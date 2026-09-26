@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeaderAuth, HeroActions } from "./_components/AuthControls";
 import { BottomNav } from "./_components/BottomNav";
+import { InstallApp } from "./_components/InstallApp";
 
 export default function Home() {
   return (
@@ -92,6 +93,7 @@ export default function Home() {
 
           {/* Buttons */}
           <HeroActions />
+          <InstallApp />
 
           {/* Feature Cards */}
           <div
