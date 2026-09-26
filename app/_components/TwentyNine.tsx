@@ -509,7 +509,8 @@ function TnFelt({ state }: { state: TnState }) {
 
   const TrickSlot = ({ pos }: { pos: number }) => {
     const t = trickAt(pos);
-    return <div className="flex justify-center">{t ? <MiniCard card={t.card} /> : null}</div>;
+    // Fixed height, so the table doesn't jump as cards are played.
+    return <div className="flex h-9 justify-center">{t ? <MiniCard card={t.card} /> : null}</div>;
   };
 
   const showTrump = ["PLAYING", "DOUBLE", "SINGLE", "NEXTDEAL"].includes(state.phase);
@@ -518,7 +519,7 @@ function TnFelt({ state }: { state: TnState }) {
 
   return (
     <div className="mt-2 rounded-3xl bg-gradient-to-r from-amber-200 via-amber-600 to-amber-200 p-[3px]">
-      <div className="relative grid grid-cols-3 grid-rows-3 items-center gap-1 rounded-[22px] bg-[radial-gradient(circle,_#3F6CD0,_#2D56B0,_#142B63)] px-2 py-2">
+      <div className="relative grid grid-cols-3 grid-rows-[auto_auto_auto] items-center gap-1 rounded-[22px] bg-[radial-gradient(circle,_#3F6CD0,_#2D56B0,_#142B63)] px-2 py-2">
         {/* trump card, top-left */}
         <div className="flex flex-col items-center">
           {showTrump && (
@@ -543,7 +544,7 @@ function TnFelt({ state }: { state: TnState }) {
         <SeatBadge pos={2} />
         <div />
         <SeatBadge pos={1} />
-        <div className="grid grid-cols-3 grid-rows-3 place-items-center">
+        <div className="grid grid-cols-3 grid-rows-[auto_auto_auto] place-items-center gap-0.5">
           <div />
           <TrickSlot pos={2} />
           <div />

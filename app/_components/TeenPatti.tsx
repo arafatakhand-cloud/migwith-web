@@ -330,7 +330,7 @@ export function TeenPattiTable({ state, uid }: { state: TeenPattiState; uid: str
         <>
           {/* Seats */}
           {state.players.length > 0 && (
-            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            <div className="mt-2 grid grid-cols-3 gap-1 sm:gap-1.5">
               {state.players.map((p, i) => {
                 const isTurn = state.phase === "PLAYING" && state.turnIndex === i;
                 const shown = state.reveal[p.uid];
@@ -338,7 +338,7 @@ export function TeenPattiTable({ state, uid }: { state: TeenPattiState; uid: str
                 return (
                   <div
                     key={p.uid}
-                    className={`rounded-xl border px-2 py-1.5 text-xs ${
+                    className={`min-w-0 rounded-xl border px-1.5 py-1 text-[11px] sm:px-2 sm:py-1.5 sm:text-xs ${
                       isTurn
                         ? "border-amber-300 bg-amber-300/15"
                         : won
@@ -353,21 +353,21 @@ export function TeenPattiTable({ state, uid }: { state: TeenPattiState; uid: str
                       </span>
                       {won && <span>🏆</span>}
                     </div>
-                    <div className="text-[10px] text-white/50">
+                    <div className="truncate text-[10px] text-white/50">
                       {p.packed ? "packed" : p.seen ? "seen" : "blind"} · 🪙 {p.invested.toLocaleString()}
                     </div>
                     {shown && shown.cards.length === 3 ? (
-                      <div className="mt-1 flex items-center gap-0.5">
+                      <div className="mt-1 flex flex-wrap items-center gap-0.5">
                         {shown.cards.map((c, k) => (
-                          <MiniCard key={k} card={c} />
+                          <MiniCard key={k} card={c} size="xs" />
                         ))}
-                        <span className="ml-1 text-[10px] font-semibold text-amber-200">{shown.hand}</span>
+                        <span className="w-full truncate text-[10px] font-semibold text-amber-200">{shown.hand}</span>
                       </div>
                     ) : state.phase === "PLAYING" && !p.packed ? (
                       <div className="mt-1 flex gap-0.5">
-                        <CardBack />
-                        <CardBack />
-                        <CardBack />
+                        <CardBack size="xs" />
+                        <CardBack size="xs" />
+                        <CardBack size="xs" />
                       </div>
                     ) : null}
                   </div>
@@ -426,61 +426,68 @@ export function TeenPattiTable({ state, uid }: { state: TeenPattiState; uid: str
             ) : me.packed ? (
               <span className="text-xs text-white/60">🚫 You packed · watching this hand</span>
             ) : (
-              <>
+              <div className="w-full space-y-2">
+                {/* My cards */}
                 {state.myCards.length === 3 && (
-                  <span className="mr-1 flex items-center gap-0.5">
+                  <div className="flex items-center justify-center gap-1">
                     {state.myCards.map((c, k) => (
                       <MiniCard key={k} card={c} size="md" />
                     ))}
-                    <span className="ml-1 text-xs font-bold text-amber-300">{state.myHand}</span>
+                    <span className="ml-2 text-sm font-black text-amber-300">{state.myHand}</span>
+                  </div>
+                )}
+                {/* Stake: − amount + */}
+                <div className="flex items-center justify-center gap-2">
+                  <TpButton color="bg-white/10 px-4" disabled={!raise} onClick={() => setRaise(false)}>
+                    −
+                  </TpButton>
+                  <span className="min-w-[96px] rounded-lg border border-amber-300 px-3 py-1.5 text-center text-sm font-black text-amber-300">
+                    🪙 {amount.toLocaleString()}
                   </span>
-                )}
-                <TpButton color="bg-red-700" disabled={state.busy} onClick={() => state.act("pack")}>
-                  ✖ Pack
-                </TpButton>
-                {!me.seen && (
-                  <TpButton color="bg-blue-700" disabled={state.busy} onClick={() => state.act("see")}>
-                    👁 See
+                  <TpButton color="bg-white/10 px-4" disabled={raise || !canRaise} onClick={() => setRaise(true)}>
+                    +
                   </TpButton>
-                )}
-                <TpButton color="bg-white/10" disabled={!raise} onClick={() => setRaise(false)}>
-                  −
-                </TpButton>
-                <span className="rounded-lg border border-amber-300 px-2 py-1 text-xs font-black text-amber-300">
-                  🪙 {amount.toLocaleString()}
-                </span>
-                <TpButton color="bg-white/10" disabled={raise || !canRaise} onClick={() => setRaise(true)}>
-                  +
-                </TpButton>
-                <TpButton
-                  color={myTurn ? "bg-emerald-600 ring-2 ring-amber-300" : "bg-emerald-800"}
-                  disabled={!myTurn || state.busy}
-                  onClick={() => state.act(raise && canRaise ? "raise" : "call")}
-                >
-                  {!myTurn
-                    ? "Waiting"
-                    : me.seen
-                      ? raise
-                        ? "Raise"
-                        : "Chaal"
-                      : raise
-                        ? "Raise blind"
-                        : "Blind"}
-                </TpButton>
-                {active.length === 2 ? (
-                  <TpButton color="bg-purple-700" disabled={!myTurn || state.busy} onClick={() => state.act("show")}>
-                    🃏 Show
+                </div>
+                {/* Moves */}
+                <div className="grid grid-cols-2 gap-1.5 sm:flex sm:flex-wrap sm:justify-center [&>*:last-child:nth-child(odd)]:col-span-2">
+                  <TpButton color="bg-red-700" disabled={state.busy} onClick={() => state.act("pack")}>
+                    ✖ Pack
                   </TpButton>
-                ) : me.seen ? (
+                  {!me.seen && (
+                    <TpButton color="bg-blue-700" disabled={state.busy} onClick={() => state.act("see")}>
+                      👁 See cards
+                    </TpButton>
+                  )}
                   <TpButton
-                    color="bg-purple-700"
+                    color={myTurn ? "bg-emerald-600 ring-2 ring-amber-300" : "bg-emerald-800"}
                     disabled={!myTurn || state.busy}
-                    onClick={() => state.act("sideshow")}
+                    onClick={() => state.act(raise && canRaise ? "raise" : "call")}
                   >
-                    🤝 Side show
+                    {!myTurn
+                      ? "Waiting…"
+                      : me.seen
+                        ? raise
+                          ? "Raise"
+                          : "Chaal"
+                        : raise
+                          ? "Raise blind"
+                          : "Blind"}
                   </TpButton>
-                ) : null}
-              </>
+                  {active.length === 2 ? (
+                    <TpButton color="bg-purple-700" disabled={!myTurn || state.busy} onClick={() => state.act("show")}>
+                      🃏 Show
+                    </TpButton>
+                  ) : me.seen ? (
+                    <TpButton
+                      color="bg-purple-700"
+                      disabled={!myTurn || state.busy}
+                      onClick={() => state.act("sideshow")}
+                    >
+                      🤝 Side show
+                    </TpButton>
+                  ) : null}
+                </div>
+              </div>
             )}
           </div>
         </>
@@ -505,7 +512,7 @@ function TpButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-xl px-3 py-2 text-xs font-bold text-white transition active:scale-95 disabled:opacity-40 ${color}`}
+      className={`rounded-xl px-3 py-2.5 text-sm font-bold text-white transition active:scale-95 disabled:opacity-40 ${color}`}
     >
       {children}
     </button>
