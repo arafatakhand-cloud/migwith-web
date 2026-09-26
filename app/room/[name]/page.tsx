@@ -775,7 +775,7 @@ export default function RoomPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 py-3 sm:px-6">
+      <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         {/* Room bar: the room's tab in the top bar names it, so this stays slim */}
         <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 shadow-sm">
           <div className="min-w-0 flex-1">
@@ -812,9 +812,9 @@ export default function RoomPage() {
           </button>
         </div>
 
-        <div className="mt-3 flex min-h-0 flex-1 gap-3">
+        <div className="mt-2 flex min-h-0 flex-1 gap-3 sm:mt-3">
           {/* Messages */}
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#CFE3F5] bg-[#E8F4FC]">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
             <div
               ref={listRef} data-notranslate
               onScroll={(e) => {

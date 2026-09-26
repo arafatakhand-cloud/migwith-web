@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  // Android Chrome: the keyboard shrinks the page (like an app), so the chat
+  // box sits right on top of it. iPhone ignores this and uses --vvh instead.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

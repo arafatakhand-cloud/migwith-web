@@ -232,7 +232,7 @@ export default function PrivateChatPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col px-2 py-3 sm:px-6">
+      <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         {/* Header */}
         <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm">
           <Link href="/messages" aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] text-lg text-[#0B2A5B]">
@@ -254,7 +254,7 @@ export default function PrivateChatPage() {
         </div>
 
         {/* Messages */}
-        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#CFE3F5] bg-[#E8F4FC]">
+        <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:mt-3 sm:rounded-b-2xl sm:border-b">
           <div
             ref={listRef} data-notranslate
             onScroll={(e) => {
