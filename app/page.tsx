@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { HeaderAuth, HeroActions } from "./_components/AuthControls";
-import { BottomNav } from "./_components/BottomNav";
+import { HomeGate } from "./_components/HomeGate";
 import { InstallApp } from "./_components/InstallApp";
 
 export default function Home() {
   return (
+    <HomeGate>
     <main className="min-h-screen overflow-hidden bg-[#050b1c] text-white">
       {/* Background Glow */}
       <div className="pointer-events-none fixed inset-0">
@@ -138,9 +139,8 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/10 px-6 py-6 text-center text-xs text-white/30">
         © {new Date().getFullYear()} MIGwith. All rights reserved.
       </footer>
-      <div className="h-16 sm:hidden" />
-      <BottomNav />
     </main>
+    </HomeGate>
   );
 }
 
