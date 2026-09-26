@@ -26,6 +26,7 @@ export type RoomInfo = {
   ownerName: string;
   description: string;
   lockLevel: number;
+  allowMedia: boolean;
   moderators: string[];
   superMods: string[];
 };
@@ -38,6 +39,7 @@ export const EMPTY_ROOM: RoomInfo = {
   ownerName: "",
   description: "",
   lockLevel: 0,
+  allowMedia: true,
   moderators: [],
   superMods: [],
 };
@@ -54,6 +56,7 @@ export function roomInfoFrom(d: DocumentData | undefined): RoomInfo {
     ownerName: String(d.ownerName || ""),
     description: String(d.description || ""),
     lockLevel: Number(d.lockLevel || 0),
+    allowMedia: d.allowMedia !== false,
     moderators: names(d.moderators),
     superMods: names(d.superMods),
   };
@@ -97,6 +100,7 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
     canMute: isRoomAdmin || isRoomMod,
     canRoomWide: isRoomAdmin || isRoomMod || canModeratePrivate, // silence / lock
     canSetLevel: isUserRoom ? canManagePrivate : isRoomAdmin || isRoomMod,
+    canShareMedia: room.allowMedia || isAppStaffHere || canModeratePrivate,
     /** Not held back by the room lock or entry level. */
     bypassesEntry: isRoomAdmin || isRoomMod || canModeratePrivate,
   };

@@ -48,6 +48,7 @@ import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
+import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import {
   EMPTY_ROOM,
   banUser,
@@ -112,6 +113,7 @@ export default function RoomPage() {
   const [roomLoaded, setRoomLoaded] = useState(false);
   const [modLoaded, setModLoaded] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -443,6 +445,33 @@ export default function RoomPage() {
     };
   };
 
+  // 📷 Photo message: same Storage folder and message shape as the app.
+  const sendPhoto = async (file: File | undefined) => {
+    if (!file || !user || !profile || uploading) return;
+    if (!perms.canShareMedia) return note(`${roomName}: Photos are turned off in this room.`);
+    if (muted || (silenced && !perms.canRoomWide)) {
+      return note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
+    }
+    setUploading(true);
+    try {
+      const url = await uploadChatImage(`room_images/${storageSafeSegment(roomName)}`, file);
+      await addDoc(collection(db, "room_messages", roomName, "messages"), {
+        text: `${profile.username}: 📷 Photo`,
+        sender: profile.username,
+        senderUid: user.uid,
+        type: "image",
+        imageUrl: url,
+        createdAt: serverTimestamp(),
+      });
+      stickToBottom.current = true;
+    } catch (err: any) {
+      console.error(err);
+      note(`${roomName}: ${err?.message || "Photo could not be sent."}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const send = async () => {
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
@@ -675,6 +704,23 @@ export default function RoomPage() {
               >
                 🎁
               </button>
+              <label
+                title={perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room"}
+                className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-3 text-lg hover:bg-white/10 ${
+                  uploading || !perms.canShareMedia ? "pointer-events-none opacity-40" : ""
+                }`}
+              >
+                {uploading ? "⏳" : "📷"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    sendPhoto(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -872,8 +918,10 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
         <span className={`mr-1 font-bold ${mine ? "text-cyan-300" : "text-blue-300"}`}>{m.sender}:</span>
       )}
       {m.type === "image" && m.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={m.imageUrl} alt="Photo" className="mt-1 max-h-64 rounded-lg" />
+        <a href={m.imageUrl} target="_blank" rel="noreferrer" className="mt-1 block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
+        </a>
       ) : m.type === "voice" && m.audioUrl ? (
         <audio controls src={m.audioUrl} className="mt-1 h-9 max-w-full" />
       ) : (

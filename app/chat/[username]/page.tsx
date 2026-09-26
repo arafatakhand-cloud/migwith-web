@@ -18,6 +18,7 @@ import { db } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
 import { PageShell } from "../../_components/PageShell";
+import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift, type GiftResult } from "../../_components/GiftPanel";
 
 type PrivateMessage = {
@@ -27,6 +28,7 @@ type PrivateMessage = {
   type: string;
   giftName: string;
   giftIcon: string;
+  imageUrl: string;
   read: boolean;
   createdAtMs: number;
 };
@@ -59,6 +61,7 @@ export default function PrivateChatPage() {
   const [sending, setSending] = useState(false);
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [giftOpen, setGiftOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
@@ -87,6 +90,7 @@ export default function PrivateChatPage() {
               type: String(d.get("messageType") || ""),
               giftName: String(d.get("giftName") || ""),
               giftIcon: String(d.get("giftIcon") || ""),
+              imageUrl: String(d.get("imageUrl") || ""),
               read: d.get("read") === true,
               createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
             }))
@@ -143,6 +147,33 @@ export default function PrivateChatPage() {
       createdAt: serverTimestamp(),
     }).catch((err) => setError(err?.message || "Gift was sent, but chat display failed."));
     stickToBottom.current = true;
+  };
+
+  // 📷 Photo: same Storage folder and message shape as the app.
+  const sendPhoto = async (file: File | undefined) => {
+    if (!file || !user || !username || uploading) return;
+    setUploading(true);
+    setError("");
+    try {
+      const url = await uploadChatImage(`private_images/${storageSafeSegment(chatId)}`, file);
+      await addDoc(collection(db, "private_messages"), {
+        chatId,
+        fromUsername: username,
+        fromUid: user.uid,
+        toUsername: friend,
+        text: "📷 Photo",
+        messageType: "image",
+        imageUrl: url,
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+      stickToBottom.current = true;
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Photo could not be sent.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   // Refresh the "Last seen 5m ago" label every 30 s.
@@ -241,7 +272,12 @@ export default function PrivateChatPage() {
                       mine ? "rounded-br-md bg-blue-500/30" : "rounded-bl-md bg-white/[0.07]"
                     }`}
                   >
-                    {m.type === "gift" ? (
+                    {m.type === "image" && m.imageUrl ? (
+                      <a href={m.imageUrl} target="_blank" rel="noreferrer" className="block">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-72 max-w-full rounded-xl" />
+                      </a>
+                    ) : m.type === "gift" ? (
                       <div className="flex items-center gap-2 py-1">
                         {giftImages.get((m.giftName || m.text).toLowerCase()) ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -283,6 +319,25 @@ export default function PrivateChatPage() {
             >
               🎁
             </button>
+            <label
+              title="Send a photo"
+              className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-3 text-lg hover:bg-white/10 ${
+                uploading || !username || friend.toLowerCase() === username.toLowerCase()
+                  ? "pointer-events-none opacity-40"
+                  : ""
+              }`}
+            >
+              {uploading ? "⏳" : "📷"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  sendPhoto(e.target.files?.[0]);
+                  e.target.value = "";
+                }}
+              />
+            </label>
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
