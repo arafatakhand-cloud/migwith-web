@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeaderAuth, HeroActions } from "./_components/AuthControls";
+import { BottomNav } from "./_components/BottomNav";
 
 export default function Home() {
   return (
@@ -135,6 +136,8 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/10 px-6 py-6 text-center text-xs text-white/30">
         © {new Date().getFullYear()} MIGwith. All rights reserved.
       </footer>
+      <div className="h-16 sm:hidden" />
+      <BottomNav />
     </main>
   );
 }

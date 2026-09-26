@@ -693,7 +693,7 @@ export default function RoomPage() {
   }
 
   return (
-    <PageShell>
+    <PageShell bottomNav={false}>
       <div className="relative mx-auto flex h-[calc(100dvh-73px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
         {/* Room header */}
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
@@ -757,18 +757,18 @@ export default function RoomPage() {
             {ludo && <LudoTable state={ludo} />}
 
             {/* Composer */}
-            <div className="flex gap-2 border-t border-white/10 p-2">
+            <div className="flex gap-1.5 border-t border-white/10 p-2 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setGiftTarget("")}
                 title="Send a gift"
-                className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-3 text-lg hover:bg-pink-500/20"
+                className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-2.5 text-lg sm:px-3 hover:bg-pink-500/20"
               >
                 🎁
               </button>
               <label
                 title={perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room"}
-                className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-3 text-lg hover:bg-white/10 ${
+                className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-2.5 text-lg sm:px-3 hover:bg-white/10 ${
                   uploading || !perms.canShareMedia ? "pointer-events-none opacity-40" : ""
                 }`}
               >
@@ -802,15 +802,16 @@ export default function RoomPage() {
                     }}
                     maxLength={1000}
                     placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message"}
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50"
+                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50 sm:px-4"
                   />
                   <button
                     type="button"
                     onClick={send}
                     disabled={sending || !text.trim() || !profile}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-5 text-sm font-bold disabled:opacity-40"
+                    className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-4 text-sm font-bold disabled:opacity-40 sm:px-5"
                   >
-                    Send
+                    <span className="sm:hidden">➤</span>
+                    <span className="hidden sm:inline">Send</span>
                   </button>
                 </>
               )}

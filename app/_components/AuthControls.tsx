@@ -4,17 +4,13 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
-import { useUnreadBySender } from "../../lib/privateChat";
-import { useFriendRequests } from "../../lib/friends";
-import { useUnreadAlerts } from "../../lib/alerts";
+import { useBadges } from "../../lib/useBadges";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
 export function HeaderAuth() {
   const { user, username, loading } = useCurrentUser();
-  const unread = useUnreadBySender(username);
-  const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
-  const requests = useFriendRequests(username).incoming.length;
-  const alerts = useUnreadAlerts(username);
+  // On phones Rooms / Messages / Friends / Me live in the bottom bar instead.
+  const { messages: unreadTotal, requests, alerts } = useBadges(username);
 
   if (loading) {
     return <div className="h-10 w-24" />;
@@ -35,13 +31,13 @@ export function HeaderAuth() {
     <div className="flex items-center gap-0.5 sm:gap-2">
       <Link
         href="/rooms"
-        className="rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+        className="hidden sm:block rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
       >
         💬<span className="ml-1 hidden sm:inline">Rooms</span>
       </Link>
       <Link
         href="/messages"
-        className="relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+        className="hidden sm:block relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
       >
         ✉️<span className="ml-1 hidden sm:inline">Messages</span>
         {unreadTotal > 0 && (
@@ -52,7 +48,7 @@ export function HeaderAuth() {
       </Link>
       <Link
         href="/friends"
-        className="relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+        className="hidden sm:block relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
       >
         👥<span className="ml-1 hidden sm:inline">Friends</span>
         {requests > 0 && (
@@ -74,7 +70,7 @@ export function HeaderAuth() {
       </Link>
       <Link
         href="/profile/me"
-        className="rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+        className="hidden sm:block rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
       >
         👤<span className="ml-1 hidden font-semibold text-cyan-300 md:inline">{username}</span>
       </Link>

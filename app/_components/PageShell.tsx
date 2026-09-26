@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { HeaderAuth } from "./AuthControls";
+import { BottomNav } from "./BottomNav";
 
 /* Dark MIGwith background + header shared by the signed-in pages. */
-export function PageShell({ children }: { children: React.ReactNode }) {
+// Full-screen chat pages (room, private chat) turn the phone bottom bar off.
+export function PageShell({ children, bottomNav = true }: { children: React.ReactNode; bottomNav?: boolean }) {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050b1c] text-white">
       <div className="pointer-events-none fixed inset-0">
@@ -25,7 +27,8 @@ export function PageShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <div className="relative z-10">{children}</div>
+      <div className={`relative z-10 ${bottomNav ? "pb-20 sm:pb-0" : ""}`}>{children}</div>
+      {bottomNav && <BottomNav />}
     </main>
   );
 }
