@@ -19,7 +19,7 @@ import {
   updateDoc,
   type Timestamp,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import {
   PRESENCE_HEARTBEAT_MS,
@@ -50,6 +50,8 @@ import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../.
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
+import { VoiceRecorder } from "../../_components/VoiceRecorder";
+import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import {
   EMPTY_ROOM,
   banUser,
@@ -119,6 +121,7 @@ export default function RoomPage() {
   const [modLoaded, setModLoaded] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -508,6 +511,29 @@ export default function RoomPage() {
     }
   };
 
+  // 🎤 Voice message: same Storage folder and message shape as the app.
+  const sendVoice = async (audio: Blob) => {
+    if (!user || !profile) return;
+    if (!perms.canShareMedia) throw new Error("Voice messages are turned off in this room.");
+    if (muted || (silenced && !perms.canRoomWide)) {
+      throw new Error(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
+    }
+    const type = audio.type || "audio/webm";
+    const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+    const r = storageRef(storage, `room_audio/${storageSafeSegment(roomName)}/${crypto.randomUUID()}.${ext}`);
+    await uploadBytes(r, audio, { contentType: type });
+    const url = await getDownloadURL(r);
+    await addDoc(collection(db, "room_messages", roomName, "messages"), {
+      text: `${profile.username}: 🎤 Voice message`,
+      sender: profile.username,
+      senderUid: user.uid,
+      type: "voice",
+      audioUrl: url,
+      createdAt: serverTimestamp(),
+    });
+    stickToBottom.current = true;
+  };
+
   const send = async () => {
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
@@ -757,27 +783,37 @@ export default function RoomPage() {
                   }}
                 />
               </label>
-              <input
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    send();
-                  }
-                }}
-                maxLength={1000}
-                placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message"}
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50"
+              <VoiceRecorder
+                disabled={!profile || !perms.canShareMedia}
+                onSend={sendVoice}
+                onError={(m) => note(`${roomName}: ${m}`)}
+                onActive={setVoiceActive}
               />
-              <button
-                type="button"
-                onClick={send}
-                disabled={sending || !text.trim() || !profile}
-                className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-5 text-sm font-bold disabled:opacity-40"
-              >
-                Send
-              </button>
+              {!voiceActive && (
+                <>
+                  <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        send();
+                      }
+                    }}
+                    maxLength={1000}
+                    placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message"}
+                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={send}
+                    disabled={sending || !text.trim() || !profile}
+                    className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-5 text-sm font-bold disabled:opacity-40"
+                  >
+                    Send
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
