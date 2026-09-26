@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   limitToLast,
   onSnapshot,
   orderBy,
@@ -84,6 +85,10 @@ type Profile = { username: string; level: number; badge: string; role: string };
 // A leave that is about to run for a room. Re-entering the same room right away
 // (React re-mount, quick navigation back) cancels it instead of posting
 // "has left" followed by "has entered".
+// Someone counts towards a room being FULL only while their presence is fresh
+// (heartbeat every 20 s), same 3 minutes as the app.
+const ROOM_FULL_FRESH_MS = 3 * 60 * 1000;
+
 const pendingLeaves = new Map<string, ReturnType<typeof setTimeout>>();
 
 function toMillis(value: unknown): number {
@@ -200,6 +205,10 @@ export default function RoomPage() {
       () => setRoomLoaded(true)
     );
   }, [user, roomName]);
+
+  // Latest room document for the entry effect (which must not re-run on every edit).
+  const roomInfoRef = useRef(roomInfo);
+  roomInfoRef.current = roomInfo;
 
   const perms = useMemo(
     () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || ""),
@@ -345,6 +354,33 @@ export default function RoomPage() {
         console.error(err);
       }
       if (left) return;
+
+      // A level-based private room only holds its capacity. The owner, migwith
+      // and anyone already inside are always let in (same rule as the app).
+      if (
+        !alreadyHere &&
+        roomInfoRef.current.capacityEnforced &&
+        roomInfoRef.current.ownerUid !== uid &&
+        profile.username.trim().toLowerCase() !== "migwith"
+      ) {
+        try {
+          const snap = await getDocs(collection(db, "room_presence", roomName, "users"));
+          const fresh = Date.now() - ROOM_FULL_FRESH_MS;
+          const inside = snap.docs.filter(
+            (d) => d.id !== uid && toMillis(d.get("lastSeen")) >= fresh
+          ).length;
+          const max = roomInfoRef.current.maxUsers;
+          if (inside >= max) {
+            left = true; // nothing to clean up — we never went in
+            setBlocked(`"${roomName}" is full (${max}/${max}). Please try again later.`);
+            return;
+          }
+        } catch (err) {
+          console.error("room full check failed", err);
+        }
+        if (left) return;
+      }
+
       visitId = visitId || newVisitId();
 
       await setDoc(

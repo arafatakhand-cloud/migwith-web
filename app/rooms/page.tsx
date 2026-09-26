@@ -24,7 +24,7 @@ import {
 } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 
-type UserRoom = { name: string; description: string; ownerName: string; ownerUid: string };
+type UserRoom = { name: string; description: string; ownerName: string; ownerUid: string; maxUsers: number; capped: boolean };
 
 // Same limits as the app (MainActivity.kt).
 const MIN_LEVEL_TO_CREATE = 10;
@@ -75,6 +75,11 @@ export default function RoomsPage() {
               description: String(d.get("description") || ""),
               ownerName: String(d.get("ownerName") || ""),
               ownerUid: String(d.get("ownerUid") || ""),
+              maxUsers: Number(d.get("maxUsers") || 50),
+              capped:
+                typeof d.get("capacityEnforced") === "boolean"
+                  ? d.get("capacityEnforced") === true
+                  : d.get("capacityByLevel") === true,
             }))
             .sort((a, b) => a.name.localeCompare(b.name))
         )
@@ -277,7 +282,12 @@ export default function RoomsPage() {
                   href={roomHref(r.name)}
                   className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 transition hover:border-cyan-300/30 hover:bg-white/[0.07]"
                 >
-                  <div className="font-bold">{r.name}</div>
+                  <div className="flex items-center gap-2 font-bold">
+                    <span className="truncate">{r.name}</span>
+                    {r.capped && (
+                      <span className="ml-auto shrink-0 text-[11px] font-semibold text-white/35">👥 max {r.maxUsers}</span>
+                    )}
+                  </div>
                   <div className="mt-1 truncate text-xs text-white/40">
                     {r.description || `by ${r.ownerName}`}
                   </div>

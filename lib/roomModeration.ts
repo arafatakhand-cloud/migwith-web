@@ -27,6 +27,8 @@ export type RoomInfo = {
   description: string;
   lockLevel: number;
   allowMedia: boolean;
+  maxUsers: number;
+  capacityEnforced: boolean;
   moderators: string[];
   superMods: string[];
 };
@@ -40,6 +42,8 @@ export const EMPTY_ROOM: RoomInfo = {
   description: "",
   lockLevel: 0,
   allowMedia: true,
+  maxUsers: 50,
+  capacityEnforced: false,
   moderators: [],
   superMods: [],
 };
@@ -57,6 +61,8 @@ export function roomInfoFrom(d: DocumentData | undefined): RoomInfo {
     description: String(d.description || ""),
     lockLevel: Number(d.lockLevel || 0),
     allowMedia: d.allowMedia !== false,
+    maxUsers: Number(d.maxUsers || 50),
+    capacityEnforced: typeof d.capacityEnforced === "boolean" ? d.capacityEnforced : d.capacityByLevel === true,
     moderators: names(d.moderators),
     superMods: names(d.superMods),
   };
