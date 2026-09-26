@@ -37,6 +37,12 @@ import {
 } from "../../_components/GiftPanel";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale } from "../../_components/RoyaleGame";
+import {
+  TEEN_PATTI_ROOM,
+  TeenPattiTable,
+  teenPattiHandleCommand,
+  useTeenPatti,
+} from "../../_components/TeenPatti";
 
 type ChatMessage = {
   id: string;
@@ -113,6 +119,8 @@ export default function RoomPage() {
   const luxury = useLuxuryBot(roomName === LUXURY_ROOM, user?.uid, note);
   // 👑 MIG Royale round + bets (only in the MIG Royale room).
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
+  // 🎴 Teen Patti table (only in the Teen Patti room).
+  const teenPatti = useTeenPatti(roomName === TEEN_PATTI_ROOM, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -369,6 +377,11 @@ export default function RoomPage() {
       return;
     }
 
+    if (teenPatti && teenPattiHandleCommand(teenPatti, clean, note, 200)) {
+      setText("");
+      return;
+    }
+
     if (royale && royaleHandleCommand(royale, clean, note)) {
       setText("");
       return;
@@ -506,6 +519,7 @@ export default function RoomPage() {
 
             {luxury && <LuxuryBetBox state={luxury} note={note} />}
             {royale && <RoyaleTable state={royale} />}
+            {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">

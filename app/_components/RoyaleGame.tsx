@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { MiniCard } from "./Cards";
 
 // 👑 MIG Royale — Red vs Blue. Server-driven (startRoyale / royaleBet /
 // tickRoyale): the web only shows the round and sends bets, same as the app's
@@ -215,22 +216,6 @@ export function royaleHandleCommand(state: RoyaleState, text: string, note: (t: 
     return true;
   }
   return false;
-}
-
-function MiniCard({ card }: { card: string }) {
-  const suit = card.slice(-1);
-  const rank = card.slice(0, -1);
-  const red = suit === "♥" || suit === "♦";
-  return (
-    <span
-      className={`inline-flex h-9 w-7 flex-col items-center justify-center rounded-md border border-black/10 bg-white text-[11px] font-black leading-none ${
-        red ? "text-red-600" : "text-neutral-900"
-      }`}
-    >
-      <span>{rank}</span>
-      <span className="text-[10px]">{suit}</span>
-    </span>
-  );
 }
 
 export function RoyaleTable({ state }: { state: RoyaleState }) {
