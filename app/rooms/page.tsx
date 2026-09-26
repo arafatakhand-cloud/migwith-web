@@ -175,6 +175,12 @@ export default function RoomsPage() {
         >
           ➕ Create Room
         </button>
+        <Link
+          href="/leaderboard"
+          className="ml-2 inline-block rounded-2xl border border-amber-300/30 bg-amber-300/10 px-5 py-3 text-sm font-black text-amber-200 hover:bg-amber-300/20"
+        >
+          🏆 Leader Board
+        </Link>
 
         {showCreate && (
           <div
