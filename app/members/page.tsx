@@ -79,7 +79,7 @@ export default function MembersPage() {
 
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+      <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 sm:px-6">
         {selected ? (
           <>
             <PageTitle title={selected.title} subtitle={selected.subtitle} icon={selected.icon} />
@@ -88,7 +88,7 @@ export default function MembersPage() {
             ) : list.length === 0 ? (
               <p className="py-10 text-center text-sm text-[#5B6B8C]">No members yet.</p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="grid gap-2 md:grid-cols-2">
                 {list.map((m, i) => (
                   <li key={m.uid}>
                     <Link
@@ -130,13 +130,13 @@ export default function MembersPage() {
           <>
             <PageTitle title="Members" subtitle="Explore · Community" />
             <SectionLabel>Management</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               {MANAGEMENT.map((c) => (
                 <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
               ))}
             </div>
             <SectionLabel>Community</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               {COMMUNITY.map((c) => (
                 <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
               ))}

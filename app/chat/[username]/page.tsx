@@ -232,7 +232,7 @@ export default function PrivateChatPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="mx-auto flex h-[calc(100dvh-53px)] max-w-3xl flex-col px-2 py-3 sm:px-6">
+      <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col px-2 py-3 sm:px-6">
         {/* Header */}
         <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm">
           <Link href="/messages" aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] text-lg text-[#0B2A5B]">
@@ -312,7 +312,7 @@ export default function PrivateChatPage() {
           )}
 
           {/* Composer */}
-          <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 sm:gap-2">
+          <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 pb-safe sm:gap-2">
             <button
               type="button"
               onClick={() => setGiftOpen(true)}

@@ -491,6 +491,9 @@ export const BN: Record<string, string> = {
   "📈 Trail Earnings": "📈 ট্রেইল আয়",
   "Last 7 days": "গত ৭ দিন",
   "Pending": "বাকি",
+  "Use MIGwith like an app on iPhone": "iPhone-এ MIGwith অ্যাপের মতো ব্যবহার করুন",
+  "✕ Leave": "✕ বের হোন",
+  "Leave room": "রুম ছাড়ুন",
 };
 
 export function translate(text: string): string | null {

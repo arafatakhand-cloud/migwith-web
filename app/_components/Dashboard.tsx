@@ -6,7 +6,9 @@ import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc
 import { db } from "../../lib/firebase";
 import { useFriendRequests } from "../../lib/friends";
 import { chatHref } from "../../lib/privateChat";
+import { OFFICIAL_COUNTRY_ROOMS, roomHref } from "../../lib/rooms";
 import { useSession } from "./AppSession";
+import { InstallHint } from "./InstallHint";
 
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
@@ -183,7 +185,8 @@ export function Dashboard() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl pb-8">
+    <div className="mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
+      <div className="min-w-0 flex-1 lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-md">
       {/* Orange profile header */}
       <section className="bg-gradient-to-r from-[#F7931E] to-[#F58220] px-4 py-3 text-white shadow">
         <div className="flex items-center gap-3">
@@ -245,6 +248,8 @@ export function Dashboard() {
         </div>
       </section>
 
+      <InstallHint />
+
       {/* Rows */}
       <div className="bg-white shadow-sm">
         <Link href="/messages" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
@@ -277,6 +282,45 @@ export function Dashboard() {
           <span className="font-semibold">Invite Friends</span>
         </button>
       </div>
+      </div>
+
+      {/* Laptop: quick links beside the list */}
+      <aside className="hidden w-72 shrink-0 space-y-3 lg:block">
+        <div className="rounded-2xl bg-white p-3 shadow-md">
+          <p className="mb-2 text-sm font-black text-[#0B2A5B]">💬 Popular rooms</p>
+          <ul className="space-y-1">
+            {OFFICIAL_COUNTRY_ROOMS.slice(0, 6).map((r) => (
+              <li key={r}>
+                <Link href={roomHref(r)} className="flex items-center gap-2 rounded-xl px-2 py-1.5 text-sm font-semibold text-[#0B2A5B] hover:bg-[#F4F9FF]">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#DCEBFB] text-xs font-black text-[#174EA6]">
+                    {r.slice(0, 1)}
+                  </span>
+                  <span data-notranslate>{r}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href="/rooms" className="mt-2 block rounded-xl bg-[#2F80ED] py-2 text-center text-sm font-bold text-white">
+            All rooms
+          </Link>
+        </div>
+        <div className="rounded-2xl bg-white p-3 shadow-md">
+          <p className="mb-2 text-sm font-black text-[#0B2A5B]">🧭 Explore</p>
+          <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-[#0B2A5B]">
+            {[
+              ["/gifts", "🎁", "Gift Shops"],
+              ["/leaderboard", "🏆", "Leader Board"],
+              ["/lucky", "🍀", "Lucky User"],
+              ["/members", "👥", "Members"],
+            ].map(([href, icon, label]) => (
+              <Link key={href} href={href} className="rounded-xl bg-[#F4F9FF] py-3 hover:bg-[#EAF4FE]">
+                <span className="block text-xl">{icon}</span>
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

@@ -170,7 +170,7 @@ export default function LeaderboardPage() {
 
   return (
     <PageShell>
-      <section className="mx-auto max-w-2xl px-3 pb-8 pt-4 sm:px-6">
+      <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 pt-4 sm:px-6">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -197,7 +197,7 @@ export default function LeaderboardPage() {
         {!picked ? (
           <>
             <SectionLabel>Top players</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               {RANKINGS.map((r) => (
                 <PastelCard
                   key={r.id}

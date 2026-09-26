@@ -39,7 +39,7 @@ function Switch({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={onClose}>
       <div className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-black">{title}</h2>
         {children}
@@ -95,7 +95,7 @@ export default function SettingsPage() {
 
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
+      <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-10 sm:px-6">
         <div className="flex items-center gap-3 pt-4">
           <Link
             href="/"
@@ -113,7 +113,7 @@ export default function SettingsPage() {
         {ready && (
           <>
             <SectionLabel>Privacy</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               <PastelCard
                 icon="🔒"
                 title="Profile Lock"
@@ -148,7 +148,7 @@ export default function SettingsPage() {
             </div>
 
             <SectionLabel>Security</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               <PastelCard icon="🔐" title="Change Password" subtitle="Update your account password securely" color="#D4AF37" onClick={() => setDialog("gate")} />
               <PastelCard icon="🛡️" title="Security PIN" subtitle="Set or change your PIN for coin transfers" color="#12AFC7" href="/security" />
               <PastelCard icon="📧" title="Recovery Email" subtitle="For a forgotten PIN or password" color="#2F80ED" href="/security" />
@@ -156,7 +156,7 @@ export default function SettingsPage() {
             </div>
 
             <SectionLabel>App preferences</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGwith visual style" color="#E12A6B" note="In app" />
               <PastelCard
                 icon="🌐"
@@ -171,7 +171,7 @@ export default function SettingsPage() {
             </div>
 
             <SectionLabel>Support</SectionLabel>
-            <div className="space-y-2.5">
+            <div className="grid gap-2.5 md:grid-cols-2">
               <PastelCard icon="❔" title="Help & Support" subtitle="Get help or report an issue" color="#43B65A" note="In app" />
               <PastelCard icon="💬" title="Feedback & Report" subtitle="Send feedback or report a problem" color="#7B1FB8" note="In app" />
               <PastelCard icon="ℹ️" title="About MIGwith" subtitle="MIGwith Web" color="#D4AF37" note="Web" />

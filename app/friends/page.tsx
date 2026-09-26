@@ -187,7 +187,7 @@ export default function FriendsPage() {
   return (
     <PageShell light>
       <div className="bg-[#0B1F3A] text-white">
-        <div className="mx-auto flex max-w-2xl items-center gap-3 px-3 py-2.5 sm:px-6">
+        <div className="mx-auto flex max-w-2xl items-center gap-3 px-3 py-2.5 sm:px-6 lg:max-w-4xl">
           <Link
             href="/"
             aria-label="Back"
@@ -198,7 +198,7 @@ export default function FriendsPage() {
           <h1 className="text-lg font-black">👥 Friends</h1>
         </div>
       </div>
-      <section className="mx-auto max-w-2xl px-3 py-4 sm:px-6">
+      <section className="mx-auto max-w-2xl px-3 py-4 sm:px-6 lg:max-w-4xl">
 
         <div className="flex gap-2">
           {tabBtn("FRIENDS", "My Friends")}
@@ -235,7 +235,7 @@ export default function FriendsPage() {
               ))}
             </div>
 
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-4 grid gap-2 md:grid-cols-2">
               {shownFriends.length === 0 && (
                 <li className="py-10 text-center text-sm text-[#6B7A99]">
                   {fr.friends.length === 0
