@@ -6,6 +6,7 @@ import { auth } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useUnreadBySender } from "../../lib/privateChat";
 import { useFriendRequests } from "../../lib/friends";
+import { useUnreadAlerts } from "../../lib/alerts";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
 export function HeaderAuth() {
@@ -13,6 +14,7 @@ export function HeaderAuth() {
   const unread = useUnreadBySender(username);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
   const requests = useFriendRequests(username).incoming.length;
+  const alerts = useUnreadAlerts(username);
 
   if (loading) {
     return <div className="h-10 w-24" />;
@@ -30,7 +32,7 @@ export function HeaderAuth() {
   }
 
   return (
-    <div className="flex items-center gap-2 sm:gap-3">
+    <div className="flex items-center gap-0.5 sm:gap-2">
       <Link
         href="/rooms"
         className="rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
@@ -56,6 +58,17 @@ export function HeaderAuth() {
         {requests > 0 && (
           <span className="absolute -right-1 -top-0.5 min-w-[18px] rounded-full bg-pink-500 px-1 text-center text-[10px] font-bold leading-[18px] text-white">
             {requests > 99 ? "99+" : requests}
+          </span>
+        )}
+      </Link>
+      <Link
+        href="/alerts"
+        className="relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+      >
+        🔔<span className="ml-1 hidden lg:inline">Alerts</span>
+        {alerts > 0 && (
+          <span className="absolute -right-1 -top-0.5 min-w-[18px] rounded-full bg-pink-500 px-1 text-center text-[10px] font-bold leading-[18px] text-white">
+            {alerts > 99 ? "99+" : alerts}
           </span>
         )}
       </Link>
