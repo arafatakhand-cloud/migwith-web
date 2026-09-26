@@ -201,6 +201,17 @@ export const BN: Record<string, string> = {
   "Remove friend": "বন্ধু থেকে সরান",
 
   // Alerts
+  "Notifications are on": "নোটিফিকেশন চালু আছে",
+  "Get notifications on this device": "এই ডিভাইসে নোটিফিকেশন পান",
+  "Messages, gifts, friend requests and invites — even when MIGwith is closed.":
+    "মেসেজ, গিফট, ফ্রেন্ড রিকোয়েস্ট আর ইনভাইট — MIGwith বন্ধ থাকলেও।",
+  "Notifications are blocked. Allow them for this site in your browser settings.":
+    "নোটিফিকেশন বন্ধ করা আছে। ব্রাউজারের সেটিংসে এই সাইটের জন্য চালু করুন।",
+  "On iPhone, first add MIGwith to your Home Screen (Share → Add to Home Screen), then open it from there.":
+    "iPhone-এ আগে MIGwith হোম স্ক্রিনে যোগ করুন (Share → Add to Home Screen), তারপর সেখান থেকে খুলুন।",
+  "Turn on": "চালু করুন",
+  "Turn off": "বন্ধ করুন",
+  "Notifications were not allowed.": "নোটিফিকেশনের অনুমতি দেওয়া হয়নি।",
   "🔔 Alerts": "🔔 অ্যালার্ট",
   "No alerts yet.": "এখনো কোনো অ্যালার্ট নেই।",
   "Respond in the MIGwith app": "MIGwith অ্যাপ থেকে উত্তর দিন",
