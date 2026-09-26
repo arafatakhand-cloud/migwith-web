@@ -48,6 +48,7 @@ export function GiftPanel({
   gifts,
   people,
   initialTarget,
+  fixedTarget = false,
   onClose,
   onSent,
 }: {
@@ -56,6 +57,8 @@ export function GiftPanel({
   gifts: Gift[];
   people: string[];
   initialTarget: string;
+  /** Private chat: the recipient is the friend and can't be changed. */
+  fixedTarget?: boolean;
   onClose: () => void;
   onSent: (result: GiftResult) => void;
 }) {
@@ -132,6 +135,12 @@ export function GiftPanel({
         </div>
 
         {/* Recipient */}
+        {fixedTarget ? (
+          <p className="mt-3 text-sm text-white/60">
+            To <span className="font-bold text-pink-200">{target}</span>
+          </p>
+        ) : (
+          <>
         <label className="mt-4 mb-1 block text-xs font-semibold text-white/60">To</label>
         <input
           value={target}
@@ -162,6 +171,9 @@ export function GiftPanel({
               </button>
             ))}
           </div>
+        )}
+
+          </>
         )}
 
         {/* Gifts */}

@@ -18,11 +18,15 @@ import { db } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
 import { PageShell } from "../../_components/PageShell";
+import { GiftPanel, loadGiftCatalog, type Gift, type GiftResult } from "../../_components/GiftPanel";
 
 type PrivateMessage = {
   id: string;
   from: string;
   text: string;
+  type: string;
+  giftName: string;
+  giftIcon: string;
   read: boolean;
   createdAtMs: number;
 };
@@ -53,6 +57,8 @@ export default function PrivateChatPage() {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [giftOpen, setGiftOpen] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
@@ -78,6 +84,9 @@ export default function PrivateChatPage() {
               id: d.id,
               from: String(d.get("fromUsername") || ""),
               text: String(d.get("text") || ""),
+              type: String(d.get("messageType") || ""),
+              giftName: String(d.get("giftName") || ""),
+              giftIcon: String(d.get("giftIcon") || ""),
               read: d.get("read") === true,
               createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
             }))
@@ -103,6 +112,38 @@ export default function PrivateChatPage() {
       (snap) => setFriendLastActive(toMillis(snap.docs[0]?.get("lastActiveAt")))
     );
   }, [user, friend]);
+
+  // Gift catalog (for the gift panel and gift pictures).
+  useEffect(() => {
+    if (!user) return;
+    loadGiftCatalog()
+      .then(setGifts)
+      .catch((err) => console.error(err));
+  }, [user]);
+
+  const giftImages = useMemo(
+    () => new Map(gifts.filter((g) => g.imageUrl).map((g) => [g.name.toLowerCase(), g.imageUrl])),
+    [gifts]
+  );
+
+  // Coins were already moved by the sendGift function; this only shows the
+  // gift in the chat, same document shape as the app (no price in it).
+  const showGift = (r: GiftResult) => {
+    if (!user) return;
+    addDoc(collection(db, "private_messages"), {
+      chatId,
+      fromUsername: username,
+      fromUid: user.uid,
+      toUsername: friend,
+      text: `${r.giftIcon} ${r.giftName}`,
+      messageType: "gift",
+      giftName: r.giftName,
+      giftIcon: r.giftIcon,
+      read: false,
+      createdAt: serverTimestamp(),
+    }).catch((err) => setError(err?.message || "Gift was sent, but chat display failed."));
+    stickToBottom.current = true;
+  };
 
   // Refresh the "Last seen 5m ago" label every 30 s.
   useEffect(() => {
@@ -200,7 +241,23 @@ export default function PrivateChatPage() {
                       mine ? "rounded-br-md bg-blue-500/30" : "rounded-bl-md bg-white/[0.07]"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                    {m.type === "gift" ? (
+                      <div className="flex items-center gap-2 py-1">
+                        {giftImages.get((m.giftName || m.text).toLowerCase()) ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={giftImages.get((m.giftName || m.text).toLowerCase())}
+                            alt={m.giftName}
+                            className="h-10 w-10 object-contain"
+                          />
+                        ) : (
+                          <span className="text-3xl">{m.giftIcon || "🎁"}</span>
+                        )}
+                        <span className="text-lg font-black text-pink-200">{m.giftName || m.text}</span>
+                      </div>
+                    ) : (
+                      <p className="whitespace-pre-wrap break-words">{m.text}</p>
+                    )}
                     <p className="mt-0.5 text-right text-[10px] text-white/35">
                       {timeLabel(m.createdAtMs)}
                       {mine && <span className="ml-1">{m.read ? "✓✓" : "✓"}</span>}
@@ -217,6 +274,15 @@ export default function PrivateChatPage() {
 
           {/* Composer */}
           <div className="flex gap-2 border-t border-white/10 p-2">
+            <button
+              type="button"
+              onClick={() => setGiftOpen(true)}
+              disabled={!username || friend.toLowerCase() === username.toLowerCase()}
+              title={`Send ${friend} a gift`}
+              className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-3 text-lg disabled:opacity-40"
+            >
+              🎁
+            </button>
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -241,6 +307,19 @@ export default function PrivateChatPage() {
           </div>
         </div>
       </div>
+
+      {giftOpen && (
+        <GiftPanel
+          roomId={`private_${chatId}`}
+          uid={user.uid}
+          gifts={gifts}
+          people={[friend]}
+          initialTarget={friend}
+          fixedTarget
+          onClose={() => setGiftOpen(false)}
+          onSent={showGift}
+        />
+      )}
     </PageShell>
   );
 }
