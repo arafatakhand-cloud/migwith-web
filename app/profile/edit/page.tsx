@@ -123,9 +123,9 @@ export default function EditProfilePage() {
 
   if (!loading && !user) {
     return (
-      <PageShell>
+      <PageShell light>
         <div className="mx-auto max-w-md px-6 py-20 text-center">
-          <Link href="/login" className="rounded-xl bg-blue-600 px-6 py-3 font-bold">
+          <Link href="/login" className="rounded-xl bg-[#2F80ED] px-6 py-3 font-bold text-white">
             Login
           </Link>
         </div>
@@ -133,25 +133,25 @@ export default function EditProfilePage() {
     );
   }
 
-  const field = "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none focus:border-cyan-300/60";
+  const field = "w-full rounded-xl border border-[#D5E3F5] bg-white px-4 py-3 text-[#0B2A5B] outline-none focus:border-[#2F80ED]";
 
   return (
-    <PageShell>
+    <PageShell light>
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
         <div className="flex items-center gap-3">
-          <Link href={`/profile/${encodeURIComponent(username || "me")}`} className="text-white/60 hover:text-white">
+          <Link href={`/profile/${encodeURIComponent(username || "me")}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
             ←
           </Link>
-          <h1 className="text-2xl font-black">Edit Profile</h1>
+          <h1 className="text-2xl font-black text-[#0B2A5B]">Edit Profile</h1>
         </div>
 
         {!loaded ? (
-          <p className="py-16 text-center text-white/40">{error || "Loading…"}</p>
+          <p className="py-16 text-center text-[#5B6B8C]">{error || "Loading…"}</p>
         ) : (
           <div className="mt-5 space-y-4">
             {/* Cover + photo */}
             <label className="relative block cursor-pointer">
-              <div className="flex aspect-[3.2] items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-b from-blue-600 to-[#0F2C55]">
+              <div className="flex aspect-[3.2] items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-b from-[#174EA6] to-[#0B2A5B] text-white shadow-md">
                 {coverPhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={coverPhotoUrl} alt="" className="h-full w-full object-cover" />
@@ -159,7 +159,7 @@ export default function EditProfilePage() {
                   <span className="text-xl font-black">MIG WITH</span>
                 )}
               </div>
-              <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold">
+              <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold text-white">
                 {uploading === "cover" ? "Uploading…" : "📷 Change cover"}
               </span>
               <input
@@ -172,7 +172,7 @@ export default function EditProfilePage() {
             </label>
 
             <label className="flex cursor-pointer items-center gap-4">
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-2 border-white/20 bg-gradient-to-br from-blue-500 to-cyan-400">
+              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#1E3A6B] text-white shadow-md">
                 {photoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={photoUrl} alt="" className="h-full w-full object-cover" />
@@ -182,7 +182,7 @@ export default function EditProfilePage() {
                   </span>
                 )}
               </div>
-              <span className="rounded-xl border border-white/15 px-4 py-2 text-sm font-bold hover:bg-white/5">
+              <span className="rounded-xl border border-[#BFD7F2] bg-white px-4 py-2 text-sm font-bold text-[#174EA6] hover:bg-[#F4F9FF]">
                 {uploading === "photo" ? "Uploading…" : "📷 Change photo"}
               </span>
               <input
@@ -195,17 +195,17 @@ export default function EditProfilePage() {
             </label>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-white/50">MIG ID (cannot be changed)</p>
-              <p className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-3 text-white/60">{username}</p>
+              <p className="mb-1 text-xs font-bold text-[#35507E]">MIG ID (cannot be changed)</p>
+              <p className="rounded-xl border border-[#D5E3F5] bg-[#EAF2FC] px-4 py-3 text-[#5B6B8C]">{username}</p>
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-white/50">Full Name</p>
+              <p className="mb-1 text-xs font-bold text-[#35507E]">Full Name</p>
               <input value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={40} className={field} />
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-white/50">Bio</p>
+              <p className="mb-1 text-xs font-bold text-[#35507E]">Bio</p>
               <textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
@@ -216,17 +216,17 @@ export default function EditProfilePage() {
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-white/50">Date of birth</p>
+              <p className="mb-1 text-xs font-bold text-[#35507E]">Date of birth</p>
               <input
                 type="date"
                 value={dateOfBirth}
                 onChange={(e) => setDateOfBirth(e.target.value)}
-                className={`${field} [color-scheme:dark]`}
+                className={`${field} [color-scheme:light]`}
               />
             </div>
 
             <div>
-              <p className="mb-1 text-xs font-bold text-white/50">Gender</p>
+              <p className="mb-1 text-xs font-bold text-[#35507E]">Gender</p>
               <div className="flex gap-2">
                 {GENDERS.map(([value, label]) => (
                   <button
@@ -234,7 +234,7 @@ export default function EditProfilePage() {
                     type="button"
                     onClick={() => setGender(value)}
                     className={`flex-1 rounded-xl border py-2.5 text-sm font-bold ${
-                      gender === value ? "border-cyan-300 bg-cyan-300/15 text-cyan-200" : "border-white/10 text-white/60"
+                      gender === value ? "border-[#2F80ED] bg-[#2F80ED] text-white" : "border-[#D5E3F5] bg-white text-[#0B2A5B]"
                     }`}
                   >
                     {label}
@@ -245,8 +245,8 @@ export default function EditProfilePage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <p className="mb-1 text-xs font-bold text-white/50">Country</p>
-                <select value={country} onChange={(e) => setCountry(e.target.value)} className={`${field} bg-[#0b1430]`}>
+                <p className="mb-1 text-xs font-bold text-[#35507E]">Country</p>
+                <select value={country} onChange={(e) => setCountry(e.target.value)} className={field}>
                   <option value="">—</option>
                   {!COUNTRIES.includes(country) && country && <option value={country}>{country}</option>}
                   {COUNTRIES.map((c) => (
@@ -257,11 +257,11 @@ export default function EditProfilePage() {
                 </select>
               </div>
               <div>
-                <p className="mb-1 text-xs font-bold text-white/50">Relationship</p>
+                <p className="mb-1 text-xs font-bold text-[#35507E]">Relationship</p>
                 <select
                   value={relationship}
                   onChange={(e) => setRelationship(e.target.value)}
-                  className={`${field} bg-[#0b1430]`}
+                  className={field}
                 >
                   {RELATIONSHIPS.map((r) => (
                     <option key={r} value={r}>
@@ -272,13 +272,13 @@ export default function EditProfilePage() {
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-300">{error}</p>}
+            {error && <p className="text-sm text-rose-600">{error}</p>}
 
             <button
               type="button"
               onClick={save}
               disabled={saving || !!uploading}
-              className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 py-3.5 font-black disabled:opacity-50"
+              className="w-full rounded-2xl bg-[#0B2A5B] py-3.5 font-black text-white shadow disabled:opacity-50"
             >
               {saving ? "Saving…" : "Save"}
             </button>

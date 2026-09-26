@@ -439,6 +439,7 @@ export const BN: Record<string, string> = {
   "Top players": "সেরা খেলোয়াড়",
   "All time": "সব সময়",
   "← Back to Settings": "← সেটিংসে ফিরুন",
+  "Tagged": "ট্যাগড",
 };
 
 export function translate(text: string): string | null {
