@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect } from "react";
+import { startAppCheck } from "../../lib/appCheck";
 import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useBadges } from "../../lib/useBadges";
@@ -8,6 +9,10 @@ import { useBadges } from "../../lib/useBadges";
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
 // rebuilt (twice — header and bottom bar) on every navigation.
+
+// App Check has to start before the first Firestore / Functions call, so it
+// runs as soon as this file loads in the browser (before any page renders).
+startAppCheck();
 
 type Session = ReturnType<typeof useCurrentUser> & { badges: ReturnType<typeof useBadges> };
 

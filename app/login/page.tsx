@@ -192,6 +192,21 @@ export default function LoginPage() {
           </label>
         </div>
 
+        {process.env.NEXT_PUBLIC_RECAPTCHA_ENTERPRISE_KEY && (
+          // Required wording when the reCAPTCHA badge is hidden (see globals.css).
+          <p className="mt-6 text-center text-[11px] leading-4 text-white/60">
+            This site is protected by reCAPTCHA and the Google{" "}
+            <a href="https://policies.google.com/privacy" className="underline" target="_blank" rel="noreferrer">
+              Privacy Policy
+            </a>{" "}
+            and{" "}
+            <a href="https://policies.google.com/terms" className="underline" target="_blank" rel="noreferrer">
+              Terms of Service
+            </a>{" "}
+            apply.
+          </p>
+        )}
+
         <p className="mt-auto pt-12 text-center text-sm text-white/80">
           New to MIGwith? Create your MIG ID in the MIGwith app.
         </p>

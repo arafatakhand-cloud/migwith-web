@@ -75,3 +75,9 @@ body {
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+/* App Check's invisible reCAPTCHA: its corner badge would sit on top of the
+   chat send button; the login page shows the required notice instead. */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
