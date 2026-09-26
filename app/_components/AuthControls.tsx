@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useSession } from "./AppSession";
+import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { detachPushForLogout } from "../../lib/push";
 import { LanguageToggle } from "./LanguageToggle";
 
@@ -88,6 +89,7 @@ export function HeaderAuth() {
         type="button"
         onClick={async () => {
           await detachPushForLogout();
+          if (auth.currentUser) await leaveAllOpenRooms(auth.currentUser.uid);
           await signOut(auth);
         }}
         className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/10 sm:px-5 sm:py-2.5"
