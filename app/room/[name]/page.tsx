@@ -628,7 +628,12 @@ export default function RoomPage() {
               {roomUsers.map((u) => (
                 <li key={u.uid} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
                   <span>{badgeForLevel(u.level)}</span>
-                  <span className="truncate font-semibold">{u.username}</span>
+                  <Link
+                    href={`/profile/${encodeURIComponent(u.username)}`}
+                    className="truncate font-semibold hover:text-cyan-300"
+                  >
+                    {u.username}
+                  </Link>
                   <span className="ml-auto text-xs text-white/35">{u.level}</span>
                   {u.uid !== user.uid && (
                     <button

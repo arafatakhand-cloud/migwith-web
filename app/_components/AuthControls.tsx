@@ -46,9 +46,12 @@ export function HeaderAuth() {
           </span>
         )}
       </Link>
-      <span className="hidden text-sm text-white/70 md:inline">
-        <span className="font-semibold text-cyan-300">{username}</span>
-      </span>
+      <Link
+        href="/profile/me"
+        className="rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+      >
+        👤<span className="ml-1 hidden font-semibold text-cyan-300 md:inline">{username}</span>
+      </Link>
 
       <button
         type="button"

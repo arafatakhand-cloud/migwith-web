@@ -167,7 +167,9 @@ export default function PrivateChatPage() {
             {friend.slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-black">{friend}</h1>
+            <Link href={`/profile/${encodeURIComponent(friend)}`} className="block truncate font-black hover:text-cyan-300">
+              {friend}
+            </Link>
             {status && (
               <p className={`text-xs ${status === "Online" ? "text-emerald-300" : "text-white/40"}`}>
                 {status === "Online" ? "🟢 Online" : status}
