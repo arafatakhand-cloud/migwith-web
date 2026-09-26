@@ -123,11 +123,11 @@ export function TopBar() {
         <div className="fixed inset-0 z-50" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
           <nav
-            className="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col overflow-y-auto rounded-r-3xl border-r border-white/10 bg-gradient-to-b from-[#12225a] to-[#0a1230] p-4 shadow-2xl"
+            className="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col overflow-y-auto rounded-r-3xl border-r border-white/10 bg-gradient-to-b from-[#174EA6] to-[#0B1F3A] p-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Profile card */}
-            <div className="relative rounded-3xl border border-white/15 bg-[#26345f]/80 p-4">
+            <div className="relative rounded-3xl border border-white/15 bg-[#0F3D8C]/80 p-4">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -147,7 +147,7 @@ export function TopBar() {
                     )}
                   </div>
                   <span
-                    className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#26345f] ${
+                    className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0F3D8C] ${
                       me?.online === false ? "bg-white/40" : "bg-emerald-400"
                     }`}
                   />
@@ -162,11 +162,11 @@ export function TopBar() {
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link href="/leaderboard" className="rounded-2xl border border-blue-300/30 bg-[#2f3d6b] py-2 text-center">
+                <Link href="/leaderboard" className="rounded-2xl border border-blue-300/30 bg-[#0B2A5B] py-2 text-center">
                   <p className="text-lg font-black text-cyan-300">{me ? me.xp.toLocaleString() : "…"}</p>
                   <p className="text-xs text-cyan-200/80">XP</p>
                 </Link>
-                <Link href="/wallet" className="rounded-2xl border border-blue-300/30 bg-[#2f3d6b] py-2 text-center">
+                <Link href="/wallet" className="rounded-2xl border border-blue-300/30 bg-[#0B2A5B] py-2 text-center">
                   <p className="text-lg font-black text-emerald-300">
                     {me
                       ? me.coins >= 1_000_000
@@ -189,7 +189,7 @@ export function TopBar() {
                       pathname === href ? "bg-white/10 text-white" : "text-white/90 hover:bg-white/5"
                     }`}
                   >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#2a3556] text-lg">{icon}</span>
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F3D8C] text-lg">{icon}</span>
                     <span className="flex-1">{label}</span>
                     {n > 0 && (
                       <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold leading-5">{badgeText(n)}</span>

@@ -47,11 +47,11 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-white/15 bg-[#13245f]/80">
+    <section className="overflow-hidden rounded-3xl border border-white/15 bg-[#174EA6]/80">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between border-b border-white/10 bg-[#1a2657]/70 px-4 py-3.5 text-left"
+        className="flex w-full items-center justify-between border-b border-white/10 bg-[#0F3D8C]/70 px-4 py-3.5 text-left"
       >
         <span className="text-lg font-black">{title}</span>
         <span className={`text-white/70 transition ${open ? "" : "rotate-180"}`}>⌃</span>
@@ -137,11 +137,11 @@ export function Dashboard() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 px-3 py-4 sm:px-6">
       {/* Profile card */}
-      <section className="rounded-3xl border border-white/15 bg-[#13245f]/80 p-4">
+      <section className="rounded-3xl border border-white/15 bg-[#174EA6]/80 p-4">
         <div className="flex items-center gap-3">
           <Link
             href="/profile/me"
-            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#2a4a9a] text-2xl font-black"
+            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0B2A5B] text-2xl font-black"
           >
             {me?.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -212,7 +212,7 @@ export function Dashboard() {
             <Link
               key={href}
               href={href}
-              className="flex items-center justify-center gap-1.5 rounded-2xl bg-[#1d2a5c] py-2.5 text-sm font-bold hover:bg-[#24346e]"
+              className="flex items-center justify-center gap-1.5 rounded-2xl bg-[#0F3D8C] py-2.5 text-sm font-bold hover:bg-[#13479E]"
             >
               <span>{icon}</span>
               <span>{label}</span>
@@ -232,7 +232,7 @@ export function Dashboard() {
               <li key={`c_${name}`}>
                 <Link
                   href={chatHref(name)}
-                  className="flex items-center gap-3 rounded-2xl border border-blue-300/30 bg-[#1f3a86]/70 px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-2xl border border-blue-300/30 bg-[#0B2A5B]/70 px-3 py-2.5"
                 >
                   <span className="text-lg">✉️</span>
                   <span data-notranslate className="min-w-0 flex-1 truncate font-bold">
@@ -246,7 +246,7 @@ export function Dashboard() {
               <li key={`r_${room}`}>
                 <Link
                   href={roomHref(room)}
-                  className="flex items-center gap-3 rounded-2xl border border-blue-300/20 bg-[#1b3278]/60 px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-2xl border border-blue-300/20 bg-[#0F3D8C]/60 px-3 py-2.5"
                 >
                   <span className="text-lg">💬</span>
                   <span data-notranslate className="min-w-0 flex-1 truncate font-bold">
@@ -266,7 +266,7 @@ export function Dashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search friends…"
-          className="mb-2 w-full rounded-2xl border border-white/15 bg-[#0e1a47] px-4 py-3 text-sm outline-none placeholder:text-white/40 focus:border-cyan-300/50"
+          className="mb-2 w-full rounded-2xl border border-white/15 bg-[#0B2A5B] px-4 py-3 text-sm outline-none placeholder:text-white/40 focus:border-cyan-300/50"
         />
         {fr.friends.length === 0 ? (
           <p className="px-2 py-3 text-sm text-white/45">

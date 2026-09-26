@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050b1c] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-sky-app text-white">
 
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-1/2 top-[-220px] h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[150px]" />
@@ -109,7 +109,7 @@ export default function ForgotPasswordPage() {
         <div className="absolute right-[-150px] top-[35%] h-[420px] w-[420px] rounded-full bg-indigo-600/10 blur-[130px]" />
       </div>
 
-      <header className="relative z-10 border-b border-white/10 bg-[#050b1c]/70 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-white/10 bg-[#0B1F3A]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
 
           <Link href="/" className="flex items-center gap-3">

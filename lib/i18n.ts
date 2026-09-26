@@ -97,6 +97,10 @@ export const BN: Record<string, string> = {
   "Add to favorites": "প্রিয়তে যোগ করুন",
   "Remove from favorites": "প্রিয় থেকে সরান",
 
+  "Create your MIG ID in the app": "অ্যাপে আপনার MIG ID তৈরি করুন",
+  "New MIG IDs can only be created in the MIGwith app. Once you have one, log in here with the same MIG ID and password.":
+    "নতুন MIG ID শুধু MIGwith অ্যাপ থেকে তৈরি করা যায়। ID হয়ে গেলে একই MIG ID আর পাসওয়ার্ড দিয়ে এখানে লগইন করুন।",
+  "New to MIGwith? Create your MIG ID in the MIGwith app.": "MIGwith-এ নতুন? MIGwith অ্যাপ থেকে আপনার MIG ID তৈরি করুন।",
   // Login / register / forgot password
   "← Home": "← হোম",
   "← Login": "← লগইন",

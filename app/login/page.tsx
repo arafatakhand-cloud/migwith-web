@@ -71,7 +71,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050b1c] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-sky-app text-white">
 
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-1/2 top-[-220px] h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[150px]" />
@@ -79,7 +79,7 @@ export default function LoginPage() {
         <div className="absolute right-[-150px] top-[35%] h-[420px] w-[420px] rounded-full bg-indigo-600/10 blur-[130px]" />
       </div>
 
-      <header className="relative z-10 border-b border-white/10 bg-[#050b1c]/70 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-white/10 bg-[#0B1F3A]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
 
           <Link href="/" className="flex items-center gap-3">
@@ -229,18 +229,9 @@ export default function LoginPage() {
               {loading ? "Logging in..." : "Login to MIGwith →"}
             </button>
 
-            <div className="my-7 flex items-center gap-4">
-              <div className="h-px flex-1 bg-white/10" />
-              <span className="text-xs text-white/30">OR</span>
-              <div className="h-px flex-1 bg-white/10" />
-            </div>
-
-            <Link
-              href="/register"
-              className="block w-full rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-center font-semibold text-white/80 transition hover:bg-white/10 hover:text-white"
-            >
-              Create a New MIG ID
-            </Link>
+            <p className="mt-6 text-center text-sm text-white/70">
+              New to MIGwith? Create your MIG ID in the MIGwith app.
+            </p>
 
           </div>
 

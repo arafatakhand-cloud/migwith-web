@@ -224,13 +224,13 @@ export default function RoomsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search room"
-            className="min-w-0 flex-1 rounded-2xl border border-white/15 bg-[#0e1a47] px-4 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-cyan-300/50"
+            className="min-w-0 flex-1 rounded-2xl border border-white/15 bg-[#0B2A5B] px-4 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-cyan-300/50"
           />
           <button
             type="button"
             onClick={() => setRefreshKey((k) => k + 1)}
             title="Refresh"
-            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#13245f] text-xl hover:bg-[#1a2f78]"
+            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#174EA6] text-xl hover:bg-[#0F3D8C]"
           >
             ↻
           </button>
@@ -241,7 +241,7 @@ export default function RoomsPage() {
               setCreateError("");
             }}
             title="Create Room"
-            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#1f3a86] text-2xl hover:bg-[#274596]"
+            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#0B2A5B] text-2xl hover:bg-[#0F3D8C]"
           >
             +
           </button>
@@ -305,9 +305,9 @@ export default function RoomsPage() {
 
         {sections.map((sec) =>
           sec.names.length === 0 && !(sec.id === "fav" && !q) ? null : (
-            <div key={sec.id} className="overflow-hidden rounded-3xl border border-white/15 bg-[#13245f]/80">
+            <div key={sec.id} className="overflow-hidden rounded-3xl border border-white/15 bg-[#174EA6]/80">
               <div
-                className="flex items-center gap-2 border-b border-white/10 bg-[#1c2352]/80 px-4 py-3"
+                className="flex items-center gap-2 border-b border-white/10 bg-[#0F3D8C]/80 px-4 py-3"
                 style={{ boxShadow: `inset 5px 0 0 ${sec.accent}` }}
               >
                 <button
