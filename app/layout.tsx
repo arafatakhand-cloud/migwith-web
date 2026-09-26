@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppSession } from "./_components/AppSession";
+import { Translator } from "./_components/Translator";
 
 export const metadata: Metadata = {
   title: "MIGwith",
@@ -33,6 +34,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <AppSession>{children}</AppSession>
+        <Translator />
       </body>
     </html>
   );

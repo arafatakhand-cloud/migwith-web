@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useSession } from "./AppSession";
+import { LanguageToggle } from "./LanguageToggle";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
 export function HeaderAuth() {
@@ -21,17 +22,21 @@ export function HeaderAuth() {
 
   if (!user) {
     return (
-      <Link
+      <div className="flex items-center gap-2">
+        <LanguageToggle />
+        <Link
         href="/login"
         className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold backdrop-blur transition hover:bg-white/10"
       >
         Login
       </Link>
+      </div>
     );
   }
 
   return (
     <div className="flex items-center gap-0.5 sm:gap-2">
+      <LanguageToggle />
       <Link
         href="/rooms"
         className="hidden sm:block rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"

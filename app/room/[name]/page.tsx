@@ -759,7 +759,7 @@ export default function RoomPage() {
           {/* Messages */}
           <div className="flex min-w-0 flex-1 flex-col rounded-2xl border border-white/10 bg-black/20">
             <div
-              ref={listRef}
+              ref={listRef} data-notranslate
               onScroll={(e) => {
                 const el = e.currentTarget;
                 stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
@@ -856,7 +856,7 @@ export default function RoomPage() {
             <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-white/40">
               In this room
             </h2>
-            <ul className="space-y-1">
+            <ul className="space-y-1" data-notranslate>
               {roomUsers.map((u) => (
                 <li key={u.uid} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
                   <span>{badgeForLevel(u.level)}</span>

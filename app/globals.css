@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Bangla: wide letter-spacing breaks joined letters (যুক্তাক্ষর), so keep it normal. */
+html[lang="bn"] * {
+  letter-spacing: normal !important;
+}

@@ -379,7 +379,7 @@ export default function ProfilePage() {
 
         <div className="mt-3 px-1">
           <p className="text-sm text-white/50">@{username} · MIG WITH member</p>
-          {profile.bio && <p className="mt-2 whitespace-pre-wrap text-white/85">{profile.bio}</p>}
+          {profile.bio && <p data-notranslate className="mt-2 whitespace-pre-wrap text-white/85">{profile.bio}</p>}
         </div>
 
         {/* Details */}
