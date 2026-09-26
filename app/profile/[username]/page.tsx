@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -18,6 +20,7 @@ import { db } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
+import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
@@ -213,20 +216,16 @@ export default function ProfilePage() {
       })
       .catch(() => {});
 
-    const ga = collection(db, "gift_activity");
-    Promise.all([
-      getDocs(query(ga, where("fromUsername", "==", username), limit(10))),
-      getDocs(query(ga, where("toUsername", "==", username), limit(10))),
-    ])
+    Promise.all([latestGifts("fromUsername", username, 10), latestGifts("toUsername", username, 10)])
       .then(([sent, got]) => {
         const list: GiftEntry[] = [
-          ...sent.docs.map((d) => ({
+          ...sent.map((d) => ({
             sent: true,
             other: String(d.get("toUsername") || ""),
             giftName: String(d.get("giftName") || ""),
             at: toMs(d.get("createdAt")),
           })),
-          ...got.docs.map((d) => ({
+          ...got.map((d) => ({
             sent: false,
             other: String(d.get("fromUsername") || ""),
             giftName: String(d.get("giftName") || ""),
@@ -249,7 +248,7 @@ export default function ProfilePage() {
         setIsBlocked(list("blockedUsers").some((n) => sameName(n, username)));
         const visited = list("visitedProfiles");
         if (!visited.some((n) => sameName(n, username))) {
-          updateDoc(ref, { visitedProfiles: [...visited, username] }).catch(() => {});
+          updateDoc(ref, { visitedProfiles: arrayUnion(username) }).catch(() => {});
         }
       })
       .catch(() => {});
@@ -264,10 +263,14 @@ export default function ProfilePage() {
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
       const current = ((snap.get(field) as unknown[]) || []).filter((v): v is string => typeof v === "string");
-      const next = on
-        ? Array.from(new Set([...current, username]))
-        : current.filter((n) => !sameName(n, username));
-      await updateDoc(ref, { [field]: next });
+      // arrayUnion / arrayRemove change only this name, so an edit made at the
+      // same time elsewhere (another tab, the app) is not overwritten.
+      const matches = current.filter((n) => sameName(n, username));
+      if (on) {
+        if (matches.length === 0) await updateDoc(ref, { [field]: arrayUnion(username) });
+      } else if (matches.length > 0) {
+        await updateDoc(ref, { [field]: arrayRemove(...matches) });
+      }
       if (field === "following") {
         setIsFollowing(on);
         setFollowers((c) => Math.max(0, c + (on ? 1 : -1)));

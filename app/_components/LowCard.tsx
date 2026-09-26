@@ -113,15 +113,19 @@ export function useLowCard(enabled: boolean, uid: string | undefined, note: (t: 
     const t = setInterval(() => {
       const n = Date.now();
       setNow(n);
-      if (!g.running || g.round <= 0 || document.visibilityState !== "visible") return;
+      if (!g.running || g.round <= 0 || g.phaseEndsAt <= 0 || document.visibilityState !== "visible") return;
       if (n - lastDrive.current < 1500) return;
-      const stuck = g.phaseEndsAt > 0 ? n - g.phaseEndsAt : 0;
+      const stuck = n - g.phaseEndsAt;
       const args = { roomId: LOWCARD_ROOM, roundNumber: g.round };
 
       if (g.phase === "JOINING" && stuck >= 1000 && stuck <= 150_000 && g.players.length < 2) {
         lastDrive.current = n;
         cancelCall(args).catch(() => {});
-      } else if ((g.phase === "JOINING" || g.phase === "COUNTDOWN") && stuck >= 0 && stuck <= 150_000) {
+      } else if (
+        ((g.phase === "JOINING" && g.players.length >= 2) || g.phase === "COUNTDOWN") &&
+        stuck >= 0 &&
+        stuck <= 150_000
+      ) {
         lastDrive.current = n;
         advanceCall(args).catch(() => {});
       } else if (g.phase === "DRAWING" && stuck >= 3500 && stuck <= 150_000) {

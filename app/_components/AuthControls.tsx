@@ -3,14 +3,17 @@
 import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { useBadges } from "../../lib/useBadges";
+import { useSession } from "./AppSession";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
 export function HeaderAuth() {
-  const { user, username, loading } = useCurrentUser();
   // On phones Rooms / Messages / Friends / Me live in the bottom bar instead.
-  const { messages: unreadTotal, requests, alerts } = useBadges(username);
+  const {
+    user,
+    username,
+    loading,
+    badges: { messages: unreadTotal, requests, alerts },
+  } = useSession();
 
   if (loading) {
     return <div className="h-10 w-24" />;
@@ -88,7 +91,7 @@ export function HeaderAuth() {
 
 /* Hero: Create/Login buttons, or a welcome message when signed in */
 export function HeroActions() {
-  const { user, username, loading } = useCurrentUser();
+  const { user, username, loading } = useSession();
 
   if (loading) {
     return <div className="mt-10 h-[60px]" />;

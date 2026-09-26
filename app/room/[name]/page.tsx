@@ -119,6 +119,7 @@ export default function RoomPage() {
   const [roomInfo, setRoomInfo] = useState<RoomInfo>(EMPTY_ROOM);
   const [roomLoaded, setRoomLoaded] = useState(false);
   const [modLoaded, setModLoaded] = useState(false);
+  const [myModLoaded, setMyModLoaded] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
@@ -288,16 +289,22 @@ export default function RoomPage() {
   useEffect(() => {
     if (!user || !profile) return;
     const userRef = doc(db, "room_moderation", roomName, "users", profile.username.toLowerCase());
-    const offUser = onSnapshot(userRef, (snap) => {
-      setMuted(snap.get("muted") === true);
-      if (snap.get("banned") === true) {
-        setBlocked("You are banned from this room.");
-      } else if (snap.get("kicked") === true) {
-        setBlocked("You were kicked from this room.");
-        // The kicked person clears their own flag so they can come back later.
-        updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
-      }
-    });
+    const offUser = onSnapshot(
+      userRef,
+      (snap) => {
+        setMuted(snap.get("muted") === true);
+        if (snap.get("banned") === true) {
+          setBlocked("You are banned from this room.");
+        } else if (snap.get("kicked") === true) {
+          setBlocked("You were kicked from this room.");
+          // The kicked person clears their own flag so they can come back later.
+          updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
+        }
+        // Set together with "blocked", so a banned person never gets as far as entering.
+        setMyModLoaded(true);
+      },
+      () => setMyModLoaded(true)
+    );
     const offRoom = onSnapshot(
       doc(db, "room_moderation", roomName),
       (snap) => {
@@ -315,7 +322,7 @@ export default function RoomPage() {
 
   // Enter the room: presence doc + "has entered", heartbeat, and "has left" on exit.
   useEffect(() => {
-    if (!user || !profile || blocked || !roomLoaded || !modLoaded) return;
+    if (!user || !profile || blocked || !roomLoaded || !modLoaded || !myModLoaded) return;
     // Checked here too: the effect that sets "blocked" runs in the same commit,
     // too late to stop this one from posting "has entered".
     const info = roomInfoRef.current;
@@ -451,7 +458,7 @@ export default function RoomPage() {
         }, 1500)
       );
     };
-  }, [user, profile, roomName, blocked, roomLoaded, modLoaded]);
+  }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded]);
 
   // Merge server messages with this device's own notices, oldest first.
   const shown = useMemo(
@@ -630,7 +637,8 @@ export default function RoomPage() {
       return;
     }
 
-    if (clean.startsWith("/") || clean.startsWith("!")) {
+    // "!" commands belong to the game rooms (handled above); elsewhere "!hi" is chat.
+    if (clean.startsWith("/")) {
       note("Unknown command. Type /help to see the commands.");
       setText("");
       return;

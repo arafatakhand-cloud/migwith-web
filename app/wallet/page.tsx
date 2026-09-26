@@ -21,6 +21,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
+import { latestGifts } from "../../lib/giftActivity";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
 // users/{uid}/coin_transactions and gift_activity. Coins only ever move through
@@ -155,11 +156,6 @@ export default function WalletPage() {
         (e) => console.error("transactions", e)
       ),
       onSnapshot(
-        query(collection(db, "gift_activity"), where("fromUsername", "==", username), limit(30)),
-        (s) => setGifts(s.docs.map((d) => ({ id: d.id, data: d.data() }))),
-        (e) => console.error("gifts", e)
-      ),
-      onSnapshot(
         query(collection(userRef, "coin_transactions"), where("createdAt", ">=", midnight)),
         (s) => setTodayTx(s.docs.map((d) => d.data())),
         (e) => console.error("today tx", e)
@@ -173,6 +169,14 @@ export default function WalletPage() {
     ensureCoinAccount({}).catch(() => {});
     return () => offs.forEach((off) => off());
   }, [user, username]);
+
+  // My newest 30 sent gifts, read again whenever today's gift list changes.
+  useEffect(() => {
+    if (!username) return;
+    latestGifts("fromUsername", username, 30)
+      .then((docs) => setGifts(docs.map((d) => ({ id: d.id, data: d.data() }))))
+      .catch((e) => console.error("gifts", e));
+  }, [username, todayGifts.length]);
 
   // Today's numbers, counted the same way as the app.
   const { earnedToday, spentToday, transferredToday } = useMemo(() => {

@@ -237,6 +237,7 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
 
 export async function muteUser(ctx: ModContext, name: string, mute: boolean) {
   if (!ctx.perms.canMute) return ctx.note(`${ctx.roomName}: You cannot mute in this room.`);
+  if (mute && (await isProtected(ctx, name))) return ctx.note(`${ctx.roomName}: You cannot mute ${name.trim()}.`);
   const target = await lookup(ctx, name).catch(() => null);
   if (!target) return ctx.note(`${ctx.roomName}: User not found: ${name.trim()}`);
   try {

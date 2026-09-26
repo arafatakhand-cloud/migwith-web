@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { badgeText, useBadges } from "../../lib/useBadges";
+import { badgeText } from "../../lib/useBadges";
+import { useSession } from "./AppSession";
 
 /* Phone-only bottom bar, like the app's main tabs. */
 export function BottomNav() {
   const pathname = usePathname() || "/";
-  const { user, username } = useCurrentUser();
-  const badges = useBadges(username);
+  const { user, badges } = useSession();
   if (!user) return null;
 
   const tabs = [
