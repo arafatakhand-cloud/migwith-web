@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   addDoc,
   collection,
@@ -158,7 +159,10 @@ export default function MerchantPage() {
       <div className={`${card} border border-[#D4AF37]/60`}>
         <p className="text-4xl">🎓</p>
         <p className="mt-2 text-xl font-bold">You are a Mentor 🎓</p>
-        <p className="mt-1 text-sm text-white/70">Approve requests and manage your merchants in the MIGwith app (Explore › Merchant Program).</p>
+        <p className="mt-1 text-sm text-white/70">Approve requests and manage your merchants.</p>
+        <Link href="/mentor" className="mt-4 inline-block rounded-xl bg-[#69E1F2] px-6 py-2.5 text-sm font-black text-[#0B1F3A]">
+          Open Mentor Dashboard
+        </Link>
       </div>
     );
   } else if (merchant) {

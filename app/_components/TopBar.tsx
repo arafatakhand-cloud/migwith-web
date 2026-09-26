@@ -33,6 +33,7 @@ const PAGE_NAMES: [string, string][] = [
   ["/lucky", "Lucky User"],
   ["/style-studio", "Style Studio"],
   ["/merchant", "Merchant"],
+  ["/mentor", "Mentor"],
   ["/leaderboard", "Leader Board"],
   ["/security", "Security PIN"],
   ["/settings", "Settings"],
