@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { HeaderAuth, HeroActions } from "./_components/AuthControls";
-import { BottomNav } from "./_components/BottomNav";
+import { HomeGate } from "./_components/HomeGate";
 import { InstallApp } from "./_components/InstallApp";
 
 export default function Home() {
   return (
-    <main className="min-h-screen overflow-hidden bg-[#050b1c] text-white">
+    <HomeGate>
+    <main className="min-h-screen overflow-hidden bg-sky-app text-white">
       {/* Background Glow */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute left-1/2 top-[-250px] h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-blue-600/20 blur-[140px]" />
@@ -16,7 +17,7 @@ export default function Home() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 border-b border-white/10 bg-[#050b1c]/70 backdrop-blur-xl">
+      <header className="relative z-10 border-b border-white/10 bg-[#0B1F3A]/85 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-10">
 
           {/* Logo */}
@@ -80,7 +81,7 @@ export default function Home() {
             Your world.
             <br />
 
-            <span className="bg-gradient-to-r from-white via-cyan-200 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-white via-sky-100 to-amber-200 bg-clip-text text-transparent">
               Your community.
             </span>
           </h2>
@@ -138,9 +139,8 @@ export default function Home() {
       <footer className="relative z-10 border-t border-white/10 px-6 py-6 text-center text-xs text-white/30">
         © {new Date().getFullYear()} MIGwith. All rights reserved.
       </footer>
-      <div className="h-16 sm:hidden" />
-      <BottomNav />
     </main>
+    </HomeGate>
   );
 }
 

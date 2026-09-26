@@ -49,6 +49,7 @@ import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
+import { rememberRecentRoom } from "../../../lib/roomPrefs";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
@@ -423,6 +424,8 @@ export default function RoomPage() {
         { merge: true }
       ).catch((err) => console.error("presence write failed", err));
 
+      rememberRecentRoom(roomName);
+
       if (!alreadyHere && !left) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true),
@@ -725,7 +728,7 @@ export default function RoomPage() {
 
   return (
     <PageShell bottomNav={false}>
-      <div className="relative mx-auto flex h-[calc(100dvh-73px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
+      <div className="relative mx-auto flex h-[calc(100dvh-65px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
         {/* Room header */}
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
           <Link href="/rooms" className="text-sm text-white/60 hover:text-white">

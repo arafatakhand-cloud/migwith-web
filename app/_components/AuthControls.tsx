@@ -139,18 +139,6 @@ export function HeroActions() {
   return (
     <div className="mt-10 flex w-full flex-col items-center justify-center gap-4 sm:flex-row">
 
-      {/* Create MIG ID */}
-      <Link
-        href="/register"
-        className="group flex w-full max-w-xs items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 px-8 py-4 font-bold text-white shadow-xl shadow-blue-500/25 transition duration-300 hover:scale-[1.02] hover:shadow-cyan-400/20"
-      >
-        Create MIG ID
-
-        <span className="ml-2 transition group-hover:translate-x-1">
-          →
-        </span>
-      </Link>
-
       {/* Login */}
       <Link
         href="/login"

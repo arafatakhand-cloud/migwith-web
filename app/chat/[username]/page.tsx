@@ -230,7 +230,7 @@ export default function PrivateChatPage() {
 
   return (
     <PageShell bottomNav={false}>
-      <div className="mx-auto flex h-[calc(100dvh-73px)] max-w-3xl flex-col px-2 py-3 sm:px-6">
+      <div className="mx-auto flex h-[calc(100dvh-65px)] max-w-3xl flex-col px-2 py-3 sm:px-6">
         {/* Header */}
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
           <Link href="/messages" className="text-sm text-white/60 hover:text-white">
