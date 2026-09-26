@@ -300,7 +300,6 @@ export const BN: Record<string, string> = {
   "✅ Your Security PIN has been reset.": "✅ আপনার সিকিউরিটি পিন রিসেট হয়েছে।",
 
   // Leader Board
-  "🏆 Leader Board": "🏆 লিডার বোর্ড",
   Today: "আজ",
   Yesterday: "গতকাল",
   "This Week": "এই সপ্তাহ",
