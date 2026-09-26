@@ -36,6 +36,7 @@ import {
   type GiftResult,
 } from "../../_components/GiftPanel";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
+import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale } from "../../_components/RoyaleGame";
 
 type ChatMessage = {
   id: string;
@@ -110,6 +111,8 @@ export default function RoomPage() {
 
   // 👻 Luxury Bot round + bets (only in the Luxury Bot room).
   const luxury = useLuxuryBot(roomName === LUXURY_ROOM, user?.uid, note);
+  // 👑 MIG Royale round + bets (only in the MIG Royale room).
+  const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -366,6 +369,11 @@ export default function RoomPage() {
       return;
     }
 
+    if (royale && royaleHandleCommand(royale, clean, note)) {
+      setText("");
+      return;
+    }
+
     if (clean.startsWith("/") || clean.startsWith("!")) {
       note("Commands (/ and !) work only in the MIGwith app for now.");
       setText("");
@@ -497,6 +505,7 @@ export default function RoomPage() {
             </div>
 
             {luxury && <LuxuryBetBox state={luxury} note={note} />}
+            {royale && <RoyaleTable state={royale} />}
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">
