@@ -112,6 +112,12 @@ export function HeroActions() {
           💬 Enter Chat Rooms
           <span className="ml-2 transition group-hover:translate-x-1">→</span>
         </Link>
+        <Link
+          href="/wallet"
+          className="flex w-full max-w-xs items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/10 px-8 py-3 font-bold text-amber-200 transition hover:bg-amber-300/20"
+        >
+          💰 My Account · Coins
+        </Link>
       </div>
     );
   }

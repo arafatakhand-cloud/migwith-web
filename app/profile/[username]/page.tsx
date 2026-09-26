@@ -417,6 +417,14 @@ export default function ProfilePage() {
             >
               ✎ Edit Profile
             </Link>
+          ) : null}
+          {isOwn ? (
+            <Link
+              href="/wallet"
+              className="block w-full rounded-2xl border border-amber-300/30 bg-amber-300/10 py-3 text-center font-bold text-amber-200 transition hover:bg-amber-300/20"
+            >
+              💰 My Account · Coins
+            </Link>
           ) : (
             <>
               <div className="flex gap-2.5">
