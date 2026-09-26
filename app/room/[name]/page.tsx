@@ -107,7 +107,7 @@ function toMillis(value: unknown): number {
 
 function timeLabel(ms: number): string {
   if (!ms) return "";
-  return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
 export default function RoomPage() {
@@ -802,7 +802,7 @@ export default function RoomPage() {
                 const el = e.currentTarget;
                 stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
               }}
-              className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3"
+              className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3"
             >
               {/* Room cards, like the app: manager, welcome text, who is here */}
               <div className="space-y-1.5 pb-1">
@@ -1042,26 +1042,36 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
     );
   }
 
-  // "username: message" → bold name, then the message.
+  // Plain lines, no bubbles: other people's messages on the left as
+  // "name: message", mine on the right (no name). Tiny time after the text.
   const split = m.sender && m.text.startsWith(`${m.sender}: `);
   const body = split ? m.text.slice(m.sender.length + 2) : m.text;
+  const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
 
   return (
-    <div className={`rounded-xl px-3 py-1.5 text-sm shadow-sm ${mine ? "bg-[#DCEBFB]" : "bg-white"}`}>
-      {split && (
-        <span className={`mr-1 font-bold ${mine ? "text-[#0F6E56]" : "text-[#174EA6]"}`}>{m.sender}:</span>
-      )}
-      {m.type === "image" && m.imageUrl ? (
-        <a href={m.imageUrl} target="_blank" rel="noreferrer" className="mt-1 block">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
-        </a>
-      ) : m.type === "voice" && m.audioUrl ? (
-        <audio controls src={m.audioUrl} className="mt-1 h-9 max-w-full" />
-      ) : (
-        <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
-      )}
-      {time && <span className="ml-2 text-[10px] text-[#8A9BBC]">{time}</span>}
+    <div className={`flex px-1 ${mine ? "justify-end" : "justify-start"}`}>
+      <div className={`max-w-[85%] text-[15px] leading-snug ${mine ? "text-right" : "text-left"}`}>
+        {!mine && split && <span className="mr-1 font-bold text-[#174EA6]">{m.sender}:</span>}
+        {m.type === "image" && m.imageUrl ? (
+          <>
+            <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${mine ? "ml-auto w-fit" : "w-fit"}`}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
+            </a>
+            {stamp}
+          </>
+        ) : m.type === "voice" && m.audioUrl ? (
+          <>
+            <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${mine ? "ml-auto" : ""}`} />
+            {stamp}
+          </>
+        ) : (
+          <>
+            <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
+            {stamp}
+          </>
+        )}
+      </div>
     </div>
   );
 }
