@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
@@ -79,6 +79,51 @@ export function TopBar() {
     return () => clearInterval(t);
   }, [uid, currentRoom]);
 
+  // Swipe left / right to move between Home, Rooms and the open rooms, like the app.
+  const router = useRouter();
+  const order = ["/", "/rooms", ...openRooms.map((r) => roomHref(r))];
+  const here = currentRoom ? roomHref(currentRoom) : pathname;
+  const orderRef = useRef({ order, here });
+  orderRef.current = { order, here };
+  useEffect(() => {
+    if (!uid) return;
+    let start: { x: number; y: number; t: number } | null = null;
+    const onStart = (e: TouchEvent) => {
+      const el = e.target as Element | null;
+      // Leave sideways scrollers, text boxes and game tables alone.
+      if (e.touches.length !== 1 || el?.closest("input, textarea, select, [data-noswipe], .overflow-x-auto")) {
+        start = null;
+        return;
+      }
+      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (!start) return;
+      const dx = e.changedTouches[0].clientX - start.x;
+      const dy = e.changedTouches[0].clientY - start.y;
+      const quick = Date.now() - start.t < 700;
+      start = null;
+      if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
+      const { order, here } = orderRef.current;
+      const i = order.indexOf(here);
+      if (i < 0) return; // only on the tab pages
+      const next = order[dx < 0 ? i + 1 : i - 1];
+      if (next) router.push(next);
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [uid, router]);
+
+  // Keep the current room's tab in view.
+  const activeTabRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [currentRoom, openRooms.length]);
+
   // Close the menu when the page changes.
   useEffect(() => setOpen(false), [pathname]);
 
@@ -104,7 +149,7 @@ export function TopBar() {
   const onRooms = pathname === "/rooms";
   const pageName = currentRoom ? undefined : PAGE_NAMES.find(([p]) => pathname.startsWith(p))?.[1];
   const tab = (active: boolean) =>
-    `relative flex h-9 w-10 items-center justify-center rounded-xl text-lg transition ${
+    `relative flex h-9 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition ${
       active ? "bg-[#2F80ED] text-white shadow-md" : "text-[#0B2A5B] hover:bg-[#E3F0FD]"
     }`;
 
@@ -120,12 +165,12 @@ export function TopBar() {
 
   return (
     <>
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center gap-1.5 px-3 py-2 sm:gap-2 sm:px-6">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-xl text-[#0B2A5B] hover:bg-[#E3F0FD]"
+          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xl text-[#0B2A5B] hover:bg-[#E3F0FD]"
         >
           ☰
           <Badge n={badges.messages + badges.requests} />
@@ -138,11 +183,12 @@ export function TopBar() {
           💬
         </Link>
         {openRooms.length > 0 && (
-          <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
             {openRooms.map((r) =>
               r === currentRoom ? (
                 <span
                   key={r}
+                  ref={activeTabRef}
                   data-notranslate
                   className="flex max-w-[9.5rem] shrink-0 items-center gap-1 rounded-xl bg-[#2F80ED] px-2.5 py-1.5 text-xs font-bold text-white shadow-md"
                 >
@@ -163,7 +209,7 @@ export function TopBar() {
           </div>
         )}
         {pageName && (
-          <span className="flex items-center gap-1 rounded-xl bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow-md">
+          <span className="flex min-w-0 shrink items-center gap-1 truncate rounded-xl bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow-md">
             💬 {pageName}
           </span>
         )}

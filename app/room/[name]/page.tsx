@@ -839,7 +839,7 @@ export default function RoomPage() {
 
             {/* Game tables keep their dark look */}
             {(luxury || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
-              <div className="bg-[#0B1F3A] text-white">
+              <div data-noswipe className="bg-[#0B1F3A] text-white">
                 {luxury && <LuxuryBetBox state={luxury} note={note} />}
                 {royale && <RoyaleTable state={royale} />}
                 {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}

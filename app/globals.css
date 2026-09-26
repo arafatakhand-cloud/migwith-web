@@ -29,3 +29,12 @@ html[lang="bn"] * {
 .bg-sky-app .text-white\/55 {
   color: rgb(255 255 255 / 0.8);
 }
+
+/* Sideways tab rows scroll by finger without showing a scrollbar. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
