@@ -35,6 +35,7 @@ import {
   type Gift,
   type GiftResult,
 } from "../../_components/GiftPanel";
+import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 
 type ChatMessage = {
   id: string;
@@ -106,6 +107,9 @@ export default function RoomPage() {
         local: true,
       },
     ]);
+
+  // 👻 Luxury Bot round + bets (only in the Luxury Bot room).
+  const luxury = useLuxuryBot(roomName === LUXURY_ROOM, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -355,6 +359,13 @@ export default function RoomPage() {
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
 
+    if (luxury && clean.toLowerCase() === "!start") {
+      setText("");
+      if (luxury.running) note("👻 Luxury Bot: A round is already running.");
+      else luxury.start();
+      return;
+    }
+
     if (clean.startsWith("/") || clean.startsWith("!")) {
       note("Commands (/ and !) work only in the MIGwith app for now.");
       setText("");
@@ -484,6 +495,8 @@ export default function RoomPage() {
                 />
               ))}
             </div>
+
+            {luxury && <LuxuryBetBox state={luxury} note={note} />}
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">
