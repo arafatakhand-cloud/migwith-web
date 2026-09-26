@@ -79,7 +79,10 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
   }
 
   if (r.gifts) {
-    const snap = await getDocs(query(collection(db, "gift_activity"), where("createdAt", ">=", periodStart(period))));
+    // "Yesterday" ends at today's midnight; the other periods run up to now.
+    const range = [where("createdAt", ">=", periodStart(period))];
+    if (period === "Yesterday") range.push(where("createdAt", "<", periodStart("Today")));
+    const snap = await getDocs(query(collection(db, "gift_activity"), ...range));
     const counts = new Map<string, number>();
     snap.docs.forEach((d) => {
       const name = String(d.get(r.gifts === "received" ? "toUsername" : "fromUsername") || "").trim();

@@ -75,11 +75,12 @@ export default function PrivateChatPage() {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
-  // The conversation (same query as the app: one equality filter, sorted here).
+  // The whole conversation (one equality filter, no composite index needed),
+  // sorted here. A limit without orderBy would return arbitrary messages.
   useEffect(() => {
     if (!chatId) return;
     return onSnapshot(
-      query(collection(db, "private_messages"), where("chatId", "==", chatId), limit(300)),
+      query(collection(db, "private_messages"), where("chatId", "==", chatId)),
       (snap) => {
         setMessages(
           snap.docs

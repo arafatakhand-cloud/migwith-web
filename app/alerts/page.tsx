@@ -3,14 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { collection, getDocs, limit, onSnapshot, query, where, writeBatch } from "firebase/firestore";
+import { collection, limit, onSnapshot, query, where, writeBatch } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 
 // Same list as the app's AlertsPage: alerts where toUsername == me, newest
-// first. Opening the page marks them all read (clears the 🔔 badge).
+// first. Unread ones are marked read while the page is open (clears the 🔔 badge).
 
 type Alert = {
   id: string;
@@ -34,6 +34,17 @@ const ICONS: Record<string, string> = {
   mentor_request: "🎓",
 };
 
+function toAlert(d: { id: string; get: (f: string) => any }): Alert {
+  return {
+    id: d.id,
+    type: String(d.get("type") || ""),
+    text: String(d.get("message") || d.get("text") || "You have a new alert."),
+    read: d.get("read") === true,
+    roomName: String(d.get("roomName") || ""),
+    createdAtMs: d.get("createdAt")?.toMillis?.() ?? 0,
+  };
+}
+
 function timeLabel(ms: number): string {
   if (!ms) return "";
   return new Date(ms).toLocaleString(undefined, { hour: "numeric", minute: "2-digit", day: "2-digit", month: "short" });
@@ -56,50 +67,61 @@ export default function AlertsPage() {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
 
+  // Up to 100 of my alerts (no orderBy, so which 100 is arbitrary — that
+  // query needs no composite index) …
+  const [base, setBase] = useState<Alert[] | null>(null);
+  // … plus every alert that was unread while this page was open, so new ones
+  // always show even when they fall outside those 100.
+  const [fresh, setFresh] = useState<Map<string, Alert>>(new Map());
+
   useEffect(() => {
     if (!username) return;
     return onSnapshot(
       query(collection(db, "alerts"), where("toUsername", "==", username), limit(100)),
-      (snap) => {
-        setAlerts(
-          snap.docs
-            .map((d) => ({
-              id: d.id,
-              type: String(d.get("type") || ""),
-              text: String(d.get("message") || d.get("text") || "You have a new alert."),
-              read: d.get("read") === true,
-              roomName: String(d.get("roomName") || ""),
-              createdAtMs: d.get("createdAt")?.toMillis?.() ?? 0,
-            }))
-            .sort((a, b) => b.createdAtMs - a.createdAtMs)
-        );
-      },
+      (snap) => setBase(snap.docs.map(toAlert)),
       (err) => {
         console.error(err);
-        setAlerts([]);
+        setBase([]);
       }
     );
   }, [username]);
 
-  // Clear every unread alert once per visit (not only the 100 shown), in batches.
+  // Unread alerts: keep them in the list and mark them read (clears the 🔔
+  // badge), including ones that arrive while the page is open.
   useEffect(() => {
     if (!username) return;
-    getDocs(
-      query(collection(db, "alerts"), where("toUsername", "==", username), where("read", "==", false), limit(2000))
-    )
-      .then(async (snap) => {
+    return onSnapshot(
+      query(collection(db, "alerts"), where("toUsername", "==", username), where("read", "==", false)),
+      (snap) => {
+        if (snap.empty) return;
+        setFresh((prev) => {
+          const next = new Map(prev);
+          snap.docs.forEach((d) => next.set(d.id, toAlert(d)));
+          return next;
+        });
         const docs = snap.docs.filter((d) => !marked.current.has(d.id));
-        for (let i = 0; i < docs.length; i += 450) {
-          const batch = writeBatch(db);
-          docs.slice(i, i + 450).forEach((d) => {
-            marked.current.add(d.id);
-            batch.update(d.ref, { read: true });
-          });
-          await batch.commit();
-        }
-      })
-      .catch((err) => console.error("could not mark alerts read", err));
+        (async () => {
+          for (let i = 0; i < docs.length; i += 450) {
+            const batch = writeBatch(db);
+            docs.slice(i, i + 450).forEach((d) => {
+              marked.current.add(d.id);
+              batch.update(d.ref, { read: true });
+            });
+            await batch.commit();
+          }
+        })().catch((err) => console.error("could not mark alerts read", err));
+      },
+      (err) => console.error("unread alerts listener failed", err)
+    );
   }, [username]);
+
+  useEffect(() => {
+    if (base === null) return;
+    const all = new Map(base.map((a) => [a.id, a]));
+    // Keep the "new" dot for alerts that were unread when they arrived here.
+    fresh.forEach((a, id) => all.set(id, { ...(all.get(id) || a), read: false }));
+    setAlerts(Array.from(all.values()).sort((a, b) => b.createdAtMs - a.createdAtMs));
+  }, [base, fresh]);
 
   if (loading || !user) {
     return (

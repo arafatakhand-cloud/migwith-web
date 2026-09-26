@@ -217,6 +217,10 @@ export default function RoomPage() {
     () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || ""),
     [roomInfo, user, profile]
   );
+  const permsRef = useRef(perms);
+  permsRef.current = perms;
+  const lockedRef = useRef(locked);
+  lockedRef.current = locked;
 
   // Entry level and room lock — admins / mods of this room are not held back.
   useEffect(() => {
@@ -312,11 +316,21 @@ export default function RoomPage() {
   // Enter the room: presence doc + "has entered", heartbeat, and "has left" on exit.
   useEffect(() => {
     if (!user || !profile || blocked || !roomLoaded || !modLoaded) return;
+    // Checked here too: the effect that sets "blocked" runs in the same commit,
+    // too late to stop this one from posting "has entered".
+    const info = roomInfoRef.current;
+    if (
+      !permsRef.current.bypassesEntry &&
+      ((info.lockLevel > 0 && profile.level < info.lockLevel) || lockedRef.current)
+    ) {
+      return;
+    }
     const uid = user.uid;
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
     const leaveKey = `${uid}|${roomName}`;
     let visitId: string | null = null;
     let left = false;
+    let disposed = false; // this effect was cleaned up (a leave may be pending)
     let heartbeat: ReturnType<typeof setInterval> | null = null;
 
     const pending = pendingLeaves.get(leaveKey);
@@ -412,6 +426,9 @@ export default function RoomPage() {
         }).catch((err) => console.error("entry message failed", err));
       }
 
+      // Left while we were still entering: the cleanup already ran, so don't
+      // start a heartbeat nothing would ever stop.
+      if (left || disposed) return;
       heartbeat = setInterval(() => {
         setDoc(presenceRef, { lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
@@ -422,6 +439,7 @@ export default function RoomPage() {
     window.addEventListener("pagehide", onPageHide);
 
     return () => {
+      disposed = true;
       window.removeEventListener("pagehide", onPageHide);
       if (heartbeat) clearInterval(heartbeat);
       if (left) return;
@@ -590,6 +608,11 @@ export default function RoomPage() {
         roomName,
         note,
         post: (t, type) => {
+          // /me, /hug, /roll … are seen by everyone, so mute / silence apply.
+          if (muted || (silenced && !perms.canRoomWide)) {
+            note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
+            return;
+          }
           stickToBottom.current = true;
           addDoc(collection(db, "room_messages", roomName, "messages"), {
             text: t,

@@ -12,7 +12,11 @@ export function useCurrentUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Each sign-in change gets a number; a slow profile read from an earlier
+    // one must not overwrite the current username.
+    let latest = 0;
     return onAuthStateChanged(auth, async (next) => {
+      const run = ++latest;
       setUser(next);
 
       if (!next) {
@@ -20,6 +24,10 @@ export function useCurrentUser() {
         setLoading(false);
         return;
       }
+
+      // Never show the previous account's name while this one loads.
+      setUsername("");
+      setLoading(true);
 
       // Fallback: the part before "@" of "<migid>@login.migwith.local".
       let name = next.email?.split("@")[0] ?? "";
@@ -30,6 +38,7 @@ export function useCurrentUser() {
       } catch (err) {
         console.error(err);
       }
+      if (run !== latest) return;
 
       setUsername(name);
       setLoading(false);
