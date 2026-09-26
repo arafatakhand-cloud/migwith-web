@@ -28,8 +28,10 @@ import {
   leaveDocId,
   newVisitId,
   presenceLine,
+  roomHref,
 } from "../../../lib/rooms";
 import { EmojiPicker } from "../../_components/EmojiPicker";
+import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { PageShell } from "../../_components/PageShell";
 import {
   GiftPanel,
@@ -137,6 +139,8 @@ export default function RoomPage() {
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Leaves this room now (the ✕ on the room tab).
+  const leaveRef = useRef<(() => void) | null>(null);
   const stickToBottom = useRef(true);
 
   const note = (t: string) =>
@@ -230,6 +234,11 @@ export default function RoomPage() {
   permsRef.current = perms;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
+
+  // Kicked, banned, full or not allowed in: the tab closes.
+  useEffect(() => {
+    if (blocked && user) removeOpenRoom(user.uid, roomName);
+  }, [blocked, user, roomName]);
 
   // Entry level and room lock — admins / mods of this room are not held back.
   useEffect(() => {
@@ -374,6 +383,7 @@ export default function RoomPage() {
       // Invisible: read the room without showing up in it (same as the app).
       if (profile.invisible) {
         rememberRecentRoom(roomName);
+        addOpenRoom(uid, roomName);
         return;
       }
       let alreadyHere = resumed;
@@ -439,6 +449,7 @@ export default function RoomPage() {
       ).catch((err) => console.error("presence write failed", err));
 
       rememberRecentRoom(roomName);
+      if (!left) addOpenRoom(uid, roomName);
 
       if (!alreadyHere && !left && !profile.quiet) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
@@ -459,6 +470,7 @@ export default function RoomPage() {
       }, PRESENCE_HEARTBEAT_MS);
     })();
 
+    leaveRef.current = leave;
     const onPageHide = () => leave();
     window.addEventListener("pagehide", onPageHide);
 
@@ -467,6 +479,8 @@ export default function RoomPage() {
       window.removeEventListener("pagehide", onPageHide);
       if (heartbeat) clearInterval(heartbeat);
       if (left) return;
+      // Still an open tab: moving to another page or room keeps you in here.
+      if (isRoomOpen(uid, roomName)) return;
       pendingLeaves.set(
         leaveKey,
         setTimeout(() => {
@@ -742,21 +756,17 @@ export default function RoomPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="relative mx-auto flex h-[calc(100dvh-65px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
-        {/* Room header */}
-        <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm">
-          <Link href="/rooms" aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] text-lg text-[#0B2A5B]">
-            ←
-          </Link>
+      <div className="relative mx-auto flex h-[calc(100dvh-53px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
+        {/* Room bar: the room's tab in the top bar names it, so this stays slim */}
+        <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 shadow-sm">
           <div className="min-w-0 flex-1">
-            <h1 data-notranslate className="truncate font-black text-[#0B2A5B]">
+            <h1 data-notranslate className="truncate text-sm font-black text-[#0B2A5B]">
               {roomName}
-              {locked && <span className="ml-1.5 text-sm">🔒</span>}
-              {silenced && <span className="ml-1 text-sm">🔇</span>}
+              {locked && <span className="ml-1.5 text-xs">🔒</span>}
+              {silenced && <span className="ml-1 text-xs">🔇</span>}
             </h1>
-            <p className="truncate text-xs text-[#6B7A99]">
+            <p className="truncate text-[11px] text-[#6B7A99]">
               {roomUsers.length} in this room
-              {roomInfo.ownerName && ` · 👑 ${roomInfo.ownerName}`}
               {roomInfo.lockLevel > 0 && ` · Lv ${roomInfo.lockLevel}+`}
             </p>
           </div>
@@ -766,6 +776,20 @@ export default function RoomPage() {
             className="rounded-full bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow lg:hidden"
           >
             👥 {roomUsers.length}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              // Close this room's tab: leave it and go to another open room.
+              removeOpenRoom(user.uid, roomName);
+              leaveRef.current?.();
+              const next = readOpenRooms(user.uid).slice(-1)[0];
+              router.push(next ? roomHref(next) : "/rooms");
+            }}
+            title="Leave room"
+            className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600"
+          >
+            ✕ Leave
           </button>
         </div>
 

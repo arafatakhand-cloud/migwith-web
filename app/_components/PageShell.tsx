@@ -14,7 +14,7 @@ export function PageShell({
 }) {
   return (
     <main
-      className={`relative min-h-screen overflow-hidden ${
+      className={`relative min-h-screen overflow-x-clip ${
         light ? "bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] text-[#0B2A5B]" : "bg-sky-app text-white"
       }`}
     >

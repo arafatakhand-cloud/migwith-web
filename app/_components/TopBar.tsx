@@ -8,6 +8,8 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { badgeText } from "../../lib/useBadges";
 import { detachPushForLogout } from "../../lib/push";
+import { PRESENCE_HEARTBEAT_MS, roomHref } from "../../lib/rooms";
+import { leaveAllOpenRooms, touchOpenRooms, useOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { LanguageToggle } from "./LanguageToggle";
@@ -66,6 +68,17 @@ export function TopBar() {
     });
   }, [open, uid]);
 
+  // Rooms you are in: one tab each, like the app.
+  const openRooms = useOpenRooms(uid);
+  const currentRoom = pathname.startsWith("/room/") ? decodeURIComponent(pathname.slice("/room/".length)) : null;
+
+  // Keep the rooms you are in but not looking at fresh (the open room page does its own).
+  useEffect(() => {
+    if (!uid) return;
+    const t = setInterval(() => touchOpenRooms(uid, currentRoom), PRESENCE_HEARTBEAT_MS * 3);
+    return () => clearInterval(t);
+  }, [uid, currentRoom]);
+
   // Close the menu when the page changes.
   useEffect(() => setOpen(false), [pathname]);
 
@@ -88,8 +101,8 @@ export function TopBar() {
   }
 
   const onHome = pathname === "/";
-  const onRooms = pathname.startsWith("/room");
-  const pageName = PAGE_NAMES.find(([p]) => pathname.startsWith(p))?.[1];
+  const onRooms = pathname === "/rooms";
+  const pageName = currentRoom ? undefined : PAGE_NAMES.find(([p]) => pathname.startsWith(p))?.[1];
   const tab = (active: boolean) =>
     `relative flex h-9 w-10 items-center justify-center rounded-xl text-lg transition ${
       active ? "bg-[#2F80ED] text-white shadow-md" : "text-[#0B2A5B] hover:bg-[#E3F0FD]"
@@ -124,12 +137,37 @@ export function TopBar() {
         <Link href="/rooms" aria-label="Rooms" className={tab(onRooms)}>
           💬
         </Link>
+        {openRooms.length > 0 && (
+          <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+            {openRooms.map((r) =>
+              r === currentRoom ? (
+                <span
+                  key={r}
+                  data-notranslate
+                  className="flex max-w-[9.5rem] shrink-0 items-center gap-1 rounded-xl bg-[#2F80ED] px-2.5 py-1.5 text-xs font-bold text-white shadow-md"
+                >
+                  💬 <span className="truncate">{r.replace(/^👻\s*/, "")}</span>
+                </span>
+              ) : (
+                <Link
+                  key={r}
+                  href={roomHref(r)}
+                  title={r}
+                  aria-label={r}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg text-[#0B2A5B] hover:bg-[#E3F0FD]"
+                >
+                  🗨️
+                </Link>
+              )
+            )}
+          </div>
+        )}
         {pageName && (
           <span className="flex items-center gap-1 rounded-xl bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow-md">
             💬 {pageName}
           </span>
         )}
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <Link
             href="/alerts"
             aria-label="Alerts"
@@ -231,6 +269,7 @@ export function TopBar() {
               type="button"
               onClick={async () => {
                 await detachPushForLogout();
+                if (uid) await leaveAllOpenRooms(uid);
                 await signOut(auth);
               }}
               className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50 px-2.5 py-2 text-left text-sm font-bold text-rose-600"
