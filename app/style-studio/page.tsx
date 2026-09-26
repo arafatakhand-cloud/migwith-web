@@ -211,7 +211,7 @@ export default function StyleStudioPage() {
       </section>
 
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center" onClick={() => setConfirmId(null)}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={() => setConfirmId(null)}>
           <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-black">
               {confirming.badge} Buy {confirming.name}?

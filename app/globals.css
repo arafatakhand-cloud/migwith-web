@@ -38,3 +38,40 @@ html[lang="bn"] * {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ---- iPhone / phone comfort ---- */
+html {
+  /* No font blow-up when the phone turns sideways. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  /* No grey flash on every tap. */
+  -webkit-tap-highlight-color: transparent;
+  /* Landscape iPhone: keep content clear of the notch. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+/* iPhone zooms the whole page into any text box under 16px; 16px stops that. */
+@media (hover: none) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+/* iPhone Safari ignores fixed backgrounds and repaints slowly with them. */
+@supports (-webkit-touch-callout: none) {
+  .bg-sky-app {
+    background-attachment: scroll;
+  }
+}
+/* Height of what is visible above the keyboard (set by the top bar); pages
+   like chat rooms size themselves to it so the message box stays in view. */
+.h-screen-minus-bar {
+  height: calc(var(--vvh, 100dvh) - 53px);
+}
+/* Room above the iPhone home bar. */
+.pb-safe {
+  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}

@@ -15,11 +15,12 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   // iPhone "Add to Home Screen" opens full screen, like an app.
-  appleWebApp: { capable: true, title: "MIGwith", statusBarStyle: "black" },
+  appleWebApp: { capable: true, title: "MIGwith", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B1F3A",
+  // Matches the white top bar (iPhone Safari tints its bar with this).
+  themeColor: "#FFFFFF",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

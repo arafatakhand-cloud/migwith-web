@@ -7,6 +7,7 @@ import { db } from "../../lib/firebase";
 import { useFriendRequests } from "../../lib/friends";
 import { chatHref } from "../../lib/privateChat";
 import { useSession } from "./AppSession";
+import { InstallHint } from "./InstallHint";
 
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
@@ -244,6 +245,8 @@ export function Dashboard() {
           </Link>
         </div>
       </section>
+
+      <InstallHint />
 
       {/* Rows */}
       <div className="bg-white shadow-sm">

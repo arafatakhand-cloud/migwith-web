@@ -756,7 +756,7 @@ export default function RoomPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="relative mx-auto flex h-[calc(100dvh-53px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
+      <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 py-3 sm:px-6">
         {/* Room bar: the room's tab in the top bar names it, so this stays slim */}
         <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 shadow-sm">
           <div className="min-w-0 flex-1">
@@ -851,7 +851,7 @@ export default function RoomPage() {
             )}
 
             {/* Composer */}
-            <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 sm:gap-2">
+            <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 pb-safe sm:gap-2">
               <button
                 type="button"
                 onClick={() => setGiftTarget("")}

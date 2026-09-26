@@ -96,7 +96,13 @@ export function TopBar() {
         start = null;
         return;
       }
-      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() };
+      const x = e.touches[0].clientX;
+      // The screen edges belong to iPhone's own back / forward swipe.
+      if (x < 28 || x > window.innerWidth - 28) {
+        start = null;
+        return;
+      }
+      start = { x, y: e.touches[0].clientY, t: Date.now() };
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
@@ -118,6 +124,25 @@ export function TopBar() {
       window.removeEventListener("touchend", onEnd);
     };
   }, [uid, router]);
+
+  // The height above the on-screen keyboard (iPhone keeps 100dvh the same when
+  // the keyboard opens), for chat pages that size themselves to the screen.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const set = () => {
+      document.documentElement.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
+      // iPhone scrolls the page up under the keyboard; put it back so the top bar stays.
+      // Only on the chat pages, which fit the screen; elsewhere let it scroll to the box.
+      if (vv.height < window.innerHeight - 80 && document.querySelector(".h-screen-minus-bar")) window.scrollTo(0, 0);
+    };
+    set();
+    vv.addEventListener("resize", set);
+    return () => {
+      vv.removeEventListener("resize", set);
+      document.documentElement.style.removeProperty("--vvh");
+    };
+  }, []);
 
   // Keep the current room's tab in view.
   const activeTabRef = useRef<HTMLSpanElement>(null);
@@ -233,7 +258,7 @@ export function TopBar() {
         <div className="fixed inset-0 z-50" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <nav
-            className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl"
+            className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl pb-safe pt-[max(0.75rem,env(safe-area-inset-top))]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Profile card */}

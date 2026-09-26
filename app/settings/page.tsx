@@ -39,7 +39,7 @@ function Switch({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={onClose}>
       <div className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-black">{title}</h2>
         {children}

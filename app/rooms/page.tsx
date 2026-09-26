@@ -321,7 +321,7 @@ export default function RoomsPage() {
 
         {showCreate && (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center"
             onClick={() => !creating && setShowCreate(false)}
           >
             <div
