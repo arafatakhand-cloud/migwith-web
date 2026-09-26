@@ -8,24 +8,25 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
+import { PastelCard, SectionLabel } from "../_components/LightCards";
 
 // Same boards as the app's Leader Board. Game boards come from the
 // getLeaderboard function (ranked by spend, but only win counts are sent);
 // gift boards count gift_activity; the level board reads users by level.
 
-type Ranking = { id: string; title: string; icon: string; gameKey?: string; gifts?: "sent" | "received" };
+type Ranking = { id: string; title: string; icon: string; color: string; gameKey?: string; gifts?: "sent" | "received" };
 
 const RANKINGS: Ranking[] = [
-  { id: "cricket", title: "Cricket", icon: "🏏", gameKey: "cricket" },
-  { id: "teenpatti", title: "Teen Patti", icon: "🃏", gameKey: "teenpatti" },
-  { id: "ludo", title: "Ludo", icon: "🎲", gameKey: "ludo" },
-  { id: "royale", title: "MIG Royale", icon: "👑", gameKey: "royale" },
-  { id: "twentynine", title: "29", icon: "🃏", gameKey: "twentynine" },
-  { id: "lowcard", title: "LowCard", icon: "🪙", gameKey: "lowcard" },
-  { id: "luxury", title: "Luxury", icon: "💎", gameKey: "luxury" },
-  { id: "gift_sent", title: "Gift Sent", icon: "🎁", gifts: "sent" },
-  { id: "gift_received", title: "Gift Received", icon: "🎉", gifts: "received" },
-  { id: "level", title: "Top Level", icon: "⭐" },
+  { id: "cricket", title: "Cricket", icon: "🏏", gameKey: "cricket", color: "#1E8C4E" },
+  { id: "teenpatti", title: "Teen Patti", icon: "🃏", gameKey: "teenpatti", color: "#E12A6B" },
+  { id: "ludo", title: "Ludo", icon: "🎲", gameKey: "ludo", color: "#3984D9" },
+  { id: "royale", title: "MIG Royale", icon: "👑", gameKey: "royale", color: "#7B3FC7" },
+  { id: "twentynine", title: "29", icon: "🃏", gameKey: "twentynine", color: "#12AFC7" },
+  { id: "lowcard", title: "LowCard", icon: "🪙", gameKey: "lowcard", color: "#D9A400" },
+  { id: "luxury", title: "Luxury", icon: "💎", gameKey: "luxury", color: "#E12A6B" },
+  { id: "gift_sent", title: "Gift Sent", icon: "🎁", gifts: "sent", color: "#E5484D" },
+  { id: "gift_received", title: "Gift Received", icon: "🎉", gifts: "received", color: "#D9730D" },
+  { id: "level", title: "Top Level", icon: "⭐", color: "#D9A400" },
 ];
 
 const PERIODS = ["Today", "Yesterday", "This Week", "This Month"];
@@ -122,6 +123,8 @@ export default function LeaderboardPage() {
   const router = useRouter();
   const { user, loading } = useCurrentUser();
   const [ranking, setRanking] = useState<Ranking>(RANKINGS[0]);
+  // The board list first, like the app; a board opens when picked.
+  const [picked, setPicked] = useState(false);
   const [period, setPeriod] = useState("Today");
   const [rows, setRows] = useState<Row[] | null>(null);
   const [mySpend, setMySpend] = useState<number | null>(null);
@@ -133,7 +136,7 @@ export default function LeaderboardPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !picked) return;
     let cancelled = false;
     setRows(null);
     setError("");
@@ -152,12 +155,12 @@ export default function LeaderboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [user, ranking, period, refresh]);
+  }, [user, picked, ranking, period, refresh]);
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
@@ -167,47 +170,64 @@ export default function LeaderboardPage() {
 
   return (
     <PageShell>
-      <section className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-black tracking-tight">🏆 Leader Board</h1>
+      <section className="mx-auto max-w-2xl px-3 pb-8 pt-4 sm:px-6">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => (picked ? setPicked(false) : router.back())}
+            aria-label="Back"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg shadow-sm"
+          >
+            ←
+          </button>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Leader Board"}</h1>
+            {picked && <p className="text-xs text-[#6B7A99]">{timed ? `${period} ranking` : "All time"}</p>}
+          </div>
           <button
             type="button"
             onClick={() => setRefresh((n) => n + 1)}
             title="Refresh"
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-lg hover:bg-white/10"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#2F80ED] shadow-sm"
           >
             ↻
           </button>
         </div>
 
-        {/* Boards */}
-        <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-          {RANKINGS.map((r) => (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => setRanking(r)}
-              className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-bold transition ${
-                ranking.id === r.id
-                  ? "border-amber-300 bg-amber-300 text-neutral-900"
-                  : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10"
-              }`}
-            >
-              {r.icon} {r.title}
-            </button>
-          ))}
-        </div>
+        {!picked ? (
+          <>
+            <SectionLabel>Top players</SectionLabel>
+            <div className="space-y-2.5">
+              {RANKINGS.map((r) => (
+                <PastelCard
+                  key={r.id}
+                  icon={r.icon}
+                  title={r.title}
+                  subtitle={r.id === "level" ? "All time" : "Today"}
+                  color={r.color}
+                  onClick={() => {
+                    setRanking(r);
+                    setPeriod("Today");
+                    setPicked(true);
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+
 
         {/* Period */}
         {timed && (
-          <div className="mt-3 grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
+          <div className="mt-4 grid grid-cols-4 gap-1 rounded-2xl border border-[#D5E3F5] bg-white p-1 shadow-sm">
             {PERIODS.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPeriod(p)}
                 className={`rounded-xl py-2 text-xs font-bold transition ${
-                  period === p ? "bg-blue-600 text-white" : "text-white/55 hover:bg-white/5"
+                  period === p ? "bg-[#2F80ED] text-white" : "text-[#5B6B8C] hover:bg-[#F4F9FF]"
                 }`}
               >
                 {p}
@@ -220,9 +240,9 @@ export default function LeaderboardPage() {
         {top && (
           <Link
             href={`/profile/${encodeURIComponent(top.name)}`}
-            className="mt-5 flex flex-col items-center rounded-3xl border border-amber-300/30 bg-gradient-to-b from-amber-400/20 to-transparent px-4 py-6 text-center"
+            className="mt-5 flex flex-col items-center rounded-3xl border border-[#F5D77A] bg-gradient-to-b from-[#FFF3D6] to-white px-4 py-6 shadow-sm text-center"
           >
-            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-amber-300 bg-gradient-to-br from-blue-500 to-cyan-400">
+            <div className="h-20 w-20 overflow-hidden rounded-full border-4 border-amber-300 bg-[#DCEBFB] text-[#174EA6]">
               {top.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={top.photoUrl} alt={top.name} className="h-full w-full object-cover" />
@@ -232,17 +252,17 @@ export default function LeaderboardPage() {
                 </span>
               )}
             </div>
-            <p className="mt-2 text-xs font-bold tracking-widest text-amber-200/80">🥇 #1 {ranking.title.toUpperCase()}</p>
-            <p className="text-xl font-black">{top.name}</p>
-            <p className="text-sm font-bold text-amber-300">{top.score}</p>
+            <p className="mt-2 text-xs font-bold tracking-widest text-[#B7791F]">🥇 #1 {ranking.title.toUpperCase()}</p>
+            <p data-notranslate className="text-xl font-black">{top.name}</p>
+            <p className="text-sm font-bold text-[#B7791F]">{top.score}</p>
           </Link>
         )}
 
         {/* List */}
         <ul className="mt-3 space-y-1.5">
-          {rows === null && <li className="py-10 text-center text-sm text-white/35">Loading…</li>}
+          {rows === null && <li className="py-10 text-center text-sm text-[#6B7A99]">Loading…</li>}
           {rows?.length === 0 && (
-            <li className="py-10 text-center text-sm text-white/35">
+            <li className="py-10 text-center text-sm text-[#6B7A99]">
               {error || `No ${ranking.title} players ${timed ? period.toLowerCase() : ""} yet.`}
             </li>
           )}
@@ -250,26 +270,28 @@ export default function LeaderboardPage() {
             <li key={r.position}>
               <Link
                 href={`/profile/${encodeURIComponent(r.name)}`}
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2.5 transition hover:border-cyan-300/30 hover:bg-white/[0.07]"
+                className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-4 py-2.5 shadow-sm transition hover:bg-[#F4F9FF]"
               >
-                <span className="w-8 text-center text-lg font-black text-white/60">
+                <span className="w-8 text-center text-lg font-black text-[#5B6B8C]">
                   {MEDALS[r.position - 1] || r.position}
                 </span>
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-black">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DCEBFB] text-sm font-black text-[#174EA6]">
                   {r.name.slice(0, 1).toUpperCase()}
                 </span>
-                <span className="min-w-0 flex-1 truncate font-bold">{r.name}</span>
-                <span className="shrink-0 text-sm font-bold text-amber-300">{r.score}</span>
+                <span data-notranslate className="min-w-0 flex-1 truncate font-bold">{r.name}</span>
+                <span className="shrink-0 text-sm font-bold text-[#B7791F]">{r.score}</span>
               </Link>
             </li>
           ))}
         </ul>
 
         {ranking.gameKey && mySpend !== null && (
-          <p className="mt-4 text-center text-xs text-white/45">
+          <p className="mt-4 text-center text-xs text-[#5B6B8C]">
             Ranked by coins played. Your {ranking.title} play {period.toLowerCase()}:{" "}
-            <span className="font-bold text-amber-300">🪙 {mySpend.toLocaleString()}</span> (only you can see this)
+            <span className="font-bold text-[#B7791F]">🪙 {mySpend.toLocaleString()}</span> (only you can see this)
           </p>
+        )}
+          </>
         )}
       </section>
     </PageShell>

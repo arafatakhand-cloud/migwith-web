@@ -46,6 +46,7 @@ export function PastelCard({
   href,
   onClick,
   note,
+  right,
 }: {
   icon: string;
   title: string;
@@ -54,6 +55,8 @@ export function PastelCard({
   href?: string;
   onClick?: () => void;
   note?: string;
+  /** Replaces the › on the right (a switch, say). */
+  right?: React.ReactNode;
 }) {
   const body = (
     <>
@@ -67,7 +70,9 @@ export function PastelCard({
         <span className="block truncate font-bold text-[#0B2A5B]">{title}</span>
         <span className="block truncate text-xs text-[#6B7A99]">{subtitle}</span>
       </span>
-      {note ? (
+      {right ? (
+        right
+      ) : note ? (
         <span className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-bold text-[#6B7A99]">{note}</span>
       ) : (
         <span
@@ -81,6 +86,12 @@ export function PastelCard({
   );
   const cls = "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left shadow-sm transition";
   const style = { background: `linear-gradient(90deg, #ffffff 40%, ${color}1f)`, borderColor: `${color}40` };
+  if (right)
+    return (
+      <div className={cls} style={style}>
+        {body}
+      </div>
+    );
   if (href)
     return (
       <Link href={href} className={`${cls} hover:brightness-[0.98]`} style={style}>

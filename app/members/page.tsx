@@ -26,6 +26,18 @@ const COMMUNITY: Category[] = [
   { id: "top", icon: "🏆", title: "Top Level Users", subtitle: "Highest level users", color: "#E0B000", roles: [] },
 ];
 
+// Name colours on the dark rows (the app's accents).
+const NAME_COLORS: Record<string, string> = {
+  executive_board: "#8FA2FF",
+  admin: "#FFD54F",
+  country_representative: "#E0B89A",
+  staff: "#39FF14",
+  elite_user: "#00FFFF",
+  mentor: "#FF4D4D",
+  merchant: "#C77DFF",
+  top: "#FFD54F",
+};
+
 type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[] };
 
 const norm = (v: string) => v.trim().toLowerCase().replace(/[-\s]/g, "_");
@@ -81,10 +93,10 @@ export default function MembersPage() {
                   <li key={m.uid}>
                     <Link
                       href={`/profile/${encodeURIComponent(m.name)}`}
-                      className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-3 py-2.5 shadow-sm hover:bg-[#F4F9FF]"
+                      className="flex items-center gap-3 rounded-2xl border border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656] px-3 py-2.5 shadow-md hover:brightness-110"
                     >
                       {selected.id === "top" && <span className="w-6 text-center text-sm font-black text-[#D9A400]">{i + 1}</span>}
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DCEBFB] font-black text-[#174EA6]">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 font-black text-white">
                         {m.photo ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={m.photo} alt="" className="h-full w-full object-cover" />
@@ -93,14 +105,14 @@ export default function MembersPage() {
                         )}
                       </span>
                       <span data-notranslate className="min-w-0 flex-1">
-                        <span className="block truncate font-bold" style={{ color: selected.color }}>
+                        <span className="block truncate font-bold" style={{ color: NAME_COLORS[selected.id] || selected.color }}>
                           {m.name}
                         </span>
-                        <span className="block truncate text-xs text-[#6B7A99]">
+                        <span className="block truncate text-xs text-white/70">
                           {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
                         </span>
                       </span>
-                      <span className="text-[#9AA8C2]">›</span>
+                      <span className="text-white/50">›</span>
                     </Link>
                   </li>
                 ))}

@@ -30,7 +30,7 @@ const PAGE_NAMES: [string, string][] = [
   ["/members", "Members"],
   ["/gifts", "Gift Shops"],
   ["/leaderboard", "Leader Board"],
-  ["/security", "Settings"],
+  ["/security", "Security PIN"],
   ["/settings", "Settings"],
   ["/friends", "Friends"],
   ["/messages", "Messages"],
@@ -98,7 +98,7 @@ export function TopBar() {
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "🧭", "Explore", 0],
     ["/rooms", "🎮", "Game List", 0],
-    ["/security", "⚙️", "Settings", 0],
+    ["/settings", "⚙️", "Settings", 0],
   ];
 
   return (
