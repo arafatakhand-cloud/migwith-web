@@ -47,6 +47,7 @@ import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../.
 import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
+import { handleRoomCommand } from "../../../lib/roomCommands";
 
 type ChatMessage = {
   id: string;
@@ -419,8 +420,33 @@ export default function RoomPage() {
       return;
     }
 
+    if (
+      clean.startsWith("/") &&
+      handleRoomCommand(clean, {
+        username: profile.username,
+        uid: user.uid,
+        roomName,
+        note,
+        post: (t, type) => {
+          stickToBottom.current = true;
+          addDoc(collection(db, "room_messages", roomName, "messages"), {
+            text: t,
+            sender: profile.username,
+            senderUid: user.uid,
+            type,
+            giftName: "",
+            createdAt: serverTimestamp(),
+            clientCreatedAt: Date.now(),
+          }).catch(() => note("Message could not be sent. Please try again."));
+        },
+      })
+    ) {
+      setText("");
+      return;
+    }
+
     if (clean.startsWith("/") || clean.startsWith("!")) {
-      note("Commands (/ and !) work only in the MIGwith app for now.");
+      note("Unknown command. Type /help to see the commands.");
       setText("");
       return;
     }
@@ -658,6 +684,24 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
     return (
       <p className="rounded-lg bg-cyan-400/10 px-3 py-1.5 text-center text-xs font-semibold text-cyan-200">
         {m.text}
+      </p>
+    );
+  }
+
+  if (m.type === "social") {
+    return (
+      <p className="text-center text-sm font-semibold text-fuchsia-300">
+        {m.text.replace(/\*\*/g, "")}
+        {time && <span className="ml-2 text-[10px] font-normal text-white/25">{time}</span>}
+      </p>
+    );
+  }
+
+  if (m.type === "me") {
+    return (
+      <p className="px-3 text-sm italic text-violet-300">
+        * {m.sender && m.text.startsWith(`${m.sender}: `) ? `${m.sender} ${m.text.slice(m.sender.length + 2)}` : m.text}
+        {time && <span className="ml-2 text-[10px] not-italic text-white/25">{time}</span>}
       </p>
     );
   }
