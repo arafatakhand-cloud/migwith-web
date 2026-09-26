@@ -48,6 +48,19 @@ import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
+import {
+  EMPTY_ROOM,
+  banUser,
+  handleModCommand,
+  kickUser,
+  muteUser,
+  normRole,
+  roomInfoFrom,
+  roomPerms,
+  setModerator,
+  type ModContext,
+  type RoomInfo,
+} from "../../../lib/roomModeration";
 
 type ChatMessage = {
   id: string;
@@ -58,13 +71,14 @@ type ChatMessage = {
   imageUrl: string;
   audioUrl: string;
   giftName: string;
+  moderationColor?: string;
   createdAtMs: number;
   local?: boolean;
 };
 
 type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number };
 
-type Profile = { username: string; level: number; badge: string };
+type Profile = { username: string; level: number; badge: string; role: string };
 
 // A leave that is about to run for a room. Re-entering the same room right away
 // (React re-mount, quick navigation back) cancels it instead of posting
@@ -93,6 +107,11 @@ export default function RoomPage() {
   const [presence, setPresence] = useState<RoomUser[]>([]);
   const [muted, setMuted] = useState(false);
   const [silenced, setSilenced] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const [roomInfo, setRoomInfo] = useState<RoomInfo>(EMPTY_ROOM);
+  const [roomLoaded, setRoomLoaded] = useState(false);
+  const [modLoaded, setModLoaded] = useState(false);
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
@@ -150,6 +169,7 @@ export default function RoomPage() {
           username: String(snap.get("username") || user.email?.split("@")[0] || ""),
           level,
           badge: String(snap.get("levelBadgeIcon") || badgeForLevel(level)),
+          role: normRole(snap.get("role")),
         });
       })
       .catch((err) => {
@@ -166,18 +186,33 @@ export default function RoomPage() {
       .catch((err) => console.error(err));
   }, [user]);
 
-  // Entry level lock (rooms/{room}.lockLevel).
+  // The room document: owner, mods, entry level (official rooms may have none).
   useEffect(() => {
-    if (!profile) return;
-    getDoc(doc(db, "rooms", roomName))
-      .then((snap) => {
-        const lockLevel = Number(snap.get("lockLevel") || 0);
-        if (lockLevel > 0 && profile.level < lockLevel) {
-          setBlocked(`This room needs level ${lockLevel}. You are level ${profile.level}.`);
-        }
-      })
-      .catch(() => {});
-  }, [profile, roomName]);
+    if (!user) return;
+    return onSnapshot(
+      doc(db, "rooms", roomName),
+      (snap) => {
+        setRoomInfo(snap.exists() ? roomInfoFrom(snap.data()) : EMPTY_ROOM);
+        setRoomLoaded(true);
+      },
+      () => setRoomLoaded(true)
+    );
+  }, [user, roomName]);
+
+  const perms = useMemo(
+    () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || ""),
+    [roomInfo, user, profile]
+  );
+
+  // Entry level and room lock — admins / mods of this room are not held back.
+  useEffect(() => {
+    if (!profile || !roomLoaded || !modLoaded || perms.bypassesEntry) return;
+    if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel) {
+      setBlocked(`This room needs level ${roomInfo.lockLevel}. You are level ${profile.level}.`);
+    } else if (locked) {
+      setBlocked("🔒 This room is locked. Only admins and mods can enter right now.");
+    }
+  }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked]);
 
   // Live chat — the latest 150 messages, same collection the app uses.
   useEffect(() => {
@@ -200,6 +235,7 @@ export default function RoomPage() {
             imageUrl: String(d.get("imageUrl") || ""),
             audioUrl: String(d.get("audioUrl") || ""),
             giftName: String(d.get("giftName") || ""),
+            moderationColor: String(d.get("moderationColor") || ""),
             // Pending (just-sent) messages have no server time yet.
             createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
           }))
@@ -244,9 +280,15 @@ export default function RoomPage() {
         updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
       }
     });
-    const offRoom = onSnapshot(doc(db, "room_moderation", roomName), (snap) => {
-      setSilenced(snap.get("silenced") === true);
-    });
+    const offRoom = onSnapshot(
+      doc(db, "room_moderation", roomName),
+      (snap) => {
+        setSilenced(snap.get("silenced") === true);
+        setLocked(snap.get("locked") === true);
+        setModLoaded(true);
+      },
+      () => setModLoaded(true)
+    );
     return () => {
       offUser();
       offRoom();
@@ -255,7 +297,7 @@ export default function RoomPage() {
 
   // Enter the room: presence doc + "has entered", heartbeat, and "has left" on exit.
   useEffect(() => {
-    if (!user || !profile || blocked) return;
+    if (!user || !profile || blocked || !roomLoaded || !modLoaded) return;
     const uid = user.uid;
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
     const leaveKey = `${uid}|${roomName}`;
@@ -350,7 +392,7 @@ export default function RoomPage() {
         }, 1500)
       );
     };
-  }, [user, profile, roomName, blocked]);
+  }, [user, profile, roomName, blocked, roomLoaded, modLoaded]);
 
   // Merge server messages with this device's own notices, oldest first.
   const shown = useMemo(
@@ -379,9 +421,38 @@ export default function RoomPage() {
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [shown]);
 
+  // Everything the moderator commands and the ⋯ menu need.
+  const modCtx = (): ModContext | null => {
+    if (!user || !profile) return null;
+    const write = (data: Record<string, unknown>) =>
+      addDoc(collection(db, "room_messages", roomName, "messages"), {
+        sender: profile.username,
+        senderUid: user.uid,
+        createdAt: serverTimestamp(),
+        ...data,
+      }).catch(() => note("Message could not be sent. Please try again."));
+    return {
+      roomName,
+      username: profile.username,
+      room: roomInfo,
+      perms,
+      people: roomUsers.map((u) => ({ uid: u.uid, username: u.username })),
+      note,
+      post: (t, type = "chat") => write({ text: t, type, giftName: "", clientCreatedAt: Date.now() }),
+      postModeration: (t, color) => write({ text: t, type: "moderation", moderationColor: color }),
+    };
+  };
+
   const send = async () => {
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
+
+    // Moderator commands come before mute / silence, as in the app.
+    const ctx = clean.startsWith("/") ? modCtx() : null;
+    if (ctx && handleModCommand(clean, ctx)) {
+      setText("");
+      return;
+    }
 
     if (luxury && clean.toLowerCase() === "!start") {
       setText("");
@@ -450,7 +521,7 @@ export default function RoomPage() {
       setText("");
       return;
     }
-    if (muted || silenced) {
+    if (muted || (silenced && !perms.canRoomWide)) {
       note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
       return;
     }
@@ -539,8 +610,19 @@ export default function RoomPage() {
             ←
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-black">{roomName}</h1>
-            <p className="text-xs text-white/40">{roomUsers.length} in this room</p>
+            <h1 className="truncate font-black">
+              {roomName}
+              {locked && <span className="ml-1.5 text-sm">🔒</span>}
+              {silenced && <span className="ml-1 text-sm">🔇</span>}
+            </h1>
+            <p className="truncate text-xs text-white/40">
+              {roomUsers.length} in this room
+              {roomInfo.ownerName && ` · 👑 ${roomInfo.ownerName}`}
+              {roomInfo.lockLevel > 0 && ` · Lv ${roomInfo.lockLevel}+`}
+            </p>
+            {roomInfo.description && (
+              <p className="mt-0.5 line-clamp-2 text-xs text-white/55">{roomInfo.description}</p>
+            )}
           </div>
           <button
             type="button"
@@ -634,7 +716,56 @@ export default function RoomPage() {
                   >
                     {u.username}
                   </Link>
+                  {(() => {
+                    const k = u.username.toLowerCase();
+                    if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <span title="Room owner">👑</span>;
+                    if (roomInfo.superMods.includes(k)) return <span title="Super Mod">🌟</span>;
+                    if (roomInfo.moderators.includes(k)) return <span title="Moderator">⭐</span>;
+                    return null;
+                  })()}
                   <span className="ml-auto text-xs text-white/35">{u.level}</span>
+                  {u.uid !== user.uid && (perms.canKick || perms.canBan || perms.canMute || perms.canManagePrivate) && (
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setMenuFor(menuFor === u.uid ? null : u.uid)}
+                        title="Moderate"
+                        className="rounded px-1 text-white/50 hover:bg-white/10 hover:text-white"
+                      >
+                        ⋯
+                      </button>
+                      {menuFor === u.uid && (
+                        <div className="absolute right-0 top-6 z-30 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#101c3f] text-sm shadow-xl">
+                          {(
+                            [
+                              perms.canKick && ["👢 Kick", (c: ModContext) => kickUser(c, u.username)],
+                              perms.canBan && ["🚫 Ban", (c: ModContext) => banUser(c, u.username, true)],
+                              perms.canMute && ["🔇 Mute", (c: ModContext) => muteUser(c, u.username, true)],
+                              perms.canMute && ["🔊 Unmute", (c: ModContext) => muteUser(c, u.username, false)],
+                              perms.isUserRoom &&
+                                perms.canManagePrivate &&
+                                (roomInfo.moderators.includes(u.username.toLowerCase())
+                                  ? ["🛑 Remove Mod", (c: ModContext) => setModerator(c, u.username, false)]
+                                  : ["⭐ Make Mod", (c: ModContext) => setModerator(c, u.username, true)]),
+                            ].filter(Boolean) as [string, (c: ModContext) => unknown][]
+                          ).map(([label, run]) => (
+                            <button
+                              key={label}
+                              type="button"
+                              onClick={() => {
+                                setMenuFor(null);
+                                const c = modCtx();
+                                if (c) run(c);
+                              }}
+                              className="block w-full px-3 py-2 text-left hover:bg-white/10"
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {u.uid !== user.uid && (
                     <button
                       type="button"
@@ -682,12 +813,18 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
   }
 
   if (m.local) {
-    return <p className="text-center text-xs text-amber-300/80">{m.text}</p>;
+    return <p className="whitespace-pre-wrap text-center text-xs text-amber-300/80">{m.text}</p>;
   }
 
   if (m.type === "moderation" || m.type === "broadcast") {
+    const tone =
+      m.moderationColor === "red"
+        ? "bg-red-500/10 text-red-300"
+        : m.moderationColor === "green"
+          ? "bg-emerald-500/10 text-emerald-300"
+          : "bg-cyan-400/10 text-cyan-200";
     return (
-      <p className="rounded-lg bg-cyan-400/10 px-3 py-1.5 text-center text-xs font-semibold text-cyan-200">
+      <p className={`whitespace-pre-wrap rounded-lg px-3 py-1.5 text-center text-xs font-semibold ${tone}`}>
         {m.text}
       </p>
     );
