@@ -30,14 +30,14 @@ export function PushToggle() {
   };
 
   return (
-    <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.05] p-4">
+    <div className="mt-3 rounded-2xl bg-white p-4 text-[#0B2A5B] shadow-sm">
       <div className="flex items-center gap-3">
         <span className="text-2xl">{status === "on" ? "🔔" : "🔕"}</span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold">
             {status === "on" ? "Notifications are on" : "Get notifications on this device"}
           </p>
-          <p className="text-xs text-white/50">
+          <p className="text-xs text-[#5B6B8C]">
             {status === "ios-install"
               ? "On iPhone, first add MIGwith to your Home Screen (Share → Add to Home Screen), then open it from there."
               : status === "blocked"
@@ -51,14 +51,14 @@ export function PushToggle() {
             onClick={toggle}
             disabled={busy}
             className={`shrink-0 rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-50 ${
-              status === "on" ? "border border-white/15 text-white/70" : "bg-cyan-500 text-neutral-900"
+              status === "on" ? "border border-[#D5E3F5] text-[#5B6B8C]" : "bg-[#2F80ED] text-white"
             }`}
           >
             {busy ? "Please wait…" : status === "on" ? "Turn off" : "Turn on"}
           </button>
         )}
       </div>
-      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+      {error && <p className="mt-2 text-xs text-rose-600">{error}</p>}
     </div>
   );
 }

@@ -135,7 +135,7 @@ export function VoiceRecorder({
         onClick={start}
         disabled={disabled}
         title="Record a voice message"
-        className="rounded-xl border border-white/10 bg-white/5 px-2.5 text-lg sm:px-3 hover:bg-white/10 disabled:opacity-40"
+        className="rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-2.5 text-lg sm:px-3 hover:bg-[#EAF4FE] disabled:opacity-40"
       >
         🎤
       </button>
@@ -144,17 +144,17 @@ export function VoiceRecorder({
 
   // Recording / review take over the composer row.
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-1.5">
+    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5">
       {state === "recording" ? (
         <>
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-          <span className={`text-sm font-bold ${seconds >= MAX_VOICE_MS / 1000 - 10 ? "text-amber-300" : "text-white"}`}>
+          <span className={`text-sm font-bold ${seconds >= MAX_VOICE_MS / 1000 - 10 ? "text-amber-600" : "text-[#0B2A5B]"}`}>
             {clock(seconds)} / {clock(MAX_VOICE_MS / 1000)}
           </span>
           <button
             type="button"
             onClick={stop}
-            className="ml-auto rounded-lg bg-red-500 px-3 py-1.5 text-sm font-bold"
+            className="ml-auto rounded-lg bg-red-500 px-3 py-1.5 text-sm font-bold text-white"
           >
             ■ Stop
           </button>
@@ -166,7 +166,7 @@ export function VoiceRecorder({
             type="button"
             onClick={reset}
             disabled={state === "sending"}
-            className="rounded-lg border border-white/15 px-2.5 py-1.5 text-sm text-white/70 disabled:opacity-40"
+            className="rounded-lg border border-[#D5E3F5] px-2.5 py-1.5 text-sm text-[#5B6B8C] disabled:opacity-40"
           >
             ✕
           </button>
@@ -174,7 +174,7 @@ export function VoiceRecorder({
             type="button"
             onClick={send}
             disabled={state === "sending"}
-            className="rounded-lg bg-gradient-to-r from-blue-500 to-cyan-400 px-3 py-1.5 text-sm font-bold disabled:opacity-50"
+            className="rounded-lg bg-[#2F80ED] px-3 py-1.5 text-sm font-bold text-white disabled:opacity-50"
           >
             {state === "sending" ? "Sending…" : "Send"}
           </button>

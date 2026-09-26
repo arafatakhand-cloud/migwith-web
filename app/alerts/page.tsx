@@ -8,6 +8,7 @@ import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
+import { PageTitle } from "../_components/LightCards";
 import { PushToggle } from "../_components/PushToggle";
 
 // Same list as the app's AlertsPage: alerts where toUsername == me, newest
@@ -126,21 +127,21 @@ export default function AlertsPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
   return (
-    <PageShell>
-      <section className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <h1 className="text-3xl font-black tracking-tight">🔔 Alerts</h1>
+    <PageShell light>
+      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+        <PageTitle title="migAlerts" subtitle="Notifications" icon="🔔" />
         <PushToggle />
 
-        <ul className="mt-6 space-y-2">
-          {alerts === null && <li className="py-10 text-center text-sm text-white/35">Loading…</li>}
-          {alerts?.length === 0 && <li className="py-10 text-center text-sm text-white/35">No alerts yet.</li>}
+        <ul className="mt-4 space-y-2">
+          {alerts === null && <li className="py-10 text-center text-sm text-[#6B7A99]">Loading…</li>}
+          {alerts?.length === 0 && <li className="py-10 text-center text-sm text-[#6B7A99]">No alerts yet.</li>}
           {alerts?.map((a) => {
             const room = a.type === "game_invite" || a.type === "mention" ? inviteRoom(a) : "";
             const isFriend = a.type === "friend_request" || a.type === "friend_request_accepted";
@@ -148,29 +149,29 @@ export default function AlertsPage() {
             return (
               <li
                 key={a.id}
-                className={`flex gap-3 rounded-2xl border px-4 py-3 ${
-                  a.read ? "border-white/10 bg-white/[0.03]" : "border-cyan-300/30 bg-cyan-300/[0.07]"
+                className={`flex gap-3 rounded-2xl border px-4 py-3 shadow-sm ${
+                  a.read ? "border-[#E3ECF7] bg-white" : "border-[#F7B27A] bg-[#FFF4EA]"
                 }`}
               >
                 <span className="text-xl leading-6">{ICONS[a.type] || "🔔"}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="whitespace-pre-wrap break-words text-sm text-white/90">{a.text}</p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-[#0B2A5B]">{a.text}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    {a.createdAtMs > 0 && <span className="text-xs text-white/35">{timeLabel(a.createdAtMs)}</span>}
+                    {a.createdAtMs > 0 && <span className="text-xs text-[#6B7A99]">{timeLabel(a.createdAtMs)}</span>}
                     {room && (
-                      <Link href={roomHref(room)} className="text-xs font-bold text-emerald-300 hover:underline">
+                      <Link href={roomHref(room)} className="text-xs font-bold text-emerald-600 hover:underline">
                         {a.type === "game_invite" ? "▶ Open table" : "▶ Join room"}
                       </Link>
                     )}
                     {isFriend && (
-                      <Link href="/friends" className="text-xs font-bold text-cyan-300 hover:underline">
+                      <Link href="/friends" className="text-xs font-bold text-[#2F80ED] hover:underline">
                         {a.type === "friend_request" ? "View requests →" : "My friends →"}
                       </Link>
                     )}
-                    {needsApp && <span className="text-xs text-amber-300/80">Respond in the MIGwith app</span>}
+                    {needsApp && <span className="text-xs text-amber-700">Respond in the MIGwith app</span>}
                   </div>
                 </div>
-                {!a.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-pink-500" />}
+                {!a.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#F58220]" />}
               </li>
             );
           })}

@@ -220,8 +220,8 @@ export default function PrivateChatPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
@@ -229,22 +229,22 @@ export default function PrivateChatPage() {
   const status = lastSeenLabel(friendLastActive);
 
   return (
-    <PageShell bottomNav={false}>
+    <PageShell light bottomNav={false}>
       <div className="mx-auto flex h-[calc(100dvh-65px)] max-w-3xl flex-col px-2 py-3 sm:px-6">
         {/* Header */}
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-          <Link href="/messages" className="text-sm text-white/60 hover:text-white">
+        <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm">
+          <Link href="/messages" aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] text-lg text-[#0B2A5B]">
             ←
           </Link>
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 font-black">
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DCEBFB] font-black text-[#174EA6]">
             {friend.slice(0, 1).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <Link href={`/profile/${encodeURIComponent(friend)}`} className="block truncate font-black hover:text-cyan-300">
+            <Link href={`/profile/${encodeURIComponent(friend)}`} className="block truncate font-black text-[#0B2A5B] hover:text-[#2F80ED]">
               {friend}
             </Link>
             {status && (
-              <p className={`text-xs ${status === "Online" ? "text-emerald-300" : "text-white/40"}`}>
+              <p className={`text-xs ${status === "Online" ? "text-emerald-600" : "text-[#6B7A99]"}`}>
                 {status === "Online" ? "🟢 Online" : status}
               </p>
             )}
@@ -252,7 +252,7 @@ export default function PrivateChatPage() {
         </div>
 
         {/* Messages */}
-        <div className="mt-3 flex min-h-0 flex-1 flex-col rounded-2xl border border-white/10 bg-black/20">
+        <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#CFE3F5] bg-[#E8F4FC]">
           <div
             ref={listRef} data-notranslate
             onScroll={(e) => {
@@ -262,15 +262,15 @@ export default function PrivateChatPage() {
             className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 py-3"
           >
             {messages.length === 0 && (
-              <p className="py-10 text-center text-sm text-white/30">Say hi to {friend} 👋</p>
+              <p className="py-10 text-center text-sm text-[#6B7A99]">Say hi to {friend} 👋</p>
             )}
             {messages.map((m) => {
               const mine = m.from.toLowerCase() === username.toLowerCase();
               return (
                 <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                      mine ? "rounded-br-md bg-blue-500/30" : "rounded-bl-md bg-white/[0.07]"
+                    className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm text-[#0B2A5B] shadow-sm ${
+                      mine ? "rounded-br-md bg-[#DCEBFB]" : "rounded-bl-md bg-white"
                     }`}
                   >
                     {m.type === "image" && m.imageUrl ? (
@@ -290,12 +290,12 @@ export default function PrivateChatPage() {
                         ) : (
                           <span className="text-3xl">{m.giftIcon || "🎁"}</span>
                         )}
-                        <span className="text-lg font-black text-pink-200">{m.giftName || m.text}</span>
+                        <span className="text-lg font-black text-pink-600">{m.giftName || m.text}</span>
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap break-words">{m.text}</p>
                     )}
-                    <p className="mt-0.5 text-right text-[10px] text-white/35">
+                    <p className="mt-0.5 text-right text-[10px] text-[#8A9BBC]">
                       {timeLabel(m.createdAtMs)}
                       {mine && <span className="ml-1">{m.read ? "✓✓" : "✓"}</span>}
                     </p>
@@ -306,23 +306,23 @@ export default function PrivateChatPage() {
           </div>
 
           {error && (
-            <p className="border-t border-white/10 px-3 py-2 text-xs text-red-300">{error}</p>
+            <p className="border-t border-[#CFE3F5] bg-white px-3 py-2 text-xs text-rose-600">{error}</p>
           )}
 
           {/* Composer */}
-          <div className="flex gap-1.5 border-t border-white/10 p-2 sm:gap-2">
+          <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 sm:gap-2">
             <button
               type="button"
               onClick={() => setGiftOpen(true)}
               disabled={!username || friend.toLowerCase() === username.toLowerCase()}
               title={`Send ${friend} a gift`}
-              className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-2.5 text-lg sm:px-3 disabled:opacity-40"
+              className="rounded-xl border border-pink-200 bg-pink-50 px-2.5 text-lg sm:px-3 disabled:opacity-40"
             >
               🎁
             </button>
             <label
               title="Send a photo"
-              className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-2.5 text-lg sm:px-3 hover:bg-white/10 ${
+              className={`flex cursor-pointer items-center rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-2.5 text-lg sm:px-3 hover:bg-[#EAF4FE] ${
                 uploading || !username || friend.toLowerCase() === username.toLowerCase()
                   ? "pointer-events-none opacity-40"
                   : ""
@@ -350,13 +350,13 @@ export default function PrivateChatPage() {
               }}
               maxLength={2000}
               placeholder={`Message ${friend}`}
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50 sm:px-4"
+              className="min-w-0 flex-1 rounded-full border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED] sm:px-4"
             />
             <button
               type="button"
               onClick={send}
               disabled={sending || !text.trim() || !username}
-              className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-4 text-sm font-bold disabled:opacity-40 sm:px-5"
+              className="rounded-full bg-[#2F80ED] px-4 text-sm font-bold text-white disabled:opacity-40 sm:px-5"
             >
               <span className="sm:hidden">➤</span>
               <span className="hidden sm:inline">Send</span>

@@ -124,7 +124,7 @@ export function GiftPanel({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-3xl border border-white/10 bg-[#0b1430] p-4 shadow-2xl"
+        className="flex max-h-[90dvh] w-full max-w-lg flex-col rounded-3xl border border-white/10 bg-[#0b1430] p-4 text-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

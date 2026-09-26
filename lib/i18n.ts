@@ -440,6 +440,13 @@ export const BN: Record<string, string> = {
   "All time": "সব সময়",
   "← Back to Settings": "← সেটিংসে ফিরুন",
   "Tagged": "ট্যাগড",
+  "Join the Fun!": "মজায় যোগ দিন!",
+  "Go!": "চলো!",
+  "MIG ID": "MIG ID",
+  "Coins · Transfers": "কয়েন · ট্রান্সফার",
+  "Private chats": "প্রাইভেট চ্যাট",
+  "Notifications": "নোটিফিকেশন",
+  "👫 Currently in this room:": "👫 এখন এই রুমে আছেন:",
 };
 
 export function translate(text: string): string | null {

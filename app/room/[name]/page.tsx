@@ -703,21 +703,21 @@ export default function RoomPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
   if (blocked) {
     return (
-      <PageShell>
+      <PageShell light>
         <div className="mx-auto max-w-md px-4 py-20 text-center">
           <div className="text-4xl">🚫</div>
           <p className="mt-4 font-semibold">{blocked}</p>
           <Link
             href="/rooms"
-            className="mt-6 inline-block rounded-2xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold hover:bg-white/10"
+            className="mt-6 inline-block rounded-2xl bg-[#2F80ED] px-6 py-3 text-sm font-semibold text-white shadow"
           >
             ← Back to rooms
           </Link>
@@ -727,32 +727,29 @@ export default function RoomPage() {
   }
 
   return (
-    <PageShell bottomNav={false}>
+    <PageShell light bottomNav={false}>
       <div className="relative mx-auto flex h-[calc(100dvh-65px)] max-w-5xl flex-col px-2 py-3 sm:px-6">
         {/* Room header */}
-        <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
-          <Link href="/rooms" className="text-sm text-white/60 hover:text-white">
+        <div className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm">
+          <Link href="/rooms" aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] text-lg text-[#0B2A5B]">
             ←
           </Link>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate font-black">
+            <h1 data-notranslate className="truncate font-black text-[#0B2A5B]">
               {roomName}
               {locked && <span className="ml-1.5 text-sm">🔒</span>}
               {silenced && <span className="ml-1 text-sm">🔇</span>}
             </h1>
-            <p className="truncate text-xs text-white/40">
+            <p className="truncate text-xs text-[#6B7A99]">
               {roomUsers.length} in this room
               {roomInfo.ownerName && ` · 👑 ${roomInfo.ownerName}`}
               {roomInfo.lockLevel > 0 && ` · Lv ${roomInfo.lockLevel}+`}
             </p>
-            {roomInfo.description && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-white/55">{roomInfo.description}</p>
-            )}
           </div>
           <button
             type="button"
             onClick={() => setShowUsers((v) => !v)}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white/70 hover:bg-white/10 lg:hidden"
+            className="rounded-full bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow lg:hidden"
           >
             👥 {roomUsers.length}
           </button>
@@ -760,7 +757,7 @@ export default function RoomPage() {
 
         <div className="mt-3 flex min-h-0 flex-1 gap-3">
           {/* Messages */}
-          <div className="flex min-w-0 flex-1 flex-col rounded-2xl border border-white/10 bg-black/20">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#CFE3F5] bg-[#E8F4FC]">
             <div
               ref={listRef} data-notranslate
               onScroll={(e) => {
@@ -769,8 +766,28 @@ export default function RoomPage() {
               }}
               className="min-h-0 flex-1 space-y-1.5 overflow-y-auto px-3 py-3"
             >
+              {/* Room cards, like the app: manager, welcome text, who is here */}
+              <div className="space-y-1.5 pb-1">
+                <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
+                  👥 This room is managed by: {roomInfo.ownerName || "migwith"}
+                </p>
+                {roomInfo.description && (
+                  <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
+                    {roomInfo.description}
+                  </p>
+                )}
+                {locked && (
+                  <p className="rounded-xl border border-[#D85A30] bg-[#4A1B0C] px-3.5 py-2.5 text-[13px] font-bold text-[#F0997B]">
+                    🔒 This room is locked. Only admins/mods can enter until it&apos;s unlocked.
+                  </p>
+                )}
+                <div className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px]">
+                  <p className="text-white">👫 Currently in this room:</p>
+                  {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => u.username).join(", ")}</p>}
+                </div>
+              </div>
               {shown.length === 0 && (
-                <p className="py-10 text-center text-sm text-white/30">No messages yet — say hi 👋</p>
+                <p className="py-10 text-center text-sm text-[#6B7A99]">No messages yet — say hi 👋</p>
               )}
               {shown.map((m) => (
                 <MessageRow
@@ -782,27 +799,32 @@ export default function RoomPage() {
               ))}
             </div>
 
-            {luxury && <LuxuryBetBox state={luxury} note={note} />}
-            {royale && <RoyaleTable state={royale} />}
-            {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
-            {cricket && <CricketBox state={cricket} uid={user.uid} />}
-            {twentyNine && <TwentyNineTable state={twentyNine} />}
-            {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
-            {ludo && <LudoTable state={ludo} />}
+            {/* Game tables keep their dark look */}
+            {(luxury || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
+              <div className="bg-[#0B1F3A] text-white">
+                {luxury && <LuxuryBetBox state={luxury} note={note} />}
+                {royale && <RoyaleTable state={royale} />}
+                {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
+                {cricket && <CricketBox state={cricket} uid={user.uid} />}
+                {twentyNine && <TwentyNineTable state={twentyNine} />}
+                {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
+                {ludo && <LudoTable state={ludo} />}
+              </div>
+            )}
 
             {/* Composer */}
-            <div className="flex gap-1.5 border-t border-white/10 p-2 sm:gap-2">
+            <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setGiftTarget("")}
                 title="Send a gift"
-                className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-2.5 text-lg sm:px-3 hover:bg-pink-500/20"
+                className="rounded-xl border border-pink-200 bg-pink-50 px-2.5 text-lg sm:px-3 hover:bg-pink-100"
               >
                 🎁
               </button>
               <label
                 title={perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room"}
-                className={`flex cursor-pointer items-center rounded-xl border border-white/10 bg-white/5 px-2.5 text-lg sm:px-3 hover:bg-white/10 ${
+                className={`flex cursor-pointer items-center rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-2.5 text-lg sm:px-3 hover:bg-[#EAF4FE] ${
                   uploading || !perms.canShareMedia ? "pointer-events-none opacity-40" : ""
                 }`}
               >
@@ -836,13 +858,13 @@ export default function RoomPage() {
                     }}
                     maxLength={1000}
                     placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message"}
-                    className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-3 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50 sm:px-4"
+                    className="min-w-0 flex-1 rounded-full border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED] sm:px-4"
                   />
                   <button
                     type="button"
                     onClick={send}
                     disabled={sending || !text.trim() || !profile}
-                    className="rounded-xl bg-gradient-to-r from-blue-500 to-cyan-400 px-4 text-sm font-bold disabled:opacity-40 sm:px-5"
+                    className="rounded-full bg-[#2F80ED] px-4 text-sm font-bold text-white disabled:opacity-40 sm:px-5"
                   >
                     <span className="sm:hidden">➤</span>
                     <span className="hidden sm:inline">Send</span>
@@ -854,9 +876,9 @@ export default function RoomPage() {
 
           {/* People in the room */}
           <aside
-            className={`${showUsers ? "block" : "hidden"} absolute inset-x-2 top-[76px] z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0b1430] p-3 lg:static lg:block lg:max-h-none lg:w-60 lg:bg-white/[0.04]`}
+            className={`${showUsers ? "block" : "hidden"} absolute inset-x-2 top-[76px] z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#CFE3F5] bg-white p-3 shadow-lg lg:static lg:block lg:max-h-none lg:w-60 lg:shadow-sm`}
           >
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-white/40">
+            <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#35507E]">
               In this room
             </h2>
             <ul className="space-y-1" data-notranslate>
@@ -865,7 +887,7 @@ export default function RoomPage() {
                   <span>{badgeForLevel(u.level)}</span>
                   <Link
                     href={`/profile/${encodeURIComponent(u.username)}`}
-                    className="truncate font-semibold hover:text-cyan-300"
+                    className="truncate font-semibold text-[#0B2A5B] hover:text-[#2F80ED]"
                   >
                     {u.username}
                   </Link>
@@ -876,19 +898,19 @@ export default function RoomPage() {
                     if (roomInfo.moderators.includes(k)) return <span title="Moderator">⭐</span>;
                     return null;
                   })()}
-                  <span className="ml-auto text-xs text-white/35">{u.level}</span>
+                  <span className="ml-auto text-xs text-[#6B7A99]">{u.level}</span>
                   {u.uid !== user.uid && (perms.canKick || perms.canBan || perms.canMute || perms.canManagePrivate) && (
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setMenuFor(menuFor === u.uid ? null : u.uid)}
                         title="Moderate"
-                        className="rounded px-1 text-white/50 hover:bg-white/10 hover:text-white"
+                        className="rounded px-1 text-[#5B6B8C] hover:bg-[#EAF4FE] hover:text-[#0B2A5B]"
                       >
                         ⋯
                       </button>
                       {menuFor === u.uid && (
-                        <div className="absolute right-0 top-6 z-30 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#101c3f] text-sm shadow-xl">
+                        <div className="absolute right-0 top-6 z-30 w-40 overflow-hidden rounded-xl border border-[#D5E3F5] bg-white text-sm text-[#0B2A5B] shadow-xl">
                           {(
                             [
                               perms.canKick && ["👢 Kick", (c: ModContext) => kickUser(c, u.username)],
@@ -910,7 +932,7 @@ export default function RoomPage() {
                                 const c = modCtx();
                                 if (c) run(c);
                               }}
-                              className="block w-full px-3 py-2 text-left hover:bg-white/10"
+                              className="block w-full px-3 py-2 text-left hover:bg-[#EAF4FE]"
                             >
                               {label}
                             </button>
@@ -959,23 +981,23 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
 
   if (m.type === "room_entry" || m.type === "room_leave") {
     return (
-      <p className={`text-center text-xs ${m.type === "room_entry" ? "text-emerald-300/60" : "text-white/30"}`}>
+      <p className={`text-center text-xs ${m.type === "room_entry" ? "text-emerald-700" : "text-[#6B7A99]"}`}>
         {m.text}
       </p>
     );
   }
 
   if (m.local) {
-    return <p className="whitespace-pre-wrap text-center text-xs text-amber-300/80">{m.text}</p>;
+    return <p className="whitespace-pre-wrap text-center text-xs text-amber-700">{m.text}</p>;
   }
 
   if (m.type === "moderation" || m.type === "broadcast") {
     const tone =
       m.moderationColor === "red"
-        ? "bg-red-500/10 text-red-300"
+        ? "bg-rose-100 text-rose-700"
         : m.moderationColor === "green"
-          ? "bg-emerald-500/10 text-emerald-300"
-          : "bg-cyan-400/10 text-cyan-200";
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-[#DCEBFB] text-[#174EA6]";
     return (
       <p className={`whitespace-pre-wrap rounded-lg px-3 py-1.5 text-center text-xs font-semibold ${tone}`}>
         {m.text}
@@ -985,18 +1007,18 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
 
   if (m.type === "social") {
     return (
-      <p className="text-center text-sm font-semibold text-fuchsia-300">
+      <p className="text-center text-sm font-semibold text-fuchsia-700">
         {m.text.replace(/\*\*/g, "")}
-        {time && <span className="ml-2 text-[10px] font-normal text-white/25">{time}</span>}
+        {time && <span className="ml-2 text-[10px] font-normal text-[#8A9BBC]">{time}</span>}
       </p>
     );
   }
 
   if (m.type === "me") {
     return (
-      <p className="px-3 text-sm italic text-violet-300">
+      <p className="px-3 text-sm italic text-violet-700">
         * {m.sender && m.text.startsWith(`${m.sender}: `) ? `${m.sender} ${m.text.slice(m.sender.length + 2)}` : m.text}
-        {time && <span className="ml-2 text-[10px] not-italic text-white/25">{time}</span>}
+        {time && <span className="ml-2 text-[10px] not-italic text-[#8A9BBC]">{time}</span>}
       </p>
     );
   }
@@ -1004,13 +1026,13 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
   if (m.type === "gift") {
     const clean = m.text.replace(/^<</, "").replace(/>>/, "");
     return (
-      <div className="flex items-center justify-center gap-2 rounded-xl border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-200">
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-center text-sm font-semibold text-pink-700">
         {giftImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={giftImage} alt={m.giftName} className="h-8 w-8 object-contain" />
         )}
         <span className="whitespace-pre-wrap break-words">{clean}</span>
-        {time && <span className="text-[10px] font-normal text-white/25">{time}</span>}
+        {time && <span className="text-[10px] font-normal text-[#8A9BBC]">{time}</span>}
       </div>
     );
   }
@@ -1020,9 +1042,9 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
   const body = split ? m.text.slice(m.sender.length + 2) : m.text;
 
   return (
-    <div className={`rounded-xl px-3 py-1.5 text-sm ${mine ? "bg-blue-500/15" : "bg-white/[0.04]"}`}>
+    <div className={`rounded-xl px-3 py-1.5 text-sm shadow-sm ${mine ? "bg-[#DCEBFB]" : "bg-white"}`}>
       {split && (
-        <span className={`mr-1 font-bold ${mine ? "text-cyan-300" : "text-blue-300"}`}>{m.sender}:</span>
+        <span className={`mr-1 font-bold ${mine ? "text-[#0F6E56]" : "text-[#174EA6]"}`}>{m.sender}:</span>
       )}
       {m.type === "image" && m.imageUrl ? (
         <a href={m.imageUrl} target="_blank" rel="noreferrer" className="mt-1 block">
@@ -1032,9 +1054,9 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
       ) : m.type === "voice" && m.audioUrl ? (
         <audio controls src={m.audioUrl} className="mt-1 h-9 max-w-full" />
       ) : (
-        <span className="whitespace-pre-wrap break-words text-white/85">{body}</span>
+        <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
       )}
-      {time && <span className="ml-2 text-[10px] text-white/25">{time}</span>}
+      {time && <span className="ml-2 text-[10px] text-[#8A9BBC]">{time}</span>}
     </div>
   );
 }

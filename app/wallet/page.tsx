@@ -21,6 +21,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
+import { PageTitle } from "../_components/LightCards";
 import { latestGifts } from "../../lib/giftActivity";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
@@ -309,48 +310,48 @@ export default function WalletPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
   const field =
-    "w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-amber-300/50";
+    "w-full rounded-xl border border-[#D5E3F5] bg-white px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]";
 
   return (
-    <PageShell>
-      <section className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <h1 className="text-3xl font-black tracking-tight">💰 My Account</h1>
+    <PageShell light>
+      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+        <PageTitle title="My Account" subtitle="Coins · Transfers" icon="💳" />
 
         {/* Balance */}
-        <div className="mt-5 rounded-3xl border border-amber-300/20 bg-gradient-to-br from-amber-400/20 via-amber-500/5 to-transparent p-5">
-          <p className="text-xs font-bold tracking-widest text-amber-200/70">MIGWITH BALANCE</p>
-          <p className="mt-1 text-4xl font-black text-amber-300">
+        <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-5 text-white shadow-lg">
+          <p className="text-xs font-bold tracking-widest text-yellow-200">MIGWITH BALANCE</p>
+          <p className="mt-1 text-4xl font-black text-white">
             🪙 {balance === null ? "…" : balance.toLocaleString()}
           </p>
-          <p className="mt-1 text-xs text-white/40">@{username}</p>
+          <p className="mt-1 text-xs text-white/75">@{username}</p>
         </div>
 
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
-            <p className="text-lg font-black text-rose-300">{short(spentToday)}</p>
-            <p className="text-[11px] text-white/45">Spent Today</p>
+          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
+            <p className="text-lg font-black text-rose-500">{short(spentToday)}</p>
+            <p className="text-[11px] text-[#5B6B8C]">Spent Today</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
-            <p className="text-lg font-black text-emerald-300">{short(earnedToday)}</p>
-            <p className="text-[11px] text-white/45">Earned Today</p>
+          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
+            <p className="text-lg font-black text-emerald-600">{short(earnedToday)}</p>
+            <p className="text-[11px] text-[#5B6B8C]">Earned Today</p>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
-            <p className="text-lg font-black text-cyan-300">
+          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
+            <p className="text-lg font-black text-[#2F80ED]">
               {cap === null ? "∞" : `${short(transferredToday)}/${short(cap)}`}
             </p>
-            <p className="text-[11px] text-white/45">Transfer Limit</p>
+            <p className="text-[11px] text-[#5B6B8C]">Transfer Limit</p>
           </div>
         </div>
 
         {/* Transfer */}
-        {success && <p className="mt-4 text-sm text-emerald-300">{success}</p>}
+        {success && <p className="mt-4 text-sm font-semibold text-emerald-600">{success}</p>}
         {!showTransfer ? (
           <button
             type="button"
@@ -359,15 +360,15 @@ export default function WalletPage() {
               setSuccess("");
               setError("");
             }}
-            className="mt-4 w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-600 py-3.5 font-black text-neutral-900"
+            className="mt-4 w-full rounded-2xl bg-[#0B2A5B] py-3.5 font-black text-white shadow"
           >
             💸 Transfer Coins
           </button>
         ) : (
-          <div className="mt-4 space-y-3 rounded-3xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mt-4 space-y-3 rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
             <div className="flex items-center justify-between">
               <h2 className="font-black">💸 Transfer Coins</h2>
-              <button type="button" onClick={() => setShowTransfer(false)} className="text-white/50 hover:text-white">
+              <button type="button" onClick={() => setShowTransfer(false)} className="text-[#5B6B8C] hover:text-[#0B2A5B]">
                 ✕
               </button>
             </div>
@@ -388,18 +389,18 @@ export default function WalletPage() {
               placeholder="Security PIN"
               className={field}
             />
-            {error && <p className="text-sm text-red-300">{error}</p>}
+            {error && <p className="text-sm text-rose-600">{error}</p>}
             <button
               type="button"
               onClick={transfer}
               disabled={busy}
-              className="w-full rounded-2xl bg-amber-500 py-3 font-black text-neutral-900 disabled:opacity-50"
+              className="w-full rounded-2xl bg-[#2F80ED] py-3 font-black text-white disabled:opacity-50"
             >
               {busy ? "Sending…" : `Send${Number(amount) > 0 ? ` ${Number(amount).toLocaleString()} coins` : ""}`}
             </button>
-            <p className="text-center text-xs text-white/35">
+            <p className="text-center text-xs text-[#6B7A99]">
               Forgot your PIN or want to change it?{" "}
-              <Link href="/security" className="font-semibold text-cyan-300 hover:underline">
+              <Link href="/security" className="font-semibold text-[#2F80ED] hover:underline">
                 🔐 Security PIN
               </Link>
             </p>
@@ -407,24 +408,24 @@ export default function WalletPage() {
         )}
 
         {/* History */}
-        <h2 className="mt-7 text-sm font-bold tracking-widest text-white/60">RECENT ACTIVITY</h2>
+        <h2 className="mt-7 border-l-4 border-[#2F80ED] pl-2 text-sm font-bold tracking-widest text-[#35507E]">RECENT ACTIVITY</h2>
         {grouped.length === 0 ? (
-          <p className="py-10 text-center text-sm text-white/35">No coin activity yet.</p>
+          <p className="py-10 text-center text-sm text-[#6B7A99]">No coin activity yet.</p>
         ) : (
           grouped.map(([day, list]) => (
             <div key={day} className="mt-3">
-              <p className="mb-1.5 text-[11px] font-bold tracking-widest text-white/35">{day}</p>
-              <ul className="divide-y divide-white/5 rounded-2xl border border-white/10 bg-white/[0.03]">
+              <p className="mb-1.5 text-[11px] font-bold tracking-widest text-[#35507E]">{day}</p>
+              <ul className="divide-y divide-[#E3ECF7] rounded-2xl bg-white shadow-sm">
                 {list.map((it) => (
                   <li key={it.key} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/5">{it.icon}</span>
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF2FC]">{it.icon}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-white/85">{it.title}</p>
-                      <p className="text-[11px] text-white/35">
+                      <p className="truncate text-sm text-[#0B2A5B]">{it.title}</p>
+                      <p className="text-[11px] text-[#6B7A99]">
                         {new Date(it.timeMs).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
-                    <span className={`shrink-0 font-black ${it.amount >= 0 ? "text-emerald-300" : "text-rose-300"}`}>
+                    <span className={`shrink-0 font-black ${it.amount >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
                       {it.amount >= 0 ? "+" : ""}
                       {it.amount.toLocaleString()}
                     </span>
@@ -435,8 +436,8 @@ export default function WalletPage() {
           ))
         )}
 
-        <p className="mt-6 text-center text-xs text-white/30">
-          <Link href="/profile/me" className="hover:text-white/60">
+        <p className="mt-6 text-center text-xs text-[#5B6B8C]">
+          <Link href="/profile/me" className="hover:text-[#0B2A5B]">
             ← Back to profile
           </Link>
         </p>

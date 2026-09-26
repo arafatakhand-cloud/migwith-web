@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { chatHref, useFriends, useUnreadBySender } from "../../lib/privateChat";
 import { PageShell } from "../_components/PageShell";
+import { PageTitle } from "../_components/LightCards";
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -25,28 +26,27 @@ export default function MessagesPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
   return (
-    <PageShell>
-      <section className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-        <h1 className="text-3xl font-black tracking-tight">Messages</h1>
-        <p className="mt-1 text-sm text-white/45">Private chats with your MIGwith friends.</p>
+    <PageShell light>
+      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+        <PageTitle title="Messages" subtitle="Private chats" icon="✉️" />
 
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search friends"
-          className="mt-6 w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-cyan-300/50"
+          className="w-full rounded-full border border-[#D5E3F5] bg-white px-4 py-2.5 text-sm text-[#0B2A5B] shadow-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
         />
 
-        <div className="mt-4 space-y-2">
+        <div className="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
           {people.length === 0 && (
-            <p className="py-10 text-center text-sm text-white/35">
+            <p className="px-4 py-10 text-center text-sm text-[#6B7A99]">
               {friends.length === 0
                 ? "No friends yet. Add friends from the 👥 Friends page to chat here."
                 : "No friends match your search."}
@@ -56,15 +56,15 @@ export default function MessagesPage() {
             <Link
               key={p}
               href={chatHref(p)}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 transition hover:border-cyan-300/30 hover:bg-white/[0.07]"
+              className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 transition last:border-b-0 hover:bg-[#F4F9FF]"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 font-black">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DCEBFB] font-black text-[#174EA6]">
                 {p.slice(0, 1).toUpperCase()}
               </div>
-              <span className="flex-1 truncate font-semibold">{p}</span>
-              {!friends.includes(p) && <span className="text-xs text-white/30">not a friend</span>}
+              <span data-notranslate className="flex-1 truncate font-semibold text-[#0B2A5B]">{p}</span>
+              {!friends.includes(p) && <span className="text-xs text-[#8A9BBC]">not a friend</span>}
               {(unread[p] || 0) > 0 && (
-                <span className="rounded-full bg-pink-500 px-2 py-0.5 text-xs font-bold">{unread[p]}</span>
+                <span className="rounded-full bg-rose-500 px-2 py-0.5 text-xs font-bold text-white">{unread[p]}</span>
               )}
             </Link>
           ))}
