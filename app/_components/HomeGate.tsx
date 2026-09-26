@@ -10,7 +10,7 @@ export function HomeGate({ children }: { children: React.ReactNode }) {
   if (loading) return <main className="min-h-screen bg-sky-app" />;
   if (user) {
     return (
-      <PageShell>
+      <PageShell light>
         <Dashboard />
       </PageShell>
     );

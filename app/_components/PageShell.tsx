@@ -1,15 +1,24 @@
 import { TopBar } from "./TopBar";
 
-/* Navy MIGwith background + the app-style top bar, shared by every page. */
-// `bottomNav` is kept for older callers; the ☰ menu and 🏠/💬 tabs replaced the phone bottom bar.
-export function PageShell({ children }: { children: React.ReactNode; bottomNav?: boolean }) {
+/* Page frame shared by every signed-in page: the app's white top bar over a
+   sky background. `light` pages use the app's pale sky page with white cards;
+   the others keep the deeper sky with blue cards. */
+export function PageShell({
+  children,
+  light = false,
+}: {
+  children: React.ReactNode;
+  light?: boolean;
+  /** Kept for older callers; the ☰ menu replaced the phone bottom bar. */
+  bottomNav?: boolean;
+}) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-sky-app text-white">
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute left-1/2 top-[-250px] h-[500px] w-[700px] -translate-x-1/2 rounded-full bg-white/20 blur-[140px]" />
-      </div>
-
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0B1F3A]/90 backdrop-blur-xl">
+    <main
+      className={`relative min-h-screen overflow-hidden ${
+        light ? "bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] text-[#0B2A5B]" : "bg-sky-app text-white"
+      }`}
+    >
+      <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white/95 shadow-sm backdrop-blur-xl">
         <TopBar />
       </header>
 

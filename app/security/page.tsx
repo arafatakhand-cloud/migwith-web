@@ -194,14 +194,14 @@ export default function SecurityPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
   const field =
-    "w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm tracking-widest text-white outline-none placeholder:tracking-normal placeholder:text-white/25 focus:border-cyan-300/50";
+    "w-full rounded-xl border border-[#D5E3F5] bg-white px-4 py-3 text-sm tracking-widest text-[#0B2A5B] outline-none placeholder:tracking-normal placeholder:text-[#8A9BBC] focus:border-[#2F80ED]";
   const pinInput = (value: string, set: (v: string) => void, placeholder: string) => (
     <input
       value={value}
@@ -215,21 +215,21 @@ export default function SecurityPage() {
   );
 
   return (
-    <PageShell>
+    <PageShell light>
       <section className="mx-auto max-w-md px-4 py-8 sm:px-6">
-        <h1 className="text-3xl font-black tracking-tight">🔐 Security</h1>
-        <p className="mt-1 text-sm text-white/45">Your PIN protects coin transfers. Never share it with anyone.</p>
+        <h1 className="text-2xl font-black tracking-wide">🛡️ Security PIN</h1>
+        <p className="mt-1 text-sm text-[#35507E]">Your PIN protects coin transfers. Never share it with anyone.</p>
 
         {/* Recovery Email */}
-        <div className="mt-6 space-y-3 rounded-3xl border border-cyan-300/20 bg-cyan-300/[0.04] p-5">
+        <div className="mt-6 space-y-3 rounded-3xl border border-[#BFD7F7] bg-white p-5 shadow-sm">
           <h2 className="font-black">📧 Recovery Email</h2>
           {!editingEmail ? (
             <>
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-[#5B6B8C]">
                 {email ? (
                   <>
                     Codes for a forgotten PIN or password go to{" "}
-                    <span className="font-semibold text-white">{maskEmail(email)}</span>.
+                    <span className="font-semibold text-[#0B2A5B]">{maskEmail(email)}</span>.
                   </>
                 ) : (
                   "No Recovery Email yet. Add one so you can reset a forgotten PIN or password."
@@ -241,7 +241,7 @@ export default function SecurityPage() {
                   setEditingEmail(true);
                   setEmailMsg(null);
                 }}
-                className="w-full rounded-2xl border border-cyan-300/30 py-3 font-bold text-cyan-200 hover:bg-cyan-300/10"
+                className="w-full rounded-2xl border border-[#2F80ED] py-3 font-bold text-[#2F80ED] hover:bg-[#EAF4FE]"
               >
                 {email ? "Change email" : "➕ Add Recovery Email"}
               </button>
@@ -277,7 +277,7 @@ export default function SecurityPage() {
                     setEmailMsg(null);
                   }}
                   disabled={emailBusy}
-                  className="flex-1 rounded-2xl border border-white/15 py-3 text-sm font-bold text-white/70"
+                  className="flex-1 rounded-2xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]"
                 >
                   Cancel
                 </button>
@@ -285,7 +285,7 @@ export default function SecurityPage() {
                   type="button"
                   onClick={emailCodeSent ? saveEmail : sendEmailCode}
                   disabled={emailBusy}
-                  className="flex-1 rounded-2xl bg-cyan-500 py-3 text-sm font-black text-neutral-900 disabled:opacity-50"
+                  className="flex-1 rounded-2xl bg-[#2F80ED] py-3 text-sm font-black text-white disabled:opacity-50"
                 >
                   {emailBusy ? "Please wait…" : emailCodeSent ? "Verify & Save" : "Send code"}
                 </button>
@@ -295,7 +295,7 @@ export default function SecurityPage() {
                   type="button"
                   onClick={sendEmailCode}
                   disabled={emailBusy}
-                  className="w-full text-center text-xs text-white/45 hover:text-white"
+                  className="w-full text-center text-xs text-[#5B6B8C] hover:text-[#0B2A5B]"
                 >
                   Didn&apos;t get it? Send a new code
                 </button>
@@ -303,42 +303,42 @@ export default function SecurityPage() {
             </>
           )}
           {emailMsg && (
-            <p className={`text-sm ${emailMsg.error ? "text-red-300" : "text-emerald-300"}`}>{emailMsg.text}</p>
+            <p className={`text-sm ${emailMsg.error ? "text-rose-600" : "text-emerald-600"}`}>{emailMsg.text}</p>
           )}
         </div>
 
         {/* Change */}
-        <div className="mt-5 space-y-3 rounded-3xl border border-white/10 bg-white/[0.04] p-5">
+        <div className="mt-5 space-y-3 rounded-3xl border border-[#BFD7F7] bg-white p-5 shadow-sm">
           <h2 className="font-black">{hasPin === false ? "Set a PIN" : "Change PIN"}</h2>
           {hasPin !== false && pinInput(currentPin, setCurrentPin, "Current PIN")}
           {pinInput(newPin, setNewPin, "New PIN (4–6 digits)")}
           {pinInput(confirmPin, setConfirmPin, "Confirm new PIN")}
           {changeMsg && (
-            <p className={`text-sm ${changeMsg.error ? "text-red-300" : "text-emerald-300"}`}>{changeMsg.text}</p>
+            <p className={`text-sm ${changeMsg.error ? "text-rose-600" : "text-emerald-600"}`}>{changeMsg.text}</p>
           )}
           <button
             type="button"
             onClick={change}
             disabled={changeBusy || hasPin === null}
-            className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 py-3 font-black disabled:opacity-50"
+            className="w-full rounded-2xl bg-[#2F80ED] py-3 font-black text-white disabled:opacity-50"
           >
             {changeBusy ? "Saving…" : hasPin === false ? "Set PIN" : "Change PIN"}
           </button>
-          <p className="text-center text-xs text-white/35">5 wrong PINs lock it for 15 minutes.</p>
+          <p className="text-center text-xs text-[#6B7A99]">5 wrong PINs lock it for 15 minutes.</p>
         </div>
 
         {/* Forgot */}
         {hasPin !== false && (
-          <div className="mt-5 space-y-3 rounded-3xl border border-amber-300/20 bg-amber-300/[0.04] p-5">
+          <div className="mt-5 space-y-3 rounded-3xl border border-[#FFD9A8] bg-[#FFF8EE] p-5 shadow-sm">
             <h2 className="font-black">Forgot your PIN?</h2>
             {!email ? (
-              <p className="text-sm text-white/60">
+              <p className="text-sm text-[#5B6B8C]">
                 A PIN can only be reset with a Recovery Email. Add one above first.
               </p>
             ) : !codeSent ? (
               <>
-                <p className="text-sm text-white/60">
-                  We&apos;ll send a reset code to <span className="font-semibold text-white">{maskEmail(email)}</span>.
+                <p className="text-sm text-[#5B6B8C]">
+                  We&apos;ll send a reset code to <span className="font-semibold text-[#0B2A5B]">{maskEmail(email)}</span>.
                 </p>
                 <button
                   type="button"
@@ -372,21 +372,21 @@ export default function SecurityPage() {
                   type="button"
                   onClick={sendCode}
                   disabled={resetBusy}
-                  className="w-full text-center text-xs text-white/45 hover:text-white"
+                  className="w-full text-center text-xs text-[#5B6B8C] hover:text-[#0B2A5B]"
                 >
                   Didn&apos;t get it? Send a new code
                 </button>
               </>
             )}
             {resetMsg && (
-              <p className={`text-sm ${resetMsg.error ? "text-red-300" : "text-emerald-300"}`}>{resetMsg.text}</p>
+              <p className={`text-sm ${resetMsg.error ? "text-rose-600" : "text-emerald-600"}`}>{resetMsg.text}</p>
             )}
           </div>
         )}
 
-        <p className="mt-6 text-center text-xs text-white/30">
-          <Link href="/wallet" className="hover:text-white/60">
-            ← Back to My Account
+        <p className="mt-6 text-center text-xs text-[#5B6B8C]">
+          <Link href="/settings" className="hover:text-[#0B2A5B]">
+            ← Back to Settings
           </Link>
         </p>
       </section>

@@ -12,8 +12,8 @@ import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { LanguageToggle } from "./LanguageToggle";
 
-// App-style top bar: ☰ menu, 🏠 Home and 💬 Rooms tabs, 🔔 alerts.
-// Signed out, it shows the logo and the Login button instead.
+// The app's top bar: ☰ menu, 👥 Home and 💬 Rooms tabs, and a blue pill naming
+// the page you are on (Explore, Members, Settings …). Signed out: logo + Login.
 
 function Badge({ n }: { n: number }) {
   if (!n) return null;
@@ -23,6 +23,22 @@ function Badge({ n }: { n: number }) {
     </span>
   );
 }
+
+// Page name shown in the pill, by path.
+const PAGE_NAMES: [string, string][] = [
+  ["/explore", "Explore"],
+  ["/members", "Members"],
+  ["/gifts", "Gift Shops"],
+  ["/leaderboard", "Leader Board"],
+  ["/security", "Security PIN"],
+  ["/settings", "Settings"],
+  ["/friends", "Friends"],
+  ["/messages", "Messages"],
+  ["/chat/", "Chat"],
+  ["/alerts", "Alerts"],
+  ["/wallet", "My Account"],
+  ["/profile", "Profile"],
+];
 
 export function TopBar() {
   const pathname = usePathname() || "/";
@@ -49,17 +65,17 @@ export function TopBar() {
   // Close the menu when the page changes.
   useEffect(() => setOpen(false), [pathname]);
 
-  if (loading) return <div className="h-[60px]" />;
+  if (loading) return <div className="h-[56px]" />;
 
   if (!user) {
     return (
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2.5 sm:px-6">
         <Link href="/" className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-cyan-300/30 bg-gradient-to-br from-blue-500 to-cyan-400">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#2F80ED] to-[#174EA6] text-white">
             <span className="text-lg font-black">M</span>
           </div>
-          <span className="text-xl font-black tracking-wide">
-            MIG<span className="text-cyan-300">with</span>
+          <span className="text-xl font-black tracking-wide text-[#0B2A5B]">
+            MIG<span className="text-[#2F80ED]">with</span>
           </span>
         </Link>
         <HeaderAuth />
@@ -69,47 +85,51 @@ export function TopBar() {
 
   const onHome = pathname === "/";
   const onRooms = pathname.startsWith("/room");
-  const tab = (active: boolean, activeColor: string) =>
-    `relative flex h-11 w-12 items-center justify-center rounded-xl text-xl transition ${
-      active ? `${activeColor} ring-1 ring-white/30 shadow-lg` : "text-white/80 hover:bg-white/10"
+  const pageName = PAGE_NAMES.find(([p]) => pathname.startsWith(p))?.[1];
+  const tab = (active: boolean) =>
+    `relative flex h-9 w-10 items-center justify-center rounded-xl text-lg transition ${
+      active ? "bg-[#2F80ED] text-white shadow-md" : "text-[#0B2A5B] hover:bg-[#E3F0FD]"
     }`;
 
   const links: [string, string, string, number][] = [
     ["/", "🏠", "Home", 0],
-    ["/rooms", "💬", "Rooms", 0],
-    ["/messages", "✉️", "Messages", badges.messages],
+    ["/profile/me", "🪪", "My Profile", 0],
+    ["/wallet", "💳", "My Account", 0],
     ["/friends", "👥", "Friends", badges.requests],
-    ["/alerts", "🔔", "Alerts", badges.alerts],
-    ["/profile/me", "👤", "My Profile", 0],
-    ["/wallet", "💰", "My Account", 0],
-    ["/leaderboard", "🏆", "Leader Board", 0],
-    ["/security", "🔐", "Security", 0],
+    ["/explore", "🧭", "Explore", 0],
+    ["/rooms", "🎮", "Game List", 0],
+    ["/settings", "⚙️", "Settings", 0],
   ];
 
   return (
     <>
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2.5 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:px-6">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className="relative flex h-11 w-11 items-center justify-center rounded-xl text-2xl text-white/90 hover:bg-white/10"
+          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-xl text-[#0B2A5B] hover:bg-[#E3F0FD]"
         >
           ☰
           <Badge n={badges.messages + badges.requests} />
         </button>
-        <Link href="/" aria-label="Home" className={tab(onHome, "bg-[#2E6B45]")}>
-          🏠
+        <Link href="/" aria-label="Home" className={tab(onHome)}>
+          👥
+          <Badge n={badges.messages} />
         </Link>
-        <Link href="/rooms" aria-label="Rooms" className={tab(onRooms, "bg-[#3A5BB0]")}>
+        <Link href="/rooms" aria-label="Rooms" className={tab(onRooms)}>
           💬
         </Link>
-        <span className="mx-1 h-8 w-px bg-white/15" />
-        <div className="ml-auto flex items-center gap-2">
+        {pageName && (
+          <span className="flex items-center gap-1 rounded-xl bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow-md">
+            💬 {pageName}
+          </span>
+        )}
+        <div className="ml-auto flex items-center gap-1.5">
           <Link
             href="/alerts"
             aria-label="Alerts"
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl text-lg hover:bg-white/10"
+            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-lg hover:bg-[#E3F0FD]"
           >
             🔔
             <Badge n={badges.alerts} />
@@ -121,24 +141,16 @@ export function TopBar() {
       {/* Side menu */}
       {open && (
         <div className="fixed inset-0 z-50" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/60" />
+          <div className="absolute inset-0 bg-black/40" />
           <nav
-            className="absolute inset-y-0 left-0 flex w-80 max-w-[85vw] flex-col overflow-y-auto rounded-r-3xl border-r border-white/10 bg-gradient-to-b from-[#174EA6] to-[#0B1F3A] p-4 shadow-2xl"
+            className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Profile card */}
-            <div className="relative rounded-3xl border border-white/15 bg-[#0F3D8C]/80 p-4">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="absolute right-3 top-3 rounded-lg px-1.5 text-white/50 hover:bg-white/10"
-              >
-                ✕
-              </button>
+            <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-4 text-white shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="relative h-14 w-14 shrink-0">
-                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-2xl bg-sky-400 text-2xl font-black">
+                  <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-[#D4AF37] bg-[#0B2A5B] text-2xl font-black">
                     {me?.photo ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={me.photo} alt="" className="h-full w-full object-cover" />
@@ -147,27 +159,27 @@ export function TopBar() {
                     )}
                   </div>
                   <span
-                    className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0F3D8C] ${
-                      me?.online === false ? "bg-white/40" : "bg-emerald-400"
+                    className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#174EA6] ${
+                      me?.online === false ? "bg-white/50" : "bg-emerald-400"
                     }`}
                   />
                 </div>
                 <div className="min-w-0">
-                  <p data-notranslate className="truncate text-lg font-black">
+                  <p data-notranslate className="truncate text-xl font-black">
                     {username}
                   </p>
-                  <p className="text-sm font-semibold text-cyan-300">
+                  <p className="text-sm font-bold text-yellow-200">
                     ⭐ Level {me?.level ?? "…"} · {me?.online === false ? "Away" : "Active"}
                   </p>
                 </div>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <Link href="/leaderboard" className="rounded-2xl border border-blue-300/30 bg-[#0B2A5B] py-2 text-center">
-                  <p className="text-lg font-black text-cyan-300">{me ? me.xp.toLocaleString() : "…"}</p>
-                  <p className="text-xs text-cyan-200/80">XP</p>
+                <Link href="/leaderboard" className="rounded-2xl border border-white/25 bg-white/10 py-2 text-center">
+                  <p className="font-black">{me ? me.xp.toLocaleString() : "…"}</p>
+                  <p className="text-[11px] text-white/80">XP</p>
                 </Link>
-                <Link href="/wallet" className="rounded-2xl border border-blue-300/30 bg-[#0B2A5B] py-2 text-center">
-                  <p className="text-lg font-black text-emerald-300">
+                <Link href="/wallet" className="rounded-2xl border border-white/25 bg-white/10 py-2 text-center">
+                  <p className="font-black text-cyan-200">
                     {me
                       ? me.coins >= 1_000_000
                         ? `${(me.coins / 1_000_000).toFixed(1)}M`
@@ -176,40 +188,54 @@ export function TopBar() {
                           : me.coins
                       : "…"}
                   </p>
-                  <p className="text-xs text-emerald-200/80">Coins</p>
+                  <p className="text-[11px] text-white/80">Coins</p>
                 </Link>
               </div>
             </div>
-            <ul className="mt-3 flex-1 space-y-1">
-              {links.map(([href, icon, label, n]) => (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={`flex items-center gap-4 rounded-xl px-2 py-2 text-base font-semibold transition ${
-                      pathname === href ? "bg-white/10 text-white" : "text-white/90 hover:bg-white/5"
-                    }`}
-                  >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F3D8C] text-lg">{icon}</span>
-                    <span className="flex-1">{label}</span>
-                    {n > 0 && (
-                      <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold leading-5">{badgeText(n)}</span>
-                    )}
-                  </Link>
-                </li>
-              ))}
+
+            <ul className="mt-3 space-y-2">
+              {links.map(([href, icon, label, n]) => {
+                const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className={`flex items-center gap-3 rounded-2xl border px-2.5 py-2 text-sm font-semibold shadow-sm transition ${
+                        active ? "border-[#174EA6] bg-[#DCEBFB]" : "border-transparent bg-white/90 hover:bg-white"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${
+                          active ? "bg-[#2F80ED]" : "bg-[#EAF2FC]"
+                        }`}
+                      >
+                        {icon}
+                      </span>
+                      <span className="flex-1">{label}</span>
+                      {n > 0 && (
+                        <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold leading-5 text-white">
+                          {badgeText(n)}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
+
             <button
               type="button"
               onClick={async () => {
                 await detachPushForLogout();
                 await signOut(auth);
               }}
-              className="-mx-4 -mb-4 mt-4 flex items-center gap-4 border-t border-rose-500/30 bg-[#2a1a2e] px-6 py-4 text-left text-lg font-bold text-rose-400 hover:bg-[#351f37]"
+              className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50 px-2.5 py-2 text-left text-sm font-bold text-rose-600"
             >
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-900/60 text-lg">⎋</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-100">↪</span>
               <span className="flex-1">Logout</span>
-              <span className="text-rose-400/70">›</span>
+              <span>›</span>
             </button>
+            <p className="mt-2 text-center text-[10px] text-[#35507E]">MIGwith Web</p>
           </nav>
         </div>
       )}

@@ -65,7 +65,8 @@ export default function RoomsPage() {
   const [createError, setCreateError] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [maxes, setMaxes] = useState<Record<string, number>>({});
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
+  const [listOpen, setListOpen] = useState(true);
+  const [filter, setFilter] = useState<"all" | "fav" | "recent" | "mine">("all");
   const [refreshKey, setRefreshKey] = useState(0);
   const { favorites, recent, toggleFavorite } = useRoomPrefs();
 
@@ -186,51 +187,58 @@ export default function RoomsPage() {
 
   if (loading || !user) {
     return (
-      <PageShell>
-        <p className="py-20 text-center text-sm text-white/40">Loading…</p>
+      <PageShell light>
+        <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
       </PageShell>
     );
   }
 
-  // Everything the lists show, filtered by the search box.
+  // Everything the lists show, filtered by the search box and the pills.
   const q = search.trim().toLowerCase();
   const byName = new Map<string, UserRoom>(userRooms.map((r) => [r.name, r]));
   const allNames = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, ...userRooms.map((r) => r.name)]));
   const known = new Set(allNames);
   const f = (names: string[]) => names.filter((n) => known.has(n) && (!q || n.toLowerCase().includes(q)));
-  const hot = allNames
-    .filter((n) => (counts[n] || 0) > 0)
-    .sort((a, b) => (counts[b] || 0) - (counts[a] || 0))
-    .slice(0, 5);
+  const hotName =
+    [...allNames].sort((a, b) => (counts[b] || 0) - (counts[a] || 0)).find((n) => (counts[n] || 0) > 0) ||
+    OFFICIAL_COUNTRY_ROOMS[0];
   const userList = [...userRooms]
-    .sort((a, b) => Number(b.ownerUid === user.uid) - Number(a.ownerUid === user.uid) || (counts[b.name] || 0) - (counts[a.name] || 0))
+    .sort((a, b) => (counts[b.name] || 0) - (counts[a.name] || 0) || a.name.localeCompare(b.name))
     .map((r) => r.name);
 
-  const sections: { id: string; title: string; accent: string; names: string[]; empty?: string }[] = [
-    { id: "fav", title: "Favorite Rooms", accent: "#F5A524", names: f(favorites), empty: "Tap ☆ on a room to keep it here." },
-    { id: "recent", title: "Recent Rooms", accent: "#38BDF8", names: f(recent) },
-    { id: "official", title: "Official Rooms", accent: "#818CF8", names: f(OFFICIAL_COUNTRY_ROOMS) },
-    { id: "game", title: "Game Rooms", accent: "#C084FC", names: f(OFFICIAL_GAME_ROOMS) },
-    { id: "hot", title: "What's Hot", accent: "#F472B6", names: f(hot) },
-    { id: "user", title: "User Rooms", accent: "#34D399", names: f(userList) },
-  ];
+  const lists = {
+    all: { title: "Public rooms", names: f([...OFFICIAL_COUNTRY_ROOMS, ...userList]), empty: "No rooms match your search." },
+    fav: { title: "Favorite Rooms", names: f(favorites), empty: "Tap ☆ on a room to keep it here." },
+    recent: { title: "Recent Rooms", names: f(recent), empty: "Rooms you visit show up here." },
+    mine: { title: "My rooms", names: f(myRooms.map((r) => r.name)), empty: "You haven't created a room yet." },
+  };
+  const list = lists[filter];
+  const subtitle = (name: string) => {
+    if (OFFICIAL_COUNTRY_ROOMS.includes(name)) return "Official room";
+    if (OFFICIAL_GAME_ROOMS.includes(name)) return "Official game";
+    const r = byName.get(name);
+    return r?.description || (r?.ownerName ? `by ${r.ownerName}` : "User room");
+  };
 
   return (
-    <PageShell>
+    <PageShell light>
       <section className="mx-auto max-w-2xl space-y-4 px-3 py-4 sm:px-6">
-        {/* Search · refresh · create */}
-        <div className="flex gap-2">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search room"
-            className="min-w-0 flex-1 rounded-2xl border border-white/15 bg-[#0B2A5B] px-4 py-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-cyan-300/50"
-          />
+        {/* Search · create */}
+        <div className="flex items-center gap-2">
+          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#D5E3F5] bg-white px-4 py-2.5 shadow-sm">
+            <span className="text-[#8A9BBC]">⌕</span>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search room"
+              className="min-w-0 flex-1 bg-transparent text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC]"
+            />
+          </label>
           <button
             type="button"
             onClick={() => setRefreshKey((k) => k + 1)}
             title="Refresh"
-            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#174EA6] text-xl hover:bg-[#0F3D8C]"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg text-[#2F80ED] shadow-sm"
           >
             ↻
           </button>
@@ -241,23 +249,87 @@ export default function RoomsPage() {
               setCreateError("");
             }}
             title="Create Room"
-            className="flex w-12 items-center justify-center rounded-2xl border border-white/15 bg-[#0B2A5B] text-2xl hover:bg-[#0F3D8C]"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2F80ED] text-2xl text-white shadow-md"
           >
             +
           </button>
         </div>
 
+        {/* Hot now */}
+        <div className="flex items-center gap-3 rounded-3xl bg-gradient-to-r from-[#FBC9B6] to-[#FDE1D4] px-5 py-4 shadow-sm">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-[#B4533A]">Hot now</p>
+            <p data-notranslate className="truncate text-xl font-black text-[#5A2314]">
+              {hotName}
+            </p>
+            <p className="text-xs text-[#8A4A38]">{counts[hotName] ?? 0} people · active</p>
+          </div>
+          <Link href={roomHref(hotName)} className="rounded-full bg-white px-5 py-2 text-sm font-bold text-[#D9481E] shadow">
+            Join
+          </Link>
+        </div>
+
+        {/* Official games */}
+        <div>
+          <p className="mb-2 text-sm font-bold text-[#0B2A5B]">Official games</p>
+          <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1">
+            {OFFICIAL_GAME_ROOMS.map((name, i) => {
+              const c = GAME_COLORS[i % GAME_COLORS.length];
+              const n = counts[name] ?? 0;
+              const label = name.replace(/^\P{L}+/u, "").replace(/\s*Official$/i, "");
+              return (
+                <Link
+                  key={name}
+                  href={roomHref(name)}
+                  className="w-32 shrink-0 rounded-2xl border px-3 py-2.5 shadow-sm"
+                  style={{ backgroundColor: c.bg, borderColor: c.border }}
+                >
+                  <p data-notranslate className="truncate text-sm font-bold" style={{ color: c.text }}>
+                    {label}
+                  </p>
+                  <p className="text-[11px] text-[#6B7A99]">
+                    <span className={n > 0 ? "text-emerald-500" : "text-[#9AA8C2]"}>●</span> {n} playing
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Filter pills */}
+        <div className="flex gap-2 overflow-x-auto">
+          {(
+            [
+              ["all", "All"],
+              ["fav", "Favorites"],
+              ["recent", "Recent"],
+              ["mine", "My rooms"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setFilter(id)}
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold shadow-sm ${
+                filter === id ? "bg-[#2F80ED] text-white" : "bg-white text-[#0B2A5B]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {showCreate && (
           <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-2 sm:items-center"
+            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 sm:items-center"
             onClick={() => !creating && setShowCreate(false)}
           >
             <div
-              className="w-full max-w-md space-y-3 rounded-3xl border border-white/10 bg-[#0b1430] p-5"
+              className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-lg font-black">➕ Create a Chat Room</h2>
-              <p className="text-xs text-white/45">
+              <p className="text-xs text-[#5B6B8C]">
                 Level {MIN_LEVEL_TO_CREATE}+ · up to {MAX_ROOMS_PER_USER} rooms · you are Level {level || "…"}
                 {!isFounder && level >= MIN_LEVEL_TO_CREATE && ` · holds ${capacityForLevel(level)} people`}
               </p>
@@ -268,22 +340,22 @@ export default function RoomsPage() {
                   setCreateError("");
                 }}
                 placeholder={`Room name (${MIN_NAME}–${MAX_NAME} characters)`}
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-violet-400/60"
+                className="w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
               />
               <textarea
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
                 placeholder="Description"
                 rows={3}
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none placeholder:text-white/25 focus:border-violet-400/60"
+                className="w-full resize-none rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
               />
-              {createError && <p className="text-center text-sm text-red-300">{createError}</p>}
+              {createError && <p className="text-center text-sm text-rose-600">{createError}</p>}
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
                   disabled={creating}
-                  className="flex-1 rounded-xl border border-white/15 py-3 text-sm font-bold text-white/70"
+                  className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]"
                 >
                   Cancel
                 </button>
@@ -291,86 +363,63 @@ export default function RoomsPage() {
                   type="button"
                   onClick={create}
                   disabled={creating}
-                  className="flex-1 rounded-xl bg-violet-600 py-3 text-sm font-black disabled:opacity-50"
+                  className="flex-1 rounded-xl bg-[#2F80ED] py-3 text-sm font-black text-white disabled:opacity-50"
                 >
                   {creating ? "Creating…" : "Create"}
                 </button>
               </div>
-              <p className="text-center text-[11px] text-white/35">
+              <p className="text-center text-[11px] text-[#8A9BBC]">
                 In your room: /kick /ban /unban /lock /silence room /level /mod — type /modhelp
               </p>
             </div>
           </div>
         )}
 
-        {sections.map((sec) =>
-          sec.names.length === 0 && !(sec.id === "fav" && !q) ? null : (
-            <div key={sec.id} className="overflow-hidden rounded-3xl border border-white/15 bg-[#174EA6]/80">
-              <div
-                className="flex items-center gap-2 border-b border-white/10 bg-[#0F3D8C]/80 px-4 py-3"
-                style={{ boxShadow: `inset 5px 0 0 ${sec.accent}` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setClosed((c) => ({ ...c, [sec.id]: !c[sec.id] }))}
-                  className="flex flex-1 items-center gap-2 text-left"
-                >
-                  <span className="text-[15px] font-black uppercase tracking-wide">{sec.title}</span>
-                  {sec.names.length > 0 && (
-                    <span
-                      className="rounded-full px-2 text-xs font-black leading-5 text-neutral-900"
-                      style={{ backgroundColor: sec.accent }}
-                    >
-                      {sec.names.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRefreshKey((k) => k + 1)}
-                  title="Refresh"
-                  className="rounded-lg px-2 text-lg"
-                  style={{ color: sec.accent }}
-                >
-                  ↻
-                </button>
-                <span className="h-5 w-px bg-white/15" />
-                <button
-                  type="button"
-                  onClick={() => setClosed((c) => ({ ...c, [sec.id]: !c[sec.id] }))}
-                  className={`px-2 text-white/70 transition ${closed[sec.id] ? "rotate-180" : ""}`}
-                >
-                  ⌃
-                </button>
-              </div>
-              {!closed[sec.id] && (
-                <ul className="p-2">
-                  {sec.names.length === 0 && <li className="px-3 py-3 text-sm text-white/45">{sec.empty}</li>}
-                  {sec.names.map((name) => (
-                    <RoomRow
-                      key={name}
-                      name={name}
-                      count={counts[name]}
-                      max={maxes[name] || byName.get(name)?.maxUsers || 50}
-                      mine={byName.get(name)?.ownerUid === user.uid}
-                      favorite={favorites.includes(name)}
-                      onStar={() => toggleFavorite(name)}
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
-          )
-        )}
+        {/* Room list */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setListOpen((v) => !v)}
+            className="flex w-full items-center gap-2 rounded-xl bg-[#E4EEFB] px-3 py-2 text-left"
+          >
+            <span className="text-sm font-bold text-[#0B2A5B]">{list.title}</span>
+            <span className="rounded-full bg-white px-2 text-xs font-bold leading-5 text-[#5B6B8C]">{list.names.length}</span>
+            <span className={`ml-auto text-[#5B6B8C] transition ${listOpen ? "" : "rotate-180"}`}>▴</span>
+          </button>
+          {listOpen && (
+            <ul className="mt-2 space-y-2">
+              {list.names.length === 0 && <li className="px-3 py-3 text-sm text-[#5B6B8C]">{list.empty}</li>}
+              {list.names.map((name) => (
+                <RoomRow
+                  key={name}
+                  name={name}
+                  subtitle={subtitle(name)}
+                  count={counts[name]}
+                  max={maxes[name] || byName.get(name)?.maxUsers || 50}
+                  mine={byName.get(name)?.ownerUid === user.uid}
+                  favorite={favorites.includes(name)}
+                  onStar={() => toggleFavorite(name)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
     </PageShell>
   );
 }
 
-const AVATAR_COLORS = ["#8E24AA", "#F57C00", "#43A047", "#3949AB", "#E53935", "#00897B", "#6D4C41"];
+const GAME_COLORS = [
+  { bg: "#E6F7EC", border: "#B7E4C7", text: "#1E8C4E" },
+  { bg: "#FDE7EF", border: "#F6BFD2", text: "#C2185B" },
+  { bg: "#E6F0FD", border: "#BFD7F7", text: "#1E63C7" },
+  { bg: "#FFF3E0", border: "#FFD9A8", text: "#D9730D" },
+  { bg: "#F1E8FD", border: "#D9C4F7", text: "#7B3FC7" },
+];
 
 function RoomRow({
   name,
+  subtitle,
   count,
   max,
   mine,
@@ -378,37 +427,33 @@ function RoomRow({
   onStar,
 }: {
   name: string;
+  subtitle: string;
   count: number | undefined;
   max: number;
   mine: boolean;
   favorite: boolean;
   onStar: () => void;
 }) {
-  // Rooms whose name starts with an emoji show that emoji; others a coloured letter.
-  const first = Array.from(name.trim())[0] || "?";
-  const isEmoji = /\p{Extended_Pictographic}/u.test(first);
-  const label = isEmoji ? name.trim().slice(first.length).trim() : name;
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const n = count ?? 0;
-  const busy = n > 0 && n >= Math.max(1, max * 0.2);
   return (
     <li>
-      <Link href={roomHref(name)} className="flex items-center gap-3 rounded-xl px-2 py-2 hover:bg-white/5">
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-base font-black"
-          style={{ backgroundColor: isEmoji ? "#F57C00" : AVATAR_COLORS[h % AVATAR_COLORS.length] }}
-        >
-          {isEmoji ? first : first.toUpperCase()}
+      <Link
+        href={roomHref(name)}
+        className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-4 py-3 shadow-sm hover:bg-[#F4F9FF]"
+      >
+        <span className="min-w-0 flex-1">
+          <span data-notranslate className="flex items-center gap-1.5 font-bold text-[#0B2A5B]">
+            <span className="truncate">{name}</span>
+            {mine && <span className="text-sm">👑</span>}
+            <span className={`h-2 w-2 shrink-0 rounded-full ${n > 0 ? "bg-emerald-500" : "bg-[#C5D0E0]"}`} />
+          </span>
+          <span data-notranslate className="block truncate text-xs text-[#6B7A99]">
+            {subtitle}
+          </span>
         </span>
-        <span data-notranslate className="min-w-0 flex-1 truncate font-bold">
-          {label}
-          {mine && <span className="ml-1.5 text-sm">👑</span>}
-        </span>
-        <span className="shrink-0 text-sm font-bold text-amber-400">
+        <span className="shrink-0 text-sm font-semibold text-[#0B2A5B]">
           {count === undefined ? "…" : n}/{max}
         </span>
-        <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${busy ? "bg-orange-400" : n > 0 ? "bg-emerald-400" : "bg-white/30"}`} />
         <button
           type="button"
           onClick={(e) => {
@@ -416,7 +461,7 @@ function RoomRow({
             onStar();
           }}
           aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-          className={`shrink-0 px-1 text-xl ${favorite ? "text-amber-400" : "text-white/50 hover:text-white"}`}
+          className={`shrink-0 px-1 text-xl ${favorite ? "text-amber-400" : "text-[#B5C2D6] hover:text-amber-400"}`}
         >
           {favorite ? "★" : "☆"}
         </button>
