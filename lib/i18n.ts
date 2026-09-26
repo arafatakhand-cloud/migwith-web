@@ -74,6 +74,9 @@ export const BN: Record<string, string> = {
   "Something went wrong. Please try again.": "কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।",
 
   // App-style home / menu / rooms
+  "Game List": "গেম তালিকা",
+  "Share App": "অ্যাপ শেয়ার",
+  Settings: "সেটিংস",
   Recent: "সাম্প্রতিক",
   "My Profile": "আমার প্রোফাইল",
   "My Account": "আমার অ্যাকাউন্ট",

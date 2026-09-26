@@ -69,22 +69,37 @@ export function TopBar() {
 
   const onHome = pathname === "/";
   const onRooms = pathname.startsWith("/room");
-  const tab = (active: boolean, activeColor: string) =>
+  // Like the app: the open tab is blue with a light ring; away from Home, the Home tab is green.
+  const tab = (active: boolean, idle: string) =>
     `relative flex h-11 w-12 items-center justify-center rounded-xl text-xl transition ${
-      active ? `${activeColor} ring-1 ring-white/30 shadow-lg` : "text-white/80 hover:bg-white/10"
+      active ? "bg-[#3A6FD0] ring-2 ring-sky-200/70 shadow-lg" : idle
     }`;
 
+  // Same order as the app's side menu.
   const links: [string, string, string, number][] = [
     ["/", "🏠", "Home", 0],
-    ["/rooms", "💬", "Rooms", 0],
-    ["/messages", "✉️", "Messages", badges.messages],
-    ["/friends", "👥", "Friends", badges.requests],
-    ["/alerts", "🔔", "Alerts", badges.alerts],
     ["/profile/me", "👤", "My Profile", 0],
-    ["/wallet", "💰", "My Account", 0],
+    ["/wallet", "💳", "My Account", 0],
+    ["/friends", "👥", "Friends", badges.requests],
+    ["/messages", "✉️", "Messages", badges.messages],
+    ["/alerts", "🔔", "Alerts", badges.alerts],
+    ["/rooms", "🎮", "Game List", 0],
     ["/leaderboard", "🏆", "Leader Board", 0],
-    ["/security", "🔐", "Security", 0],
+    ["/security", "⚙️", "Settings", 0],
   ];
+
+  const shareApp = async () => {
+    const data = { title: "MIGwith", text: "Chat, gifts and games on MIGwith", url: window.location.origin };
+    try {
+      if (navigator.share) await navigator.share(data);
+      else {
+        await navigator.clipboard.writeText(data.url);
+        alert("Link copied: " + data.url);
+      }
+    } catch {
+      // share sheet closed
+    }
+  };
 
   return (
     <>
@@ -98,10 +113,10 @@ export function TopBar() {
           ☰
           <Badge n={badges.messages + badges.requests} />
         </button>
-        <Link href="/" aria-label="Home" className={tab(onHome, "bg-[#2E6B45]")}>
+        <Link href="/" aria-label="Home" className={tab(onHome, "bg-[#2E7D4F] hover:bg-[#35905b]")}>
           🏠
         </Link>
-        <Link href="/rooms" aria-label="Rooms" className={tab(onRooms, "bg-[#3A5BB0]")}>
+        <Link href="/rooms" aria-label="Rooms" className={tab(onRooms, "text-white/85 hover:bg-white/10")}>
           💬
         </Link>
         <span className="mx-1 h-8 w-px bg-white/15" />
@@ -180,13 +195,15 @@ export function TopBar() {
                 </Link>
               </div>
             </div>
-            <ul className="mt-3 flex-1 space-y-1">
+            <ul className="mt-3 space-y-1">
               {links.map(([href, icon, label, n]) => (
                 <li key={href}>
                   <Link
                     href={href}
-                    className={`flex items-center gap-4 rounded-xl px-2 py-2 text-base font-semibold transition ${
-                      pathname === href ? "bg-white/10 text-white" : "text-white/90 hover:bg-white/5"
+                    className={`flex items-center gap-4 rounded-2xl px-2 py-2 text-base font-semibold transition ${
+                      pathname === href
+                        ? "border border-sky-300/60 bg-[#2F63C4] text-white shadow-lg"
+                        : "border border-transparent text-white/90 hover:bg-white/5"
                     }`}
                   >
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F3D8C] text-lg">{icon}</span>
@@ -200,11 +217,19 @@ export function TopBar() {
             </ul>
             <button
               type="button"
+              onClick={shareApp}
+              className="mt-1 flex items-center gap-4 rounded-2xl px-2 py-2 text-left text-base font-semibold text-white/90 hover:bg-white/5"
+            >
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0F3D8C] text-lg">🔗</span>
+              <span>Share App</span>
+            </button>
+            <button
+              type="button"
               onClick={async () => {
                 await detachPushForLogout();
                 await signOut(auth);
               }}
-              className="-mx-4 -mb-4 mt-4 flex items-center gap-4 border-t border-rose-500/30 bg-[#2a1a2e] px-6 py-4 text-left text-lg font-bold text-rose-400 hover:bg-[#351f37]"
+              className="-mx-4 -mb-4 mt-auto flex items-center gap-4 border-t border-rose-500/30 bg-[#2a1a2e] px-6 py-4 text-left text-lg font-bold text-rose-400 hover:bg-[#351f37]"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-900/60 text-lg">⎋</span>
               <span className="flex-1">Logout</span>
