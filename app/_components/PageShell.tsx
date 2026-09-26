@@ -18,7 +18,7 @@ export function PageShell({
         light ? "bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] text-[#0B2A5B]" : "bg-sky-app text-white"
       }`}
     >
-      <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white/95 shadow-sm backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
         <TopBar />
       </header>
 

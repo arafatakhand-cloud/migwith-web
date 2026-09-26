@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
@@ -226,8 +227,9 @@ export function TopBar() {
         </div>
       </div>
 
-      {/* Side menu */}
-      {open && (
+      {/* Side menu — in <body>, so nothing in the header can box it in */}
+      {open &&
+        createPortal(
         <div className="fixed inset-0 z-50" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/40" />
           <nav
@@ -326,8 +328,9 @@ export function TopBar() {
             </button>
             <p className="mt-2 text-center text-[10px] text-[#35507E]">MIGwith Web</p>
           </nav>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 }
