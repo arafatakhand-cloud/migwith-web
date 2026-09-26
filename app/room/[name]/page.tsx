@@ -29,6 +29,12 @@ import {
   presenceLine,
 } from "../../../lib/rooms";
 import { PageShell } from "../../_components/PageShell";
+import {
+  GiftPanel,
+  loadGiftCatalog,
+  type Gift,
+  type GiftResult,
+} from "../../_components/GiftPanel";
 
 type ChatMessage = {
   id: string;
@@ -38,6 +44,7 @@ type ChatMessage = {
   senderUid: string;
   imageUrl: string;
   audioUrl: string;
+  giftName: string;
   createdAtMs: number;
   local?: boolean;
 };
@@ -77,6 +84,8 @@ export default function RoomPage() {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [giftTarget, setGiftTarget] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
@@ -92,6 +101,7 @@ export default function RoomPage() {
         senderUid: "",
         imageUrl: "",
         audioUrl: "",
+        giftName: "",
         createdAtMs: Date.now(),
         local: true,
       },
@@ -118,6 +128,14 @@ export default function RoomPage() {
         console.error(err);
         setBlocked("Could not load your profile. Please try again.");
       });
+  }, [user]);
+
+  // Gift catalog (for the gift panel and gift pictures in the chat).
+  useEffect(() => {
+    if (!user) return;
+    loadGiftCatalog()
+      .then(setGifts)
+      .catch((err) => console.error(err));
   }, [user]);
 
   // Entry level lock (rooms/{room}.lockLevel).
@@ -153,6 +171,7 @@ export default function RoomPage() {
             senderUid: String(d.get("senderUid") || ""),
             imageUrl: String(d.get("imageUrl") || ""),
             audioUrl: String(d.get("audioUrl") || ""),
+            giftName: String(d.get("giftName") || ""),
             // Pending (just-sent) messages have no server time yet.
             createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
           }))
@@ -367,6 +386,35 @@ export default function RoomPage() {
     }
   };
 
+  // After the server took the coins, announce the gift in the room exactly the
+  // way the app does ("<<name [level] gives a Rose 🌹 to friend[12]!>>").
+  const announceGift = (r: GiftResult) => {
+    if (!user || !profile) return;
+    const recipientLevel = roomUsers.find(
+      (u) => u.username.toLowerCase() === r.recipient.toLowerCase()
+    )?.level;
+    const tag = recipientLevel !== undefined ? `[${recipientLevel}]` : "";
+    const suffix = r.message ? ` — "${r.message}"` : "";
+    addDoc(collection(db, "room_messages", roomName, "messages"), {
+      text: `<<${profile.username} [${profile.level}] gives a ${r.giftName} ${r.giftIcon} to ${r.recipient}${tag}!>>${suffix}`,
+      sender: profile.username,
+      senderUid: user.uid,
+      type: "gift",
+      giftName: r.giftName,
+      createdAt: serverTimestamp(),
+      clientCreatedAt: Date.now(),
+    }).catch((err) => {
+      console.error(err);
+      note(`🎁 ${r.giftName} was sent, but the room message failed.`);
+    });
+    stickToBottom.current = true;
+  };
+
+  const giftImages = useMemo(
+    () => new Map(gifts.map((g) => [g.name.toLowerCase(), g.imageUrl])),
+    [gifts]
+  );
+
   if (loading || !user) {
     return (
       <PageShell>
@@ -428,12 +476,25 @@ export default function RoomPage() {
                 <p className="py-10 text-center text-sm text-white/30">No messages yet — say hi 👋</p>
               )}
               {shown.map((m) => (
-                <MessageRow key={m.id} m={m} mine={m.senderUid === user.uid} />
+                <MessageRow
+                  key={m.id}
+                  m={m}
+                  mine={m.senderUid === user.uid}
+                  giftImage={giftImages.get(m.giftName.toLowerCase()) || ""}
+                />
               ))}
             </div>
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">
+              <button
+                type="button"
+                onClick={() => setGiftTarget("")}
+                title="Send a gift"
+                className="rounded-xl border border-pink-400/30 bg-pink-500/10 px-3 text-lg hover:bg-pink-500/20"
+              >
+                🎁
+              </button>
               <input
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -471,17 +532,42 @@ export default function RoomPage() {
                   <span>{badgeForLevel(u.level)}</span>
                   <span className="truncate font-semibold">{u.username}</span>
                   <span className="ml-auto text-xs text-white/35">{u.level}</span>
+                  {u.uid !== user.uid && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGiftTarget(u.username);
+                        setShowUsers(false);
+                      }}
+                      title={`Send ${u.username} a gift`}
+                      className="text-sm opacity-60 hover:opacity-100"
+                    >
+                      🎁
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
           </aside>
         </div>
       </div>
+
+      {giftTarget !== null && (
+        <GiftPanel
+          roomId={roomName}
+          uid={user.uid}
+          gifts={gifts}
+          people={roomUsers.filter((u) => u.uid !== user.uid).map((u) => u.username)}
+          initialTarget={giftTarget}
+          onClose={() => setGiftTarget(null)}
+          onSent={announceGift}
+        />
+      )}
     </PageShell>
   );
 }
 
-function MessageRow({ m, mine }: { m: ChatMessage; mine: boolean }) {
+function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; giftImage: string }) {
   const time = timeLabel(m.createdAtMs);
 
   if (m.type === "room_entry" || m.type === "room_leave") {
@@ -504,12 +590,26 @@ function MessageRow({ m, mine }: { m: ChatMessage; mine: boolean }) {
     );
   }
 
+  if (m.type === "gift") {
+    const clean = m.text.replace(/^<</, "").replace(/>>/, "");
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-xl border border-pink-400/30 bg-pink-500/10 px-3 py-2 text-center text-sm font-semibold text-pink-200">
+        {giftImage && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={giftImage} alt={m.giftName} className="h-8 w-8 object-contain" />
+        )}
+        <span className="whitespace-pre-wrap break-words">{clean}</span>
+        {time && <span className="text-[10px] font-normal text-white/25">{time}</span>}
+      </div>
+    );
+  }
+
   // "username: message" → bold name, then the message.
   const split = m.sender && m.text.startsWith(`${m.sender}: `);
   const body = split ? m.text.slice(m.sender.length + 2) : m.text;
 
   return (
-    <div className={`rounded-xl px-3 py-1.5 text-sm ${mine ? "bg-blue-500/15" : "bg-white/[0.04]"} ${m.type === "gift" ? "border border-pink-400/30 bg-pink-500/10" : ""}`}>
+    <div className={`rounded-xl px-3 py-1.5 text-sm ${mine ? "bg-blue-500/15" : "bg-white/[0.04]"}`}>
       {split && (
         <span className={`mr-1 font-bold ${mine ? "text-cyan-300" : "text-blue-300"}`}>{m.sender}:</span>
       )}
