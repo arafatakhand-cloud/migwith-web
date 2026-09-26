@@ -27,7 +27,7 @@ export function HeaderAuth() {
         <LanguageToggle />
         <Link
         href="/login"
-        className="rounded-xl border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold backdrop-blur transition hover:bg-white/10"
+        className="rounded-xl bg-[#2F80ED] px-5 py-2.5 text-sm font-bold text-white shadow transition hover:bg-[#1f6fd8]"
       >
         Login
       </Link>

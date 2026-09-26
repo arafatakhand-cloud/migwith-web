@@ -18,7 +18,7 @@ export function LanguageToggle() {
         window.location.reload();
       }}
       title={lang === "bn" ? "Switch to English" : "বাংলায় দেখুন"}
-      className="rounded-xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs font-bold text-white/80 transition hover:bg-white/10"
+      className="rounded-xl border border-[#BFD7F2] bg-white px-2.5 py-1.5 text-xs font-bold text-[#0B2A5B] transition hover:bg-[#E3F0FD]"
     >
       {lang === "bn" ? "EN" : "বাংলা"}
     </button>
