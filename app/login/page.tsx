@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -9,7 +9,10 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../../lib/firebase";
+
+const INVISIBLE_KEY = "migwith.loginInvisible";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +21,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  // "Login as Invisible", remembered like the app's checkbox.
+  const [invisible, setInvisible] = useState(false);
+  useEffect(() => {
+    try {
+      setInvisible(localStorage.getItem(INVISIBLE_KEY) === "1");
+    } catch {
+      // storage blocked
+    }
+  }, []);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,11 +57,23 @@ export default function LoginPage() {
           : browserSessionPersistence
       );
 
-      await signInWithEmailAndPassword(
+      const cred = await signInWithEmailAndPassword(
         auth,
         authEmail,
         password
       );
+
+      // Same as the app: every login writes isInvisible (checked or not) and
+      // presenceStatus ONLINE, or OFFLINE when logging in as Invisible.
+      try {
+        localStorage.setItem(INVISIBLE_KEY, invisible ? "1" : "0");
+      } catch {
+        // storage blocked
+      }
+      await updateDoc(doc(db, "users", cred.user.uid), {
+        isInvisible: invisible,
+        presenceStatus: invisible ? "OFFLINE" : "ONLINE",
+      }).catch((err) => console.error("presence on login failed", err));
 
       router.push("/");
       router.refresh();
@@ -147,15 +171,26 @@ export default function LoginPage() {
           {loading ? "…" : "Go!"}
         </button>
 
-        <label className="mt-6 flex cursor-pointer items-center gap-3 self-start text-base text-white/90">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            className="h-7 w-7 rounded accent-[#E0762A]"
-          />
-          Remember me
-        </label>
+        <div className="mt-6 flex w-full items-center justify-between gap-3 text-base text-white/90">
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-7 w-7 rounded accent-[#E0762A]"
+            />
+            Remember me
+          </label>
+          <label className="flex cursor-pointer items-center gap-3">
+            <input
+              type="checkbox"
+              checked={invisible}
+              onChange={(e) => setInvisible(e.target.checked)}
+              className="h-7 w-7 rounded accent-[#E0762A]"
+            />
+            Login as Invisible
+          </label>
+        </div>
 
         <p className="mt-auto pt-12 text-center text-sm text-white/80">
           New to MIGwith? Create your MIG ID in the MIGwith app.

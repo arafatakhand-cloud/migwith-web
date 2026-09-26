@@ -17,6 +17,7 @@ import {
 import { db } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
+import { EmojiPicker } from "../../_components/EmojiPicker";
 import { PageShell } from "../../_components/PageShell";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift, type GiftResult } from "../../_components/GiftPanel";
@@ -64,6 +65,7 @@ export default function PrivateChatPage() {
   const [uploading, setUploading] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const stickToBottom = useRef(true);
 
   const chatId = useMemo(
@@ -339,7 +341,9 @@ export default function PrivateChatPage() {
                 }}
               />
             </label>
+            <EmojiPicker inputRef={inputRef} value={text} onChange={(v) => setText(v.slice(0, 2000))} />
             <input
+              ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {

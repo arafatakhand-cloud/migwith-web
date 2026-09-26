@@ -29,6 +29,7 @@ import {
   newVisitId,
   presenceLine,
 } from "../../../lib/rooms";
+import { EmojiPicker } from "../../_components/EmojiPicker";
 import { PageShell } from "../../_components/PageShell";
 import {
   GiftPanel,
@@ -83,7 +84,10 @@ type ChatMessage = {
 
 type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number };
 
-type Profile = { username: string; level: number; badge: string; role: string };
+// invisible: logged in as Invisible (users.isInvisible) — no presence doc,
+// no heartbeat, no "has entered/left". quiet: that, or Presence Status
+// "INVISIBLE", which still writes presence but hides the announcements.
+type Profile = { username: string; level: number; badge: string; role: string; invisible: boolean; quiet: boolean };
 
 // A leave that is about to run for a room. Re-entering the same room right away
 // (React re-mount, quick navigation back) cancels it instead of posting
@@ -132,6 +136,7 @@ export default function RoomPage() {
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const stickToBottom = useRef(true);
 
   const note = (t: string) =>
@@ -182,6 +187,8 @@ export default function RoomPage() {
           level,
           badge: String(snap.get("levelBadgeIcon") || badgeForLevel(level)),
           role: normRole(snap.get("role")),
+          invisible: snap.get("isInvisible") === true,
+          quiet: snap.get("isInvisible") === true || String(snap.get("presenceStatus") || "").toUpperCase() === "INVISIBLE",
         });
       })
       .catch((err) => {
@@ -351,7 +358,9 @@ export default function RoomPage() {
     const leave = () => {
       if (left) return;
       left = true;
+      if (profile.invisible) return;
       deleteDoc(presenceRef).catch(() => {});
+      if (profile.quiet) return;
       setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, visitId)), {
         text: presenceLine(roomName, profile.username, profile.level, false),
         sender: profile.username,
@@ -362,6 +371,11 @@ export default function RoomPage() {
     };
 
     (async () => {
+      // Invisible: read the room without showing up in it (same as the app).
+      if (profile.invisible) {
+        rememberRecentRoom(roomName);
+        return;
+      }
       let alreadyHere = resumed;
       try {
         const existing = await getDoc(presenceRef);
@@ -426,7 +440,7 @@ export default function RoomPage() {
 
       rememberRecentRoom(roomName);
 
-      if (!alreadyHere && !left) {
+      if (!alreadyHere && !left && !profile.quiet) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true),
           sender: profile.username,
@@ -847,7 +861,9 @@ export default function RoomPage() {
               />
               {!voiceActive && (
                 <>
+                  <EmojiPicker inputRef={inputRef} value={text} onChange={setText} disabled={!profile} />
                   <input
+                    ref={inputRef}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => {
