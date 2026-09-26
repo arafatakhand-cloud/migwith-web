@@ -56,9 +56,13 @@ export function HeroActions() {
           Welcome, <span className="text-cyan-300">{username}</span> 👋
         </div>
 
-        <p className="text-sm text-white/45">
-          You&apos;re logged in to MIGwith.
-        </p>
+        <Link
+          href="/rooms"
+          className="group flex w-full max-w-xs items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 px-8 py-4 font-bold text-white shadow-xl shadow-blue-500/25 transition duration-300 hover:scale-[1.02]"
+        >
+          💬 Enter Chat Rooms
+          <span className="ml-2 transition group-hover:translate-x-1">→</span>
+        </Link>
       </div>
     );
   }
