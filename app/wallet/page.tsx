@@ -394,7 +394,10 @@ export default function WalletPage() {
               {busy ? "Sending…" : `Send${Number(amount) > 0 ? ` ${Number(amount).toLocaleString()} coins` : ""}`}
             </button>
             <p className="text-center text-xs text-white/35">
-              Forgot your PIN or want to change it? Use the MIGwith app.
+              Forgot your PIN or want to change it?{" "}
+              <Link href="/security" className="font-semibold text-cyan-300 hover:underline">
+                🔐 Security PIN
+              </Link>
             </p>
           </div>
         )}
