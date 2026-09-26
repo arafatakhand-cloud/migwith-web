@@ -35,6 +35,7 @@ import {
   ProgramBar,
   spendBetween,
   todayStr,
+  trailReport,
   uidsFor,
 } from "../_components/ProgramShared";
 
@@ -476,7 +477,11 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
     setData(null);
     setError("");
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Loading took too long. Tap ⟳ to try again.")), 40_000));
-    Promise.race([trailForDay(me, day), timeout])
+    const load = trailReport("mentor", day, async () => {
+      const r = await trailForDay(me, day);
+      return { direct: r.direct, merchantSourced: r.merchant, total: 0 };
+    }).then((r) => ({ direct: r.direct || [], merchant: r.merchantSourced || [] }));
+    Promise.race([load, timeout])
       .then((r) => !cancelled && setData(r))
       .catch((e) => {
         if (cancelled) return;

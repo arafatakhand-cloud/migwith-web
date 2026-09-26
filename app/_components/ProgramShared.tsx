@@ -14,6 +14,31 @@ const syncLuxuryBetEarnings = httpsCallable<{ beneficiaryType: string; username:
   "syncLuxuryBetEarnings"
 );
 
+export type TrailRow = { username: string; spend: number; earning: number; rate?: number };
+type TrailReport = { direct?: TrailRow[]; merchantSourced?: TrailRow[]; rows?: TrailRow[]; total: number };
+const getTrailReport = httpsCallable<{ beneficiaryType: "mentor" | "merchant"; date: string }, TrailReport>(
+  functions,
+  "getTrailReport"
+);
+
+/** A day's trail worked out on the server (getTrailReport), which can read
+ *  the tagged users' spend; if that function isn't there yet, `fallback`
+ *  works it out in the browser as before. */
+export async function trailReport(
+  beneficiaryType: "mentor" | "merchant",
+  date: string,
+  fallback: () => Promise<TrailReport>
+): Promise<TrailReport> {
+  try {
+    return (await getTrailReport({ beneficiaryType, date })).data;
+  } catch (e: any) {
+    // Only a missing function falls back; a real server error is shown.
+    const code = String(e?.code || "");
+    if (code.endsWith("not-found") || code.endsWith("unimplemented") || code.endsWith("internal")) return fallback();
+    throw e;
+  }
+}
+
 export const DAY = 86_400_000;
 export const lc = (s: string) => s.trim().toLowerCase();
 export const toMs = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);

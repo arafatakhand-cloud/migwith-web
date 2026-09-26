@@ -31,6 +31,7 @@ import {
   spendBetween,
   todayStr,
   toMs,
+  trailReport,
   uidsFor,
 } from "../_components/ProgramShared";
 
@@ -45,8 +46,14 @@ import {
 const RATE = 2.5;
 type Row = { username: string; spend: number; earning: number };
 
-// One day's 2.5% trail, same as the app's fetchMerchantTrailForDate.
+// One day's 2.5% trail: from the server (getTrailReport), else worked out here.
 async function merchantTrailForDay(me: string, day: string): Promise<Row[]> {
+  const r = await trailReport("merchant", day, async () => ({ rows: await merchantTrailInBrowser(me, day), total: 0 }));
+  return r.rows || [];
+}
+
+// Same as the app's fetchMerchantTrailForDate (needs read access to the users' spend).
+async function merchantTrailInBrowser(me: string, day: string): Promise<Row[]> {
   const { start, end } = dayRange(day);
   const snap = await getDocs(query(collection(db, "merchant_tagged"), where("merchantUsername", "==", me), where("status", "==", "active")));
   const tagged = snap.docs
