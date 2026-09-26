@@ -43,6 +43,7 @@ import {
   teenPattiHandleCommand,
   useTeenPatti,
 } from "../../_components/TeenPatti";
+import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../../_components/CricketGame";
 
 type ChatMessage = {
   id: string;
@@ -121,6 +122,8 @@ export default function RoomPage() {
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
   // 🎴 Teen Patti table (only in the Teen Patti room).
   const teenPatti = useTeenPatti(roomName === TEEN_PATTI_ROOM, user?.uid, note);
+  // 🏏 Cricket (only in the Cricket room).
+  const cricket = useCricket(roomName === CRICKET_ROOM, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -377,6 +380,11 @@ export default function RoomPage() {
       return;
     }
 
+    if (cricket && cricketHandleCommand(cricket, clean, note, 200)) {
+      setText("");
+      return;
+    }
+
     if (teenPatti && teenPattiHandleCommand(teenPatti, clean, note, 200)) {
       setText("");
       return;
@@ -520,6 +528,7 @@ export default function RoomPage() {
             {luxury && <LuxuryBetBox state={luxury} note={note} />}
             {royale && <RoyaleTable state={royale} />}
             {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
+            {cricket && <CricketBox state={cricket} uid={user.uid} />}
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">
