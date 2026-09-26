@@ -69,7 +69,7 @@ export function TopBar() {
   orderRef.current = { order, here };
   useEffect(() => {
     if (!uid) return;
-    let start: { x: number; y: number; t: number } | null = null;
+    let start: { x: number; y: number; t: number; reply: boolean } | null = null;
     const onStart = (e: TouchEvent) => {
       const el = e.target as Element | null;
       // Leave sideways scrollers, text boxes and game tables alone.
@@ -83,14 +83,17 @@ export function TopBar() {
         start = null;
         return;
       }
-      start = { x, y: e.touches[0].clientY, t: Date.now() };
+      // A right-swipe on someone's message is swipe-to-reply (the room page handles it).
+      start = { x, y: e.touches[0].clientY, t: Date.now(), reply: !!el?.closest("[data-swipe-reply]") };
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
       const dx = e.changedTouches[0].clientX - start.x;
       const dy = e.changedTouches[0].clientY - start.y;
       const quick = Date.now() - start.t < 700;
+      const onMessage = start.reply;
       start = null;
+      if (onMessage && dx > 0) return;
       if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
       const { order, here } = orderRef.current;
       const i = order.indexOf(here);

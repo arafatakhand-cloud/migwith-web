@@ -24,6 +24,7 @@ export function ChatBar({
   photo,
   voice,
   voiceActive,
+  reply,
 }: {
   text: string;
   setText: (v: string) => void;
@@ -39,6 +40,8 @@ export function ChatBar({
   /** The <VoiceRecorder>; while it records it takes over the row. */
   voice: React.ReactNode;
   voiceActive: boolean;
+  /** Replying to someone (swipe right on their message): shown above the bar. */
+  reply?: { sender: string; snippet: string; onCancel: () => void } | null;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
@@ -53,6 +56,23 @@ export function ChatBar({
   }, [moreOpen]);
 
   return (
+    <div>
+    {reply && (
+      <div className="flex items-center gap-2 border-l-[3px] border-[#2F80ED] bg-[#F3F5F9] px-3 py-2">
+        <span className="text-base text-[#2F80ED]">↩</span>
+        <div className="min-w-0 flex-1">
+          <p data-notranslate className="truncate text-[13px] font-bold text-[#2F80ED]">
+            {reply.sender}
+          </p>
+          <p data-notranslate className="truncate text-xs text-[#6B7A99]">
+            {reply.snippet}
+          </p>
+        </div>
+        <button type="button" onClick={reply.onCancel} aria-label="Cancel reply" className="px-1 text-sm text-[#6B7A99]">
+          ✕
+        </button>
+      </div>
+    )}
     <div className="flex items-center gap-1.5 rounded-t-[28px] bg-[#0B1F3A] px-2 pt-2 pb-safe sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
@@ -140,6 +160,7 @@ export function ChatBar({
           </button>
         </>
       )}
+    </div>
     </div>
   );
 }

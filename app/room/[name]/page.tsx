@@ -31,6 +31,7 @@ import {
   roomHref,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
+import { SwipeToReply } from "../../_components/SwipeToReply";
 import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { PageShell } from "../../_components/PageShell";
 import {
@@ -132,6 +133,8 @@ export default function RoomPage() {
   const [voiceActive, setVoiceActive] = useState(false);
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState("");
+  // Swipe right on someone's message to reply (same "↩ name: snippet" quote the app writes).
+  const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
   const [gifts, setGifts] = useState<Gift[]>([]);
@@ -697,7 +700,7 @@ export default function RoomPage() {
     setSending(true);
     try {
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
-        text: `${profile.username}: ${clean}`,
+        text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet}\n` : ""}${clean}`,
         sender: profile.username,
         senderUid: user.uid,
         type: "chat",
@@ -706,6 +709,7 @@ export default function RoomPage() {
         clientCreatedAt: Date.now(),
       });
       setText("");
+      setReplyTo(null);
       stickToBottom.current = true;
     } catch (err) {
       console.error(err);
@@ -848,6 +852,10 @@ export default function RoomPage() {
                   m={m}
                   mine={m.senderUid === user.uid}
                   giftImage={giftImages.get(m.giftName.toLowerCase()) || ""}
+                  onReply={(sender, snippet) => {
+                    setReplyTo({ sender, snippet });
+                    inputRef.current?.focus();
+                  }}
                 />
               ))}
             </div>
@@ -891,6 +899,7 @@ export default function RoomPage() {
                 />
               }
               voiceActive={voiceActive}
+              reply={replyTo && { ...replyTo, onCancel: () => setReplyTo(null) }}
             />
           </div>
 
@@ -996,13 +1005,30 @@ export default function RoomPage() {
   );
 }
 
-function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; giftImage: string }) {
+function MessageRow({
+  m,
+  mine,
+  giftImage,
+  onReply,
+}: {
+  m: ChatMessage;
+  mine: boolean;
+  giftImage: string;
+  onReply: (sender: string, snippet: string) => void;
+}) {
   const time = timeLabel(m.createdAtMs);
+  const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
 
+  // "Bangladesh: imran [25] has entered." — on the left, room name in orange.
   if (m.type === "room_entry" || m.type === "room_leave") {
+    const colon = m.text.indexOf(": ");
     return (
-      <p className={`text-center text-xs ${m.type === "room_entry" ? "text-emerald-700" : "text-[#6B7A99]"}`}>
-        {m.text}
+      <p className="px-1 text-left text-[13px] leading-snug">
+        {colon > 0 && <span className="font-semibold text-[#E6731E]">{m.text.slice(0, colon + 1)} </span>}
+        <span className={m.type === "room_entry" ? "text-[#0B2A5B]" : "text-[#6B7A99]"}>
+          {colon > 0 ? m.text.slice(colon + 2) : m.text}
+        </span>
+        {stamp}
       </p>
     );
   }
@@ -1060,33 +1086,71 @@ function MessageRow({ m, mine, giftImage }: { m: ChatMessage; mine: boolean; gif
   // Plain lines, no bubbles: other people's messages on the left as
   // "name: message", mine on the right (no name). Tiny time after the text.
   const split = m.sender && m.text.startsWith(`${m.sender}: `);
-  const body = split ? m.text.slice(m.sender.length + 2) : m.text;
-  const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  let body = split ? m.text.slice(m.sender.length + 2) : m.text;
+
+  // Lucky voucher drops (written by the server, no "name:" in front): small pink line.
+  if (!split && /voucher/i.test(m.text)) {
+    return (
+      <p className="px-1 text-left text-[13px] leading-snug text-[#E8327E]">
+        {m.text}
+        {stamp}
+      </p>
+    );
+  }
+
+  // A reply starts with the quoted line the app writes: "↩ name: snippet\n".
+  let quote: string | null = null;
+  if (body.startsWith("↩ ") && body.includes("\n")) {
+    quote = body.slice(2, body.indexOf("\n"));
+    body = body.slice(body.indexOf("\n") + 1);
+  }
+
+  // Swipe right on someone else's message (not bots) to reply to it.
+  const canReply = !mine && !!split && !/ Bot$/.test(m.sender);
+  const snippet =
+    m.type === "image" && m.imageUrl
+      ? "📷 Photo"
+      : m.type === "voice" && m.audioUrl
+        ? "🎤 Voice message"
+        : body.length > 60
+          ? body.slice(0, 60) + "…"
+          : body;
 
   return (
-    <div className={`flex px-1 ${mine ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[85%] text-[15px] leading-snug ${mine ? "text-right" : "text-left"}`}>
-        {!mine && split && <span className="mr-1 font-bold text-[#174EA6]">{m.sender}:</span>}
-        {m.type === "image" && m.imageUrl ? (
-          <>
-            <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${mine ? "ml-auto w-fit" : "w-fit"}`}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
-            </a>
-            {stamp}
-          </>
-        ) : m.type === "voice" && m.audioUrl ? (
-          <>
-            <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${mine ? "ml-auto" : ""}`} />
-            {stamp}
-          </>
-        ) : (
-          <>
-            <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
-            {stamp}
-          </>
-        )}
+    <SwipeToReply enabled={canReply} onReply={() => onReply(m.sender, snippet)}>
+      <div className={`flex px-1 ${mine ? "justify-end" : "justify-start"}`}>
+        <div className={`max-w-[85%] text-[15px] leading-snug ${mine ? "text-right" : "text-left"}`}>
+          {quote && (
+            <span
+              className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
+                mine ? "ml-auto" : ""
+              }`}
+            >
+              ↩ {quote}
+            </span>
+          )}
+          {!mine && split && <span className="mr-1 font-bold text-[#174EA6]">{m.sender}:</span>}
+          {m.type === "image" && m.imageUrl ? (
+            <>
+              <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${mine ? "ml-auto w-fit" : "w-fit"}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
+              </a>
+              {stamp}
+            </>
+          ) : m.type === "voice" && m.audioUrl ? (
+            <>
+              <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${mine ? "ml-auto" : ""}`} />
+              {stamp}
+            </>
+          ) : (
+            <>
+              <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
+              {stamp}
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </SwipeToReply>
   );
 }
