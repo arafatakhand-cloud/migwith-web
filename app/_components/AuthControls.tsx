@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useSession } from "./AppSession";
+import { detachPushForLogout } from "../../lib/push";
 import { LanguageToggle } from "./LanguageToggle";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
@@ -85,7 +86,10 @@ export function HeaderAuth() {
 
       <button
         type="button"
-        onClick={() => signOut(auth)}
+        onClick={async () => {
+          await detachPushForLogout();
+          await signOut(auth);
+        }}
         className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm font-semibold backdrop-blur transition hover:bg-white/10 sm:px-5 sm:py-2.5"
       >
         Logout

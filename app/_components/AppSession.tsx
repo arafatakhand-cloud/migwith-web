@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect } from "react";
+import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useBadges } from "../../lib/useBadges";
 
@@ -15,6 +16,12 @@ const SessionContext = createContext<Session | null>(null);
 export function AppSession({ children }: { children: React.ReactNode }) {
   const current = useCurrentUser();
   const badges = useBadges(current.username);
+
+  // Keep this browser's push token saved for whoever is signed in.
+  const uid = current.user?.uid;
+  useEffect(() => {
+    if (uid) syncPush();
+  }, [uid]);
   return <SessionContext.Provider value={{ ...current, badges }}>{children}</SessionContext.Provider>;
 }
 

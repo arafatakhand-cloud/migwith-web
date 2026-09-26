@@ -8,6 +8,7 @@ import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
+import { PushToggle } from "../_components/PushToggle";
 
 // Same list as the app's AlertsPage: alerts where toUsername == me, newest
 // first. Unread ones are marked read while the page is open (clears the 🔔 badge).
@@ -135,6 +136,7 @@ export default function AlertsPage() {
     <PageShell>
       <section className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <h1 className="text-3xl font-black tracking-tight">🔔 Alerts</h1>
+        <PushToggle />
 
         <ul className="mt-6 space-y-2">
           {alerts === null && <li className="py-10 text-center text-sm text-white/35">Loading…</li>}
