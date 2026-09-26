@@ -30,7 +30,7 @@ import {
   presenceLine,
   roomHref,
 } from "../../../lib/rooms";
-import { EmojiPicker } from "../../_components/EmojiPicker";
+import { ChatBar } from "../../_components/ChatBar";
 import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { PageShell } from "../../_components/PageShell";
 import {
@@ -850,68 +850,33 @@ export default function RoomPage() {
               </div>
             )}
 
-            {/* Composer */}
-            <div className="flex gap-1.5 border-t border-[#CFE3F5] bg-white p-2 pb-safe sm:gap-2">
-              <button
-                type="button"
-                onClick={() => setGiftTarget("")}
-                title="Send a gift"
-                className="rounded-xl border border-pink-200 bg-pink-50 px-2.5 text-lg sm:px-3 hover:bg-pink-100"
-              >
-                🎁
-              </button>
-              <label
-                title={perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room"}
-                className={`flex cursor-pointer items-center rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-2.5 text-lg sm:px-3 hover:bg-[#EAF4FE] ${
-                  uploading || !perms.canShareMedia ? "pointer-events-none opacity-40" : ""
-                }`}
-              >
-                {uploading ? "⏳" : "📷"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    sendPhoto(e.target.files?.[0]);
-                    e.target.value = "";
-                  }}
+            {/* Text bar, like the app's */}
+            <ChatBar
+              text={text}
+              setText={setText}
+              inputRef={inputRef}
+              onSend={send}
+              canSend={!sending && !!text.trim() && !!profile}
+              placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message..."}
+              maxLength={1000}
+              disabled={!profile}
+              onGift={() => setGiftTarget("")}
+              photo={{
+                onFile: sendPhoto,
+                disabled: !perms.canShareMedia,
+                uploading,
+                title: perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room",
+              }}
+              voice={
+                <VoiceRecorder
+                  disabled={!profile || !perms.canShareMedia}
+                  onSend={sendVoice}
+                  onError={(m) => note(`${roomName}: ${m}`)}
+                  onActive={setVoiceActive}
                 />
-              </label>
-              <VoiceRecorder
-                disabled={!profile || !perms.canShareMedia}
-                onSend={sendVoice}
-                onError={(m) => note(`${roomName}: ${m}`)}
-                onActive={setVoiceActive}
-              />
-              {!voiceActive && (
-                <>
-                  <EmojiPicker inputRef={inputRef} value={text} onChange={setText} disabled={!profile} />
-                  <input
-                    ref={inputRef}
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        send();
-                      }
-                    }}
-                    maxLength={1000}
-                    placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message"}
-                    className="min-w-0 flex-1 rounded-full border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED] sm:px-4"
-                  />
-                  <button
-                    type="button"
-                    onClick={send}
-                    disabled={sending || !text.trim() || !profile}
-                    className="rounded-full bg-[#2F80ED] px-4 text-sm font-bold text-white disabled:opacity-40 sm:px-5"
-                  >
-                    <span className="sm:hidden">➤</span>
-                    <span className="hidden sm:inline">Send</span>
-                  </button>
-                </>
-              )}
-            </div>
+              }
+              voiceActive={voiceActive}
+            />
           </div>
 
           {/* People in the room */}

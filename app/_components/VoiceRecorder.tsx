@@ -135,7 +135,7 @@ export function VoiceRecorder({
         onClick={start}
         disabled={disabled}
         title="Record a voice message"
-        className="rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-2.5 text-lg sm:px-3 hover:bg-[#EAF4FE] disabled:opacity-40"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#8C7B3E] bg-[#1E2B47] text-lg disabled:opacity-40"
       >
         🎤
       </button>
