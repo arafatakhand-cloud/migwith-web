@@ -46,6 +46,7 @@ import {
 import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../../_components/CricketGame";
 import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
+import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 
 type ChatMessage = {
   id: string;
@@ -130,6 +131,8 @@ export default function RoomPage() {
   const twentyNine = useTwentyNine(roomName === TN_ROOM, user?.uid, note);
   // 🃏 LowCard (only in the LowCard room).
   const lowCard = useLowCard(roomName === LOWCARD_ROOM, user?.uid, note);
+  // 🎲 Ludo (only in the Ludo room).
+  const ludo = useLudo(roomName === LUDO_ROOM, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -386,6 +389,11 @@ export default function RoomPage() {
       return;
     }
 
+    if (ludo && ludoHandleCommand(ludo, clean, note)) {
+      setText("");
+      return;
+    }
+
     if (lowCard && lowCardHandleCommand(lowCard, clean, note, 200)) {
       setText("");
       return;
@@ -547,6 +555,7 @@ export default function RoomPage() {
             {cricket && <CricketBox state={cricket} uid={user.uid} />}
             {twentyNine && <TwentyNineTable state={twentyNine} />}
             {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
+            {ludo && <LudoTable state={ludo} />}
 
             {/* Composer */}
             <div className="flex gap-2 border-t border-white/10 p-2">
