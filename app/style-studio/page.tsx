@@ -107,7 +107,7 @@ export default function StyleStudioPage() {
 
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
+      <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-10 sm:px-6">
         <PageTitle title="Style Studio" subtitle="Premium username colors" icon="🎨" />
         <div className="flex items-center justify-between px-1 text-sm">
           <span className="font-semibold text-[#35507E]">Available colors · {CATALOG.length} styles</span>
@@ -153,7 +153,7 @@ export default function StyleStudioPage() {
         )}
 
         <SectionLabel>Shop</SectionLabel>
-        <div className="space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
           {available.map((c) => {
             const isPending = pending.has(c.id);
             const canAfford = balance !== null && balance >= c.price;

@@ -1,7 +1,9 @@
+import { DesktopSidebar } from "./SideMenu";
 import { TopBar } from "./TopBar";
 
 /* Page frame shared by every signed-in page: the app's white top bar over a
-   sky background. `light` pages use the app's pale sky page with white cards;
+   sky background (and on laptops the menu as a left sidebar).
+   `light` pages use the app's pale sky page with white cards;
    the others keep the deeper sky with blue cards. */
 export function PageShell({
   children,
@@ -22,7 +24,11 @@ export function PageShell({
         <TopBar />
       </header>
 
-      <div className="relative z-10">{children}</div>
+      {/* Laptop: the menu stays open on the left and the page fills the rest. */}
+      <div className="relative z-10 lg:flex">
+        <DesktopSidebar />
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </main>
   );
 }
