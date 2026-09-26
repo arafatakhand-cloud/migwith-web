@@ -17,6 +17,7 @@ import {
 import { db } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { chatHref } from "../../../lib/privateChat";
+import { useFriendRequests } from "../../../lib/friends";
 import { PageShell } from "../../_components/PageShell";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
@@ -101,6 +102,33 @@ export default function ProfilePage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const fr = useFriendRequests(me);
+  const relation = fr.relationTo(username);
+
+  const friendAction = async () => {
+    setBusy("friend");
+    setError("");
+    try {
+      if (relation === "none") await fr.send(username);
+      else if (relation === "incoming") {
+        const r = fr.incoming.find((x) => sameName(x.from, username));
+        if (r) {
+          await fr.accept(r);
+          setFriends((c) => c + 1);
+        }
+      } else if (relation === "sent") {
+        const r = fr.sent.find((x) => sameName(x.to, username));
+        if (r) await fr.cancel(r);
+      } else if (relation === "friend" && confirm(`Remove ${username} from your friends?`)) {
+        await fr.remove(username);
+        setFriends((c) => Math.max(0, c - 1));
+      }
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Please try again.");
+    } finally {
+      setBusy("");
+    }
+  };
 
   // The profile document.
   useEffect(() => {
@@ -409,6 +437,30 @@ export default function ProfilePage() {
                   ✉️ Message
                 </Link>
               </div>
+              <button
+                type="button"
+                onClick={friendAction}
+                disabled={!!busy}
+                className={`w-full rounded-2xl py-3 font-bold transition disabled:opacity-50 ${
+                  relation === "friend"
+                    ? "border border-emerald-400/40 bg-emerald-500/10 text-emerald-300"
+                    : relation === "sent"
+                      ? "border border-white/15 bg-white/5 text-white/60"
+                      : relation === "incoming"
+                        ? "bg-emerald-600 hover:bg-emerald-500"
+                        : "bg-violet-600 hover:bg-violet-500"
+                }`}
+              >
+                {busy === "friend"
+                  ? "Working…"
+                  : relation === "friend"
+                    ? "✓ Friends · Remove"
+                    : relation === "sent"
+                      ? "⏳ Request sent · Cancel"
+                      : relation === "incoming"
+                        ? "🤝 Accept friend request"
+                        : "🤝 Add Friend"}
+              </button>
               <button
                 type="button"
                 onClick={() => toggleMine("blockedUsers", !isBlocked)}

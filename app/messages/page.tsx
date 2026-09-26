@@ -48,7 +48,7 @@ export default function MessagesPage() {
           {people.length === 0 && (
             <p className="py-10 text-center text-sm text-white/35">
               {friends.length === 0
-                ? "No friends yet. Add friends in the MIGwith app to chat here."
+                ? "No friends yet. Add friends from the 👥 Friends page to chat here."
                 : "No friends match your search."}
             </p>
           )}

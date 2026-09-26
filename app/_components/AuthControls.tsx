@@ -5,12 +5,14 @@ import { signOut } from "firebase/auth";
 import { auth } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useUnreadBySender } from "../../lib/privateChat";
+import { useFriendRequests } from "../../lib/friends";
 
 /* Header: Login button, or the signed-in MIG ID + Logout */
 export function HeaderAuth() {
   const { user, username, loading } = useCurrentUser();
   const unread = useUnreadBySender(username);
   const unreadTotal = Object.values(unread).reduce((a, b) => a + b, 0);
+  const requests = useFriendRequests(username).incoming.length;
 
   if (loading) {
     return <div className="h-10 w-24" />;
@@ -43,6 +45,17 @@ export function HeaderAuth() {
         {unreadTotal > 0 && (
           <span className="absolute -right-1 -top-0.5 min-w-[18px] rounded-full bg-pink-500 px-1 text-center text-[10px] font-bold leading-[18px] text-white">
             {unreadTotal > 99 ? "99+" : unreadTotal}
+          </span>
+        )}
+      </Link>
+      <Link
+        href="/friends"
+        className="relative rounded-xl px-2 py-2 text-sm text-white/70 transition hover:text-white"
+      >
+        👥<span className="ml-1 hidden sm:inline">Friends</span>
+        {requests > 0 && (
+          <span className="absolute -right-1 -top-0.5 min-w-[18px] rounded-full bg-pink-500 px-1 text-center text-[10px] font-bold leading-[18px] text-white">
+            {requests > 99 ? "99+" : requests}
           </span>
         )}
       </Link>
