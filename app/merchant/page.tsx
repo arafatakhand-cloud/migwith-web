@@ -20,16 +20,16 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
+import { MerchantDashboard } from "./MerchantDashboard";
 
 // Explore › Merchant Program, same documents as the app's MentorProgramPage:
 // a normal user picks a mentor and sends a mentor_requests entry; an active
-// mentor_merchants record shows the merchant's summary (merchant_earnings).
-// Mentor tools and tagging users stay in the app.
+// mentor_merchants record opens the Merchant Dashboard; mentors get a link to
+// the Mentor Dashboard (/mentor).
 
 type Mentor = { username: string; level: number; country: string; merchants: number; pending: number };
 
 const toMs = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
-const coins = (n: number) => n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 
 const card = "rounded-3xl bg-[#0B1F3A] p-6 text-center text-white shadow-lg";
 
@@ -41,7 +41,6 @@ export default function MerchantPage() {
   const [level, setLevel] = useState(1);
   const [pending, setPending] = useState<DocumentSnapshot | null>(null);
   const [merchant, setMerchant] = useState<DocumentSnapshot | null>(null);
-  const [earnings, setEarnings] = useState({ today: 0, last7: 0, pending: 0, allTime: 0 });
   const [step, setStep] = useState<"INTRO" | "PICK">("INTRO");
   const [mentors, setMentors] = useState<Mentor[] | null>(null);
   const [selected, setSelected] = useState("");
@@ -67,15 +66,6 @@ export default function MerchantPage() {
           setPending(req.docs[0] || null);
           const active = merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
           setMerchant(active);
-          if (active) {
-            const e = await getDoc(doc(db, "merchant_earnings", username));
-            setEarnings({
-              today: Number(e.get("today") || 0),
-              last7: Number(e.get("last7Days") || 0),
-              pending: Number(e.get("pending") || 0),
-              allTime: Number(e.get("allTime") || 0),
-            });
-          }
         }
       } catch (e: any) {
         setError(e?.message || "Could not load the Merchant Program.");
@@ -151,6 +141,11 @@ export default function MerchantPage() {
     }
   };
 
+  // An active merchant gets the full Merchant Dashboard.
+  if (ready && loaded && merchant && uid) {
+    return <MerchantDashboard me={username} uid={uid} merchantDoc={merchant} />;
+  }
+
   let body: React.ReactNode;
   if (!ready || !loaded) {
     body = <p className="py-16 text-center text-sm text-[#5B6B8C]">Loading…</p>;
@@ -163,40 +158,6 @@ export default function MerchantPage() {
         <Link href="/mentor" className="mt-4 inline-block rounded-xl bg-[#69E1F2] px-6 py-2.5 text-sm font-black text-[#0B1F3A]">
           Open Mentor Dashboard
         </Link>
-      </div>
-    );
-  } else if (merchant) {
-    const days = Math.max(0, Math.floor((toMs(merchant.get("expiresAt")) - Date.now()) / 86_400_000));
-    body = (
-      <div className="space-y-3">
-        <div className="rounded-3xl bg-gradient-to-br from-[#7B1FB8] to-[#4A1480] p-5 text-white shadow-lg">
-          <p className="text-lg font-black">🏪 Active Merchant 🎁</p>
-          <p className="text-sm text-white/80">🪙 {coins(earnings.allTime)} coins earned all-time</p>
-          <p className="mt-3 inline-block rounded-xl bg-white/15 px-3 py-1 text-sm font-bold">⏱ {days} days remaining</p>
-        </div>
-        <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
-          <p className="font-bold">📈 Trail Earnings</p>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-            {[
-              ["Today", earnings.today],
-              ["Last 7 days", earnings.last7],
-              ["Pending", earnings.pending],
-            ].map(([l, v]) => (
-              <div key={l as string}>
-                <p className="text-[11px] text-white/60">{l}</p>
-                <p className="font-black text-[#6FE0A0]">{coins(v as number)}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-[11px] text-white/50">Auto-credited daily at 12:00 AM Bangladesh time</p>
-        </div>
-        <div className="rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
-          <p className="text-xs text-[#5B6B8C]">Your Mentor</p>
-          <p data-notranslate className="font-bold text-[#2F80ED]">
-            @{String(merchant.get("mentorUsername") || "")}
-          </p>
-        </div>
-        <p className="text-center text-xs text-[#5B6B8C]">Tag users, reports and renewal are in the MIGwith app.</p>
       </div>
     );
   } else if (pending) {
