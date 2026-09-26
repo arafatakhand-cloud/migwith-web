@@ -492,10 +492,25 @@ export default function RoomPage() {
   }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded]);
 
   // Merge server messages with this device's own notices, oldest first.
-  const shown = useMemo(
-    () => [...messages, ...localNotes].sort((a, b) => a.createdAtMs - b.createdAtMs),
-    [messages, localNotes]
-  );
+  // Same display rules as the app (RoomPage.kt): your own entered/left lines
+  // are hidden from you, and one person's "has entered" (or "has left") never
+  // shows twice in a row — a second copy can come from an older app version or
+  // a second device, and entered/left always alternate per person.
+  const myUid = user?.uid;
+  const shown = useMemo(() => {
+    const last = new Map<string, string>();
+    return [...messages, ...localNotes]
+      .sort((a, b) => a.createdAtMs - b.createdAtMs)
+      .filter((m) => {
+        if (m.type !== "room_entry" && m.type !== "room_leave") return true;
+        if (myUid && m.senderUid === myUid) return false;
+        const who = m.sender.trim().toLowerCase() || m.senderUid;
+        if (!who) return true;
+        const keep = last.get(who) !== m.type;
+        last.set(who, m.type);
+        return keep;
+      });
+  }, [messages, localNotes, myUid]);
 
   // People in the room: fresh presence, and no "has left" newer than their last heartbeat.
   const roomUsers = useMemo(() => {
