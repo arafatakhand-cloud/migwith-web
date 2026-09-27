@@ -13,7 +13,7 @@ import { InstallHint } from "./InstallHint";
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
 
-type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean };
+type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string };
 type Friend = {
   name: string;
   photo: string;
@@ -76,6 +76,7 @@ export function Dashboard() {
         role: String(d.role || d.membershipRole || ""),
         statusMessage: String(d.statusMessage || "").trim(),
         online: String(d.presenceStatus || "ONLINE").toUpperCase() === "ONLINE",
+        presence: String(d.presenceStatus || "ONLINE").toUpperCase(),
       });
     });
   }, [user]);
@@ -208,7 +209,16 @@ export function Dashboard() {
               <span className="rounded-full border border-white/70 bg-white/25 px-2 text-[11px] font-bold">
                 {roleLabel(me?.role || "")}
               </span>
-              <span className={`h-3.5 w-3.5 rounded-full border-2 border-white ${me?.online === false ? "bg-gray-300" : "bg-emerald-400"}`} />
+              {/* Presence dot — tap to change it (the app's Presence Status page) */}
+              <Link
+                href="/presence"
+                aria-label="Presence status"
+                className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-white"
+                style={{
+                  background:
+                    { ONLINE: "#3DAA3D", BUSY: "#B3261E", AWAY: "#B8860B" }[me?.presence || "ONLINE"] || "#8A8A8A",
+                }}
+              />
               <Link href="/messages" aria-label="Messages" className="text-base">
                 💬
               </Link>
