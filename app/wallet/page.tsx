@@ -8,6 +8,7 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -37,6 +38,10 @@ const getUserByUsername = httpsCallable<{ username: string }, { uid: string; use
 const verifySecurityPin = httpsCallable<{ pin: string }, { valid: boolean; locked?: boolean }>(
   functions,
   "verifySecurityPin"
+);
+const adminAdjustCoins = httpsCallable<{ targetUid: string; delta: number; reason: string; operationId: string }, unknown>(
+  functions,
+  "adminAdjustCoins"
 );
 const transferCoins = httpsCallable<{ toUid: string; amount: number; operationId: string }, { success: boolean }>(
   functions,
@@ -137,6 +142,14 @@ export default function WalletPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);
+  const isFounderName = username.trim().toLowerCase() === "migwith";
+  // Mentor / merchant: tag the receiver too (5,000+ coins), like the app.
+  const [tagAvailable, setTagAvailable] = useState<boolean | null>(null);
+  const [tagChecked, setTagChecked] = useState(true);
+  const amountIsTagPrice = (role === "mentor" || role === "merchant") && Number(amount) >= 5000;
+  const wantsTag = amountIsTagPrice && tagChecked && tagAvailable === true;
 
   // "Send Credit" from a private chat opens the transfer with that person filled in.
   useEffect(() => {
@@ -263,6 +276,27 @@ export default function WalletPage() {
     return out;
   }, [items]);
 
+  useEffect(() => {
+    const to = receiver.trim().replace(/^@/, "");
+    if (!showTransfer || !(role === "mentor" || role === "merchant") || !to || !username) return setTagAvailable(null);
+    const merchant = role === "merchant";
+    let live = true;
+    getDocs(
+      query(
+        collection(db, merchant ? "merchant_tagged" : "mentor_tagged"),
+        where(merchant ? "merchantUsername" : "mentorUsername", "==", username),
+        where("taggedUsername", "==", to),
+        where("status", "==", "active"),
+        limit(1)
+      )
+    )
+      .then((snap) => live && setTagAvailable(snap.empty))
+      .catch(() => live && setTagAvailable(null));
+    return () => {
+      live = false;
+    };
+  }, [showTransfer, role, receiver, username]);
+
   const transfer = async () => {
     setError("");
     setSuccess("");
@@ -295,17 +329,58 @@ export default function WalletPage() {
 
       await transferCoins({ toUid: target.uid, amount: coins, operationId: crypto.randomUUID() });
 
-      addDoc(collection(db, "alerts"), {
-        toUsername: toName,
-        fromUsername: username,
-        message: `${username} sent you ${coins} Coins.`,
-        type: "coin_transfer",
-        amount: coins,
-        read: false,
-        createdAt: serverTimestamp(),
-      }).catch(() => {});
+      // The server writes the receiver's "sent you N Coins" alert.
 
-      setSuccess(`✅ Sent ${coins.toLocaleString()} coins to ${toName}.`);
+      // A mentor / merchant sending 5,000+ can also ask to tag the person
+      // (they get an alert to accept), like the app.
+      let tagNote = "";
+      if (wantsTag) {
+        const merchant = role === "merchant";
+        const toRole = lower((await getDoc(doc(db, "users", target.uid))).get("role"));
+        if (merchant ? toRole === "mentor" : toRole === "merchant") {
+          tagNote = merchant ? " (a merchant can't tag a mentor — no request sent)" : " (a mentor can't tag a merchant — no request sent)";
+        } else {
+          const existing = await getDocs(
+            query(
+              collection(db, merchant ? "merchant_tagged" : "mentor_tagged"),
+              where(merchant ? "merchantUsername" : "mentorUsername", "==", username),
+              where("taggedUsername", "==", toName),
+              where("status", "==", "active"),
+              limit(1)
+            )
+          ).catch(() => null);
+          if (existing && !existing.empty) tagNote = " (user was already tagged, no new request sent)";
+          else {
+            const req = await addDoc(collection(db, merchant ? "merchant_tag_requests" : "mentor_tag_requests"), {
+              [merchant ? "merchantUsername" : "mentorUsername"]: username,
+              taggedUsername: toName,
+              taggedUid: target.uid,
+              amount: coins,
+              ...(merchant ? { rate: 2.5 } : {}),
+              status: "pending",
+              createdAt: serverTimestamp(),
+            }).catch(() => null);
+            if (req) {
+              addDoc(collection(db, "alerts"), {
+                toUsername: toName,
+                fromUsername: username,
+                requestId: req.id,
+                amount: coins,
+                ...(merchant ? { rate: 2.5 } : {}),
+                type: merchant ? "merchant_tag_request" : "mentor_tag_request",
+                message: merchant
+                  ? `@${username} wants to tag you. Tag amount: ${coins} Coins · Merchant trail: 2.5%`
+                  : `@${username} wants to tag you. Tag amount: ${coins} Coins`,
+                read: false,
+                createdAt: serverTimestamp(),
+              }).catch(() => {});
+              tagNote = " · tag request sent";
+            }
+          }
+        }
+      }
+
+      setSuccess(`✅ Sent ${coins.toLocaleString()} coins to ${toName}.${tagNote}`);
       setReceiver("");
       setAmount("");
       setPin("");
@@ -331,7 +406,41 @@ export default function WalletPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
-        <PageTitle title="My Account" subtitle="Coins · Transfers" icon="💳" />
+        <div className="relative">
+          <PageTitle title="My Account" subtitle="Coins · Transfers" icon="💳" />
+          {/* ⋮ like the app: Refresh balance, and Add / Adjust Coins for migwith */}
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label="Account menu"
+            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full px-3 text-[26px] font-bold text-[#0A1E63]"
+          >
+            ⋮
+          </button>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 top-full z-40 w-52 overflow-hidden rounded-xl bg-white py-1 text-sm text-[#0B2A5B] shadow-xl">
+                {isFounderName && (
+                  <button type="button" onClick={() => (setMenuOpen(false), setShowAdjust(true))} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]">
+                    Add / Adjust Coins
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    ensureCoinAccount({}).catch(() => {});
+                  }}
+                  className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]"
+                >
+                  Refresh balance
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        {showAdjust && <AdjustDialog onClose={() => setShowAdjust(false)} onDone={(m) => (setShowAdjust(false), setSuccess(m))} />}
 
         {/* Balance */}
         <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-5 text-white shadow-lg">
@@ -398,6 +507,20 @@ export default function WalletPage() {
               placeholder="Security PIN"
               className={field}
             />
+            {amountIsTagPrice && tagAvailable === true && (
+              <label className="flex items-center gap-3 rounded-xl bg-[#16325C] px-3 py-2.5">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-xs font-bold text-[#55DFA9]">
+                    ✓ Available — tag this user as your {role === "merchant" ? "merchant" : "mentor"}
+                  </span>
+                  <span className="block text-[11px] text-[#8FA0C9]">Send tag request — they get a notification to accept</span>
+                </span>
+                <input type="checkbox" checked={tagChecked} onChange={(e) => setTagChecked(e.target.checked)} className="h-5 w-5 accent-[#55DFA9]" />
+              </label>
+            )}
+            {amountIsTagPrice && tagAvailable === false && (
+              <p className="text-[11px] text-[#8FA0C9]">User already tagged. Please try again later.</p>
+            )}
             {error && <p className="text-sm text-rose-600">{error}</p>}
             <button
               type="button"
@@ -452,5 +575,61 @@ export default function WalletPage() {
         </p>
       </section>
     </PageShell>
+  );
+}
+
+// Admin Coin Adjustment (the server allows only the founder), like the app.
+function AdjustDialog({ onClose, onDone }: { onClose: () => void; onDone: (message: string) => void }) {
+  const [target, setTarget] = useState("");
+  const [amount, setAmount] = useState("");
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const apply = async () => {
+    const delta = Number(amount);
+    if (!target.trim() || !Number.isInteger(delta) || delta === 0) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { data } = await getUserByUsername({ username: target.trim() });
+      if (!data?.uid) throw new Error("User not found");
+      await adminAdjustCoins({
+        targetUid: data.uid,
+        delta,
+        reason: reason.trim() || "Admin adjustment",
+        operationId: crypto.randomUUID(),
+      });
+      onDone("🪙 Balance updated");
+    } catch (e: any) {
+      setError(`🪙 ${e?.message || "Permission denied"}`);
+      setBusy(false);
+    }
+  };
+  const field = "w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-base text-[#0B2A5B] outline-none focus:border-[#2F80ED]";
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !busy && onClose()}>
+      <div className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-lg font-black">Admin Coin Adjustment</h2>
+        <p className="text-xs text-gray-500">Admin/Staff only. Positive = add, negative = deduct.</p>
+        <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target username" className={field} />
+        <input
+          value={amount}
+          onChange={(e) => setAmount(e.target.value.replace(/[^\d-]/g, ""))}
+          placeholder="Amount (+/-)"
+          inputMode="numeric"
+          className={field}
+        />
+        <input value={reason} onChange={(e) => setReason(e.target.value.slice(0, 120))} placeholder="Reason" className={field} />
+        {error && <p className="text-sm text-rose-600">{error}</p>}
+        <div className="flex justify-end gap-2 text-sm font-bold">
+          <button type="button" disabled={busy} onClick={onClose} className="px-3 py-2 text-[#2F80ED]">
+            CANCEL
+          </button>
+          <button type="button" disabled={busy} onClick={apply} className="rounded-full bg-[#2F80ED] px-5 py-2 text-white">
+            {busy ? "Saving..." : "APPLY"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
