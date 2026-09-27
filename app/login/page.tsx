@@ -98,7 +98,7 @@ export default function LoginPage() {
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#1B4F86] via-[#154272] to-[#0E2F55] text-white">
       <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center px-6 pb-10 pt-12">
         {/* mig + life bubble */}
-        <Link href="/" aria-label="MIGlife home" className="relative mt-4 block">
+        <Link href="/welcome" aria-label="About MIGlife" className="relative mt-4 block">
           <div className="flex h-28 w-52 items-center justify-center rounded-[56px] bg-gradient-to-b from-[#4FA8E8] to-[#1F74C4] shadow-[inset_0_-6px_12px_rgba(0,0,0,0.18),0_10px_24px_rgba(0,0,0,0.25)]">
             <span className="text-6xl font-black tracking-tight text-white drop-shadow">mig</span>
           </div>
@@ -193,7 +193,11 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-auto pt-12 text-center text-sm text-white/80">
-          New to MIGlife? Create your MIG ID in the MIGlife app.
+          New to MIGlife? Create your MIG ID in the{" "}
+          <Link href="/welcome" className="underline underline-offset-4">
+            MIGlife app
+          </Link>
+          .
         </p>
         <Link href="/forgot-password" className="mt-3 text-base text-white underline underline-offset-4">
           Forgot Password?
