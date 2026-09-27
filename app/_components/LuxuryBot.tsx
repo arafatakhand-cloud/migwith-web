@@ -139,32 +139,79 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
   const [amount, setAmount] = useState(500);
   const [inFlight, setInFlight] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
+  // Bets sent but not yet seen in the round document, like the app's
+  // optimisticBetTotals: the label goes up at once, rolled back on failure.
+  const [optimistic, setOptimistic] = useState<Record<string, number>>({});
+  const [lastBet, setLastBet] = useState<{ character: string; amount: number } | null>(null);
+  const lastBetAt = useRef(0);
+  const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
+  const lastClosedNoteAt = useRef(0);
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
 
-  const bet = async (character: string) => {
+  // New round: start clean.
+  useEffect(() => {
+    setOptimistic({});
+    setLastBet(null);
+  }, [state.round]);
+
+  const shownTotal = (c: string) => Math.max(Number(state.myBets[c] || 0), Number(optimistic[c] || 0));
+
+  const bet = async (character: string, betAmount: number) => {
     if (!canBet) return;
+    const now = Date.now();
+    if (now - lastBetAt.current < 1000) return; // the app's 1 s guard
+    if (betAmount < 100 || betAmount > 12000) return;
+    lastBetAt.current = now;
+    setLastBet({ character, amount: betAmount });
+    setOptimistic((o) => ({ ...o, [character]: Math.max(Number(o[character] || 0), Number(state.myBets[character] || 0)) + betAmount }));
     setInFlight((n) => n + 1);
     try {
       await placeBet({
         roomGamePath: `room_game/${LUXURY_ROOM}`,
         character,
-        amount,
+        amount: betAmount,
         expectedRound: state.round,
         operationId: opId(),
       });
     } catch (err: any) {
-      note(`👻 Luxury Bot: Bet rejected. ${err?.message || "Please try again."}`);
+      setOptimistic((o) => ({ ...o, [character]: Math.max(0, Number(o[character] || 0) - betAmount) }));
+      const msg = String(err?.message || "");
+      if (/too fast/i.test(msg)) return;
+      if (/closed/i.test(msg)) {
+        if (Date.now() - lastClosedNoteAt.current < 8000) return;
+        lastClosedNoteAt.current = Date.now();
+        note("👻 Luxury Bot: Betting is closed.");
+        return;
+      }
+      if (/insufficient|not enough/i.test(msg)) note("👻 Luxury Bot: Insufficient coins.");
+      else if (/round/i.test(msg)) note("👻 Luxury Bot: Round changed. Please try again.");
+      else note(`👻 Luxury Bot: Bet rejected. ${msg || "Please try again."}`);
     } finally {
       setInFlight((n) => n - 1);
     }
   };
 
-  const myTotal = Object.values(state.myBets).reduce((a, b) => a + (Number(b) || 0), 0);
+  // Like the app: one tap does nothing, a second tap on the same character
+  // within half a second places one bet.
+  const tap = (character: string) => {
+    const now = Date.now();
+    const prev = lastTap.current;
+    if (prev.character === character && now - prev.at <= 500) {
+      lastTap.current = { character: "", at: 0 };
+      bet(character, amount);
+    } else {
+      lastTap.current = { character, at: now };
+    }
+  };
+
+  const myTotal = LUXURY_CHARACTERS.reduce((a, c) => a + shownTotal(c), 0);
 
   return (
     <div className="border-t border-amber-300/20 bg-gradient-to-b from-fuchsia-500/10 to-transparent px-2 py-2">
       <div className="flex items-center gap-2">
-        <span className="text-sm font-black text-pink-300">👻 Luxury Bot</span>
+        <span className="text-sm font-black text-pink-300">
+          {inFlight > 0 ? "⏳ Sending bet…" : "👻 Luxury Bot · tap 2x to bid"}
+        </span>
         {state.running && state.phase === "BETTING" ? (
           <span
             className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -176,7 +223,26 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
         ) : state.running ? (
           <span className="rounded-full bg-amber-500/60 px-2 py-0.5 text-xs font-bold">🎲 Result…</span>
         ) : null}
-        {inFlight > 0 && <span className="text-xs text-white/50">⏳ Sending bet…</span>}
+        {canBet && lastBet && (
+          <>
+            <button
+              type="button"
+              onClick={() => bet(lastBet.character, lastBet.amount)}
+              title="Repeat last bet"
+              className="rounded-lg border border-amber-300/40 px-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+            >
+              ↻
+            </button>
+            <button
+              type="button"
+              onClick={() => bet(lastBet.character, Math.min(lastBet.amount * 2, 12000))}
+              title="Double last bet"
+              className="rounded-lg border border-amber-300/40 px-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
+            >
+              ×2
+            </button>
+          </>
+        )}
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
@@ -204,14 +270,14 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
                   <button
                     key={c}
                     type="button"
-                    onClick={() => bet(c)}
+                    onClick={() => tap(c)}
                     disabled={!canBet}
-                    className="rounded-xl border border-amber-300/40 bg-white/[0.05] px-1 py-2 text-center text-xs font-bold transition hover:bg-amber-300/10 active:scale-95 disabled:opacity-40"
+                    className="select-none touch-manipulation rounded-xl border border-amber-300/40 bg-white/[0.05] px-1 py-2 text-center text-xs font-bold transition hover:bg-amber-300/10 active:scale-95 disabled:opacity-40"
                   >
                     <div>{c}</div>
                     {/* My total on it, the app's label: 500 → "500", 2000 → "2k", 2500 → "2.5k" */}
-                    <div className={`mt-0.5 text-xs font-extrabold ${(state.myBets[c] || 0) > 0 ? "text-amber-300" : "text-white/40"}`}>
-                      {betTotalLabel(Number(state.myBets[c] || 0))}
+                    <div className={`mt-0.5 text-xs font-extrabold ${shownTotal(c) > 0 ? "text-amber-300" : "text-white/40"}`}>
+                      {betTotalLabel(shownTotal(c))}
                     </div>
                   </button>
                 ))}
@@ -239,7 +305,7 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
                 )}
               </div>
               <p className="mt-1 text-[10px] text-white/35">
-                Tap a character to bet {amount.toLocaleString()} coins on it · 100–12,000 per bet
+                Double-tap a character to bet {amount.toLocaleString()} coins on it · 100–12,000 per bet
               </p>
             </>
           )}

@@ -173,6 +173,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
@@ -636,6 +637,21 @@ function RoomView({ roomName }: { roomName: string }) {
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
   }, [shown]);
 
+  // Also stay pinned when the list changes size without a new message: a
+  // picture or gift finishing loading, or the game box below growing
+  // (a bet placed, the round moving on), so the newest bet line stays in view.
+  useEffect(() => {
+    const el = listRef.current;
+    const inner = contentRef.current;
+    if (!el || !inner || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      if (stickToBottom.current) el.scrollTop = el.scrollHeight;
+    });
+    ro.observe(el);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [loading, user, blocked]);
+
   // Everything the moderator commands and the ⋯ menu need.
   const modCtx = (): ModContext | null => {
     if (!user || !profile) return null;
@@ -1023,8 +1039,9 @@ function RoomView({ roomName }: { roomName: string }) {
                   }
                 }
               }}
-              className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3"
+              className="min-h-0 flex-1 overflow-y-auto px-3 py-3"
             >
+              <div ref={contentRef} className="space-y-1">
               {/* Room cards, like the app: manager, welcome text, who is here */}
               <div className="space-y-1.5 pb-1">
                 <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
@@ -1060,6 +1077,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   }}
                 />
               ))}
+              </div>
             </div>
 
             {/* Game tables keep their dark look */}
