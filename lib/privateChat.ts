@@ -13,11 +13,13 @@ export function chatHref(username: string): string {
   return `/chat/${encodeURIComponent(username)}`;
 }
 
-// "Online" if the person was active in the last 2 minutes, else "Last seen …".
+// "Online" if the person was active in the last 90 seconds, else "Last seen …"
+// (the app's formatLastSeen).
 export function lastSeenLabel(lastActiveMs: number): string {
-  if (!lastActiveMs) return "";
-  const minutes = Math.floor((Date.now() - lastActiveMs) / 60_000);
-  if (minutes < 2) return "Online";
+  if (!lastActiveMs) return "Offline";
+  const diff = Date.now() - lastActiveMs;
+  if (diff < 90_000) return "Online";
+  const minutes = Math.floor(diff / 60_000);
   if (minutes < 60) return `Last seen ${minutes}m ago`;
   if (minutes < 1440) return `Last seen ${Math.floor(minutes / 60)}h ago`;
   return `Last seen ${Math.floor(minutes / 1440)}d ago`;

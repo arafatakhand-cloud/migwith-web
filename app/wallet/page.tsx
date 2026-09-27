@@ -138,6 +138,15 @@ export default function WalletPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // "Send Credit" from a private chat opens the transfer with that person filled in.
+  useEffect(() => {
+    const to = new URLSearchParams(window.location.search).get("to");
+    if (to) {
+      setReceiver(to);
+      setShowTransfer(true);
+    }
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
