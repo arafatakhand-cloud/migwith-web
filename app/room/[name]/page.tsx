@@ -53,7 +53,7 @@ import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
-import { rememberRecentRoom } from "../../../lib/roomPrefs";
+import { rememberRecentRoom, useRoomPrefs } from "../../../lib/roomPrefs";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
@@ -162,6 +162,11 @@ export default function RoomPage() {
   const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(null);
   const [sending, setSending] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
+  // ⋮ Room menu (like the app's) and its Room Info / Kick User sheets.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [kickOpen, setKickOpen] = useState(false);
+  const { favorites, toggleFavorite } = useRoomPrefs();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
 
@@ -825,46 +830,48 @@ export default function RoomPage() {
     );
   }
 
+  // Leave: close this room's tab, leave it and go to another open room.
+  const leaveRoom = () => {
+    removeOpenRoom(user.uid, roomName);
+    leaveRef.current?.();
+    const next = readOpenRooms(user.uid).slice(-1)[0];
+    router.push(next ? roomHref(next) : "/rooms");
+  };
+
+  // Clear Chat: empties this browser's view of the room; newer messages keep coming.
+  const clearChat = () => {
+    const newest = messages.reduce((a, m) => Math.max(a, m.createdAtMs), sinceMs ?? 0);
+    setSinceMs(newest);
+    setLocalNotes([]);
+    const saved = savedEntry(user.uid, roomName);
+    if (saved) saveEntry(user.uid, roomName, { ...saved, at: newest });
+  };
+
+  const checkBalance = async () => {
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      note(`💰 Your balance: ${Number(snap.get("balance") || 0).toLocaleString()} coins`);
+    } catch {
+      note("Could not read your balance. Please try again.");
+    }
+  };
+
+  const favorite = favorites.includes(roomName);
+  const menuItems: [string, string, () => void, boolean?][] = [
+    ["ℹ️", "Room Info", () => setInfoOpen(true)],
+    [favorite ? "💔" : "❤️", favorite ? "Remove from favorites" : "Add to favorites", () => toggleFavorite(roomName)],
+    ["🧹", "Clear Chat", clearChat],
+    ["💰", "Check Balance", checkBalance],
+    ["🎁", "Send Gift", () => setGiftTarget("")],
+    ["👥", `Participants (${roomUsers.length})`, () => setShowUsers(true)],
+    ...(perms.canKick ? ([["👢", "Kick User", () => setKickOpen(true)]] as [string, string, () => void][]) : []),
+    ["🚪", "Leave Room", leaveRoom, true],
+  ];
+
   return (
     <PageShell light bottomNav={false}>
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
-        {/* Room bar: the room's tab in the top bar names it, so this stays slim */}
-        <div className="flex items-center gap-2 rounded-2xl bg-white px-3 py-1.5 shadow-sm">
-          <div className="min-w-0 flex-1">
-            <h1 data-notranslate className="truncate text-sm font-black text-[#0B2A5B]">
-              {roomName}
-              {locked && <span className="ml-1.5 text-xs">🔒</span>}
-              {silenced && <span className="ml-1 text-xs">🔇</span>}
-            </h1>
-            <p className="truncate text-[11px] text-[#6B7A99]">
-              {roomUsers.length} in this room
-              {roomInfo.lockLevel > 0 && ` · Lv ${roomInfo.lockLevel}+`}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowUsers((v) => !v)}
-            className="rounded-full bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow lg:hidden"
-          >
-            👥 {roomUsers.length}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              // Close this room's tab: leave it and go to another open room.
-              removeOpenRoom(user.uid, roomName);
-              leaveRef.current?.();
-              const next = readOpenRooms(user.uid).slice(-1)[0];
-              router.push(next ? roomHref(next) : "/rooms");
-            }}
-            title="Leave room"
-            className="rounded-full border border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600"
-          >
-            ✕ Leave
-          </button>
-        </div>
-
-        <div className="mt-2 flex min-h-0 flex-1 gap-3 sm:mt-3">
+        <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
             <div
@@ -933,6 +940,7 @@ export default function RoomPage() {
               maxLength={1000}
               disabled={!profile}
               onGift={() => setGiftTarget("")}
+              onMore={() => setMenuOpen(true)}
               photo={{
                 onFile: sendPhoto,
                 disabled: !perms.canShareMedia,
@@ -954,11 +962,16 @@ export default function RoomPage() {
 
           {/* People in the room */}
           <aside
-            className={`${showUsers ? "block" : "hidden"} absolute inset-x-2 top-[76px] z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#CFE3F5] bg-white p-3 shadow-lg lg:static lg:block lg:max-h-none lg:w-60 lg:shadow-sm`}
+            className={`${showUsers ? "block" : "hidden"} absolute inset-x-2 top-2 z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#CFE3F5] bg-white p-3 shadow-lg lg:static lg:block lg:max-h-none lg:w-60 lg:shadow-sm`}
           >
-            <h2 className="mb-2 text-xs font-bold uppercase tracking-widest text-[#35507E]">
-              In this room
-            </h2>
+            <div className="mb-2 flex items-center">
+              <h2 className="flex-1 text-xs font-bold uppercase tracking-widest text-[#35507E]">
+                In this room ({roomUsers.length})
+              </h2>
+              <button type="button" onClick={() => setShowUsers(false)} aria-label="Close" className="px-1 text-lg text-[#6B7A99] lg:hidden">
+                ✕
+              </button>
+            </div>
             <ul className="space-y-1" data-notranslate>
               {roomUsers.map((u) => (
                 <li key={u.uid} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
@@ -1049,6 +1062,104 @@ export default function RoomPage() {
           onClose={() => setGiftTarget(null)}
           onSent={announceGift}
         />
+      )}
+
+      {/* ⋮ Room menu */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-2 pb-safe" onClick={() => setMenuOpen(false)}>
+          <div className="w-full max-w-sm overflow-hidden rounded-[28px] bg-[#EEF0F3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-[#1E5BC6] to-[#1A4DA8] px-5 py-4 text-white">
+              <p data-notranslate className="truncate text-lg font-black">
+                {roomName}
+                {locked && <span className="ml-1.5 text-sm">🔒</span>}
+                {silenced && <span className="ml-1 text-sm">🔇</span>}
+              </p>
+              <p className="text-sm text-white/85">Room menu · {roomUsers.length} here</p>
+            </div>
+            <ul className="max-h-[65vh] space-y-2 overflow-y-auto p-3">
+              {menuItems.map(([icon, label, run, danger]) => (
+                <li key={label}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      run();
+                    }}
+                    className={`flex w-full items-center gap-4 rounded-full px-3 py-2.5 text-left text-[15px] font-semibold ${
+                      danger ? "bg-[#F4DDDD] text-[#C62828]" : "bg-[#E1E4EA] text-[#0B1F3A]"
+                    }`}
+                  >
+                    <span className={`flex h-11 w-11 items-center justify-center rounded-full text-xl ${danger ? "bg-[#EFC6C6]" : "bg-[#CFDDF0]"}`}>
+                      {icon}
+                    </span>
+                    <span className="flex-1">{label}</span>
+                    <span className={danger ? "text-[#C62828]" : "text-[#6B7A99]"}>›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* Room Info */}
+      {infoOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setInfoOpen(false)}>
+          <div className="w-full max-w-sm space-y-2 rounded-3xl bg-white p-5 text-sm text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 data-notranslate className="text-lg font-black">ℹ️ {roomName}</h2>
+            {roomInfo.description && (
+              <p data-notranslate className="whitespace-pre-wrap text-[#35507E]">
+                {roomInfo.description}
+              </p>
+            )}
+            <ul className="space-y-1 pt-1">
+              <li>👑 Managed by: <b data-notranslate>{roomInfo.ownerName || "migwith"}</b></li>
+              <li>👥 In the room: <b>{roomUsers.length}</b>{roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`}</li>
+              <li>🔐 {roomInfo.privacy || "Public"}{locked && " · 🔒 Locked"}{silenced && " · 🔇 Silenced"}</li>
+              {roomInfo.lockLevel > 0 && <li>⭐ Entry level: {roomInfo.lockLevel}+</li>}
+              {roomInfo.superMods.length > 0 && <li data-notranslate>🌟 Super Mods: {roomInfo.superMods.join(", ")}</li>}
+              {roomInfo.moderators.length > 0 && <li data-notranslate>⭐ Mods: {roomInfo.moderators.join(", ")}</li>}
+            </ul>
+            <button type="button" onClick={() => setInfoOpen(false)} className="mt-2 w-full rounded-xl bg-[#2F80ED] py-2.5 font-bold text-white">
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Kick User */}
+      {kickOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setKickOpen(false)}>
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-black">👢 Kick User</h2>
+            <ul className="mt-2 max-h-[50vh] space-y-1 overflow-y-auto">
+              {roomUsers.filter((u) => u.uid !== user.uid).length === 0 && <li className="text-sm text-[#6B7A99]">No one else is here.</li>}
+              {roomUsers
+                .filter((u) => u.uid !== user.uid)
+                .map((u) => (
+                  <li key={u.uid} className="flex items-center gap-2 rounded-xl bg-[#F4F9FF] px-3 py-2">
+                    <span data-notranslate className="flex-1 truncate font-semibold">
+                      {u.username}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const c = modCtx();
+                        if (c) kickUser(c, u.username);
+                        setKickOpen(false);
+                      }}
+                      className="rounded-lg bg-rose-500 px-3 py-1 text-xs font-bold text-white"
+                    >
+                      Kick
+                    </button>
+                  </li>
+                ))}
+            </ul>
+            <button type="button" onClick={() => setKickOpen(false)} className="mt-3 w-full rounded-xl border border-[#D5E3F5] py-2.5 text-sm font-bold text-[#5B6B8C]">
+              Close
+            </button>
+          </div>
+        </div>
       )}
     </PageShell>
   );

@@ -21,6 +21,7 @@ export function ChatBar({
   disabled,
   onGift,
   giftDisabled,
+  onMore,
   photo,
   voice,
   voiceActive,
@@ -35,6 +36,8 @@ export function ChatBar({
   maxLength: number;
   disabled?: boolean;
   onGift?: () => void;
+  /** ⋮ opens the caller's own menu (the room menu) instead of the small gift menu. */
+  onMore?: () => void;
   giftDisabled?: boolean;
   photo: { onFile: (f: File | undefined) => void; disabled: boolean; uploading: boolean; title: string };
   /** The <VoiceRecorder>; while it records it takes over the row. */
@@ -78,7 +81,7 @@ export function ChatBar({
       <div ref={moreRef} className="relative shrink-0">
         <button
           type="button"
-          onClick={() => setMoreOpen((v) => !v)}
+          onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
           aria-label="More"
           aria-expanded={moreOpen}
           className="flex h-11 w-7 items-center justify-center rounded-full bg-[#1E2B47] text-lg font-black text-white"
