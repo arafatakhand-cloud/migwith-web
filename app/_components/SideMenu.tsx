@@ -10,6 +10,7 @@ import { badgeText } from "../../lib/useBadges";
 import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
+import { useFounderPerms } from "../../lib/founder";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
 // Phones open it from ☰; laptops show it as a sidebar (DesktopSidebar).
@@ -21,6 +22,7 @@ export function MenuPanel() {
   const { user, username, badges } = useSession();
   const uid = user?.uid;
   const [me, setMe] = useState<Me | null>(null);
+  const founder = useFounderPerms();
 
   useEffect(() => {
     if (!uid) return;
@@ -42,6 +44,8 @@ export function MenuPanel() {
     ["/wallet", "💳", "My Account", 0],
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "🧭", "Explore", 0],
+    // The founder tools, like the app's "migwith secret" (founders only).
+    ...(founder.isAnyFounder ? ([["/secret", "▤", "migwith secret", 0]] as [string, string, string, number][]) : []),
     ["/games", "🎮", "Game List", 0],
     ["/settings", "⚙️", "Settings", 0],
   ];
