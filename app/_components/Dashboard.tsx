@@ -252,8 +252,16 @@ export function Dashboard() {
 
       {/* Rows */}
       <div className="bg-white shadow-sm">
+        <Link href="/mail" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
+          {/* An envelope, like the app's */}
+          <svg width="26" height="19" viewBox="0 0 26 19" className="shrink-0" aria-hidden>
+            <rect x="1" y="1" width="24" height="17" rx="3" fill="none" stroke="#2A6F9E" strokeWidth="2" />
+            <path d="M2 3 L13 11.4 L24 3" fill="none" stroke="#2A6F9E" strokeWidth="2" />
+          </svg>
+          <span className="font-semibold">Email ({badges.emails})</span>
+        </Link>
         <Link href="/messages" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
-          <span className="text-lg text-[#174EA6]">✉️</span>
+          <span className="text-lg text-[#174EA6]">💬</span>
           <span className="font-semibold">Messages ({badges.messages})</span>
         </Link>
         <Link href="/alerts" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 hover:bg-[#F4F9FF]">

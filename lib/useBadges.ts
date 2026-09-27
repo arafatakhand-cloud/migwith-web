@@ -2,7 +2,7 @@
 
 import { useUnreadBySender } from "./privateChat";
 import { useFriendRequests } from "./friends";
-import { useUnreadAlerts } from "./alerts";
+import { useUnreadAlerts, useUnreadEmails } from "./alerts";
 
 // Unread counts for the header and the mobile bottom bar.
 export function useBadges(username: string) {
@@ -11,6 +11,7 @@ export function useBadges(username: string) {
     messages: Object.values(unread).reduce((a, b) => a + b, 0),
     requests: useFriendRequests(username).incoming.length,
     alerts: useUnreadAlerts(username),
+    emails: useUnreadEmails(username),
   };
 }
 

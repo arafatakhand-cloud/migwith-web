@@ -22,3 +22,27 @@ export function useUnreadAlerts(username: string): number {
 
   return count;
 }
+
+// Unread mail in the inbox (the app's "Email (n)").
+export function useUnreadEmails(username: string): number {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!username) {
+      setCount(0);
+      return;
+    }
+    return onSnapshot(
+      query(
+        collection(db, "emails"),
+        where("mailboxUsername", "==", username),
+        where("mailboxType", "==", "received"),
+        where("read", "==", false)
+      ),
+      (snap) => setCount(snap.size),
+      (err) => console.error("emails listener failed", err)
+    );
+  }, [username]);
+
+  return count;
+}

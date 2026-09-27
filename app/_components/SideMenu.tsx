@@ -42,7 +42,7 @@ export function MenuPanel() {
     ["/wallet", "💳", "My Account", 0],
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "🧭", "Explore", 0],
-    ["/rooms", "🎮", "Game List", 0],
+    ["/games", "🎮", "Game List", 0],
     ["/settings", "⚙️", "Settings", 0],
   ];
 
