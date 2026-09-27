@@ -24,3 +24,17 @@ export function levelProgress(xp: number, level: number): number {
   if (next <= start) return 0;
   return Math.min(1, Math.max(0, (xp - start) / (next - start)));
 }
+
+/** The level an amount of XP earns (one pass up the curve, like the app). */
+export function levelFromXp(xp: number): number {
+  const safe = Math.max(0, xp);
+  let level = 1;
+  let total = 0;
+  while (level < 100000) {
+    const next = total + xpRequiredForNextLevel(level);
+    if (next > safe) break;
+    total = next;
+    level++;
+  }
+  return level;
+}

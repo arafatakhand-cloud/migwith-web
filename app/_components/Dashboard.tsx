@@ -6,7 +6,7 @@ import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc
 import { db } from "../../lib/firebase";
 import { useFriendRequests } from "../../lib/friends";
 import { chatHref } from "../../lib/privateChat";
-import { OFFICIAL_COUNTRY_ROOMS, roomHref } from "../../lib/rooms";
+import { OFFICIAL_COUNTRY_ROOMS, badgeForLevel, roomHref } from "../../lib/rooms";
 import { useSession } from "./AppSession";
 import { InstallHint } from "./InstallHint";
 
@@ -242,8 +242,10 @@ export function Dashboard() {
               </button>
             )}
           </div>
-          <Link href="/leaderboard" className="shrink-0 text-sm font-black">
-            🏅 {me?.level ?? "…"}
+          {/* Level badge + number; tap opens the Level page (like the app) */}
+          <Link href="/level" className="flex shrink-0 items-center gap-1.5 text-[17px] font-bold">
+            <span className="text-lg">{badgeForLevel(me?.level ?? 1)}</span>
+            {me?.level ?? "…"}
           </Link>
         </div>
       </section>
