@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-// "Install MIGwith" button. Android / desktop Chrome give us a real install
+// "Install MIGlife" button. Android / desktop Chrome give us a real install
 // prompt; iPhone Safari has none, so it shows the Share → Add to Home Screen tip.
 
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -53,7 +53,7 @@ export function InstallApp() {
         }}
         className="flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-300/30 bg-cyan-300/10 px-6 py-3 font-bold text-cyan-200 transition hover:bg-cyan-300/20"
       >
-        📲 Install MIGwith on this phone
+        📲 Install MIGlife on this phone
       </button>
       {showTip && (
         <p className="mt-2 rounded-xl bg-white/5 px-4 py-3 text-center text-sm text-white/75">

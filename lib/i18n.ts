@@ -42,11 +42,11 @@ export const BN: Record<string, string> = {
   About: "সম্পর্কে",
   Download: "ডাউনলোড",
   "Connect • Chat • Play": "যুক্ত হও • চ্যাট • খেলো",
-  "Welcome to MIGwith": "MIGwith-এ স্বাগতম",
+  "Welcome to MIGlife": "MIGlife-এ স্বাগতম",
   "Your world.": "তোমার দুনিয়া।",
   "Your community.": "তোমার কমিউনিটি।",
-  "Connect with people, discover rooms, chat, share gifts, play games and experience the world of MIGwith.":
-    "মানুষের সাথে যুক্ত হও, রুম খুঁজে নাও, চ্যাট করো, গিফট দাও, গেম খেলো — MIGwith-এর দুনিয়া উপভোগ করো।",
+  "Connect with people, discover rooms, chat, share gifts, play games and experience the world of MIGlife.":
+    "মানুষের সাথে যুক্ত হও, রুম খুঁজে নাও, চ্যাট করো, গিফট দাও, গেম খেলো — MIGlife-এর দুনিয়া উপভোগ করো।",
   Chat: "চ্যাট",
   Gifts: "গিফট",
   Games: "গেম",
@@ -59,8 +59,8 @@ export const BN: Record<string, string> = {
   "💰 My Account · Coins": "💰 আমার অ্যাকাউন্ট · কয়েন",
   "🏆 Leader Board": "🏆 লিডার বোর্ড",
   "Create MIG ID": "MIG ID তৈরি করুন",
-  "Login to MIGwith": "MIGwith-এ লগইন",
-  "📲 Install MIGwith on this phone": "📲 এই ফোনে MIGwith ইনস্টল করুন",
+  "Login to MIGlife": "MIGlife-এ লগইন",
+  "📲 Install MIGlife on this phone": "📲 এই ফোনে MIGlife ইনস্টল করুন",
   "In Safari, tap": "Safari-তে চাপুন",
   "Loading…": "লোড হচ্ছে…",
   Refresh: "রিফ্রেশ",
@@ -101,25 +101,25 @@ export const BN: Record<string, string> = {
   "Remove from favorites": "প্রিয় থেকে সরান",
 
   "Create your MIG ID in the app": "অ্যাপে আপনার MIG ID তৈরি করুন",
-  "New MIG IDs can only be created in the MIGwith app. Once you have one, log in here with the same MIG ID and password.":
-    "নতুন MIG ID শুধু MIGwith অ্যাপ থেকে তৈরি করা যায়। ID হয়ে গেলে একই MIG ID আর পাসওয়ার্ড দিয়ে এখানে লগইন করুন।",
-  "New to MIGwith? Create your MIG ID in the MIGwith app.": "MIGwith-এ নতুন? MIGwith অ্যাপ থেকে আপনার MIG ID তৈরি করুন।",
+  "New MIG IDs can only be created in the MIGlife app. Once you have one, log in here with the same MIG ID and password.":
+    "নতুন MIG ID শুধু MIGlife অ্যাপ থেকে তৈরি করা যায়। ID হয়ে গেলে একই MIG ID আর পাসওয়ার্ড দিয়ে এখানে লগইন করুন।",
+  "New to MIGlife? Create your MIG ID in the MIGlife app.": "MIGlife-এ নতুন? MIGlife অ্যাপ থেকে আপনার MIG ID তৈরি করুন।",
   // Login / register / forgot password
   "← Home": "← হোম",
   "← Login": "← লগইন",
   "Welcome Back": "আবার স্বাগতম",
-  "Login to continue to your MIGwith account": "আপনার MIGwith অ্যাকাউন্টে যেতে লগইন করুন",
+  "Login to continue to your MIGlife account": "আপনার MIGlife অ্যাকাউন্টে যেতে লগইন করুন",
   Password: "পাসওয়ার্ড",
   "Forgot Password?": "পাসওয়ার্ড ভুলে গেছেন?",
   "Remember me": "মনে রাখুন",
   OR: "অথবা",
   "Create a New MIG ID": "নতুন MIG ID তৈরি করুন",
-  "Your account information is protected by MIGwith security.": "আপনার অ্যাকাউন্টের তথ্য MIGwith নিরাপত্তায় সুরক্ষিত।",
+  "Your account information is protected by MIGlife security.": "আপনার অ্যাকাউন্টের তথ্য MIGlife নিরাপত্তায় সুরক্ষিত।",
   "Please enter your MIG ID and password.": "আপনার MIG ID আর পাসওয়ার্ড দিন।",
   "Incorrect MIG ID or password.": "MIG ID বা পাসওয়ার্ড ভুল।",
   "Enter your password": "পাসওয়ার্ড লিখুন",
   "Enter your MIG ID": "আপনার MIG ID লিখুন",
-  "Join MIGwith and start connecting today": "MIGwith-এ যোগ দিন, আজই যুক্ত হওয়া শুরু করুন",
+  "Join MIGlife and start connecting today": "MIGlife-এ যোগ দিন, আজই যুক্ত হওয়া শুরু করুন",
   "1-27 characters, at least 1 letter. Only A-Z a-z 0-9 . _ -": "১-২৭ অক্ষর, কমপক্ষে ১টি অক্ষর। শুধু A-Z a-z 0-9 . _ -",
   "Recovery Email": "রিকভারি ইমেইল",
   "Used to reset your password if you forget it": "পাসওয়ার্ড ভুলে গেলে এটা দিয়ে রিসেট করবেন",
@@ -127,7 +127,7 @@ export const BN: Record<string, string> = {
   "Confirm Password": "পাসওয়ার্ড আবার দিন",
   Select: "বেছে নিন",
   "Referral Code": "রেফারেল কোড",
-  "I agree to the MIGwith terms and community rules": "আমি MIGwith-এর শর্ত ও কমিউনিটি নিয়ম মেনে নিচ্ছি",
+  "I agree to the MIGlife terms and community rules": "আমি MIGlife-এর শর্ত ও কমিউনিটি নিয়ম মেনে নিচ্ছি",
   "I already have a MIG ID": "আমার আগে থেকেই MIG ID আছে",
   "Please enter a valid email address.": "সঠিক ইমেইল ঠিকানা দিন।",
   "Please verify your email first.": "আগে আপনার ইমেইল ভেরিফাই করুন।",
@@ -142,7 +142,7 @@ export const BN: Record<string, string> = {
   "Reset Code": "রিসেট কোড",
   "New Password": "নতুন পাসওয়ার্ড",
   "Confirm New Password": "নতুন পাসওয়ার্ড আবার দিন",
-  "Login to MIGwith →": "MIGwith-এ লগইন →",
+  "Login to MIGlife →": "MIGlife-এ লগইন →",
   "Back to Login": "লগইনে ফিরে যান",
   "Please enter your MIG ID.": "আপনার MIG ID দিন।",
   "Please enter the code from your email.": "ইমেইলে আসা কোডটা দিন।",
@@ -154,7 +154,7 @@ export const BN: Record<string, string> = {
 
   // Rooms
   "Chat Rooms": "চ্যাট রুম",
-  "Same rooms as the MIGwith app — chat with app users live.": "MIGwith অ্যাপের একই রুম — অ্যাপের মানুষের সাথে সরাসরি চ্যাট করুন।",
+  "Same rooms as the MIGlife app — chat with app users live.": "MIGlife অ্যাপের একই রুম — অ্যাপের মানুষের সাথে সরাসরি চ্যাট করুন।",
   "➕ Create Room": "➕ রুম তৈরি করুন",
   "➕ Create a Chat Room": "➕ চ্যাট রুম তৈরি করুন",
   "👑 My Rooms": "👑 আমার রুম",
@@ -200,7 +200,7 @@ export const BN: Record<string, string> = {
   "Message (optional)": "মেসেজ (ইচ্ছা হলে)",
 
   // Messages / chat
-  "Private chats with your MIGwith friends.": "MIGwith বন্ধুদের সাথে প্রাইভেট চ্যাট।",
+  "Private chats with your MIGlife friends.": "MIGlife বন্ধুদের সাথে প্রাইভেট চ্যাট।",
   "Search friends": "বন্ধু খুঁজুন",
   "not a friend": "বন্ধু নয়",
   "You cannot message yourself.": "নিজেকে মেসেজ পাঠানো যায় না।",
@@ -234,18 +234,18 @@ export const BN: Record<string, string> = {
   // Alerts
   "Notifications are on": "নোটিফিকেশন চালু আছে",
   "Get notifications on this device": "এই ডিভাইসে নোটিফিকেশন পান",
-  "Messages, gifts, friend requests and invites — even when MIGwith is closed.":
-    "মেসেজ, গিফট, ফ্রেন্ড রিকোয়েস্ট আর ইনভাইট — MIGwith বন্ধ থাকলেও।",
+  "Messages, gifts, friend requests and invites — even when MIGlife is closed.":
+    "মেসেজ, গিফট, ফ্রেন্ড রিকোয়েস্ট আর ইনভাইট — MIGlife বন্ধ থাকলেও।",
   "Notifications are blocked. Allow them for this site in your browser settings.":
     "নোটিফিকেশন বন্ধ করা আছে। ব্রাউজারের সেটিংসে এই সাইটের জন্য চালু করুন।",
-  "On iPhone, first add MIGwith to your Home Screen (Share → Add to Home Screen), then open it from there.":
-    "iPhone-এ আগে MIGwith হোম স্ক্রিনে যোগ করুন (Share → Add to Home Screen), তারপর সেখান থেকে খুলুন।",
+  "On iPhone, first add MIGlife to your Home Screen (Share → Add to Home Screen), then open it from there.":
+    "iPhone-এ আগে MIGlife হোম স্ক্রিনে যোগ করুন (Share → Add to Home Screen), তারপর সেখান থেকে খুলুন।",
   "Turn on": "চালু করুন",
   "Turn off": "বন্ধ করুন",
   "Notifications were not allowed.": "নোটিফিকেশনের অনুমতি দেওয়া হয়নি।",
   "🔔 Alerts": "🔔 অ্যালার্ট",
   "No alerts yet.": "এখনো কোনো অ্যালার্ট নেই।",
-  "Respond in the MIGwith app": "MIGwith অ্যাপ থেকে উত্তর দিন",
+  "Respond in the MIGlife app": "MIGlife অ্যাপ থেকে উত্তর দিন",
   "View requests →": "রিকোয়েস্ট দেখুন →",
   "My friends →": "আমার বন্ধু →",
   "▶ Join room": "▶ রুমে ঢুকুন",
@@ -287,7 +287,7 @@ export const BN: Record<string, string> = {
 
   // Wallet
   "💰 My Account": "💰 আমার অ্যাকাউন্ট",
-  "MIGWITH BALANCE": "MIGWITH ব্যালেন্স",
+  "MIGLIFE BALANCE": "MIGLIFE ব্যালেন্স",
   "Spent Today": "আজ খরচ",
   "Earned Today": "আজ আয়",
   "Transfer Limit": "ট্রান্সফার সীমা",
@@ -413,14 +413,14 @@ export const BN: Record<string, string> = {
   "Security Question": "সিকিউরিটি প্রশ্ন",
   "Required before you can change your password or PIN": "পাসওয়ার্ড বা পিন বদলানোর আগে লাগবে",
   "Appearance & Theme": "রূপ ও থিম",
-  "Customize the MIGwith visual style": "MIGwith-এর চেহারা সাজান",
+  "Customize the MIGlife visual style": "MIGlife-এর চেহারা সাজান",
   "Language": "ভাষা",
   "Help & Support": "সাহায্য ও সহায়তা",
   "Get help or report an issue": "সাহায্য নিন বা সমস্যা জানান",
   "Feedback & Report": "মতামত ও রিপোর্ট",
   "Send feedback or report a problem": "মতামত দিন বা সমস্যা জানান",
-  "About MIGwith": "MIGwith সম্পর্কে",
-  "MIGwith · Privacy, security & account controls": "MIGwith · গোপনীয়তা, নিরাপত্তা ও অ্যাকাউন্ট",
+  "About MIGlife": "MIGlife সম্পর্কে",
+  "MIGlife · Privacy, security & account controls": "MIGlife · গোপনীয়তা, নিরাপত্তা ও অ্যাকাউন্ট",
   "No blocked users.": "কোনো ব্লক করা ইউজার নেই।",
   "Unblock": "আনব্লক",
   "Block": "ব্লক",
@@ -491,7 +491,7 @@ export const BN: Record<string, string> = {
   "📈 Trail Earnings": "📈 ট্রেইল আয়",
   "Last 7 days": "গত ৭ দিন",
   "Pending": "বাকি",
-  "Use MIGwith like an app on iPhone": "iPhone-এ MIGwith অ্যাপের মতো ব্যবহার করুন",
+  "Use MIGlife like an app on iPhone": "iPhone-এ MIGlife অ্যাপের মতো ব্যবহার করুন",
   "✕ Leave": "✕ বের হোন",
   "Leave room": "রুম ছাড়ুন",
 };

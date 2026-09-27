@@ -13,7 +13,7 @@ export default function ExplorePage() {
         <PageTitle title="Explore" subtitle="Discover · Community" />
         {ready && (
           <div className="grid gap-2.5 md:grid-cols-2">
-            <PastelCard icon="📢" title="Announcements" subtitle="migwith News & Updates" color="#3984D9" href="/announcements" />
+            <PastelCard icon="📢" title="Announcements" subtitle="MIGlife News & Updates" color="#3984D9" href="/announcements" />
             <PastelCard icon="🎁" title="Gift Shops" subtitle="Send gifts to your friends" color="#E5484D" href="/gifts" />
             <PastelCard icon="👥" title="Members" subtitle="Staff, Mentors & Merchants" color="#7B3FC7" href="/members" />
             <PastelCard icon="🏆" title="Leader Board" subtitle="Top Game Winners across rooms" color="#D9A400" href="/leaderboard" />

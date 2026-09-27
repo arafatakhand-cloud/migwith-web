@@ -146,7 +146,7 @@ export function HeroActions() {
         href="/login"
         className="flex w-full max-w-xs items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-8 py-4 font-bold text-white/90 backdrop-blur transition hover:bg-white/10"
       >
-        Login to MIGwith
+        Login to MIGlife
       </Link>
     </div>
   );

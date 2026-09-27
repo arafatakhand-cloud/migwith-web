@@ -156,7 +156,7 @@ export default function EditProfilePage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={coverPhotoUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-xl font-black">MIG WITH</span>
+                  <span className="text-xl font-black">MIG LIFE</span>
                 )}
               </div>
               <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold text-white">

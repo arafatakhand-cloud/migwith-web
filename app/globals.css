@@ -17,7 +17,7 @@ html[data-font="rounded"] body {
   font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive, sans-serif;
 }
 
-/* ☀️ Sky Blue — the MIGwith app's default theme: sky page, brand-blue cards, navy bars. */
+/* ☀️ Sky Blue — the MIGlife app's default theme: sky page, brand-blue cards, navy bars. */
 .bg-sky-app {
   background: linear-gradient(180deg, #4fb6ea 0%, #2e93d3 45%, #1e73bc 100%);
   background-attachment: fixed;

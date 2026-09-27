@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
 
             <div>
               <h1 className="text-2xl font-black tracking-wide">
-                MIG<span className="text-cyan-300">with</span>
+                MIG<span className="text-cyan-300">life</span>
               </h1>
 
               <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">
@@ -302,7 +302,7 @@ export default function ForgotPasswordPage() {
                 href="/login"
                 className="mt-7 block w-full rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-400 px-6 py-4 text-center font-bold text-white shadow-xl shadow-blue-500/20 transition duration-300 hover:scale-[1.01]"
               >
-                Login to MIGwith →
+                Login to MIGlife →
               </Link>
             )}
 
@@ -319,7 +319,7 @@ export default function ForgotPasswordPage() {
 
           <div className="mt-8 flex items-center justify-center gap-3 text-xs text-white/20">
             <span className="h-px w-8 bg-white/10" />
-            MIGwith
+            MIGlife
             <span className="h-px w-8 bg-white/10" />
           </div>
 

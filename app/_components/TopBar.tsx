@@ -148,7 +148,7 @@ export function TopBar() {
             <span className="text-lg font-black">M</span>
           </div>
           <span className="text-xl font-black tracking-wide text-[#0B2A5B]">
-            MIG<span className="text-[#2F80ED]">with</span>
+            MIG<span className="text-[#2F80ED]">life</span>
           </span>
         </Link>
         <HeaderAuth />

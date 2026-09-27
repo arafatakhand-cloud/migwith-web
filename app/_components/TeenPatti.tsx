@@ -563,7 +563,7 @@ function TpOvalTable({
               <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[50%] bg-[radial-gradient(ellipse,_#B4246C,_#8E1A57_60%,_#4E0B2E)]">
                 <span className="absolute left-[17%] top-[20%] h-[60%] w-[66%] rounded-[50%] border-2 border-dashed border-[#E39A6A]/55" />
                 <span className="absolute left-[14%] top-[8%] h-[42%] w-[72%] rounded-[50%] bg-gradient-to-b from-white/20 to-white/[0.04]" />
-                <span className="relative text-[13px] font-bold tracking-[5px] text-[#E8A3B8]/85">MIGWITH</span>
+                <span className="relative text-[13px] font-bold tracking-[5px] text-[#E8A3B8]/85">MIGLIFE</span>
                 <span className="relative my-0.5 text-lg leading-none">🪙</span>
                 <span className="relative rounded-full border-[1.5px] border-[#E6BE5A] bg-[#2A0A1E] px-3.5 py-0.5 text-sm font-extrabold text-[#FFD166]">
                   {state.running ? `POT ${state.pot.toLocaleString()}` : "Type !start"}

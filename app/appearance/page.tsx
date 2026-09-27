@@ -97,7 +97,7 @@ export default function AppearancePage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-md px-3 pb-8 sm:px-6">
-        <PageTitle title="Appearance" subtitle="Customize the MIGwith visual style" icon="🎨" />
+        <PageTitle title="Appearance" subtitle="Customize the MIGlife visual style" icon="🎨" />
         {ready && (
           <>
             <p className="text-sm font-bold text-[#0B2A5B]">APP THEMES</p>
@@ -122,7 +122,7 @@ export default function AppearancePage() {
                       {name}
                     </span>
                     <span className="block text-sm text-[#5B6B8C]" style={{ fontFamily: family, fontWeight: id === "luxury" ? 300 : undefined }}>
-                      Hello · বাংলা · MIG WITH
+                      Hello · বাংলা · MIG LIFE
                     </span>
                   </span>
                   <span className="text-xl text-[#D4AF37]">{font === id ? "✓" : ""}</span>

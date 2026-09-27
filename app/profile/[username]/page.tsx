@@ -345,7 +345,7 @@ export default function ProfilePage() {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
             ) : (
-              <span className="text-2xl font-black tracking-wide">MIG WITH</span>
+              <span className="text-2xl font-black tracking-wide">MIG LIFE</span>
             )}
           </div>
           <button
@@ -391,7 +391,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-3 px-1">
-          <p className="text-sm text-[#35507E]">@{username} · MIG WITH member</p>
+          <p className="text-sm text-[#35507E]">@{username} · MIG LIFE member</p>
           {profile.bio && <p data-notranslate className="mt-2 whitespace-pre-wrap text-[#0B2A5B]">{profile.bio}</p>}
         </div>
 

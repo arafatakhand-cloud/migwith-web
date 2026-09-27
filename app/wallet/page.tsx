@@ -444,7 +444,7 @@ export default function WalletPage() {
 
         {/* Balance */}
         <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-5 text-white shadow-lg">
-          <p className="text-xs font-bold tracking-widest text-yellow-200">MIGWITH BALANCE</p>
+          <p className="text-xs font-bold tracking-widest text-yellow-200">MIGLIFE BALANCE</p>
           <p className="mt-1 text-4xl font-black text-white">
             🪙 {balance === null ? "…" : balance.toLocaleString()}
           </p>

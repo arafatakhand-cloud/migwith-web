@@ -44,8 +44,8 @@ export function MenuPanel() {
     ["/wallet", "💳", "My Account", 0],
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "🧭", "Explore", 0],
-    // The founder tools, like the app's "migwith secret" (founders only).
-    ...(founder.isAnyFounder ? ([["/secret", "▤", "migwith secret", 0]] as [string, string, string, number][]) : []),
+    // The founder tools, like the app's "miglife secret" (founders only).
+    ...(founder.isAnyFounder ? ([["/secret", "▤", "miglife secret", 0]] as [string, string, string, number][]) : []),
     ["/games", "🎮", "Game List", 0],
     ["/settings", "⚙️", "Settings", 0],
   ];
@@ -142,7 +142,7 @@ export function MenuPanel() {
       <span className="flex-1">Logout</span>
       <span>›</span>
     </button>
-    <p className="mt-2 text-center text-[10px] text-[#35507E]">MIGwith Web</p>
+    <p className="mt-2 text-center text-[10px] text-[#35507E]">MIGlife Web</p>
     </>
   );
 }

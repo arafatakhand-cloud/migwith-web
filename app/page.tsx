@@ -28,7 +28,7 @@ export default function Home() {
 
             <div>
               <h1 className="text-2xl font-black tracking-wide">
-                MIG<span className="text-cyan-300">with</span>
+                MIG<span className="text-cyan-300">life</span>
               </h1>
 
               <p className="text-[10px] uppercase tracking-[0.35em] text-white/40">
@@ -73,7 +73,7 @@ export default function Home() {
           {/* Badge */}
           <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/5 px-4 py-2 text-xs font-medium text-cyan-200">
             <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300" />
-            Welcome to MIGwith
+            Welcome to MIGlife
           </div>
 
           {/* Title */}
@@ -89,7 +89,7 @@ export default function Home() {
           {/* Description */}
           <p className="mt-7 max-w-2xl text-base leading-7 text-white/55 sm:text-lg">
             Connect with people, discover rooms, chat, share gifts,
-            play games and experience the world of MIGwith.
+            play games and experience the world of MIGlife.
           </p>
 
           {/* Buttons */}
@@ -129,7 +129,7 @@ export default function Home() {
           {/* Bottom Line */}
           <div className="mt-16 flex items-center gap-3 text-xs text-white/30">
             <span className="h-px w-10 bg-white/10" />
-            MIGwith
+            MIGlife
             <span className="h-px w-10 bg-white/10" />
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 px-6 py-6 text-center text-xs text-white/30">
-        © {new Date().getFullYear()} MIGwith. All rights reserved.
+        © {new Date().getFullYear()} MIGlife. All rights reserved.
       </footer>
     </main>
     </HomeGate>

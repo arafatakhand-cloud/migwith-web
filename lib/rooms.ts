@@ -1,4 +1,4 @@
-// Room names and presence helpers shared with the MIGwith Android app.
+// Room names and presence helpers shared with the MIGlife Android app.
 // Keep these in sync with MainActivity.kt / RoomPage.kt.
 
 export const OFFICIAL_COUNTRY_ROOMS = [

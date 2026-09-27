@@ -39,10 +39,10 @@ export function PushToggle() {
           </p>
           <p className="text-xs text-[#5B6B8C]">
             {status === "ios-install"
-              ? "On iPhone, first add MIGwith to your Home Screen (Share → Add to Home Screen), then open it from there."
+              ? "On iPhone, first add MIGlife to your Home Screen (Share → Add to Home Screen), then open it from there."
               : status === "blocked"
                 ? "Notifications are blocked. Allow them for this site in your browser settings."
-                : "Messages, gifts, friend requests and invites — even when MIGwith is closed."}
+                : "Messages, gifts, friend requests and invites — even when MIGlife is closed."}
           </p>
         </div>
         {(status === "on" || status === "off") && (

@@ -134,7 +134,7 @@ export function Dashboard() {
   const invite = async () => {
     const url = window.location.origin;
     try {
-      if (navigator.share) await navigator.share({ title: "MIGwith", text: "Join me on MIGwith!", url });
+      if (navigator.share) await navigator.share({ title: "MIGlife", text: "Join me on MIGlife!", url });
       else {
         await navigator.clipboard.writeText(url);
         alert("Link copied: " + url);

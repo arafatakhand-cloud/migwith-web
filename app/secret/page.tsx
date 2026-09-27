@@ -9,7 +9,7 @@ import { useFounderPerms } from "../../lib/founder";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { FounderShell, input } from "./_Shell";
 
-// "migwith secret", the app's BlogPage: the founder tools, the "other users
+// "miglife secret", the app's BlogPage: the founder tools, the "other users
 // ID creation" switch, Luxury Bot sequence tiers and FOUNDER CREATE ID.
 
 const setIdCreationStatus = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
@@ -72,7 +72,7 @@ export default function SecretPage() {
   ];
 
   return (
-    <FounderShell title="migwith secret" allowed={f.isAnyFounder} loaded={f.loaded}>
+    <FounderShell title="miglife secret" allowed={f.isAnyFounder} loaded={f.loaded}>
       <div className="space-y-2 rounded-[18px] border border-[#E0A82E] bg-white p-4">
         <p className="text-[17px] font-bold">🧰 Founder Tools</p>
         {tools

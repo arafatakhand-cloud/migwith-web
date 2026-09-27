@@ -229,7 +229,7 @@ export default function IpMonitorPage() {
                 onClick={() =>
                   task(async () => {
                     const next = !user.suspended;
-                    await ipAdmin({ action: "suspend", username: user.name, suspended: next, reason: "Suspended by migwith" });
+                    await ipAdmin({ action: "suspend", username: user.name, suspended: next, reason: "Suspended by MIGlife" });
                     await fetchUser(user.name);
                     setStatus(next ? `✅ ${user.name} suspended` : `✅ ${user.name} unsuspended`);
                   })

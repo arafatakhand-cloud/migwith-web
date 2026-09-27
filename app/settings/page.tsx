@@ -119,7 +119,7 @@ export default function SettingsPage() {
           </Link>
           <h1 className="text-2xl font-black tracking-wide">SETTINGS</h1>
         </div>
-        <p className="mt-1 text-sm text-[#35507E]">MIGwith · Privacy, security & account controls</p>
+        <p className="mt-1 text-sm text-[#35507E]">MIGlife · Privacy, security & account controls</p>
 
         {message && <p className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{message}</p>}
 
@@ -170,7 +170,7 @@ export default function SettingsPage() {
 
             <SectionLabel>App preferences</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGwith visual style" color="#E12A6B" href="/appearance" />
+              <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGlife visual style" color="#E12A6B" href="/appearance" />
               <PastelCard
                 icon="🌐"
                 title="Language"
@@ -187,7 +187,7 @@ export default function SettingsPage() {
             <div className="grid gap-2.5 md:grid-cols-2">
               <PastelCard icon="❔" title="Help & Support" subtitle="Get help or report an issue" color="#43B65A" onClick={() => setDialog("help")} />
               <PastelCard icon="💬" title="Feedback & Report" subtitle="Send feedback or report a problem" color="#7B1FB8" onClick={() => setDialog("feedback")} />
-              <PastelCard icon="ℹ️" title="About MIGwith" subtitle="MIGwith Web" color="#D4AF37" onClick={() => setDialog("about")} />
+              <PastelCard icon="ℹ️" title="About MIGlife" subtitle="MIGlife Web" color="#D4AF37" onClick={() => setDialog("about")} />
             </div>
           </>
         )}
@@ -217,9 +217,9 @@ export default function SettingsPage() {
         />
       )}
       {dialog === "about" && (
-        <Modal title="About MIGwith" onClose={() => setDialog("")}>
+        <Modal title="About MIGlife" onClose={() => setDialog("")}>
           <p className="text-sm leading-5 text-[#5B6B8C]">
-            MIGwith — chat rooms, friends, gifts and games. This is the web version; it uses the same account, rooms and coins as
+            MIGlife — chat rooms, friends, gifts and games. This is the web version; it uses the same account, rooms and coins as
             the app.
           </p>
           <div className="flex">
@@ -369,7 +369,7 @@ function SecurityGate({ onClose, onVerified }: { onClose: () => void; onVerified
         <p className="text-sm text-[#5B6B8C]">Checking your Security Question…</p>
       ) : !hasQuestion ? (
         <p className="text-sm text-rose-600">
-          You need to set a Security Question first (in the MIGwith app: Settings › Security Question) before you can change
+          You need to set a Security Question first (in the MIGlife app: Settings › Security Question) before you can change
           your password.
         </p>
       ) : (
