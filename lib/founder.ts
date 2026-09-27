@@ -5,8 +5,14 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 import { useSession } from "../app/_components/AppSession";
 
-// Founder permissions of this account, like the app's MyFounderPerms:
-// migwith can do everything; other founders have the perms listed in
+// The main founder account, like the app's MainFounderUsernames: "miglife"
+// ONLY (the old "migwith" account has no founder powers any more).
+export const MAIN_FOUNDER_USERNAMES = new Set(["miglife"]);
+export const isMainFounderName = (name?: string | null) =>
+  MAIN_FOUNDER_USERNAMES.has((name || "").trim().toLowerCase());
+
+// Founder permissions of this account, like the app's MyFounderPerms: the
+// main founder can do everything; other founders have the perms listed in
 // founders/{uid}. The server checks every founder action again.
 export const FOUNDER_PERMS: [string, string][] = [
   ["share_permissions", "Share Permissions"],
@@ -25,7 +31,7 @@ export function useFounderPerms() {
   const { user, username } = useSession();
   const [perms, setPerms] = useState<Set<string>>(new Set());
   const [loaded, setLoaded] = useState(false);
-  const isMigwith = (username || "").trim().toLowerCase() === "migwith";
+  const isMigwith = isMainFounderName(username);
   useEffect(() => {
     if (!user) return;
     return onSnapshot(

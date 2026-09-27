@@ -17,6 +17,7 @@ import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
+import { isMainFounderName } from "../../lib/founder";
 
 // 📢 Announcements, like the app's (Explore → Announcements): everyone reads
 // them, migwith adds / edits / deletes them.
@@ -26,7 +27,7 @@ type Item = { id: string; message: string; createdAtMs: number };
 export default function AnnouncementsPage() {
   const ready = useRequireLogin();
   const { username } = useSession();
-  const isAdmin = (username || "").trim().toLowerCase() === "migwith";
+  const isAdmin = isMainFounderName(username);
   const [items, setItems] = useState<Item[] | null>(null);
   const [editor, setEditor] = useState<{ id: string | null; text: string } | null>(null);
   const [busy, setBusy] = useState(false);

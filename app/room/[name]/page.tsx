@@ -73,6 +73,7 @@ import {
   type ModContext,
   type RoomInfo,
 } from "../../../lib/roomModeration";
+import { isMainFounderName } from "../../../lib/founder";
 
 type ChatMessage = SessionMessage;
 
@@ -481,7 +482,7 @@ function RoomView({ roomName }: { roomName: string }) {
         !alreadyHere &&
         roomInfoRef.current.capacityEnforced &&
         roomInfoRef.current.ownerUid !== uid &&
-        profile.username.trim().toLowerCase() !== "migwith"
+        !isMainFounderName(profile.username)
       ) {
         try {
           const snap = await getDocs(collection(db, "room_presence", roomName, "users"));
@@ -1045,7 +1046,7 @@ function RoomView({ roomName }: { roomName: string }) {
               {/* Room cards, like the app: manager, welcome text, who is here */}
               <div className="space-y-1.5 pb-1">
                 <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
-                  👥 This room is managed by: {roomInfo.ownerName || "migwith"}
+                  👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}
                 </p>
                 {roomInfo.description && (
                   <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
@@ -1277,7 +1278,7 @@ function RoomView({ roomName }: { roomName: string }) {
               </p>
             )}
             <ul className="space-y-1 pt-1">
-              <li>👑 Managed by: <b data-notranslate>{roomInfo.ownerName || "migwith"}</b></li>
+              <li>👑 Managed by: <b data-notranslate>{isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}</b></li>
               <li>👥 In the room: <b>{roomUsers.length}</b>{roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`}</li>
               <li>🔐 {roomInfo.privacy || "Public"}{locked && " · 🔒 Locked"}{silenced && " · 🔇 Silenced"}</li>
               {roomInfo.lockLevel > 0 && <li>⭐ Entry level: {roomInfo.lockLevel}+</li>}

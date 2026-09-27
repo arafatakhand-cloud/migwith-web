@@ -27,6 +27,7 @@ import {
 } from "../../lib/rooms";
 import { useRoomPrefs } from "../../lib/roomPrefs";
 import { PageShell } from "../_components/PageShell";
+import { isMainFounderName } from "../../lib/founder";
 
 type UserRoom = { name: string; description: string; ownerName: string; ownerUid: string; maxUsers: number; capped: boolean };
 
@@ -127,7 +128,7 @@ export default function RoomsPage() {
   }, [user, userRoomNames, refreshKey]);
 
   const myRooms = userRooms.filter((r) => user && r.ownerUid === user.uid);
-  const isFounder = username.trim().toLowerCase() === "migwith";
+  const isFounder = isMainFounderName(username);
 
   const create = async () => {
     if (!user || creating) return;
@@ -203,7 +204,7 @@ export default function RoomsPage() {
   const byLive = (a: string, b: string) => live(b) - live(a);
   const gameSet = new Set(OFFICIAL_GAME_ROOMS);
   const nonGame = userRooms.filter((r) => !gameSet.has(r.name));
-  const byMigwith = (r: UserRoom) => r.ownerName.trim().toLowerCase() === "migwith";
+  const byMigwith = (r: UserRoom) => isMainFounderName(r.ownerName);
   const publicSection = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...nonGame.filter(byMigwith).map((r) => r.name)]))
     .filter((n) => matches(n) && !isBannedRoomName(n))
     .sort(byLive);

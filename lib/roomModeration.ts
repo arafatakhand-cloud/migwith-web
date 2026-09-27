@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
+import { isMainFounderName } from "./founder";
 
 // Room roles and moderation, same rules and Firestore writes as the app's
 // RoomPage.kt. The Firestore rules check every write again on the server.
@@ -79,7 +80,7 @@ export type RoomPerms = ReturnType<typeof roomPerms>;
 
 export function roomPerms(room: RoomInfo, uid: string, username: string, role: string) {
   const me = username.trim().toLowerCase();
-  const isOwnerUser = me === "migwith";
+  const isOwnerUser = isMainFounderName(me);
   const isAppStaffHere = isOwnerUser || ["admin", "staff", "superadmin"].includes(role);
   const isRoomAdmin = isOwnerUser || ["admin", "superadmin"].includes(role);
   const isRoomMod = ["staff", "admin", "superadmin"].includes(role);
@@ -211,7 +212,7 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
   const appRole = await appRoleOf(name).catch(() => "");
   if (k === key(ctx.username)) return true;
   if (!perms.isUserRoom) {
-    return k === "migwith" || k === key(room.ownerName) || (!perms.isAppStaffHere && STAFF_ROLES.has(appRole));
+    return isMainFounderName(k) || k === key(room.ownerName) || (!perms.isAppStaffHere && STAFF_ROLES.has(appRole));
   }
   return (
     k === key(room.ownerName) ||

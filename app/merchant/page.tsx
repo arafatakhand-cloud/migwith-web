@@ -21,6 +21,7 @@ import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
 import { MerchantDashboard } from "./MerchantDashboard";
+import { isMainFounderName } from "../../lib/founder";
 
 // Explore › Merchant Program, same documents as the app's MentorProgramPage:
 // a normal user picks a mentor and sends a mentor_requests entry; an active
@@ -56,7 +57,7 @@ export default function MerchantPage() {
         const me = await getDoc(doc(db, "users", uid));
         const role = String(me.get("role") || "").trim().toLowerCase();
         setLevel(Number(me.get("level") || 1));
-        const mentor = role === "mentor" || username.trim().toLowerCase() === "migwith";
+        const mentor = role === "mentor" || isMainFounderName(username);
         setIsMentor(mentor);
         if (!mentor) {
           const [req, merch] = await Promise.all([

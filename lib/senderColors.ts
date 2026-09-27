@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./firebase";
+import { isMainFounderName } from "./founder";
 
 // Name colours in room chat, the app's roomRoleColor + Color Shop rule:
 // Lucky User pink while it lasts; Admin / Staff / Mentor / Merchant always
@@ -51,7 +52,7 @@ const cache = new Map<string, Profile>();
 function colorFor(name: string, p: Profile | undefined): string {
   if (!p) return USER_BLUE;
   if (p.luckyUntil > Date.now()) return LUCKY_PINK;
-  if (name === "migwith" || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
+  if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
   }
   if (["admin", "administrator", "superadmin", "staff", "mentor", "merchant"].includes(p.role)) {

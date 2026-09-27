@@ -24,7 +24,7 @@ const GENDERS: [string, string][] = [
   ["Others", "♙ Others"],
 ];
 // Nobody may look like the founder or staff through their Full Name.
-const RESERVED = new Set(["migwith", "admin", "ceo", "staff", "owner", "support", "mod", "moderator", "superadmin"]);
+const RESERVED = new Set(["migwith", "miglife", "admin", "ceo", "staff", "owner", "support", "mod", "moderator", "superadmin"]);
 const nameKey = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 export default function EditProfilePage() {

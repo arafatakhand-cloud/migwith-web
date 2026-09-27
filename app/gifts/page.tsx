@@ -16,6 +16,7 @@ import { db, storage } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
+import { isMainFounderName } from "../../lib/founder";
 
 // Explore › Gift Shops, like the app's GiftStorePage: the catalog in the
 // app's order with FEATURED / LIMITED badges; migwith adds, edits and
@@ -41,7 +42,7 @@ export default function GiftShopsPage() {
   const ready = useRequireLogin();
   const router = useRouter();
   const { user, username } = useSession();
-  const isAdmin = (username || "").trim().toLowerCase() === "migwith";
+  const isAdmin = isMainFounderName(username);
   const [gifts, setGifts] = useState<CatalogGift[] | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");

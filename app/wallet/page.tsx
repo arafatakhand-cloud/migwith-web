@@ -24,6 +24,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
 import { latestGifts } from "../../lib/giftActivity";
+import { isMainFounderName } from "../../lib/founder";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
 // users/{uid}/coin_transactions and gift_activity. Coins only ever move through
@@ -144,7 +145,7 @@ export default function WalletPage() {
   const [success, setSuccess] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
-  const isFounderName = username.trim().toLowerCase() === "migwith";
+  const isFounderName = isMainFounderName(username);
   // Mentor / merchant: tag the receiver too (5,000+ coins), like the app.
   const [tagAvailable, setTagAvailable] = useState<boolean | null>(null);
   const [tagChecked, setTagChecked] = useState(true);
@@ -222,7 +223,7 @@ export default function WalletPage() {
     return { earnedToday: earned, spentToday: Math.max(0, bets + giftSpent - refunded), transferredToday: out };
   }, [todayTx, todayGifts]);
 
-  const cap = role === "mentor" || username === "migwith" ? null : role === "merchant" ? MERCHANT_CAP : NORMAL_CAP;
+  const cap = role === "mentor" || isMainFounderName(username) ? null : role === "merchant" ? MERCHANT_CAP : NORMAL_CAP;
 
   const items = useMemo(() => {
     const fromTx = txs

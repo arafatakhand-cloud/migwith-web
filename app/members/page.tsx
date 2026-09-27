@@ -9,6 +9,7 @@ import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
+import { isMainFounderName } from "../../lib/founder";
 
 // Explore › Members, same categories and role checks as the app (MainActivity.kt).
 // The founder (migwith) adds / removes Management members and Mentors here,
@@ -72,7 +73,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [selected, setSelected] = useState<Category | null>(null);
   const { user, username } = useSession();
-  const isFounder = (username || "").trim().toLowerCase() === "migwith";
+  const isFounder = isMainFounderName(username);
   const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");

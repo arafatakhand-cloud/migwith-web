@@ -38,6 +38,7 @@ import {
   trailReport,
   uidsFor,
 } from "../_components/ProgramShared";
+import { isMainFounderName } from "../../lib/founder";
 
 // Explore › Merchant Program › Mentor Dashboard, same documents and rules as
 // the app's MentorDashboardPage / MentorReportPage / MentorEarningsPage:
@@ -68,7 +69,7 @@ export default function MentorDashboardPage() {
       .then((s) => {
         const role = lc(String(s.get("role") || ""));
         const roles = ((s.get("roles") as unknown[]) || []).map((r) => lc(String(r)));
-        setAllowed(role === "mentor" || roles.includes("mentor") || lc(username) === "migwith");
+        setAllowed(role === "mentor" || roles.includes("mentor") || isMainFounderName(username));
       })
       .catch(() => setAllowed(false));
   }, [user, username]);
