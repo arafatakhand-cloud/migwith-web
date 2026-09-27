@@ -259,7 +259,7 @@ export default function RoomsPage() {
             type="button"
             onClick={() => {
               // Same checks as the app, before the form opens.
-              if (level < MIN_LEVEL_TO_CREATE)
+              if (level > 0 && level < MIN_LEVEL_TO_CREATE)
                 return window.alert(
                   `Can't create a room\n\nYou need to reach Level ${MIN_LEVEL_TO_CREATE} to create a chat room. Your level: ${level}.`
                 );
