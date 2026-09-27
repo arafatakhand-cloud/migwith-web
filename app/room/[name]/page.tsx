@@ -111,6 +111,28 @@ function timeLabel(ms: number): string {
   return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
+// When this visit to the room began (server time), kept per room in this
+// browser so switching tabs or reloading while still in the room keeps it.
+// Only messages sent after it are shown, like the app: a new visit (after
+// Leave) starts with an empty chat instead of the old messages.
+type EntryMark = { visitId: string; at: number };
+const entryKey = (uid: string, room: string) => `migwith.roomEntry.${uid}.${room}`;
+function savedEntry(uid: string, room: string): EntryMark | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(entryKey(uid, room)) || "null");
+    return v && typeof v.at === "number" && typeof v.visitId === "string" ? v : null;
+  } catch {
+    return null;
+  }
+}
+function saveEntry(uid: string, room: string, mark: EntryMark) {
+  try {
+    localStorage.setItem(entryKey(uid, room), JSON.stringify(mark));
+  } catch {
+    // storage blocked
+  }
+}
+
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
@@ -119,6 +141,9 @@ export default function RoomPage() {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  // Start of this visit (see savedEntry); null until known.
+  const [sinceMs, setSinceMs] = useState<number | null>(null);
+  useEffect(() => setSinceMs(null), [roomName]);
   const [localNotes, setLocalNotes] = useState<ChatMessage[]>([]);
   const [presence, setPresence] = useState<RoomUser[]>([]);
   const [muted, setMuted] = useState(false);
@@ -385,11 +410,17 @@ export default function RoomPage() {
     (async () => {
       // Invisible: read the room without showing up in it (same as the app).
       if (profile.invisible) {
+        // No presence doc to stamp, so the browser clock marks the visit.
+        const saved = savedEntry(uid, roomName);
+        const at = saved && isRoomOpen(uid, roomName) ? saved.at : Date.now() - 30_000;
+        saveEntry(uid, roomName, { visitId: "invisible", at });
+        setSinceMs(at);
         rememberRecentRoom(roomName);
         addOpenRoom(uid, roomName);
         return;
       }
       let alreadyHere = resumed;
+      let existingMarkerMs = 0;
       try {
         const existing = await getDoc(presenceRef);
         if (existing.exists()) {
@@ -400,6 +431,7 @@ export default function RoomPage() {
           if (fresh) {
             alreadyHere = true;
             visitId = String(existing.get("visitId") || "") || null;
+            existingMarkerMs = toMillis(existing.get("entryMarker"));
           }
         }
       } catch (err) {
@@ -447,9 +479,29 @@ export default function RoomPage() {
           presenceStatus: "ONLINE",
           lastSeen: serverTimestamp(),
           visitId,
+          // A new visit gets a server-time mark (the app does the same).
+          ...(alreadyHere ? {} : { entryMarker: serverTimestamp() }),
         },
         { merge: true }
       ).catch((err) => console.error("presence write failed", err));
+
+      // Where this visit's chat starts.
+      if (alreadyHere) {
+        const saved = savedEntry(uid, roomName);
+        const at = saved && saved.visitId === visitId ? saved.at : existingMarkerMs || Date.now() - 30_000;
+        saveEntry(uid, roomName, { visitId: visitId!, at });
+        if (!disposed) setSinceMs(at);
+      } else {
+        let at = Date.now() - 30_000;
+        try {
+          const mark = toMillis((await getDoc(presenceRef)).get("entryMarker"));
+          if (mark) at = mark;
+        } catch {
+          // offline — the browser clock will do
+        }
+        saveEntry(uid, roomName, { visitId: visitId!, at });
+        if (!disposed) setSinceMs(at);
+      }
 
       rememberRecentRoom(roomName);
       if (!left) addOpenRoom(uid, roomName);
@@ -502,7 +554,7 @@ export default function RoomPage() {
   const myUid = user?.uid;
   const shown = useMemo(() => {
     const last = new Map<string, string>();
-    return [...messages, ...localNotes]
+    return [...messages.filter((m) => sinceMs !== null && m.createdAtMs > sinceMs), ...localNotes]
       .sort((a, b) => a.createdAtMs - b.createdAtMs)
       .filter((m) => {
         if (m.type !== "room_entry" && m.type !== "room_leave") return true;
@@ -513,7 +565,7 @@ export default function RoomPage() {
         last.set(who, m.type);
         return keep;
       });
-  }, [messages, localNotes, myUid]);
+  }, [messages, localNotes, myUid, sinceMs]);
 
   // People in the room: fresh presence, and no "has left" newer than their last heartbeat.
   const roomUsers = useMemo(() => {
