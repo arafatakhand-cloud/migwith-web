@@ -474,6 +474,12 @@ export function LudoTable({ state }: { state: LudoState }) {
                     : turnPlayer
                       ? `${turnPlayer.username}'s turn (${COLOR_NAMES[turnPlayer.color] || ""})`
                       : ""}
+                  {/* Who rolled last and what, so a roll with no move is not invisible. */}
+                  {state.dice >= 1 && state.dice <= 6 && state.players[state.diceSeat] && (
+                    <span className="block text-[10px] text-white/55">
+                      {state.diceSeat === state.mySeat ? "You" : state.players[state.diceSeat].username} rolled {state.dice} 🎲
+                    </span>
+                  )}
                 </span>
                 {me && !me.out ? (
                   <>
@@ -489,7 +495,11 @@ export function LudoTable({ state }: { state: LudoState }) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => state.act("leave")}
+                      onClick={() => {
+                        // Asks first: quitting a running game does NOT refund the entry.
+                        if (window.confirm(`Leave the game?\n\nYour ${state.fee.toLocaleString()} coin entry will NOT be refunded.`))
+                          state.act("leave");
+                      }}
                       disabled={state.busy}
                       className="rounded-xl border border-white/10 px-3 py-2 text-xs text-white/60"
                     >

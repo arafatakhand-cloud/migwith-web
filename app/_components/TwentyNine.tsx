@@ -42,6 +42,9 @@ export type TnState = {
   trumpRevealed: boolean;
   trumpSuit: string | null;
   trick: TrickCard[];
+  /** The trick that just finished and who won it (shown until the next card). */
+  lastTrick: TrickCard[];
+  lastTrickWinner: number;
   ledSuit: string | null;
   points: [number, number];
   tricksPlayed: number;
@@ -88,6 +91,8 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
     trumpRevealed: false,
     trumpSuit: null as string | null,
     trick: [] as TrickCard[],
+    lastTrick: [] as TrickCard[],
+    lastTrickWinner: -1,
     ledSuit: null as string | null,
     points: [0, 0] as [number, number],
     tricksPlayed: 0,
@@ -147,6 +152,10 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
         trick: Array.isArray(rawTrick)
           ? rawTrick.map((t: any) => ({ seat: Number(t?.seat || 0), card: String(t?.card || "") }))
           : [],
+        lastTrick: Array.isArray(d.get("lastTrick")?.cards)
+          ? d.get("lastTrick").cards.map((t: any) => ({ seat: Number(t?.seat || 0), card: String(t?.card || "") }))
+          : [],
+        lastTrickWinner: Number(d.get("lastTrick")?.winner ?? -1),
         ledSuit: d.get("ledSuit") ? String(d.get("ledSuit")) : null,
         points: pair(d.get("points")),
         tricksPlayed: Number(d.get("tricksPlayed") || 0),
@@ -476,9 +485,16 @@ function TnInfo({ state }: { state: TnState }) {
 // The four seats, rotated so I sit at the bottom, with the current trick in the middle.
 function TnFelt({ state }: { state: TnState }) {
   const base = state.mySeat >= 0 ? state.mySeat : 0;
-  const posOf = (seat: number) => (seat - base + 4) % 4; // 0 bottom, 1 left, 2 top, 3 right
+  // 29 is played ANTICLOCKWISE: the next seat in turn order (seat + 1) sits
+  // on my right, then across, then on my left (same as the app).
+  const posOf = (seat: number) => (base - seat + 4) % 4; // 0 bottom, 1 left, 2 top, 3 right
   const seatAt = (pos: number) => [0, 1, 2, 3].find((s) => posOf(s) === pos) ?? 0;
-  const trickAt = (pos: number) => state.trick.find((t) => posOf(t.seat) === pos);
+  // A finished trick's 4 cards stay on the table (winner's card outlined in
+  // gold) until the next card is played.
+  const showingLast =
+    state.trick.length === 0 && state.lastTrick.length > 0 && (state.phase === "PLAYING" || state.phase === "NEXTDEAL");
+  const onTable = showingLast ? state.lastTrick : state.trick;
+  const trickAt = (pos: number) => onTable.find((t) => posOf(t.seat) === pos);
 
   const SeatBadge = ({ pos }: { pos: number }) => {
     const seat = seatAt(pos);
@@ -510,7 +526,16 @@ function TnFelt({ state }: { state: TnState }) {
   const TrickSlot = ({ pos }: { pos: number }) => {
     const t = trickAt(pos);
     // Fixed height, so the table doesn't jump as cards are played.
-    return <div className="flex h-9 justify-center">{t ? <MiniCard card={t.card} /> : null}</div>;
+    const winner = showingLast && t && t.seat === state.lastTrickWinner;
+    return (
+      <div className="flex h-9 justify-center">
+        {t ? (
+          <span className={winner ? "rounded-[4px] ring-2 ring-[#E8B84A]" : ""}>
+            <MiniCard card={t.card} />
+          </span>
+        ) : null}
+      </div>
+    );
   };
 
   const showTrump = ["PLAYING", "DOUBLE", "SINGLE", "NEXTDEAL"].includes(state.phase);
