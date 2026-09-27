@@ -895,9 +895,6 @@ export default function RoomPage() {
                   {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => u.username).join(", ")}</p>}
                 </div>
               </div>
-              {shown.length === 0 && (
-                <p className="py-10 text-center text-sm text-[#6B7A99]">No messages yet — say hi 👋</p>
-              )}
               {shown.map((m) => (
                 <MessageRow
                   key={m.id}
