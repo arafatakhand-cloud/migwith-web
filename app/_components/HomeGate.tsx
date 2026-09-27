@@ -12,7 +12,7 @@ const SPLASH_MS = 1400;
 
 export function Splash() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#1B4F86] via-[#154272] to-[#0E2F55] px-6 text-white">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-sky-app px-6 text-white">
       <img
         src="/icon-512.png"
         alt=""
@@ -21,14 +21,14 @@ export function Splash() {
         className="h-28 w-28 rounded-[28px] shadow-[0_16px_40px_rgba(0,0,0,0.35)]"
       />
       <h1 className="mt-6 text-5xl font-black tracking-tight">
-        MIG<span className="text-cyan-300">life</span>
+        MIG<span className="text-amber-200">life</span>
       </h1>
-      <p className="mt-3 text-sm uppercase tracking-[0.35em] text-white/70">Connect · Chat · Play</p>
+      <p className="mt-3 text-sm uppercase tracking-[0.35em] text-white/85">Connect · Chat · Play</p>
       <div className="mt-12 flex gap-1.5" aria-label="Loading">
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="h-2 w-2 animate-pulse rounded-full bg-white/70"
+            className="h-2 w-2 animate-pulse rounded-full bg-white/90"
             style={{ animationDelay: `${i * 200}ms` }}
           />
         ))}
