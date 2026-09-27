@@ -33,6 +33,9 @@ const LEVEL_BADGES: [number, number | null, string, string][] = [
   [1000, null, "♾️", "Eternal"],
 ];
 
+/** Every level tier as [name, icon] (for the level-badge pictures). */
+export const LEVEL_TIERS: [string, string][] = LEVEL_BADGES.map(([, , icon, name]) => [name, icon]);
+
 /** The tier name for a level ("Silver", "Gold" …), like the app. */
 export function badgeNameForLevel(level: number): string {
   const safe = Math.max(1, level);
