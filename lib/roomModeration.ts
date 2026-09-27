@@ -13,7 +13,8 @@ import {
   where,
   type DocumentData,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 
 // Room roles and moderation, same rules and Firestore writes as the app's
 // RoomPage.kt. The Firestore rules check every write again on the server.
@@ -124,7 +125,41 @@ export type ModContext = {
   post: (text: string, type?: string) => void;
   /** A red / green moderation line everyone sees. */
   postModeration: (text: string, color: "red" | "green") => void;
+  /** Empties this device's view of the room (after /cc). */
+  clearForMe?: () => void;
 };
+
+const changeManagementRole = httpsCallable(functions, "changeManagementRole");
+const clearRoomChatCall = httpsCallable(functions, "clearRoomChat");
+
+// /mod and /dmod in an official room change the person's app role (staff /
+// user) — on the server only, like the app.
+async function setAppRole(ctx: ModContext, name: string, role: "staff" | "user") {
+  if (key(name) === key(ctx.username)) return ctx.note(`${ctx.roomName}: You cannot change your own role.`);
+  const target = await lookup(ctx, name).catch(() => null);
+  if (!target) return ctx.note(`${ctx.roomName}: User not found: ${name.trim()}`);
+  try {
+    await changeManagementRole({
+      targetUid: target.uid,
+      role,
+      operationId: "role_" + crypto.randomUUID().replace(/-/g, ""),
+    });
+    if (role === "staff") ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.username}.`, "green");
+    else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
+  } catch (e: any) {
+    ctx.note(`${ctx.roomName}: Role update failed. ${e?.message || "Permission denied."}`);
+  }
+}
+
+// /cc — deleting room messages is server-only.
+async function clearRoomChat(ctx: ModContext) {
+  try {
+    await clearRoomChatCall({ roomId: ctx.roomName });
+    ctx.clearForMe?.();
+  } catch (e: any) {
+    ctx.note(`${ctx.roomName}: Could not clear the chat. ${e?.message || "Please try again."}`);
+  }
+}
 
 const key = (s: string) => s.trim().toLowerCase();
 
@@ -364,6 +399,8 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canMute) lines.push("/mute name   /unmute name");
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
+  if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
+  if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
   if (p.canAssignSuperMod) lines.push("/smod name   /dsmod name");
   return lines;
 }
@@ -416,7 +453,15 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
     }
     case "/mod":
     case "/dmod":
+      if (!ctx.perms.isUserRoom) {
+        if (ctx.perms.isRoomAdmin && arg) setAppRole(ctx, arg, cmd === "/mod" ? "staff" : "user");
+        return true;
+      }
       needName(() => setModerator(ctx, arg, cmd === "/mod"));
+      return true;
+    case "/cc":
+    case "/clearchat":
+      if (ctx.perms.isRoomAdmin) clearRoomChat(ctx);
       return true;
     case "/smod":
     case "/dsmod":

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -19,7 +19,8 @@ import {
   updateDoc,
   type Timestamp,
 } from "firebase/firestore";
-import { db, storage } from "../../../lib/firebase";
+import { db, functions, storage } from "../../../lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import {
   PRESENCE_HEARTBEAT_MS,
@@ -33,6 +34,8 @@ import {
 import { ChatBar } from "../../_components/ChatBar";
 import { SwipeToReply } from "../../_components/SwipeToReply";
 import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
+import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
+import { useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
 import {
   GiftPanel,
@@ -71,19 +74,7 @@ import {
   type RoomInfo,
 } from "../../../lib/roomModeration";
 
-type ChatMessage = {
-  id: string;
-  text: string;
-  type: string;
-  sender: string;
-  senderUid: string;
-  imageUrl: string;
-  audioUrl: string;
-  giftName: string;
-  moderationColor?: string;
-  createdAtMs: number;
-  local?: boolean;
-};
+type ChatMessage = SessionMessage;
 
 type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number };
 
@@ -133,18 +124,29 @@ function saveEntry(uid: string, room: string, mark: EntryMark) {
   }
 }
 
+// One RoomView per room (keyed by name), so switching room tabs starts from
+// that room's own saved session instead of the previous room's state.
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
+  const { user, loading } = useCurrentUser();
+  // Wait for the account first, so the room's saved session can be read on mount.
+  if (loading || !user) return <RoomView key="" roomName={roomName} />;
+  return <RoomView key={roomName} roomName={roomName} />;
+}
+
+function RoomView({ roomName }: { roomName: string }) {
   const router = useRouter();
   const { user, loading } = useCurrentUser();
+  // This open tab's saved session (lib/roomSession): coming back to the tab
+  // shows the same chat, draft and scroll position, like the app.
+  const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages ?? []);
   // Start of this visit (see savedEntry); null until known.
-  const [sinceMs, setSinceMs] = useState<number | null>(null);
-  useEffect(() => setSinceMs(null), [roomName]);
-  const [localNotes, setLocalNotes] = useState<ChatMessage[]>([]);
+  const [sinceMs, setSinceMs] = useState<number | null>(initial?.sinceMs ?? null);
+  const [localNotes, setLocalNotes] = useState<ChatMessage[]>(initial?.localNotes ?? []);
   const [presence, setPresence] = useState<RoomUser[]>([]);
   const [muted, setMuted] = useState(false);
   const [silenced, setSilenced] = useState(false);
@@ -157,9 +159,9 @@ export default function RoomPage() {
   const [uploading, setUploading] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
   const [blocked, setBlocked] = useState("");
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initial?.text ?? "");
   // Swipe right on someone's message to reply (same "↩ name: snippet" quote the app writes).
-  const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(null);
+  const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(initial?.replyTo ?? null);
   const [sending, setSending] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
   // ⋮ Room menu (like the app's) and its Room Info / Kick User sheets.
@@ -174,7 +176,32 @@ export default function RoomPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
-  const stickToBottom = useRef(true);
+  const stickToBottom = useRef(initial?.stickToBottom ?? true);
+  // Clear Chat for this device (set once the page has rendered; used by /cc).
+  const clearChatRef = useRef<(() => void) | null>(null);
+  const scrollTopRef = useRef(initial?.scrollTop ?? 0);
+
+  // Keep this tab's session up to date while it is open.
+  useEffect(() => {
+    if (!user || !isRoomOpen(user.uid, roomName)) return;
+    writeRoomSession(user.uid, roomName, {
+      sinceMs,
+      messages,
+      localNotes,
+      text,
+      replyTo,
+      scrollTop: scrollTopRef.current,
+      stickToBottom: stickToBottom.current,
+    });
+  }, [user, roomName, sinceMs, messages, localNotes, text, replyTo]);
+
+  // Back on this tab: return to where the reader was.
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el || !initial) return;
+    el.scrollTop = initial.stickToBottom ? el.scrollHeight : initial.scrollTop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const note = (t: string) =>
     setLocalNotes((n) => [
@@ -424,7 +451,10 @@ export default function RoomPage() {
         addOpenRoom(uid, roomName);
         return;
       }
-      let alreadyHere = resumed;
+      // An open tab that already has this visit's session is the same visit
+      // (the app keeps roomEntryAt for as long as the tab is open).
+      const tabSession = isRoomOpen(uid, roomName) ? readRoomSession(uid, roomName) : null;
+      let alreadyHere = resumed || !!tabSession;
       let existingMarkerMs = 0;
       try {
         const existing = await getDoc(presenceRef);
@@ -493,7 +523,9 @@ export default function RoomPage() {
       // Where this visit's chat starts.
       if (alreadyHere) {
         const saved = savedEntry(uid, roomName);
-        const at = saved && saved.visitId === visitId ? saved.at : existingMarkerMs || Date.now() - 30_000;
+        const at =
+          tabSession?.sinceMs ??
+          (saved && saved.visitId === visitId ? saved.at : existingMarkerMs || Date.now() - 30_000);
         saveEntry(uid, roomName, { visitId: visitId!, at });
         if (!disposed) setSinceMs(at);
       } else {
@@ -572,6 +604,17 @@ export default function RoomPage() {
       });
   }, [messages, localNotes, myUid, sinceMs]);
 
+  // Game rooms read as a plain running log: every line on the left.
+  const gameRoom = [LUXURY_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
+
+  // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
+  const colorOf = useSenderColors(
+    useMemo(
+      () => shown.map((m) => (m.sender ? m.sender : m.text.slice(0, Math.max(0, m.text.indexOf(":")))).trim()),
+      [shown]
+    )
+  );
+
   // People in the room: fresh presence, and no "has left" newer than their last heartbeat.
   const roomUsers = useMemo(() => {
     const leftAt = new Map<string, number>();
@@ -612,6 +655,7 @@ export default function RoomPage() {
       note,
       post: (t, type = "chat") => write({ text: t, type, giftName: "", clientCreatedAt: Date.now() }),
       postModeration: (t, color) => write({ text: t, type: "moderation", moderationColor: color }),
+      clearForMe: () => clearChatRef.current?.(),
     };
   };
 
@@ -673,6 +717,24 @@ export default function RoomPage() {
     const ctx = clean.startsWith("/") ? modCtx() : null;
     if (ctx && handleModCommand(clean, ctx)) {
       setText("");
+      return;
+    }
+
+    // Admin/Staff stop of a running Luxury Bot / LowCard round: the server
+    // refunds every bet first, then closes the round (the app's !stop).
+    if (clean.toLowerCase() === "!stop") {
+      setText("");
+      if (perms.isAppStaffHere && (luxury || lowCard)) {
+        const botLabel = lowCard ? "LowCard Bot" : "👻 Luxury Bot";
+        httpsCallable<{ roomId: string }, { reason?: string; refunded?: boolean }>(functions, "adminStopBot")({ roomId: roomName })
+          .then(({ data }) => {
+            const reason = String(data?.reason || "");
+            if (reason === "settling") note(`${botLabel}: The round is paying out right now. Try !stop again in a few seconds.`);
+            else if (reason.startsWith("not-running")) note(`${botLabel}: The bot is not running.`);
+            else if (data?.refunded !== true) modCtx()?.post(`${botLabel}: Bot stopped.`);
+          })
+          .catch((e: any) => note(`${botLabel}: Could not stop the bot. ${e?.message || "Please try again."}`));
+      }
       return;
     }
 
@@ -800,8 +862,8 @@ export default function RoomPage() {
     stickToBottom.current = true;
   };
 
-  const giftImages = useMemo(
-    () => new Map(gifts.map((g) => [g.name.toLowerCase(), g.imageUrl])),
+  const giftByName = useMemo(
+    () => new Map(gifts.map((g) => [g.name.toLowerCase(), { icon: g.icon, imageUrl: g.imageUrl }])),
     [gifts]
   );
 
@@ -846,6 +908,7 @@ export default function RoomPage() {
     const saved = savedEntry(user.uid, roomName);
     if (saved) saveEntry(user.uid, roomName, { ...saved, at: newest });
   };
+  clearChatRef.current = clearChat;
 
   const checkBalance = async () => {
     try {
@@ -879,6 +942,14 @@ export default function RoomPage() {
               onScroll={(e) => {
                 const el = e.currentTarget;
                 stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                scrollTopRef.current = el.scrollTop;
+                if (user && isRoomOpen(user.uid, roomName)) {
+                  const cur = readRoomSession(user.uid, roomName);
+                  if (cur) {
+                    cur.scrollTop = el.scrollTop;
+                    cur.stickToBottom = stickToBottom.current;
+                  }
+                }
               }}
               className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-3"
             >
@@ -906,8 +977,11 @@ export default function RoomPage() {
                 <MessageRow
                   key={m.id}
                   m={m}
-                  mine={m.senderUid === user.uid}
-                  giftImage={giftImages.get(m.giftName.toLowerCase()) || ""}
+                  mine={!!m.senderUid && m.senderUid === user.uid}
+                  roomName={roomName}
+                  gameRoom={gameRoom}
+                  colorOf={colorOf}
+                  gift={giftByName.get(m.giftName.toLowerCase()) || null}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
                     inputRef.current?.focus();
@@ -1165,15 +1239,183 @@ export default function RoomPage() {
   );
 }
 
+// Colours from the app (RoomPage.kt).
+const INK = "#0B1F3A";
+const LINK_BLUE = "#174EA6";
+const APP_RED = "#B3261E";
+const ROOM_ORANGE = "#E6731E";
+
+// A little playing card in a chat line ("10♥", "A♠"), like the app's.
+function InlineCard({ card }: { card: string }) {
+  const suit = card.slice(-1);
+  const red = suit === "♥" || suit === "♦";
+  return (
+    <span
+      className="mx-px inline-flex h-[20px] w-[15px] flex-col items-center justify-center rounded-[4px] align-middle leading-none text-white"
+      style={{ background: red ? "#E24B4A" : "#2C2C2A" }}
+    >
+      <span className="text-[8px] font-bold">{card.slice(0, -1)}</span>
+      <span className="text-[7px]">{suit}</span>
+    </span>
+  );
+}
+
+// Cricket Bot's {4} {6} {OUT} {NOTOUT} {DRS} tokens become small badges.
+function CricketBadge({ token }: { token: string }) {
+  const [label, bg] =
+    token === "OUT"
+      ? ["OUT", "#D32F2F"]
+      : token === "NOTOUT"
+        ? ["NOT OUT", "#2E7D32"]
+        : token === "DRS"
+          ? ["📺 DRS", "#1565C0"]
+          : token === "4" || token === "6"
+            ? [token, "#E53935"]
+            : [token, "#E0E0E0"];
+  const single = token.length === 1;
+  const ink = single && token !== "4" && token !== "6" ? "#D32F2F" : "#FFFFFF";
+  return (
+    <span
+      className={`mx-px inline-flex h-4 items-center justify-center align-middle text-[9px] font-extrabold leading-none ${
+        single ? "w-4 rounded-full" : "rounded-full px-1.5"
+      }`}
+      style={{ background: bg, color: ink }}
+    >
+      {label}
+    </span>
+  );
+}
+
+// "@name" mentions in link blue, bold.
+function withMentions(text: string, keyPrefix = "m"): ReactNode[] {
+  const out: ReactNode[] = [];
+  let last = 0;
+  for (const match of text.matchAll(/@[A-Za-z0-9_.-]+/g)) {
+    const i = match.index ?? 0;
+    if (i > last) out.push(text.slice(last, i));
+    out.push(
+      <span key={`${keyPrefix}${i}`} className="font-bold" style={{ color: LINK_BLUE }}>
+        {match[0]}
+      </span>
+    );
+    last = i + match[0].length;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+
+// A game bot's line: bot name in its colour, the rest in blue, cards and
+// cricket tokens drawn as little pictures.
+const GAME_BOTS: [string, string][] = [
+  ["LowCard Bot", "#1B8E3E"],
+  ["Teen Patti Bot", "#7B1FA2"],
+  ["MIG Royale Bot", "#7B1FA2"],
+  ["29 Bot", "#E53935"],
+  ["Ludo Bot", "#E91E63"],
+  ["Cricket Bot", "#1B8E3E"],
+];
+
+function gameBotLine(text: string): ReactNode | null {
+  const bot = GAME_BOTS.find(([name]) => text.toLowerCase().startsWith(`${name.toLowerCase()}:`));
+  if (!bot) return null;
+  const [name, color] = bot;
+  const body = text.slice(name.length);
+  const parts: ReactNode[] = [];
+  if (name === "LowCard Bot") {
+    // "…: 10♥" — the card sits at the very end, glued to the last word.
+    const m = body.match(/(10|[2-9JQKA])([♠♥♦♣])$/);
+    if (m && m.index !== undefined) {
+      parts.push(body.slice(0, m.index).trimEnd() + " ", <InlineCard key="c" card={m[0]} />);
+    } else parts.push(body);
+  } else if (name === "Teen Patti Bot" || name === "MIG Royale Bot") {
+    let last = 0;
+    for (const m of body.matchAll(/\[(10|[2-9JQKA])([♠♥♦♣])\]/g)) {
+      const i = m.index ?? 0;
+      parts.push(body.slice(last, i), <InlineCard key={`c${i}`} card={m[1] + m[2]} />);
+      last = i + m[0].length;
+    }
+    parts.push(body.slice(last));
+  } else if (name === "Cricket Bot") {
+    let last = 0;
+    for (const m of body.matchAll(/\{(\d|OUT|NOTOUT|DRS)\}/g)) {
+      const i = m.index ?? 0;
+      parts.push(body.slice(last, i), <CricketBadge key={`b${i}`} token={m[1]} />);
+      last = i + m[0].length;
+    }
+    parts.push(body.slice(last));
+  } else parts.push(body);
+  return (
+    <>
+      <span className="font-bold" style={{ color }}>
+        {name}
+      </span>
+      <span style={{ color: LINK_BLUE }}>{parts}</span>
+    </>
+  );
+}
+
+// "👻 Luxury Bot: …" — the ghost stays in the stored text but is never shown;
+// "Luxury Bot:" in pink, the rest in the normal ink.
+function luxuryLine(text: string): ReactNode | null {
+  const shown = text.replace(/^👻\s*/, "");
+  if (!/^Luxury Bot:/i.test(shown)) return null;
+  return (
+    <>
+      <span className="font-bold text-[#E91E63]">{shown.slice(0, "Luxury Bot".length)}</span>
+      <span style={{ color: INK }}>{withMentions(shown.slice("Luxury Bot".length))}</span>
+    </>
+  );
+}
+
+// Gift announcement: pink, "[level]" tags in amber, the gift's own icon
+// swapped for its uploaded picture when there is one.
+function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[] {
+  const clean = text.replace(/^<</, "").replace(/>>/, "");
+  const out: ReactNode[] = [];
+  let k = 0;
+  const pushSegment = (seg: string) => {
+    if (giftIcon && giftImage && seg.includes(giftIcon)) {
+      seg.split(giftIcon).forEach((piece, i) => {
+        if (i > 0)
+          out.push(
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={`g${k++}`} src={giftImage} alt="" className="mx-0.5 inline h-[18px] w-[18px] rounded-full object-cover align-middle" />
+          );
+        if (piece) out.push(piece);
+      });
+    } else out.push(seg);
+  };
+  let last = 0;
+  for (const m of clean.matchAll(/\[[^\]]*\]/g)) {
+    const i = m.index ?? 0;
+    if (i > last) pushSegment(clean.slice(last, i));
+    out.push(
+      <span key={`l${k++}`} className="text-[#FFC107]">
+        {m[0]}
+      </span>
+    );
+    last = i + m[0].length;
+  }
+  if (last < clean.length) pushSegment(clean.slice(last));
+  return out;
+}
+
 function MessageRow({
   m,
   mine,
-  giftImage,
+  roomName,
+  gameRoom,
+  colorOf,
+  gift,
   onReply,
 }: {
   m: ChatMessage;
   mine: boolean;
-  giftImage: string;
+  roomName: string;
+  /** Game rooms: everything on the left, full-width plain lines, no swipe reply. */
+  gameRoom: boolean;
+  colorOf: (name: string) => string;
+  gift: { icon: string; imageUrl: string } | null;
   onReply: (sender: string, snippet: string) => void;
 }) {
   const time = timeLabel(m.createdAtMs);
@@ -1182,77 +1424,83 @@ function MessageRow({
   // Lucky User announcement (pickBangladeshLuckyUser): a celebration card, like the app.
   if (m.text.startsWith("🍀 Lucky Bot:")) return <LuckyCard text={m.text} time={time} />;
 
-  // "Bangladesh: imran [25] has entered." — on the left, room name in orange.
+  // "Bangladesh: imran [25] has entered." — on the left, room name in orange, the rest black.
   if (m.type === "room_entry" || m.type === "room_leave") {
     const colon = m.text.indexOf(": ");
     return (
       <p className="px-1 text-left text-[13px] leading-snug">
-        {colon > 0 && <span className="font-semibold text-[#E6731E]">{m.text.slice(0, colon + 1)} </span>}
-        <span className={m.type === "room_entry" ? "text-[#0B2A5B]" : "text-[#6B7A99]"}>
-          {colon > 0 ? m.text.slice(colon + 2) : m.text}
-        </span>
+        {colon > 0 && (
+          <span className="font-bold" style={{ color: ROOM_ORANGE }}>
+            {m.text.slice(0, colon + 1)}{" "}
+          </span>
+        )}
+        <span className="text-black">{colon > 0 ? m.text.slice(colon + 2) : m.text}</span>
         {stamp}
       </p>
     );
   }
 
-  if (m.local) {
-    return <p className="whitespace-pre-wrap text-center text-xs text-amber-700">{m.text}</p>;
-  }
-
-  if (m.type === "moderation" || m.type === "broadcast") {
-    const tone =
-      m.moderationColor === "red"
-        ? "bg-rose-100 text-rose-700"
-        : m.moderationColor === "green"
-          ? "bg-emerald-100 text-emerald-700"
-          : "bg-[#DCEBFB] text-[#174EA6]";
+  if (m.type === "moderation") {
+    const color = m.moderationColor === "red" ? "#D32F2F" : m.moderationColor === "green" ? "#2E7D32" : LINK_BLUE;
     return (
-      <p className={`whitespace-pre-wrap rounded-lg px-3 py-1.5 text-center text-xs font-semibold ${tone}`}>
+      <p className="whitespace-pre-wrap px-1 text-left text-[13px] font-semibold leading-snug" style={{ color }}>
         {m.text}
+        {stamp}
       </p>
     );
   }
 
+  // /broadcast: shown once, on a gold card.
+  if (m.type === "broadcast" || m.type === "friend_request") {
+    const gold = m.type === "broadcast";
+    return (
+      <div className="flex px-1">
+        <p
+          className="max-w-[336px] whitespace-pre-wrap rounded-[9px] border px-[7px] py-[7px] text-[14px] leading-snug"
+          style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: INK }}
+        >
+          {withMentions(m.text)}
+          {stamp}
+        </p>
+      </div>
+    );
+  }
+
+  // /hug, /roll, 8ball …: centered, one red colour, bold.
   if (m.type === "social") {
     return (
-      <p className="text-center text-sm font-semibold text-fuchsia-700">
+      <p className="px-2 text-center text-[14px] font-bold leading-snug" style={{ color: APP_RED }}>
         {m.text.replace(/\*\*/g, "")}
-        {time && <span className="ml-2 text-[10px] font-normal text-[#8A9BBC]">{time}</span>}
+        {stamp}
       </p>
     );
   }
 
+  // /me: "name action" in red, on the left.
   if (m.type === "me") {
+    const c = m.text.indexOf(":");
     return (
-      <p className="px-3 text-sm italic text-violet-700">
-        * {m.sender && m.text.startsWith(`${m.sender}: `) ? `${m.sender} ${m.text.slice(m.sender.length + 2)}` : m.text}
-        {time && <span className="ml-2 text-[10px] not-italic text-[#8A9BBC]">{time}</span>}
+      <p className="px-1 text-left text-[15px] leading-snug" style={{ color: APP_RED }}>
+        {c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text}
+        {stamp}
       </p>
     );
   }
 
   if (m.type === "gift") {
-    const clean = m.text.replace(/^<</, "").replace(/>>/, "");
     return (
-      <div className="flex items-center justify-center gap-2 rounded-xl border border-pink-200 bg-pink-50 px-3 py-2 text-center text-sm font-semibold text-pink-700">
-        {giftImage && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={giftImage} alt={m.giftName} className="h-8 w-8 object-contain" />
-        )}
-        <span className="whitespace-pre-wrap break-words">{clean}</span>
-        {time && <span className="text-[10px] font-normal text-[#8A9BBC]">{time}</span>}
+      <div className="flex justify-center">
+        <p className="w-[94%] whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-left text-[14px] leading-snug text-[#FF2D95]">
+          {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "")}
+          {stamp}
+        </p>
       </div>
     );
   }
 
-  // Plain lines, no bubbles: other people's messages on the left as
-  // "name: message", mine on the right (no name). Tiny time after the text.
-  const split = m.sender && m.text.startsWith(`${m.sender}: `);
-  let body = split ? m.text.slice(m.sender.length + 2) : m.text;
-
   // Lucky voucher drops (written by the server, no "name:" in front): small pink line.
-  if (!split && /voucher/i.test(m.text)) {
+  const splitByUid = m.sender && m.text.startsWith(`${m.sender}: `);
+  if (!splitByUid && /voucher/i.test(m.text)) {
     return (
       <p className="px-1 text-left text-[13px] leading-snug text-[#E8327E]">
         {m.text}
@@ -1261,6 +1509,23 @@ function MessageRow({
     );
   }
 
+  // Bot and game lines (also this device's own game notices).
+  const bot = gameBotLine(m.text) ?? luxuryLine(m.text);
+  if (bot) {
+    return (
+      <p className="whitespace-pre-wrap break-words px-1 text-left text-[15px] leading-snug">
+        {bot}
+        {stamp}
+      </p>
+    );
+  }
+
+  // "name: message" — the sender is whatever comes before the first colon,
+  // like the app (local notices such as "Bangladesh: …" included).
+  const colon = m.text.indexOf(":");
+  const senderName = splitByUid ? m.sender : colon > 0 && colon <= 40 ? m.text.slice(0, colon).trim() : "";
+  let body = senderName ? m.text.slice(m.text.indexOf(":") + 1).replace(/^ /, "") : m.text;
+
   // A reply starts with the quoted line the app writes: "↩ name: snippet\n".
   let quote: string | null = null;
   if (body.startsWith("↩ ") && body.includes("\n")) {
@@ -1268,8 +1533,10 @@ function MessageRow({
     body = body.slice(body.indexOf("\n") + 1);
   }
 
-  // Swipe right on someone else's message (not bots) to reply to it.
-  const canReply = !mine && !!split && !/ Bot$/.test(m.sender);
+  const rightSide = mine && !gameRoom;
+  const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
+  // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
+  const canReply = !mine && !gameRoom && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
       ? "📷 Photo"
@@ -1280,22 +1547,26 @@ function MessageRow({
           : body;
 
   return (
-    <SwipeToReply enabled={canReply} onReply={() => onReply(m.sender, snippet)}>
-      <div className={`flex px-1 ${mine ? "justify-end" : "justify-start"}`}>
-        <div className={`max-w-[85%] text-[15px] leading-snug ${mine ? "text-right" : "text-left"}`}>
+    <SwipeToReply enabled={canReply} onReply={() => onReply(senderName, snippet)}>
+      <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
+        <div className={`${gameRoom ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug ${rightSide ? "text-right" : "text-left"}`}>
           {quote && (
             <span
               className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
-                mine ? "ml-auto" : ""
+                rightSide ? "ml-auto" : ""
               }`}
             >
               ↩ {quote}
             </span>
           )}
-          {!mine && split && <span className="mr-1 font-bold text-[#174EA6]">{m.sender}:</span>}
+          {!mine && senderName && (
+            <span className="mr-1 font-bold" style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}>
+              {senderName}:
+            </span>
+          )}
           {m.type === "image" && m.imageUrl ? (
             <>
-              <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${mine ? "ml-auto w-fit" : "w-fit"}`}>
+              <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${rightSide ? "ml-auto w-fit" : "w-fit"}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
               </a>
@@ -1303,12 +1574,14 @@ function MessageRow({
             </>
           ) : m.type === "voice" && m.audioUrl ? (
             <>
-              <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${mine ? "ml-auto" : ""}`} />
+              <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${rightSide ? "ml-auto" : ""}`} />
               {stamp}
             </>
           ) : (
             <>
-              <span className="whitespace-pre-wrap break-words text-[#0B2A5B]">{body}</span>
+              <span className="whitespace-pre-wrap break-words" style={{ color: INK }}>
+                {withMentions(body)}
+              </span>
               {stamp}
             </>
           )}

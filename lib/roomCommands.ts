@@ -1,6 +1,6 @@
 "use client";
 
-import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 
@@ -159,10 +159,72 @@ const HELP =
   "/beibei • /challenge • /champion • /cheers • /frenzy • /go • /gold • /huanhuan • /jingjing • /lose • /luck • /medal • /nini • /proud\n" +
   "/record • /taunt • /torch • /win • /winner • /yingying\n" +
   "/goal • /penalty • /freekick • /offside • /handball • /red • /yellow\n" +
+  "Friends: /fr @user (friend request) • /uf @user (unfriend)\n" +
   "/pick [code] (Lucky Voucher) • /invite @user • /commands • /help";
 
 const pickVoucher = httpsCallable<{ roomId: string; code: string }, { amount?: number }>(functions, "pickVoucher");
 const whoisUser = httpsCallable<{ username: string }, Record<string, unknown>>(functions, "whoisUser");
+
+// One user by name: exact username first, then any upper/lower case
+// (usernameLower) — the app's findUserByName.
+export async function findUserByName(name: string): Promise<{ uid: string; username: string } | null> {
+  const clean = name.trim().replace(/^@/, "");
+  if (!clean) return null;
+  const users = collection(db, "users");
+  for (const q of [
+    query(users, where("username", "==", clean), limit(1)),
+    query(users, where("usernameLower", "==", clean.toLowerCase()), limit(1)),
+  ]) {
+    const d = (await getDocs(q)).docs[0];
+    if (d) return { uid: d.id, username: String(d.get("username") || clean).trim() || clean };
+  }
+  return null;
+}
+
+// /fr name — same flat friend_requests doc + alert as the app. Only the sender
+// sees the confirmation (it never goes to the room chat).
+async function sendFriendRequest(ctx: CommandContext, name: string) {
+  const target = await findUserByName(name).catch(() => null);
+  if (!target) return ctx.note(`🤝 User not found: ${name.trim()}`);
+  if (target.username.toLowerCase() === ctx.username.toLowerCase()) return;
+  try {
+    await addDoc(collection(db, "friend_requests"), {
+      fromUsername: ctx.username,
+      toUsername: target.username,
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
+    ctx.note(`🤝 Friend request sent to ${target.username}!`);
+    addDoc(collection(db, "alerts"), {
+      toUsername: target.username,
+      message: `${ctx.username} sent you a friend request.`,
+      type: "friend_request",
+      read: false,
+      createdAt: serverTimestamp(),
+    }).catch(() => {});
+  } catch (e: any) {
+    ctx.note(`🤝 Friend request failed. ${e?.message || "Permission denied."}`);
+  }
+}
+
+// /uf name — removes the friendship straight away (either friend may end it).
+async function unfriend(ctx: CommandContext, name: string) {
+  const target = await findUserByName(name).catch(() => null);
+  if (!target) return ctx.note(`💔 User not found: ${name.trim()}`);
+  try {
+    const col = collection(db, "friend_requests");
+    const snaps = await Promise.all([
+      getDocs(query(col, where("fromUsername", "==", ctx.username), where("toUsername", "==", target.username), where("status", "==", "accepted"))),
+      getDocs(query(col, where("fromUsername", "==", target.username), where("toUsername", "==", ctx.username), where("status", "==", "accepted"))),
+    ]);
+    const docs = snaps.flatMap((s) => s.docs);
+    if (docs.length === 0) return ctx.note(`💔 ${target.username} is not in your friends list.`);
+    await Promise.all(docs.map((d) => deleteDoc(d.ref)));
+    ctx.note(`💔 ${target.username} removed from your friends.`);
+  } catch (e: any) {
+    ctx.note(`💔 Unfriend failed. ${e?.message || "Please try again."}`);
+  }
+}
 
 const pickRandom = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
@@ -251,6 +313,15 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
     })
       .then(() => ctx.note(`${u}: Invite sent to @${who}.`))
       .catch((err: any) => ctx.note(`${u}: Could not send invite. ${err?.message || "Please try again."}`));
+    return true;
+  }
+
+  if (command === "/fr" || command === "/uf") {
+    const who = (parts[1] || "").replace(/^@/, "").trim();
+    if (who && who.toLowerCase() !== u.toLowerCase()) {
+      if (command === "/fr") sendFriendRequest(ctx, who);
+      else unfriend(ctx, who);
+    }
     return true;
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { leaveDocId, presenceLine } from "./rooms";
+import { dropRoomSession } from "./roomSession";
 
 // Rooms you are in, shown as tabs in the top bar like the app. Moving between
 // tabs keeps you in the room (no "has left"); only closing a tab (✕) or
@@ -38,6 +39,7 @@ export function addOpenRoom(uid: string, name: string) {
 }
 
 export function removeOpenRoom(uid: string, name: string) {
+  dropRoomSession(uid, name);
   write(
     uid,
     readOpenRooms(uid).filter((r) => r !== name)
@@ -98,6 +100,7 @@ export async function leaveRoomInBackground(uid: string, name: string) {
 /** Logout: leave every open room and forget the tabs. */
 export async function leaveAllOpenRooms(uid: string) {
   const rooms = readOpenRooms(uid);
+  rooms.forEach((r) => dropRoomSession(uid, r));
   write(uid, []);
   await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
 }
