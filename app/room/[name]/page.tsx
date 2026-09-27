@@ -738,6 +738,78 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
+    // /gift name Gift [-m message] — and "/gift all Gift" (Gift Shower: everyone
+    // else in the room). The room line is posted only after the server sent it.
+    if (/^\/gift\b/i.test(clean)) {
+      setText("");
+      const parts = clean.split(/\s+/);
+      const m = parts.findIndex((w, i) => i > 1 && w.toLowerCase() === "-m");
+      const target = (parts[1] || "").replace(/^@/, "");
+      const giftName = (m > 2 ? parts.slice(2, m) : parts.slice(2)).join(" ").trim();
+      const message = m > 2 ? parts.slice(m + 1).join(" ").trim().slice(0, 200) : "";
+      if (!target || !giftName) {
+        note("🎁 Usage: /gift username Rose [-m message]");
+        return;
+      }
+      const suffix = message ? ` — "${message}"` : "";
+      if (target.toLowerCase() === "all") {
+        const everyone = roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== profile.username.toLowerCase()).slice(0, 40);
+        if (everyone.length === 0) return note("🎁 There is nobody else in this room right now.");
+        if (gifts.length && !giftByName.has(giftName.toLowerCase())) return note(`🎁 No active gift named "${giftName}".`);
+        httpsCallable<
+          { roomId: string; targets: string[]; giftName: string; message: string },
+          { sentTo?: string[]; giftName?: string; giftIcon?: string; failed?: { target?: string; reason?: string }[] }
+        >(functions, "sendGiftShower")({ roomId: roomName, targets: everyone, giftName, message })
+          .then(({ data }) => {
+            const sent = data?.sentTo || [];
+            const shownGift = data?.giftName || giftName;
+            const icon = data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁";
+            if (sent.length) {
+              const others = sent.length - 5;
+              const toText = sent.slice(0, 5).join(", ") + (others > 0 ? ` and ${others} other` : "");
+              addDoc(collection(db, "room_messages", roomName, "messages"), {
+                text: `<<🎁*GIFT SHOWER* ${profile.username}[${profile.level}] gives a ${shownGift} ${icon} to ${toText}! Hurray!>>${suffix}`,
+                sender: profile.username,
+                senderUid: user.uid,
+                type: "gift",
+                giftName: shownGift,
+                createdAt: serverTimestamp(),
+                clientCreatedAt: Date.now(),
+              }).catch(() => {});
+            }
+            const failed = (data?.failed || []).map((f) => `• ${f.target || ""} — ${String(f.reason || "").replace(/^🎁/, "").trim() || "Gift sending failed."}`);
+            if (failed.length) note(`These people did not get the ${shownGift}:\n${failed.join("\n")}`);
+          })
+          .catch((e: any) => note(`The gift shower did not send. Reason: ${e?.message || "Gift sending failed."}`));
+        return;
+      }
+      httpsCallable<
+        { roomId: string; target: string; giftName: string; message: string },
+        { giftName?: string; recipient?: string; giftIcon?: string }
+      >(functions, "sendGift")({ roomId: roomName, target, giftName, message })
+        .then(({ data }) =>
+          announceGift({
+            giftName: data?.giftName || giftName,
+            giftIcon: data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁",
+            recipient: data?.recipient || target,
+            message,
+          })
+        )
+        .catch((e: any) => note(`🎁 That gift did not actually send: ${e?.message || "Gift sending failed."}`));
+      return;
+    }
+
+    // /park 1-24 — keep your name in "Currently in this room" (paid, on the server).
+    if (/^\/park\b/i.test(clean)) {
+      setText("");
+      const hours = Number(clean.split(/\s+/)[1]);
+      if (!Number.isInteger(hours) || hours < 1 || hours > 24) return note("Usage: /park <hours> — a whole number from 1 to 24.");
+      httpsCallable<{ roomId: string; hours: number }, { cost?: number }>(functions, "parkRoomPresence")({ roomId: roomName, hours })
+        .then(({ data }) => note(`🅿️ Parked in ${roomName} for ${hours}h (${data?.cost ?? hours * 50} coins).`))
+        .catch((e: any) => note(`Could not park: ${e?.message || "Please try again."}`));
+      return;
+    }
+
     if (luxury && clean.toLowerCase() === "!start") {
       setText("");
       if (luxury.running) note("👻 Luxury Bot: A round is already running.");
