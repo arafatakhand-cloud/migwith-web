@@ -21,6 +21,19 @@ const getSecurityQuestion = httpsCallable<Record<string, never>, { hasQuestion?:
   "getSecurityQuestion"
 );
 const verifySecurityAnswer = httpsCallable<{ answer: string }, unknown>(functions, "verifySecurityAnswer");
+const setSecurityQuestion = httpsCallable<{ question: string; answer: string }, unknown>(functions, "setSecurityQuestion");
+const submitFeedback = httpsCallable<{ message: string }, unknown>(functions, "submitFeedback");
+const submitSupportRequest = httpsCallable<{ message: string }, unknown>(functions, "submitSupportRequest");
+
+const SECURITY_QUESTIONS = [
+  "What was your childhood nickname?",
+  "What is the name of your first school?",
+  "What is your favorite teacher's name?",
+  "What was the name of your first pet?",
+  "What city were you born in?",
+  "What is your mother's maiden name?",
+  "Custom question",
+];
 
 function Switch({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
@@ -64,7 +77,7 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [lang, setL] = useState<Lang>("en");
-  const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password">("");
+  const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password" | "question" | "help" | "feedback" | "about">("");
 
   useEffect(() => setL(getLang()), []);
 
@@ -152,7 +165,7 @@ export default function SettingsPage() {
               <PastelCard icon="🔐" title="Change Password" subtitle="Update your account password securely" color="#D4AF37" onClick={() => setDialog("gate")} />
               <PastelCard icon="🛡️" title="Security PIN" subtitle="Set or change your PIN for coin transfers" color="#12AFC7" href="/security" />
               <PastelCard icon="📧" title="Recovery Email" subtitle="For a forgotten PIN or password" color="#2F80ED" href="/security" />
-              <PastelCard icon="❓" title="Security Question" subtitle="Required before you can change your password or PIN" color="#7B1FB8" note="In app" />
+              <PastelCard icon="❓" title="Security Question" subtitle="Required before you can change your password or PIN" color="#7B1FB8" onClick={() => setDialog("question")} />
             </div>
 
             <SectionLabel>App preferences</SectionLabel>
@@ -172,9 +185,9 @@ export default function SettingsPage() {
 
             <SectionLabel>Support</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="❔" title="Help & Support" subtitle="Get help or report an issue" color="#43B65A" note="In app" />
-              <PastelCard icon="💬" title="Feedback & Report" subtitle="Send feedback or report a problem" color="#7B1FB8" note="In app" />
-              <PastelCard icon="ℹ️" title="About MIGwith" subtitle="MIGwith Web" color="#D4AF37" note="Web" />
+              <PastelCard icon="❔" title="Help & Support" subtitle="Get help or report an issue" color="#43B65A" onClick={() => setDialog("help")} />
+              <PastelCard icon="💬" title="Feedback & Report" subtitle="Send feedback or report a problem" color="#7B1FB8" onClick={() => setDialog("feedback")} />
+              <PastelCard icon="ℹ️" title="About MIGwith" subtitle="MIGwith Web" color="#D4AF37" onClick={() => setDialog("about")} />
             </div>
           </>
         )}
@@ -184,6 +197,38 @@ export default function SettingsPage() {
         <BlockedDialog uid={uid} blocked={blocked} onUpdated={setBlocked} onMessage={setMessage} onClose={() => setDialog("")} />
       )}
       {dialog === "gate" && <SecurityGate onClose={() => setDialog("")} onVerified={() => setDialog("password")} />}
+      {dialog === "question" && (
+        <QuestionDialog
+          onClose={() => setDialog("")}
+          onDone={() => {
+            setDialog("");
+            setMessage("Security Question saved.");
+          }}
+        />
+      )}
+      {(dialog === "help" || dialog === "feedback") && (
+        <SendDialog
+          kind={dialog}
+          onClose={() => setDialog("")}
+          onDone={(m) => {
+            setDialog("");
+            setMessage(m);
+          }}
+        />
+      )}
+      {dialog === "about" && (
+        <Modal title="About MIGwith" onClose={() => setDialog("")}>
+          <p className="text-sm leading-5 text-[#5B6B8C]">
+            MIGwith — chat rooms, friends, gifts and games. This is the web version; it uses the same account, rooms and coins as
+            the app.
+          </p>
+          <div className="flex">
+            <button type="button" className={primary} onClick={() => setDialog("")}>
+              OK
+            </button>
+          </div>
+        </Modal>
+      )}
       {dialog === "password" && (
         <PasswordDialog
           onClose={() => setDialog("")}
@@ -408,6 +453,103 @@ function PasswordDialog({ onClose, onDone }: { onClose: () => void; onDone: () =
         </button>
         <button type="button" onClick={change} disabled={busy} className={primary}>
           {busy ? "Saving…" : "Change"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// Set / change the Security Question (the server hashes the answer), like the app.
+function QuestionDialog({ onClose, onDone }: { onClose: () => void; onDone: () => void }) {
+  const [question, setQuestion] = useState(SECURITY_QUESTIONS[0]);
+  const [custom, setCustom] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const save = async () => {
+    const q = question === "Custom question" ? custom.trim() : question;
+    if (!q) return setError("Choose or write a question.");
+    if (!answer.trim()) return setError("Enter an answer.");
+    if (answer !== confirm) return setError("Answers do not match.");
+    setBusy(true);
+    setError("");
+    try {
+      await setSecurityQuestion({ question: q, answer: answer.trim() });
+      onDone();
+    } catch (e: any) {
+      setError(e?.message || "Could not save Security Question.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal title="Security Question" onClose={() => !busy && onClose()}>
+      <p className="text-xs text-[#5B6B8C]">
+        This answer will be required before you can change your password or Security PIN — pick something only you would know.
+      </p>
+      <select value={question} onChange={(e) => setQuestion(e.target.value)} disabled={busy} className={input}>
+        {SECURITY_QUESTIONS.map((q) => (
+          <option key={q}>{q}</option>
+        ))}
+      </select>
+      {question === "Custom question" && (
+        <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Your question" disabled={busy} className={input} />
+      )}
+      <input type="password" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Answer" disabled={busy} className={input} />
+      <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Confirm answer" disabled={busy} className={input} />
+      {error && <p className="text-xs text-[#B3261E]">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" className={secondary} disabled={busy} onClick={onClose}>
+          CANCEL
+        </button>
+        <button type="button" className={primary} disabled={busy} onClick={save}>
+          {busy ? "Saving…" : "SAVE"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// Help & Support / Feedback & Report — sent to the server, like the app.
+function SendDialog({ kind, onClose, onDone }: { kind: "help" | "feedback"; onClose: () => void; onDone: (m: string) => void }) {
+  const help = kind === "help";
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const send = async () => {
+    if (!text.trim()) return setError(help ? "Describe your issue first." : "Enter your feedback or report first.");
+    setBusy(true);
+    setError("");
+    try {
+      await (help ? submitSupportRequest : submitFeedback)({ message: text.trim() });
+      onDone(help ? "Thanks — support has been contacted." : "Thanks — your feedback was sent.");
+    } catch (e: any) {
+      setError(e?.message || (help ? "Could not send your request. Try again." : "Could not send feedback. Try again."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal title={help ? "Help & Support" : "Feedback & Report"} onClose={() => !busy && onClose()}>
+      {help && (
+        <p className="text-sm leading-5 text-[#5B6B8C]">
+          For account, room, coin or security problems, describe what&apos;s happening below. Include your MIG ID.
+        </p>
+      )}
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, 1000))}
+        placeholder={help ? "Describe your issue" : "Your feedback / report"}
+        className={`${input} h-36`}
+      />
+      {error && <p className="text-xs text-[#B3261E]">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" className={secondary} disabled={busy} onClick={onClose}>
+          CANCEL
+        </button>
+        <button type="button" className={primary} disabled={busy} onClick={send}>
+          {busy ? "Sending…" : "SEND"}
         </button>
       </div>
     </Modal>
