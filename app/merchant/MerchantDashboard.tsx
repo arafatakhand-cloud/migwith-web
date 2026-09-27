@@ -73,11 +73,9 @@ async function merchantTrailInBrowser(me: string, day: string): Promise<Row[]> {
   return Array.from(rows.values()).sort((a, b) => a.username.toLowerCase().localeCompare(b.username.toLowerCase()));
 }
 
-const dayStr = (daysAgo: number) => {
-  const t = new Date();
-  t.setDate(t.getDate() - daysAgo);
-  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
-};
+// Bangladesh date, like the server's daily reports.
+const dayStr = (daysAgo: number) =>
+  new Date(Date.now() - daysAgo * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
 
 export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: string; merchantDoc: DocumentSnapshot }) {
   const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");

@@ -61,10 +61,9 @@ export function Avatar({ name, size = "h-9 w-9" }: { name: string; size?: string
   );
 }
 
-export const todayStr = () => {
-  const t = new Date();
-  return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`;
-};
+// Bangladesh date — the same "today" the server's daily reports use,
+// whatever time zone this device is set to (like the app).
+export const todayStr = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
 
 // One user's spend in [from, end): bets minus refunds (never below 0) plus
 // gifts sent — the same rule the app and the midnight settlement use.
