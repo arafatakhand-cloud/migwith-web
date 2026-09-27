@@ -85,7 +85,7 @@ export function PastelCard({
     </>
   );
   const cls = "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left shadow-sm transition";
-  const style = { background: `linear-gradient(90deg, #ffffff 40%, ${color}1f)`, borderColor: `${color}40` };
+  const style = { background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`, borderColor: `${color}40` };
   if (right)
     return (
       <div className={cls} style={style}>

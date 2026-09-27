@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./themes.css";
 import { AppSession } from "./_components/AppSession";
 import { Translator } from "./_components/Translator";
 
@@ -40,7 +41,7 @@ export default function RootLayout({
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var f=localStorage.getItem("migwith.font");if(f&&f!=="modern")document.documentElement.dataset.font=f}catch(e){}`,
+            __html: `try{var f=localStorage.getItem("migwith.font");if(f&&f!=="modern")document.documentElement.dataset.font=f;var t=localStorage.getItem("migwith.theme");if(t&&t!=="sky_blue")document.documentElement.dataset.theme=t}catch(e){}`,
           }}
         />
         <AppSession>{children}</AppSession>
