@@ -170,7 +170,7 @@ export default function SettingsPage() {
 
             <SectionLabel>App preferences</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGwith visual style" color="#E12A6B" note="In app" />
+              <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGwith visual style" color="#E12A6B" href="/appearance" />
               <PastelCard
                 icon="🌐"
                 title="Language"

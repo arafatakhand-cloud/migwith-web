@@ -35,8 +35,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
+        {/* The font chosen in Settings › Appearance, applied before the page shows. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var f=localStorage.getItem("migwith.font");if(f&&f!=="modern")document.documentElement.dataset.font=f}catch(e){}`,
+          }}
+        />
         <AppSession>{children}</AppSession>
         <Translator />
       </body>

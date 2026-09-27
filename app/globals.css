@@ -5,6 +5,18 @@ html[lang="bn"] * {
   letter-spacing: normal !important;
 }
 
+/* Settings › Appearance fonts (the app's four). Bangla falls back to the device font. */
+html[data-font="classic"] body {
+  font-family: Georgia, "Times New Roman", serif;
+}
+html[data-font="luxury"] body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-weight: 300;
+}
+html[data-font="rounded"] body {
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive, sans-serif;
+}
+
 /* ☀️ Sky Blue — the MIGwith app's default theme: sky page, brand-blue cards, navy bars. */
 .bg-sky-app {
   background: linear-gradient(180deg, #4fb6ea 0%, #2e93d3 45%, #1e73bc 100%);
