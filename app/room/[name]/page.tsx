@@ -30,6 +30,7 @@ import {
   newVisitId,
   presenceLine,
   roomHref,
+  resolveRoomDescription,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { SwipeToReply } from "../../_components/SwipeToReply";
@@ -152,6 +153,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const [muted, setMuted] = useState(false);
   const [silenced, setSilenced] = useState(false);
   const [locked, setLocked] = useState(false);
+  const [announcement, setAnnouncement] = useState("");
   const [roomInfo, setRoomInfo] = useState<RoomInfo>(EMPTY_ROOM);
   const [roomLoaded, setRoomLoaded] = useState(false);
   const [modLoaded, setModLoaded] = useState(false);
@@ -285,6 +287,7 @@ function RoomView({ roomName }: { roomName: string }) {
   }, [user, roomName]);
 
   // Latest room document for the entry effect (which must not re-run on every edit).
+  const roomDescription = resolveRoomDescription(roomName, roomInfo.description);
   const roomInfoRef = useRef(roomInfo);
   roomInfoRef.current = roomInfo;
 
@@ -389,6 +392,7 @@ function RoomView({ roomName }: { roomName: string }) {
       (snap) => {
         setSilenced(snap.get("silenced") === true);
         setLocked(snap.get("locked") === true);
+        setAnnouncement(String(snap.get("announcement") || "").trim());
         setModLoaded(true);
       },
       () => setModLoaded(true)
@@ -1048,11 +1052,9 @@ function RoomView({ roomName }: { roomName: string }) {
                 <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
                   👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}
                 </p>
-                {roomInfo.description && (
-                  <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
-                    {roomInfo.description}
-                  </p>
-                )}
+                <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
+                  {roomDescription}
+                </p>
                 {locked && (
                   <p className="rounded-xl border border-[#D85A30] bg-[#4A1B0C] px-3.5 py-2.5 text-[13px] font-bold text-[#F0997B]">
                     🔒 This room is locked. Only admins/mods can enter until it&apos;s unlocked.
@@ -1062,6 +1064,13 @@ function RoomView({ roomName }: { roomName: string }) {
                   <p className="text-white">👫 Currently in this room:</p>
                   {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => u.username).join(", ")}</p>}
                 </div>
+                {/* Room announcement (/announcement), pinned under who is here, like the app */}
+                {announcement && (
+                  <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
+                    <span className="text-xl leading-none">📢</span>
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#8A5A00]">{announcement}</p>
+                  </div>
+                )}
               </div>
               {shown.map((m) => (
                 <MessageRow
@@ -1272,11 +1281,9 @@ function RoomView({ roomName }: { roomName: string }) {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setInfoOpen(false)}>
           <div className="w-full max-w-sm space-y-2 rounded-3xl bg-white p-5 text-sm text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h2 data-notranslate className="text-lg font-black">ℹ️ {roomName}</h2>
-            {roomInfo.description && (
-              <p data-notranslate className="whitespace-pre-wrap text-[#35507E]">
-                {roomInfo.description}
-              </p>
-            )}
+            <p data-notranslate className="whitespace-pre-wrap text-[#35507E]">
+              {roomDescription}
+            </p>
             <ul className="space-y-1 pt-1">
               <li>👑 Managed by: <b data-notranslate>{isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}</b></li>
               <li>👥 In the room: <b>{roomUsers.length}</b>{roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`}</li>

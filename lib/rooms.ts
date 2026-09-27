@@ -73,3 +73,51 @@ export function newVisitId(): string {
 export function roomHref(name: string): string {
   return `/room/${encodeURIComponent(name)}`;
 }
+
+// The room's welcome card, like the app's resolveRoomDescription: whatever an
+// admin wrote is shown as is; only a blank, the old generic sentence, or (in
+// an official room) just the room's own name falls back to the built-in
+// welcome — the country-aware one for official rooms.
+const LEGACY_DEFAULT_DESCRIPTION =
+  "🏷️ Welcome to the room — chat, connect and enjoy the game together. 🎁\n\nPlease play fairly, respect other players and enjoy your time in the room. ✨";
+
+const isOfficialRoomName = (name: string) =>
+  OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
+
+function officialRoomDefaultDescription(roomName: string): string {
+  switch (roomName) {
+    case "👻 Luxury Bot Official":
+      return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miglife team — place your bets, enjoy the game, and play responsibly. ✨";
+    case "🃏 LowCard Official":
+      return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miglife team — join a game, draw your card, and play responsibly. ✨";
+    case "🏏 Cricket Official":
+      return "🏏 Welcome to the official Cricket room! 🎉\n\nOn behalf of the miglife team — type !start to start a game, !j to join and !d to bat. Highest run scorer wins. Play responsibly! ✨";
+    case "🎴 Teen Patti Official":
+      return "🎴 Welcome to the official Teen Patti room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then play blind or see your cards. Best hand wins. Play responsibly! ✨";
+    case "🃏 29 Official":
+      return "🃏 Welcome to 29! 🎉\n\n4 players, 2 teams — bid, hide your trump and win the tricks. Empty seats get bots. Type !start to open a table. Play responsibly! ✨";
+    case "👑 MIG Royale Official":
+      return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
+    case "🎲 Ludo Bot Official":
+      return "🎲 Welcome to the official Ludo room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then roll and race all 4 tokens home. First one home wins. Play responsibly! ✨";
+    case "🎁 Gift Official":
+      return "🎁 Welcome to the official Gift room! 🎉\n\nOn behalf of the miglife team — join the official gift contests and enjoy! ✨";
+  }
+  if (OFFICIAL_COUNTRY_ROOMS.includes(roomName)) {
+    return `🏷️ Welcome to the official ${roomName} room! 🎉\n\nOn behalf of the miglife team — chat, connect and enjoy your time with fellow members from ${roomName}. Please be respectful and have fun! ✨`;
+  }
+  return LEGACY_DEFAULT_DESCRIPTION;
+}
+
+function isAutoRoomDescription(roomName: string, stored: string): boolean {
+  const t = stored.trim();
+  if (!t || t === LEGACY_DEFAULT_DESCRIPTION.trim()) return true;
+  if (!isOfficialRoomName(roomName)) return false;
+  const n = roomName.trim().toLowerCase();
+  const l = t.toLowerCase();
+  return l === n || l === `${n} chat room` || l === `${n} room` || l === `${n} chat`;
+}
+
+export function resolveRoomDescription(roomName: string, stored: string): string {
+  return isAutoRoomDescription(roomName, stored) ? officialRoomDefaultDescription(roomName) : stored.trim();
+}
