@@ -1067,8 +1067,8 @@ function RoomView({ roomName }: { roomName: string }) {
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
                   <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
-                    <span className="text-xl leading-none">📢</span>
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#8A5A00]">{announcement}</p>
+                    <span className="text-lg leading-none">📢</span>
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[15px] leading-[21px] text-[#8A5A00]">{announcement}</p>
                   </div>
                 )}
               </div>
