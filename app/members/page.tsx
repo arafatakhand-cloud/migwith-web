@@ -2,14 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, limit, query, type DocumentData } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { collection, getDocs, limit, query, where, type DocumentData } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../../lib/firebase";
+import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
 
 // Explore › Members, same categories and role checks as the app (MainActivity.kt).
-// View only: role changes stay in the app.
+// The founder (migwith) adds / removes Management members and Mentors here,
+// through the changeManagementRole function like the app.
+
+const changeManagementRole = httpsCallable<{ targetUid: string; role: string; operationId: string }, unknown>(
+  functions,
+  "changeManagementRole"
+);
+const MANAGED = new Set(["executive_board", "admin", "country_representative", "staff", "elite_user", "mentor"]);
+const PROTECTED = new Set(["ceo", "owner", "superadmin"]);
 
 type Category = { id: string; icon: string; title: string; subtitle: string; color: string; roles: string[] };
 
@@ -61,13 +71,54 @@ export default function MembersPage() {
   const ready = useRequireLogin();
   const [members, setMembers] = useState<Member[] | null>(null);
   const [selected, setSelected] = useState<Category | null>(null);
+  const { user, username } = useSession();
+  const isFounder = (username || "").trim().toLowerCase() === "migwith";
+  const [target, setTarget] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     if (!ready) return;
     getDocs(query(collection(db, "users"), limit(500)))
       .then((snap) => setMembers(snap.docs.map((d) => toMember(d.id, d.data())).filter((m) => m.name)))
       .catch(() => setMembers([]));
-  }, [ready]);
+  }, [ready, reload]);
+
+  // Username, MIG ID or UID → the user.
+  const findTarget = async (input: string): Promise<Member | null> => {
+    const v = input.trim();
+    if (!v) return null;
+    for (const field of ["username", "migId"]) {
+      const snap = await getDocs(query(collection(db, "users"), where(field, "==", v), limit(1))).catch(() => null);
+      const d = snap?.docs[0];
+      if (d) return toMember(d.id, d.data());
+    }
+    const lower = v.toLowerCase();
+    return (members || []).find((m) => m.name.toLowerCase() === lower || m.uid.toLowerCase() === lower) || null;
+  };
+
+  const change = async (input: string, add: boolean) => {
+    if (!selected || !isFounder || busy) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const m = await findTarget(input);
+      if (!m) throw new Error("User not found. Enter Username, MIG ID or UID.");
+      if (m.uid === user?.uid) throw new Error("You cannot change your own management role.");
+      if (m.roles.some((r) => PROTECTED.has(r))) throw new Error("FOUNDER account cannot be changed here.");
+      await changeManagementRole({ targetUid: m.uid, role: add ? selected.id : "user", operationId: crypto.randomUUID() });
+      setMessage(`${selected.title} ${add ? "added" : "removed"}: ${m.name}`);
+      setTarget("");
+      setReload((n) => n + 1);
+    } catch (e: any) {
+      const text = String(e?.message || "");
+      setMessage(text.startsWith("User not found") || text.startsWith("You cannot") || text.startsWith("FOUNDER") ? text : `Could not update member: ${text}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const canManage = isFounder && !!selected && MANAGED.has(selected.id);
 
   const list = useMemo(() => {
     if (!selected || !members) return [];
@@ -83,6 +134,38 @@ export default function MembersPage() {
         {selected ? (
           <>
             <PageTitle title={selected.title} subtitle={selected.subtitle} icon={selected.icon} />
+            {canManage && (
+              <div className="mb-2.5 rounded-2xl border bg-[#304477] p-2.5 text-white" style={{ borderColor: NAME_COLORS[selected.id] }}>
+                <p className="flex items-center gap-1.5 text-sm font-bold text-[#FFD54F]">
+                  👑 FOUNDER MANAGEMENT
+                  <span className="ml-auto text-[13px]" style={{ color: NAME_COLORS[selected.id] }}>
+                    ADD
+                  </span>
+                </p>
+                <div className="mt-2 flex gap-1.5">
+                  <input
+                    value={target}
+                    onChange={(e) => setTarget(e.target.value)}
+                    placeholder="Username / MIG ID / UID"
+                    className="min-w-0 flex-1 rounded-xl border bg-transparent px-3 py-2.5 text-base text-white outline-none placeholder:text-white/60"
+                    style={{ borderColor: NAME_COLORS[selected.id] }}
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || !target.trim()}
+                    onClick={() => change(target, true)}
+                    className="rounded-full bg-[#39FF14] px-5 text-sm font-extrabold text-black disabled:opacity-50"
+                  >
+                    ADD
+                  </button>
+                </div>
+                {message && (
+                  <p className={`mt-1.5 text-xs ${/^(Could not|User not found|You cannot|FOUNDER)/.test(message) ? "text-[#FF7B8A]" : "text-[#7CFFB2]"}`}>
+                    {message}
+                  </p>
+                )}
+              </div>
+            )}
             {members === null ? (
               <p className="py-10 text-center text-sm text-[#5B6B8C]">Loading…</p>
             ) : list.length === 0 ? (
@@ -112,11 +195,28 @@ export default function MembersPage() {
                           {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
                         </span>
                       </span>
-                      <span className="text-white/50">›</span>
+                      {canManage ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            change(m.uid, false);
+                          }}
+                          className="px-2 text-xs font-bold text-[#FF6F7D]"
+                        >
+                          REMOVE
+                        </button>
+                      ) : (
+                        <span className="text-white/50">›</span>
+                      )}
                     </Link>
                   </li>
                 ))}
               </ul>
+            )}
+            {canManage && (
+              <p className="mt-2 px-1 text-xs text-[#35507E]">Only the FOUNDER can add or remove {selected.title} members.</p>
             )}
             <button
               type="button"
