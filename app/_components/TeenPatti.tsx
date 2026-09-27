@@ -328,53 +328,8 @@ export function TeenPattiTable({ state, uid }: { state: TeenPattiState; uid: str
 
       {!collapsed && (
         <>
-          {/* Seats */}
-          {state.players.length > 0 && (
-            <div className="mt-2 grid grid-cols-3 gap-1 sm:gap-1.5">
-              {state.players.map((p, i) => {
-                const isTurn = state.phase === "PLAYING" && state.turnIndex === i;
-                const shown = state.reveal[p.uid];
-                const won = !state.running && (winners.has(p.uid) || winners.has(p.username));
-                return (
-                  <div
-                    key={p.uid}
-                    className={`min-w-0 rounded-xl border px-1.5 py-1 text-[11px] sm:px-2 sm:py-1.5 sm:text-xs ${
-                      isTurn
-                        ? "border-amber-300 bg-amber-300/15"
-                        : won
-                          ? "border-emerald-400 bg-emerald-500/15"
-                          : "border-white/10 bg-white/[0.04]"
-                    } ${p.packed ? "opacity-45" : ""}`}
-                  >
-                    <div className="flex items-center gap-1">
-                      <span className="truncate font-bold">
-                        {p.username}
-                        {p.uid === uid && " (you)"}
-                      </span>
-                      {won && <span>🏆</span>}
-                    </div>
-                    <div className="truncate text-[10px] text-white/50">
-                      {p.packed ? "packed" : p.seen ? "seen" : "blind"} · 🪙 {p.invested.toLocaleString()}
-                    </div>
-                    {shown && shown.cards.length === 3 ? (
-                      <div className="mt-1 flex flex-wrap items-center gap-0.5">
-                        {shown.cards.map((c, k) => (
-                          <MiniCard key={k} card={c} size="xs" />
-                        ))}
-                        <span className="w-full truncate text-[10px] font-semibold text-amber-200">{shown.hand}</span>
-                      </div>
-                    ) : state.phase === "PLAYING" && !p.packed ? (
-                      <div className="mt-1 flex gap-0.5">
-                        <CardBack size="xs" />
-                        <CardBack size="xs" />
-                        <CardBack size="xs" />
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* The table: oval felt with the seats on the rim, like the app */}
+          <TpOvalTable state={state} uid={uid} meIdx={meIdx} winners={winners} />
 
           {!state.running && state.lastPrize > 0 && (
             <p className="mt-1 text-center text-xs text-emerald-300">
@@ -516,5 +471,199 @@ function TpButton({
     >
       {children}
     </button>
+  );
+}
+
+// Seat position on the rim: evenly spaced by distance round the oval,
+// starting at the bottom (me), like the app's tpSeatOffset.
+function seatOffset(rel: number, n: number, rx: number, ry: number): [number, number] {
+  if (n <= 1) return [0, ry];
+  const steps = 720;
+  const lengths = new Float64Array(steps + 1);
+  let px = 0;
+  let py = ry;
+  for (let k = 1; k <= steps; k++) {
+    const a = Math.PI / 2 + (2 * Math.PI * k) / steps;
+    const x = rx * Math.cos(a);
+    const y = ry * Math.sin(a);
+    lengths[k] = lengths[k - 1] + Math.hypot(x - px, y - py);
+    px = x;
+    py = y;
+  }
+  const target = (lengths[steps] * (((rel % n) + n) % n)) / n;
+  let k = 0;
+  while (k < steps && lengths[k + 1] < target) k++;
+  const a = Math.PI / 2 + (2 * Math.PI * k) / steps;
+  return [rx * Math.cos(a), ry * Math.sin(a)];
+}
+
+const AVATAR_COLORS = ["#3B8BE8", "#E0507C", "#2FAE85", "#8E6CE0", "#E08A2E", "#3FA7C9", "#C2185B"];
+const hashOf = (s: string) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return h & 0x7fffffff;
+};
+
+function TpOvalTable({
+  state,
+  uid,
+  meIdx,
+  winners,
+}: {
+  state: TeenPattiState;
+  uid: string;
+  meIdx: number;
+  winners: Set<string>;
+}) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setW(el.clientWidth));
+    ro.observe(el);
+    setW(el.clientWidth);
+    return () => ro.disconnect();
+  }, []);
+
+  const justFinished = !state.running && state.lastWinners.length > 0 && state.players.length > 0;
+  const busy = state.running || justFinished;
+  const aspect = busy ? 1.7 : 2.8;
+  const h = w / aspect;
+  const padX = busy ? 26 : 40;
+  const padTop = busy ? 22 : 10;
+  const padBottom = busy ? 36 : 10;
+  const ow = Math.max(0, w - padX * 2);
+  const oh = Math.max(0, h - padTop - padBottom);
+  const centerY = padTop + oh / 2;
+  const rx = ow / 2 - 4;
+  const ry = oh / 2 - 2;
+  const n = state.phase === "JOINING" ? 10 : busy ? state.players.length : 0;
+  const rel = (i: number) => (meIdx >= 0 ? (i - meIdx + n) % n : i);
+
+  return (
+    <div
+      ref={boxRef}
+      className="relative mx-1.5 my-1 overflow-hidden rounded-[20px] bg-gradient-to-b from-[#1C0833] via-[#12052A] to-[#0A0318]"
+      style={{ aspectRatio: String(aspect) }}
+    >
+      {[
+        [7, 9], [43, 5], [86, 12], [95, 40], [4, 55], [13, 90], [80, 88], [62, 95], [30, 97],
+      ].map(([x, y]) => (
+        <span key={`${x}${y}`} className="absolute h-1 w-1 rounded-full bg-[#B48CC8]/35" style={{ left: `${x}%`, top: `${y}%` }} />
+      ))}
+      {w > 0 && (
+        <>
+          {/* wood rim → gold ring → felt */}
+          <div
+            className="absolute rounded-[50%] bg-gradient-to-b from-[#5E3413] via-[#3A1D08] to-[#5E3413] p-1.5 shadow-[0_8px_24px_rgba(176,36,106,.45)]"
+            style={{ left: padX, top: padTop, width: ow, height: oh }}
+          >
+            <div className="h-full w-full rounded-[50%] bg-gradient-to-br from-[#FFE08A] via-[#D4A437] to-[#FFE9A6] p-[3px]">
+              <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden rounded-[50%] bg-[radial-gradient(ellipse,_#B4246C,_#8E1A57_60%,_#4E0B2E)]">
+                <span className="absolute left-[17%] top-[20%] h-[60%] w-[66%] rounded-[50%] border-2 border-dashed border-[#E39A6A]/55" />
+                <span className="absolute left-[14%] top-[8%] h-[42%] w-[72%] rounded-[50%] bg-gradient-to-b from-white/20 to-white/[0.04]" />
+                <span className="relative text-[13px] font-bold tracking-[5px] text-[#E8A3B8]/85">MIGWITH</span>
+                <span className="relative my-0.5 text-lg leading-none">🪙</span>
+                <span className="relative rounded-full border-[1.5px] border-[#E6BE5A] bg-[#2A0A1E] px-3.5 py-0.5 text-sm font-extrabold text-[#FFD166]">
+                  {state.running ? `POT ${state.pot.toLocaleString()}` : "Type !start"}
+                </span>
+                {state.phase === "JOINING" && (
+                  <span className="relative text-[9px] text-white/80">
+                    boot {state.boot} · {state.players.length}/10 seats
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* empty seats while people sit down */}
+          {state.phase === "JOINING" &&
+            Array.from({ length: n - state.players.length }, (_, j) => state.players.length + j).map((slot) => {
+              const [dx, dy] = seatOffset(rel(slot), n, rx, ry);
+              const canSit = meIdx < 0;
+              return (
+                <button
+                  key={`e${slot}`}
+                  type="button"
+                  disabled={!canSit || state.busy}
+                  onClick={() => canSit && state.join()}
+                  className="absolute flex h-11 w-[52px] flex-col items-center justify-center"
+                  style={{ left: w / 2 + dx - 26, top: centerY + dy - 22 }}
+                >
+                  <span className="flex h-6 w-6 animate-pulse items-center justify-center rounded-full border-[1.5px] border-[#D4A437] bg-white/20 text-[15px] font-bold leading-none text-white">
+                    +
+                  </span>
+                  <span className="text-[8px] text-[#D4A437]">{canSit ? "Sit" : "Invite"}</span>
+                </button>
+              );
+            })}
+
+          {/* players */}
+          {n > 0 &&
+            state.players.map((p, i) => {
+              const [dx, dy] = seatOffset(rel(i), n, rx, ry);
+              const isMe = p.uid === uid;
+              const isTurn = state.phase === "PLAYING" && state.turnIndex === i;
+              const won = !state.running && (winners.has(p.uid) || winners.has(p.username));
+              const cards = isMe && state.myCards.length === 3 ? state.myCards : state.reveal[p.uid]?.cards || [];
+              const showCards = state.phase !== "JOINING";
+              const yellow = isTurn || won;
+              const frac = won ? 1 : isTurn ? Math.min(1, Math.max(0, state.secondsLeft / 15)) : 0;
+              const color = AVATAR_COLORS[hashOf(p.uid) % AVATAR_COLORS.length];
+              return (
+                <div
+                  key={p.uid}
+                  className={`absolute flex w-[74px] flex-col items-center ${p.packed ? "opacity-55" : ""}`}
+                  style={{ left: w / 2 + dx - 37, top: centerY + dy - 24 }}
+                >
+                  <div className="relative h-12 w-[74px]">
+                    <div
+                      className={`absolute left-1/2 top-0 flex h-12 w-12 -translate-x-1/2 items-center justify-center rounded-full ${yellow ? "shadow-[0_0_16px_rgba(255,200,61,.6)]" : ""}`}
+                      style={{ background: `conic-gradient(#FFC83D ${frac * 360}deg, #2A1E3A 0)` }}
+                    >
+                      <span
+                        className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[17px] font-bold text-white ring-[1px] ring-[#12052A]"
+                        style={{ background: `radial-gradient(circle, ${color}BF, ${color})` }}
+                      >
+                        {(p.username[0] || "?").toUpperCase()}
+                      </span>
+                      {won && <span className="absolute -top-3 text-[13px]">👑</span>}
+                    </div>
+                    {showCards && !p.packed && (
+                      <div className="absolute -right-2.5 top-0 h-[26px] w-[30px]">
+                        {[-12, 0, 12].map((angle, k) => (
+                          <span key={k} className="absolute" style={{ left: k * 7, top: k === 1 ? -1 : 1, transform: `rotate(${angle}deg)` }}>
+                            {cards.length === 3 ? <MiniCard card={cards[k]} size="xs" /> : <CardBack size="xs" />}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {showCards && !won && (
+                      <span
+                        className={`absolute left-0 top-0 rounded-[5px] px-[3px] text-[6px] font-extrabold ${
+                          p.packed ? "bg-[#8E2424] text-white" : p.seen ? "bg-[#E0A800] text-[#1B1200]" : "bg-[#37294A] text-white"
+                        }`}
+                      >
+                        {p.packed ? "PACK" : p.seen ? "SEEN" : "BLIND"}
+                      </span>
+                    )}
+                  </div>
+                  <span
+                    className={`mt-0.5 max-w-[74px] truncate rounded-full px-[7px] text-center text-[10px] font-bold ${
+                      yellow
+                        ? "bg-gradient-to-b from-[#FFE07A] to-[#FFC83D] text-[#221400]"
+                        : `bg-gradient-to-b from-[#2A1740]/90 to-[#160A26]/90 text-white ${isMe ? "ring-1 ring-white/80" : ""}`
+                    }`}
+                  >
+                    {isMe ? "You" : p.username}
+                    {isTurn && state.secondsLeft > 0 ? ` · ${state.secondsLeft}s` : ""}
+                  </span>
+                </div>
+              );
+            })}
+        </>
+      )}
+    </div>
   );
 }

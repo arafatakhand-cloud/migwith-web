@@ -9,6 +9,13 @@ import { db, functions } from "../../lib/firebase";
 // results and the round itself are handled by the Cloud Functions
 // (startLuxuryRound / placeLuxuryBotBet / settleLuxuryRound), same as the app.
 
+function betTotalLabel(total: number): string {
+  if (total <= 0) return "0";
+  if (total < 1000) return String(total);
+  if (total % 1000 === 0) return `${total / 1000}k`;
+  return `${(total / 1000).toFixed(1)}k`;
+}
+
 export const LUXURY_ROOM = "👻 Luxury Bot Official";
 
 export const LUXURY_CHARACTERS = [
@@ -202,11 +209,10 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
                     className="rounded-xl border border-amber-300/40 bg-white/[0.05] px-1 py-2 text-center text-xs font-bold transition hover:bg-amber-300/10 active:scale-95 disabled:opacity-40"
                   >
                     <div>{c}</div>
-                    {(state.myBets[c] || 0) > 0 && (
-                      <div className="mt-0.5 text-[10px] text-amber-300">
-                        🪙 {Number(state.myBets[c]).toLocaleString()}
-                      </div>
-                    )}
+                    {/* My total on it, the app's label: 500 → "500", 2000 → "2k", 2500 → "2.5k" */}
+                    <div className={`mt-0.5 text-xs font-extrabold ${(state.myBets[c] || 0) > 0 ? "text-amber-300" : "text-white/40"}`}>
+                      {betTotalLabel(Number(state.myBets[c] || 0))}
+                    </div>
                   </button>
                 ))}
               </div>
