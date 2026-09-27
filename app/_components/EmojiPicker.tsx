@@ -62,7 +62,7 @@ export function EmojiPicker({
         aria-expanded={open}
         className={
           inline
-            ? "flex h-10 w-10 items-center justify-center rounded-full text-2xl disabled:opacity-40"
+            ? "flex h-8 w-8 items-center justify-center rounded-full text-xl disabled:opacity-40"
             : `rounded-xl border px-2.5 text-lg sm:px-3 disabled:opacity-40 ${
                 open ? "border-[#2F80ED] bg-[#DCEBFB]" : "border-[#D5E3F5] bg-[#F4F9FF] hover:bg-[#EAF4FE]"
               }`

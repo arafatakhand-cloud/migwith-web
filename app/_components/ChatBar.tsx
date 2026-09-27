@@ -8,7 +8,7 @@ import { EmojiPicker } from "./EmojiPicker";
 // and a round white ➤ send button. Used by chat rooms and private chat.
 
 const round =
-  "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#1E2B47] text-lg shadow-inner disabled:opacity-40";
+  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1E2B47] text-base shadow-inner disabled:opacity-40";
 
 export function ChatBar({
   text,
@@ -76,7 +76,7 @@ export function ChatBar({
         </button>
       </div>
     )}
-    <div className="flex items-center gap-1.5 rounded-t-[28px] bg-[#0B1F3A] px-2 pt-2 pb-safe sm:gap-2 sm:px-3">
+    <div className="flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
         <button
@@ -84,7 +84,7 @@ export function ChatBar({
           onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
           aria-label="More"
           aria-expanded={moreOpen}
-          className="flex h-11 w-7 items-center justify-center rounded-full bg-[#1E2B47] text-lg font-black text-white"
+          className="flex h-9 w-6 items-center justify-center rounded-full bg-[#1E2B47] text-base font-black text-white"
         >
           ⋮
         </button>
@@ -110,7 +110,7 @@ export function ChatBar({
       {/* 🖼️ photo */}
       <label
         title={photo.title}
-        className={`${round} cursor-pointer border-2 border-[#8C7B3E] ${
+        className={`${round} cursor-pointer border-[1.5px] border-[#8C7B3E] ${
           photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""
         }`}
       >
@@ -132,7 +132,7 @@ export function ChatBar({
       {!voiceActive && (
         <>
           {/* White box with 😊 inside */}
-          <div className="flex h-12 min-w-0 flex-1 items-center rounded-full border-2 border-[#1E4FA8] bg-white pl-4 pr-1">
+          <div className="flex h-9 min-w-0 flex-1 items-center rounded-full border-[1.5px] border-[#1E4FA8] bg-white pl-3 pr-0.5">
             <input
               ref={inputRef}
               value={text}
@@ -157,7 +157,7 @@ export function ChatBar({
             onClick={onSend}
             disabled={!canSend}
             aria-label="Send"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-2xl text-[#4A7BE0] shadow-md disabled:text-[#A9BDE6]"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg text-[#4A7BE0] shadow-md disabled:text-[#A9BDE6]"
           >
             ➤
           </button>
