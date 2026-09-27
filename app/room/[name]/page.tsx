@@ -1067,16 +1067,16 @@ export default function RoomPage() {
       {/* ⋮ Room menu */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-2 pb-safe" onClick={() => setMenuOpen(false)}>
-          <div className="w-full max-w-sm overflow-hidden rounded-[28px] bg-[#EEF0F3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-[#1E5BC6] to-[#1A4DA8] px-5 py-4 text-white">
-              <p data-notranslate className="truncate text-lg font-black">
+          <div className="w-[62%] min-w-[230px] max-w-[280px] overflow-hidden rounded-[24px] bg-[#EEF0F3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-[#1E5BC6] to-[#1A4DA8] px-4 py-3 text-white">
+              <p data-notranslate className="truncate text-[15px] font-black">
                 {roomName}
                 {locked && <span className="ml-1.5 text-sm">🔒</span>}
                 {silenced && <span className="ml-1 text-sm">🔇</span>}
               </p>
-              <p className="text-sm text-white/85">Room menu · {roomUsers.length} here</p>
+              <p className="text-[11px] text-white/85">Room menu · {roomUsers.length} here</p>
             </div>
-            <ul className="max-h-[65vh] space-y-2 overflow-y-auto p-3">
+            <ul className="max-h-[70vh] space-y-1.5 overflow-y-auto p-2">
               {menuItems.map(([icon, label, run, danger]) => (
                 <li key={label}>
                   <button
@@ -1085,15 +1085,15 @@ export default function RoomPage() {
                       setMenuOpen(false);
                       run();
                     }}
-                    className={`flex w-full items-center gap-4 rounded-full px-3 py-2.5 text-left text-[15px] font-semibold ${
+                    className={`flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-left text-[13px] font-semibold ${
                       danger ? "bg-[#F4DDDD] text-[#C62828]" : "bg-[#E1E4EA] text-[#0B1F3A]"
                     }`}
                   >
-                    <span className={`flex h-11 w-11 items-center justify-center rounded-full text-xl ${danger ? "bg-[#EFC6C6]" : "bg-[#CFDDF0]"}`}>
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${danger ? "bg-[#EFC6C6]" : "bg-[#CFDDF0]"}`}>
                       {icon}
                     </span>
                     <span className="flex-1">{label}</span>
-                    <span className={danger ? "text-[#C62828]" : "text-[#6B7A99]"}>›</span>
+                    <span className={`pr-1 text-sm ${danger ? "text-[#C62828]" : "text-[#6B7A99]"}`}>›</span>
                   </button>
                 </li>
               ))}
