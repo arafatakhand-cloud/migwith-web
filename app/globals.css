@@ -75,3 +75,27 @@ body {
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }
+
+/* Lucky User card: a soft shine sweeping across, like the app. */
+.lucky-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.55) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: lucky-shine 2.6s linear infinite;
+}
+@keyframes lucky-shine {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucky-shimmer::after {
+    animation: none;
+  }
+}

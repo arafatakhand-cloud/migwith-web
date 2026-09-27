@@ -1179,6 +1179,9 @@ function MessageRow({
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
 
+  // Lucky User announcement (pickBangladeshLuckyUser): a celebration card, like the app.
+  if (m.text.startsWith("🍀 Lucky Bot:")) return <LuckyCard text={m.text} time={time} />;
+
   // "Bangladesh: imran [25] has entered." — on the left, room name in orange.
   if (m.type === "room_entry" || m.type === "room_leave") {
     const colon = m.text.indexOf(": ");
@@ -1312,5 +1315,44 @@ function MessageRow({
         </div>
       </div>
     </SwipeToReply>
+  );
+}
+
+// "🍀 Lucky Bot: Congratulations NAME! You are the Lucky User — pink ID for
+//  3 hours, +1 level and 5000 coins added to your account! 🎉"
+function LuckyCard({ text, time }: { text: string; time: string }) {
+  const winner = /Congratulations (.+?)! You are/i.exec(text)?.[1]?.trim() || "Lucky User";
+  const coins = Number(/and (\d+) coins/i.exec(text)?.[1] || 5000);
+  return (
+    <div className="rounded-[20px] bg-gradient-to-r from-[#43C77A] via-[#FF6FB1] to-[#F2B53A] p-[1.5px] shadow-[0_6px_18px_rgba(255,111,177,0.35)]">
+      <div className="lucky-shimmer relative overflow-hidden rounded-[19px] bg-gradient-to-br from-[#E8FFF3] via-[#FFEEF7] to-[#FFF6DC] px-3.5 py-3">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xl">🍀</span>
+          <span className="flex-1 text-[13px] font-black tracking-[0.15em] text-[#1E9B5A]">LUCKY USER</span>
+          <span className="text-sm">✨🎉✨</span>
+        </div>
+        <p className="mt-2 text-xs font-semibold text-[#7A6A88]">Congratulations</p>
+        <p data-notranslate className="truncate text-2xl font-black text-[#E8327E]">
+          {winner}
+        </p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {[
+            ["💗", "Pink ID 3h", "#FF6FB1", "#B2477F"],
+            ["⬆️", "+1 Level", "#3B8BF0", "#2D5FA6"],
+            ["🪙", `+${coins.toLocaleString()}`, "#E0A21B", "#96701E"],
+          ].map(([icon, label, accent, ink]) => (
+            <span
+              key={label}
+              className="flex items-center gap-1 rounded-xl border bg-white/85 px-2 py-1 text-xs font-bold"
+              style={{ borderColor: `${accent}73`, color: ink }}
+            >
+              <span className="text-[13px]">{icon}</span>
+              {label}
+            </span>
+          ))}
+        </div>
+        {time && <p className="mt-1.5 text-right text-[10px] text-[#9A8FA6]">{time}</p>}
+      </div>
+    </div>
   );
 }
