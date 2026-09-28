@@ -1352,6 +1352,8 @@ function RoomView({ roomName }: { roomName: string }) {
 // Colours from the app (RoomPage.kt).
 const INK = "#0B1F3A";
 const LINK_BLUE = "#174EA6";
+// Bright blue of the game lines: Luxury Bot bets and every game bot's text.
+const BET_BLUE = "#1565E8";
 const APP_RED = "#B3261E";
 const ROOM_ORANGE = "#E6731E";
 
@@ -1459,7 +1461,7 @@ function gameBotLine(text: string): ReactNode | null {
       <span className="font-bold" style={{ color }}>
         {name}
       </span>
-      <span style={{ color: LINK_BLUE }}>{parts}</span>
+      <span style={{ color: BET_BLUE }}>{parts}</span>
     </>
   );
 }
@@ -1467,7 +1469,6 @@ function gameBotLine(text: string): ReactNode | null {
 // "👻 Luxury Bot: …" — the ghost stays in the stored text but is never shown;
 // "Luxury Bot:" in pink; a bet line ("… placed 500 coins on …") in blue,
 // every other line in the normal ink.
-const BET_BLUE = "#1565E8";
 function luxuryLine(text: string): ReactNode | null {
   const shown = text.replace(/^👻\s*/, "");
   if (!/^Luxury Bot:/i.test(shown)) return null;
