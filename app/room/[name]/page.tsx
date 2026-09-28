@@ -33,6 +33,7 @@ import {
   resolveRoomDescription,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
+import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
 import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
@@ -287,6 +288,7 @@ function RoomView({ roomName }: { roomName: string }) {
   }, [user, roomName]);
 
   // Latest room document for the entry effect (which must not re-run on every edit).
+  const giftQuery = giftPickerQuery(text);
   const roomDescription = resolveRoomDescription(roomName, roomInfo.description);
   const roomInfoRef = useRef(roomInfo);
   roomInfoRef.current = roomInfo;
@@ -1029,7 +1031,17 @@ function RoomView({ roomName }: { roomName: string }) {
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
+          <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
+            {giftQuery !== null && (
+              <GiftNamePicker
+                queryText={giftQuery}
+                names={roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== (profile?.username || "").toLowerCase())}
+                onPick={(t) => {
+                  setText(t);
+                  inputRef.current?.focus();
+                }}
+              />
+            )}
             <div
               ref={listRef} data-notranslate
               onScroll={(e) => {
