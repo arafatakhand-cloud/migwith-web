@@ -499,22 +499,7 @@ export default function ProfilePage() {
               ✎ Edit Profile
             </Link>
           ) : null}
-          {isOwn ? (
-            <Link
-              href="/wallet"
-              className="block w-full rounded-2xl border border-[#F5D77A] bg-[#FFF3D6] py-3 text-center font-bold text-[#8A5A00] transition hover:bg-[#FFEBB8]"
-            >
-              💰 My Account · Coins
-            </Link>
-          ) : null}
-          {isOwn ? (
-            <Link
-              href="/security"
-              className="block w-full rounded-2xl border border-[#BFD7F2] bg-white py-3 text-center font-bold text-[#0B2A5B] transition hover:bg-[#F4F9FF]"
-            >
-              🔐 Security PIN
-            </Link>
-          ) : (
+          {isOwn ? null : (
             <>
               <div className="flex gap-2.5">
                 <button
@@ -585,29 +570,27 @@ export default function ProfilePage() {
 
         {/* Gift history */}
         <h2 className="mt-6 px-1 text-sm font-bold tracking-widest text-[#0B2A5B]">GIFT HISTORY</h2>
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2 rounded-[18px] bg-white py-2 shadow-sm">
           {gifts.length === 0 ? (
-            <li className="rounded-2xl bg-white px-4 py-3 text-sm text-[#5B6B8C] shadow-sm">🎁 No gifts sent or received yet</li>
+            <li className="flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B]">
+              <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FB] text-xl">🎁</span>
+              No gifts sent or received yet
+            </li>
           ) : (
             gifts.map((g, i) => (
-              <li key={i} className="flex items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm shadow-sm">
-                <span>{g.sent ? "🎁" : "🎉"}</span>
-                <span className="text-[#0B2A5B]">
+              <li key={i} className="flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B]">
+                <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FB] text-xl">
+                  {g.sent ? "🎁" : "🎉"}
+                </span>
+                <span className="min-w-0">
                   {g.sent ? "Sent" : "Received"} {g.giftName} {g.sent ? "to" : "from"}{" "}
                   <Link href={`/profile/${encodeURIComponent(g.other)}`} className="font-semibold text-[#2F80ED]">
                     {g.other}
                   </Link>
+                  {g.at > 0 &&
+                    " · " +
+                      new Date(g.at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                 </span>
-                {g.at > 0 && (
-                  <span className="ml-auto shrink-0 text-xs text-[#6B7A99]">
-                    {new Date(g.at).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                )}
               </li>
             ))
           )}
