@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
+  FieldPath,
   arrayRemove,
   arrayUnion,
   collection,
+  deleteField,
   doc,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
   query,
+  serverTimestamp,
   updateDoc,
   where,
   type DocumentData,
@@ -22,10 +26,11 @@ import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
 import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
+import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
-// queries. Follow, block and footprints only ever write the viewer's OWN doc.
+// queries. Follow, block, votes and footprints only ever write the viewer's OWN doc.
 
 type Profile = {
   uid: string;
@@ -100,6 +105,12 @@ export default function ProfilePage() {
   const [friends, setFriends] = useState(0);
   const [followers, setFollowers] = useState(0);
   const [footprints, setFootprints] = useState(0);
+  // Votes work like footprints: a voter adds this username to their OWN
+  // "votedProfiles" list (+ votedAt.<name> time); the owner can see who.
+  const [voters, setVoters] = useState(0);
+  const [hasVoted, setHasVoted] = useState(false);
+  const [giftCount, setGiftCount] = useState(0);
+  const [peopleList, setPeopleList] = useState<"footprints" | "votes" | null>(null);
   // Days left on an active mentor tag (0 = no end date), or null when not tagged.
   const [taggedDays, setTaggedDays] = useState<number | null>(null);
   const [gifts, setGifts] = useState<GiftEntry[]>([]);
@@ -185,8 +196,16 @@ export default function ProfilePage() {
     getDocs(query(users, where("following", "array-contains", username)))
       .then((s) => setFollowers(s.size))
       .catch(() => {});
-    getDocs(query(users, where("visitedProfiles", "array-contains", username)))
-      .then((s) => setFootprints(s.size))
+    // count(): the server returns only the number, like the app.
+    getCountFromServer(query(users, where("visitedProfiles", "array-contains", username)))
+      .then((s) => setFootprints(s.data().count))
+      .catch(() => {});
+    getCountFromServer(query(users, where("votedProfiles", "array-contains", username)))
+      .then((s) => setVoters(s.data().count))
+      .catch(() => {});
+    // Gifts really received (gift_activity), as the app counts them.
+    getCountFromServer(query(collection(db, "gift_activity"), where("toUsername", "==", username)))
+      .then((s) => setGiftCount(s.data().count))
       .catch(() => {});
 
     const fr = collection(db, "friend_requests");
@@ -251,13 +270,42 @@ export default function ProfilePage() {
         const list = (k: string) => ((snap.get(k) as unknown[]) || []).filter((v): v is string => typeof v === "string");
         setIsFollowing(list("following").some((n) => sameName(n, username)));
         setIsBlocked(list("blockedUsers").some((n) => sameName(n, username)));
+        setHasVoted(list("votedProfiles").some((n) => sameName(n, username)));
         const visited = list("visitedProfiles");
         if (!visited.some((n) => sameName(n, username))) {
           updateDoc(ref, { visitedProfiles: arrayUnion(username) }).catch(() => {});
         }
+        // WHEN: visitedAt.<name>, refreshed on every visit, for the owner's
+        // "Who viewed my profile" list. Separate write, like the app.
+        updateDoc(ref, new FieldPath("visitedAt", username.toLowerCase()), serverTimestamp()).catch(() => {});
       })
       .catch(() => {});
   }, [user, username, me, isOwn]);
+
+  // Vote / remove my vote. Only MY document is written: votedProfiles and
+  // votedAt.<name>, same as the app.
+  const toggleVote = async () => {
+    if (!user || isOwn) return;
+    setBusy("vote");
+    setError("");
+    try {
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      const current = ((snap.get("votedProfiles") as unknown[]) || []).filter((v): v is string => typeof v === "string");
+      const matches = current.filter((n) => sameName(n, username));
+      const already = matches.length > 0;
+      if (already) await updateDoc(ref, { votedProfiles: arrayRemove(...matches) });
+      else await updateDoc(ref, { votedProfiles: arrayUnion(username) });
+      setHasVoted(!already);
+      setVoters((c) => Math.max(0, c + (already ? -1 : 1)));
+      updateDoc(ref, new FieldPath("votedAt", username.toLowerCase()), already ? deleteField() : serverTimestamp()).catch(() => {});
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setBusy("");
+    }
+  };
 
   // Edit one of MY lists (following / blockedUsers): add or remove this username.
   const toggleMine = async (field: "following" | "blockedUsers", on: boolean) => {
@@ -407,18 +455,35 @@ export default function ProfilePage() {
 
         {/* Stats */}
         <div className="mt-4 grid grid-cols-4 gap-2">
-          {[
-            ["👥", friends, "Friends"],
-            ["🎁", profile.gifts, "Gifts"],
-            ["❤️", profile.votes, "Votes"],
-            ["👣", footprints, "Footprints"],
-          ].map(([icon, value, label]) => (
-            <div key={label} className="rounded-2xl bg-white py-3 text-center text-[#0B2A5B] shadow-sm">
-              <div className="text-lg">{icon}</div>
-              <div className="font-black">{Number(value).toLocaleString()}</div>
-              <div className="text-[11px] text-[#35507E]">{label}</div>
-            </div>
-          ))}
+          {(
+            [
+              ["👥", friends, "Friends", null],
+              ["🎁", giftCount, "Gifts", null],
+              // Any old number stored on the profile, plus the real votes.
+              ["❤️", profile.votes + voters, "Votes", "votes"],
+              ["👣", footprints, "Footprints", "footprints"],
+            ] as const
+          ).map(([icon, value, label, list]) =>
+            // Only the owner can tap Votes / Footprints to see who.
+            isOwn && list ? (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setPeopleList(list)}
+                className="rounded-2xl bg-white py-3 text-center text-[#0B2A5B] shadow-sm ring-1 ring-[#BFD7F2] transition hover:bg-[#F4F9FF]"
+              >
+                <div className="text-lg">{icon}</div>
+                <div className="font-black">{Number(value).toLocaleString()}</div>
+                <div className="text-[11px] text-[#35507E]">{label} ›</div>
+              </button>
+            ) : (
+              <div key={label} className="rounded-2xl bg-white py-3 text-center text-[#0B2A5B] shadow-sm">
+                <div className="text-lg">{icon}</div>
+                <div className="font-black">{Number(value).toLocaleString()}</div>
+                <div className="text-[11px] text-[#35507E]">{label}</div>
+              </div>
+            )
+          )}
         </div>
         <p className="mt-2 text-center text-xs text-[#35507E]">
           {followers.toLocaleString()} followers · {profile.following.toLocaleString()} following
@@ -469,6 +534,16 @@ export default function ProfilePage() {
                   ✉️ Message
                 </Link>
               </div>
+              <button
+                type="button"
+                onClick={toggleVote}
+                disabled={!!busy}
+                className={`w-full rounded-2xl py-3 font-bold text-white transition disabled:opacity-50 ${
+                  hasVoted ? "bg-[#2A3F63]" : "bg-[#E0303F] hover:bg-[#C92836]"
+                }`}
+              >
+                {busy === "vote" ? "Working…" : hasVoted ? "✓ Voted" : "❤️ Vote"}
+              </button>
               <button
                 type="button"
                 onClick={friendAction}
@@ -538,6 +613,9 @@ export default function ProfilePage() {
           )}
         </ul>
       </div>
+      {peopleList && isOwn && user && profile && (
+        <ProfilePeopleList kind={peopleList} ownerName={username} ownerUid={user.uid} onClose={() => setPeopleList(null)} />
+      )}
     </PageShell>
   );
 }
