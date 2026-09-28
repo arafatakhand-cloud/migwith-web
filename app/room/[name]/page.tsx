@@ -1465,14 +1465,17 @@ function gameBotLine(text: string): ReactNode | null {
 }
 
 // "👻 Luxury Bot: …" — the ghost stays in the stored text but is never shown;
-// "Luxury Bot:" in pink, the rest in the normal ink.
+// "Luxury Bot:" in pink; a bet line ("… placed 500 coins on …") in blue,
+// every other line in the normal ink.
+const BET_BLUE = "#1565E8";
 function luxuryLine(text: string): ReactNode | null {
   const shown = text.replace(/^👻\s*/, "");
   if (!/^Luxury Bot:/i.test(shown)) return null;
+  const isBet = /\bplaced\s+[\d,]+\s+coins?\s+on\b/i.test(shown);
   return (
     <>
       <span className="font-bold text-[#E91E63]">{shown.slice(0, "Luxury Bot".length)}</span>
-      <span style={{ color: INK }}>{withMentions(shown.slice("Luxury Bot".length))}</span>
+      <span style={{ color: isBet ? BET_BLUE : INK }}>{withMentions(shown.slice("Luxury Bot".length))}</span>
     </>
   );
 }
