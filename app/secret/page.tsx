@@ -12,7 +12,22 @@ import { FounderShell, input } from "./_Shell";
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
 // ID creation" switch, Luxury Bot sequence tiers and FOUNDER CREATE ID.
 
-const setIdCreationStatus = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
+const setIdCreationStatusFn = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
+const manageFounder = httpsCallable<{ action: string; enabled: boolean }, unknown>(functions, "manageFounder");
+// The switch is saved by setIdCreationStatus; if that function can't be
+// reached (e.g. it was just created and isn't callable from outside yet), the
+// same write goes through manageFounder, which the founder already uses.
+async function setIdCreationStatus(args: { enabled: boolean }) {
+  try {
+    return await setIdCreationStatusFn(args);
+  } catch (first) {
+    try {
+      return await manageFounder({ action: "setIdCreation", enabled: args.enabled });
+    } catch {
+      throw first;
+    }
+  }
+}
 const setLuxuryConfig = httpsCallable<{ tiersEnabled: Record<string, boolean> }, unknown>(functions, "setLuxuryBotSequenceConfig");
 const ceoCreateUserId = httpsCallable<Record<string, string>, { username?: string }>(functions, "ceoCreateUserId");
 
