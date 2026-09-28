@@ -193,11 +193,10 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-auto pt-12 text-center text-sm text-white/80">
-          New to MIGlife? Create your MIG ID in the{" "}
-          <Link href="/welcome" className="underline underline-offset-4">
-            MIGlife app
+          New to MIGlife?{" "}
+          <Link href="/register" className="font-bold text-white underline underline-offset-4">
+            Create ID
           </Link>
-          .
         </p>
         <Link href="/forgot-password" className="mt-3 text-base text-white underline underline-offset-4">
           Forgot Password?
