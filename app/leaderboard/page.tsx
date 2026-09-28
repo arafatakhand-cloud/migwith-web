@@ -253,7 +253,7 @@ export default function LeaderboardPage() {
               )}
             </div>
             <p className="mt-2 text-xs font-bold tracking-widest text-[#B7791F]">🥇 #1 {ranking.title.toUpperCase()}</p>
-            <p data-notranslate className="text-xl font-black">{top.name}</p>
+            <p data-notranslate className="text-xl font-black text-[#0B2A5B]">{top.name}</p>
             <p className="text-sm font-bold text-[#B7791F]">{top.score}</p>
           </Link>
         )}
@@ -278,7 +278,7 @@ export default function LeaderboardPage() {
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#DCEBFB] text-sm font-black text-[#174EA6]">
                   {r.name.slice(0, 1).toUpperCase()}
                 </span>
-                <span data-notranslate className="min-w-0 flex-1 truncate font-bold">{r.name}</span>
+                <span data-notranslate className="min-w-0 flex-1 truncate font-bold text-[#0B2A5B]">{r.name}</span>
                 <span className="shrink-0 text-sm font-bold text-[#B7791F]">{r.score}</span>
               </Link>
             </li>
