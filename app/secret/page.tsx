@@ -86,7 +86,8 @@ export default function SecretPage() {
           ))}
       </div>
 
-      {f.can("id_creation") && (
+      {/* ID tools: the main founder (miglife) ONLY, whatever perms other founders have. */}
+      {f.isMigwith && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-white p-4">
           <p className="text-[17px] font-bold">🔴 Other Users ID Creation</p>
           <p className="mt-1 text-xs text-gray-500">{idOn ? "ENABLE — normal users can create IDs." : "OFF — normal users cannot create IDs."}</p>
@@ -138,7 +139,7 @@ export default function SecretPage() {
         </div>
       )}
 
-      {f.can("create_id") && (
+      {f.isMigwith && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-[#11101A] p-4">
           <p className="text-lg font-extrabold text-[#FFD35A]">👑 FOUNDER CREATE ID</p>
           <p className="mt-1 text-xs text-[#D0D5E0]">FOUNDER mode uses the same MIG ID rule: minimum 3 characters and at least 1 English letter.</p>
