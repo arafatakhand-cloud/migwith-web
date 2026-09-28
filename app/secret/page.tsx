@@ -14,15 +14,15 @@ import { FounderShell, input } from "./_Shell";
 
 const setIdCreationStatusFn = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
 const manageFounder = httpsCallable<{ action: string; enabled: boolean }, unknown>(functions, "manageFounder");
-// The switch is saved by setIdCreationStatus; if that function can't be
-// reached (e.g. it was just created and isn't callable from outside yet), the
-// same write goes through manageFounder, which the founder already uses.
+// The switch is saved through manageFounder (already callable by the
+// founder); setIdCreationStatus is tried only if that fails. The error shown
+// is manageFounder's own, so it says what really went wrong.
 async function setIdCreationStatus(args: { enabled: boolean }) {
   try {
-    return await setIdCreationStatusFn(args);
-  } catch (first) {
+    return await manageFounder({ action: "setIdCreation", enabled: args.enabled });
+  } catch (first: any) {
     try {
-      return await manageFounder({ action: "setIdCreation", enabled: args.enabled });
+      return await setIdCreationStatusFn(args);
     } catch {
       throw first;
     }
