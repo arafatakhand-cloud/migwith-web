@@ -85,6 +85,19 @@ export function activeShopBadges(ownedColors: unknown): string[] {
     .map((x) => x.badge);
 }
 
+// Badge emoji -> app_settings/badge_images key (the app's BADGE_EMOJI_TO_ROLE_KEY):
+// every Color Shop badge by its colour id, every role badge by its role key.
+export const BADGE_EMOJI_TO_KEY: [string, string][] = [
+  ...SHOP_BADGES.map(([id, badge]) => [badge, id] as [string, string]),
+  ["🎓", "MENTOR"],
+  ["🛒", "MERCHANT"],
+  ["🛠️", "STAFF"],
+  ["⚙️", "ADMIN"],
+  ["✨", "ELITE_USER"],
+  ["🏛️", "EXECUTIVE_BOARD"],
+  ["🌍", "COUNTRY_REPRESENTATIVE"],
+];
+
 /** Role badge (the app's roleBadgesFor): owner / founder and normal users have none. */
 export function roleBadgesFor(role: unknown): string[] {
   switch (String(role ?? "").trim().toLowerCase().replace(/[- ]/g, "_")) {

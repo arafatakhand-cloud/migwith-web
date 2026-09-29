@@ -23,7 +23,7 @@ const ROLES: [string, string, string][] = [
   ["premium", "Royal", "🏵️"],
   ["supporter", "Patron", "🛡️"],
   ["streamer", "Icon", "🎬"],
-  ["ELITE_USER", "Elite User", "💠"],
+  ["ELITE_USER", "Elite User", "✨"],
   ["EXECUTIVE_BOARD", "Executive Board", "🏛️"],
   ["COUNTRY_REPRESENTATIVE", "Country Representative", "🌍"],
   ["STAFF", "Staff", "🛠️"],

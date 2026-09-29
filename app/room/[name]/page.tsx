@@ -85,6 +85,7 @@ import {
   type RoomInfo,
 } from "../../../lib/roomModeration";
 import { isMainFounderName } from "../../../lib/founder";
+import { useBadgeImages } from "../../../lib/badgeImages";
 
 type ChatMessage = SessionMessage;
 
@@ -639,6 +640,9 @@ function RoomView({ roomName }: { roomName: string }) {
     [shown, onlyMyBets, myName]
   );
 
+  // Uploaded pictures for the badges in the enter/left lines.
+  const badgeImages = useBadgeImages(!!user);
+
   // Game rooms read as a plain running log: every line on the left.
   const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
 
@@ -1125,6 +1129,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   roomName={roomName}
                   gameRoom={gameRoom}
                   colorOf={colorOf}
+                  badgeImages={badgeImages}
                   gift={giftByName.get(m.giftName.toLowerCase()) || null}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
@@ -1520,6 +1525,33 @@ function luxuryLine(text: string): ReactNode | null {
   );
 }
 
+// The badges in "name [12] 🎓 💎 has entered." drawn as miglife's uploaded
+// pictures when there are any (the app's badge_images swap).
+function withBadgeImages(text: string, images: Record<string, string>): ReactNode[] {
+  const emojis = Object.keys(images);
+  if (emojis.length === 0) return [text];
+  const out: ReactNode[] = [];
+  let plain = "";
+  let i = 0;
+  while (i < text.length) {
+    const hit = emojis.find((e) => text.startsWith(e, i));
+    if (hit) {
+      if (plain) out.push(plain);
+      plain = "";
+      out.push(
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={i} src={images[hit]} alt={hit} className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle" />
+      );
+      i += hit.length;
+    } else {
+      plain += text[i];
+      i += 1;
+    }
+  }
+  if (plain) out.push(plain);
+  return out;
+}
+
 // "🎰 Luxury Bet: …" — the bot name in orange, the rest in blue. In the
 // Result, the row made only of character icons (👑👑👸👸🐼🐼) is drawn bigger.
 function luxuryBetLine(text: string): ReactNode | null {
@@ -1586,6 +1618,7 @@ function MessageRow({
   roomName,
   gameRoom,
   colorOf,
+  badgeImages,
   gift,
   onReply,
 }: {
@@ -1595,6 +1628,8 @@ function MessageRow({
   /** Game rooms: everything on the left, full-width plain lines, no swipe reply. */
   gameRoom: boolean;
   colorOf: (name: string) => string;
+  /** Badge emoji -> uploaded picture, for the enter/left lines. */
+  badgeImages: Record<string, string>;
   gift: { icon: string; imageUrl: string } | null;
   onReply: (sender: string, snippet: string) => void;
 }) {
@@ -1614,7 +1649,7 @@ function MessageRow({
             {m.text.slice(0, colon + 1)}{" "}
           </span>
         )}
-        <span className="text-black">{colon > 0 ? m.text.slice(colon + 2) : m.text}</span>
+        <span className="text-black">{withBadgeImages(colon > 0 ? m.text.slice(colon + 2) : m.text, badgeImages)}</span>
         {stamp}
       </p>
     );
