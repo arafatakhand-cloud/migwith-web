@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
@@ -14,17 +14,27 @@ import { FounderShell, input } from "./_Shell";
 
 const setIdCreationStatusFn = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
 const manageFounder = httpsCallable<{ action: string; enabled: boolean }, unknown>(functions, "manageFounder");
-// The switch is saved through manageFounder (already callable by the
-// founder); setIdCreationStatus is tried only if that fails. The error shown
-// is manageFounder's own, so it says what really went wrong.
+// The switch is written straight to app_settings/id_creation, which the
+// Firestore rules allow for the founder only (the app does the same when the
+// function isn't there). If that write is refused, setIdCreationStatus and
+// then manageFounder are tried; the first error is the one shown.
 async function setIdCreationStatus(args: { enabled: boolean }) {
   try {
-    return await manageFounder({ action: "setIdCreation", enabled: args.enabled });
+    await setDoc(
+      doc(db, "app_settings", "id_creation"),
+      { otherUserCreationEnabled: args.enabled, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    return;
   } catch (first: any) {
     try {
       return await setIdCreationStatusFn(args);
     } catch {
-      throw first;
+      try {
+        return await manageFounder({ action: "setIdCreation", enabled: args.enabled });
+      } catch {
+        throw first;
+      }
     }
   }
 }
