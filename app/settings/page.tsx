@@ -11,6 +11,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
+import { BackButton } from "../_components/BackButton";
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -110,13 +111,7 @@ export default function SettingsPage() {
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-10 sm:px-6">
         <div className="flex items-center gap-3 pt-4">
-          <Link
-            href="/"
-            aria-label="Back"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg shadow-sm"
-          >
-            ←
-          </Link>
+          <BackButton href="/" />
           <h1 className="text-2xl font-black tracking-wide">SETTINGS</h1>
         </div>
         <p className="mt-1 text-sm text-[#35507E]">MIGlife · Privacy, security & account controls</p>

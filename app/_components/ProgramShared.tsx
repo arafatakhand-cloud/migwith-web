@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { BackButton } from "./BackButton";
 
 // Shared by the Mentor Dashboard (/mentor) and the Merchant Dashboard
 // (/merchant): helpers, the spend rule, the navy tab bar and the EARNING tab.
@@ -140,13 +141,7 @@ export function ProgramBar<P extends string>({
     <div className="bg-[#0B1F3A]">
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-2 py-2">
         {backHref && (
-          <Link
-            href={backHref}
-            aria-label="Back"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-white/80 text-lg text-white"
-          >
-            ←
-          </Link>
+          <BackButton variant="dark" href={backHref} />
         )}
         <div className="flex min-w-0 flex-1 gap-1.5">
           {panels.map((p) => (

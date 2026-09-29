@@ -14,6 +14,7 @@ import { TEEN_PATTI_ROOM } from "../_components/TeenPatti";
 import { LUDO_ROOM } from "../_components/Ludo";
 import { ROYALE_ROOM } from "../_components/RoyaleGame";
 import { TN_ROOM } from "../_components/TwentyNine";
+import { BackButton } from "../_components/BackButton";
 
 // 🎮 Game List, like the app's (menu → Game List): the running games, each
 // opening its official room, and what's coming soon.
@@ -43,9 +44,7 @@ export default function GameListPage() {
     <PageShell light>
       <section className="mx-auto max-w-2xl pb-8">
         <div className="flex items-center gap-1 px-2 py-1">
-          <button type="button" onClick={() => router.back()} aria-label="Back" className="px-2 py-2 text-2xl leading-none text-[#12335E]">
-            ←
-          </button>
+          <BackButton onClick={() => router.back()} className="mr-1.5" />
           <h1 className="text-xl font-bold text-[#12335E]">🎮 Game List</h1>
         </div>
         {ready && (

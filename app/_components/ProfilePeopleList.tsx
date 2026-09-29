@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { BackButton } from "./BackButton";
 
 // Owner-only list of everyone who visited (Footprints) or voted for (Votes)
 // this profile, latest first — like the app's ProfileFootprintsDialog. Reads
@@ -76,9 +77,7 @@ export function ProfilePeopleList({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-sky-app">
       <div className="flex items-center gap-3 bg-[#1E6FD9] px-3 py-2.5 text-white">
-        <button type="button" onClick={onClose} aria-label="Back" className="rounded-full px-2 py-1 text-xl hover:bg-white/15">
-          ←
-        </button>
+        <BackButton variant="dark" onClick={onClose} />
         <div>
           <p className="text-[17px] font-bold">{votes ? "❤️ Votes" : "👣 Footprints"}</p>
           {people && (

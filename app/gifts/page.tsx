@@ -17,6 +17,7 @@ import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { isMainFounderName } from "../../lib/founder";
+import { BackButton } from "../_components/BackButton";
 
 // Explore › Gift Shops, like the app's GiftStorePage: the catalog in the
 // app's order with FEATURED / LIMITED badges; migwith adds, edits and
@@ -93,9 +94,7 @@ export default function GiftShopsPage() {
     <PageShell light>
       <section className="mx-auto max-w-2xl p-3.5 pb-8 lg:max-w-4xl">
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => router.back()} aria-label="Back" className="px-2 text-2xl text-[#0B1F3A]">
-            ←
-          </button>
+          <BackButton onClick={() => router.back()} className="mr-1.5" />
           <div className="min-w-0 flex-1">
             <h1 className="text-[25px] font-bold text-[#0B1F3A]">🎁 Gift Shops</h1>
             <p className="text-xs text-[#68758D]">Coins • Special &amp; Limited</p>

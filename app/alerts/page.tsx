@@ -26,6 +26,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 import { PushToggle } from "../_components/PushToggle";
+import { BackButton } from "../_components/BackButton";
 
 // The app's Alerts page (MainActivity.kt AlertsPage): the NEWEST 100 alerts,
 // grouped by day, filter chips on top, a coloured card per type, and the
@@ -453,9 +454,7 @@ export default function AlertsPage() {
         <div className="relative overflow-hidden rounded-b-[26px] bg-gradient-to-br from-[#2B5FD9] via-[#0B1F3A] to-[#5B2A86] px-2 pb-3.5 pt-1 text-white sm:mt-3 sm:rounded-[26px]">
           <span className="pointer-events-none absolute -right-14 -top-16 h-[150px] w-[150px] rounded-full bg-white/[0.07]" />
           <div className="relative flex items-center gap-1">
-            <button type="button" onClick={() => router.back()} aria-label="Back" className="px-3 py-2 text-2xl leading-none">
-              ←
-            </button>
+            <BackButton variant="dark" onClick={() => router.back()} className="mr-1.5" />
             <div className="min-w-0 flex-1">
               <h1 className="text-[22px] font-extrabold">🔔 Alerts</h1>
               <p className="text-xs text-white/80">

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
+import { BackButton } from "../_components/BackButton";
 
 // Frame for the founder pages: back arrow + title, and "FOUNDER ONLY" for everyone else.
 export function FounderShell({ title, allowed, loaded, children }: { title: string; allowed: boolean; loaded: boolean; children: ReactNode }) {
@@ -13,9 +14,7 @@ export function FounderShell({ title, allowed, loaded, children }: { title: stri
     <PageShell light>
       <section className="mx-auto max-w-2xl space-y-2.5 p-4 pb-10 text-[#0B1F3A]">
         <div className="flex items-center gap-1">
-          <button type="button" onClick={() => router.back()} aria-label="Back" className="px-2 text-2xl">
-            ←
-          </button>
+          <BackButton onClick={() => router.back()} className="mr-1.5" />
           <h1 className="flex-1 text-[22px] font-extrabold">{title}</h1>
         </div>
         {!ready || !loaded ? (

@@ -9,6 +9,7 @@ import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
+import { BackButton } from "../_components/BackButton";
 
 // Same boards as the app's Leader Board. Game boards come from the
 // getLeaderboard function (ranked by spend, but only win counts are sent);
@@ -172,14 +173,7 @@ export default function LeaderboardPage() {
     <PageShell>
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 pt-4 sm:px-6">
         <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => (picked ? setPicked(false) : router.back())}
-            aria-label="Back"
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg shadow-sm"
-          >
-            ←
-          </button>
+          <BackButton onClick={() => (picked ? setPicked(false) : router.back())} />
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Leader Board"}</h1>
             {picked && <p className="text-xs text-[#6B7A99]">{timed ? `${period} ranking` : "All time"}</p>}

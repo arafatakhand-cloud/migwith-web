@@ -27,6 +27,7 @@ import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
+import { BackButton } from "../../_components/BackButton";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -330,9 +331,7 @@ export default function PrivateChatPage() {
       <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] sm:my-3 sm:overflow-hidden sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center gap-2.5 rounded-b-3xl bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3.5 py-2 shadow-lg">
-          <Link href="/messages" aria-label="Back" className="text-2xl leading-none text-white">
-            ←
-          </Link>
+          <BackButton variant="dark" href="/messages" />
           <span className="relative h-11 w-11 shrink-0">
             <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-[#FFE08A] bg-gradient-to-br from-[#E9C55A] to-[#D4AF37] text-lg font-extrabold text-white">
               {(friend[0] || "?").toUpperCase()}

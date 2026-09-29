@@ -9,6 +9,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { levelFromXp, totalXpForLevel } from "../../lib/level";
 import { badgeForLevel, badgeNameForLevel } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
+import { BackButton } from "../_components/BackButton";
 
 // 🛡️ Level System, like the app's (tap your level on Home): level, XP bar,
 // how XP is earned, unlocked rewards and the last 5 XP events.
@@ -153,9 +154,7 @@ export default function LevelPage() {
                 ))}
               </div>
             )}
-            <button type="button" onClick={() => router.back()} className="pt-2 text-2xl text-[#0B2A5B]" aria-label="Back">
-              ←
-            </button>
+            <BackButton onClick={() => router.back()} className="mt-2" />
           </>
         )}
       </section>

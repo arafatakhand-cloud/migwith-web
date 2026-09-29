@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { chatHref } from "../../lib/privateChat";
 import { useFriendRequests, type FriendRequest } from "../../lib/friends";
 import { PageShell } from "../_components/PageShell";
+import { BackButton } from "../_components/BackButton";
 
 // Same three tabs as the app's FriendsPage: My Friends / Requests / Find Friends.
 
@@ -188,13 +189,7 @@ export default function FriendsPage() {
     <PageShell light>
       <div className="bg-[#0B1F3A] text-white">
         <div className="mx-auto flex max-w-2xl items-center gap-3 px-3 py-2.5 sm:px-6 lg:max-w-4xl">
-          <Link
-            href="/"
-            aria-label="Back"
-            className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/80 text-lg"
-          >
-            ←
-          </Link>
+          <BackButton variant="dark" href="/" />
           <h1 className="text-lg font-black">👥 Friends</h1>
         </div>
       </div>

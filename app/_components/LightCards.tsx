@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BackButton } from "./BackButton";
 
 // Pieces shared by the app-style light pages (Explore, Members, Gift Shops).
 
@@ -9,14 +10,7 @@ export function PageTitle({ title, subtitle, icon }: { title: string; subtitle?:
   const router = useRouter();
   return (
     <div className="flex items-center gap-3 py-3">
-      <button
-        type="button"
-        onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
-        aria-label="Back"
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm"
-      >
-        ←
-      </button>
+      <BackButton onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))} />
       <div className="min-w-0 flex-1 text-center">
         <h1 className="text-xl font-black text-[#0B2A5B]">
           {icon && <span className="mr-1">{icon}</span>}

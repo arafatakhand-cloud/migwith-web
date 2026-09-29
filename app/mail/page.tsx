@@ -20,6 +20,7 @@ import { db } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
+import { BackButton } from "../_components/BackButton";
 
 // ✉️ Email, the app's mailbox (MainActivity.kt EmailsPage): Inbox / Sent,
 // search, read a mail (marks it read), reply, delete, compose. Each mail is
@@ -90,9 +91,7 @@ function toMail(d: { id: string; get: (k: string, o?: any) => any }, sent: boole
 function TopBar({ title, onBack, children }: { title: string; onBack: () => void; children?: React.ReactNode }) {
   return (
     <div className="flex items-center gap-1 bg-gradient-to-r from-[#0B1F3A] to-[#174EA6] px-2.5 py-2 text-white sm:mt-3 sm:rounded-2xl">
-      <button type="button" onClick={onBack} aria-label="Back" className="px-2 text-2xl leading-none">
-        ←
-      </button>
+      <BackButton variant="dark" onClick={onBack} className="mr-1.5" />
       <h1 className="flex-1 text-[19px] font-bold">{title}</h1>
       {children}
     </div>
@@ -200,9 +199,7 @@ function MailPage() {
         <div className="relative overflow-hidden rounded-b-[26px] bg-gradient-to-br from-[#0B1F3A] via-[#174EA6] to-[#3F8EEA] px-2.5 pb-3.5 pt-2 text-white sm:mt-3 sm:rounded-[26px]">
           <span className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-white/[0.07]" />
           <div className="relative flex items-center gap-1">
-            <button type="button" onClick={() => router.back()} aria-label="Back" className="px-2 text-2xl leading-none">
-              ←
-            </button>
+            <BackButton variant="dark" onClick={() => router.back()} className="mr-1.5" />
             <div className="min-w-0 flex-1">
               <h1 className="text-[22px] font-extrabold">✉️ Email</h1>
               <p className="text-xs text-white/75">@{username}</p>

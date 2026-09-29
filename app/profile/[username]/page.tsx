@@ -27,6 +27,7 @@ import { useFriendRequests } from "../../../lib/friends";
 import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
+import { BackButton } from "../../_components/BackButton";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -396,14 +397,11 @@ export default function ProfilePage() {
               <span className="text-2xl font-black tracking-wide">MIG LIFE</span>
             )}
           </div>
-          <button
-            type="button"
+          <BackButton
+            variant="dark"
             onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
-            aria-label="Back"
-            className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-white/80 bg-black/20 text-lg text-white"
-          >
-            ←
-          </button>
+            className="absolute left-3 top-3 bg-black/20"
+          />
           <div className="absolute -bottom-10 left-3 h-20 w-20 overflow-hidden rounded-full border-4 border-[#CFE6F9] bg-[#1E3A6B] text-white shadow-md sm:h-24 sm:w-24">
             {profile.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
