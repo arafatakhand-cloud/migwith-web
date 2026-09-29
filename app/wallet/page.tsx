@@ -25,6 +25,7 @@ import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
 import { latestGifts } from "../../lib/giftActivity";
 import { isMainFounderName } from "../../lib/founder";
+import { BackPill } from "../_components/BackButton";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
 // users/{uid}/coin_transactions and gift_activity. Coins only ever move through
@@ -569,10 +570,8 @@ export default function WalletPage() {
           ))
         )}
 
-        <p className="mt-6 text-center text-xs text-[#5B6B8C]">
-          <Link href="/profile/me" className="hover:text-[#0B2A5B]">
-            ← Back to profile
-          </Link>
+        <p className="mt-6 text-center">
+          <BackPill href="/profile/me" label="Back to profile" />
         </p>
       </section>
     </PageShell>

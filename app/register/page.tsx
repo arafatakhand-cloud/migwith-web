@@ -10,6 +10,7 @@ import { auth, db, functions } from "../../lib/firebase";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { isMainFounderName } from "../../lib/founder";
 import { useSession } from "../_components/AppSession";
+import { BackPill } from "../_components/BackButton";
 
 // Create ID, the same flow as the app's RegisterPage: fill in the form, get a
 // 6-character code by email (sendEmailVerificationCode), enter it
@@ -194,8 +195,9 @@ export default function RegisterPage() {
           {busy === "sending" ? "SENDING..." : "RESEND OTP"}
         </button>
         <div>
-          <button
-            type="button"
+          <BackPill
+            variant="dark"
+            label="Back"
             disabled={!!busy}
             onClick={() => {
               setStep("form");
@@ -203,10 +205,7 @@ export default function RegisterPage() {
               setError("");
               setInfo("");
             }}
-            className="text-sm text-[#9EA9C0] disabled:opacity-50"
-          >
-            ← Back
-          </button>
+          />
         </div>
       </div>
     );

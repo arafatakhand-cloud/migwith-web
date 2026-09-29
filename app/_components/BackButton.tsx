@@ -54,3 +54,41 @@ export function BackButton({ variant = "light", href, onClick, className = "", l
     </button>
   );
 }
+
+/** "← Back to …" as a pill: the same glossy look with the arrow and a label. */
+export function BackPill({
+  variant = "light",
+  href,
+  onClick,
+  label,
+  disabled,
+  className = "",
+}: Props & { label: string; disabled?: boolean }) {
+  const cls = `group inline-flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-4 text-sm font-bold transition duration-150 active:scale-95 disabled:opacity-50 ${STYLES[variant]} ${className}`;
+  const inner = (
+    <>
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-full transition-transform duration-150 group-hover:-translate-x-0.5 ${
+          variant === "light" ? "bg-[#1E63D6] text-white" : "bg-white/20"
+        }`}
+      >
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M15 5 8 12l7 7" />
+        </svg>
+      </span>
+      {label}
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className={cls}>
+        {inner}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={cls}>
+      {inner}
+    </button>
+  );
+}

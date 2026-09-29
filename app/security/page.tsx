@@ -8,6 +8,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
+import { BackPill } from "../_components/BackButton";
 
 // Security PIN: change it (needs the current PIN) or reset a forgotten one
 // with a code sent to the Recovery Email. The PIN is hashed and checked only
@@ -384,10 +385,8 @@ export default function SecurityPage() {
           </div>
         )}
 
-        <p className="mt-6 text-center text-xs text-[#5B6B8C]">
-          <Link href="/settings" className="hover:text-[#0B2A5B]">
-            ← Back to Settings
-          </Link>
+        <p className="mt-6 text-center">
+          <BackPill href="/settings" label="Back to Settings" />
         </p>
       </section>
     </PageShell>

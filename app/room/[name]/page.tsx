@@ -86,6 +86,7 @@ import {
 } from "../../../lib/roomModeration";
 import { isMainFounderName } from "../../../lib/founder";
 import { useBadgeImages } from "../../../lib/badgeImages";
+import { BackPill } from "../../_components/BackButton";
 
 type ChatMessage = SessionMessage;
 
@@ -1019,12 +1020,7 @@ function RoomView({ roomName }: { roomName: string }) {
         <div className="mx-auto max-w-md px-4 py-20 text-center">
           <div className="text-4xl">🚫</div>
           <p className="mt-4 font-semibold">{blocked}</p>
-          <Link
-            href="/rooms"
-            className="mt-6 inline-block rounded-2xl bg-[#2F80ED] px-6 py-3 text-sm font-semibold text-white shadow"
-          >
-            ← Back to rooms
-          </Link>
+          <BackPill href="/rooms" label="Back to rooms" className="mt-6" />
         </div>
       </PageShell>
     );
