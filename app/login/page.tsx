@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
+import { AndroidDownload } from "../_components/AndroidDownload";
 
 const INVISIBLE_KEY = "migwith.loginInvisible";
 
@@ -201,6 +202,8 @@ export default function LoginPage() {
         <Link href="/forgot-password" className="mt-3 text-base text-white underline underline-offset-4">
           Forgot Password?
         </Link>
+        {/* Android app download (the link miglife sets in miglife secret) */}
+        <AndroidDownload />
       </section>
     </main>
   );
