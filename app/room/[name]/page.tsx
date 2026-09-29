@@ -682,8 +682,15 @@ function RoomView({ roomName }: { roomName: string }) {
     const el = listRef.current;
     const inner = contentRef.current;
     if (!el || !inner || typeof ResizeObserver === "undefined") return;
+    // When the list itself gets shorter (the bet box opening, a game table,
+    // the keyboard), scroll by the height it lost so the lines that were at
+    // the bottom stay in view right above the box (like the app).
+    let lastHeight = el.clientHeight;
     const ro = new ResizeObserver(() => {
+      const lost = lastHeight - el.clientHeight;
+      lastHeight = el.clientHeight;
       if (stickToBottom.current) el.scrollTop = el.scrollHeight;
+      else if (lost > 0) el.scrollTop += lost;
     });
     ro.observe(el);
     ro.observe(inner);

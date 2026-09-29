@@ -253,43 +253,20 @@ function useBlink(active: boolean): boolean {
   return on;
 }
 
-// Short beep on each of the last 3 seconds (3, 2, 1), like the app.
-function useCountdownBeep(secondsLeft: number) {
-  const ctx = useRef<AudioContext | null>(null);
-  useEffect(() => {
-    if (secondsLeft < 1 || secondsLeft > 3) return;
-    try {
-      ctx.current ??= new AudioContext();
-      const ac = ctx.current;
-      const osc = ac.createOscillator();
-      const gain = ac.createGain();
-      osc.frequency.value = 880;
-      gain.gain.value = 0.08;
-      osc.connect(gain).connect(ac.destination);
-      osc.start();
-      osc.stop(ac.currentTime + 0.15);
-    } catch {
-      /* no sound on this browser */
-    }
-  }, [secondsLeft]);
-}
-
-/** The gold ▶ START button in the input row; shows the seconds while a round runs. */
+/** The gold ▶ START button in the input row. */
 export function LuxuryBetStartButton({ state }: { state: LuxuryBetState }) {
-  const urgent = state.running && state.secondsLeft >= 1 && state.secondsLeft <= 10;
-  const blinkOn = useBlink(urgent);
+  // While a round runs it just shows ⏳ — the timer is only in the bet box (like the app).
   if (!state.canSee) return null;
-  const bg = urgent && blinkOn ? "#E53935" : state.running ? "#0B2A5B" : "#D4A017";
   return (
     <button
       type="button"
       onClick={state.start}
       disabled={state.running || state.starting}
       title={state.running ? "Round running" : "Start a round"}
-      className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full border font-bold text-white"
-      style={{ background: bg, borderColor: urgent ? "#E53935" : "#D4A017", fontSize: state.running && state.secondsLeft > 0 ? 12 : 16 }}
+      className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full border border-[#D4A017] text-base font-bold text-white"
+      style={{ background: state.running ? "#0B2A5B" : "#D4A017" }}
     >
-      {state.starting ? "…" : state.running && state.secondsLeft > 0 ? state.secondsLeft : state.running ? "⏳" : "▶\uFE0E"}
+      {state.starting ? "…" : state.running ? "⏳" : "▶\uFE0E"}
     </button>
   );
 }
@@ -336,7 +313,6 @@ export function LuxuryBetTable({
   const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
   const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 10;
   const blinkOn = useBlink(urgent);
-  useCountdownBeep(state.secondsLeft);
 
   // New round opens the box; no round running folds it.
   useEffect(() => setCollapsed(false), [state.round]);
