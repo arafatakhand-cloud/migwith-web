@@ -1131,6 +1131,12 @@ function RoomView({ roomName }: { roomName: string }) {
                   colorOf={colorOf}
                   badgeImages={badgeImages}
                   gift={giftByName.get(m.giftName.toLowerCase()) || null}
+                  onMention={(name) => {
+                    // Tap a name: add "@name" to the message box, like the app.
+                    const mention = `@${name}`;
+                    setText((t) => (t.includes(mention) ? t : t.trim() ? `${t.trimEnd()} ${mention} ` : `${mention} `));
+                    inputRef.current?.focus();
+                  }}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
                     inputRef.current?.focus();
@@ -1620,6 +1626,7 @@ function MessageRow({
   colorOf,
   badgeImages,
   gift,
+  onMention,
   onReply,
 }: {
   m: ChatMessage;
@@ -1631,6 +1638,7 @@ function MessageRow({
   /** Badge emoji -> uploaded picture, for the enter/left lines. */
   badgeImages: Record<string, string>;
   gift: { icon: string; imageUrl: string } | null;
+  onMention: (name: string) => void;
   onReply: (sender: string, snippet: string) => void;
 }) {
   const time = timeLabel(m.createdAtMs);
@@ -1777,7 +1785,11 @@ function MessageRow({
             </span>
           )}
           {!mine && senderName && (
-            <span className="mr-1 font-bold" style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}>
+            <span
+              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
+              style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
+              onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
+            >
               {senderName}:
             </span>
           )}
