@@ -46,6 +46,14 @@ import {
   type GiftResult,
 } from "../../_components/GiftPanel";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
+import {
+  LUXURY_BET_ROOM,
+  LuxuryBetStartButton,
+  LuxuryBetTable,
+  LuxuryBetWelcomeLine,
+  luxuryBetHandleCommand,
+  useLuxuryBet,
+} from "../../_components/LuxuryBet";
 import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale } from "../../_components/RoyaleGame";
 import {
   TEEN_PATTI_ROOM,
@@ -227,6 +235,10 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // 👻 Luxury Bot round + bets (only in the Luxury Bot room).
   const luxury = useLuxuryBot(roomName === LUXURY_ROOM, user?.uid, note);
+  // 🎰 Luxury Bet (only in the Luxury Bet room) — run by the server.
+  const luxuryBet = useLuxuryBet(roomName === LUXURY_BET_ROOM, user?.uid, note);
+  // Eye button: show only my own Luxury Bet bet lines.
+  const [onlyMyBets, setOnlyMyBets] = useState(false);
   // 👑 MIG Royale round + bets (only in the MIG Royale room).
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
   // 🎴 Teen Patti table (only in the Teen Patti room).
@@ -612,8 +624,21 @@ function RoomView({ roomName }: { roomName: string }) {
       });
   }, [messages, localNotes, myUid, sinceMs]);
 
+  // Eye mode (Luxury Bet): other people's bet lines are taken out of the list.
+  const myName = (profile?.username || "").toLowerCase();
+  const visible = useMemo(
+    () =>
+      onlyMyBets
+        ? shown.filter((m) => {
+            const bet = /^🎰 Luxury Bet: (.+?) placed [\d,]+ coins? on /.exec(m.text);
+            return !bet || bet[1].trim().toLowerCase() === myName;
+          })
+        : shown,
+    [shown, onlyMyBets, myName]
+  );
+
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
@@ -837,6 +862,11 @@ function RoomView({ roomName }: { roomName: string }) {
       setText("");
       if (luxury.running) note("👻 Luxury Bot: A round is already running.");
       else luxury.start();
+      return;
+    }
+
+    if (luxuryBet && luxuryBetHandleCommand(luxuryBet, clean, note)) {
+      setText("");
       return;
     }
 
@@ -1084,7 +1114,8 @@ function RoomView({ roomName }: { roomName: string }) {
                   </div>
                 )}
               </div>
-              {shown.map((m) => (
+              {luxuryBet?.canSee && <LuxuryBetWelcomeLine state={luxuryBet} />}
+              {visible.map((m) => (
                 <MessageRow
                   key={m.id}
                   m={m}
@@ -1103,9 +1134,12 @@ function RoomView({ roomName }: { roomName: string }) {
             </div>
 
             {/* Game tables keep their dark look */}
-            {(luxury || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
+            {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
               <div data-noswipe className="bg-[#0B1F3A] text-white">
                 {luxury && <LuxuryBetBox state={luxury} note={note} />}
+                {luxuryBet && (
+                  <LuxuryBetTable state={luxuryBet} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
+                )}
                 {royale && <RoyaleTable state={royale} />}
                 {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
                 {cricket && <CricketBox state={cricket} uid={user.uid} />}
@@ -1134,12 +1168,15 @@ function RoomView({ roomName }: { roomName: string }) {
                 title: perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room",
               }}
               voice={
+                <>
+                {luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
                 <VoiceRecorder
                   disabled={!profile || !perms.canShareMedia}
                   onSend={sendVoice}
                   onError={(m) => note(`${roomName}: ${m}`)}
                   onActive={setVoiceActive}
                 />
+                </>
               }
               voiceActive={voiceActive}
               reply={replyTo && { ...replyTo, onCancel: () => setReplyTo(null) }}
@@ -1481,6 +1518,33 @@ function luxuryLine(text: string): ReactNode | null {
   );
 }
 
+// "🎰 Luxury Bet: …" — the bot name in orange, the rest in blue. In the
+// Result, the row made only of character icons (👑👑👸👸🐼🐼) is drawn bigger.
+function luxuryBetLine(text: string): ReactNode | null {
+  const prefix = "🎰 Luxury Bet";
+  if (!text.startsWith(`${prefix}:`)) return null;
+  const body = text.slice(prefix.length);
+  const lines = body.split("\n");
+  return (
+    <>
+      <span className="font-bold" style={{ color: ROOM_ORANGE }}>
+        {prefix}
+      </span>
+      <span style={{ color: BET_BLUE }}>
+        {lines.map((line, i) => {
+          const iconsOnly = i > 0 && line.trim() !== "" && !/[\p{L}\p{N}\s:|]/u.test(line);
+          return (
+            <span key={i}>
+              {i > 0 && "\n"}
+              {iconsOnly ? <span className="text-[20px] leading-[26px] tracking-[1px]">{line}</span> : withMentions(line, `lb${i}_`)}
+            </span>
+          );
+        })}
+      </span>
+    </>
+  );
+}
+
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
 // swapped for its uploaded picture when there is one.
 function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[] {
@@ -1624,7 +1688,7 @@ function MessageRow({
   }
 
   // Bot and game lines (also this device's own game notices).
-  const bot = gameBotLine(m.text) ?? luxuryLine(m.text);
+  const bot = gameBotLine(m.text) ?? luxuryLine(m.text) ?? luxuryBetLine(m.text);
   if (bot) {
     return (
       <p className="whitespace-pre-wrap break-words px-1 text-left text-[15px] leading-snug">
@@ -1647,7 +1711,8 @@ function MessageRow({
     body = body.slice(body.indexOf("\n") + 1);
   }
 
-  const rightSide = mine && !gameRoom;
+  // Own messages sit on the right in EVERY room, game rooms included (like the app).
+  const rightSide = mine;
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
   const canReply = !mine && !gameRoom && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
@@ -1663,7 +1728,7 @@ function MessageRow({
   return (
     <SwipeToReply enabled={canReply} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
-        <div className={`${gameRoom ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug ${rightSide ? "text-right" : "text-left"}`}>
+        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug ${rightSide ? "text-right" : "text-left"}`}>
           {quote && (
             <span
               className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${

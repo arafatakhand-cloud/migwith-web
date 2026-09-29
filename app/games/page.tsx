@@ -6,6 +6,8 @@ import { roomHref } from "../../lib/rooms";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { LUXURY_ROOM } from "../_components/LuxuryBot";
+import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
+import { useCurrentUser } from "../../lib/useCurrentUser";
 import { LOWCARD_ROOM } from "../_components/LowCard";
 import { CRICKET_ROOM } from "../_components/CricketGame";
 import { TEEN_PATTI_ROOM } from "../_components/TeenPatti";
@@ -18,6 +20,7 @@ import { TN_ROOM } from "../_components/TwentyNine";
 
 const RUNNING: [string, string, string, string, string][] = [
   ["💎", "Luxury Bot", "Live betting game", "#D62F72", LUXURY_ROOM],
+  ["🎰", "Luxury Bet", "King, Queen, Jax, Max, Toto, Zozo", "#B8860B", LUXURY_BET_ROOM],
   ["🃏", "LowCard", "Draw the lowest card, survive", "#1D9E75", LOWCARD_ROOM],
   ["🏏", "Cricket", "Bat 6 rounds, top scorer wins", "#3984D9", CRICKET_ROOM],
   ["🎴", "3 Patti", "Blind or seen — best hand wins", "#7B1FA2", TEEN_PATTI_ROOM],
@@ -34,6 +37,8 @@ const SOON: [string, string, string][] = [
 export default function GameListPage() {
   const ready = useRequireLogin();
   const router = useRouter();
+  const { user } = useCurrentUser();
+  const luxuryBetAccess = useLuxuryBetAccess(user?.uid);
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl pb-8">
@@ -46,7 +51,7 @@ export default function GameListPage() {
         {ready && (
           <div className="px-4 py-2.5">
             <p className="pb-2 text-xs font-bold tracking-[1.2px] text-[#6C87B0]">RUNNING GAMES</p>
-            {RUNNING.map(([icon, name, sub, color, room]) => (
+            {RUNNING.filter(([, , , , room]) => room !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([icon, name, sub, color, room]) => (
               <Link
                 key={room}
                 href={roomHref(room)}

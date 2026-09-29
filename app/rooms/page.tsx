@@ -28,6 +28,7 @@ import {
 import { useRoomPrefs } from "../../lib/roomPrefs";
 import { PageShell } from "../_components/PageShell";
 import { isMainFounderName } from "../../lib/founder";
+import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
 
 type UserRoom = { name: string; description: string; ownerName: string; ownerUid: string; maxUsers: number; capped: boolean };
 
@@ -56,6 +57,11 @@ function capacityForLevel(level: number): number {
 export default function RoomsPage() {
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
+  // 🎰 Luxury Bet shows only for the IDs miglife added (or everyone once open).
+  const luxuryBetAccess = useLuxuryBetAccess(user?.uid);
+  const gameRooms = luxuryBetAccess.canSee
+    ? OFFICIAL_GAME_ROOMS.flatMap((n) => (n === "👻 Luxury Bot Official" ? [n, LUXURY_BET_ROOM] : [n]))
+    : OFFICIAL_GAME_ROOMS;
   const [userRooms, setUserRooms] = useState<UserRoom[]>([]);
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState(0);
@@ -107,7 +113,7 @@ export default function RoomsPage() {
   const userRoomNames = userRooms.map((r) => r.name).join("|");
   useEffect(() => {
     if (!user) return;
-    const names = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, ...userRooms.map((r) => r.name)]));
+    const names = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM, ...userRooms.map((r) => r.name)]));
     const cutoff = Timestamp.fromMillis(Date.now() - ROOM_PRESENCE_STALE_MS);
     names.forEach((name) => {
       getCountFromServer(query(collection(db, "room_presence", name, "users"), where("lastSeen", ">=", cutoff)))
@@ -145,7 +151,7 @@ export default function RoomsPage() {
     if (room.includes("/") || room === "." || room === ".." || (room.startsWith("__") && room.endsWith("__")))
       return setCreateError("That room name isn't allowed. Please use letters, numbers or spaces.");
     if (isBannedRoomName(room)) return setCreateError("This room name isn't allowed. Please choose a clean name.");
-    const all = [...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, ...userRooms.map((r) => r.name)];
+    const all = [...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM, ...userRooms.map((r) => r.name)];
     if (all.some((n) => n.toLowerCase() === room.toLowerCase())) return setCreateError("This room already exists.");
 
     setCreating(true);
@@ -202,17 +208,17 @@ export default function RoomsPage() {
   const matches = (n: string) => !q || n.toLowerCase().includes(q);
   const live = (n: string) => counts[n] || 0;
   const byLive = (a: string, b: string) => live(b) - live(a);
-  const gameSet = new Set(OFFICIAL_GAME_ROOMS);
+  const gameSet = new Set([...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM]);
   const nonGame = userRooms.filter((r) => !gameSet.has(r.name));
   const byMigwith = (r: UserRoom) => isMainFounderName(r.ownerName);
   const publicSection = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...nonGame.filter(byMigwith).map((r) => r.name)]))
     .filter((n) => matches(n) && !isBannedRoomName(n))
     .sort(byLive);
-  const gameSection = [...OFFICIAL_GAME_ROOMS].sort(byLive);
+  const gameSection = [...gameRooms].sort(byLive);
   const privateSection = Array.from(new Set(nonGame.filter((r) => !byMigwith(r)).map((r) => r.name)))
     .filter((n) => matches(n) && !OFFICIAL_COUNTRY_ROOMS.includes(n) && !isBannedRoomName(n))
     .sort(byLive);
-  const hotName = [...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, ...userRooms.map((r) => r.name)]
+  const hotName = [...OFFICIAL_COUNTRY_ROOMS, ...gameRooms, ...userRooms.map((r) => r.name)]
     .filter((n) => !isBannedRoomName(n))
     .sort(byLive)[0];
   const hotLive = hotName ? live(hotName) : 0;
@@ -301,7 +307,7 @@ export default function RoomsPage() {
         <div>
           <p className="mb-2 pl-1 text-[15px] font-bold text-[#0B2A5B]">Official games</p>
           <div className="no-scrollbar -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1">
-            {OFFICIAL_GAME_CARDS.map(([name, label], i) => {
+            {OFFICIAL_GAME_CARDS.filter(([name]) => name !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([name, label], i) => {
               const [bg, ink] = GAME_PASTELS[i % GAME_PASTELS.length];
               const n = counts[name] ?? 0;
               return (
@@ -470,6 +476,7 @@ const OFFICIAL_GAME_CARDS: [string, string][] = [
   ["👑 MIG Royale Official", "MIG Royale"],
   ["🃏 29 Official", "29"],
   ["👻 Luxury Bot Official", "Luxury Bot"],
+  ["🎰 Luxury Bet", "Luxury Bet"],
   ["🃏 LowCard Official", "LowCard"],
   ["🎁 Gift Official", "Gift"],
 ];

@@ -82,12 +82,14 @@ const LEGACY_DEFAULT_DESCRIPTION =
   "🏷️ Welcome to the room — chat, connect and enjoy the game together. 🎁\n\nPlease play fairly, respect other players and enjoy your time in the room. ✨";
 
 const isOfficialRoomName = (name: string) =>
-  OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
+  name === "🎰 Luxury Bet" || OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
 
 function officialRoomDefaultDescription(roomName: string): string {
   switch (roomName) {
     case "👻 Luxury Bot Official":
       return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miglife team — place your bets, enjoy the game, and play responsibly. ✨";
+    case "🎰 Luxury Bet":
+      return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b k 1000) to bet on King, Queen, Jax, Max, Toto or Zozo. Play responsibly! ✨";
     case "🃏 LowCard Official":
       return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miglife team — join a game, draw your card, and play responsibly. ✨";
     case "🏏 Cricket Official":

@@ -1,0 +1,494 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { doc, onSnapshot } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../../lib/firebase";
+
+// 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
+// server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
+// the round and sends !start / bets, same as the app's LuxuryBetGame.kt.
+// Commands: !start · !b [k|q|j|m|t|z or name] [amount]   (e.g. !b k 1000)
+
+export const LUXURY_BET_ROOM = "🎰 Luxury Bet";
+const LB_BOT = "🎰 Luxury Bet";
+
+export const LUXURY_BET_CHARACTERS = ["👑 King", "👸 Queen", "🃏 Jax", "🦁 Max", "🐼 Toto", "🦓 Zozo"];
+
+const CODES: Record<string, string> = {
+  k: "👑 King",
+  q: "👸 Queen",
+  j: "🃏 Jax",
+  m: "🦁 Max",
+  t: "🐼 Toto",
+  z: "🦓 Zozo",
+};
+
+const CHIPS = [500, 1000, 2000, 5000, 10000, 12000];
+
+const startCall = httpsCallable(functions, "startLuxuryBet");
+const betCall = httpsCallable<unknown, { bets?: Record<string, number> }>(functions, "placeLuxuryBet");
+const tickCall = httpsCallable(functions, "tickLuxuryBet");
+
+// Black & gold bet box, like the app.
+const LB_DARK_BG = "#1E1A2E";
+const LB_DARK_CHIP = "#2A2440";
+const LB_GOLD = "#D4AF37";
+const LB_GOLD_TEXT = "#F2D675";
+const LB_CREAM = "#F2E6C2";
+
+function totalLabel(total: number): string {
+  if (total <= 0) return "0";
+  if (total < 1000) return String(total);
+  if (total % 1000 === 0) return `${total / 1000}k`;
+  return `${(total / 1000).toFixed(1)}k`;
+}
+
+// ---------------------------------------------------------------------------
+// Who can see the room (testing phase): app_settings/luxury_bet_access =
+// { uids: [...], names: {uid: name}, open: bool }. Written only by
+// founderLuxuryBetAccess (miglife).
+// ---------------------------------------------------------------------------
+export type LuxuryBetAccess = { open: boolean; uids: string[]; names: Record<string, string>; canSee: boolean };
+
+export function useLuxuryBetAccess(uid: string | undefined): LuxuryBetAccess {
+  const [data, setData] = useState<{ open: boolean; uids: string[]; names: Record<string, string> }>({
+    open: false,
+    uids: [],
+    names: {},
+  });
+  useEffect(() => {
+    if (!uid) return;
+    return onSnapshot(
+      doc(db, "app_settings", "luxury_bet_access"),
+      (snap) => {
+        const uids = snap.get("uids");
+        const names = snap.get("names");
+        setData({
+          open: snap.get("open") === true,
+          uids: Array.isArray(uids) ? uids.filter((x): x is string => typeof x === "string") : [],
+          names: names && typeof names === "object" ? Object.fromEntries(Object.entries(names).map(([k, v]) => [k, String(v ?? "")])) : {},
+        });
+      },
+      () => {}
+    );
+  }, [uid]);
+  return { ...data, canSee: !!uid && (data.open || data.uids.includes(uid)) };
+}
+
+function characterFor(input: string): string | null {
+  const key = input.trim().toLowerCase();
+  if (!key) return null;
+  if (CODES[key]) return CODES[key];
+  return LUXURY_BET_CHARACTERS.find((c) => c.split(" ").slice(1).join(" ").toLowerCase() === key) ?? null;
+}
+
+export type LuxuryBetState = {
+  canSee: boolean;
+  running: boolean;
+  phase: string;
+  round: number;
+  secondsLeft: number;
+  myBets: Record<string, number>;
+  starting: boolean;
+  inFlight: number;
+  lastBet: { character: string; amount: number } | null;
+  start: () => void;
+  bet: (character: string, amount: number) => void;
+};
+
+export function useLuxuryBet(
+  enabled: boolean,
+  uid: string | undefined,
+  note: (t: string) => void
+): LuxuryBetState | null {
+  const access = useLuxuryBetAccess(enabled ? uid : undefined);
+  const [running, setRunning] = useState(false);
+  const [phase, setPhase] = useState("IDLE");
+  const [phaseEndsAt, setPhaseEndsAt] = useState(0);
+  const [round, setRound] = useState(0);
+  const [myBets, setMyBets] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(Date.now());
+  const [starting, setStarting] = useState(false);
+  const [inFlight, setInFlight] = useState(0);
+  const [lastBet, setLastBet] = useState<{ character: string; amount: number } | null>(null);
+  const lastTick = useRef(0);
+  const lastBetSentAt = useRef(0);
+  const noteRef = useRef(note);
+  noteRef.current = note;
+
+  // Live game document (written only by the server).
+  useEffect(() => {
+    if (!enabled || !uid) return;
+    return onSnapshot(doc(db, "room_game", LUXURY_BET_ROOM), (snap) => {
+      setRunning(snap.get("gameRunning") === true);
+      setPhase(String(snap.get("phase") || "IDLE"));
+      setPhaseEndsAt(Number(snap.get("phaseEndsAt") || 0));
+      setRound(Number(snap.get("roundNumber") || 0));
+    });
+  }, [enabled, uid]);
+
+  // My own bets this round (lb_bets/{round}_{uid}); a new round starts clean.
+  useEffect(() => {
+    setMyBets({});
+    setLastBet(null);
+    if (!enabled || !uid || round <= 0) return;
+    return onSnapshot(doc(db, "room_game", LUXURY_BET_ROOM, "lb_bets", `${round}_${uid}`), (snap) => {
+      if (!snap.exists()) return;
+      setMyBets(((snap.get("bets") || {}) as Record<string, number>) ?? {});
+    });
+  }, [enabled, uid, round]);
+
+  // Countdown, and "the timer ran out → ask the server to close the round".
+  // The server decides; asking twice (or from many phones) is harmless.
+  useEffect(() => {
+    if (!enabled) return;
+    const t = setInterval(() => {
+      const n = Date.now();
+      setNow(n);
+      const due = running && ((phase === "BETTING" && n >= phaseEndsAt + 500) || phase === "SETTLING");
+      if (due && n - lastTick.current > 4000) {
+        lastTick.current = n;
+        tickCall().catch(() => {});
+      }
+    }, 250);
+    return () => clearInterval(t);
+  }, [enabled, running, phase, phaseEndsAt]);
+
+  if (!enabled) return null;
+
+  const secondsLeft =
+    running && phase === "BETTING" ? Math.max(0, Math.ceil((phaseEndsAt - now) / 1000)) : 0;
+
+  const start = () => {
+    if (running) return noteRef.current(`${LB_BOT}: A round is already running.`);
+    if (starting) return;
+    setStarting(true);
+    startCall()
+      .catch((e: any) => noteRef.current(`${LB_BOT}: Could not start — ${e?.message || "please try again."}`))
+      .finally(() => setStarting(false));
+  };
+
+  const bet = (character: string, amount: number) => {
+    if (!running || phase !== "BETTING" || secondsLeft <= 0) {
+      noteRef.current(`${LB_BOT}: Betting is closed. Type !start to start a new round.`);
+      return;
+    }
+    if (amount < 100 || amount > 12000) {
+      noteRef.current(`${LB_BOT}: Bet amount must be 100-12000 coins.`);
+      return;
+    }
+    // Fast taps are dropped silently (the server takes one bet per ~0.8 s).
+    const t = Date.now();
+    if (inFlight > 0 || t - lastBetSentAt.current < 850) return;
+    lastBetSentAt.current = t;
+    setInFlight((n) => n + 1);
+    betCall({
+      character,
+      amount,
+      roundNumber: round,
+      operationId: crypto.randomUUID().replace(/-/g, ""),
+    })
+      .then(({ data }) => {
+        if (data?.bets) setMyBets(data.bets);
+        setLastBet({ character, amount });
+      })
+      .catch((e: any) => {
+        // "Betting too fast" is never shown: nothing was charged for that tap.
+        if (String(e?.code || "").includes("resource-exhausted")) return;
+        noteRef.current(`${LB_BOT}: ${e?.message || "Bet failed."}`);
+      })
+      .finally(() => setInFlight((n) => Math.max(0, n - 1)));
+  };
+
+  return {
+    canSee: access.canSee,
+    running,
+    phase,
+    round,
+    secondsLeft,
+    myBets,
+    starting,
+    inFlight,
+    lastBet,
+    start,
+    bet,
+  };
+}
+
+/** Room commands. Returns true when the text was a Luxury Bet command. */
+export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note: (t: string) => void): boolean {
+  const parts = text.trim().split(/\s+/);
+  const cmd = (parts[0] || "").toLowerCase();
+  if (cmd !== "!start" && cmd !== "!b" && cmd !== "!bet") return false;
+  if (!state.canSee) {
+    note(`${LB_BOT}: This room is not open yet.`);
+    return true;
+  }
+  if (cmd === "!start") {
+    state.start();
+    return true;
+  }
+  const character = parts[1] ? characterFor(parts[1]) : null;
+  const amount = Number(parts[2]);
+  if (!character || !Number.isInteger(amount)) {
+    note(`${LB_BOT}: Usage: !b [k/q/j/m/t/z] [amount] — e.g. !b k 1000 (King, Queen, Jax, Max, Toto, Zozo)`);
+  } else {
+    state.bet(character, amount);
+  }
+  return true;
+}
+
+// Flips every 0.5 s while active (the blinking timer of the last 10 s).
+function useBlink(active: boolean): boolean {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    if (!active) {
+      setOn(true);
+      return;
+    }
+    const t = setInterval(() => setOn((v) => !v), 500);
+    return () => clearInterval(t);
+  }, [active]);
+  return on;
+}
+
+// Short beep on each of the last 3 seconds (3, 2, 1), like the app.
+function useCountdownBeep(secondsLeft: number) {
+  const ctx = useRef<AudioContext | null>(null);
+  useEffect(() => {
+    if (secondsLeft < 1 || secondsLeft > 3) return;
+    try {
+      ctx.current ??= new AudioContext();
+      const ac = ctx.current;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.frequency.value = 880;
+      gain.gain.value = 0.08;
+      osc.connect(gain).connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + 0.15);
+    } catch {
+      /* no sound on this browser */
+    }
+  }, [secondsLeft]);
+}
+
+/** The gold ▶ START button in the input row; shows the seconds while a round runs. */
+export function LuxuryBetStartButton({ state }: { state: LuxuryBetState }) {
+  const urgent = state.running && state.secondsLeft >= 1 && state.secondsLeft <= 10;
+  const blinkOn = useBlink(urgent);
+  if (!state.canSee) return null;
+  const bg = urgent && blinkOn ? "#E53935" : state.running ? "#0B2A5B" : "#D4A017";
+  return (
+    <button
+      type="button"
+      onClick={state.start}
+      disabled={state.running || state.starting}
+      title={state.running ? "Round running" : "Start a round"}
+      className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full border font-bold text-white"
+      style={{ background: bg, borderColor: urgent ? "#E53935" : "#D4A017", fontSize: state.running && state.secondsLeft > 0 ? 12 : 16 }}
+    >
+      {state.starting ? "…" : state.running && state.secondsLeft > 0 ? state.secondsLeft : state.running ? "⏳" : "▶\uFE0E"}
+    </button>
+  );
+}
+
+/** The Luxury Bet line at the top of the room; follows the live round. */
+export function LuxuryBetWelcomeLine({ state }: { state: LuxuryBetState | null }) {
+  const body =
+    state && state.running && state.phase === "BETTING" && state.secondsLeft > 0
+      ? `: 🎰 Round in progress — ${state.secondsLeft}s left to bid!`
+      : state && state.running
+        ? ": 🎰 Calculating result… Please wait!"
+        : ": Luxury Bet is here! Type !start to begin. Min: 100 | Max: 12000 coins";
+  return (
+    <p className="px-1 py-1 text-[14px] leading-[19px]">
+      <span className="font-bold text-[#E6731E]">🎰 Luxury Bet</span>
+      <span className="text-[#1565E8]">{body}</span>
+    </p>
+  );
+}
+
+/** Eye drawn with lines: open = everyone's bets shown; slashed = only mine. */
+function EyeIcon({ slashed, color }: { slashed: boolean; color: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke={color} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12 Q12 0.5 23 12 Q12 23.5 1 12 Z" />
+      <circle cx="12" cy="12" r="3.4" fill={color} stroke="none" />
+      {slashed && <line x1="3" y1="3" x2="21" y2="21" />}
+    </svg>
+  );
+}
+
+/** The bet box under the chat (the app's black & gold LuxuryBetBox). */
+export function LuxuryBetTable({
+  state,
+  onlyMine,
+  onToggleOnlyMine,
+}: {
+  state: LuxuryBetState;
+  onlyMine: boolean;
+  onToggleOnlyMine: () => void;
+}) {
+  const [amount, setAmount] = useState(500);
+  const [collapsed, setCollapsed] = useState(false);
+  const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
+  const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 10;
+  const blinkOn = useBlink(urgent);
+  useCountdownBeep(state.secondsLeft);
+
+  // New round opens the box; no round running folds it.
+  useEffect(() => setCollapsed(false), [state.round]);
+  useEffect(() => {
+    if (!state.running) setCollapsed(true);
+  }, [state.running]);
+
+  if (!state.canSee) {
+    return <p className="p-3 text-[13px] font-bold text-[#D62F72]">🎰 Luxury Bet is not open yet.</p>;
+  }
+
+  const open = state.secondsLeft > 0;
+  const tap = (character: string) => {
+    const t = Date.now();
+    const prev = lastTap.current;
+    if (prev.character === character && t - prev.at <= 500) {
+      lastTap.current = { character: "", at: 0 };
+      state.bet(character, amount);
+    } else lastTap.current = { character, at: t };
+  };
+  const title = state.inFlight > 0 ? "⏳ Sending bet…" : state.phase === "SETTLING" ? "Calculating result…" : "Luxury Bet · tap 2x to bid";
+  const circle = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold";
+
+  return (
+    <div className="m-1.5 rounded-2xl border-[1.5px] px-2 py-1.5" style={{ background: LB_DARK_BG, borderColor: LB_GOLD }}>
+      <div className="flex items-center gap-1.5">
+        <span
+          className="min-w-[34px] rounded-xl px-2 py-0.5 text-center text-sm font-black"
+          style={{ background: urgent && blinkOn ? "#E53935" : LB_DARK_CHIP, color: urgent ? (blinkOn ? "#fff" : "#E53935") : LB_GOLD_TEXT }}
+        >
+          {state.secondsLeft}
+        </span>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: LB_GOLD_TEXT }}>
+          {title}
+        </span>
+        {open && state.lastBet && (
+          <>
+            <button
+              type="button"
+              title="Repeat last bet"
+              onClick={() => state.bet(state.lastBet!.character, state.lastBet!.amount)}
+              className={circle}
+              style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+            >
+              ↻
+            </button>
+            <button
+              type="button"
+              title="Double last bet"
+              onClick={() => state.bet(state.lastBet!.character, Math.min(state.lastBet!.amount * 2, 12000))}
+              className={circle}
+              style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+            >
+              2x
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          title={onlyMine ? "Showing only my bets" : "Showing everyone's bets"}
+          onClick={onToggleOnlyMine}
+          className={circle}
+          style={{ background: onlyMine ? LB_GOLD : LB_DARK_CHIP, borderColor: LB_GOLD }}
+        >
+          <EyeIcon slashed={onlyMine} color={onlyMine ? LB_DARK_BG : LB_GOLD} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          className="rounded-lg border px-2 text-sm font-bold"
+          style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+        >
+          {collapsed ? "+" : "−"}
+        </button>
+      </div>
+
+      {!collapsed && (
+        <>
+          <div className="mt-1 h-[2px] rounded-sm" style={{ background: LB_GOLD }} />
+          <div className="mt-1.5 grid grid-cols-6 gap-1">
+            {LUXURY_BET_CHARACTERS.map((c) => {
+              const total = Number(state.myBets[c] || 0);
+              const mine = total > 0;
+              const [emoji, ...rest] = c.split(" ");
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={!open}
+                  onClick={() => tap(c)}
+                  className="relative select-none touch-manipulation rounded-xl pb-[3px] active:translate-y-px"
+                  style={{ background: !open ? "#15131C" : mine ? "#C8901A" : "#0E0B18" }}
+                >
+                  <span
+                    className="flex h-full flex-col items-center justify-center rounded-xl py-1"
+                    style={{
+                      background: !open
+                        ? "linear-gradient(#2E2A3C,#24212F)"
+                        : mine
+                          ? "linear-gradient(#FFF8DC,#FCD97A)"
+                          : "linear-gradient(#3A3350,#27213A)",
+                      border: `${mine ? 2 : 1}px solid ${!open ? "#3A3648" : mine ? "#D4A017" : "#5A4F7A"}`,
+                    }}
+                  >
+                    <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
+                    <span
+                      className="w-full truncate text-[9px] font-bold leading-[10px]"
+                      style={{ color: !open ? "#6E6880" : mine ? "#7A4E00" : LB_CREAM }}
+                    >
+                      {rest.join(" ")}
+                    </span>
+                    <span
+                      className="text-[11px] font-extrabold leading-3"
+                      style={{ color: !open ? "#6E6880" : mine ? "#B8790A" : "rgba(242,230,194,.7)" }}
+                    >
+                      {totalLabel(total)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="py-0.5 text-center text-[9px]" style={{ color: "rgba(242,214,117,.75)" }}>
+            👆 Tap twice on a character to bid instantly
+          </p>
+          <div className="grid grid-cols-6 gap-1 pb-0.5">
+            {CHIPS.map((c) => {
+              const selected = amount === c;
+              return (
+                <button
+                  key={c}
+                  type="button"
+                  disabled={!open}
+                  onClick={() => setAmount(c)}
+                  className="h-[24px] rounded-xl border text-[11px] font-bold shadow"
+                  style={{
+                    background: !open
+                      ? "linear-gradient(#2E2A3C,#24212F)"
+                      : selected
+                        ? "linear-gradient(#F2D675,#C9982A)"
+                        : "linear-gradient(#3A3350,#2A2440)",
+                    borderColor: !open ? "#3A3648" : selected ? LB_GOLD : "#5A4F7A",
+                    color: !open ? "#6E6880" : selected ? "#2A1E00" : LB_CREAM,
+                  }}
+                >
+                  {c >= 1000 ? `${c / 1000}k` : c}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

@@ -5,10 +5,12 @@ function xpRequiredForNextLevel(level: number): number {
   const l = Math.max(1, level);
   if (l <= 10) return 50;
   if (l <= 30) return 75 + (l - 11) * 5;
-  if (l <= 60) return 180 + (l - 31) * 10;
-  if (l <= 100) return 500 + (l - 61) * 20;
-  if (l <= 200) return 1400 + (l - 101) * 40;
-  return 1400 + (200 - 101) * 40 + (l - 200) * 50;
+  if (l <= 40) return 180 + (l - 31) * 10;
+  // v2 curve: harder after level 40 (same as the app and firestore.rules).
+  if (l <= 60) return 500 + (l - 41) * 30;
+  if (l <= 100) return 1500 + (l - 61) * 50;
+  if (l <= 200) return 4000 + (l - 101) * 100;
+  return 14000 + (l - 201) * 150;
 }
 
 export function totalXpForLevel(level: number): number {

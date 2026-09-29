@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// 🎤 Voice message recorder: hold to record up to 60 s (same as the app),
+// 🎤 Voice message recorder: tap to record up to 60 s (same as the app),
 // then send or cancel the clip. The parent uploads the recording.
 
 export const MAX_VOICE_MS = 60_000;
@@ -32,8 +32,9 @@ export function VoiceRecorder({
   onSend: (audio: Blob) => Promise<void>;
   onError: (message: string) => void;
 }) {
-  // Like the app: HOLD 🎤 to record, let go to finish. The clip then waits in
-  // the chat box with ✕ (cancel) and ➤ (send); nothing is sent by itself.
+  // Like the app: TAP 🎤 to start recording (no popup), tap ■ to stop. The
+  // clip then waits in the chat box with ✕ (cancel) and ➤ (send); nothing is
+  // sent by itself.
   const [state, setState] = useState<"idle" | "recording" | "review" | "sending">("idle");
   const [seconds, setSeconds] = useState(0);
   const [blob, setBlob] = useState<Blob | null>(null);
@@ -42,8 +43,7 @@ export function VoiceRecorder({
   const stream = useRef<MediaStream | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
   const stopAt = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const holding = useRef(false);
-  const pressedAt = useRef(0);
+  const starting = useRef(false);
   const began = useRef(0);
   const discard = useRef(false);
 
@@ -78,12 +78,6 @@ export function VoiceRecorder({
     }
     try {
       const s = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Let go while the browser was asking for the microphone: don't record.
-      if (!holding.current) {
-        s.getTracks().forEach((t) => t.stop());
-        onError("Hold 🎤 to record.");
-        return;
-      }
       stream.current = s;
       const type = pickType();
       const r = new MediaRecorder(s, type ? { mimeType: type } : undefined);
@@ -110,7 +104,7 @@ export function VoiceRecorder({
       setSeconds(0);
       setState("recording");
       timer.current = setInterval(() => setSeconds(Math.floor((Date.now() - began.current) / 1000)), 250);
-      // Still holding at 60 s: stops by itself and waits in the box.
+      // Still recording at 60 s: stops by itself and waits in the box.
       stopAt.current = setTimeout(() => r.state === "recording" && r.stop(), MAX_VOICE_MS);
     } catch (err: any) {
       cleanupStream();
@@ -119,37 +113,25 @@ export function VoiceRecorder({
           ? "Microphone permission was denied. Allow it in your browser to send voice messages."
           : "Could not start the microphone."
       );
+    } finally {
+      starting.current = false;
     }
   };
 
-  const pressStart = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (disabled) return;
+  // Tap 🎤: start. Tap ■ while recording: stop, the clip waits in the box.
+  const onTap = () => {
+    if (disabled && state !== "recording") return;
+    if (state === "recording") {
+      if (recorder.current?.state === "recording") recorder.current.stop();
+      return;
+    }
     if (state === "review" || state === "sending") {
       onError("Send or cancel the recording first.");
       return;
     }
-    if (state !== "idle") return;
-    e.preventDefault();
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // not supported
-    }
-    holding.current = true;
-    pressedAt.current = Date.now();
+    if (starting.current) return;
+    starting.current = true;
     start();
-  };
-
-  const pressEnd = () => {
-    if (!holding.current) return;
-    holding.current = false;
-    if (recorder.current?.state !== "recording") return;
-    // A quick tap is not a recording: drop it and say how it works.
-    if (Date.now() - pressedAt.current < 700) {
-      discard.current = true;
-      onError("Hold 🎤 to record, release to finish.");
-    }
-    recorder.current.stop();
   };
 
   const reset = () => {
@@ -173,18 +155,14 @@ export function VoiceRecorder({
   const mic = (
     <button
       type="button"
-      onPointerDown={pressStart}
-      onPointerUp={pressEnd}
-      onPointerCancel={pressEnd}
-      onContextMenu={(e) => e.preventDefault()}
-      disabled={disabled}
-      title="Hold to record a voice message"
-      style={{ touchAction: "none", WebkitTouchCallout: "none" }}
+      onClick={onTap}
+      disabled={disabled && state !== "recording"}
+      title={state === "recording" ? "Stop recording" : "Record a voice message"}
       className={`flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border-[1.5px] text-base disabled:opacity-40 ${
         state === "recording" ? "scale-110 border-red-400 bg-red-500" : "border-[#8C7B3E] bg-[#1E2B47]"
       }`}
     >
-      🎤
+      {state === "recording" ? <span className="block h-3 w-3 rounded-[2px] bg-white" /> : "🎤"}
     </button>
   );
 
@@ -199,7 +177,7 @@ export function VoiceRecorder({
           <span className={`text-sm font-bold ${seconds >= MAX_VOICE_MS / 1000 - 10 ? "text-amber-600" : "text-[#0B2A5B]"}`}>
             {clock(seconds)} / {clock(MAX_VOICE_MS / 1000)}
           </span>
-          <span className="ml-auto truncate text-xs text-[#7A8599]">Release to finish</span>
+          <span className="ml-auto truncate text-xs text-[#7A8599]">Tap ■ to stop</span>
         </div>
       ) : (
         <>
