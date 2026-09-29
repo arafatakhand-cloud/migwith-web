@@ -67,6 +67,7 @@ import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
+import { handleExtraCommand } from "../../../lib/extraCommands";
 import { rememberRecentRoom, useRoomPrefs } from "../../../lib/roomPrefs";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
@@ -628,18 +629,36 @@ function RoomView({ roomName }: { roomName: string }) {
       });
   }, [messages, localNotes, myUid, sinceMs]);
 
+  // People I blocked (users/{uid}.blockedUsers, /block): their lines are hidden for me, like the app.
+  const [blockedNames, setBlockedNames] = useState<string[]>([]);
+  useEffect(() => {
+    if (!myUid) return;
+    return onSnapshot(
+      doc(db, "users", myUid),
+      (s) => {
+        const raw = s.get("blockedUsers");
+        setBlockedNames(Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string").map((x) => x.toLowerCase()) : []);
+      },
+      () => {}
+    );
+  }, [myUid]);
+
   // Eye mode (Luxury Bet): other people's bet lines are taken out of the list.
   const myName = (profile?.username || "").toLowerCase();
-  const visible = useMemo(
-    () =>
-      onlyMyBets
-        ? shown.filter((m) => {
-            const bet = /^🎰 Luxury Bet: (.+?) placed [\d,]+ coins? on /.exec(m.text);
-            return !bet || bet[1].trim().toLowerCase() === myName;
-          })
-        : shown,
-    [shown, onlyMyBets, myName]
-  );
+  const visible = useMemo(() => {
+    const blocked = new Set(blockedNames);
+    return shown.filter((m) => {
+      if (blocked.size && !m.local && m.senderUid !== myUid) {
+        const who = (m.sender || (m.text.indexOf(":") > 0 ? m.text.slice(0, m.text.indexOf(":")) : "")).trim().toLowerCase();
+        if (who && blocked.has(who) && m.type !== "room_entry" && m.type !== "room_leave") return false;
+      }
+      if (onlyMyBets) {
+        const bet = /^🎰 Luxury Bet: (.+?) placed [\d,]+ coins? on /.exec(m.text);
+        if (bet && bet[1].trim().toLowerCase() !== myName) return false;
+      }
+      return true;
+    });
+  }, [shown, onlyMyBets, myName, blockedNames, myUid]);
 
   // Uploaded pictures for the badges in the enter/left lines.
   const badgeImages = useBadgeImages(!!user);
@@ -778,6 +797,20 @@ function RoomView({ roomName }: { roomName: string }) {
     // Moderator commands come before mute / silence, as in the app.
     const ctx = clean.startsWith("/") ? modCtx() : null;
     if (ctx && handleModCommand(clean, ctx)) {
+      setText("");
+      return;
+    }
+    if (
+      clean.startsWith("/") &&
+      handleExtraCommand(clean, {
+        uid: user.uid,
+        username: profile.username,
+        roomName,
+        isFounder: isMainFounderName(profile.username),
+        isRoomAdmin: perms.isRoomAdmin,
+        note,
+      })
+    ) {
       setText("");
       return;
     }

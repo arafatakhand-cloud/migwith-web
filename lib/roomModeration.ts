@@ -409,7 +409,8 @@ function modHelp(ctx: ModContext): string[] {
 /** Room moderator commands. True = handled (not posted as chat). */
 export function handleModCommand(clean: string, ctx: ModContext): boolean {
   const parts = clean.trim().split(/\s+/);
-  const cmd = parts[0].toLowerCase();
+  // "/silince" / "/unsilince" are accepted too, like the app.
+  const cmd = parts[0].toLowerCase().replace(/^\/(un)?silince$/, "/$1silence");
   const arg = parts[1] || "";
   const needName = (fn: () => void) => (arg ? fn() : ctx.note(`${ctx.roomName}: Usage: ${cmd} username`));
 

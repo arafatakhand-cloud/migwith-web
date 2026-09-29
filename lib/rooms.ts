@@ -151,7 +151,7 @@ const LEGACY_DEFAULT_DESCRIPTION =
 const isOfficialRoomName = (name: string) =>
   name === "🎰 Luxury Bet" || OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
 
-function officialRoomDefaultDescription(roomName: string): string {
+export function officialRoomDefaultDescription(roomName: string): string {
   switch (roomName) {
     case "👻 Luxury Bot Official":
       return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miglife team — place your bets, enjoy the game, and play responsibly. ✨";
@@ -178,7 +178,7 @@ function officialRoomDefaultDescription(roomName: string): string {
   return LEGACY_DEFAULT_DESCRIPTION;
 }
 
-function isAutoRoomDescription(roomName: string, stored: string): boolean {
+export function isAutoRoomDescription(roomName: string, stored: string): boolean {
   const t = stored.trim();
   if (!t || t === LEGACY_DEFAULT_DESCRIPTION.trim()) return true;
   if (!isOfficialRoomName(roomName)) return false;
