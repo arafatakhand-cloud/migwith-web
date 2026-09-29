@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "./firebase";
 
-// The Android app download link — the SAME link the app's "Share Invite"
-// uses: app_settings/invite.downloadUrl, which miglife changes from the app
-// (Home → Invite Friends ✏️) or from miglife secret on the web. If it isn't
-// set, the direct APK link from app_config/latest.apkUrl is used. Both
-// documents are readable by everyone (also signed out).
+// The Android app download link: the DIRECT APK from app_config/latest.apkUrl
+// (the same file the app's Update page downloads, so it is always the newest
+// version). If that isn't set, the app's "Share Invite" link
+// (app_settings/invite.downloadUrl) is used. Both documents are readable by
+// everyone (also signed out).
 
 const valid = (v: unknown): string => {
   const s = typeof v === "string" ? v.trim() : "";
@@ -26,5 +26,5 @@ export function useAppDownloadUrl(): string {
       b();
     };
   }, []);
-  return invite || apk;
+  return apk || invite;
 }

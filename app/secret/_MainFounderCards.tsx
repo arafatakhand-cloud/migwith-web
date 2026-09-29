@@ -473,8 +473,8 @@ export function AppDownloadLinkCard() {
     <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#34A853] bg-white p-4">
       <p className="text-[17px] font-extrabold">📲 Android App Download Link</p>
       <p className="text-xs text-gray-500">
-        Shown on web.miglife.app as the &quot;Download Android App&quot; button, and shared by the app&apos;s Invite Friends. Paste the APK /
-        Play Store / Google Drive link.
+        Shared by the app&apos;s Invite Friends. The web&apos;s &quot;Download Android App&quot; button uses the direct APK (app_config/latest
+        apkUrl, same as the app&apos;s Update page) and falls back to this link only when there is no APK link.
       </p>
       <input
         value={link}
