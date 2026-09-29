@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "../../lib/firebase";
+import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { input } from "./_Shell";
@@ -440,6 +441,76 @@ function LuxuryBetLevelCard() {
       >
         ↻ Refresh
       </button>
+      <Message text={msg} failed={failed} />
+    </div>
+  );
+}
+
+/** 📲 Android app download link — app_settings/invite.downloadUrl, the same link
+ *  the app's Share Invite uses; the web's "Download Android App" button reads it. */
+export function AppDownloadLinkCard() {
+  const [saved, setSaved] = useState("");
+  const [link, setLink] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "invite"),
+        (s) => {
+          const v = String(s.get("downloadUrl") || "");
+          setSaved(v);
+          setLink((cur) => cur || v);
+        },
+        () => {}
+      ),
+    []
+  );
+  const clean = link.trim();
+  const ok = /^https?:\/\/\S+$/i.test(clean);
+  return (
+    <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#34A853] bg-white p-4">
+      <p className="text-[17px] font-extrabold">📲 Android App Download Link</p>
+      <p className="text-xs text-gray-500">
+        Shown on web.miglife.app as the &quot;Download Android App&quot; button, and shared by the app&apos;s Invite Friends. Paste the APK /
+        Play Store / Google Drive link.
+      </p>
+      <input
+        value={link}
+        onChange={(e) => {
+          setLink(e.target.value);
+          setMsg(null);
+        }}
+        placeholder="https://..."
+        inputMode="url"
+        disabled={busy}
+        className={input}
+      />
+      <button
+        type="button"
+        disabled={busy || !ok || clean === saved}
+        onClick={() => {
+          setBusy(true);
+          setMsg(null);
+          setFailed(false);
+          setDoc(doc(db, "app_settings", "invite"), { downloadUrl: clean }, { merge: true })
+            .then(() => setMsg("✅ Saved — the download button now uses this link."))
+            .catch((e) => {
+              setFailed(true);
+              setMsg(errText(e));
+            })
+            .finally(() => setBusy(false));
+        }}
+        className="w-full rounded-xl bg-[#34A853] py-2.5 font-extrabold text-white disabled:opacity-50"
+      >
+        {busy ? "Saving…" : "SAVE LINK"}
+      </button>
+      {saved && (
+        <a href={saved} target="_blank" rel="noopener noreferrer" className="block truncate text-xs font-semibold text-[#1E63D6] underline">
+          Current: {saved}
+        </a>
+      )}
       <Message text={msg} failed={failed} />
     </div>
   );

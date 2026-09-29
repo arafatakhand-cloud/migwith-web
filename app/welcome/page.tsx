@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeaderAuth, HeroActions } from "../_components/AuthControls";
 import { InstallApp } from "../_components/InstallApp";
+import { AndroidDownload } from "../_components/AndroidDownload";
 
 export default function Welcome() {
   return (
@@ -92,6 +93,9 @@ export default function Welcome() {
 
           {/* Buttons */}
           <HeroActions />
+          <div id="download" className="flex w-full flex-col items-center">
+            <AndroidDownload />
+          </div>
           <InstallApp />
 
           {/* Feature Cards */}
