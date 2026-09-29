@@ -1,10 +1,10 @@
 "use client";
 
-import { useAppDownloadUrl } from "../../lib/appDownload";
+import { useAppDownload } from "../../lib/appDownload";
 
 // "Download for Android" button. Hidden until miglife has set a link.
 export function AndroidDownload({ light = false }: { light?: boolean }) {
-  const url = useAppDownloadUrl();
+  const { url, version } = useAppDownload();
   if (!url) return null;
   return (
     <a
@@ -25,7 +25,9 @@ export function AndroidDownload({ light = false }: { light?: boolean }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/80">Download for</span>
-        <span className="block text-lg font-black leading-tight">Android App</span>
+        <span className="block text-lg font-black leading-tight">
+          Android App{version && <span className="ml-1.5 align-middle text-xs font-bold text-white/80">v{version}</span>}
+        </span>
       </span>
       <span className="text-xl transition-transform group-hover:translate-y-0.5">⬇️</span>
     </a>
@@ -34,7 +36,7 @@ export function AndroidDownload({ light = false }: { light?: boolean }) {
 
 /** A row for the Home page list (signed in): "Download Android App". */
 export function AndroidDownloadRow() {
-  const url = useAppDownloadUrl();
+  const { url, version } = useAppDownload();
   if (!url) return null;
   return (
     <a
@@ -48,7 +50,9 @@ export function AndroidDownloadRow() {
           <path d="M17.6 9.48l1.84-3.18a.38.38 0 0 0-.66-.38l-1.87 3.23A11.4 11.4 0 0 0 12 8.2c-1.77 0-3.43.37-4.9.95L5.23 5.92a.38.38 0 1 0-.66.38L6.4 9.48A10.8 10.8 0 0 0 1 18h22a10.8 10.8 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z" />
         </svg>
       </span>
-      <span className="flex-1 text-[16px] font-semibold">Download Android App</span>
+      <span className="flex-1 text-[16px] font-semibold">
+        Download Android App{version && <span className="ml-1.5 text-xs font-bold text-[#34A853]">v{version}</span>}
+      </span>
       <span className="text-[#34A853]">⬇️</span>
     </a>
   );

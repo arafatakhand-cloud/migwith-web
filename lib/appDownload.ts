@@ -15,16 +15,29 @@ const valid = (v: unknown): string => {
   return /^https?:\/\//i.test(s) ? s : "";
 };
 
-export function useAppDownloadUrl(): string {
+/** The download link plus the APK's version ("2.2.5") when the direct APK is used. */
+export function useAppDownload(): { url: string; version: string } {
   const [invite, setInvite] = useState("");
   const [apk, setApk] = useState("");
+  const [version, setVersion] = useState("");
   useEffect(() => {
     const a = onSnapshot(doc(db, "app_settings", "invite"), (s) => setInvite(valid(s.get("downloadUrl"))), () => {});
-    const b = onSnapshot(doc(db, "app_config", "latest"), (s) => setApk(valid(s.get("apkUrl"))), () => {});
+    const b = onSnapshot(
+      doc(db, "app_config", "latest"),
+      (s) => {
+        setApk(valid(s.get("apkUrl")));
+        setVersion(String(s.get("versionName") || "").trim());
+      },
+      () => {}
+    );
     return () => {
       a();
       b();
     };
   }, []);
-  return apk || invite;
+  return { url: apk || invite, version: apk ? version : "" };
+}
+
+export function useAppDownloadUrl(): string {
+  return useAppDownload().url;
 }
