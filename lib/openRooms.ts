@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { leaveDocId, presenceLine } from "./rooms";
+import { leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
 
 // Rooms you are in, shown as tabs in the top bar like the app. Moving between
@@ -89,7 +89,7 @@ export async function leaveRoomInBackground(uid: string, name: string) {
   await deleteDoc(presenceRef).catch(() => {});
   if (quiet || !username) return;
   await setDoc(doc(db, "room_messages", name, "messages", leaveDocId(uid, visitId)), {
-    text: presenceLine(name, username, level, false),
+    text: presenceLine(name, username, level, false, presenceBadgesForDoc(me?.data())),
     sender: username,
     senderUid: uid,
     type: "room_leave",

@@ -28,6 +28,7 @@ import {
   badgeForLevel,
   leaveDocId,
   newVisitId,
+  presenceBadgesForDoc,
   presenceLine,
   roomHref,
   resolveRoomDescription,
@@ -92,7 +93,7 @@ type RoomUser = { uid: string; username: string; level: number; lastSeenMs: numb
 // invisible: logged in as Invisible (users.isInvisible) — no presence doc,
 // no heartbeat, no "has entered/left". quiet: that, or Presence Status
 // "INVISIBLE", which still writes presence but hides the announcements.
-type Profile = { username: string; level: number; badge: string; role: string; invisible: boolean; quiet: boolean };
+type Profile = { username: string; level: number; badge: string; badges: string[]; role: string; invisible: boolean; quiet: boolean };
 
 // A leave that is about to run for a room. Re-entering the same room right away
 // (React re-mount, quick navigation back) cancels it instead of posting
@@ -267,6 +268,7 @@ function RoomView({ roomName }: { roomName: string }) {
           username: String(snap.get("username") || user.email?.split("@")[0] || ""),
           level,
           badge: String(snap.get("levelBadgeIcon") || badgeForLevel(level)),
+          badges: presenceBadgesForDoc(snap.data()),
           role: normRole(snap.get("role")),
           invisible: snap.get("isInvisible") === true,
           quiet: snap.get("isInvisible") === true || String(snap.get("presenceStatus") || "").toUpperCase() === "INVISIBLE",
@@ -451,7 +453,7 @@ function RoomView({ roomName }: { roomName: string }) {
       deleteDoc(presenceRef).catch(() => {});
       if (profile.quiet) return;
       setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, visitId)), {
-        text: presenceLine(roomName, profile.username, profile.level, false),
+        text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),
         sender: profile.username,
         senderUid: uid,
         type: "room_leave",
@@ -565,7 +567,7 @@ function RoomView({ roomName }: { roomName: string }) {
 
       if (!alreadyHere && !left && !profile.quiet) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
-          text: presenceLine(roomName, profile.username, profile.level, true),
+          text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
           sender: profile.username,
           senderUid: uid,
           type: "room_entry",

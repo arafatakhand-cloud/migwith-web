@@ -51,15 +51,69 @@ export function badgeForLevel(level: number): string {
   return hit ? hit[2] : "🥚";
 }
 
-// Same text as formatPresenceLine() in the app. The level badge itself is not
-// part of the line; only extra (shop) badges are, and the web has none yet.
+// Same text as formatPresenceLine() in the app: "Room: name [12] 🎓 💎 has
+// entered." The level badge itself is not part of the line; the role badge
+// and the Color Shop badges are.
 export function presenceLine(
   roomId: string,
   name: string,
   level: number,
-  entered: boolean
+  entered: boolean,
+  badges: string[] = []
 ): string {
-  return `${roomId}: ${name} [${level}] ${entered ? "has entered." : "has left."}`;
+  const extra = badges.filter((b) => b.trim());
+  return `${roomId}: ${name} [${level}]${extra.length ? " " + extra.join(" ") : ""} ${entered ? "has entered." : "has left."}`;
+}
+
+// Color Shop badge per colour id (COLOR_SHOP_CATALOG in the app).
+const SHOP_BADGES: [string, string][] = [
+  ["king", "👑"], ["queen", "👼"], ["mafia", "🎩"], ["vip", "⭐"],
+  ["diamond", "💎"], ["premium", "🏵️"], ["supporter", "🛡️"], ["streamer", "🎬"],
+];
+
+/** Every Color Shop badge the user owns that has not expired, oldest first (the app's activeShopBadges). */
+export function activeShopBadges(ownedColors: unknown): string[] {
+  if (!ownedColors || typeof ownedColors !== "object") return [];
+  const owned = ownedColors as Record<string, { expiresAt?: unknown; grantedAt?: unknown } | undefined>;
+  const now = Date.now();
+  return SHOP_BADGES.flatMap(([id, badge]) => {
+    const e = owned[id];
+    const expiresAt = Number(e?.expiresAt || 0);
+    return e && expiresAt > now ? [{ at: Number(e.grantedAt || 0), badge }] : [];
+  })
+    .sort((a, b) => a.at - b.at)
+    .map((x) => x.badge);
+}
+
+/** Role badge (the app's roleBadgesFor): owner / founder and normal users have none. */
+export function roleBadgesFor(role: unknown): string[] {
+  switch (String(role ?? "").trim().toLowerCase().replace(/[- ]/g, "_")) {
+    case "mentor": return ["🎓"];
+    case "merchant": return ["🛒"];
+    case "staff": return ["🛠️"];
+    case "admin":
+    case "administrator": return ["⚙️"];
+    case "elite":
+    case "elite_user": return ["✨"];
+    case "executive_board": return ["🏛️"];
+    case "country_representative": return ["🌍"];
+    default: return [];
+  }
+}
+
+/** A role can be saved in membershipRole, memberType or role — the first that gives a badge wins. */
+export function roleBadgesForDoc(data: Record<string, unknown> | undefined | null): string[] {
+  if (!data) return [];
+  for (const field of ["membershipRole", "memberType", "role"]) {
+    const b = roleBadgesFor(data[field]);
+    if (b.length) return b;
+  }
+  return [];
+}
+
+/** Role badge + Color Shop badges, as in the app's room enter/left lines. */
+export function presenceBadgesForDoc(data: Record<string, unknown> | undefined | null): string[] {
+  return [...roleBadgesForDoc(data), ...activeShopBadges(data?.ownedColors)];
 }
 
 export function leaveDocId(uid: string, visitId: string | null): string {
