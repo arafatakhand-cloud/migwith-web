@@ -1765,7 +1765,8 @@ function MessageRow({
   return (
     <SwipeToReply enabled={canReply} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
-        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug ${rightSide ? "text-right" : "text-left"}`}>
+        {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
+        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug text-left`}>
           {quote && (
             <span
               className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
