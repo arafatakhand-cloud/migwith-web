@@ -95,6 +95,9 @@ export function withEmotes(text: string, fontPx: number, renderText: (s: string,
 // stays open for more. The last 24 picked are kept under 🕒 in this browser.
 // ---------------------------------------------------------------------------
 
+// Tab icons of the ✨ animated groups, in order (like the app).
+const ANIM_GLYPHS = ["✨", "🎉", "💖", "🐾", "🍕", "🎈", "🌸"];
+
 type Section = { key: string; title: string; tabId: string | null; glyph: string | null; ids: string[] };
 
 export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => void; onBackspace?: () => void }) {
@@ -102,7 +105,7 @@ export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => 
   const sections: Section[] = [
     ...(recent.length ? [{ key: "recent", title: "Recent", tabId: null, glyph: "🕒", ids: recent }] : []),
     ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids })),
-    ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: i === 0 ? "✨" : "🎉", ids: g.ids })),
+    ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: ANIM_GLYPHS[i] ?? "✨", ids: g.ids })),
   ];
   const [active, setActive] = useState(0);
   const sec = sections[Math.min(active, sections.length - 1)];

@@ -23,6 +23,11 @@ const CODE_PREFIX: Record<string, string> = {
   gestures: ";h",
   anim_faces: ";a",
   anim_fun: ";a",
+  anim_love: ";a",
+  anim_animals: ";a",
+  anim_food: ";a",
+  anim_party: ";a",
+  anim_nature: ";a",
 };
 
 /** Emote id -> the code it is sent as (":c12", ";a40" …). */
