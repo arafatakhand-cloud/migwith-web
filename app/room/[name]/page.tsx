@@ -1863,7 +1863,8 @@ function MessageRow({
               ↩ {quote}
             </span>
           )}
-          {!mine && senderName && (
+          {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too. */}
+          {(!mine || (!isRoomLine && isMainFounderName(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"} ${
                 !isRoomLine && isMainFounderName(senderName) ? "miglife-rainbow" : ""

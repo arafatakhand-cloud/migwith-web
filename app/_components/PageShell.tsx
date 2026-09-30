@@ -8,21 +8,33 @@ import { TopBar } from "./TopBar";
 export function PageShell({
   children,
   light = false,
+  pale = false,
+  noTopBar = false,
 }: {
   children: React.ReactNode;
   light?: boolean;
+  /** A much lighter sky (Edit Profile, like the app). */
+  pale?: boolean;
+  /** The page has its own bar (the profile page, like the app). */
+  noTopBar?: boolean;
   /** Kept for older callers; the ☰ menu replaced the phone bottom bar. */
   bottomNav?: boolean;
 }) {
   return (
     <main
       className={`relative min-h-screen overflow-x-clip ${
-        light ? "bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] text-[#0B2A5B]" : "bg-sky-app text-white"
+        pale
+          ? "bg-gradient-to-b from-[#F4FAFE] to-[#EAF5FD] text-[#0B2A5B]"
+          : light
+            ? "bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] text-[#0B2A5B]"
+            : "bg-sky-app text-white"
       }`}
     >
-      <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
-        <TopBar />
-      </header>
+      {!noTopBar && (
+        <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
+          <TopBar />
+        </header>
+      )}
 
       {/* Laptop: the menu stays open on the left and the page fills the rest. */}
       <div className="relative z-10 lg:flex">

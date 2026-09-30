@@ -156,3 +156,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .miglife-rainbow { animation: none; }
 }
+
+/* The profile's stylish frame (photo and cover): gold/pink/purple/blue ring
+   with a thin white inner line and a soft purple shadow, like the app. */
+.mig-frame {
+  padding: 3px;
+  background: linear-gradient(135deg, #ffe08a, #ffa726, #ff4f8b, #9c5bff, #3aa0e0, #ffe08a);
+  box-shadow: 0 4px 12px rgba(122, 60, 200, 0.45);
+}
+.mig-frame > :first-child {
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+}

@@ -141,7 +141,7 @@ export default function EditProfilePage() {
   const field = "w-full rounded-xl border border-[#D5E3F5] bg-white px-4 py-3 text-[#0B2A5B] outline-none focus:border-[#2F80ED]";
 
   return (
-    <PageShell light>
+    <PageShell light pale>
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
         <div className="flex items-center gap-3">
           <Link href={`/profile/${encodeURIComponent(username || "me")}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
@@ -154,9 +154,11 @@ export default function EditProfilePage() {
           <p className="py-16 text-center text-[#5B6B8C]">{error || "Loading…"}</p>
         ) : (
           <div className="mt-5 space-y-4">
-            {/* Cover + photo */}
-            <label className="relative block cursor-pointer">
-              <div className="flex aspect-[3.2] items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-b from-[#174EA6] to-[#0B2A5B] text-white shadow-md">
+            {/* Cover + photo exactly like the profile page: the same rainbow
+                frame; the photo box (108 × 140) starts right at the cover's
+                bottom border, joined to it. */}
+            <label className="mig-frame relative block aspect-[3.2] cursor-pointer rounded-2xl">
+              <div className="flex h-full items-center justify-center overflow-hidden rounded-[13px] bg-gradient-to-b from-[#174EA6] to-[#0B2A5B] text-white">
                 {coverPhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={coverPhotoUrl} alt="" className="h-full w-full object-cover" />
@@ -164,7 +166,7 @@ export default function EditProfilePage() {
                   <span className="text-xl font-black">MIG LIFE</span>
                 )}
               </div>
-              <span className="absolute bottom-2 right-2 rounded-lg bg-black/60 px-2.5 py-1 text-xs font-bold text-white">
+              <span className="absolute bottom-2 right-2 rounded-[10px] bg-black/55 px-2.5 py-1 text-[13px] font-bold text-white">
                 {uploading === "cover" ? "Uploading…" : "📷 Change cover"}
               </span>
               <input
@@ -182,34 +184,44 @@ export default function EditProfilePage() {
               />
             </label>
 
-            <label className="flex cursor-pointer items-center gap-4">
-              <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full border-4 border-white bg-[#1E3A6B] text-white shadow-md">
-                {photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={photoUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-3xl font-black">
-                    {username.slice(0, 1).toUpperCase()}
-                  </span>
-                )}
+            <div className="!mt-0 flex items-start gap-3">
+              <label className="mig-frame relative ml-2.5 -mt-[3px] block h-[140px] w-[108px] shrink-0 cursor-pointer rounded-b-xl">
+                <div className="relative h-full overflow-hidden rounded-b-[9px] bg-[#E8EEF5]">
+                  {photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-[46px] font-bold text-[#8FA3BF]">
+                      {username.slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                  {uploading === "photo" ? (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-bold text-white">Uploading…</span>
+                  ) : (
+                    <span className="absolute inset-x-0 bottom-0 bg-black/50 py-1 text-center text-xs font-bold text-white">📷 Change</span>
+                  )}
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={!!uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!f) return;
+                    if (!f.type.startsWith("image/")) return setError("Please choose an image.");
+                    setCropFile(f);
+                  }}
+                />
+              </label>
+              <div className="pt-3">
+                <p className="text-[15px] font-bold text-[#0B2A5B]">Profile photo &amp; cover</p>
+                <p className="mt-1 text-xs text-[#35507E]">
+                  Tap the photo or the cover to change it. This is exactly how they look on your profile.
+                </p>
               </div>
-              <span className="rounded-xl border border-[#BFD7F2] bg-white px-4 py-2 text-sm font-bold text-[#174EA6] hover:bg-[#F4F9FF]">
-                {uploading === "photo" ? "Uploading…" : "📷 Change photo"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={!!uploading}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  e.target.value = "";
-                  if (!f) return;
-                  if (!f.type.startsWith("image/")) return setError("Please choose an image.");
-                  setCropFile(f);
-                }}
-              />
-            </label>
+            </div>
 
             <div>
               <p className="mb-1 text-xs font-bold text-[#35507E]">MIG ID (cannot be changed)</p>
@@ -305,6 +317,11 @@ export default function EditProfilePage() {
       {cropFile && (
         <PhotoCropDialog
           file={cropFile}
+          // Same portrait shape as the photo box on the profile (108 × 140).
+          frameAspect={108 / 140}
+          round={false}
+          outWidth={540}
+          hint="Drag to move · pinch or scroll to zoom · the frame is your profile photo"
           onCancel={() => setCropFile(null)}
           onCropped={(jpeg) => {
             setCropFile(null);

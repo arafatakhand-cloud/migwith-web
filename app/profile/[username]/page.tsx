@@ -448,7 +448,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <PageShell light>
+    <PageShell light noTopBar>
       <div className="mx-auto max-w-2xl bg-[#EEF3F8] pb-6">
         {/* Title bar: back · miglife logo · the person's ID */}
         <div className="flex items-center gap-2 bg-gradient-to-b from-[#3A3A3A] to-[#1C1C1C] px-2 py-2">
@@ -460,26 +460,34 @@ export default function ProfilePage() {
           </h1>
         </div>
 
-        {/* Cover photo (only when the person has one) */}
+        {/* Cover photo (only when the person has one), in the same frame as the photo */}
         {profile.coverPhotoUrl && (
-          <div className="aspect-[3.2] bg-gradient-to-b from-[#174EA6] to-[#0F2C55]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
+          <div className="bg-white px-2.5 pt-2.5">
+            <div className="mig-frame aspect-[3.2] rounded-2xl">
+              <div className="h-full overflow-hidden rounded-[13px] bg-gradient-to-b from-[#174EA6] to-[#0F2C55]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Photo (left, as tall as the details) + details (right) */}
+        {/* Photo (left, 108 × 140) + details (right). With a cover, the photo's
+            frame starts right on the cover's bottom border, joined to it. */}
         <div className="flex gap-3 bg-white p-2.5">
           <div
-            className="w-[140px] shrink-0 self-stretch rounded-xl p-[3px] shadow-[0_4px_12px_rgba(122,60,200,.45)] sm:w-[170px]"
-            style={{ background: "linear-gradient(135deg, #FFE08A, #FFA726, #FF4F8B, #9C5BFF, #3AA0E0, #FFE08A)" }}
+            className={`mig-frame h-[140px] w-[108px] shrink-0 ${
+              profile.coverPhotoUrl ? "-mt-[13px] rounded-b-xl" : "rounded-xl"
+            }`}
           >
-            <div className="h-full min-h-[180px] overflow-hidden rounded-[9px] border-[1.5px] border-white/95 bg-[#E8EEF5]">
+            <div
+              className={`h-full overflow-hidden bg-[#E8EEF5] ${profile.coverPhotoUrl ? "rounded-b-[9px]" : "rounded-[9px]"}`}
+            >
               {profile.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-[54px] font-bold text-[#8FA3BF]">
+                <span className="flex h-full w-full items-center justify-center text-[46px] font-bold text-[#8FA3BF]">
                   {username.slice(0, 1).toUpperCase()}
                 </span>
               )}
