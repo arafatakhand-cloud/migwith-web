@@ -8,6 +8,7 @@ import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { PageShell } from "../../_components/PageShell";
+import { PhotoCropDialog } from "../../_components/PhotoCropDialog";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
@@ -41,6 +42,8 @@ export default function EditProfilePage() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [coverPhotoUrl, setCoverPhotoUrl] = useState("");
   const [uploading, setUploading] = useState("");
+  // A picked profile photo opens the crop editor first (like the app).
+  const [cropFile, setCropFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -62,7 +65,7 @@ export default function EditProfilePage() {
       .catch(() => setError("Could not load your profile."));
   }, [user, username]);
 
-  const upload = async (kind: "photo" | "cover", file: File | undefined) => {
+  const upload = async (kind: "photo" | "cover", file: Blob | undefined) => {
     if (!file || !user) return;
     if (!file.type.startsWith("image/")) {
       setError("Please choose an image.");
@@ -190,7 +193,13 @@ export default function EditProfilePage() {
                 accept="image/*"
                 className="hidden"
                 disabled={!!uploading}
-                onChange={(e) => upload("photo", e.target.files?.[0])}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  if (!f.type.startsWith("image/")) return setError("Please choose an image.");
+                  setCropFile(f);
+                }}
               />
             </label>
 
@@ -285,6 +294,16 @@ export default function EditProfilePage() {
           </div>
         )}
       </div>
+      {cropFile && (
+        <PhotoCropDialog
+          file={cropFile}
+          onCancel={() => setCropFile(null)}
+          onCropped={(jpeg) => {
+            setCropFile(null);
+            upload("photo", jpeg);
+          }}
+        />
+      )}
     </PageShell>
   );
 }
