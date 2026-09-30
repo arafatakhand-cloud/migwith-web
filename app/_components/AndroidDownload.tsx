@@ -43,7 +43,7 @@ export function AndroidDownloadRow() {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 border-b border-[#E3ECF7] bg-white px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]"
+      className="flex items-center gap-3 border-t border-[#E3ECF7] bg-white px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]"
     >
       <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-lg bg-[#34A853] text-white">
         <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>

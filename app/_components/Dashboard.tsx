@@ -262,7 +262,6 @@ export function Dashboard() {
       </section>
 
       <InstallHint />
-      <AndroidDownloadRow />
 
       {/* Rows */}
       <div className="bg-white shadow-sm">
@@ -303,6 +302,8 @@ export function Dashboard() {
           <span className="flex h-5 w-5 items-center justify-center rounded bg-[#2F80ED] text-xs font-black text-white">i</span>
           <span className="font-semibold">Invite Friends</span>
         </button>
+        {/* Android app download, right under Invite Friends */}
+        <AndroidDownloadRow />
       </div>
       </div>
 
