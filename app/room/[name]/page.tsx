@@ -1866,13 +1866,11 @@ function MessageRow({
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too. */}
           {(!mine || (!isRoomLine && isMainFounderName(senderName))) && senderName && (
             <span
-              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"} ${
-                !isRoomLine && isMainFounderName(senderName) ? "miglife-rainbow" : ""
-              }`}
+              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
-              {senderName}:
+              {!isRoomLine && isMainFounderName(senderName) ? <RainbowName name={senderName} /> : senderName}:
             </span>
           )}
           {m.type === "image" && m.imageUrl ? (
@@ -1938,5 +1936,24 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
         {time && <p className="mt-1.5 text-right text-[10px] text-[#9A8FA6]">{time}</p>}
       </div>
     </div>
+  );
+}
+
+// 🌈 miglife's name: each letter its own rainbow colour (48° apart), and the
+// whole rainbow slides along — like the app's appendMiglifeRainbow.
+function RainbowName({ name }: { name: string }) {
+  return (
+    <>
+      {Array.from(name).map((ch, i) => (
+        <span
+          key={i}
+          className="miglife-rainbow-ch"
+          // Start letter i at hue i·48° of the 360° → 0° cycle.
+          style={{ animationDelay: `${-(((360 - ((i * 48) % 360)) % 360) / 360) * 2.4}s` }}
+        >
+          {ch}
+        </span>
+      ))}
+    </>
   );
 }
