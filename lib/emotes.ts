@@ -8,9 +8,9 @@
 // The app's older punctuation codes (":)", ":D" …) use pictures the web does not
 // carry, so they stay as plain text here.
 
-import { ANIMATED_GROUPS, EMOTE_GROUPS, type EmoteGroup } from "./emoteData";
+import { ANIMATED_GROUPS, EMOTE_GROUPS, GIF_GROUP, GIF_MOTION, type EmoteGroup, type GifMotion } from "./emoteData";
 
-export { ANIMATED_GROUPS, EMOTE_GROUPS, type EmoteGroup };
+export { ANIMATED_GROUPS, EMOTE_GROUPS, GIF_GROUP, GIF_MOTION, type EmoteGroup, type GifMotion };
 
 const CODE_PREFIX: Record<string, string> = {
   classic: ":c",
@@ -28,13 +28,14 @@ const CODE_PREFIX: Record<string, string> = {
   anim_food: ";a",
   anim_party: ";a",
   anim_nature: ";a",
+  gif: ";m",
 };
 
 /** Emote id -> the code it is sent as (":c12", ";a40" …). */
 export const EMOTE_CODES: Record<string, string> = (() => {
   const out: Record<string, string> = {};
   const counters: Record<string, number> = {};
-  for (const g of [...EMOTE_GROUPS, ...ANIMATED_GROUPS]) {
+  for (const g of [...EMOTE_GROUPS, ...ANIMATED_GROUPS, GIF_GROUP]) {
     const prefix = CODE_PREFIX[g.key];
     if (!prefix) continue;
     for (const id of g.ids) {
@@ -48,7 +49,10 @@ export const EMOTE_CODES: Record<string, string> = (() => {
 
 export const isAnimated = (id: string) => id.startsWith("mla_");
 
-export const emoteSrc = (id: string) => (isAnimated(id) ? `/emotes/anim/${id}.json` : `/emotes/${id}.png`);
+export const isSprite = (id: string) => id.startsWith("mlg_");
+
+export const emoteSrc = (id: string) =>
+  isAnimated(id) ? `/emotes/anim/${id}.json` : isSprite(id) ? `/emotes/gif/${id}.png` : `/emotes/${id}.png`;
 
 // ✌ ☝ ✊ ✋ ✍ are sent with the emoji style marker U+FE0F.
 const FE0F = new Set([0x261d, 0x270a, 0x270b, 0x270c, 0x270d]);

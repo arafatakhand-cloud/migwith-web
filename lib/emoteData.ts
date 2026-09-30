@@ -823,3 +823,11 @@ export const ANIMATED_GROUPS: EmoteGroup[] = [
 ]
 }
 ];
+
+// 😆 MIGLIFE Animated — 32 frame-by-frame emotes (the app's MiglifeGifGroup):
+// each is ONE picture strip of 18 frames (128×128) in /public/emotes/gif, played
+// at 90 ms a frame, with a light movement on top. Codes ";m1" … ";m32".
+export const GIF_GROUP: EmoteGroup = { key: "gif", title: "MIGLIFE Animated", tab: "", ids: ["mlg_01", "mlg_02", "mlg_03", "mlg_04", "mlg_05", "mlg_06", "mlg_07", "mlg_08", "mlg_09", "mlg_10", "mlg_11", "mlg_12", "mlg_13", "mlg_14", "mlg_15", "mlg_16", "mlg_17", "mlg_18", "mlg_19", "mlg_20", "mlg_21", "mlg_22", "mlg_23", "mlg_24", "mlg_25", "mlg_26", "mlg_27", "mlg_28", "mlg_29", "mlg_30", "mlg_31", "mlg_32"] };
+
+export type GifMotion = "BOUNCE" | "SHAKE" | "BEAT" | "SWAY" | "FLOAT" | "WOBBLE";
+export const GIF_MOTION: Record<string, GifMotion> = {"mlg_01": "SHAKE", "mlg_02": "BOUNCE", "mlg_03": "BOUNCE", "mlg_04": "SWAY", "mlg_05": "FLOAT", "mlg_06": "SWAY", "mlg_07": "FLOAT", "mlg_08": "BOUNCE", "mlg_09": "BEAT", "mlg_10": "BEAT", "mlg_11": "SWAY", "mlg_12": "FLOAT", "mlg_13": "BOUNCE", "mlg_14": "FLOAT", "mlg_15": "SHAKE", "mlg_16": "FLOAT", "mlg_17": "FLOAT", "mlg_18": "BOUNCE", "mlg_19": "SWAY", "mlg_20": "SHAKE", "mlg_21": "FLOAT", "mlg_22": "SWAY", "mlg_23": "BEAT", "mlg_24": "WOBBLE", "mlg_25": "SHAKE", "mlg_26": "FLOAT", "mlg_27": "SWAY", "mlg_28": "BOUNCE", "mlg_29": "BOUNCE", "mlg_30": "SWAY", "mlg_31": "SWAY", "mlg_32": "SWAY"};

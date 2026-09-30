@@ -111,3 +111,30 @@ body {
     animation: none;
   }
 }
+
+/* 😆 MIGLIFE Animated emotes: an 18-frame picture strip (90 ms a frame) plus a
+   light movement on top, like the app's SpriteEmote. */
+.mlg-frames {
+  background-size: 1800% 100%;
+  background-repeat: no-repeat;
+  animation: mlg-frames 1.62s steps(18, jump-none) infinite;
+}
+@keyframes mlg-frames {
+  from { background-position: 0% 0; }
+  to { background-position: 100% 0; }
+}
+.mlg-BOUNCE { animation: mlg-bounce 0.81s ease-in-out infinite; }
+.mlg-SHAKE { animation: mlg-shake 0.36s linear infinite; }
+.mlg-BEAT { animation: mlg-beat 0.9s linear infinite; }
+.mlg-SWAY { animation: mlg-sway 1.62s ease-in-out infinite; transform-origin: 50% 92%; }
+.mlg-FLOAT { animation: mlg-float 1.62s ease-in-out infinite; }
+.mlg-WOBBLE { animation: mlg-wobble 1.08s ease-in-out infinite; }
+@keyframes mlg-bounce { 0%, 100% { transform: translateY(0) scale(1.03, 0.96); } 50% { transform: translateY(-8%) scale(1, 1); } }
+@keyframes mlg-shake { 0%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(4%) rotate(4deg); } 75% { transform: translateX(-4%) rotate(-4deg); } }
+@keyframes mlg-beat { 0% { transform: scale(1); } 12% { transform: scale(1.12); } 24% { transform: scale(1); } 36% { transform: scale(1.07); } 48%, 100% { transform: scale(1); } }
+@keyframes mlg-sway { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(7deg); } 75% { transform: rotate(-7deg); } }
+@keyframes mlg-float { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(4.5%); } 75% { transform: translateY(-4.5%); } }
+@keyframes mlg-wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(14deg); } 75% { transform: rotate(-14deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .mlg-frames, .mlg-BOUNCE, .mlg-SHAKE, .mlg-BEAT, .mlg-SWAY, .mlg-FLOAT, .mlg-WOBBLE { animation: none; }
+}

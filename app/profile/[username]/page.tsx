@@ -28,6 +28,7 @@ import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
+import { ProfileAchievementsRow } from "../../_components/Achievements";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -483,6 +484,8 @@ export default function ProfilePage() {
             )
           )}
         </div>
+        {/* 🏅 Achievement badges — anyone can tap to see them. */}
+        <ProfileAchievementsRow uid={profile.uid} isOwnProfile={isOwn} />
         <p className="mt-2 text-center text-xs text-[#35507E]">
           {followers.toLocaleString()} followers · {profile.following.toLocaleString()} following
         </p>

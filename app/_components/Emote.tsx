@@ -4,6 +4,9 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ANIMATED_GROUPS,
   EMOTE_CODES,
+  GIF_GROUP,
+  GIF_MOTION,
+  isSprite,
   EMOTE_GROUPS,
   emoteSrc,
   isAnimated,
@@ -56,8 +59,18 @@ function AnimatedEmote({ id, size, playing }: { id: string; size: number; playin
   return <span ref={box} className="inline-block align-middle" style={{ width: size, height: size }} aria-label={EMOTE_CODES[id]} />;
 }
 
+// 😆 MIGLIFE Animated: an 18-frame strip played by CSS (it plays in the picker too).
+function SpriteEmote({ id, size }: { id: string; size: number }) {
+  return (
+    <span className={`inline-block align-middle mlg-${GIF_MOTION[id] || "BOUNCE"}`} style={{ width: size, height: size }} aria-label={EMOTE_CODES[id]}>
+      <span className="mlg-frames block h-full w-full" style={{ backgroundImage: `url(${emoteSrc(id)})` }} />
+    </span>
+  );
+}
+
 export function EmoteView({ id, size, playing = true }: { id: string; size: number; playing?: boolean }) {
   if (isAnimated(id)) return <AnimatedEmote id={id} size={size} playing={playing} />;
+  if (isSprite(id)) return <SpriteEmote id={id} size={size} />;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -104,6 +117,7 @@ export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => 
   const [recent] = useState<string[]>(() => (typeof window === "undefined" ? [] : readRecentEmotes()));
   const sections: Section[] = [
     ...(recent.length ? [{ key: "recent", title: "Recent", tabId: null, glyph: "🕒", ids: recent }] : []),
+    { key: GIF_GROUP.key, title: "😆 MIGLIFE Animated", tabId: null, glyph: "😆", ids: GIF_GROUP.ids },
     ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids })),
     ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: ANIM_GLYPHS[i] ?? "✨", ids: g.ids })),
   ];

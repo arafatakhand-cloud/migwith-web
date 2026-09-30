@@ -9,6 +9,7 @@ import { useFounderPerms } from "../../lib/founder";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { FounderShell, input } from "./_Shell";
 import { AppDownloadLinkCard, LevelCurveCard, LuxuryBetSection, SecurityQuestionResetCard } from "./_MainFounderCards";
+import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
 // ID creation" switch, Luxury Bot sequence tiers and FOUNDER CREATE ID.
@@ -178,6 +179,7 @@ export default function SecretPage() {
       {/* miglife only, like the app: new level curve, Security Question Reset, 🎰 Luxury Bet. */}
       {f.isMigwith && (
         <>
+          <FounderAchievementsCard />
           <AppDownloadLinkCard />
           <LevelCurveCard />
           <SecurityQuestionResetCard />

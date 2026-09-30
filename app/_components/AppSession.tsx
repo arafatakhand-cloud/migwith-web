@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect } from "react";
 import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useBadges } from "../../lib/useBadges";
+import { useAchievementSync } from "./Achievements";
 
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
@@ -22,6 +23,8 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (uid) syncPush();
   }, [uid]);
+  // 🏅 Achievements the server checks on open (level, streak, friends, views …).
+  useAchievementSync(uid);
   return <SessionContext.Provider value={{ ...current, badges }}>{children}</SessionContext.Provider>;
 }
 
