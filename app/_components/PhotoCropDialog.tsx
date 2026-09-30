@@ -37,10 +37,21 @@ export function PhotoCropDialog({
   file,
   onCancel,
   onCropped,
+  frameAspect = 1,
+  round = true,
+  outWidth = OUT,
+  hint = "Drag to move · pinch or scroll to zoom · the circle is your profile picture",
 }: {
   file: File;
   onCancel: () => void;
   onCropped: (jpeg: Blob) => void;
+  /** Frame width ÷ height: 1 for the profile picture, 3.2 for the cover. */
+  frameAspect?: number;
+  /** Round frame (profile picture) or a rectangle (cover). */
+  round?: boolean;
+  /** Width of the saved JPEG; its height follows frameAspect. */
+  outWidth?: number;
+  hint?: string;
 }) {
   const [img, setImg] = useState<HTMLCanvasElement | null>(null);
   const [failed, setFailed] = useState(false);
@@ -72,14 +83,17 @@ export function PhotoCropDialog({
     return () => ro.disconnect();
   }, []);
 
-  const diameter = Math.min(box.w, box.h) * 0.86;
-  const baseScale = img ? diameter / Math.min(img.width, img.height) : 1;
+  // The frame: as big as fits (86 %), in the wanted shape.
+  const frameW = Math.min(box.w, box.h * frameAspect) * 0.86;
+  const frameH = frameW / frameAspect;
+  // Scale at which the photo just covers the frame.
+  const baseScale = img ? Math.max(frameW / img.width, frameH / img.height) : 1;
 
   const clamp = (o: { x: number; y: number }, z: number) => {
     if (!img) return o;
     const s = baseScale * z;
-    const maxX = Math.max(0, img.width * s - diameter) / 2;
-    const maxY = Math.max(0, img.height * s - diameter) / 2;
+    const maxX = Math.max(0, img.width * s - frameW) / 2;
+    const maxY = Math.max(0, img.height * s - frameH) / 2;
     return { x: Math.min(maxX, Math.max(-maxX, o.x)), y: Math.min(maxY, Math.max(-maxY, o.y)) };
   };
 
@@ -119,19 +133,20 @@ export function PhotoCropDialog({
   const useIt = () => {
     if (!img || saving) return;
     setSaving(true);
-    // Same numbers as the screen: which square of the photo is inside the circle.
+    // Same numbers as the screen: which part of the photo is inside the frame.
     const scale = baseScale * zoom;
-    const side = Math.max(1, Math.min(Math.min(img.width, img.height), Math.round(diameter / scale)));
+    const srcW = Math.max(1, Math.min(img.width, frameW / scale));
+    const srcH = Math.max(1, Math.min(img.height, frameH / scale));
     const cx = img.width / 2 - offset.x / scale;
     const cy = img.height / 2 - offset.y / scale;
-    const left = Math.round(Math.min(img.width - side, Math.max(0, cx - side / 2)));
-    const top = Math.round(Math.min(img.height - side, Math.max(0, cy - side / 2)));
+    const left = Math.min(img.width - srcW, Math.max(0, cx - srcW / 2));
+    const top = Math.min(img.height - srcH, Math.max(0, cy - srcH / 2));
     const out = document.createElement("canvas");
-    out.width = OUT;
-    out.height = OUT;
+    out.width = outWidth;
+    out.height = Math.round(outWidth / frameAspect);
     const g = out.getContext("2d")!;
     g.imageSmoothingQuality = "high";
-    g.drawImage(img, left, top, side, side, 0, 0, OUT, OUT);
+    g.drawImage(img, left, top, srcW, srcH, 0, 0, out.width, out.height);
     out.toBlob(
       (b) => {
         if (b) onCropped(b);
@@ -150,7 +165,7 @@ export function PhotoCropDialog({
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-[#0B0F1A] text-white">
       <p className="pt-5 text-center text-lg font-bold">Move and zoom</p>
-      <p className="px-4 pb-3 pt-1 text-center text-xs text-white/60">Drag to move · pinch or scroll to zoom · the circle is your profile picture</p>
+      <p className="px-4 pb-3 pt-1 text-center text-xs text-white/60">{hint}</p>
 
       <div
         ref={areaRef}
@@ -179,14 +194,14 @@ export function PhotoCropDialog({
                 transform: `translate(${(box.w - shownW) / 2 + offset.x}px, ${(box.h - shownH) / 2 + offset.y}px)`,
               }}
             />
-            {/* Dark cover with a round window + white ring. */}
+            {/* Dark cover with a window (round, or the cover's rectangle) + white ring. */}
             <div
-              className="pointer-events-none absolute rounded-full border-2 border-white"
+              className={`pointer-events-none absolute border-2 border-white ${round ? "rounded-full" : "rounded-lg"}`}
               style={{
-                width: diameter,
-                height: diameter,
-                left: (box.w - diameter) / 2,
-                top: (box.h - diameter) / 2,
+                width: frameW,
+                height: frameH,
+                left: (box.w - frameW) / 2,
+                top: (box.h - frameH) / 2,
                 boxShadow: "0 0 0 9999px rgba(0,0,0,.62)",
               }}
             />

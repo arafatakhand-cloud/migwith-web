@@ -437,6 +437,18 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
     const uid = user.uid;
+    // WHO MAY BE INVISIBLE (like the app): "Login as Invisible" and the
+    // Presence Status "INVISIBLE" only work for the Founder, Global Admin and
+    // Staff — and in a private room also for its owner and Super Mods.
+    // Everybody else enters normally, with "has entered" / "has left".
+    const me = profile.username.trim().toLowerCase();
+    const isPrivateRoom = info.exists && info.category === "user" && info.privacy !== "Public";
+    const invisibleAllowed =
+      permsRef.current.isOwnerUser ||
+      ["admin", "superadmin", "staff"].includes(profile.role) ||
+      (isPrivateRoom && ((!!info.ownerUid && info.ownerUid === uid) || info.superMods.includes(me)));
+    const hideMe = profile.invisible && invisibleAllowed; // no presence doc at all
+    const quietMe = profile.quiet && invisibleAllowed; // no entered / left lines
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
     const leaveKey = `${uid}|${roomName}`;
     let visitId: string | null = null;
@@ -454,9 +466,9 @@ function RoomView({ roomName }: { roomName: string }) {
     const leave = () => {
       if (left) return;
       left = true;
-      if (profile.invisible) return;
+      if (hideMe) return;
       deleteDoc(presenceRef).catch(() => {});
-      if (profile.quiet) return;
+      if (quietMe) return;
       setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, visitId)), {
         text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),
         sender: profile.username,
@@ -468,7 +480,7 @@ function RoomView({ roomName }: { roomName: string }) {
 
     (async () => {
       // Invisible: read the room without showing up in it (same as the app).
-      if (profile.invisible) {
+      if (hideMe) {
         // No presence doc to stamp, so the browser clock marks the visit.
         const saved = savedEntry(uid, roomName);
         const at = saved && isRoomOpen(uid, roomName) ? saved.at : Date.now() - 30_000;
@@ -538,7 +550,8 @@ function RoomView({ roomName }: { roomName: string }) {
           level: profile.level,
           levelBadgeIcon: profile.badge,
           shopBadges: [],
-          presenceStatus: "ONLINE",
+          // Hidden (allowed) people stay out of "Currently in this room".
+          presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
           lastSeen: serverTimestamp(),
           visitId,
           // A new visit gets a server-time mark (the app does the same).
@@ -570,7 +583,7 @@ function RoomView({ roomName }: { roomName: string }) {
       rememberRecentRoom(roomName);
       if (!left) addOpenRoom(uid, roomName);
 
-      if (!alreadyHere && !left && !profile.quiet) {
+      if (!alreadyHere && !left && !quietMe) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
           sender: profile.username,

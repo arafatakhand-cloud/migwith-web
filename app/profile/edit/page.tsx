@@ -44,6 +44,8 @@ export default function EditProfilePage() {
   const [uploading, setUploading] = useState("");
   // A picked profile photo opens the crop editor first (like the app).
   const [cropFile, setCropFile] = useState<File | null>(null);
+  // The cover gets the same editor with a wide frame (3.2 : 1, like the app).
+  const [coverCropFile, setCoverCropFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -170,7 +172,13 @@ export default function EditProfilePage() {
                 accept="image/*"
                 className="hidden"
                 disabled={!!uploading}
-                onChange={(e) => upload("cover", e.target.files?.[0])}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  if (!f.type.startsWith("image/")) return setError("Please choose an image.");
+                  setCoverCropFile(f);
+                }}
               />
             </label>
 
@@ -301,6 +309,20 @@ export default function EditProfilePage() {
           onCropped={(jpeg) => {
             setCropFile(null);
             upload("photo", jpeg);
+          }}
+        />
+      )}
+      {coverCropFile && (
+        <PhotoCropDialog
+          file={coverCropFile}
+          frameAspect={3.2}
+          round={false}
+          outWidth={1280}
+          hint="Drag to move · pinch or scroll to zoom · the frame is your cover photo"
+          onCancel={() => setCoverCropFile(null)}
+          onCropped={(jpeg) => {
+            setCoverCropFile(null);
+            upload("cover", jpeg);
           }}
         />
       )}

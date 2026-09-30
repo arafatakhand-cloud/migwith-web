@@ -84,7 +84,9 @@ export async function leaveRoomInBackground(uid: string, name: string) {
   const me = await getDoc(doc(db, "users", uid)).catch(() => null);
   const username = String(presence.get("username") || me?.get("username") || "");
   const level = Number(presence.get("level") || me?.get("level") || 1);
-  const quiet = me?.get("isInvisible") === true || String(me?.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
+  // "has left" only for someone really shown in the room: their presence doc
+  // exists (checked above) and is not INVISIBLE — the room decided who may hide.
+  const quiet = String(presence.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
   const visitId = String(presence.get("visitId") || "") || null;
   await deleteDoc(presenceRef).catch(() => {});
   if (quiet || !username) return;
