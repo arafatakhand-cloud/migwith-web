@@ -159,7 +159,7 @@ const HELP =
   "/beibei • /challenge • /champion • /cheers • /frenzy • /go • /gold • /huanhuan • /jingjing • /lose • /luck • /medal • /nini • /proud\n" +
   "/record • /taunt • /torch • /win • /winner • /yingying\n" +
   "/goal • /penalty • /freekick • /offside • /handball • /red • /yellow\n" +
-  "Friends: /fr @user (friend request) • /uf @user (unfriend) • /block @user • /unblock @user\n" +
+  "Friends: /f user (friend request) • /uf user (unfriend) • /block user • /unblock user\n" +
   "/pick [code] (Lucky Voucher) • /invite @user • /commands • /help";
 
 const pickVoucher = httpsCallable<{ roomId: string; code: string }, { amount?: number }>(functions, "pickVoucher");
@@ -316,11 +316,16 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
     return true;
   }
 
-  if (command === "/fr" || command === "/uf") {
+  // Friend request: /f <MIG ID> (the old /fr still works too) · unfriend: /uf <MIG ID>
+  if (command === "/f" || command === "/fr" || command === "/uf") {
     const who = (parts[1] || "").replace(/^@/, "").trim();
-    if (who && who.toLowerCase() !== u.toLowerCase()) {
-      if (command === "/fr") sendFriendRequest(ctx, who);
-      else unfriend(ctx, who);
+    if (!who) {
+      ctx.note(command === "/uf" ? "💔 Usage: /uf username — remove a friend" : "🤝 Usage: /f username — send a friend request");
+      return true;
+    }
+    if (who.toLowerCase() !== u.toLowerCase()) {
+      if (command === "/uf") unfriend(ctx, who);
+      else sendFriendRequest(ctx, who);
     }
     return true;
   }

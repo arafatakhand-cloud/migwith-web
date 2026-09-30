@@ -8,7 +8,7 @@ import { EmojiPicker } from "./EmojiPicker";
 // and a round white ➤ send button. Used by chat rooms and private chat.
 
 const round =
-  "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1E2B47] text-base shadow-inner disabled:opacity-40";
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1E2B47] text-sm shadow-inner disabled:opacity-40";
 
 export function ChatBar({
   text,
@@ -76,7 +76,7 @@ export function ChatBar({
         </button>
       </div>
     )}
-    <div className="flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
+    <div className="flex items-center gap-1 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
         <button

@@ -158,7 +158,7 @@ export function VoiceRecorder({
       onClick={onTap}
       disabled={disabled && state !== "recording"}
       title={state === "recording" ? "Stop recording" : "Record a voice message"}
-      className={`flex h-9 w-9 shrink-0 select-none items-center justify-center rounded-full border-[1.5px] text-base disabled:opacity-40 ${
+      className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border-[1.5px] text-sm disabled:opacity-40 ${
         state === "recording" ? "scale-110 border-red-400 bg-red-500" : "border-[#8C7B3E] bg-[#1E2B47]"
       }`}
     >
