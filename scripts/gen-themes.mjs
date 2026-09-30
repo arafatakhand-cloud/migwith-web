@@ -94,12 +94,14 @@ function darkSurface(hex) {
   if (l < 0.72) return null;
   return toHex(hslToRgb(s < 0.05 ? 222 : h, Math.min(s < 0.05 ? 0.35 : s, 0.35), 0.09 + (1 - l) * 0.55));
 }
-// (The app also keeps strongly coloured dark ink, because its screens draw text
-// through a theme colour; on the website all dark text must turn light.)
+// Same as the app's darkModeInk: text too dark to read on the dark pages is
+// made light. A coloured one keeps its colour (dark blue → light blue, dark
+// red → soft red); a grey / navy one becomes an off-white.
 function darkInk(hex) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
-  if (l > 0.36) return null;
-  return toHex(hslToRgb(h, Math.min(s, 0.35), 0.9 - l * 0.5));
+  if (l >= 0.52) return null;
+  if (s > 0.4) return toHex(hslToRgb(h, Math.min(s, 0.9), 0.7));
+  return toHex(hslToRgb(h, Math.min(s, 0.35), 0.88 - l * 0.3));
 }
 
 const PROPS = {

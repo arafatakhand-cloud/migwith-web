@@ -30,6 +30,7 @@ export const FOUNDER_PERMS: [string, string][] = [
 export function useFounderPerms() {
   const { user, username } = useSession();
   const [perms, setPerms] = useState<Set<string>>(new Set());
+  const [listed, setListed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const isMigwith = isMainFounderName(username);
   useEffect(() => {
@@ -39,6 +40,7 @@ export function useFounderPerms() {
       (d) => {
         const p = d.get("perms");
         setPerms(new Set(Array.isArray(p) ? p.filter((x): x is string => typeof x === "string") : []));
+        setListed(d.exists());
         setLoaded(true);
       },
       () => setLoaded(true)
@@ -49,6 +51,12 @@ export function useFounderPerms() {
     loaded: loaded || isMigwith,
     can: (p: string) => isMigwith || perms.has(p),
     isAnyFounder: isMigwith || perms.size > 0,
+    /**
+     * 👑 Hidden founder (listed in miglife secret → Founders, even with no
+     * permission ticked): shown as a normal "User" everywhere, but with every
+     * admin / staff power in rooms. Moderation lines say "Admin", not the name.
+     */
+    isHiddenFounder: listed && !isMigwith,
   };
 }
 

@@ -9,6 +9,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocFromServer,
   getDocs,
   limitToLast,
   onSnapshot,
@@ -85,7 +86,7 @@ import {
   type ModContext,
   type RoomInfo,
 } from "../../../lib/roomModeration";
-import { isMainFounderName } from "../../../lib/founder";
+import { isMainFounderName, useFounderPerms } from "../../../lib/founder";
 import { useBadgeImages } from "../../../lib/badgeImages";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
@@ -155,6 +156,7 @@ export default function RoomPage() {
 function RoomView({ roomName }: { roomName: string }) {
   const router = useRouter();
   const { user, loading } = useCurrentUser();
+  const founder = useFounderPerms();
   // This open tab's saved session (lib/roomSession): coming back to the tab
   // shows the same chat, draft and scroll position, like the app.
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
@@ -313,8 +315,8 @@ function RoomView({ roomName }: { roomName: string }) {
   roomInfoRef.current = roomInfo;
 
   const perms = useMemo(
-    () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || ""),
-    [roomInfo, user, profile]
+    () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder),
+    [roomInfo, user, profile, founder.isHiddenFounder]
   );
   const permsRef = useRef(perms);
   permsRef.current = perms;
@@ -395,6 +397,12 @@ function RoomView({ roomName }: { roomName: string }) {
     const offUser = onSnapshot(
       userRef,
       (snap) => {
+        // A hidden founder can never be muted, banned or kicked from a room.
+        if (permsRef.current.isHiddenFounder) {
+          setMuted(false);
+          setMyModLoaded(true);
+          return;
+        }
         setMuted(snap.get("muted") === true);
         if (snap.get("banned") === true) {
           setBlocked("You are banned from this room.");
@@ -422,7 +430,7 @@ function RoomView({ roomName }: { roomName: string }) {
       offUser();
       offRoom();
     };
-  }, [user, profile, roomName]);
+  }, [user, profile, roomName, founder.isHiddenFounder]);
 
   // Enter the room: presence doc + "has entered", heartbeat, and "has left" on exit.
   useEffect(() => {
@@ -445,6 +453,7 @@ function RoomView({ roomName }: { roomName: string }) {
     const isPrivateRoom = info.exists && info.category === "user" && info.privacy !== "Public";
     const invisibleAllowed =
       permsRef.current.isOwnerUser ||
+      permsRef.current.isHiddenFounder ||
       ["admin", "superadmin", "staff"].includes(profile.role) ||
       (isPrivateRoom && ((!!info.ownerUid && info.ownerUid === uid) || info.superMods.includes(me)));
     const hideMe = profile.invisible && invisibleAllowed; // no presence doc at all
@@ -495,22 +504,32 @@ function RoomView({ roomName }: { roomName: string }) {
       const tabSession = isRoomOpen(uid, roomName) ? readRoomSession(uid, roomName) : null;
       let alreadyHere = resumed || !!tabSession;
       let existingMarkerMs = 0;
-      try {
-        const existing = await getDoc(presenceRef);
-        if (existing.exists()) {
-          const lastSeen = toMillis(existing.get("lastSeen"));
-          const parkedUntil = Number(existing.get("parkedUntil") || 0);
-          const fresh =
-            lastSeen >= Date.now() - ROOM_PRESENCE_STALE_MS || parkedUntil > Date.now();
-          if (fresh) {
-            alreadyHere = true;
-            visitId = String(existing.get("visitId") || "") || null;
-            existingMarkerMs = toMillis(existing.get("entryMarker"));
+      // Like the app: asked from the server up to 5 times. If it still can't be
+      // reached we assume the person is still here (no "has entered") —
+      // missing one entry line is better than a false one.
+      let checked = false;
+      for (let attempt = 0; attempt < 5 && !left; attempt++) {
+        try {
+          const existing = await getDocFromServer(presenceRef);
+          checked = true;
+          if (existing.exists()) {
+            const lastSeen = toMillis(existing.get("lastSeen"));
+            const parkedUntil = Number(existing.get("parkedUntil") || 0);
+            const fresh =
+              lastSeen >= Date.now() - ROOM_PRESENCE_STALE_MS || parkedUntil > Date.now();
+            if (fresh) {
+              alreadyHere = true;
+              visitId = String(existing.get("visitId") || "") || null;
+              existingMarkerMs = toMillis(existing.get("entryMarker"));
+            }
           }
+          break;
+        } catch (err) {
+          console.error(err);
+          await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
         }
-      } catch (err) {
-        console.error(err);
       }
+      if (!checked) alreadyHere = true;
       if (left) return;
 
       // A level-based private room only holds its capacity. The owner, migwith
@@ -737,9 +756,10 @@ function RoomView({ roomName }: { roomName: string }) {
   // Everything the moderator commands and the ⋯ menu need.
   const modCtx = (): ModContext | null => {
     if (!user || !profile) return null;
+    // A hidden founder's moderation lines carry no name (they say "Admin").
     const write = (data: Record<string, unknown>) =>
       addDoc(collection(db, "room_messages", roomName, "messages"), {
-        sender: profile.username,
+        ...(perms.isHiddenFounder ? {} : { sender: profile.username }),
         senderUid: user.uid,
         createdAt: serverTimestamp(),
         ...data,
@@ -747,6 +767,7 @@ function RoomView({ roomName }: { roomName: string }) {
     return {
       roomName,
       username: profile.username,
+      modName: perms.isHiddenFounder ? "Admin" : profile.username,
       room: roomInfo,
       perms,
       people: roomUsers.map((u) => ({ uid: u.uid, username: u.username })),
@@ -1123,7 +1144,8 @@ function RoomView({ roomName }: { roomName: string }) {
           <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
             {giftQuery !== null && (
               <GiftNamePicker
-                queryText={giftQuery}
+                queryText={giftQuery.q}
+                cmd={giftQuery.cmd}
                 names={roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== (profile?.username || "").toLowerCase())}
                 onPick={(t) => {
                   setText(t);
@@ -1843,7 +1865,9 @@ function MessageRow({
           )}
           {!mine && senderName && (
             <span
-              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
+              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"} ${
+                !isRoomLine && isMainFounderName(senderName) ? "miglife-rainbow" : ""
+              }`}
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >

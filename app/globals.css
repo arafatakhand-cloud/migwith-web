@@ -138,3 +138,21 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .mlg-frames, .mlg-BOUNCE, .mlg-SHAKE, .mlg-BEAT, .mlg-SWAY, .mlg-FLOAT, .mlg-WOBBLE { animation: none; }
 }
+
+/* 🌈 miglife's name in the chat moves through the rainbow (like the app). */
+.miglife-rainbow {
+  background-image: linear-gradient(90deg, #ff1744, #ff9100, #ffd600, #00c853, #00b8d4, #2962ff, #aa00ff, #ff1744);
+  background-size: 130px 100%;
+  background-repeat: repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: miglife-rainbow 2.4s linear infinite;
+}
+@keyframes miglife-rainbow {
+  from { background-position: 0 0; }
+  to { background-position: 130px 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .miglife-rainbow { animation: none; }
+}

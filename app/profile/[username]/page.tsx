@@ -28,7 +28,8 @@ import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
-import { ProfileAchievementsRow } from "../../_components/Achievements";
+import { useProfileAchievements } from "../../_components/Achievements";
+import { badgeForLevel } from "../../../lib/rooms";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -47,7 +48,9 @@ type Profile = {
   gender: string;
   age: number;
   memberSince: string;
-  online: boolean;
+  /** Online / Away / Busy / Offline, like the app. */
+  presence: "Online" | "Away" | "Busy" | "Offline";
+  statusMessage: string;
   gifts: number;
   votes: number;
   following: number;
@@ -93,6 +96,49 @@ function roleInfo(raw: string): { label: string; color: string } | null {
 
 const sameName = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
 
+// Online = active in the last 90 seconds and not Offline / Invisible (like the app).
+function presenceLabel(raw: string, lastActiveMs: number): Profile["presence"] {
+  const st = raw.trim().toUpperCase();
+  if (Date.now() - lastActiveMs >= 90_000 || st === "OFFLINE" || st === "INVISIBLE") return "Offline";
+  if (st === "BUSY") return "Busy";
+  if (st === "AWAY") return "Away";
+  return "Online";
+}
+
+const PRESENCE_DOT: Record<Profile["presence"], [string, string]> = {
+  Online: ["#B6F25A", "#3E9E12"],
+  Busy: ["#FF8A80", "#C62828"],
+  Away: ["#FFD180", "#E08A00"],
+  Offline: ["#D0D4DA", "#8A9099"],
+};
+
+// One raised, glossy number tile in its own colour (the app's migTile).
+function Tile({ value, label, tint, onClick }: { value: string; label: string; tint: string; onClick?: () => void }) {
+  const style = {
+    background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
+    borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
+    boxShadow: `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
+  };
+  const inner = (
+    <>
+      <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-1/2 rounded-t-lg bg-gradient-to-b from-white/30 to-white/5" />
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-black/25" />
+      <span className="relative block text-xl font-bold leading-6 [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
+      <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
+    </>
+  );
+  const cls = "relative flex h-[60px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[9px] border text-white";
+  return onClick ? (
+    <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
+      {inner}
+    </button>
+  ) : (
+    <div className={cls} style={style}>
+      {inner}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const params = useParams<{ username: string }>();
   const router = useRouter();
@@ -120,8 +166,10 @@ export default function ProfilePage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
   const fr = useFriendRequests(me);
   const relation = fr.relationTo(username);
+  const badges = useProfileAchievements(profile?.uid, isOwn);
 
   const friendAction = async () => {
     setBusy("friend");
@@ -177,7 +225,8 @@ export default function ProfilePage() {
           memberSince: created
             ? new Date(created).toLocaleDateString(undefined, { month: "long", year: "numeric" })
             : "",
-          online: String(x.presenceStatus || "ONLINE").toUpperCase() === "ONLINE",
+          presence: presenceLabel(String(x.presenceStatus || ""), toMs(x.lastActiveAt)),
+          statusMessage: String(x.statusMessage || "").trim(),
           gifts: Array.isArray(x.unlockedGifts)
             ? x.unlockedGifts.reduce((s: number, g: any) => s + Number(g?.quantity || 0), 0)
             : 0,
@@ -372,206 +421,190 @@ export default function ProfilePage() {
   const role = roleInfo(profile.role);
   // "Owner" is shown only on your own profile, same as the app.
   const shownRole = role && !(role.label === "Owner" && !isOwn) ? role : null;
-  const genderIcon = sameName(profile.gender, "Female") ? "♀" : sameName(profile.gender, "Male") ? "♂" : "⚥";
+  const facts = [profile.gender, profile.age > 0 ? String(profile.age) : ""].filter(Boolean);
+  const bubble = profile.statusMessage || profile.bio;
+  const dot = PRESENCE_DOT[profile.presence];
+  const goBack = () => (window.history.length > 1 ? router.back() : router.push("/"));
 
-  const info: [string, string][] = [];
-  if (shownRole) info.push(["🎖", shownRole.label]);
-  info.push(["⭐", `Level ${profile.level}`]);
-  if (profile.gender) info.push([genderIcon, profile.gender]);
-  if (profile.age > 0) info.push(["🎂", `${profile.age} years old`]);
-  if (profile.relationship) info.push(["💍", profile.relationship]);
-  if (profile.country) info.push(["📍", profile.country]);
-  if (profile.fullName && !sameName(profile.fullName, username)) info.push(["👤", profile.fullName]);
-  if (profile.memberSince) info.push(["🗓", `Member since ${profile.memberSince}`]);
-  if (taggedDays !== null) info.push(["🎓", taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"]);
+  const menu: [string, () => void, string?][] = [["🏅 Achievements", badges.open]];
+  if (isOwn) {
+    menu.push(["✎ Edit Profile", () => router.push("/profile/edit")]);
+    menu.push(["👣 Who viewed me", () => setPeopleList("footprints")]);
+    menu.push(["❤️ Who voted me", () => setPeopleList("votes")]);
+  } else {
+    menu.push([hasVoted ? "💔 Remove vote" : "❤️ Vote", toggleVote]);
+    menu.push(["✉️ Message", () => router.push(chatHref(username))]);
+    menu.push([
+      relation === "friend"
+        ? "✓ Friends · Remove"
+        : relation === "sent"
+          ? "⏳ Request sent · Cancel"
+          : relation === "incoming"
+            ? "🤝 Accept friend request"
+            : "🤝 Add Friend",
+      friendAction,
+    ]);
+    menu.push([isBlocked ? `✓ Unblock ${username}` : `🚫 Block ${username}`, () => toggleMine("blockedUsers", !isBlocked), isBlocked ? "" : "text-rose-600"]);
+  }
 
   return (
     <PageShell light>
-      <div className="mx-auto max-w-2xl px-4 py-5 sm:px-6">
-        {/* Cover with the round photo over its bottom edge */}
-        <div className="relative">
-          <div className="flex aspect-[3.2] items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-b from-[#174EA6] to-[#0B2A5B] text-white shadow-md">
-            {profile.coverPhotoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-2xl font-black tracking-wide">MIG LIFE</span>
-            )}
-          </div>
-          <BackButton
-            variant="dark"
-            onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))}
-            className="absolute left-3 top-3 bg-black/20"
-          />
-          <div className="absolute -bottom-10 left-3 h-20 w-20 overflow-hidden rounded-full border-4 border-[#CFE6F9] bg-[#1E3A6B] text-white shadow-md sm:h-24 sm:w-24">
-            {profile.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
-            ) : (
-              <span className="flex h-full w-full items-center justify-center text-3xl font-black">
-                {username.slice(0, 1).toUpperCase()}
-              </span>
-            )}
-          </div>
+      <div className="mx-auto max-w-2xl bg-[#EEF3F8] pb-6">
+        {/* Title bar: back · miglife logo · the person's ID */}
+        <div className="flex items-center gap-2 bg-gradient-to-b from-[#3A3A3A] to-[#1C1C1C] px-2 py-2">
+          <BackButton variant="dark" onClick={goBack} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-192.png" alt="miglife" className="h-[38px] w-[38px] rounded-lg" />
+          <h1 data-notranslate className="min-w-0 flex-1 truncate pl-1 text-[21px] font-medium text-white">
+            {username}
+          </h1>
         </div>
 
-        {/* Name, role, level, online */}
-        <div className="ml-[100px] mt-2 min-h-[48px] sm:ml-[116px]">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <h1 data-notranslate className="truncate text-xl font-black text-[#0B2A5B] sm:text-2xl">{username}</h1>
-            {shownRole && (
+        {/* Cover photo (only when the person has one) */}
+        {profile.coverPhotoUrl && (
+          <div className="aspect-[3.2] bg-gradient-to-b from-[#174EA6] to-[#0F2C55]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
+          </div>
+        )}
+
+        {/* Photo (left, as tall as the details) + details (right) */}
+        <div className="flex gap-3 bg-white p-2.5">
+          <div
+            className="w-[140px] shrink-0 self-stretch rounded-xl p-[3px] shadow-[0_4px_12px_rgba(122,60,200,.45)] sm:w-[170px]"
+            style={{ background: "linear-gradient(135deg, #FFE08A, #FFA726, #FF4F8B, #9C5BFF, #3AA0E0, #FFE08A)" }}
+          >
+            <div className="h-full min-h-[180px] overflow-hidden rounded-[9px] border-[1.5px] border-white/95 bg-[#E8EEF5]">
+              {profile.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[54px] font-bold text-[#8FA3BF]">
+                  {username.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="min-w-0 flex-1 text-[15px] text-[#333]">
+            <div className="flex items-center gap-1.5">
+              <span data-notranslate className="truncate text-xl font-bold text-[#3AA0E0]">{username}</span>
+              {shownRole && (
+                <span className="shrink-0 text-[13px] font-bold" style={{ color: shownRole.color }}>
+                  🎖 {shownRole.label}
+                </span>
+              )}
+            </div>
+            {profile.fullName && !sameName(profile.fullName, username) && (
+              <p data-notranslate className="truncate text-base text-[#6E6E6E]">{profile.fullName}</p>
+            )}
+            <p className="mt-1 flex items-center gap-1.5">
               <span
-                className="rounded-lg px-2 py-0.5 text-xs font-bold text-white"
-                style={{ backgroundColor: shownRole.color }}
-              >
-                {shownRole.label}
-              </span>
+                className="h-[15px] w-[15px] rounded-full border"
+                style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})`, borderColor: dot[1] }}
+              />
+              {profile.presence}
+            </p>
+            <p className="mt-1">
+              miglife Level {profile.level} <span className="text-base">{badgeForLevel(profile.level)}</span>
+            </p>
+            {facts.length > 0 && <p className="mt-1 truncate">{facts.join(", ")}</p>}
+            {profile.relationship && <p className="mt-0.5 truncate text-sm">💍 {profile.relationship}</p>}
+            {profile.memberSince && <p className="mt-0.5 truncate text-sm">🗓 Member since {profile.memberSince}</p>}
+            {profile.country && <p className="mt-0.5 truncate text-sm">📍 {profile.country}</p>}
+            {taggedDays !== null && (
+              <p className="mt-0.5 truncate text-sm">🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}</p>
             )}
-            <span className="rounded-lg bg-gradient-to-r from-amber-200 to-amber-500 px-2 py-0.5 text-xs font-black text-neutral-900">
-              Lv {profile.level}
-            </span>
-          </div>
-          <p className={`mt-0.5 flex items-center gap-1.5 text-sm ${profile.online ? "text-emerald-600" : "text-[#6B7A99]"}`}>
-            <span className={`h-2 w-2 rounded-full ${profile.online ? "bg-emerald-500" : "bg-[#B5C2D6]"}`} />
-            {profile.online ? "Online" : "Offline"}
-          </p>
-        </div>
-
-        <div className="mt-3 px-1">
-          <p className="text-sm text-[#35507E]">@{username} · MIG LIFE member</p>
-          {profile.bio && <p data-notranslate className="mt-2 whitespace-pre-wrap text-[#0B2A5B]">{profile.bio}</p>}
-        </div>
-
-        {/* Details */}
-        <ul className="mt-4 border-y border-[#A9CBEB] px-1">
-          {info.map(([icon, text]) => (
-            <li key={icon + text} className="flex items-center gap-3 py-2.5 text-sm">
-              <span className="w-7 text-center text-lg">{icon}</span>
-              <span className="text-[#0B2A5B]">{text}</span>
-            </li>
-          ))}
-        </ul>
-
-        {/* Stats */}
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {(
-            [
-              ["👥", friends, "Friends", null],
-              ["🎁", giftCount, "Gifts", null],
-              // Any old number stored on the profile, plus the real votes.
-              ["❤️", profile.votes + voters, "Votes", "votes"],
-              ["👣", footprints, "Footprints", "footprints"],
-            ] as const
-          ).map(([icon, value, label, list]) =>
-            // Only the owner can tap Votes / Footprints to see who.
-            isOwn && list ? (
-              <button
-                key={label}
-                type="button"
-                onClick={() => setPeopleList(list)}
-                className="rounded-2xl bg-white py-3 text-center text-[#0B2A5B] shadow-sm ring-1 ring-[#BFD7F2] transition hover:bg-[#F4F9FF]"
-              >
-                <div className="text-lg">{icon}</div>
-                <div className="font-black">{Number(value).toLocaleString()}</div>
-                <div className="text-[11px] text-[#35507E]">{label} ›</div>
-              </button>
-            ) : (
-              <div key={label} className="rounded-2xl bg-white py-3 text-center text-[#0B2A5B] shadow-sm">
-                <div className="text-lg">{icon}</div>
-                <div className="font-black">{Number(value).toLocaleString()}</div>
-                <div className="text-[11px] text-[#35507E]">{label}</div>
+            {bubble && (
+              <div className="mt-1.5">
+                <span className="ml-[34px] block h-0 w-0 border-x-[7px] border-b-[7px] border-x-transparent border-b-[#5E5E5E]" />
+                <p data-notranslate className="whitespace-pre-wrap rounded-lg bg-[#5E5E5E] px-2.5 py-1.5 text-sm text-white">
+                  {bubble}
+                </p>
               </div>
-            )
-          )}
-        </div>
-        {/* 🏅 Achievement badges — anyone can tap to see them. */}
-        <ProfileAchievementsRow uid={profile.uid} isOwnProfile={isOwn} />
-        <p className="mt-2 text-center text-xs text-[#35507E]">
-          {followers.toLocaleString()} followers · {profile.following.toLocaleString()} following
-        </p>
-
-        {/* Actions */}
-        <div className="mt-4 space-y-2.5">
-          {isOwn ? (
-            <Link
-              href="/profile/edit"
-              className="block w-full rounded-2xl bg-[#0B2A5B] py-3 text-center font-bold text-white shadow transition hover:bg-[#123A78]"
-            >
-              ✎ Edit Profile
-            </Link>
-          ) : null}
-          {isOwn ? null : (
-            <>
-              <div className="flex gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => toggleMine("following", !isFollowing)}
-                  disabled={!!busy}
-                  className={`flex-1 rounded-2xl py-3 font-bold transition disabled:opacity-50 ${
-                    isFollowing ? "bg-[#0B2A5B] text-white" : "bg-[#2F80ED] text-white hover:bg-[#1F6FDC]"
-                  }`}
-                >
-                  {busy === "following" ? "Working…" : isFollowing ? "✓ Following" : "➕ Follow"}
-                </button>
+            )}
+            <div className="mt-2.5 flex items-center gap-2">
+              {isOwn ? (
                 <Link
-                  href={chatHref(username)}
-                  className="flex-1 rounded-2xl border border-[#BFD7F2] bg-white py-3 text-center font-bold text-[#174EA6] transition hover:bg-[#F4F9FF]"
+                  href="/profile/edit"
+                  className="rounded-lg border border-[#B8350A] bg-gradient-to-b from-[#FF9A3C] to-[#E8480C] px-[26px] py-2 text-base font-medium text-white"
                 >
-                  ✉️ Message
+                  Edit Profile
                 </Link>
-              </div>
-              <button
-                type="button"
-                onClick={toggleVote}
-                disabled={!!busy}
-                className={`w-full rounded-2xl py-3 font-bold text-white transition disabled:opacity-50 ${
-                  hasVoted ? "bg-[#2A3F63]" : "bg-[#E0303F] hover:bg-[#C92836]"
-                }`}
-              >
-                {busy === "vote" ? "Working…" : hasVoted ? "✓ Voted" : "❤️ Vote"}
-              </button>
-              <button
-                type="button"
-                onClick={friendAction}
-                disabled={!!busy}
-                className={`w-full rounded-2xl py-3 font-bold transition disabled:opacity-50 ${
-                  relation === "friend"
-                    ? "border border-emerald-400 bg-emerald-50 text-emerald-700"
-                    : relation === "sent"
-                      ? "border border-[#D5E3F5] bg-white text-[#5B6B8C]"
-                      : relation === "incoming"
-                        ? "bg-emerald-500 text-white hover:bg-emerald-600"
-                        : "bg-[#7B3FC7] text-white hover:bg-[#6A32B0]"
-                }`}
-              >
-                {busy === "friend"
-                  ? "Working…"
-                  : relation === "friend"
-                    ? "✓ Friends · Remove"
-                    : relation === "sent"
-                      ? "⏳ Request sent · Cancel"
-                      : relation === "incoming"
-                        ? "🤝 Accept friend request"
-                        : "🤝 Add Friend"}
-              </button>
-              <button
-                type="button"
-                onClick={() => toggleMine("blockedUsers", !isBlocked)}
-                disabled={!!busy}
-                className={`w-full rounded-2xl border-2 py-2.5 font-bold transition disabled:opacity-50 ${
-                  isBlocked ? "border-[#D5E3F5] bg-white text-[#5B6B8C]" : "border-rose-400 bg-white text-rose-600 hover:bg-rose-50"
-                }`}
-              >
-                {busy === "blockedUsers" ? "Working…" : isBlocked ? `✓ Unblock ${username}` : `🚫 Block ${username}`}
-              </button>
-            </>
-          )}
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={!!busy}
+                    onClick={() => toggleMine("following", !isFollowing)}
+                    className={`rounded-lg border border-[#B8350A] px-[26px] py-2 text-base font-medium text-white disabled:opacity-60 ${
+                      isFollowing ? "bg-gradient-to-b from-[#9A9A9A] to-[#6A6A6A]" : "bg-gradient-to-b from-[#FF9A3C] to-[#E8480C]"
+                    }`}
+                  >
+                    {busy === "following" ? "…" : isFollowing ? "Unfollow" : "Follow"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!!busy}
+                    onClick={toggleVote}
+                    aria-label={hasVoted ? "Remove vote" : "Vote"}
+                    className={`flex h-[38px] w-[38px] items-center justify-center rounded-lg text-[17px] disabled:opacity-60 ${
+                      hasVoted ? "bg-[#E0303F]" : "bg-[#6A6A6A]"
+                    }`}
+                  >
+                    {hasVoted ? "❤️" : "🤍"}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 4 × 2 grid of number tiles */}
+        <div className="mt-px space-y-2 bg-white px-2 py-2">
+          <div className="grid grid-cols-4 gap-1.5">
+            <Tile value={String(friends)} label="Friends" tint="#1E88E5" />
+            <Tile value={String(giftCount)} label="Gifts" tint="#E91E63" />
+            <Tile value={String(followers)} label="Followers" tint="#8E24AA" />
+            <Tile value={String(profile.following)} label="Following" tint="#00897B" />
+          </div>
+          <div className="grid grid-cols-4 gap-1.5">
+            <Tile value={String(badges.count)} label="Badges" tint="#F08C00" onClick={badges.open} />
+            {/* Any old number stored on the profile, plus the real votes. Only the owner sees who. */}
+            <Tile value={String(profile.votes + voters)} label="Votes" tint="#E53935" onClick={isOwn ? () => setPeopleList("votes") : undefined} />
+            <Tile value={String(footprints)} label="Views" tint="#43A047" onClick={isOwn ? () => setPeopleList("footprints") : undefined} />
+            <div className="relative">
+              <Tile value="…" label="More" tint="#546E7A" onClick={() => setMoreOpen((o) => !o)} />
+              {moreOpen && (
+                <>
+                  <button type="button" aria-label="Close" className="fixed inset-0 z-30 cursor-default" onClick={() => setMoreOpen(false)} />
+                  <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10">
+                    {menu.map(([label, act, cls]) => (
+                      <button
+                        key={label}
+                        type="button"
+                        disabled={!!busy}
+                        onClick={() => {
+                          setMoreOpen(false);
+                          act();
+                        }}
+                        className={`block w-full px-4 py-2.5 text-left text-[15px] hover:bg-[#F1F5FB] disabled:opacity-50 ${cls || "text-[#0B1F3A]"}`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
           {error && <p className="text-center text-sm text-rose-600">{error}</p>}
         </div>
 
-        {/* Gift history */}
-        <h2 className="mt-6 px-1 text-sm font-bold tracking-widest text-[#0B2A5B]">GIFT HISTORY</h2>
-        <ul className="mt-2 rounded-[18px] bg-white py-2 shadow-sm">
+        {/* Gift history, under a dark section bar */}
+        <h2 data-notranslate className="mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
+          {username}&apos;s Gift History
+        </h2>
+        <ul className="bg-white py-1">
           {gifts.length === 0 ? (
             <li className="flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B]">
               <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FB] text-xl">🎁</span>
@@ -579,7 +612,7 @@ export default function ProfilePage() {
             </li>
           ) : (
             gifts.map((g, i) => (
-              <li key={i} className="flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B]">
+              <li key={i} className={`flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B] ${i > 0 ? "border-t border-[#E3E6EA]" : ""}`}>
                 <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FB] text-xl">
                   {g.sent ? "🎁" : "🎉"}
                 </span>
@@ -597,6 +630,7 @@ export default function ProfilePage() {
           )}
         </ul>
       </div>
+      {badges.dialog}
       {peopleList && isOwn && user && profile && (
         <ProfilePeopleList kind={peopleList} ownerName={username} ownerUid={user.uid} onClose={() => setPeopleList(null)} />
       )}

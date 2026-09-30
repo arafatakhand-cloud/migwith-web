@@ -156,6 +156,21 @@ export function ProfileAchievementsRow({ uid, isOwnProfile }: { uid: string; isO
   );
 }
 
+/**
+ * For the profile's "Badges" tile (like the app's rememberAchievementBadgeCount
+ * + AchievementsDialogFor): how many badges this person has, and the full
+ * Achievements window, shown while `open`.
+ */
+export function useProfileAchievements(uid: string | undefined, isOwnProfile: boolean) {
+  const ach = useAchievements(uid);
+  const [open, setOpen] = useState(false);
+  return {
+    count: earnedMedals(ach).length,
+    open: () => setOpen(true),
+    dialog: open && uid ? <AchievementsDialog ach={ach} isOwnProfile={isOwnProfile} onClose={() => setOpen(false)} /> : null,
+  };
+}
+
 function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
   return (
     <button

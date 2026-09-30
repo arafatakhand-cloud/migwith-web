@@ -8,6 +8,7 @@ import { db } from "../../lib/firebase";
 // the room is listed under the top bar, one per row with their round photo
 // and ID. Typing part of a name narrows it; tapping a name fills in
 // "/gift <name> ". The first row, "Everyone", starts a Gift Shower.
+// The same list opens for /f, /fr (friend request) and /uf (unfriend).
 
 const photos = new Map<string, string>();
 
@@ -19,20 +20,26 @@ function photoOf(d: Record<string, unknown>): string {
   return "";
 }
 
-/** The names to list for this text, or null when the text isn't "/gift [part-of-a-name]". */
-export function giftPickerQuery(text: string): string | null {
+export type PickerQuery = { cmd: string; q: string };
+
+/** The names to list for this text, or null when it isn't "/gift|/fr|/uf|/f [part-of-a-name]". */
+export function giftPickerQuery(text: string): PickerQuery | null {
   const t = text.trimStart();
-  if (!/^\/gift(\s|$)/i.test(t)) return null;
-  const q = t.slice(5).trimStart();
-  return /\s/.test(q) ? null : q;
+  const m = /^(\/gift|\/fr|\/uf|\/f)(\s|$)/i.exec(t);
+  if (!m) return null;
+  const q = t.slice(m[1].length).trimStart();
+  return /\s/.test(q) ? null : { cmd: m[1].toLowerCase(), q };
 }
 
 export function GiftNamePicker({
   queryText,
+  cmd = "/gift",
   names,
   onPick,
 }: {
   queryText: string;
+  /** The command the picked name is put after. */
+  cmd?: string;
   /** Everyone in the room except me. */
   names: string[];
   onPick: (text: string) => void;
@@ -70,7 +77,7 @@ export function GiftNamePicker({
 
   return (
     <div className="absolute inset-x-0 top-0 z-30 max-h-[380px] overflow-y-auto bg-white shadow-lg" data-notranslate>
-      {!queryText && (
+      {cmd === "/gift" && !queryText && (
         <button
           type="button"
           onClick={() => onPick("/gift all ")}
@@ -89,7 +96,7 @@ export function GiftNamePicker({
           <button
             key={name}
             type="button"
-            onClick={() => onPick(`/gift ${name} `)}
+            onClick={() => onPick(`${cmd} ${name} `)}
             className="flex w-full items-center gap-3 px-3 py-[7px] text-left hover:bg-[#F1F5FB]"
           >
             {photo ? (

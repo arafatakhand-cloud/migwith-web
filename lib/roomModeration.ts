@@ -78,12 +78,14 @@ export function normRole(raw: unknown): string {
 
 export type RoomPerms = ReturnType<typeof roomPerms>;
 
-export function roomPerms(room: RoomInfo, uid: string, username: string, role: string) {
+export function roomPerms(room: RoomInfo, uid: string, username: string, role: string, hiddenFounder = false) {
   const me = username.trim().toLowerCase();
   const isOwnerUser = isMainFounderName(me);
-  const isAppStaffHere = isOwnerUser || ["admin", "staff", "superadmin"].includes(role);
-  const isRoomAdmin = isOwnerUser || ["admin", "superadmin"].includes(role);
-  const isRoomMod = ["staff", "admin", "superadmin"].includes(role);
+  // A hidden founder (miglife secret → Founders) is room admin and staff everywhere.
+  const isHiddenFounder = hiddenFounder && !isOwnerUser;
+  const isAppStaffHere = isOwnerUser || isHiddenFounder || ["admin", "staff", "superadmin"].includes(role);
+  const isRoomAdmin = isOwnerUser || isHiddenFounder || ["admin", "superadmin"].includes(role);
+  const isRoomMod = isHiddenFounder || ["staff", "admin", "superadmin"].includes(role);
   // A room made by migwith is Public; one made by anybody else is Private.
   const isUserRoom = room.exists && room.category === "user" && room.privacy !== "Public";
   const isThisRoomOwner = !!uid && !!room.ownerUid && room.ownerUid === uid;
@@ -94,6 +96,7 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
   const canModeratePrivate = isUserRoom && (canManagePrivate || isPrivateMod);
   return {
     isOwnerUser,
+    isHiddenFounder,
     isAppStaffHere,
     isRoomAdmin,
     isRoomMod,
@@ -117,6 +120,8 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
 export type ModContext = {
   roomName: string;
   username: string;
+  /** The name written into moderation lines: "Admin" for a hidden founder. */
+  modName: string;
   room: RoomInfo;
   perms: RoomPerms;
   /** People in the room right now. */
@@ -145,7 +150,7 @@ async function setAppRole(ctx: ModContext, name: string, role: "staff" | "user")
       role,
       operationId: "role_" + crypto.randomUUID().replace(/-/g, ""),
     });
-    if (role === "staff") ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.username}.`, "green");
+    if (role === "staff") ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
     else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
   } catch (e: any) {
     ctx.note(`${ctx.roomName}: Role update failed. ${e?.message || "Permission denied."}`);
@@ -233,13 +238,13 @@ export async function kickUser(ctx: ModContext, name: string) {
   try {
     await setDoc(
       targetDoc(ctx.roomName, row.username),
-      { uid: row.uid, username: row.username, kicked: true, updatedBy: ctx.username, updatedAt: serverTimestamp() },
+      { uid: row.uid, username: row.username, kicked: true, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
     ctx.post(
       ctx.perms.isUserRoom
-        ? `👢 ${row.username} was kicked from the room by ${ctx.username}.`
+        ? `👢 ${row.username} was kicked from the room by ${ctx.modName}.`
         : `👢 ${row.username} was kicked from the room.`
     );
   } catch (e) {
@@ -256,10 +261,10 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
   try {
     await setDoc(
       targetDoc(ctx.roomName, target.username),
-      { uid: target.uid, username: target.username, banned: ban, updatedBy: ctx.username, updatedAt: serverTimestamp() },
+      { uid: target.uid, username: target.username, banned: ban, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    const by = ctx.perms.isUserRoom ? ctx.username : "a room administrator";
+    const by = ctx.perms.isUserRoom ? ctx.modName : "a room administrator";
     if (ban) {
       removePresence(ctx.roomName, target.username).catch(() => {});
       ctx.postModeration(`🚫 ${target.username} has been banned from this room by ${by}.`, "red");
@@ -279,7 +284,7 @@ export async function muteUser(ctx: ModContext, name: string, mute: boolean) {
   try {
     await setDoc(
       targetDoc(ctx.roomName, target.username),
-      { uid: target.uid, username: target.username, muted: mute, updatedBy: ctx.username, updatedAt: serverTimestamp() },
+      { uid: target.uid, username: target.username, muted: mute, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
     ctx.post(mute ? `🔇 ${target.username} is muted in this room.` : `🔊 ${target.username} is unmuted in this room.`);
@@ -296,13 +301,13 @@ async function setRoomFlag(ctx: ModContext, field: "silenced" | "locked", on: bo
       {
         roomId: ctx.roomName,
         [field]: on,
-        ...(field === "locked" ? { lockedBy: ctx.username } : {}),
-        updatedBy: ctx.username,
+        ...(field === "locked" ? { lockedBy: ctx.modName } : {}),
+        updatedBy: ctx.modName,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
     );
-    const u = ctx.username;
+    const u = ctx.modName;
     ctx.post(
       field === "silenced"
         ? on
@@ -325,7 +330,7 @@ export async function setEntryLevel(ctx: ModContext, level: number) {
       doc(db, "rooms", ctx.roomName),
       {
         lockLevel: lvl,
-        updatedBy: ctx.username,
+        updatedBy: ctx.modName,
         updatedAt: serverTimestamp(),
         ...(ctx.perms.isUserRoom ? {} : { name: ctx.roomName }),
       },
@@ -333,8 +338,8 @@ export async function setEntryLevel(ctx: ModContext, level: number) {
     );
     ctx.post(
       lvl > 0
-        ? `🔒 ${ctx.username} set the entry level of this room to ${lvl}.`
-        : `🔓 ${ctx.username} removed the entry level limit. Anyone can enter.`
+        ? `🔒 ${ctx.modName} set the entry level of this room to ${lvl}.`
+        : `🔓 ${ctx.modName} removed the entry level limit. Anyone can enter.`
     );
   } catch (e) {
     fail(ctx, "Entry level")(e);
@@ -355,10 +360,10 @@ export async function setModerator(ctx: ModContext, name: string, add: boolean) 
   try {
     await updateDoc(doc(db, "rooms", ctx.roomName), {
       moderators: next,
-      updatedBy: ctx.username,
+      updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.username}.`, "green");
+    if (add) ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
     else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
   } catch (e) {
     fail(ctx, "Moderator update")(e);
@@ -381,10 +386,10 @@ export async function setSuperMod(ctx: ModContext, name: string, add: boolean) {
     await updateDoc(doc(db, "rooms", ctx.roomName), {
       superMods: supers,
       moderators: mods,
-      updatedBy: ctx.username,
+      updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`🌟 ${target.username} was made a Super Mod by ${ctx.username}.`, "green");
+    if (add) ctx.postModeration(`🌟 ${target.username} was made a Super Mod by ${ctx.modName}.`, "green");
     else ctx.postModeration(`🛑 ${target.username} is no longer a Super Mod.`, "red");
   } catch (e) {
     fail(ctx, "Super Mod update")(e);
