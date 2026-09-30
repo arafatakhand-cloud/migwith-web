@@ -25,6 +25,7 @@ import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
 import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
+import { withEmotes } from "../../_components/Emote";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
 import { BackButton } from "../../_components/BackButton";
@@ -465,7 +466,7 @@ export default function PrivateChatPage() {
                       <span className={`text-xl font-bold ${ink}`}>{m.giftName || m.text}</span>
                     </span>
                   ) : (
-                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>{body}</p>
+                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>{withEmotes(body, 15)}</p>
                   )}
                   {m.createdAtMs > 0 && <p className={`mt-0.5 text-[9px] ${sub}`}>{timeLabel(m.createdAtMs)}</p>}
                 </div>

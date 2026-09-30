@@ -1,16 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { EmotePanel } from "./Emote";
+import { removeLastEmoteOrChar } from "../../lib/emotes";
 
-// 😊 button that opens a small emoji grid above the chat box; a tap adds the
-// emoji to the message at the cursor.
-
-const EMOJIS = (
-  "😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 😉 😍 🥰 😘 😗 😋 😛 😜 🤪 😎 🤩 🥳 😏 " +
-  "😒 😔 😢 😭 😤 😠 😡 🤯 😳 🥺 😱 😴 🤔 🤫 🤭 🙄 😬 🤗 🤝 👍 👎 👏 🙌 🙏 " +
-  "💪 👋 ✌️ 🤞 👌 ❤️ 🧡 💛 💚 💙 💜 🖤 💔 💕 💯 🔥 ✨ ⭐ 🌹 🌸 🎉 🎁 🎂 🏆 " +
-  "👑 💎 💰 🪙 🎮 🎲 🃏 🏏 ⚽ 🍀 ☕ 🍕 🍔 🍫 🌙 ☀️ 🌈 🇧🇩"
-).split(" ");
+// 😊 button that opens the miglife emote panel (the app's emoji panel) above
+// the chat box; a tap adds that emote's code (":c12", ";a3" …) at the cursor.
 
 export function EmojiPicker({
   inputRef,
@@ -39,13 +34,16 @@ export function EmojiPicker({
     return () => document.removeEventListener("pointerdown", close);
   }, [open]);
 
-  const insert = (emoji: string) => {
+  // Like the app: the code goes in with a space after it, at the cursor.
+  const insert = (code: string) => {
     const el = inputRef.current;
     const start = el?.selectionStart ?? value.length;
     const end = el?.selectionEnd ?? value.length;
-    const next = (value.slice(0, start) + emoji + value.slice(end)).slice(0, 1000);
+    const before = value.slice(0, start);
+    const piece = (before && !/\s$/.test(before) ? " " : "") + code + " ";
+    const next = (before + piece + value.slice(end)).slice(0, 1000);
     onChange(next);
-    const caret = Math.min(start + emoji.length, next.length);
+    const caret = Math.min(start + piece.length, next.length);
     requestAnimationFrame(() => {
       el?.setSelectionRange(caret, caret);
     });
@@ -71,17 +69,8 @@ export function EmojiPicker({
         😊
       </button>
       {open && (
-        <div className={`absolute bottom-full ${inline ? "right-0" : "left-0"} z-40 mb-3 grid max-h-56 w-[272px] grid-cols-8 gap-0.5 overflow-y-auto rounded-2xl border border-[#D5E3F5] bg-white p-2 shadow-xl`}>
-          {EMOJIS.map((e) => (
-            <button
-              key={e}
-              type="button"
-              onClick={() => insert(e)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-xl hover:bg-[#EAF4FE]"
-            >
-              {e}
-            </button>
-          ))}
+        <div className={`absolute bottom-full ${inline ? "right-0" : "left-0"} z-40 mb-3 w-[min(360px,calc(100vw-16px))]`}>
+          <EmotePanel onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
         </div>
       )}
     </div>

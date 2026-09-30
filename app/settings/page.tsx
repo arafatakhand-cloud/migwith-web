@@ -12,6 +12,7 @@ import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
+import { ChatTextSizeCard } from "../_components/ChatTextSizeCard";
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -162,6 +163,9 @@ export default function SettingsPage() {
               <PastelCard icon="📧" title="Recovery Email" subtitle="For a forgotten PIN or password" color="#2F80ED" href="/security" />
               <PastelCard icon="❓" title="Security Question" subtitle="Required before you can change your password or PIN" color="#7B1FB8" onClick={() => setDialog("question")} />
             </div>
+
+            <SectionLabel>Chat</SectionLabel>
+            <ChatTextSizeCard />
 
             <SectionLabel>App preferences</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">

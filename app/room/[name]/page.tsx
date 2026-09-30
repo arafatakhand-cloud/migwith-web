@@ -87,6 +87,8 @@ import {
 } from "../../../lib/roomModeration";
 import { isMainFounderName } from "../../../lib/founder";
 import { useBadgeImages } from "../../../lib/badgeImages";
+import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
+import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
 
 type ChatMessage = SessionMessage;
@@ -662,6 +664,8 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Uploaded pictures for the badges in the enter/left lines.
   const badgeImages = useBadgeImages(!!user);
+  // Room text size (Settings → Chat), in px.
+  const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
   const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
@@ -1166,6 +1170,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   gameRoom={gameRoom}
                   colorOf={colorOf}
                   badgeImages={badgeImages}
+                  fontPx={fontPx}
                   gift={giftByName.get(m.giftName.toLowerCase()) || null}
                   onMention={(name) => {
                     // Tap a name: add "@name" to the message box, like the app.
@@ -1661,6 +1666,7 @@ function MessageRow({
   gameRoom,
   colorOf,
   badgeImages,
+  fontPx,
   gift,
   onMention,
   onReply,
@@ -1673,6 +1679,8 @@ function MessageRow({
   colorOf: (name: string) => string;
   /** Badge emoji -> uploaded picture, for the enter/left lines. */
   badgeImages: Record<string, string>;
+  /** Room text size in px (Settings → Chat). */
+  fontPx: number;
   gift: { icon: string; imageUrl: string } | null;
   onMention: (name: string) => void;
   onReply: (sender: string, snippet: string) => void;
@@ -1739,7 +1747,7 @@ function MessageRow({
   if (m.type === "me") {
     const c = m.text.indexOf(":");
     return (
-      <p className="px-1 text-left text-[15px] leading-snug" style={{ color: APP_RED }}>
+      <p className="px-1 text-left leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
         {c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text}
         {stamp}
       </p>
@@ -1772,7 +1780,7 @@ function MessageRow({
   const bot = gameBotLine(m.text) ?? luxuryLine(m.text) ?? luxuryBetLine(m.text);
   if (bot) {
     return (
-      <p className="whitespace-pre-wrap break-words px-1 text-left text-[15px] leading-snug">
+      <p className="whitespace-pre-wrap break-words px-1 text-left leading-snug" style={{ fontSize: fontPx }}>
         {bot}
         {stamp}
       </p>
@@ -1810,7 +1818,7 @@ function MessageRow({
     <SwipeToReply enabled={canReply} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
-        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} text-[15px] leading-snug text-left`}>
+        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`} style={{ fontSize: fontPx }}>
           {quote && (
             <span
               className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
@@ -1845,7 +1853,7 @@ function MessageRow({
           ) : (
             <>
               <span className="whitespace-pre-wrap break-words" style={{ color: INK }}>
-                {withMentions(body)}
+                {withEmotes(body, fontPx, (t, k) => withMentions(t, k))}
               </span>
               {stamp}
             </>
