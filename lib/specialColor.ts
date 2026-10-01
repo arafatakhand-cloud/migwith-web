@@ -5,12 +5,17 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { isMainFounderName } from "./founder";
 
-// 🌈 SPECIAL EDITION COLOUR — miglife's moving rainbow name, $50 a month, like
-// the app's SpecialColor.kt. Apply → Payment → Approve (Cloud Functions
+// 👑 VIP SUBSCRIPTION — miglife's moving rainbow name (1 mo $49 · 3 mo $139 ·
+// 6 mo $249 · 1 year $399), like the app's SpecialColor.kt. Apply → Payment → Approve (Cloud Functions
 // specialColorApply / founderSpecialColor).
 // special_colors/{uid} = { username, usernameLower, until (ms), style 1-5 }.
 
-export const SPECIAL_COLOR_USD = 50;
+export const SPECIAL_COLOR_USD = 49; // 1 month
+/** 👑 VIP Subscription plans: months → USD (same as VIP_PLAN_USD in index.js). */
+export const VIP_PLAN_USD: Record<number, number> = { 1: 49, 3: 139, 6: 249, 12: 399 };
+export const VIP_PLANS = [1, 3, 6, 12];
+export const vipPriceUsd = (months: number) => VIP_PLAN_USD[months] ?? months * SPECIAL_COLOR_USD;
+export const vipPlanLabel = (months: number) => (months === 12 ? "1 year" : `${months} month${months > 1 ? "s" : ""}`);
 export const SPECIAL_COLOR_SLOTS = 5;
 export const SPECIAL_COLOR_METHODS = ["bKash", "Nagad", "Rocket", "Binance", "PayPal", "Bank", "Other"];
 /** Taka per dollar until miglife sets app_settings/special_color.bdtRate. */

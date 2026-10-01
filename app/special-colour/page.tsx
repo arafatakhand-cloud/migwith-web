@@ -15,13 +15,16 @@ import {
   SPECIAL_COLOR_SLOTS,
   SPECIAL_COLOR_STYLE_NAMES,
   SPECIAL_COLOR_USD,
+  VIP_PLANS,
+  vipPlanLabel,
+  vipPriceUsd,
   useSpecialColors,
 } from "../../lib/specialColor";
 import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { RainbowName } from "../_components/RainbowName";
 
-// Explore › 🌈 Special Edition Colour, like the app's SpecialEditionColourPage:
+// Explore › 👑 VIP Subscription, like the app's SpecialEditionColourPage:
 // Apply (animation + months) → Payment (method + transaction ID) → Approve
 // (miglife, in the secret page). Everything is written by the
 // specialColorApply / founderSpecialColor Cloud Functions.
@@ -173,7 +176,7 @@ export default function SpecialColourPage() {
           <div className="flex items-center gap-2">
             <BackButton variant="dark" href="/explore" />
             <div>
-              <h1 className="text-[21px] font-extrabold">Special Edition Colour</h1>
+              <h1 className="text-[21px] font-extrabold">VIP Subscription</h1>
               <p className="text-[11px] tracking-[1.5px] text-[#FFD86B]">THE MIGLIFE RAINBOW NAME</p>
             </div>
           </div>
@@ -193,7 +196,7 @@ export default function SpecialColourPage() {
           </div>
 
           <div className="mt-3.5 flex gap-2.5">
-            <Pill title="💵 Price" value={`$${SPECIAL_COLOR_USD} / mo`} sub={taka(SPECIAL_COLOR_USD, bdtRate)} />
+            <Pill title="💵 Price" value={`from $${SPECIAL_COLOR_USD} / mo`} sub={taka(SPECIAL_COLOR_USD, bdtRate)} />
             <Pill title="🎟 Places left" value={`${placesLeft} / ${SPECIAL_COLOR_SLOTS}`} on={placesLeft > 0} />
             <Pill
               title="📅 Your colour"
@@ -282,10 +285,11 @@ export default function SpecialColourPage() {
                       })}
                     </div>
                   )}
-                  <p className="mt-3 text-[15px] font-bold">How many months?</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {[1, 3, 6, 12].map((m) => (
-                      <Chip key={m} label={`${m} mo · $${m * SPECIAL_COLOR_USD}`} on={months === m} onClick={() => setMonths(m)} />
+                  <p className="mt-3 text-[15px] font-bold">Choose your plan</p>
+                  {/* 2 × 2 so the longer labels fit on small phones */}
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {VIP_PLANS.map((m) => (
+                      <Chip key={m} label={`${vipPlanLabel(m)} · $${vipPriceUsd(m)}`} on={months === m} onClick={() => setMonths(m)} />
                     ))}
                   </div>
                   {active && (
@@ -295,17 +299,17 @@ export default function SpecialColourPage() {
                   )}
                 </Card>
                 <Card>
-                  <p className="text-[15px] font-bold">② Payment — send ${months * SPECIAL_COLOR_USD}</p>
+                  <p className="text-[15px] font-bold">② Payment — send ${vipPriceUsd(months)}</p>
                   {/* How much to send, in each currency */}
                   <div className="mt-1.5 rounded-xl border border-[#FF4F8B]/35 bg-gradient-to-r from-[#FF4F8B]/20 to-[#9C5BFF]/20 p-3">
                     <p className="text-[11px] text-[#B9A8E8]">Amount to send</p>
                     <p className="flex flex-wrap items-end gap-x-2">
-                      <span className="text-[26px] font-extrabold leading-8">{taka(months * SPECIAL_COLOR_USD, bdtRate)}</span>
+                      <span className="text-[26px] font-extrabold leading-8">{taka(vipPriceUsd(months), bdtRate)}</span>
                       <span className="pb-1 text-[11px] text-[#E8E2FF]">bKash · Nagad · Rocket · Bank</span>
                     </p>
-                    <p className="text-sm font-bold text-[#FFD86B]">${months * SPECIAL_COLOR_USD} USD · Binance · PayPal</p>
+                    <p className="text-sm font-bold text-[#FFD86B]">${vipPriceUsd(months)} USD · Binance · PayPal</p>
                     <p className="text-[11px] text-[#B9A8E8]">
-                      1 USD = ৳{bdtRate} · {months} month(s) × ${SPECIAL_COLOR_USD}. Send exactly this amount (your bKash/Nagad fee is extra).
+                      1 USD = ৳{bdtRate} · {vipPlanLabel(months)} plan. Send exactly this amount (your bKash/Nagad fee is extra).
                     </p>
                   </div>
                   <p className="mt-1.5 whitespace-pre-wrap rounded-[10px] bg-[#FFD86B]/15 p-2.5 text-[13px] text-[#FFE9A8]">
@@ -330,7 +334,7 @@ export default function SpecialColourPage() {
                   {busy
                     ? "Sending…"
                     : `③ SEND FOR APPROVAL · ${
-                        SPECIAL_COLOR_TAKA_METHODS.has(method) ? taka(months * SPECIAL_COLOR_USD, bdtRate) : `$${months * SPECIAL_COLOR_USD}`
+                        SPECIAL_COLOR_TAKA_METHODS.has(method) ? taka(vipPriceUsd(months), bdtRate) : `$${vipPriceUsd(months)}`
                       }`}
                 </button>
               </>

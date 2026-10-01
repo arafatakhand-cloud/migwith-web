@@ -29,6 +29,7 @@ import { withEmotes } from "../../_components/Emote";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
 import { BackButton } from "../../_components/BackButton";
+import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -74,6 +75,8 @@ export default function PrivateChatPage() {
   const friend = decodeURIComponent(params.username).trim();
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
+  // Emotes the same size as in room chat (Settings → Chat text size), like the app.
+  const emoteFontPx = chatPx(useChatTextSize());
 
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   const [friendLastActive, setFriendLastActive] = useState(0);
@@ -466,7 +469,7 @@ export default function PrivateChatPage() {
                       <span className={`text-xl font-bold ${ink}`}>{m.giftName || m.text}</span>
                     </span>
                   ) : (
-                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>{withEmotes(body, 15)}</p>
+                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>{withEmotes(body, emoteFontPx)}</p>
                   )}
                   {m.createdAtMs > 0 && <p className={`mt-0.5 text-[9px] ${sub}`}>{timeLabel(m.createdAtMs)}</p>}
                 </div>

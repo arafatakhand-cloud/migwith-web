@@ -8,7 +8,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { input } from "./_Shell";
 import { RainbowName } from "../_components/RainbowName";
-import { SPECIAL_COLOR_DEFAULT_BDT_RATE, SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYLE_NAMES, SPECIAL_COLOR_USD, taka } from "../../lib/specialColor";
+import { SPECIAL_COLOR_DEFAULT_BDT_RATE, SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYLE_NAMES, SPECIAL_COLOR_USD, taka, vipPriceUsd } from "../../lib/specialColor";
 
 // miglife-only cards of the app's "miglife secret" page: the one-time new
 // level curve step, Security Question Reset and the 🎰 Luxury Bet section
@@ -519,7 +519,7 @@ export function AppDownloadLinkCard() {
 }
 
 // ---------------------------------------------------------------------------
-// 🌈 Special Edition Colour (approve / reject / turn off), like the app's
+// 🌈 VIP Subscription (approve / reject / turn off), like the app's
 // FounderSpecialColorCard. Everything goes through founderSpecialColor.
 // ---------------------------------------------------------------------------
 const founderSpecialColor = httpsCallable<Record<string, unknown>, Record<string, any>>(functions, "founderSpecialColor");
@@ -588,10 +588,10 @@ export function FounderSpecialColorCard() {
   return (
     <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#FF4F8B] bg-white p-4">
       <p className="text-[17px]">
-        🌈 <RainbowName name="Special Edition Colour" />
+        🌈 <RainbowName name="VIP Subscription" />
       </p>
       <p className="text-xs text-gray-500">
-        ${SPECIAL_COLOR_USD} / month · only {SPECIAL_COLOR_SLOTS} people, each with their own animation · picture + voice sharing. Check the
+        $49 / 1 mo · $139 / 3 mo · $249 / 6 mo · $399 / 1 year · only {SPECIAL_COLOR_SLOTS} people, each with their own animation · picture + voice sharing. Check the
         payment, then Approve.
       </p>
 
@@ -635,7 +635,7 @@ export function FounderSpecialColorCard() {
               setMsg("Write a number, e.g. 123");
               return;
             }
-            run({ action: "setRate", rate: r }, `✅ Rate saved: 1 USD = ৳${rate} · $50 = ${taka(SPECIAL_COLOR_USD, r)}`, false);
+            run({ action: "setRate", rate: r }, `✅ Rate saved: 1 USD = ৳${rate} · $49 = ${taka(SPECIAL_COLOR_USD, r)}`, false);
           }}
           className="rounded-xl bg-[#1E9E55] px-4 py-2.5 font-bold text-white disabled:opacity-50"
         >
@@ -644,7 +644,8 @@ export function FounderSpecialColorCard() {
       </div>
       {Number(rate) > 0 && (
         <p className="text-[11px] text-gray-500">
-          Users will see: $50 = {taka(SPECIAL_COLOR_USD, Number(rate))} · 3 months = {taka(3 * SPECIAL_COLOR_USD, Number(rate))}
+          Users will see: 1 month = {taka(vipPriceUsd(1), Number(rate))} · 3 months = {taka(vipPriceUsd(3), Number(rate))} · 1 year ={" "}
+          {taka(vipPriceUsd(12), Number(rate))}
         </p>
       )}
 
