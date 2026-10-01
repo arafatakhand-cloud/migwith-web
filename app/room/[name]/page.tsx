@@ -37,7 +37,7 @@ import {
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
-import { addOpenRoom, isRoomOpen, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
+import { addOpenRoom, isRoomOpen, postStaleLeaveLineOnce, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
 import { useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
@@ -378,11 +378,41 @@ function RoomView({ roomName }: { roomName: string }) {
   }, [user, roomName]);
 
   // Who is in the room.
+  const staleHandled = useRef(new Set<string>());
   useEffect(() => {
     if (!user) return;
     return onSnapshot(
       collection(db, "room_presence", roomName, "users"),
       (snap) => {
+        // Like the app: someone gone 3 h without a heartbeat (and not parked)
+        // is cleared by whoever is watching, and their "has left" is posted
+        // right after (the rules only accept a watcher's line once the doc is
+        // gone). Invisible people were never announced, so no line.
+        const cutoff = Date.now() - ROOM_PRESENCE_STALE_MS;
+        snap.docs.forEach((d) => {
+          if (d.id === user.uid) return;
+          const seen = toMillis(d.get("lastSeen"));
+          const parked = Number(d.get("parkedUntil") || 0) > Date.now();
+          if (!seen || seen >= cutoff || parked || staleHandled.current.has(d.id + seen)) return;
+          staleHandled.current.add(d.id + seen);
+          const name = String(d.get("username") || "").trim();
+          const hidden = String(d.get("presenceStatus") || "").trim().toUpperCase() === "INVISIBLE";
+          const shop = d.get("shopBadges");
+          deleteDoc(d.ref)
+            .then(() => {
+              if (!hidden && name) {
+                postStaleLeaveLineOnce(
+                  roomName,
+                  d.id,
+                  name,
+                  Number(d.get("level") || 1),
+                  Array.isArray(shop) ? shop.map(String) : [],
+                  String(d.get("visitId") || "") || null
+                );
+              }
+            })
+            .catch(() => {});
+        });
         setPresence(
           snap.docs
             .filter((d) => d.get("presenceStatus") !== "INVISIBLE")
@@ -516,6 +546,8 @@ function RoomView({ roomName }: { roomName: string }) {
       // reached we assume the person is still here (no "has entered") —
       // missing one entry line is better than a false one.
       let checked = false;
+      // The old visit that ended by inactivity (doc still here, but stale).
+      let staleOld: { name: string; level: number; badges: string[]; visitId: string | null; hidden: boolean } | null = null;
       for (let attempt = 0; attempt < 5 && !left; attempt++) {
         try {
           const existing = await getDocFromServer(presenceRef);
@@ -529,6 +561,15 @@ function RoomView({ roomName }: { roomName: string }) {
               alreadyHere = true;
               visitId = String(existing.get("visitId") || "") || null;
               existingMarkerMs = toMillis(existing.get("entryMarker"));
+            } else {
+              const shop = existing.get("shopBadges");
+              staleOld = {
+                name: String(existing.get("username") || "").trim() || profile.username,
+                level: Number(existing.get("level") || 1),
+                badges: Array.isArray(shop) && shop.length ? shop.map(String) : profile.badges,
+                visitId: String(existing.get("visitId") || "") || null,
+                hidden: String(existing.get("presenceStatus") || "").trim().toUpperCase() === "INVISIBLE",
+              };
             }
           }
           break;
@@ -538,6 +579,12 @@ function RoomView({ roomName }: { roomName: string }) {
         }
       }
       if (!checked) alreadyHere = true;
+      // Like the app: the previous visit timed out (3 h without heartbeat) but
+      // nobody posted its "has left". Close that old visit FIRST, so the chat
+      // reads "has left" → "has entered". (The new visit gets a new visitId.)
+      if (staleOld && !alreadyHere && !staleOld.hidden && !left) {
+        await postStaleLeaveLineOnce(roomName, uid, staleOld.name, staleOld.level, staleOld.badges, staleOld.visitId);
+      }
       if (left) return;
 
       // A level-based private room only holds its capacity. The owner, migwith

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { deleteDoc, doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, getDocFromServer, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
@@ -105,4 +105,32 @@ export async function leaveAllOpenRooms(uid: string) {
   rooms.forEach((r) => dropRoomSession(uid, r));
   write(uid, []);
   await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
+}
+
+/**
+ * "X has left." for a visit that ended by INACTIVITY (no heartbeat for 3 h),
+ * like the app's postStaleRoomLeaveLineOnce: posted at most once — if the
+ * server or another phone already wrote this visit's line, it is left alone.
+ */
+export async function postStaleLeaveLineOnce(
+  roomId: string,
+  uid: string,
+  name: string,
+  level: number,
+  badges: string[],
+  visitId: string | null
+): Promise<void> {
+  const ref = doc(db, "room_messages", roomId, "messages", leaveDocId(uid, visitId));
+  try {
+    if ((await getDocFromServer(ref)).exists()) return;
+  } catch {
+    // can't tell — try to write it; the rules / same id keep it single
+  }
+  await setDoc(ref, {
+    text: presenceLine(roomId, name, level, false, badges),
+    sender: name,
+    senderUid: uid,
+    type: "room_leave",
+    createdAt: serverTimestamp(),
+  }).catch(() => {});
 }
