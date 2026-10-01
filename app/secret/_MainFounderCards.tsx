@@ -7,6 +7,8 @@ import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { input } from "./_Shell";
+import { RainbowName } from "../_components/RainbowName";
+import { SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYLE_NAMES, SPECIAL_COLOR_USD } from "../../lib/specialColor";
 
 // miglife-only cards of the app's "miglife secret" page: the one-time new
 // level curve step, Security Question Reset and the 🎰 Luxury Bet section
@@ -511,6 +513,168 @@ export function AppDownloadLinkCard() {
           Current: {saved}
         </a>
       )}
+      <Message text={msg} failed={failed} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 🌈 Special Edition Colour (approve / reject / turn off), like the app's
+// FounderSpecialColorCard. Everything goes through founderSpecialColor.
+// ---------------------------------------------------------------------------
+const founderSpecialColor = httpsCallable<Record<string, unknown>, Record<string, any>>(functions, "founderSpecialColor");
+type SpecialRow = Record<string, any>;
+const spDate = (ms: number) =>
+  new Date(ms).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit" });
+
+export function FounderSpecialColorCard() {
+  const [pending, setPending] = useState<SpecialRow[]>([]);
+  const [active, setActive] = useState<SpecialRow[]>([]);
+  const [paymentInfo, setPaymentInfo] = useState("");
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "special_color"),
+        (d) => {
+          setApplyOpen(d.get("applyOpen") === true);
+          setPaymentInfo((cur) => cur || String(d.get("paymentInfo") || ""));
+        },
+        () => {}
+      ),
+    []
+  );
+
+  const call = useCallback(async (args: Record<string, unknown>) => {
+    try {
+      return (await founderSpecialColor(args)).data;
+    } catch (e) {
+      setFailed(true);
+      setMsg(`❌ ${(e as any)?.message || "failed"}`);
+      return null;
+    }
+  }, []);
+  const reload = useCallback(async () => {
+    const d = await call({ action: "list" });
+    if (!d) return;
+    setPending(Array.isArray(d.pending) ? d.pending : []);
+    setActive(Array.isArray(d.active) ? d.active : []);
+  }, [call]);
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  const run = async (args: Record<string, unknown>, ok: string, again = true) => {
+    setBusy(true);
+    setFailed(false);
+    setMsg(null);
+    const r = await call(args);
+    if (r) setMsg(ok);
+    if (again) await reload();
+    setBusy(false);
+    return r;
+  };
+
+  return (
+    <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#FF4F8B] bg-white p-4">
+      <p className="text-[17px]">
+        🌈 <RainbowName name="Special Edition Colour" />
+      </p>
+      <p className="text-xs text-gray-500">
+        ${SPECIAL_COLOR_USD} / month · only {SPECIAL_COLOR_SLOTS} people, each with their own animation · picture + voice sharing. Check the
+        payment, then Approve.
+      </p>
+
+      <div className={`flex items-center rounded-xl px-3 py-2 ${applyOpen ? "bg-[#1E9E55]/10" : "bg-[#C0123C]/10"}`}>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-bold">{applyOpen ? "🟢 Applications ON" : "🔴 Applications OFF"}</p>
+          <p className="text-[11px] text-gray-500">{applyOpen ? "People can apply now." : "Nobody can apply. Existing colours keep working."}</p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={applyOpen}
+          disabled={busy}
+          onClick={() => run({ action: "setOpen", open: !applyOpen }, applyOpen ? "Applications OFF" : "✅ Applications ON", false)}
+          className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${applyOpen ? "bg-[#1E9E55]" : "bg-gray-300"}`}
+        >
+          <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${applyOpen ? "left-6" : "left-1"}`} />
+        </button>
+      </div>
+
+      <p className="text-[13px] font-bold">Where to pay (shown to users)</p>
+      <textarea
+        className={`${input} min-h-[64px]`}
+        value={paymentInfo}
+        maxLength={1000}
+        onChange={(e) => setPaymentInfo(e.target.value)}
+        placeholder="e.g. bKash 01XXXXXXXXX (Personal) · Binance UID 12345678"
+      />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => run({ action: "setPaymentInfo", paymentInfo }, "✅ Saved", false)}
+        className="rounded-xl bg-[#9C5BFF] px-4 py-2 font-bold text-white disabled:opacity-50"
+      >
+        SAVE PAYMENT DETAILS
+      </button>
+
+      <p className="text-sm font-bold">Waiting ({pending.length})</p>
+      {pending.length === 0 && <p className="text-xs text-gray-500">No requests waiting.</p>}
+      {pending.map((r) => (
+        <div key={r.id} className="rounded-xl bg-[#FF4F8B]/10 p-2.5">
+          <p className="text-sm font-bold">
+            {r.username} · {r.months} month(s) · ${r.amountUsd} · {SPECIAL_COLOR_STYLE_NAMES[Number(r.style) || 0] || ""}
+          </p>
+          <p className="whitespace-pre-line text-xs text-gray-500">
+            {`${r.method} · Trx ${r.trxId}${r.sender ? ` · from ${r.sender}` : ""}${r.note ? `\n“${r.note}”` : ""}\n${spDate(Number(r.createdAtMs) || 0)}`}
+          </p>
+          <div className="mt-1.5 flex gap-2">
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run({ action: "approve", id: r.id }, `✅ ${r.username} approved`)}
+              className="rounded-[10px] bg-[#1E9E55] px-4 py-2 font-bold text-white disabled:opacity-50"
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => run({ action: "reject", id: r.id, reason: "Payment not found" }, `Rejected ${r.username}`)}
+              className="rounded-[10px] bg-[#C0123C] px-4 py-2 font-bold text-white disabled:opacity-50"
+            >
+              Reject
+            </button>
+          </div>
+        </div>
+      ))}
+
+      <p className="text-sm font-bold">
+        Active ({active.length} / {SPECIAL_COLOR_SLOTS} places)
+      </p>
+      {active.map((a) => (
+        <div key={a.uid} className="flex items-center">
+          <div className="min-w-0 flex-1">
+            <RainbowName name={String(a.username || "")} style={Number(a.style) || 1} className="text-[15px]" />
+            <p className="text-[11px] text-gray-500">
+              {SPECIAL_COLOR_STYLE_NAMES[Number(a.style) || 0] || ""} · until {spDate(Number(a.until) || 0)}
+            </p>
+          </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => run({ action: "revoke", uid: a.uid }, `Turned off ${a.username}`)}
+            className="rounded-lg p-2 text-xs font-bold text-[#C0123C] disabled:opacity-50"
+          >
+            Turn off
+          </button>
+        </div>
+      ))}
       <Message text={msg} failed={failed} />
     </div>
   );

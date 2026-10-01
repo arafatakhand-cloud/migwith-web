@@ -30,6 +30,8 @@ import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
 import { useProfileAchievements } from "../../_components/Achievements";
 import { badgeForLevel } from "../../../lib/rooms";
+import { RainbowName } from "../../_components/RainbowName";
+import { useSpecialColors } from "../../../lib/specialColor";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -170,6 +172,7 @@ export default function ProfilePage() {
   const fr = useFriendRequests(me);
   const relation = fr.relationTo(username);
   const badges = useProfileAchievements(profile?.uid, isOwn);
+  const special = useSpecialColors();
 
   const friendAction = async () => {
     setBusy("friend");
@@ -495,7 +498,12 @@ export default function ProfilePage() {
           </div>
           <div className="min-w-0 flex-1 text-[15px] text-[#333]">
             <div className="flex items-center gap-1.5">
-              <span data-notranslate className="truncate text-xl font-bold text-[#3AA0E0]">{username}</span>
+              {special.has(username) ? (
+                // 🌈 Special Edition Colour / miglife
+                <RainbowName name={username} style={special.styleOf(username)} className="truncate text-xl" />
+              ) : (
+                <span data-notranslate className="truncate text-xl font-bold text-[#3AA0E0]">{username}</span>
+              )}
               {shownRole && (
                 <span className="shrink-0 text-[13px] font-bold" style={{ color: shownRole.color }}>
                   🎖 {shownRole.label}

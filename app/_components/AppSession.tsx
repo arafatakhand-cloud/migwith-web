@@ -5,6 +5,7 @@ import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useBadges } from "../../lib/useBadges";
 import { useAchievementSync } from "./Achievements";
+import { useSpecialColorListener } from "../../lib/specialColor";
 
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
@@ -25,6 +26,8 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   }, [uid]);
   // 🏅 Achievements the server checks on open (level, streak, friends, views …).
   useAchievementSync(uid);
+  // 🌈 Who has the Special Edition Colour (rainbow name) right now.
+  useSpecialColorListener(uid);
   return <SessionContext.Provider value={{ ...current, badges }}>{children}</SessionContext.Provider>;
 }
 

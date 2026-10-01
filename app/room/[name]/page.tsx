@@ -91,6 +91,8 @@ import { useBadgeImages } from "../../../lib/badgeImages";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
+import { RainbowName } from "../../_components/RainbowName";
+import { useSpecialColors } from "../../../lib/specialColor";
 
 type ChatMessage = SessionMessage;
 
@@ -157,11 +159,13 @@ function RoomView({ roomName }: { roomName: string }) {
   const router = useRouter();
   const { user, loading } = useCurrentUser();
   const founder = useFounderPerms();
+  const specialColors = useSpecialColors();
   // This open tab's saved session (lib/roomSession): coming back to the tab
   // shows the same chat, draft and scroll position, like the app.
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
 
   const [profile, setProfile] = useState<Profile | null>(null);
+  const specialHasMe = specialColors.has(profile?.username);
   const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages ?? []);
   // Start of this visit (see savedEntry); null until known.
   const [sinceMs, setSinceMs] = useState<number | null>(initial?.sinceMs ?? null);
@@ -315,8 +319,12 @@ function RoomView({ roomName }: { roomName: string }) {
   roomInfoRef.current = roomInfo;
 
   const perms = useMemo(
-    () => roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder),
-    [roomInfo, user, profile, founder.isHiddenFounder]
+    () => {
+      const p = roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder);
+      // 🌈 Special Edition Colour holders may always share pictures and voice.
+      return specialHasMe ? { ...p, canShareMedia: true } : p;
+    },
+    [roomInfo, user, profile, founder.isHiddenFounder, specialHasMe]
   );
   const permsRef = useRef(perms);
   permsRef.current = perms;
@@ -1822,6 +1830,8 @@ function MessageRow({
     );
   }
 
+  // 🌈 miglife + Special Edition Colour holders: rainbow names.
+  const special = useSpecialColors();
   // "name: message" — the sender is whatever comes before the first colon,
   // like the app (local notices such as "Bangladesh: …" included).
   const colon = m.text.indexOf(":");
@@ -1864,13 +1874,13 @@ function MessageRow({
             </span>
           )}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too. */}
-          {(!mine || (!isRoomLine && isMainFounderName(senderName))) && senderName && (
+          {(!mine || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
-              {!isRoomLine && isMainFounderName(senderName) ? <RainbowName name={senderName} /> : senderName}:
+              {!isRoomLine && special.has(senderName) ? <RainbowName name={senderName} style={special.styleOf(senderName)} /> : senderName}:
             </span>
           )}
           {m.type === "image" && m.imageUrl ? (
@@ -1936,24 +1946,5 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
         {time && <p className="mt-1.5 text-right text-[10px] text-[#9A8FA6]">{time}</p>}
       </div>
     </div>
-  );
-}
-
-// 🌈 miglife's name: each letter its own rainbow colour (48° apart), and the
-// whole rainbow slides along — like the app's appendMiglifeRainbow.
-function RainbowName({ name }: { name: string }) {
-  return (
-    <>
-      {Array.from(name).map((ch, i) => (
-        <span
-          key={i}
-          className="miglife-rainbow-ch"
-          // Start letter i at hue i·48° of the 360° → 0° cycle.
-          style={{ animationDelay: `${-(((360 - ((i * 48) % 360)) % 360) / 360) * 2.4}s` }}
-        >
-          {ch}
-        </span>
-      ))}
-    </>
   );
 }

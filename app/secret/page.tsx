@@ -8,7 +8,7 @@ import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { FounderShell, input } from "./_Shell";
-import { AppDownloadLinkCard, LevelCurveCard, LuxuryBetSection, SecurityQuestionResetCard } from "./_MainFounderCards";
+import { AppDownloadLinkCard, FounderSpecialColorCard, LevelCurveCard, LuxuryBetSection, SecurityQuestionResetCard } from "./_MainFounderCards";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
@@ -180,6 +180,7 @@ export default function SecretPage() {
       {f.isMigwith && (
         <>
           <FounderAchievementsCard />
+          <FounderSpecialColorCard />
           <AppDownloadLinkCard />
           <LevelCurveCard />
           <SecurityQuestionResetCard />

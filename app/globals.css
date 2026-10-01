@@ -139,23 +139,59 @@ body {
   .mlg-frames, .mlg-BOUNCE, .mlg-SHAKE, .mlg-BEAT, .mlg-SWAY, .mlg-FLOAT, .mlg-WOBBLE { animation: none; }
 }
 
-/* 🌈 miglife's name in the chat: every letter its own rainbow colour, and the
-   colours move along (like the app's appendMiglifeRainbow). Each letter runs
-   the same cycle, started at its own point (see RainbowName). */
-.miglife-rainbow-ch {
-  animation: miglife-rainbow-ch 2.4s linear infinite;
+/* 🌈 Rainbow names (miglife + Special Edition Colour), like the app's
+   appendMiglifeRainbow: every letter its own colour, the colours move. Each
+   letter runs the same cycle from its own starting point (see RainbowName);
+   --rs / --rl are the saturation / lightness of that style. */
+.rb-ch { --rs: 89%; --rl: 55%; }
+.rb-up { animation-name: rb-up; animation-timing-function: linear; animation-iteration-count: infinite; }
+.rb-down { animation-name: rb-down; animation-timing-function: linear; animation-iteration-count: infinite; }
+.rb-neon { animation: rb-up 2.4s linear infinite, rb-pulse 0.6s ease-in-out infinite; }
+.rb-fire { animation: rb-fire 2.4s linear infinite; }
+.rb-spark { color: var(--rc); animation: rb-spark 2.4s linear infinite; }
+@keyframes rb-up {
+  0.0% { color: hsl(0 var(--rs) var(--rl)); }
+  16.67% { color: hsl(60 var(--rs) var(--rl)); }
+  33.33% { color: hsl(120 var(--rs) var(--rl)); }
+  50.0% { color: hsl(180 var(--rs) var(--rl)); }
+  66.67% { color: hsl(240 var(--rs) var(--rl)); }
+  83.33% { color: hsl(300 var(--rs) var(--rl)); }
+  100.0% { color: hsl(360 var(--rs) var(--rl)); }
 }
-@keyframes miglife-rainbow-ch {
-  0.0% { color: hsl(360 89% 55%); }
-  16.67% { color: hsl(300 89% 55%); }
-  33.33% { color: hsl(240 89% 55%); }
-  50.0% { color: hsl(180 89% 55%); }
-  66.67% { color: hsl(120 89% 55%); }
-  83.33% { color: hsl(60 89% 55%); }
-  100.0% { color: hsl(0 89% 55%); }
+@keyframes rb-down {
+  0.0% { color: hsl(360 var(--rs) var(--rl)); }
+  16.67% { color: hsl(300 var(--rs) var(--rl)); }
+  33.33% { color: hsl(240 var(--rs) var(--rl)); }
+  50.0% { color: hsl(180 var(--rs) var(--rl)); }
+  66.67% { color: hsl(120 var(--rs) var(--rl)); }
+  83.33% { color: hsl(60 var(--rs) var(--rl)); }
+  100.0% { color: hsl(0 var(--rs) var(--rl)); }
+}
+@keyframes rb-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(0.62); }
+}
+@keyframes rb-fire {
+  0.0% { color: hsl(107.5 100% 55%); }
+  8.33% { color: hsl(153.8 100% 55%); }
+  16.67% { color: hsl(187.6 100% 55%); }
+  25.0% { color: hsl(200.0 100% 55%); }
+  33.33% { color: hsl(187.6 100% 55%); }
+  41.67% { color: hsl(153.8 100% 55%); }
+  50.0% { color: hsl(107.5 100% 55%); }
+  58.33% { color: hsl(61.2 100% 55%); }
+  66.67% { color: hsl(27.4 100% 55%); }
+  75.0% { color: hsl(15.0 100% 55%); }
+  83.33% { color: hsl(27.4 100% 55%); }
+  91.67% { color: hsl(61.2 100% 55%); }
+  100.0% { color: hsl(107.5 100% 55%); }
+}
+@keyframes rb-spark {
+  0%, 11% { color: hsl(50 100% 95%); text-shadow: 0 0 6px #fff6c8; }
+  11.5%, 100% { color: var(--rc); text-shadow: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .miglife-rainbow-ch { animation-play-state: paused; }
+  .rb-up, .rb-down, .rb-neon, .rb-fire, .rb-spark { animation-play-state: paused; }
 }
 
 /* The profile's stylish frame (photo and cover): gold/pink/purple/blue ring
