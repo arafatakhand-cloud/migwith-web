@@ -587,7 +587,16 @@ function RoomView({ roomName }: { roomName: string }) {
           await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
         }
       }
-      if (!checked) alreadyHere = true;
+      if (!checked) {
+        alreadyHere = true;
+        // Like the app: the server couldn't be reached (network not ready yet
+        // after the laptop/phone woke up). A recent saved visit is resumed
+        // instead of starting fresh, which hid everything said before now.
+        const saved = savedEntry(uid, roomName);
+        if (saved && saved.visitId !== "invisible" && Date.now() - saved.at < ROOM_PRESENCE_STALE_MS) {
+          visitId = visitId || saved.visitId;
+        }
+      }
       // Like the app: the previous visit timed out (3 h without heartbeat) but
       // nobody posted its "has left". Close that old visit FIRST, so the chat
       // reads "has left" → "has entered". (The new visit gets a new visitId.)
@@ -648,7 +657,9 @@ function RoomView({ roomName }: { roomName: string }) {
         const saved = savedEntry(uid, roomName);
         const at =
           tabSession?.sinceMs ??
-          (saved && saved.visitId === visitId ? saved.at : existingMarkerMs || Date.now() - 30_000);
+          (saved && (saved.visitId === visitId || (existingMarkerMs > 0 && Math.abs(existingMarkerMs - saved.at) < 1000))
+            ? saved.at // the same visit: its visitId, or its own entry marker (a heartbeat may rewrite the id)
+            : existingMarkerMs || Date.now() - 30_000);
         saveEntry(uid, roomName, { visitId: visitId!, at });
         if (!disposed) setSinceMs(at);
       } else {
