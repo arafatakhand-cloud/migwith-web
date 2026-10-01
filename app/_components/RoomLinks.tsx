@@ -47,8 +47,15 @@ export function YouTubePreviewCard({ videoId, onPlay }: { videoId: string; onPla
       className="relative mt-1.5 block aspect-video w-full max-w-[260px] overflow-hidden rounded-xl bg-black"
       aria-label="Play YouTube video"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt="YouTube video" loading="lazy" className="h-full w-full object-cover" />
+      {videoId.startsWith("list:") ? (
+        // a playlist has no single picture → a red YouTube card
+        <span className="absolute inset-0 bg-gradient-to-br from-[#3A0000] to-[#B00000]">
+          <span className="absolute right-2 top-2 text-xs font-bold text-white">☰ Playlist</span>
+        </span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} alt="YouTube video" loading="lazy" className="h-full w-full object-cover" />
+      )}
       <span className="absolute inset-0 bg-gradient-to-b from-transparent to-black/60" />
       <span className="absolute left-1/2 top-1/2 flex h-10 w-[58px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-[#FF0000] text-xl text-white">
         {"▶\uFE0E"}
@@ -128,14 +135,25 @@ function YouTubePlayer({ id, url, onClose }: { id: string; url: string; onClose:
       </div>
       <div className="relative aspect-video bg-black">
         <iframe
-          src={`https://www.youtube.com/embed/${id}?autoplay=1&playsinline=1&rel=0&modestbranding=1`}
+          src={`${
+            id.startsWith("list:") ? `https://www.youtube.com/embed/videoseries?list=${id.slice(5)}&` : `https://www.youtube.com/embed/${id}?`
+          }autoplay=1&playsinline=1&rel=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`}
           title="YouTube video"
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           allowFullScreen
           className="absolute inset-0 h-full w-full border-0"
         />
       </div>
-      <p className="p-2.5 text-[10px] text-[#7D88A3]">
+      {/* footer: the miglife name in its rainbow colours, like the app */}
+      <p className="px-3.5 pb-1 pt-2.5 text-center text-lg font-bold tracking-[0.04em]">
+        <span
+          className="bg-clip-text text-transparent"
+          style={{ backgroundImage: "linear-gradient(90deg, #FF9F1C, #FFD93D, #4CD964, #34AADC, #AF52DE, #FF2D95)", WebkitBackgroundClip: "text" }}
+        >
+          miglife
+        </span>
+      </p>
+      <p className="px-2.5 pb-2.5 text-center text-[10px] text-[#7D88A3]">
         If the video doesn&apos;t play here, the owner has turned off playing in other apps — use &quot;Open in YouTube&quot;.
       </p>
     </div>

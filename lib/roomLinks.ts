@@ -26,8 +26,19 @@ export function findRoomLinks(text: string): RoomLink[] {
 const YT_ID_RE =
   /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/|live\/|v\/)|youtu\.be\/|m\.youtube\.com\/watch\?(?:.*&)?v=)([A-Za-z0-9_-]{11})/i;
 
+const YT_LIST_RE = /(?:youtube\.com|youtu\.be)\/.*[?&]list=([A-Za-z0-9_-]{10,64})/i;
+
+/**
+ * What to play for a YouTube link: an 11-letter video id, or "list:<id>" for a
+ * playlist (like the app). A YouTube "Mix" (list=RD<videoId>) plays that video.
+ */
 export function youTubeIdOf(url: string): string | null {
-  return YT_ID_RE.exec(url)?.[1] ?? null;
+  const id = YT_ID_RE.exec(url)?.[1];
+  if (id) return id;
+  const list = YT_LIST_RE.exec(url)?.[1];
+  if (!list) return null;
+  if (list.startsWith("RD") && list.length === 13) return list.slice(2);
+  return `list:${list}`;
 }
 
 /** The first YouTube link in a message. */

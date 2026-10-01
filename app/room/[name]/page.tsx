@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -93,7 +93,7 @@ import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
 import { RainbowName } from "../../_components/RainbowName";
 import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
-import { firstYouTubeLink } from "../../../lib/roomLinks";
+import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
 
 type ChatMessage = SessionMessage;
@@ -2011,9 +2011,21 @@ function MessageRow({
             </>
           ) : (
             <>
-              <span className="whitespace-pre-wrap break-words" style={{ color: INK }}>
-                {/* 🔗 links: blue + underlined + tappable (see RoomLinks) */}
-                {withEmotes(body, fontPx, (t, k) => withLinks(t, k, onLink, (s2, k2) => withMentions(s2, k2)))}
+              <span
+                className="whitespace-pre-wrap break-words"
+                style={{ color: INK }}
+                onClick={(e) => {
+                  // Missed the exact letters? A tap anywhere on a message that
+                  // holds ONE link still opens it (like the app).
+                  if ((e.target as HTMLElement).closest("a")) return;
+                  const links = findRoomLinks(body);
+                  if (links.length === 1) onLink(links[0].url);
+                }}
+              >
+                {/* 🔗 links first: blue + underlined + tappable, and emote codes inside a link stay text */}
+                {withLinks(body, "b", onLink, (seg, k) => (
+                  <Fragment key={k}>{withEmotes(seg, fontPx, (t, k2) => withMentions(t, `${k}${k2}`))}</Fragment>
+                ))}
               </span>
               {stamp}
               {ytLink && <YouTubePreviewCard videoId={ytLink.id} onPlay={() => onLink(ytLink.url)} />}
