@@ -8,7 +8,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { input } from "./_Shell";
 import { RainbowName } from "../_components/RainbowName";
-import { SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYLE_NAMES, SPECIAL_COLOR_USD } from "../../lib/specialColor";
+import { SPECIAL_COLOR_DEFAULT_BDT_RATE, SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYLE_NAMES, SPECIAL_COLOR_USD, taka } from "../../lib/specialColor";
 
 // miglife-only cards of the app's "miglife secret" page: the one-time new
 // level curve step, Security Question Reset and the 🎰 Luxury Bet section
@@ -532,17 +532,19 @@ export function FounderSpecialColorCard() {
   const [active, setActive] = useState<SpecialRow[]>([]);
   const [paymentInfo, setPaymentInfo] = useState("");
   const [applyOpen, setApplyOpen] = useState(false);
+  const [rate, setRate] = useState(String(SPECIAL_COLOR_DEFAULT_BDT_RATE));
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
+  // Live updates when the rules let us read app_settings; otherwise the
+  // values from the server (reload) are kept.
   useEffect(
     () =>
       onSnapshot(
         doc(db, "app_settings", "special_color"),
         (d) => {
-          setApplyOpen(d.get("applyOpen") === true);
-          setPaymentInfo((cur) => cur || String(d.get("paymentInfo") || ""));
+          if (d.exists()) setApplyOpen(d.get("applyOpen") === true);
         },
         () => {}
       ),
@@ -561,6 +563,10 @@ export function FounderSpecialColorCard() {
   const reload = useCallback(async () => {
     const d = await call({ action: "list" });
     if (!d) return;
+    // The saved ON/OFF, rate and payment text come from the server — what users really see.
+    if (typeof d.applyOpen === "boolean") setApplyOpen(d.applyOpen);
+    if (Number(d.bdtRate) > 0) setRate(String(Number(d.bdtRate)));
+    if (typeof d.paymentInfo === "string") setPaymentInfo((cur) => (d.paymentInfo || !cur ? d.paymentInfo : cur));
     setPending(Array.isArray(d.pending) ? d.pending : []);
     setActive(Array.isArray(d.active) ? d.active : []);
   }, [call]);
@@ -599,12 +605,48 @@ export function FounderSpecialColorCard() {
           role="switch"
           aria-checked={applyOpen}
           disabled={busy}
-          onClick={() => run({ action: "setOpen", open: !applyOpen }, applyOpen ? "Applications OFF" : "✅ Applications ON", false)}
+          onClick={async () => {
+            const r = await run({ action: "setOpen", open: !applyOpen }, applyOpen ? "Applications OFF — saved" : "✅ Applications ON — saved", false);
+            if (r) setApplyOpen(typeof r.open === "boolean" ? r.open : !applyOpen);
+          }}
           className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${applyOpen ? "bg-[#1E9E55]" : "bg-gray-300"}`}
         >
           <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${applyOpen ? "left-6" : "left-1"}`} />
         </button>
       </div>
+
+      {/* Taka rate for bKash / Nagad / Rocket / Bank */}
+      <p className="text-[13px] font-bold">Dollar rate (taka per 1 USD)</p>
+      <div className="flex items-center gap-2">
+        <input
+          className={`${input} w-[120px]`}
+          inputMode="decimal"
+          value={rate}
+          onChange={(e) => setRate(e.target.value.replace(/[^\d.]/g, "").slice(0, 6))}
+          placeholder="৳ per 1 USD"
+        />
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            const r = Number(rate);
+            if (!rate || !Number.isFinite(r)) {
+              setFailed(true);
+              setMsg("Write a number, e.g. 123");
+              return;
+            }
+            run({ action: "setRate", rate: r }, `✅ Rate saved: 1 USD = ৳${rate} · $50 = ${taka(SPECIAL_COLOR_USD, r)}`, false);
+          }}
+          className="rounded-xl bg-[#1E9E55] px-4 py-2.5 font-bold text-white disabled:opacity-50"
+        >
+          SAVE RATE
+        </button>
+      </div>
+      {Number(rate) > 0 && (
+        <p className="text-[11px] text-gray-500">
+          Users will see: $50 = {taka(SPECIAL_COLOR_USD, Number(rate))} · 3 months = {taka(3 * SPECIAL_COLOR_USD, Number(rate))}
+        </p>
+      )}
 
       <p className="text-[13px] font-bold">Where to pay (shown to users)</p>
       <textarea
@@ -628,7 +670,8 @@ export function FounderSpecialColorCard() {
       {pending.map((r) => (
         <div key={r.id} className="rounded-xl bg-[#FF4F8B]/10 p-2.5">
           <p className="text-sm font-bold">
-            {r.username} · {r.months} month(s) · ${r.amountUsd} · {SPECIAL_COLOR_STYLE_NAMES[Number(r.style) || 0] || ""}
+            {r.username} · {r.months} month(s) · ${r.amountUsd}
+            {Number(r.amountBdt) > 0 ? ` (৳${Number(r.amountBdt)})` : ""} · {SPECIAL_COLOR_STYLE_NAMES[Number(r.style) || 0] || ""}
           </p>
           <p className="whitespace-pre-line text-xs text-gray-500">
             {`${r.method} · Trx ${r.trxId}${r.sender ? ` · from ${r.sender}` : ""}${r.note ? `\n“${r.note}”` : ""}\n${spDate(Number(r.createdAtMs) || 0)}`}

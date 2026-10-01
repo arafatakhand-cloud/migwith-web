@@ -8,7 +8,10 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { isMainFounderName } from "../../lib/founder";
 import {
+  SPECIAL_COLOR_DEFAULT_BDT_RATE,
   SPECIAL_COLOR_METHODS,
+  SPECIAL_COLOR_TAKA_METHODS,
+  taka,
   SPECIAL_COLOR_SLOTS,
   SPECIAL_COLOR_STYLE_NAMES,
   SPECIAL_COLOR_USD,
@@ -24,6 +27,7 @@ import { RainbowName } from "../_components/RainbowName";
 // specialColorApply / founderSpecialColor Cloud Functions.
 
 const applyCall = httpsCallable(functions, "specialColorApply");
+const statusCall = httpsCallable<void, { applyOpen?: boolean; paymentInfo?: string; bdtRate?: number }>(functions, "specialColorStatus");
 
 type Req = { id: string; months: number; amountUsd: number; method: string; trxId: string; status: string; createdAtMs: number; reason: string };
 
@@ -47,11 +51,12 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
   );
 }
 
-function Pill({ title, value, on }: { title: string; value: string; on?: boolean }) {
+function Pill({ title, value, sub, on }: { title: string; value: string; sub?: string; on?: boolean }) {
   return (
     <div className={`min-w-0 flex-1 rounded-[14px] border p-3 ${on ? "border-[#FF4F8B] bg-[#FF4F8B]/20" : "border-white/20 bg-white/[0.13]"}`}>
       <p className="text-[11px] text-[#B9A8E8]">{title}</p>
       <p className="truncate text-[15px] font-bold text-white">{value}</p>
+      {sub && <p className="truncate text-[15px] font-bold text-white">{sub}</p>}
     </div>
   );
 }
@@ -66,6 +71,7 @@ export default function SpecialColourPage() {
   const uid = user?.uid;
   const [paymentInfo, setPaymentInfo] = useState("");
   const [applyOpen, setApplyOpen] = useState(false);
+  const [bdtRate, setBdtRate] = useState(SPECIAL_COLOR_DEFAULT_BDT_RATE);
   const [myUntil, setMyUntil] = useState(0);
   const [requests, setRequests] = useState<Req[]>([]);
   const [months, setMonths] = useState(1);
@@ -83,8 +89,11 @@ export default function SpecialColourPage() {
       onSnapshot(
         doc(db, "app_settings", "special_color"),
         (d) => {
+          if (!d.exists()) return;
           setPaymentInfo(String(d.get("paymentInfo") || ""));
           setApplyOpen(d.get("applyOpen") === true);
+          const r = Number(d.get("bdtRate") || 0);
+          if (r > 0) setBdtRate(r);
         },
         () => {}
       ),
@@ -113,6 +122,14 @@ export default function SpecialColourPage() {
         )
       );
     }
+    // Also ask the server once (works even before the rules let us read it).
+    statusCall()
+      .then(({ data }) => {
+        if (typeof data?.applyOpen === "boolean") setApplyOpen(data.applyOpen);
+        if (data?.paymentInfo) setPaymentInfo(data.paymentInfo);
+        if (Number(data?.bdtRate) > 0) setBdtRate(Number(data.bdtRate));
+      })
+      .catch(() => {});
     return () => offs.forEach((f) => f());
   }, [ready, uid]);
 
@@ -176,7 +193,7 @@ export default function SpecialColourPage() {
           </div>
 
           <div className="mt-3.5 flex gap-2.5">
-            <Pill title="💵 Price" value={`$${SPECIAL_COLOR_USD} / mo`} />
+            <Pill title="💵 Price" value={`$${SPECIAL_COLOR_USD} / mo`} sub={taka(SPECIAL_COLOR_USD, bdtRate)} />
             <Pill title="🎟 Places left" value={`${placesLeft} / ${SPECIAL_COLOR_SLOTS}`} on={placesLeft > 0} />
             <Pill
               title="📅 Your colour"
@@ -279,6 +296,18 @@ export default function SpecialColourPage() {
                 </Card>
                 <Card>
                   <p className="text-[15px] font-bold">② Payment — send ${months * SPECIAL_COLOR_USD}</p>
+                  {/* How much to send, in each currency */}
+                  <div className="mt-1.5 rounded-xl border border-[#FF4F8B]/35 bg-gradient-to-r from-[#FF4F8B]/20 to-[#9C5BFF]/20 p-3">
+                    <p className="text-[11px] text-[#B9A8E8]">Amount to send</p>
+                    <p className="flex flex-wrap items-end gap-x-2">
+                      <span className="text-[26px] font-extrabold leading-8">{taka(months * SPECIAL_COLOR_USD, bdtRate)}</span>
+                      <span className="pb-1 text-[11px] text-[#E8E2FF]">bKash · Nagad · Rocket · Bank</span>
+                    </p>
+                    <p className="text-sm font-bold text-[#FFD86B]">${months * SPECIAL_COLOR_USD} USD · Binance · PayPal</p>
+                    <p className="text-[11px] text-[#B9A8E8]">
+                      1 USD = ৳{bdtRate} · {months} month(s) × ${SPECIAL_COLOR_USD}. Send exactly this amount (your bKash/Nagad fee is extra).
+                    </p>
+                  </div>
                   <p className="mt-1.5 whitespace-pre-wrap rounded-[10px] bg-[#FFD86B]/15 p-2.5 text-[13px] text-[#FFE9A8]">
                     {paymentInfo || "Payment details will be shown here. Ask miglife how to pay."}
                   </p>
@@ -298,7 +327,11 @@ export default function SpecialColourPage() {
                   onClick={send}
                   className="h-[50px] w-full rounded-[14px] bg-[#FF4F8B] text-[15px] font-extrabold text-white disabled:bg-[#4A3A78]"
                 >
-                  {busy ? "Sending…" : "③ SEND FOR APPROVAL"}
+                  {busy
+                    ? "Sending…"
+                    : `③ SEND FOR APPROVAL · ${
+                        SPECIAL_COLOR_TAKA_METHODS.has(method) ? taka(months * SPECIAL_COLOR_USD, bdtRate) : `$${months * SPECIAL_COLOR_USD}`
+                      }`}
                 </button>
               </>
             )}

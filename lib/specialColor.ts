@@ -13,6 +13,11 @@ import { isMainFounderName } from "./founder";
 export const SPECIAL_COLOR_USD = 50;
 export const SPECIAL_COLOR_SLOTS = 5;
 export const SPECIAL_COLOR_METHODS = ["bKash", "Nagad", "Rocket", "Binance", "PayPal", "Bank", "Other"];
+/** Taka per dollar until miglife sets app_settings/special_color.bdtRate. */
+export const SPECIAL_COLOR_DEFAULT_BDT_RATE = 123;
+/** These are paid in taka; Binance / PayPal / Other in dollars. */
+export const SPECIAL_COLOR_TAKA_METHODS = new Set(["bKash", "Nagad", "Rocket", "Bank"]);
+export const taka = (usd: number, rate: number) => "৳" + Math.round(usd * rate).toLocaleString("en-US");
 /** The 5 animations (style 1-5); miglife keeps the original rainbow (style 0). */
 export const SPECIAL_COLOR_STYLE_NAMES = [
   "Original Rainbow",
