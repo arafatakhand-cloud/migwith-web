@@ -92,6 +92,8 @@ import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
 import { RainbowName } from "../../_components/RainbowName";
+import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
+import { firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
 
 type ChatMessage = SessionMessage;
@@ -160,6 +162,9 @@ function RoomView({ roomName }: { roomName: string }) {
   const { user, loading } = useCurrentUser();
   const founder = useFounderPerms();
   const specialColors = useSpecialColors();
+  // 🔗 a link tapped in the room chat (normal link → "leaving miglife" check,
+  // YouTube → plays here in a popup).
+  const [pendingLink, setPendingLink] = useState<string | null>(null);
   // This open tab's saved session (lib/roomSession): coming back to the tab
   // shows the same chat, draft and scroll position, like the app.
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
@@ -1241,6 +1246,7 @@ function RoomView({ roomName }: { roomName: string }) {
 
   return (
     <PageShell light bottomNav={false}>
+      <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
@@ -1316,6 +1322,7 @@ function RoomView({ roomName }: { roomName: string }) {
                     setText((t) => (t.includes(mention) ? t : t.trim() ? `${t.trimEnd()} ${mention} ` : `${mention} `));
                     inputRef.current?.focus();
                   }}
+                  onLink={setPendingLink}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
                     inputRef.current?.focus();
@@ -1808,6 +1815,7 @@ function MessageRow({
   gift,
   onMention,
   onReply,
+  onLink,
 }: {
   m: ChatMessage;
   mine: boolean;
@@ -1822,6 +1830,8 @@ function MessageRow({
   gift: { icon: string; imageUrl: string } | null;
   onMention: (name: string) => void;
   onReply: (sender: string, snippet: string) => void;
+  /** A link was tapped in a message. */
+  onLink: (url: string) => void;
 }) {
   // 🌈 miglife + Special Edition Colour holders: rainbow names. (A hook, so it
   // must run before any of the early returns below.)
@@ -1946,6 +1956,8 @@ function MessageRow({
     body = body.slice(body.indexOf("\n") + 1);
   }
 
+  // 🔗 The first YouTube link of a normal message gets a thumbnail card.
+  const ytLink = m.type === "image" || m.type === "voice" ? null : firstYouTubeLink(body);
   // Own messages sit on the right in EVERY room, game rooms included (like the app).
   const rightSide = mine;
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
@@ -2000,9 +2012,11 @@ function MessageRow({
           ) : (
             <>
               <span className="whitespace-pre-wrap break-words" style={{ color: INK }}>
-                {withEmotes(body, fontPx, (t, k) => withMentions(t, k))}
+                {/* 🔗 links: blue + underlined + tappable (see RoomLinks) */}
+                {withEmotes(body, fontPx, (t, k) => withLinks(t, k, onLink, (s2, k2) => withMentions(s2, k2)))}
               </span>
               {stamp}
+              {ytLink && <YouTubePreviewCard videoId={ytLink.id} onPlay={() => onLink(ytLink.url)} />}
             </>
           )}
         </div>
