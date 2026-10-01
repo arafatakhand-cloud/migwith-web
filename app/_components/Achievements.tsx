@@ -185,16 +185,45 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
   );
 }
 
+// ---- Modern dark "trophy room" look for the Achievements window (like the app) ----
+const GOLD = "#FFD36B";
+const PINK = "#FF5FA2";
+const VIOLET = "#8B5CFF";
+const SUB = "#AFA3D6";
+
+function ModernChip({ label, count, on, onClick }: { label: string; count: string; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-3 pr-1.5 text-xs font-semibold text-[#F3EEFF] ${
+        on ? "bg-gradient-to-r from-[#FF5FA2] to-[#8B5CFF]" : "border border-white/15 bg-white/[0.08]"
+      }`}
+    >
+      {label}
+      <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${on ? "bg-white/20 text-white" : "bg-white/10 text-[#AFA3D6]"}`}>{count}</span>
+    </button>
+  );
+}
+
 function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOwnProfile: boolean; onClose: () => void }) {
   const [tab, setTab] = useState<AchCategory | null>(null); // null = All
   const [showEvents, setShowEvents] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
   const openEvents = useOpenEvents(true);
   const earnedCount = earnedMedals(ach).length;
+  const total = ACH_TOTAL;
+  const pct = total > 0 ? Math.floor((earnedCount * 100) / total) : 0;
   // Opening your own badges refreshes the "checked by the server" ones.
   useEffect(() => {
     if (isOwnProfile) syncMyAchievements().catch(() => {});
   }, [isOwnProfile]);
+
+  const catCount = (c: AchCategory): [number, number] => {
+    const list = ACH_SERIES.filter((s) => s.category === c);
+    const got = list.reduce((a, s) => a + s.steps.filter((_, i) => ach.badges[achKey(s, i)]).length, 0);
+    return [got, list.reduce((a, s) => a + s.steps.length, 0)];
+  };
 
   const now = Date.now();
   const earnedEvents = Object.values(ach.badges)
@@ -202,28 +231,91 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
     .sort((a, b) => b.earnedAt - a.earnedAt);
   const waiting = isOwnProfile ? openEvents.filter((ev) => !ach.badges[`event_${ev.id}`]) : [];
 
+  // Progress ring: r 35.5 inside a 78 box, 7 px stroke.
+  const R = 35.5;
+  const C = 2 * Math.PI * R;
+
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-3.5" onClick={onClose}>
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 px-3 py-[22px]" onClick={onClose}>
       <div
-        className="flex max-h-[min(640px,92vh)] w-full max-w-lg flex-col items-center rounded-[22px] bg-white p-3.5 text-[#0B2A5B]"
+        className="relative flex max-h-[min(680px,94vh)] w-full max-w-lg flex-col overflow-hidden rounded-[26px] bg-gradient-to-b from-[#150A30] to-[#0B0620] text-[#F3EEFF] shadow-[0_10px_40px_rgba(139,92,255,.55)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-[19px] font-extrabold">🏅 Achievements</p>
-        <p className="text-xs text-gray-500">
-          {earnedCount} of {ACH_TOTAL} badges earned
-        </p>
-        <div className="no-scrollbar mt-2.5 flex w-full gap-1.5 overflow-x-auto">
-          <Chip label="All" on={tab === null && !showEvents} onClick={() => (setTab(null), setShowEvents(false))} />
-          {ACH_CATEGORIES.map(([c, label]) => (
-            <Chip key={c} label={label} on={tab === c && !showEvents} onClick={() => (setTab(c), setShowEvents(false))} />
-          ))}
-          <Chip label="🎉 Events" on={showEvents} onClick={() => (setShowEvents(true), setTab(null))} />
+        {/* gradient border */}
+        <span
+          className="pointer-events-none absolute inset-0 rounded-[26px] p-px"
+          style={{
+            background: "linear-gradient(135deg, rgba(255,211,107,.6), rgba(255,95,162,.4), rgba(139,92,255,.6))",
+            WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+            WebkitMaskComposite: "xor",
+            maskComposite: "exclude",
+          }}
+        />
+        {/* Header: trophy + progress ring */}
+        <div className="flex shrink-0 items-center bg-gradient-to-b from-[#8B5CFF]/35 to-transparent pb-3 pl-[18px] pr-3 pt-4">
+          <div className="relative flex h-[78px] w-[78px] shrink-0 items-center justify-center">
+            <svg width="78" height="78" className="absolute inset-0 -rotate-90">
+              <defs>
+                <linearGradient id="achRing" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor={GOLD} />
+                  <stop offset="50%" stopColor={PINK} />
+                  <stop offset="100%" stopColor={VIOLET} />
+                </linearGradient>
+              </defs>
+              <circle cx="39" cy="39" r={R} fill="none" stroke="rgba(255,255,255,.13)" strokeWidth="7" />
+              <circle
+                cx="39"
+                cy="39"
+                r={R}
+                fill="none"
+                stroke="url(#achRing)"
+                strokeWidth="7"
+                strokeLinecap="round"
+                strokeDasharray={`${(C * earnedCount) / Math.max(1, total)} ${C}`}
+              />
+            </svg>
+            <span className="ach-glow absolute h-[56px] w-[56px] rounded-full bg-[#FFD36B]/20" />
+            <span className="relative flex flex-col items-center leading-none">
+              <span className="text-[22px]">🏆</span>
+              <span className="mt-0.5 text-xs font-extrabold" style={{ color: GOLD }}>
+                {pct}%
+              </span>
+            </span>
+          </div>
+          <div className="ml-3.5 min-w-0 flex-1">
+            <p className="text-[11px] font-bold tracking-[2px]" style={{ color: GOLD }}>
+              ACHIEVEMENTS
+            </p>
+            <p className="text-[32px] font-extrabold leading-[34px]">{earnedCount}</p>
+            <p className="text-xs" style={{ color: SUB }}>
+              of {total} badges unlocked
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/[0.13] text-[15px] font-bold"
+          >
+            ✕
+          </button>
         </div>
-        <div className="mt-2 w-full min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+
+        {/* Category chips (with counts) */}
+        <div className="no-scrollbar flex shrink-0 gap-[7px] overflow-x-auto px-3 py-1.5">
+          <ModernChip label="✦ All" count={String(earnedCount)} on={tab === null && !showEvents} onClick={() => (setTab(null), setShowEvents(false))} />
+          {ACH_CATEGORIES.map(([c, label]) => {
+            const [got, all] = catCount(c);
+            return <ModernChip key={c} label={label} count={`${got}/${all}`} on={tab === c && !showEvents} onClick={() => (setTab(c), setShowEvents(false))} />;
+          })}
+          <ModernChip label="🎉 Events" count={String(earnedEvents.length)} on={showEvents} onClick={() => (setShowEvents(true), setTab(null))} />
+        </div>
+
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3 pb-3.5 pt-1">
           {showEvents ? (
             <>
               {earnedEvents.length === 0 && waiting.length === 0 && (
-                <p className="p-4 text-center text-xs text-gray-500">
+                <p className="p-5 text-center text-xs" style={{ color: SUB }}>
                   Special badges for Eid, Puja, Noboborsho and other days appear here. Open miglife during the event to earn one — after it ends, it can never be earned again.
                 </p>
               )}
@@ -236,7 +328,7 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
                   sub={
                     ev.startMs > now
                       ? `Starts ${fmtDate(ev.startMs)} · ends ${fmtDate(ev.endMs)}`
-                      : `🔥 Running now — ends ${fmtDate(ev.endMs)}. Keep the app open to get it!`
+                      : `🔥 Live now — ends ${fmtDate(ev.endMs)}. Keep the app open to get it!`
                   }
                 />
               ))}
@@ -246,84 +338,145 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
                   emoji={b.emoji || "🎉"}
                   title={b.title || "Event"}
                   earned
-                  sub={b.earnedAt > 0 ? `✅ Earned on ${fmtDate(b.earnedAt)}` : "✅ Earned"}
+                  sub={b.earnedAt > 0 ? `Unlocked ${fmtDate(b.earnedAt)}` : "Unlocked"}
                 />
               ))}
             </>
           ) : (
-            ACH_CATEGORIES.filter(([c]) => tab === null || c === tab).map(([c, label]) => (
-              <div key={c} className="space-y-1.5">
-                {tab === null && <p className="pb-0.5 pt-1.5 text-[11px] font-bold tracking-[1px] text-[#B07A00]">{label.toUpperCase()}</p>}
-                {ACH_SERIES.filter((s) => s.category === c).map((s) => (
-                  <SeriesRow key={s.id} s={s} ach={ach} open={expanded === s.id} onClick={() => setExpanded(expanded === s.id ? null : s.id)} />
-                ))}
-              </div>
-            ))
+            ACH_CATEGORIES.filter(([c]) => tab === null || c === tab).map(([c, label]) => {
+              const [got, all] = catCount(c);
+              return (
+                <div key={c} className="space-y-2">
+                  {tab === null && (
+                    <div className="flex items-center gap-2 pb-0.5 pt-2">
+                      <span className="text-[11px] font-bold tracking-[1.5px]" style={{ color: GOLD }}>
+                        {label.toUpperCase()}
+                      </span>
+                      <span className="h-px flex-1 bg-gradient-to-r from-[#FFD36B]/50 to-transparent" />
+                      <span className="text-[11px]" style={{ color: SUB }}>
+                        {got}/{all}
+                      </span>
+                    </div>
+                  )}
+                  {ACH_SERIES.filter((s) => s.category === c).map((s) => (
+                    <SeriesRow key={s.id} s={s} ach={ach} open={expanded === s.id} onClick={() => setExpanded(expanded === s.id ? null : s.id)} />
+                  ))}
+                </div>
+              );
+            })
           )}
         </div>
-        <button type="button" onClick={onClose} className="mt-2.5 rounded-xl bg-[#17395C] px-6 py-2 font-bold text-white">
-          Close
-        </button>
       </div>
     </div>
   );
 }
 
-// One series: best medal + name + progress to the next step. Tap → every step.
+// One series as a glass card: glowing medal, name, next goal, gradient
+// progress bar and step dots. Tap → every step with its unlock date.
 function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open: boolean; onClick: () => void }) {
   const value = ach.numbers[s.field] ?? 0;
   const earnedIdx = s.steps.map((_, i) => i).filter((i) => ach.badges[achKey(s, i)]);
   const best = earnedIdx.length ? Math.max(...earnedIdx) : null;
   const nextI = s.steps.findIndex((_, i) => !ach.badges[achKey(s, i)]);
   const next = nextI < 0 ? null : nextI;
+  const complete = next === null;
   const shownIdx = best ?? 0;
+  const ringOf = (i: number) => ACH_METALS[Math.min(ACH_METALS.length - 1, Math.max(0, achMetal(s, i)))].ring;
   return (
     <div
       role="button"
       tabIndex={0}
       onClick={onClick}
-      className={`w-full cursor-pointer rounded-[14px] border p-2.5 ${best !== null ? "border-[#D9A10B]/20 bg-[#D9A10B]/[0.07]" : "border-black/[0.08] bg-black/[0.03]"}`}
+      className="relative w-full cursor-pointer rounded-[18px] p-3"
+      style={
+        complete
+          ? {
+              // gold → pink → violet border on a finished series
+              border: "1px solid transparent",
+              background: `linear-gradient(135deg, #2A1A40, #1E103A) padding-box, linear-gradient(135deg, ${GOLD}, ${PINK}, ${VIOLET}) border-box`,
+            }
+          : {
+              border: `1px solid ${best !== null ? "rgba(255,211,107,.45)" : "rgba(255,255,255,.15)"}`,
+              background: best !== null ? "linear-gradient(135deg, rgba(255,211,107,.18), rgba(139,92,255,.08))" : "rgba(255,255,255,.08)",
+            }
+      }
     >
-      <div className="flex items-center gap-2.5">
-        <AchMedal emoji={s.emoji} label={achMedalLabel(s, shownIdx)} metal={achMetal(s, shownIdx)} earned={best !== null} size={46} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold">{best !== null ? achStepTitle(s, best) : s.title}</p>
-          <p className="line-clamp-2 text-[11px] text-gray-500">{next === null ? "✅ Complete — every step earned!" : achGoalText(s, next)}</p>
+      <div className="flex items-center">
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
+          {best !== null && (
+            <span
+              className="ach-glow absolute h-[58px] w-[58px] rounded-full"
+              style={{ background: `radial-gradient(circle, ${ringOf(shownIdx)}99, transparent 70%)` }}
+            />
+          )}
+          <span className="relative">
+            <AchMedal emoji={s.emoji} label={achMedalLabel(s, shownIdx)} metal={achMetal(s, shownIdx)} earned={best !== null} size={48} />
+          </span>
+        </div>
+        <div className="ml-3 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-[15px] font-bold">{best !== null ? achStepTitle(s, best) : s.title}</p>
+            {complete && (
+              <span className="shrink-0 rounded-full bg-gradient-to-r from-[#FFD36B] to-[#FFA726] px-1.5 py-px text-[9px] font-extrabold text-[#1A0E00]">
+                MAX
+              </span>
+            )}
+          </div>
+          <p className="line-clamp-2 text-[11px]" style={{ color: SUB }}>
+            {complete ? "Every step unlocked 🎉" : achGoalText(s, next!)}
+          </p>
           {next !== null && s.steps[next] > 1 && (
-            <div className="mt-1 flex items-center gap-1.5">
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/10">
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-white/[0.12]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#FFD86B] to-[#D9A10B]"
+                  className="h-full rounded-full bg-gradient-to-r from-[#FFD36B] via-[#FF5FA2] to-[#8B5CFF]"
                   style={{ width: `${Math.min(100, (Math.min(value, s.steps[next]) / s.steps[next]) * 100)}%` }}
                 />
               </div>
-              <span className="text-[10px] text-gray-500">
+              <span className="text-[10px] font-bold">
                 {achShort(Math.min(value, s.steps[next]))}/{achShort(s.steps[next])}
               </span>
             </div>
           )}
+          {s.steps.length > 1 && (
+            <div className="mt-1.5 flex gap-[3px]">
+              {s.steps.map((_, i) => (
+                <span
+                  key={i}
+                  className={`h-1 rounded-full ${s.steps.length > 8 ? "w-2.5" : "w-[18px]"}`}
+                  style={{ background: ach.badges[achKey(s, i)] ? ringOf(i) : "rgba(255,255,255,.13)" }}
+                />
+              ))}
+            </div>
+          )}
         </div>
-        {s.steps.length > 1 && (
-          <span className="text-xs font-bold text-[#B07A00]">
-            {earnedIdx.length}/{s.steps.length}
-          </span>
-        )}
+        <span className="ml-1.5 text-sm" style={{ color: SUB }}>
+          {open ? "▴" : "▾"}
+        </span>
       </div>
       {open && (
         <>
-          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
+          <div className="my-2.5 h-px bg-white/15" />
+          <div className="no-scrollbar flex gap-2.5 overflow-x-auto">
             {s.steps.map((_, i) => {
               const b = ach.badges[achKey(s, i)];
               return (
-                <div key={i} className="flex w-[72px] shrink-0 flex-col items-center text-center">
+                <div
+                  key={i}
+                  className={`flex w-[76px] shrink-0 flex-col items-center rounded-[14px] py-2 text-center ${b ? "bg-[#FFD36B]/10" : "bg-white/5"}`}
+                >
                   <AchMedal emoji={s.emoji} label={achMedalLabel(s, i)} metal={achMetal(s, i)} earned={!!b} size={50} />
-                  <p className={`line-clamp-2 text-[10px] font-semibold leading-3 ${b ? "" : "text-gray-500"}`}>{achStepTitle(s, i)}</p>
-                  <p className="text-[9px] text-gray-500">{b ? (b.earnedAt > 0 ? fmtDate(b.earnedAt) : "Earned") : "🔒"}</p>
+                  <p className={`mt-1 line-clamp-2 text-[10px] font-semibold leading-3 ${b ? "" : "text-[#AFA3D6]"}`}>{achStepTitle(s, i)}</p>
+                  <p className="text-[9px]" style={{ color: b ? GOLD : "#7F74A8" }}>
+                    {b ? (b.earnedAt > 0 ? fmtDate(b.earnedAt) : "Unlocked") : "🔒 Locked"}
+                  </p>
                 </div>
               );
             })}
           </div>
-          <p className="mt-1 text-[10px] text-gray-500">{s.steps.map((_, i) => achGoalText(s, i)).join(" · ")}</p>
+          <p className="mt-1.5 text-[10px]" style={{ color: SUB }}>
+            {s.steps.map((_, i) => achGoalText(s, i)).join(" · ")}
+          </p>
         </>
       )}
     </div>
@@ -332,11 +485,17 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
 
 function EventRow({ emoji, title, earned, sub }: { emoji: string; title: string; earned: boolean; sub: string }) {
   return (
-    <div className={`flex items-center gap-2.5 rounded-[14px] border p-2.5 ${earned ? "border-[#D9A10B]/20 bg-[#D9A10B]/[0.07]" : "border-black/[0.08] bg-black/[0.03]"}`}>
-      <AchMedal emoji={emoji} label="" metal={EVENT_METAL} earned={earned} size={46} />
+    <div
+      className={`flex items-center gap-3 rounded-[18px] border p-3 ${
+        earned ? "border-[#FF5FA2]/50 bg-gradient-to-br from-[#FF5FA2]/20 to-[#8B5CFF]/[0.13]" : "border-white/15 bg-white/[0.08]"
+      }`}
+    >
+      <AchMedal emoji={emoji} label="" metal={EVENT_METAL} earned={earned} size={48} />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold">{title}</p>
-        <p className="text-[11px] text-gray-500">{sub}</p>
+        <p className="text-[15px] font-bold">{title}</p>
+        <p className="text-[11px]" style={{ color: earned ? GOLD : SUB }}>
+          {sub}
+        </p>
       </div>
     </div>
   );

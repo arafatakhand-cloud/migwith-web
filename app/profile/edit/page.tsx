@@ -185,20 +185,21 @@ export default function EditProfilePage() {
             </label>
 
             <div className="!mt-0 flex items-start gap-3">
-              <label className="mig-frame relative ml-2.5 -mt-[3px] block h-[140px] w-[108px] shrink-0 cursor-pointer rounded-b-xl">
-                <div className="relative h-full overflow-hidden rounded-b-[9px] bg-[#E8EEF5]">
+              {/* round photo half on the cover's bottom edge, same as the profile */}
+              <label className="mig-frame relative z-10 ml-2.5 -mt-[52px] block h-[112px] w-[112px] shrink-0 cursor-pointer rounded-full">
+                <div className="relative h-full overflow-hidden rounded-full bg-[#E8EEF5]">
                   {photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={photoUrl} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="flex h-full w-full items-center justify-center text-[46px] font-bold text-[#8FA3BF]">
+                    <span className="flex h-full w-full items-center justify-center text-[42px] font-bold text-[#8FA3BF]">
                       {username.slice(0, 1).toUpperCase()}
                     </span>
                   )}
                   {uploading === "photo" ? (
                     <span className="absolute inset-0 flex items-center justify-center bg-black/45 text-xs font-bold text-white">Uploading…</span>
                   ) : (
-                    <span className="absolute inset-x-0 bottom-0 bg-black/50 py-1 text-center text-xs font-bold text-white">📷 Change</span>
+                    <span className="absolute inset-x-0 bottom-0 bg-black/50 py-1 text-center text-xs font-bold text-white">📷</span>
                   )}
                 </div>
                 <input
@@ -317,11 +318,11 @@ export default function EditProfilePage() {
       {cropFile && (
         <PhotoCropDialog
           file={cropFile}
-          // Same portrait shape as the photo box on the profile (108 × 140).
-          frameAspect={108 / 140}
-          round={false}
-          outWidth={540}
-          hint="Drag to move · pinch or scroll to zoom · the frame is your profile photo"
+          // Round, like the photo on the profile.
+          frameAspect={1}
+          round
+          outWidth={560}
+          hint="Drag to move · pinch or scroll to zoom · the circle is your profile photo"
           onCancel={() => setCropFile(null)}
           onCropped={(jpeg) => {
             setCropFile(null);

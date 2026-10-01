@@ -204,3 +204,8 @@ body {
 .mig-frame > :first-child {
   border: 1.5px solid rgba(255, 255, 255, 0.95);
 }
+
+/* 🏅 Achievements window: soft pulsing glow behind earned medals (like the app). */
+.ach-glow { animation: ach-glow 1.6s ease-in-out infinite alternate; }
+@keyframes ach-glow { from { opacity: 0.35; } to { opacity: 0.85; } }
+@media (prefers-reduced-motion: reduce) { .ach-glow { animation: none; } }

@@ -114,8 +114,9 @@ const PRESENCE_DOT: Record<Profile["presence"], [string, string]> = {
   Offline: ["#D0D4DA", "#8A9099"],
 };
 
-// One raised, glossy number tile in its own colour (the app's migTile).
-function Tile({ value, label, tint, onClick }: { value: string; label: string; tint: string; onClick?: () => void }) {
+// One rounded "bubble" tile in its own colour (the app's migTile): big round
+// corners, glossy dome, a shine dot and an icon on top.
+function Tile({ value, label, tint, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
   const style = {
     background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
     borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
@@ -123,13 +124,15 @@ function Tile({ value, label, tint, onClick }: { value: string; label: string; t
   };
   const inner = (
     <>
-      <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-1/2 rounded-t-lg bg-gradient-to-b from-white/30 to-white/5" />
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-[3px] bg-black/25" />
-      <span className="relative block text-xl font-bold leading-6 [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
+      <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
+      <span className="pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
+      <span className="pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
+      <span className="relative block text-[15px] leading-[17px]">{icon}</span>
+      <span className="relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
       <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
     </>
   );
-  const cls = "relative flex h-[60px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[9px] border text-white";
+  const cls = "relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[22px] border text-white";
   return onClick ? (
     <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
       {inner}
@@ -478,19 +481,15 @@ export default function ProfilePage() {
         {/* Photo (left, 108 × 140) + details (right). With a cover, the photo's
             frame starts right on the cover's bottom border, joined to it. */}
         <div className="flex gap-3 bg-white p-2.5">
-          <div
-            className={`mig-frame h-[140px] w-[108px] shrink-0 ${
-              profile.coverPhotoUrl ? "-mt-[13px] rounded-b-xl" : "rounded-xl"
-            }`}
-          >
-            <div
-              className={`h-full overflow-hidden bg-[#E8EEF5] ${profile.coverPhotoUrl ? "rounded-b-[9px]" : "rounded-[9px]"}`}
-            >
+          {/* ROUND photo (like the rest of the app). With a cover photo it sits
+              half on the cover's bottom edge, Facebook-style. */}
+          <div className={`mig-frame relative z-10 h-[112px] w-[112px] shrink-0 rounded-full ${profile.coverPhotoUrl ? "-mt-[60px]" : ""}`}>
+            <div className="h-full overflow-hidden rounded-full bg-[#E8EEF5]">
               {profile.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
               ) : (
-                <span className="flex h-full w-full items-center justify-center text-[46px] font-bold text-[#8FA3BF]">
+                <span className="flex h-full w-full items-center justify-center text-[42px] font-bold text-[#8FA3BF]">
                   {username.slice(0, 1).toUpperCase()}
                 </span>
               )}
@@ -578,18 +577,18 @@ export default function ProfilePage() {
         {/* 4 × 2 grid of number tiles */}
         <div className="mt-px space-y-2 bg-white px-2 py-2">
           <div className="grid grid-cols-4 gap-1.5">
-            <Tile value={String(friends)} label="Friends" tint="#1E88E5" />
-            <Tile value={String(giftCount)} label="Gifts" tint="#E91E63" />
-            <Tile value={String(followers)} label="Followers" tint="#8E24AA" />
-            <Tile value={String(profile.following)} label="Following" tint="#00897B" />
+            <Tile value={String(friends)} label="Friends" icon="👥" tint="#1E88E5" />
+            <Tile value={String(giftCount)} label="Gifts" icon="🎁" tint="#E91E63" />
+            <Tile value={String(followers)} label="Followers" icon="💜" tint="#8E24AA" />
+            <Tile value={String(profile.following)} label="Following" icon="➕" tint="#00897B" />
           </div>
           <div className="grid grid-cols-4 gap-1.5">
-            <Tile value={String(badges.count)} label="Badges" tint="#F08C00" onClick={badges.open} />
+            <Tile value={String(badges.count)} label="Badges" icon="🏅" tint="#F08C00" onClick={badges.open} />
             {/* Any old number stored on the profile, plus the real votes. Only the owner sees who. */}
-            <Tile value={String(profile.votes + voters)} label="Votes" tint="#E53935" onClick={isOwn ? () => setPeopleList("votes") : undefined} />
-            <Tile value={String(footprints)} label="Views" tint="#43A047" onClick={isOwn ? () => setPeopleList("footprints") : undefined} />
+            <Tile value={String(profile.votes + voters)} label="Votes" icon="❤️" tint="#E53935" onClick={isOwn ? () => setPeopleList("votes") : undefined} />
+            <Tile value={String(footprints)} label="Views" icon="👀" tint="#43A047" onClick={isOwn ? () => setPeopleList("footprints") : undefined} />
             <div className="relative">
-              <Tile value="…" label="More" tint="#546E7A" onClick={() => setMoreOpen((o) => !o)} />
+              <Tile value="•••" label="More" icon="✨" tint="#546E7A" onClick={() => setMoreOpen((o) => !o)} />
               {moreOpen && (
                 <>
                   <button type="button" aria-label="Close" className="fixed inset-0 z-30 cursor-default" onClick={() => setMoreOpen(false)} />
