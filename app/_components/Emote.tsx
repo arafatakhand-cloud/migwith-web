@@ -176,7 +176,8 @@ export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => 
               }}
               className="flex aspect-square items-center justify-center rounded-[10px] p-1 hover:bg-[#EAF4FE] active:scale-90"
             >
-              <EmoteView id={id} size={30} playing={false} />
+              {/* fixed, smaller picture in the middle of the cell (the trimmed emotes otherwise looked huge) */}
+              <EmoteView id={id} size={26} playing={false} />
             </button>
           ))}
         </div>

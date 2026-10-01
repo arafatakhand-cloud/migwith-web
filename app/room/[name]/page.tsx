@@ -1765,7 +1765,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[
         if (i > 0)
           out.push(
             // eslint-disable-next-line @next/next/no-img-element
-            <img key={`g${k++}`} src={giftImage} alt="" className="mx-0.5 inline h-[18px] w-[18px] rounded-full object-cover align-middle" />
+            <img key={`g${k++}`} src={giftImage} alt="" className="mx-0.5 inline h-[1.25em] w-[1.25em] rounded-full object-cover align-middle" />
           );
         if (piece) out.push(piece);
       });
@@ -1887,7 +1887,12 @@ function MessageRow({
   if (m.type === "gift") {
     return (
       <div className="flex justify-center">
-        <p className="w-[94%] whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-left text-[14px] leading-snug text-[#FF2D95]">
+        {/* ONE text size for every gift line (the chat text size + 1, like the
+            app), so a gift shower doesn't look big-small-big. */}
+        <p
+          className="w-[94%] whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-left leading-snug text-[#FF2D95]"
+          style={{ fontSize: fontPx }}
+        >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "")}
           {stamp}
         </p>
