@@ -6,7 +6,7 @@ import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
-import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
+import { ALL_COUNTRIES, countryFlag } from "../../lib/countries";
 import { FounderShell, input } from "./_Shell";
 import { AppDownloadLinkCard, FounderSpecialColorCard, LevelCurveCard, LuxuryBetSection, SecurityQuestionResetCard } from "./_MainFounderCards";
 import { FounderAchievementsCard } from "../_components/Achievements";
@@ -270,8 +270,10 @@ function CreateIdDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: 
         </select>
         <select value={country} onChange={(e) => setCountry(e.target.value)} disabled={busy} className={input}>
           <option value="">Select country</option>
-          {OFFICIAL_COUNTRY_ROOMS.map((c) => (
-            <option key={c}>{c}</option>
+          {ALL_COUNTRIES.map((c) => (
+            <option key={c.iso} value={c.name}>
+              {countryFlag(c.iso)}  {c.name}
+            </option>
           ))}
         </select>
         {error && <p className="text-xs font-bold text-[#B3261E]">{error}</p>}

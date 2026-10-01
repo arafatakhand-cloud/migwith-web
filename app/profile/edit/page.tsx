@@ -9,15 +9,11 @@ import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { PageShell } from "../../_components/PageShell";
 import { PhotoCropDialog } from "../../_components/PhotoCropDialog";
+import { CountryPickerDialog } from "../../_components/CountryPicker";
+import { countryFlag, countryInfoFor } from "../../../lib/countries";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
-const COUNTRIES = [
-  "Bangladesh", "India", "Pakistan", "Nepal", "Bhutan", "Maldives",
-  "Qatar", "Kuwait", "Oman", "Malaysia", "Singapore", "Indonesia",
-  "Thailand", "Canada", "Australia", "Germany", "France", "Italy",
-  "Spain", "Russia", "Brazil",
-];
 const RELATIONSHIPS = ["Single", "In a Relationship", "Married", "Divorced", "Widowed", "Prefer not to say"];
 const GENDERS: [string, string][] = [
   ["Male", "♂ Male"],
@@ -37,6 +33,7 @@ export default function EditProfilePage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [bio, setBio] = useState("");
   const [country, setCountry] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
   const [gender, setGender] = useState("Male");
   const [relationship, setRelationship] = useState("Single");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -276,15 +273,12 @@ export default function EditProfilePage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="mb-1 text-xs font-bold text-[#35507E]">Country</p>
-                <select value={country} onChange={(e) => setCountry(e.target.value)} className={field}>
-                  <option value="">—</option>
-                  {!COUNTRIES.includes(country) && country && <option value={country}>{country}</option>}
-                  {COUNTRIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                {/* searchable list of every country, with flags (like the app) */}
+                <button type="button" onClick={() => setCountryOpen(true)} className={`${field} flex items-center gap-2 text-left`}>
+                  <span className="text-lg leading-none">{countryInfoFor(country) ? countryFlag(countryInfoFor(country)!.iso) : "🌍"}</span>
+                  <span className={`min-w-0 flex-1 truncate ${country ? "" : "text-[#8A9AB2]"}`}>{country || "Select your country"}</span>
+                  <span className="text-[#2F80ED]">▾</span>
+                </button>
               </div>
               <div>
                 <p className="mb-1 text-xs font-bold text-[#35507E]">Relationship</p>
@@ -315,6 +309,16 @@ export default function EditProfilePage() {
           </div>
         )}
       </div>
+      {countryOpen && (
+        <CountryPickerDialog
+          selected={country}
+          onPick={(n) => {
+            setCountry(n);
+            setCountryOpen(false);
+          }}
+          onClose={() => setCountryOpen(false)}
+        />
+      )}
       {cropFile && (
         <PhotoCropDialog
           file={cropFile}
