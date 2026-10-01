@@ -338,7 +338,13 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Entry level and room lock — admins / mods of this room are not held back.
   useEffect(() => {
-    if (!profile || !roomLoaded || !modLoaded || perms.bypassesEntry) return;
+    if (perms.bypassesEntry) {
+      // Their rights arrived after the level / lock message (e.g. a hidden
+      // founder whose founder record loaded late): let them in after all.
+      setBlocked((b) => (b.startsWith("This room needs level") || b.startsWith("🔒 This room is locked") ? "" : b));
+      return;
+    }
+    if (!profile || !roomLoaded || !modLoaded) return;
     if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel) {
       setBlocked(`This room needs level ${roomInfo.lockLevel}. You are level ${profile.level}.`);
     } else if (locked) {
@@ -438,6 +444,8 @@ function RoomView({ roomName }: { roomName: string }) {
         // A hidden founder can never be muted, banned or kicked from a room.
         if (permsRef.current.isHiddenFounder) {
           setMuted(false);
+          // Loaded after a ban / kick was already shown: let them in after all.
+          setBlocked((b) => (b === "You are banned from this room." || b === "You were kicked from this room." ? "" : b));
           setMyModLoaded(true);
           return;
         }
@@ -472,7 +480,8 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Enter the room: presence doc + "has entered", heartbeat, and "has left" on exit.
   useEffect(() => {
-    if (!user || !profile || blocked || !roomLoaded || !modLoaded || !myModLoaded) return;
+    // Also wait for the founder record: a hidden founder may enter invisibly.
+    if (!user || !profile || blocked || !roomLoaded || !modLoaded || !myModLoaded || !founder.loaded) return;
     // Checked here too: the effect that sets "blocked" runs in the same commit,
     // too late to stop this one from posting "has entered".
     const info = roomInfoRef.current;
@@ -671,7 +680,35 @@ function RoomView({ roomName }: { roomName: string }) {
       // start a heartbeat nothing would ever stop.
       if (left || disposed) return;
       heartbeat = setInterval(() => {
-        setDoc(presenceRef, { lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+        // updateDoc, not a merge: if someone cleared this presence doc (3 h
+        // without a heartbeat, e.g. a sleeping laptop), it must not come back
+        // as a nameless half doc. Instead this is a new visit, like the app:
+        // full presence doc + "has entered".
+        updateDoc(presenceRef, { lastSeen: serverTimestamp() }).catch((err) => {
+          if (err?.code !== "not-found" || left || disposed) return;
+          visitId = newVisitId();
+          setDoc(presenceRef, {
+            uid,
+            username: profile.username,
+            activity: "",
+            level: profile.level,
+            levelBadgeIcon: profile.badge,
+            shopBadges: [],
+            presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
+            lastSeen: serverTimestamp(),
+            visitId,
+            entryMarker: serverTimestamp(),
+          }).catch(() => {});
+          if (!quietMe) {
+            addDoc(collection(db, "room_messages", roomName, "messages"), {
+              text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
+              sender: profile.username,
+              senderUid: uid,
+              type: "room_entry",
+              createdAt: serverTimestamp(),
+            }).catch(() => {});
+          }
+        });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
     })();
@@ -695,7 +732,7 @@ function RoomView({ roomName }: { roomName: string }) {
         }, 1500)
       );
     };
-  }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded]);
+  }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded, founder.loaded]);
 
   // Merge server messages with this device's own notices, oldest first.
   // Same display rules as the app (RoomPage.kt): your own entered/left lines
@@ -1775,6 +1812,9 @@ function MessageRow({
   onMention: (name: string) => void;
   onReply: (sender: string, snippet: string) => void;
 }) {
+  // 🌈 miglife + Special Edition Colour holders: rainbow names. (A hook, so it
+  // must run before any of the early returns below.)
+  const special = useSpecialColors();
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
 
@@ -1877,8 +1917,6 @@ function MessageRow({
     );
   }
 
-  // 🌈 miglife + Special Edition Colour holders: rainbow names.
-  const special = useSpecialColors();
   // "name: message" — the sender is whatever comes before the first colon,
   // like the app (local notices such as "Bangladesh: …" included).
   const colon = m.text.indexOf(":");
