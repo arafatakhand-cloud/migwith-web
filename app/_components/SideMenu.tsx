@@ -11,6 +11,7 @@ import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { useFounderPerms } from "../../lib/founder";
+import { markOfflineForLogout } from "../../lib/heartbeat";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
 // Phones open it from ☰; laptops show it as a sidebar (DesktopSidebar).
@@ -134,6 +135,7 @@ export function MenuPanel() {
       onClick={async () => {
         await detachPushForLogout();
         if (uid) await leaveAllOpenRooms(uid);
+        await markOfflineForLogout(uid);
         await signOut(auth);
       }}
       className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50 px-2.5 py-2 text-left text-sm font-bold text-rose-600"

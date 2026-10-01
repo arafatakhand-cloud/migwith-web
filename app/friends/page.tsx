@@ -10,6 +10,7 @@ import { chatHref } from "../../lib/privateChat";
 import { useFriendRequests, type FriendRequest } from "../../lib/friends";
 import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
+import { isOnlineNow } from "../../lib/heartbeat";
 
 // Same three tabs as the app's FriendsPage: My Friends / Requests / Find Friends.
 
@@ -57,7 +58,8 @@ export default function FriendsPage() {
           s.docs.forEach((d) => {
             next[String(d.get("username")).toLowerCase()] = {
               level: Number(d.get("level") || 1),
-              online: String(d.get("presenceStatus") || "OFFLINE").toUpperCase() === "ONLINE",
+              // A fresh heartbeat, like the app (presenceStatus alone stayed ONLINE forever).
+              online: isOnlineNow(d.data()),
             };
           })
         );

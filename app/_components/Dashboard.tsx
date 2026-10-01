@@ -10,6 +10,7 @@ import { OFFICIAL_COUNTRY_ROOMS, badgeForLevel, roomHref } from "../../lib/rooms
 import { useSession } from "./AppSession";
 import { InstallHint } from "./InstallHint";
 import { AndroidDownloadRow } from "./AndroidDownload";
+import { isOnlineNow } from "../../lib/heartbeat";
 
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
@@ -98,7 +99,8 @@ export function Dashboard() {
             next[name.toLowerCase()] = {
               name,
               photo: photoOf(x),
-              online: String(x.presenceStatus || "OFFLINE").toUpperCase() === "ONLINE",
+              // A fresh heartbeat, like the app (presenceStatus alone stayed ONLINE forever).
+              online: isOnlineNow(x),
               gender: String(x.gender || ""),
               level: Number(x.level || 1),
               country: String(x.country || ""),
