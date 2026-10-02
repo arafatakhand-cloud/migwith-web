@@ -175,33 +175,8 @@ function hm12(hm: string): string {
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m || 0).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 }
 
-/** 🎰 Luxury Bet — tap to open: Access, Level (7 sequences) and Schedule. */
-export function LuxuryBetSection() {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center rounded-[18px] border-[1.5px] border-[#D4AF37] bg-[#1E1A2E] px-4 py-3.5 text-left"
-      >
-        <span className="flex-1">
-          <span className="block text-lg font-extrabold text-[#F2D675]">🎰 Luxury Bet</span>
-          <span className="block text-xs text-[#F2E6C2]">Access · Level · Schedule</span>
-        </span>
-        <span className="text-[#D4AF37]">{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <>
-          <LuxuryBetAccessCard />
-          <LuxuryBetLevelCard />
-        </>
-      )}
-    </>
-  );
-}
-
-function LuxuryBetAccessCard() {
+/** 🎰 Luxury Bet Access — who sees the room while it is being tested. */
+export function LuxuryBetAccessCard() {
   const { user } = useCurrentUser();
   const access = useLuxuryBetAccess(user?.uid);
   const [target, setTarget] = useState("");
@@ -288,7 +263,7 @@ function LuxuryBetAccessCard() {
   );
 }
 
-function LuxuryBetLevelCard() {
+export function LuxuryBetLevelCard() {
   const [info, setInfo] = useState<LevelInfo>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);

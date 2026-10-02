@@ -260,12 +260,24 @@ function RoomView({ roomName }: { roomName: string }) {
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
   // 🎴 Teen Patti table (only in the Teen Patti room).
   const teenPatti = useTeenPatti(roomName === TEEN_PATTI_ROOM, user?.uid, note);
-  // 🏏 Cricket (only in the Cricket room).
-  const cricket = useCricket(roomName === CRICKET_ROOM, user?.uid, note);
+  // 🤖 LowCard / Cricket Bot switched on in THIS room (/start lowcard,
+  // /start cricket — room_bots/{room} is written by the roomBotControl Cloud Function).
+  const [roomActiveBot, setRoomActiveBot] = useState<string | null>(null);
+  useEffect(() => {
+    setRoomActiveBot(null);
+    if (!user || !roomName) return;
+    return onSnapshot(
+      doc(db, "room_bots", roomName),
+      (d) => setRoomActiveBot(String(d.get("bot") || "") || null),
+      () => setRoomActiveBot(null)
+    );
+  }, [user, roomName]);
+  // 🏏 Cricket (the Cricket room, or any room where Cricket Bot is on).
+  const cricket = useCricket(roomName === CRICKET_ROOM || roomActiveBot === "cricket" ? roomName : null, user?.uid, note);
   // 🃏 29 table (only in the 29 room).
   const twentyNine = useTwentyNine(roomName === TN_ROOM, user?.uid, note);
-  // 🃏 LowCard (only in the LowCard room).
-  const lowCard = useLowCard(roomName === LOWCARD_ROOM, user?.uid, note);
+  // 🃏 LowCard (the LowCard room, or any room where LowCard Bot is on).
+  const lowCard = useLowCard(roomName === LOWCARD_ROOM || roomActiveBot === "lowcard" ? roomName : null, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
   const ludo = useLudo(roomName === LUDO_ROOM, user?.uid, note);
 
@@ -958,6 +970,32 @@ function RoomView({ roomName }: { roomName: string }) {
       })
     ) {
       setText("");
+      return;
+    }
+
+    // 🤖 ROOM BOTS — /start lowcard · /stop lowcard · /start cricket · /stop
+    // cricket: the room's owner / mods (or admin / staff) switch a bot on or
+    // off. Stopping during a game refunds everyone (server: roomBotControl).
+    const botCmd = clean.trim().match(/^\/(start|stop)\s+(lowcard|cricket)$/i);
+    if (botCmd) {
+      setText("");
+      const act = botCmd[1].toLowerCase();
+      const which = botCmd[2].toLowerCase();
+      const label = which === "lowcard" ? "LowCard Bot" : "Cricket Bot";
+      // chat rooms only (public or private) — never inside a game room
+      if (/ official$/i.test(roomName.trim()) || roomName.startsWith("🎰 Luxury Bet")) {
+        note(`${label}: bots can be started only in chat rooms (public or private), not in game rooms.`);
+        return;
+      }
+      httpsCallable<{ roomId: string; bot: string; action: string }, { already?: boolean }>(functions, "roomBotControl")({
+        roomId: roomName,
+        bot: which,
+        action: act,
+      })
+        .then(({ data }) => {
+          if (data?.already === true) note(`${label}: already on in this room.`);
+        })
+        .catch((e: any) => note(`${label}: ${e?.message || "Could not change the bot."}`));
       return;
     }
 

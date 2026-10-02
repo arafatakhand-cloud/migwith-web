@@ -8,7 +8,14 @@ import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
 import { ALL_COUNTRIES, countryFlag } from "../../lib/countries";
 import { FounderShell, input } from "./_Shell";
-import { AppDownloadLinkCard, FounderSpecialColorCard, LevelCurveCard, LuxuryBetSection, SecurityQuestionResetCard } from "./_MainFounderCards";
+import {
+  AppDownloadLinkCard,
+  FounderSpecialColorCard,
+  LevelCurveCard,
+  LuxuryBetAccessCard,
+  LuxuryBetLevelCard,
+  SecurityQuestionResetCard,
+} from "./_MainFounderCards";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
@@ -71,6 +78,8 @@ export default function SecretPage() {
   const [tiers, setTiers] = useState<Record<string, boolean>>({ single: true, easy: true, medium: true, hard: true, trio: true });
   const [status, setStatus] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
+  // 🧰 Which Founder Tool is open (null = the tools list).
+  const [tool, setTool] = useState<string | null>(null);
 
   useEffect(() => {
     if (!f.isAnyFounder) return;
@@ -89,32 +98,110 @@ export default function SecretPage() {
     };
   }, [f.isAnyFounder]);
 
-  const tools: [string, string, string, boolean][] = [
-    ["👑", "Founders (add / remove)", "/secret/founders", f.isMigwith],
-    ["🔐", "Share Permissions", "/secret/share", f.can("share_permissions")],
-    ["ℹ", "Room info", "/secret/rooms", f.can("room_info")],
-    ["✉", "Change Email", "/secret/email", f.can("change_email")],
-    ["🌐", "IP Monitor / IP Ban", "/secret/ip", f.can("ip_monitor")],
-    ["💰", "Coin Control", "/secret/coins", f.can("coin_control")],
-  ];
+  // 🧰 FOUNDER TOOLS — every tool in one tidy, grouped list (like the app).
+  // Tools that are separate pages open those pages; the rest open right here
+  // (tool) with the back arrow returning to this list.
+  type Tool = { icon: string; label: string; hint: string; tint: string; href?: string; key?: string; ok: boolean };
+  const groups: [string, Tool[]][] = (
+    [
+      [
+        "👥 Team & Users",
+        [
+          { icon: "👑", label: "Founders", hint: "Add / remove founders & their tools", tint: "#E0A82E", href: "/secret/founders", ok: f.isMigwith },
+          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.40)", tint: "#F2B705", key: "level", ok: f.isMigwith },
+          { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
+          { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
+          { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },
+          { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.isMigwith },
+        ],
+      ],
+      [
+        "🛡 Safety & Rooms",
+        [
+          { icon: "🔐", label: "Share Permissions", hint: "Who can share pictures / voice / video", tint: "#00897B", href: "/secret/share", ok: f.can("share_permissions") },
+          { icon: "ℹ", label: "Room info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
+          { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
+        ],
+      ],
+      [
+        "💰 Coins & Shop",
+        [
+          { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
+          { icon: "🎁", label: "Gift Shops", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
+          { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
+          { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
+          { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
+        ],
+      ],
+      [
+        "🎮 Games",
+        [
+          { icon: "🎰", label: "Luxury Bet", hint: "Access · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
+          { icon: "🎲", label: "Luxury Bot Tiers", hint: "Turn result tiers on / off", tint: "#5E35B1", key: "luxury_tiers", ok: f.can("luxury_tiers") },
+        ],
+      ],
+    ] as [string, Tool[]][]
+  )
+    .map(([g, list]) => [g, list.filter((t) => t.ok)] as [string, Tool[]])
+    .filter(([, list]) => list.length > 0);
+  const allTools = groups.flatMap(([, list]) => list);
+  const openTool = allTools.find((t) => t.key && t.key === tool) || null;
 
   return (
-    <FounderShell title="miglife secret" allowed={f.isAnyFounder} loaded={f.loaded}>
-      <div className="space-y-2 rounded-[18px] border border-[#E0A82E] bg-white p-4">
-        <p className="text-[17px] font-bold">🧰 Founder Tools</p>
-        {tools
-          .filter(([, , , ok]) => ok)
-          .map(([icon, label, href]) => (
-            <Link key={href} href={href} className="flex items-center gap-2.5 rounded-xl bg-[#F1F5FB] px-3.5 py-3 font-semibold">
-              <span className="text-lg">{icon}</span>
-              <span className="flex-1">{label}</span>
-              <span className="text-xl text-gray-400">›</span>
-            </Link>
+    <FounderShell
+      title={openTool ? `${openTool.icon} ${openTool.label}` : "miglife secret"}
+      allowed={f.isAnyFounder}
+      loaded={f.loaded}
+      onBack={openTool ? () => setTool(null) : undefined}
+    >
+      {!openTool && (
+        <div className="space-y-1.5 rounded-[22px] border border-[#E0A82E] bg-white p-3.5 shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="text-[22px]">🧰</span>
+            <div>
+              <p className="text-lg font-extrabold">Founder Tools</p>
+              <p className="text-[11px] text-[#5B6B8C]">{allTools.length} tools</p>
+            </div>
+          </div>
+          {groups.map(([groupTitle, list]) => (
+            <div key={groupTitle} className="space-y-1.5">
+              <p className="pl-0.5 pt-2 text-[11px] font-bold uppercase tracking-[1px] text-[#5B6B8C]">{groupTitle}</p>
+              {list.map((t) => {
+                const body = (
+                  <>
+                    <span
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] text-[17px]"
+                      style={{ background: `linear-gradient(135deg, ${t.tint}F2, ${t.tint}99)` }}
+                    >
+                      {t.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-bold">{t.label}</span>
+                      <span className="block truncate text-[11px] text-[#5B6B8C]">{t.hint}</span>
+                    </span>
+                    <span className="text-[22px] font-bold" style={{ color: t.tint }}>
+                      ›
+                    </span>
+                  </>
+                );
+                const cls = "flex w-full items-center gap-3 rounded-[14px] border border-[#E3EAF5] bg-[#F4F7FC] px-2.5 py-[9px] text-left";
+                return t.href ? (
+                  <Link key={t.label} href={t.href} className={cls}>
+                    {body}
+                  </Link>
+                ) : (
+                  <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls}>
+                    {body}
+                  </button>
+                );
+              })}
+            </div>
           ))}
-      </div>
+        </div>
+      )}
 
       {/* ID tools: the main founder (miglife) ONLY, whatever perms other founders have. */}
-      {f.isMigwith && (
+      {f.isMigwith && tool === "id_creation" && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-white p-4">
           <p className="text-[17px] font-bold">🔴 Other Users ID Creation</p>
           <p className="mt-1 text-xs text-gray-500">{idOn ? "ENABLE — normal users can create IDs." : "OFF — normal users cannot create IDs."}</p>
@@ -138,7 +225,7 @@ export default function SecretPage() {
         </div>
       )}
 
-      {f.can("luxury_tiers") && (
+      {f.can("luxury_tiers") && tool === "luxury_tiers" && (
         <div className="space-y-2 rounded-[18px] border border-[#E0A82E] bg-white p-4">
           <p className="text-[17px] font-bold">🎛️ Luxury Bot Sequence Tiers</p>
           <p className="text-xs text-gray-500">
@@ -166,7 +253,7 @@ export default function SecretPage() {
         </div>
       )}
 
-      {f.isMigwith && (
+      {f.isMigwith && tool === "create_id" && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-[#11101A] p-4">
           <p className="text-lg font-extrabold text-[#FFD35A]">👑 FOUNDER CREATE ID</p>
           <p className="mt-1 text-xs text-[#D0D5E0]">FOUNDER mode uses the same MIG ID rule: minimum 3 characters and at least 1 English letter.</p>
@@ -177,14 +264,15 @@ export default function SecretPage() {
       )}
 
       {/* miglife only, like the app: new level curve, Security Question Reset, 🎰 Luxury Bet. */}
-      {f.isMigwith && (
+      {f.isMigwith && tool === "achievements" && <FounderAchievementsCard />}
+      {f.isMigwith && tool === "vip" && <FounderSpecialColorCard />}
+      {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
+      {f.isMigwith && tool === "level" && <LevelCurveCard />}
+      {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
+      {f.isMigwith && tool === "luxury_bet" && (
         <>
-          <FounderAchievementsCard />
-          <FounderSpecialColorCard />
-          <AppDownloadLinkCard />
-          <LevelCurveCard />
-          <SecurityQuestionResetCard />
-          <LuxuryBetSection />
+          <LuxuryBetAccessCard />
+          <LuxuryBetLevelCard />
         </>
       )}
 

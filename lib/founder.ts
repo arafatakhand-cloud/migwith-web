@@ -25,6 +25,8 @@ export const FOUNDER_PERMS: [string, string][] = [
   ["create_id", "Create ID"],
   ["switch_account", "Switch Account"],
   ["whois_full", "Whois (full)"],
+  // 🎁 Gift Shops: add / edit / delete gifts
+  ["gift_shop", "Gift Edit"],
 ];
 
 export function useFounderPerms() {

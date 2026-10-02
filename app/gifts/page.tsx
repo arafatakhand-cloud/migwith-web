@@ -16,7 +16,7 @@ import { db, storage } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
-import { isMainFounderName } from "../../lib/founder";
+import { isMainFounderName, useFounderPerms } from "../../lib/founder";
 import { BackButton } from "../_components/BackButton";
 
 // Explore › Gift Shops, like the app's GiftStorePage: the catalog in the
@@ -43,7 +43,9 @@ export default function GiftShopsPage() {
   const ready = useRequireLogin();
   const router = useRouter();
   const { user, username } = useSession();
-  const isAdmin = isMainFounderName(username);
+  // miglife, or a founder with the 🎁 Gift Edit tool (founderHas("gift_shop") in the rules)
+  const founderPerms = useFounderPerms();
+  const isAdmin = isMainFounderName(username) || founderPerms.can("gift_shop");
   const [gifts, setGifts] = useState<CatalogGift[] | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");

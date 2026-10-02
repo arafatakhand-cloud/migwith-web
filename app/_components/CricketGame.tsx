@@ -43,7 +43,10 @@ function opId(kind: string): string {
   return `cricket_${kind}_` + crypto.randomUUID().replace(/-/g, "");
 }
 
-export function useCricket(enabled: boolean, uid: string | undefined, note: (t: string) => void): CricketState | null {
+// roomId = the official Cricket room, or any room where Cricket Bot was
+// switched on with /start cricket (null = no Cricket Bot here).
+export function useCricket(roomId: string | null, uid: string | undefined, note: (t: string) => void): CricketState | null {
+  const enabled = !!roomId;
   const [g, setG] = useState({
     running: false,
     phase: "IDLE",
@@ -64,8 +67,8 @@ export function useCricket(enabled: boolean, uid: string | undefined, note: (t: 
   noteRef.current = note;
 
   useEffect(() => {
-    if (!enabled || !uid) return;
-    return onSnapshot(doc(db, "room_game", CRICKET_ROOM), (snap) => {
+    if (!roomId || !uid) return;
+    return onSnapshot(doc(db, "room_game", roomId), (snap) => {
       if (!snap.exists()) {
         setG((prev) => ({ ...prev, running: false, phase: "IDLE" }));
         return;
@@ -96,7 +99,7 @@ export function useCricket(enabled: boolean, uid: string | undefined, note: (t: 
         superOverUids: Array.isArray(so.candidateUids) ? so.candidateUids.map(String) : [],
       });
     });
-  }, [enabled, uid]);
+  }, [roomId, uid]);
 
   // Countdown, and nudge the game on when a timer ends (the server does it once).
   useEffect(() => {
@@ -112,11 +115,11 @@ export function useCricket(enabled: boolean, uid: string | undefined, note: (t: 
         n - lastTick.current > 1500
       ) {
         lastTick.current = n;
-        tickCall({}).catch(() => {});
+        tickCall({ roomId }).catch(() => {});
       }
     }, 300);
     return () => clearInterval(t);
-  }, [enabled, g.running, g.phaseEndsAt]);
+  }, [enabled, roomId, g.running, g.phaseEndsAt]);
 
   if (!enabled) return null;
 
@@ -134,13 +137,13 @@ export function useCricket(enabled: boolean, uid: string | undefined, note: (t: 
     activeBatters: () =>
       g.superOver ? g.players.filter((p) => g.superOverUids.includes(p.uid)) : g.players.filter((p) => !p.out),
     start: (entry: number) => {
-      if (!busy) run(startCall({ entryCost: entry, operationId: opId("start") }), "Could not start.");
+      if (!busy) run(startCall({ entryCost: entry, operationId: opId("start"), roomId }), "Could not start.");
     },
     join: () => {
-      if (!busy) run(joinCall({ operationId: opId("join") }), "Could not join.");
+      if (!busy) run(joinCall({ operationId: opId("join"), roomId }), "Could not join.");
     },
     bat: () => {
-      if (!busy) run(batCall({ roundNumber: g.round }), "Could not bat.");
+      if (!busy) run(batCall({ roundNumber: g.round, roomId }), "Could not bat.");
     },
   };
 }
