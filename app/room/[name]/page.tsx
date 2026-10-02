@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   collection,
   deleteDoc,
   doc,
@@ -165,6 +167,8 @@ function RoomView({ roomName }: { roomName: string }) {
   // 🔗 a link tapped in the room chat (normal link → "leaving miglife" check,
   // YouTube → plays here in a popup).
   const [pendingLink, setPendingLink] = useState<string | null>(null);
+  // Own message → who reacted with an emoji.
+  const [reactors, setReactors] = useState<{ emoji: string; uids: string[] } | null>(null);
   // This open tab's saved session (lib/roomSession): coming back to the tab
   // shows the same chat, draft and scroll position, like the app.
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
@@ -232,6 +236,22 @@ function RoomView({ roomName }: { roomName: string }) {
     el.scrollTop = initial.stickToBottom ? el.scrollHeight : initial.scrollTop;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // One reaction per person per message, like the app: the same emoji again
+  // clears it; a new one moves it (both in one update).
+  const setRoomReaction = (m: ChatMessage, emoji: string) => {
+    const uid = user?.uid;
+    if (!uid || !m.id || m.local) return;
+    const ref = doc(db, "room_messages", roomName, "messages", m.id);
+    const previous = Object.entries(m.reactions || {}).find(([, uids]) => uids.includes(uid))?.[0];
+    if (previous === emoji) {
+      updateDoc(ref, { [`reactions.${emoji}`]: arrayRemove(uid) }).catch(() => {});
+      return;
+    }
+    const updates: Record<string, unknown> = { [`reactions.${emoji}`]: arrayUnion(uid) };
+    if (previous) updates[`reactions.${previous}`] = arrayRemove(uid);
+    updateDoc(ref, updates).catch(() => setDoc(ref, { reactions: { [emoji]: [uid] } }, { merge: true }).catch(() => {}));
+  };
 
   const note = (t: string) =>
     setLocalNotes((n) => [
@@ -391,6 +411,11 @@ function RoomView({ roomName }: { roomName: string }) {
             audioUrl: String(d.get("audioUrl") || ""),
             giftName: String(d.get("giftName") || ""),
             moderationColor: String(d.get("moderationColor") || ""),
+            reactions: Object.fromEntries(
+              Object.entries((d.get("reactions") || {}) as Record<string, unknown>)
+                .map(([e, uids]) => [e, Array.isArray(uids) ? uids.filter((u): u is string => typeof u === "string") : []] as const)
+                .filter(([, uids]) => uids.length > 0)
+            ),
             // Pending (just-sent) messages have no server time yet.
             createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
           }))
@@ -1285,6 +1310,7 @@ function RoomView({ roomName }: { roomName: string }) {
   return (
     <PageShell light bottomNav={false}>
       <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
+      {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} onClose={() => setReactors(null)} />}
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
@@ -1361,6 +1387,9 @@ function RoomView({ roomName }: { roomName: string }) {
                     inputRef.current?.focus();
                   }}
                   onLink={setPendingLink}
+                  myUid={user.uid}
+                  onReact={(emoji) => setRoomReaction(m, emoji)}
+                  onShowReactors={(emoji, uids) => setReactors({ emoji, uids })}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
                     inputRef.current?.focus();
@@ -1916,6 +1945,9 @@ function MessageRow({
   onMention,
   onReply,
   onLink,
+  myUid,
+  onReact,
+  onShowReactors,
 }: {
   m: ChatMessage;
   mine: boolean;
@@ -1932,10 +1964,18 @@ function MessageRow({
   onReply: (sender: string, snippet: string) => void;
   /** A link was tapped in a message. */
   onLink: (url: string) => void;
+  myUid: string;
+  /** Long-press picker: react with this emoji (same emoji again clears it). */
+  onReact: (emoji: string) => void;
+  /** Own message: who reacted with this emoji. */
+  onShowReactors: (emoji: string, uids: string[]) => void;
 }) {
   // 🌈 miglife + Special Edition Colour holders: rainbow names. (A hook, so it
   // must run before any of the early returns below.)
   const special = useSpecialColors();
+  // 😂 Long-press (or right-click) a chat message: reactions + Copy.
+  const [picker, setPicker] = useState(false);
+  const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
 
@@ -2072,11 +2112,73 @@ function MessageRow({
           ? body.slice(0, 60) + "…"
           : body;
 
+  // Reactions work on real chat lines only (not local notices or the room's own lines).
+  const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice");
+  const reactions = Object.entries(m.reactions || {});
+  const stopHold = () => {
+    if (hold.current) clearTimeout(hold.current.t);
+    hold.current = null;
+  };
+  const holdHandlers = canReact
+    ? {
+        onPointerDown: (e: React.PointerEvent) => {
+          stopHold();
+          hold.current = { t: setTimeout(() => setPicker(true), 450), x: e.clientX, y: e.clientY };
+        },
+        onPointerMove: (e: React.PointerEvent) => {
+          if (hold.current && Math.hypot(e.clientX - hold.current.x, e.clientY - hold.current.y) > 10) stopHold();
+        },
+        onPointerUp: stopHold,
+        onPointerCancel: stopHold,
+        onPointerLeave: stopHold,
+        onContextMenu: (e: React.MouseEvent) => {
+          e.preventDefault();
+          stopHold();
+          setPicker(true);
+        },
+      }
+    : {};
+
   return (
     <SwipeToReply enabled={canReply} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
-        <div className={`${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`} style={{ fontSize: fontPx }}>
+        <div
+          className={`relative ${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`}
+          style={{ fontSize: fontPx, WebkitTouchCallout: canReact ? "none" : undefined }}
+          {...holdHandlers}
+        >
+          {picker && (
+            <ReactionPicker
+              mineSide={rightSide}
+              reactions={m.reactions || {}}
+              myUid={myUid}
+              copyText={m.type === "image" || m.type === "voice" ? "" : body}
+              onPick={(e) => {
+                setPicker(false);
+                onReact(e);
+              }}
+              onClose={() => setPicker(false)}
+            />
+          )}
+          {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
+          {reactions.length > 0 && (
+            <span className={`mb-0.5 flex gap-2 px-1.5 ${rightSide ? "justify-end" : "justify-start"}`}>
+              {reactions.map(([e, uids]) => {
+                const byMe = uids.includes(myUid);
+                return (
+                  <span
+                    key={e}
+                    className={`text-[13px] leading-4 ${byMe ? "font-bold" : ""} ${mine ? "cursor-pointer" : ""}`}
+                    style={{ color: byMe ? LINK_BLUE : "#68758D" }}
+                    onClick={mine ? () => onShowReactors(e, uids) : undefined}
+                  >
+                    {e} {uids.length}
+                  </span>
+                );
+              })}
+            </span>
+          )}
           {quote && (
             <span
               className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
@@ -2134,6 +2236,123 @@ function MessageRow({
         </div>
       </div>
     </SwipeToReply>
+  );
+}
+
+const REACTION_EMOJIS: [string, string][] = [
+  ["😂", "Haha"],
+  ["❤️", "Love"],
+  ["👍", "Like"],
+  ["😮", "Wow"],
+  ["😢", "Sad"],
+];
+
+// The long-press menu over a room message: 5 reactions (a dot under the one
+// you gave) and Copy, like the app. Tap outside to close.
+function ReactionPicker({
+  mineSide,
+  reactions,
+  myUid,
+  copyText,
+  onPick,
+  onClose,
+}: {
+  mineSide: boolean;
+  reactions: Record<string, string[]>;
+  myUid: string;
+  copyText: string;
+  onPick: (emoji: string) => void;
+  onClose: () => void;
+}) {
+  const [hovered, setHovered] = useState<string | null>(null);
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => (e.preventDefault(), onClose())} />
+      <div className={`absolute bottom-full z-50 mb-2 flex flex-col gap-2 ${mineSide ? "right-0 items-end" : "left-0 items-start"}`}>
+        <div className="flex h-7 items-end">
+          {hovered && (
+            <span className="rounded-[10px] bg-[#1A1A2E]/90 px-2.5 py-1 text-xs font-bold text-white">
+              {REACTION_EMOJIS.find(([e]) => e === hovered)?.[1]}
+            </span>
+          )}
+        </div>
+        <div className="reaction-pop flex gap-0.5 rounded-[30px] border border-[#2F80ED]/20 bg-white px-2 py-1.5 shadow-xl">
+          {REACTION_EMOJIS.map(([e], i) => {
+            const byMe = reactions[e]?.includes(myUid);
+            return (
+              <button
+                key={e}
+                type="button"
+                onClick={() => onPick(e)}
+                onMouseEnter={() => setHovered(e)}
+                onMouseLeave={() => setHovered(null)}
+                className="flex flex-col items-center"
+                style={{ animationDelay: `${i * 40}ms` }}
+              >
+                <span
+                  className={`reaction-emoji flex h-[42px] w-[42px] items-center justify-center rounded-full text-[25px] transition-transform hover:-translate-y-2 hover:scale-[1.45] ${
+                    byMe ? "bg-[#2F80ED]/15" : ""
+                  }`}
+                  style={{ animationDelay: `${i * 40}ms` }}
+                >
+                  {e}
+                </span>
+                <span className={`h-1 w-1 rounded-full ${byMe ? "bg-[#2F80ED]" : ""}`} />
+              </button>
+            );
+          })}
+        </div>
+        {copyText.trim() && (
+          <button
+            type="button"
+            onClick={() => {
+              const plain = copyText.startsWith("↩ ") && copyText.includes("\n") ? copyText.slice(copyText.indexOf("\n") + 1) : copyText;
+              navigator.clipboard?.writeText(plain).catch(() => {});
+              onClose();
+            }}
+            className="flex items-center gap-2 rounded-[18px] border border-[#2F80ED]/20 bg-white px-4 py-2 text-sm font-bold text-[#0B1F3A] shadow-lg"
+          >
+            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">📋</span>
+            Copy
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+// Own message: who reacted with an emoji (names looked up once).
+function ReactorsDialog({ emoji, uids, onClose }: { emoji: string; uids: string[]; onClose: () => void }) {
+  const [names, setNames] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let alive = true;
+    uids.forEach((uid) =>
+      getDoc(doc(db, "users", uid))
+        .then((s) => alive && setNames((n) => ({ ...n, [uid]: String(s.get("username") || "Unknown") })))
+        .catch(() => {})
+    );
+    return () => {
+      alive = false;
+    };
+  }, [uids]);
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
+      <div className="w-full max-w-xs rounded-2xl bg-white p-4 text-[#0B1F3A]" onClick={(e) => e.stopPropagation()}>
+        <p className="text-lg font-extrabold">
+          {emoji} {uids.length}
+        </p>
+        <ul className="mt-2 max-h-72 space-y-1.5 overflow-y-auto">
+          {uids.map((u) => (
+            <li key={u} className="text-[15px] font-semibold">
+              {names[u] || "…"}
+            </li>
+          ))}
+        </ul>
+        <button type="button" onClick={onClose} className="mt-3 w-full rounded-xl bg-[#2F80ED] py-2 font-bold text-white">
+          Close
+        </button>
+      </div>
+    </div>
   );
 }
 

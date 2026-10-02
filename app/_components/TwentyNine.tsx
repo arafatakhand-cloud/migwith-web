@@ -315,7 +315,7 @@ export function TwentyNineTable({ state }: { state: TnState }) {
       {/* Header */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-full bg-gradient-to-r from-blue-700 to-violet-600 px-2.5 py-0.5 text-sm font-black">
-          🃏 29
+          🃏 29 Card
         </span>
         {state.running && (
           <span
@@ -370,41 +370,167 @@ export function TwentyNineTable({ state }: { state: TnState }) {
   );
 }
 
+// Lobby (no match running) — dark "VIP casino" look like the app: felt banner
+// with a moving shine, glass cards, gold entry picker and a shimmering button.
+const TN_GOLD_TEXT = "linear-gradient(to bottom, #FFF3C4, #F2C94C, #D29B16)";
+const goldText = { background: TN_GOLD_TEXT, WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" } as const;
+
 function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; setEntry: (n: number) => void }) {
+  // 4 entries in the pot, 90% split between the 2 winners.
+  const winEach = Math.floor((entry * 4 * 9) / 10 / 2);
+  const sc = (v: number) => (v > 0 ? `+${v}` : `${v}`);
+  const win = state.resultWinTeam;
+  const teamColor = win === 0 ? "#7DB6FF" : "#FF9B7A";
   return (
-    <div className="mt-2">
-      {state.resultWinTeam >= 0 && (
-        <p className="mb-2 text-center text-xs font-semibold text-white/80">
-          Last match: Team {state.resultWinTeam === 0 ? "A" : "B"} won (A {state.match[0]} · B {state.match[1]})
-          {state.resultShare > 0 ? ` · ${state.resultShare.toLocaleString()} coins each` : ""}
-        </p>
-      )}
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-white/50">Entry</span>
-        {ENTRY_OPTIONS.map((a) => (
-          <button
-            key={a}
-            type="button"
-            onClick={() => setEntry(a)}
-            className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-              entry === a ? "border-amber-300 bg-amber-300 text-neutral-900" : "border-white/10 text-white/70"
-            }`}
-          >
-            {a >= 1000 ? `${a / 1000}K` : a}
-          </button>
-        ))}
+    <div className="mt-1 rounded-[18px] border border-[#F2C94C]/45 bg-gradient-to-b from-[#2A1F6B] via-[#130F33] to-[#0C0A24] p-2">
+      {/* Casino table banner: gold rim, felt, faint suit pattern, light sweep, fanned 29 cards */}
+      <div
+        className="rounded-[22px] p-[2.5px] shadow-[0_6px_18px_rgba(74,120,218,.55)]"
+        style={{ background: "linear-gradient(135deg, #FFF3C4, #D29B16, #FFE49A, #D29B16)" }}
+      >
+        <div className="tn-shine relative h-[108px] overflow-hidden rounded-[20px] bg-[radial-gradient(circle,_#5585E8,_#2D56B0_60%,_#142B63)]">
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-0.5 overflow-hidden whitespace-nowrap text-[18px] leading-tight text-white/5">
+            {[0, 1, 2, 3].map((r) => (
+              <span key={r}>{(r % 2 === 0 ? "♠  ♥  ♣  ♦  " : "  ♦  ♣  ♥  ♠").repeat(4)}</span>
+            ))}
+          </div>
+          <div className="absolute left-4 top-1/2 -translate-y-1/2">
+            <div className="flex items-center gap-1.5">
+              <span className="rounded border border-[#F2C94C]/60 bg-[#F2C94C]/20 px-1 py-px text-[8px] font-extrabold tracking-[1px] text-[#F2C94C]">♛ VIP</span>
+              <span className="text-[11px] font-extrabold tracking-[4px] text-[#F2C94C]">miglife</span>
+            </div>
+            <p
+              className="text-[25px] font-black leading-tight tracking-[1px]"
+              style={{ background: "linear-gradient(#FFFFFF, #FFE49A)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+            >
+              29 CARD
+            </p>
+            <div className="flex items-center text-[10px] font-bold text-white/80">
+              <span className="h-2 w-2 rounded-full bg-[#7DB6FF]" />
+              &nbsp;Team A&nbsp;<span className="text-[9px] font-black text-[#F2C94C]">VS</span>&nbsp;Team B&nbsp;
+              <span className="h-2 w-2 rounded-full bg-[#FF9B7A]" />
+            </div>
+          </div>
+          {/* J > 9 > A > 10 — the four point cards, fanned out */}
+          <div className="absolute right-[18px] top-1/2 h-20 w-28 -translate-y-1/2">
+            {["10♦", "A♣", "9♥", "J♠"].map((c, i) => (
+              <span
+                key={c}
+                className="absolute left-1/2 top-1/2 drop-shadow-md"
+                style={{
+                  transform: `translate(-50%, -50%) translate(${i * 19 - 28}px, ${i === 1 || i === 2 ? -4 : 3}px) rotate(${-21 + i * 14}deg)`,
+                }}
+              >
+                <MiniCard card={c} size="md" />
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Last match result */}
+      {win >= 0 && (
+        <div
+          className="mt-3 flex items-center rounded-2xl px-3 py-2.5"
+          style={{
+            border: "1px solid transparent",
+            background: `linear-gradient(to right, ${teamColor}38, rgba(255,255,255,.07)) padding-box, linear-gradient(to right, ${teamColor}, rgba(242,201,76,.4)) border-box`,
+          }}
+        >
+          <span className="relative">
+            <span
+              className="flex h-[42px] w-[42px] items-center justify-center rounded-full border-2 border-[#F2C94C] text-lg font-black text-[#22204A]"
+              style={{ background: `radial-gradient(circle, #FFFFFF, ${teamColor})` }}
+            >
+              {win === 0 ? "A" : "B"}
+            </span>
+            <span className="absolute -top-[11px] left-1/2 -translate-x-1/2 text-[13px]">👑</span>
+          </span>
+          <span className="ml-3 min-w-0 flex-1">
+            <span className="block text-[9px] font-extrabold tracking-[1.2px]" style={goldText}>
+              LAST MATCH · WINNER
+            </span>
+            <span className="block text-base font-extrabold text-white">Team {win === 0 ? "A" : "B"} 🏆</span>
+            <span className="block text-[11px] font-bold text-white/60">
+              A {sc(state.match[0])} · B {sc(state.match[1])}
+            </span>
+          </span>
+          {state.resultShare > 0 && (
+            <span className="flex flex-col items-center rounded-xl bg-gradient-to-b from-[#4BE39A] to-[#1E9B5A] px-2.5 py-1 shadow-[0_0_10px_#3DD68C]">
+              <span className="text-sm font-extrabold text-white">+{state.resultShare.toLocaleString()} 🪙</span>
+              <span className="text-[9px] font-bold text-white/85">each</span>
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Entry picker — 2 rows of 3 */}
+      <div className="mt-3 flex items-center">
+        <span className="text-[10px] font-extrabold tracking-[1.5px]" style={goldText}>
+          ✦ CHOOSE ENTRY
+        </span>
+        <span className="flex-1" />
+        <span className="rounded-full border border-[#3DD68C]/50 bg-[#3DD68C]/15 px-2 py-0.5 text-[10px] font-extrabold text-[#6BF0AE]">
+          Win {winEach.toLocaleString()} 🪙 each
+        </span>
+      </div>
+      <div className="mt-2 grid grid-cols-3 gap-[7px]">
+        {ENTRY_OPTIONS.map((a) => {
+          const sel = entry === a;
+          return (
+            <button
+              key={a}
+              type="button"
+              onClick={() => setEntry(a)}
+              className="relative flex items-center justify-center gap-1 rounded-[14px] py-2.5"
+              style={{
+                background: sel ? "linear-gradient(#FFE9A8, #F2C94C, #D29B16)" : "linear-gradient(rgba(255,255,255,.10), rgba(255,255,255,.04))",
+                border: sel ? "1.5px solid #FFF3C4" : "1px solid rgba(255,255,255,.14)",
+                boxShadow: sel ? "0 0 12px rgba(242,201,76,.7)" : undefined,
+              }}
+            >
+              <span className="text-xs">🪙</span>
+              <span className={`text-[15px] font-extrabold ${sel ? "text-[#22204A]" : "text-white/90"}`}>{a >= 1000 ? `${a / 1000}K` : a}</span>
+              {sel && <span className="absolute right-[7px] top-0.5 text-[9px] font-extrabold text-[#22204A]">✓</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Big gold "open table" button: pulsing glow + a light sweep */}
       <button
         type="button"
         onClick={() => state.start(entry)}
         disabled={state.busy}
-        className="mt-2 w-full rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 py-2.5 text-sm font-black text-neutral-900 disabled:opacity-50"
+        className={`relative mt-3.5 flex w-full items-center overflow-hidden rounded-[18px] py-[9px] pl-3 pr-2 text-left ${state.busy ? "" : "tn-open tn-shine"}`}
+        style={{
+          background: state.busy ? "linear-gradient(#6E6A8E, #4E4A6E)" : "linear-gradient(#FFE9A8, #F2C94C, #D29B16)",
+          border: state.busy ? "1.5px solid transparent" : "1.5px solid #FFF3C4",
+        }}
       >
-        🃏 Open a 29 table ({entry.toLocaleString()})
+        <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#22204A]/10 text-lg">🃏</span>
+        <span className="ml-2.5 min-w-0 flex-1">
+          <span className={`block text-base font-black ${state.busy ? "text-white" : "text-[#22204A]"}`}>Open a 29 Card table</span>
+          <span className={`block text-[9px] font-bold ${state.busy ? "text-white/60" : "text-[#22204A]/60"}`}>Tap to deal · bots fill empty seats</span>
+        </span>
+        <span className="rounded-xl border border-[#F2C94C]/50 bg-gradient-to-b from-[#2E2A63] to-[#22204A] px-[11px] py-[7px] text-sm font-extrabold">
+          <span style={goldText}>{entry.toLocaleString()}</span> 🪙
+        </span>
       </button>
-      <p className="mt-1 text-center text-[10px] text-white/40">
-        4 players · teams A vs B · empty seats get bots · first team to +6 wins 90% of the pot
-      </p>
+
+      <div className="mt-3 grid grid-cols-3 gap-1.5">
+        {[
+          ["👥", "4 players"],
+          ["🤖", "Bots fill seats"],
+          ["🏆", "First to +6"],
+        ].map(([icon, label]) => (
+          <span key={label} className="flex items-center justify-center gap-[3px] truncate rounded-[10px] border border-white/15 bg-white/[0.07] py-1.5">
+            <span className="text-[11px]">{icon}</span>
+            <span className="truncate text-[10px] font-bold text-white/75">{label}</span>
+          </span>
+        ))}
+      </div>
+      <p className="mt-1.5 text-center text-[9px] text-white/40">Winning team shares 90% of the pot</p>
     </div>
   );
 }

@@ -228,3 +228,21 @@ body {
 .cr-glow { animation: cr-glow 0.5s ease-in-out infinite alternate; }
 .cr-glow-fast { animation: cr-glow 0.25s ease-in-out infinite alternate; }
 @keyframes cr-glow { from { transform: scale(1.12); } to { transform: scale(0.9); opacity: 0.05; } }
+
+/* 😂 Room reaction picker: the pill grows in, each emoji pops in after the last */
+.reaction-pop { animation: reaction-pop 0.22s cubic-bezier(.34,1.56,.64,1) both; transform-origin: bottom; }
+@keyframes reaction-pop { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+.reaction-emoji { animation: reaction-emoji 0.3s cubic-bezier(.34,1.8,.64,1) backwards; }
+@keyframes reaction-emoji { from { transform: scale(0); } to { transform: scale(1); } }
+
+/* 🃏 29 lobby: light sweep across the banner / button, pulsing gold glow */
+.tn-shine { position: relative; }
+.tn-shine::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
+  background-size: 250% 100%; animation: tn-shine 3.2s linear infinite;
+}
+@keyframes tn-shine { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.tn-open { animation: tn-open 0.9s ease-in-out infinite alternate; }
+@keyframes tn-open { from { box-shadow: 0 0 6px rgba(242,201,76,.7); } to { box-shadow: 0 0 16px rgba(242,201,76,.95); } }
+@media (prefers-reduced-motion: reduce) { .tn-shine::after, .tn-open { animation: none; } }

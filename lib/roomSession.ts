@@ -18,6 +18,8 @@ export type SessionMessage = {
   moderationColor?: string;
   createdAtMs: number;
   local?: boolean;
+  /** emoji -> uids who reacted (room_messages reactions map, like the app). */
+  reactions?: Record<string, string[]>;
 };
 
 export type RoomSession = {
