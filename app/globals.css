@@ -246,3 +246,21 @@ body {
 .tn-open { animation: tn-open 0.9s ease-in-out infinite alternate; }
 @keyframes tn-open { from { box-shadow: 0 0 6px rgba(242,201,76,.7); } to { box-shadow: 0 0 16px rgba(242,201,76,.95); } }
 @media (prefers-reduced-motion: reduce) { .tn-shine::after, .tn-open { animation: none; } }
+
+/* 😀 Shaking reaction emoji (room + private chat) */
+.reaction-shake { transform-origin: 50% 90%; animation: reaction-shake 2.6s linear infinite; }
+@keyframes reaction-shake {
+  0% { transform: rotate(0) scale(1); }
+  2.7% { transform: rotate(-16deg) scale(1.1); }
+  5.8% { transform: rotate(14deg) scale(1.18); }
+  8.8% { transform: rotate(-11deg) scale(1.12); }
+  11.9% { transform: rotate(8deg) scale(1.07); }
+  15% { transform: rotate(-4deg) scale(1.03); }
+  18%, 100% { transform: rotate(0) scale(1); }
+}
+.reaction-kick { transform-origin: 50% 90%; animation: reaction-kick 0.36s linear; }
+@keyframes reaction-kick {
+  0% { transform: rotate(0); } 17% { transform: rotate(-20deg); } 33% { transform: rotate(18deg); }
+  50% { transform: rotate(-14deg); } 67% { transform: rotate(10deg); } 83% { transform: rotate(-5deg); } 100% { transform: rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) { .reaction-shake, .reaction-kick { animation: none; } }

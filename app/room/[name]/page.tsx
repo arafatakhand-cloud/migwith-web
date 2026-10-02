@@ -35,10 +35,12 @@ import {
   presenceLine,
   roomHref,
   resolveRoomDescription,
+  roomDisplayName,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
+import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { addOpenRoom, isRoomOpen, postStaleLeaveLineOnce, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
 import { useSenderColors } from "../../../lib/senderColors";
@@ -1594,7 +1596,7 @@ function RoomView({ roomName }: { roomName: string }) {
           <div className="w-[62%] min-w-[230px] max-w-[280px] overflow-hidden rounded-[24px] bg-[#EEF0F3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="bg-gradient-to-r from-[#1E5BC6] to-[#1A4DA8] px-4 py-3 text-white">
               <p data-notranslate className="truncate text-[15px] font-black">
-                {roomName}
+                {roomDisplayName(roomName)}
                 {locked && <span className="ml-1.5 text-sm">🔒</span>}
                 {silenced && <span className="ml-1 text-sm">🔇</span>}
               </p>
@@ -1630,7 +1632,7 @@ function RoomView({ roomName }: { roomName: string }) {
       {infoOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setInfoOpen(false)}>
           <div className="w-full max-w-sm space-y-2 rounded-3xl bg-white p-5 text-sm text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 data-notranslate className="text-lg font-black">ℹ️ {roomName}</h2>
+            <h2 data-notranslate className="text-lg font-black">ℹ️ {roomDisplayName(roomName)}</h2>
             <p data-notranslate className="whitespace-pre-wrap text-[#35507E]">
               {roomDescription}
             </p>
@@ -2208,7 +2210,7 @@ function MessageRow({
                     style={{ color: byMe ? LINK_BLUE : "#68758D" }}
                     onClick={mine ? () => onShowReactors(e, uids) : undefined}
                   >
-                    {e} {uids.length}
+                    <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
                   </span>
                 );
               })}

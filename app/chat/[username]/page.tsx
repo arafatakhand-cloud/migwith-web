@@ -29,6 +29,7 @@ import { withEmotes } from "../../_components/Emote";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
 import { BackButton } from "../../_components/BackButton";
+import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
@@ -482,7 +483,7 @@ export default function PrivateChatPage() {
                         onClick={() => react(m, e)}
                         className={`rounded-xl px-2 py-0.5 text-xs text-white ${uids.includes(user.uid) ? "bg-[#3984D9]/40" : "bg-[#1E2A47]"}`}
                       >
-                        {e} {uids.length}
+                        <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
                       </button>
                     ))}
                   </div>

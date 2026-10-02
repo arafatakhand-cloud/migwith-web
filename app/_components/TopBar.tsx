@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { badgeText } from "../../lib/useBadges";
-import { PRESENCE_HEARTBEAT_MS, roomHref } from "../../lib/rooms";
+import { PRESENCE_HEARTBEAT_MS, roomDisplayName, roomHref } from "../../lib/rooms";
 import { touchOpenRooms, useOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
@@ -193,7 +193,7 @@ export function TopBar() {
                   data-notranslate
                   className="flex max-w-[9.5rem] shrink-0 items-center gap-1 rounded-xl bg-[#2F80ED] px-2.5 py-1.5 text-xs font-bold text-white shadow-md"
                 >
-                  💬 <span className="truncate">{r.replace(/^👻\s*/, "")}</span>
+                  💬 <span className="truncate">{roomDisplayName(r)}</span>
                 </span>
               ) : (
                 <Link

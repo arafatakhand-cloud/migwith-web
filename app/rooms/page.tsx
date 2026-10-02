@@ -24,6 +24,7 @@ import {
   OFFICIAL_GAME_ROOMS,
   ROOM_PRESENCE_STALE_MS,
   roomHref,
+  roomDisplayName,
 } from "../../lib/rooms";
 import { useRoomPrefs } from "../../lib/roomPrefs";
 import { PageShell } from "../_components/PageShell";
@@ -293,7 +294,7 @@ export default function RoomsPage() {
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-[#9A3A1C]">Hot now</p>
               <p data-notranslate className="truncate text-[21px] font-extrabold text-[#5A1E0C]">
-                {hotName.replace(/^👻\s*/, "")}
+                {roomDisplayName(hotName)}
               </p>
               <p className="text-xs text-[#9A3A1C]">
                 {hotLive} people · {hotLive >= 20 ? "very active" : "active"}
@@ -480,7 +481,7 @@ const OFFICIAL_GAME_CARDS: [string, string][] = [
   ["🎴 Teen Patti Official", "Teen Patti"],
   ["🎲 Ludo Bot Official", "Ludo"],
   ["👑 MIG Royale Official", "MIG Royale"],
-  ["🃏 29 Official", "29"],
+  ["🃏 29 Official", "29 Card"],
   ["👻 Luxury Bot Official", "Luxury Bot"],
   ["🎰 Luxury Bet", "Luxury Bet"],
   ["🃏 LowCard Official", "LowCard"],
@@ -521,7 +522,7 @@ function RoomRow({
       >
         <span className="min-w-0 flex-1">
           <span data-notranslate className="flex items-center gap-1.5 text-sm font-semibold text-[#0B2A5B]">
-            <span className="truncate">{name.replace(/^👻\s*/, "")}</span>
+            <span className="truncate">{roomDisplayName(name)}</span>
             {n > 0 && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#6FCFA4]" />}
           </span>
           <span data-notranslate className="block truncate text-xs text-[#5B6B8C]">

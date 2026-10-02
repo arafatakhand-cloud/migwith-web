@@ -148,6 +148,15 @@ export function roomHref(name: string): string {
 const LEGACY_DEFAULT_DESCRIPTION =
   "🏷️ Welcome to the room — chat, connect and enjoy the game together. 🎁\n\nPlease play fairly, respect other players and enjoy your time in the room. ✨";
 
+// The 29 room keeps its old id (Firestore docs + Cloud Functions use it);
+// only the name people see is "29 Card" (like the app).
+export const TN_ROOM_DISPLAY_NAME = "🃏 29 Card Official";
+/** The room name people see: no 👻 in front, and the 29 room as "29 Card". */
+export function roomDisplayName(name: string): string {
+  const out = name.replace(/^👻\s*/, "");
+  return out === "🃏 29 Official" ? TN_ROOM_DISPLAY_NAME : out;
+}
+
 const isOfficialRoomName = (name: string) =>
   name === "🎰 Luxury Bet" || OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
 
@@ -164,7 +173,7 @@ export function officialRoomDefaultDescription(roomName: string): string {
     case "🎴 Teen Patti Official":
       return "🎴 Welcome to the official Teen Patti room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then play blind or see your cards. Best hand wins. Play responsibly! ✨";
     case "🃏 29 Official":
-      return "🃏 Welcome to 29! 🎉\n\n4 players, 2 teams — bid, hide your trump and win the tricks. Empty seats get bots. Type !start to open a table. Play responsibly! ✨";
+      return "🃏 Welcome to 29 Card! 🎉\n\n4 players, 2 teams — bid, hide your trump and win the tricks. Empty seats get bots. Type !start to open a table. Play responsibly! ✨";
     case "👑 MIG Royale Official":
       return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
     case "🎲 Ludo Bot Official":

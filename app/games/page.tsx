@@ -27,12 +27,11 @@ const RUNNING: [string, string, string, string, string][] = [
   ["🎴", "3 Patti", "Blind or seen — best hand wins", "#7B1FA2", TEEN_PATTI_ROOM],
   ["🎲", "Ludo", "Race 4 tokens home, 2–4 players", "#E5484D", LUDO_ROOM],
   ["👑", "MIG Royale", "Red vs Blue — bet on the better hand", "#6A3DE8", ROYALE_ROOM],
-  ["🃏", "29", "Twenty-Nine — 4 players, 2 teams", "#2E7D5B", TN_ROOM],
+  ["🃏", "29 Card", "Twenty-Nine — 4 players, 2 teams", "#2E7D5B", TN_ROOM],
 ];
 
 const SOON: [string, string, string][] = [
   ["⚽", "Football", "#43B65A"],
-  ["🃏", "29 Card", "#7B1FB8"],
 ];
 
 export default function GameListPage() {
