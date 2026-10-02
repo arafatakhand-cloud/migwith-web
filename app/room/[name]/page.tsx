@@ -68,7 +68,7 @@ import {
   useTeenPatti,
 } from "../../_components/TeenPatti";
 import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../../_components/CricketGame";
-import { TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
+import { TN_FREE_ROOM, TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
@@ -298,7 +298,7 @@ function RoomView({ roomName }: { roomName: string }) {
   // 🏏 Cricket (the Cricket room, or any room where Cricket Bot is on).
   const cricket = useCricket(roomName === CRICKET_ROOM || roomActiveBot === "cricket" ? roomName : null, user?.uid, note);
   // 🃏 29 table (only in the 29 room).
-  const twentyNine = useTwentyNine(roomName === TN_ROOM, user?.uid, note);
+  const twentyNine = useTwentyNine(roomName === TN_ROOM || roomName === TN_FREE_ROOM ? roomName : null, user?.uid, note);
   // 🃏 LowCard (the LowCard room, or any room where LowCard Bot is on).
   const lowCard = useLowCard(roomName === LOWCARD_ROOM || roomActiveBot === "lowcard" ? roomName : null, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
@@ -848,7 +848,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM].includes(roomName);
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
@@ -1017,7 +1017,7 @@ function RoomView({ roomName }: { roomName: string }) {
         return;
       }
       // chat rooms only (public or private) — never inside a game room
-      if (/ official$/i.test(roomName.trim()) || roomName.startsWith("🎰 Luxury Bet")) {
+      if (/ official$/i.test(roomName.trim()) || roomName.startsWith("🎰 Luxury Bet") || roomName === TN_FREE_ROOM) {
         note("🤖 Game bots can be added only in chat rooms (public or private), not in game rooms.");
         return;
       }

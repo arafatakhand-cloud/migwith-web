@@ -16,6 +16,7 @@ export const OFFICIAL_GAME_ROOMS = [
   "🎲 Ludo Bot Official",
   "👑 MIG Royale Official",
   "🃏 29 Official",
+  "🃏 29 Card Free",
   "🎁 Gift Official",
 ];
 
@@ -174,6 +175,8 @@ export function officialRoomDefaultDescription(roomName: string): string {
       return "🎴 Welcome to the official Teen Patti room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then play blind or see your cards. Best hand wins. Play responsibly! ✨";
     case "🃏 29 Official":
       return "🃏 Welcome to 29 Card! 🎉\n\n4 players, 2 teams — bid, hide your trump and win the tricks. Empty seats get bots. Type !start to open a table. Play responsibly! ✨";
+    case "🃏 29 Card Free":
+      return "🆓 Welcome to 29 Card Free! 🎉\n\nSame 29 game — no coins needed. 4 players, 2 teams, empty seats get bots. Type !start to open a table and play for fun! ✨";
     case "👑 MIG Royale Official":
       return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
     case "🎲 Ludo Bot Official":

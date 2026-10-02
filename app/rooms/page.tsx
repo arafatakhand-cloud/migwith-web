@@ -482,6 +482,7 @@ const OFFICIAL_GAME_CARDS: [string, string][] = [
   ["🎲 Ludo Bot Official", "Ludo"],
   ["👑 MIG Royale Official", "MIG Royale"],
   ["🃏 29 Official", "29 Card"],
+  ["🃏 29 Card Free", "29 Card Free"],
   ["👻 Luxury Bot Official", "Luxury Bot"],
   ["🎰 Luxury Bet", "Luxury Bet"],
   ["🃏 LowCard Official", "LowCard"],

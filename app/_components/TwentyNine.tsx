@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { isOnlineNow } from "../../lib/heartbeat";
 
 // 🃏 29 (Twenty-Nine) — server-driven (tnStart / tnJoin / tnAction / tnTick).
 // 4 seats, teams A (seats 1+3) vs B (seats 2+4); empty seats get bots. Your own
@@ -11,6 +12,8 @@ import { db, functions } from "../../lib/firebase";
 // Same flow as TwentyNineGame.kt.
 
 export const TN_ROOM = "🃏 29 Official";
+// 🆓 Same game, no coins (no entry, no payout) — the server checks this too.
+export const TN_FREE_ROOM = "🃏 29 Card Free";
 
 const ENTRY_OPTIONS = [100, 200, 500, 1000, 2000, 5000];
 const RANKS = ["7", "8", "Q", "K", "10", "A", "9", "J"];
@@ -71,6 +74,8 @@ export type TnState = {
   secondsLeft: number;
   busy: boolean;
   mySeat: number;
+  /** 🆓 The free room: no entry, no payout. */
+  free: boolean;
   start: (entry: number) => void;
   join: (seat?: number) => void;
   act: (type: string, extra?: Record<string, unknown>) => void;
@@ -87,7 +92,9 @@ function pair(v: unknown): [number, number] {
   return Array.isArray(v) && v.length === 2 ? [Number(v[0]) || 0, Number(v[1]) || 0] : [0, 0];
 }
 
-export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (t: string) => void): TnState | null {
+// roomId = the 29 room (official or 🆓 free) or null in every other room.
+export function useTwentyNine(roomId: string | null, uid: string | undefined, note: (t: string) => void): TnState | null {
+  const enabled = !!roomId;
   const [g, setG] = useState({
     running: false,
     phase: "IDLE",
@@ -131,8 +138,8 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
 
   // The table.
   useEffect(() => {
-    if (!enabled || !uid) return;
-    return onSnapshot(doc(db, "room_game", TN_ROOM), (d) => {
+    if (!roomId || !uid) return;
+    return onSnapshot(doc(db, "room_game", roomId), (d) => {
       if (!d.exists()) {
         setG((prev) => ({ ...prev, running: false, phase: "IDLE" }));
         return;
@@ -201,19 +208,19 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
         ),
       });
     });
-  }, [enabled, uid]);
+  }, [roomId, uid]);
 
   // My own cards (only I can read them).
   useEffect(() => {
-    if (!enabled || !uid) return;
-    return onSnapshot(doc(db, "room_game", TN_ROOM, "tn_hands", uid), (d) => {
+    if (!roomId || !uid) return;
+    return onSnapshot(doc(db, "room_game", roomId, "tn_hands", uid), (d) => {
       setHand({
         round: Number(d.get("round") || 0),
         cards: Array.isArray(d.get("cards")) ? d.get("cards").map(String) : [],
         trump: d.get("trump") ? String(d.get("trump")) : null,
       });
     });
-  }, [enabled, uid]);
+  }, [roomId, uid]);
 
   // Countdown, and move the game on when a timer ends.
   useEffect(() => {
@@ -229,11 +236,11 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
         n - lastTick.current > 1200
       ) {
         lastTick.current = n;
-        tickCall({}).catch(() => {});
+        tickCall({ roomId }).catch(() => {});
       }
     }, 250);
     return () => clearInterval(t);
-  }, [enabled, g.running, g.phaseEndsAt]);
+  }, [enabled, roomId, g.running, g.phaseEndsAt]);
 
   if (!enabled) return null;
 
@@ -255,21 +262,22 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
     busy,
     mySeat: g.seats.findIndex((s) => s?.uid === uid),
     myUid: uid || "",
+    free: roomId === TN_FREE_ROOM,
     start: (entry: number) => {
-      if (!busy) run(startCall({ entry, operationId: opId() }));
+      if (!busy) run(startCall({ entry, operationId: opId(), roomId }));
     },
     join: (seat = -1) => {
-      if (!busy) run(joinCall({ seat, operationId: opId() }));
+      if (!busy) run(joinCall({ seat, operationId: opId(), roomId }));
     },
     act: (type: string, extra: Record<string, unknown> = {}) => {
-      if (!busy) run(actionCall({ type, round: g.round, ...extra }));
+      if (!busy) run(actionCall({ type, round: g.round, roomId, ...extra }));
     },
     invite: (username: string, seat = -1) => {
       const name = username.trim().replace(/^@/, "");
-      if (name && !busy) run(inviteCall({ username: name, seat }));
+      if (name && !busy) run(inviteCall({ username: name, seat, roomId }));
     },
     cancelInvite: (seat: number) => {
-      if (!busy) run(inviteCall({ cancel: true, seat }));
+      if (!busy) run(inviteCall({ cancel: true, seat, roomId }));
     },
   };
 }
@@ -285,7 +293,7 @@ export function twentyNineHandleCommand(
   const cmd = (parts[0] || "").toLowerCase();
   if (cmd === "!start") {
     const amt = Number((parts[1] || "").replace(/,/g, ""));
-    state.start(Number.isInteger(amt) && amt > 0 ? amt : defaultEntry);
+    state.start(state.free ? 0 : Number.isInteger(amt) && amt > 0 ? amt : defaultEntry);
     return true;
   }
   if (cmd === "!j" || cmd === "!join") {
@@ -436,7 +444,7 @@ function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; set
           </div>
           <div className="absolute left-4 top-1/2 -translate-y-1/2">
             <div className="flex items-center gap-1.5">
-              <span className="rounded border border-[#F2C94C]/60 bg-[#F2C94C]/20 px-1 py-px text-[8px] font-extrabold tracking-[1px] text-[#F2C94C]">♛ VIP</span>
+              <span className="rounded border border-[#F2C94C]/60 bg-[#F2C94C]/20 px-1 py-px text-[8px] font-extrabold tracking-[1px] text-[#F2C94C]">{state.free ? "🆓 FREE" : "♛ VIP"}</span>
               <span className="text-[11px] font-extrabold tracking-[4px] text-[#F2C94C]">miglife</span>
             </div>
             <p
@@ -504,6 +512,38 @@ function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; set
         </div>
       )}
 
+      {state.free ? (
+        <>
+          {/* 🆓 free room: no entry to pick, nothing to win or lose */}
+          <div className="mt-3 flex items-center rounded-[14px] border border-[#3DD68C]/50 bg-[#3DD68C]/15 px-3 py-2.5">
+            <span className="text-xl">🆓</span>
+            <span className="ml-2.5">
+              <span className="block text-[13px] font-black tracking-[1px] text-[#6BF0AE]">FREE TABLE</span>
+              <span className="block text-[10px] font-bold text-white/70">No coins needed · practise and play for fun</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => state.start(0)}
+            disabled={state.busy}
+            className={`relative mt-3.5 flex w-full items-center overflow-hidden rounded-[18px] py-[9px] pl-3 pr-2 text-left ${state.busy ? "" : "tn-open tn-shine"}`}
+            style={{
+              background: state.busy ? "linear-gradient(#6E6A8E, #4E4A6E)" : "linear-gradient(#FFE9A8, #F2C94C, #D29B16)",
+              border: state.busy ? "1.5px solid transparent" : "1.5px solid #FFF3C4",
+            }}
+          >
+            <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#22204A]/10 text-lg">🃏</span>
+            <span className="ml-2.5 min-w-0 flex-1">
+              <span className={`block text-base font-black ${state.busy ? "text-white" : "text-[#22204A]"}`}>Open a free table</span>
+              <span className={`block text-[9px] font-bold ${state.busy ? "text-white/60" : "text-[#22204A]/60"}`}>Tap to deal · bots fill empty seats</span>
+            </span>
+            <span className="rounded-xl border border-[#F2C94C]/50 bg-gradient-to-b from-[#2E2A63] to-[#22204A] px-[11px] py-[7px] text-sm font-extrabold">
+              <span style={goldText}>FREE</span>
+            </span>
+          </button>
+        </>
+      ) : (
+        <>
       {/* Entry picker — 2 rows of 3 */}
       <div className="mt-3 flex items-center">
         <span className="text-[10px] font-extrabold tracking-[1.5px]" style={goldText}>
@@ -558,6 +598,9 @@ function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; set
         </span>
       </button>
 
+        </>
+      )}
+
       <div className="mt-3 grid grid-cols-3 gap-1.5">
         {[
           ["👥", "4 players"],
@@ -570,7 +613,9 @@ function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; set
           </span>
         ))}
       </div>
-      <p className="mt-1.5 text-center text-[9px] text-white/40">Winning team shares 90% of the pot</p>
+      <p className="mt-1.5 text-center text-[9px] text-white/40">
+        {state.free ? "Just for fun — no coins in, no coins out" : "Winning team shares 90% of the pot"}
+      </p>
     </div>
   );
 }
@@ -589,7 +634,12 @@ function TnJoining({ state, roomUsers }: { state: TnState; roomUsers: string[] }
   const posClass = ["bottom-2 left-1/2 -translate-x-1/2", "left-2 top-1/2 -translate-y-1/2", "top-2 left-1/2 -translate-x-1/2", "right-2 top-1/2 -translate-y-1/2"];
   return (
     <div className="mt-1 rounded-[18px] border border-[#F2C94C]/45 bg-gradient-to-b from-[#2A1F6B] via-[#130F33] to-[#0C0A24] p-2">
-      {/* Entry · Pot strip */}
+      {/* Entry · Pot strip (free room: just a FREE tag) */}
+      {state.free ? (
+        <div className="flex items-center justify-center rounded-xl border border-[#3DD68C]/50 bg-[#3DD68C]/15 py-1.5 text-xs font-black tracking-[1px] text-[#6BF0AE]">
+          🆓 FREE GAME · no coins
+        </div>
+      ) : (
       <div className="grid grid-cols-2 gap-1.5">
         {(
           [
@@ -606,6 +656,7 @@ function TnJoining({ state, roomUsers }: { state: TnState; roomUsers: string[] }
           </div>
         ))}
       </div>
+      )}
 
       {/* The 4 seats around a mini felt table */}
       <div
@@ -736,7 +787,7 @@ function TnJoining({ state, roomUsers }: { state: TnState; roomUsers: string[] }
               </span>
             </span>
             <span className="rounded-xl border border-[#F2C94C]/50 bg-gradient-to-b from-[#2E2A63] to-[#22204A] px-[11px] py-[7px] text-sm font-extrabold">
-              <span style={goldText}>{state.entry.toLocaleString()}</span> 🪙
+              {state.free ? <span style={goldText}>FREE</span> : <><span style={goldText}>{state.entry.toLocaleString()}</span> 🪙</>}
             </span>
           </button>
         )}
@@ -759,7 +810,7 @@ function TnJoining({ state, roomUsers }: { state: TnState; roomUsers: string[] }
               </span>
             </span>
             <span className="rounded-xl border border-[#F2C94C]/50 bg-gradient-to-b from-[#2E2A63] to-[#22204A] px-[11px] py-[7px] text-sm font-extrabold">
-              <span style={goldText}>{state.entry.toLocaleString()}</span> 🪙
+              {state.free ? <span style={goldText}>FREE</span> : <><span style={goldText}>{state.entry.toLocaleString()}</span> 🪙</>}
             </span>
           </button>
         ) : (
@@ -790,20 +841,75 @@ function TnJoining({ state, roomUsers }: { state: TnState; roomUsers: string[] }
   );
 }
 
-// 🎟 Pick who to invite: type a name or tap someone who's in the room.
+// My friends who are online right now (heartbeat in the last 90 s — same
+// rule as the Friends page). Loaded once when the invite dialog opens.
+async function loadOnlineFriends(uid: string): Promise<string[]> {
+  const me = String((await getDoc(doc(db, "users", uid))).get("username") || "");
+  if (!me) return [];
+  const accepted = (field: string, other: string) =>
+    getDocs(query(collection(db, "friend_requests"), where(field, "==", me), where("status", "==", "accepted"))).then((q) =>
+      q.docs.map((d) => String(d.get(other) || "").trim())
+    );
+  const [fromMe, toMe] = await Promise.all([accepted("fromUsername", "toUsername"), accepted("toUsername", "fromUsername")]);
+  const seen = new Set<string>();
+  const friends = [...fromMe, ...toMe].filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()));
+  const chunks: string[][] = [];
+  for (let i = 0; i < friends.length; i += 10) chunks.push(friends.slice(i, i + 10));
+  const docs = (await Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c)))))).flatMap((q) => q.docs);
+  return docs
+    .filter((d) => isOnlineNow(d.data()))
+    .map((d) => String(d.get("username") || ""))
+    .filter(Boolean)
+    .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+}
+
+// 🎟 Pick who to invite: type a name, or tap an online friend / someone in the room.
 function TnInviteDialog({ state, seat, roomUsers, onClose }: { state: TnState; seat: number; roomUsers: string[]; onClose: () => void }) {
   const [name, setName] = useState("");
-  const seatedNames = new Set(state.seats.map((p) => (p ? p.username.toLowerCase() : "")));
-  const invitedNames = new Set(Object.values(state.invites).map((v) => v.username.toLowerCase()));
+  const [onlineFriends, setOnlineFriends] = useState<string[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    if (!state.myUid) return setOnlineFriends([]);
+    loadOnlineFriends(state.myUid)
+      .then((f) => alive && setOnlineFriends(f))
+      .catch(() => alive && setOnlineFriends([]));
+    return () => {
+      alive = false;
+    };
+  }, [state.myUid]);
+  const taken = new Set([
+    ...state.seats.map((p) => (p ? p.username.toLowerCase() : "")),
+    ...Object.values(state.invites).map((v) => v.username.toLowerCase()),
+  ]);
+  const friendPicks = (onlineFriends || []).filter((u) => !taken.has(u.toLowerCase()));
+  const friendSet = new Set(friendPicks.map((u) => u.toLowerCase()));
   const seen = new Set<string>();
   const suggestions = roomUsers
     .filter((u) => {
       const k = u.toLowerCase();
-      if (!u.trim() || seatedNames.has(k) || invitedNames.has(k) || seen.has(k)) return false;
+      if (!u.trim() || taken.has(k) || friendSet.has(k) || seen.has(k)) return false;
       seen.add(k);
       return true;
     })
-    .slice(0, 12);
+    .slice(0, 20);
+  const pickRow = (title: string, names: string[], dot: boolean) => (
+    <>
+      <p className="mt-2.5 text-[11px] font-bold text-[#7A7699]">{title}</p>
+      <div className="mt-1 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+        {names.map((u) => (
+          <button
+            key={u}
+            type="button"
+            onClick={() => setName(u)}
+            className={`flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-bold ${u.toLowerCase() === name.toLowerCase() ? "bg-[#F2C94C]" : "bg-[#EDEAFB]"}`}
+          >
+            {dot && <span className="mr-[5px] h-[7px] w-[7px] rounded-full bg-[#2ECC71]" />}
+            {u}
+          </button>
+        ))}
+      </div>
+    </>
+  );
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl bg-white p-4 text-[#22204A]" onClick={(e) => e.stopPropagation()}>
@@ -815,23 +921,12 @@ function TnInviteDialog({ state, seat, roomUsers, onClose }: { state: TnState; s
           placeholder="Username"
           className="mt-3 w-full rounded-xl border border-[#D9D3F3] px-3 py-2.5 text-base outline-none focus:border-[#6A4BD8]"
         />
-        {suggestions.length > 0 && (
-          <>
-            <p className="mt-2.5 text-[11px] font-bold text-[#7A7699]">In this room</p>
-            <div className="mt-1 flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-              {suggestions.map((u) => (
-                <button
-                  key={u}
-                  type="button"
-                  onClick={() => setName(u)}
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${u.toLowerCase() === name.toLowerCase() ? "bg-[#F2C94C]" : "bg-[#EDEAFB]"}`}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
-          </>
+        {friendPicks.length > 0 ? (
+          pickRow("🟢 Online friends", friendPicks, true)
+        ) : (
+          <p className="mt-2.5 text-[11px] text-[#7A7699]">{onlineFriends === null ? "🟢 Online friends · loading…" : "🟢 No friends online right now"}</p>
         )}
+        {suggestions.length > 0 && pickRow("👥 In this room", suggestions, false)}
         <p className="mt-2 text-[10px] text-[#7A7699]">They get an alert + notification. Only they can take the seat until the timer ends.</p>
         <div className="mt-3 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-lg px-3 py-2 text-sm font-bold text-[#6A4BD8]">

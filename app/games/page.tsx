@@ -13,7 +13,7 @@ import { CRICKET_ROOM } from "../_components/CricketGame";
 import { TEEN_PATTI_ROOM } from "../_components/TeenPatti";
 import { LUDO_ROOM } from "../_components/Ludo";
 import { ROYALE_ROOM } from "../_components/RoyaleGame";
-import { TN_ROOM } from "../_components/TwentyNine";
+import { TN_FREE_ROOM, TN_ROOM } from "../_components/TwentyNine";
 import { BackButton } from "../_components/BackButton";
 
 // 🎮 Game List, like the app's (menu → Game List): the running games, each
@@ -28,6 +28,7 @@ const RUNNING: [string, string, string, string, string][] = [
   ["🎲", "Ludo", "Race 4 tokens home, 2–4 players", "#E5484D", LUDO_ROOM],
   ["👑", "MIG Royale", "Red vs Blue — bet on the better hand", "#6A3DE8", ROYALE_ROOM],
   ["🃏", "29 Card", "Twenty-Nine — 4 players, 2 teams", "#2E7D5B", TN_ROOM],
+  ["🆓", "29 Card Free", "Same 29 — no coins, play for fun", "#1E9B5A", TN_FREE_ROOM],
 ];
 
 const SOON: [string, string, string][] = [
