@@ -264,3 +264,5 @@ body {
   50% { transform: rotate(-14deg); } 67% { transform: rotate(10deg); } 83% { transform: rotate(-5deg); } 100% { transform: rotate(0); }
 }
 @media (prefers-reduced-motion: reduce) { .reaction-shake, .reaction-kick { animation: none; } }
+.tn-seat-pulse { animation: tn-seat-pulse 0.8s ease-in-out infinite alternate; }
+@keyframes tn-seat-pulse { from { box-shadow: 0 0 0 transparent; opacity: .7; } to { box-shadow: 0 0 10px var(--tc); opacity: 1; } }

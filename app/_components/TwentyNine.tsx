@@ -535,42 +535,142 @@ function TnIdle({ state, entry, setEntry }: { state: TnState; entry: number; set
   );
 }
 
+// Seat picking — same dark VIP look as the lobby (like the app): Entry · Pot
+// strip, the 4 seats around a mini felt table (me at the bottom, the next seat
+// in turn order on my right, partner across), a gold "Sit down" button.
 function TnJoining({ state }: { state: TnState }) {
+  const mySeat = state.mySeat;
+  const base = mySeat >= 0 ? mySeat : 0;
+  const seated = state.seats.filter(Boolean).length;
+  const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 5;
+  const posClass = ["bottom-2 left-1/2 -translate-x-1/2", "left-2 top-1/2 -translate-y-1/2", "top-2 left-1/2 -translate-x-1/2", "right-2 top-1/2 -translate-y-1/2"];
   return (
-    <div className="mt-2">
-      <p className="text-xs font-semibold text-white/80">
-        Entry {state.entry.toLocaleString()} · Pot {state.pot.toLocaleString()}
-      </p>
-      <div className="mt-2 grid grid-cols-4 gap-1.5">
-        {[0, 1, 2, 3].map((s) => {
-          const p = state.seats[s];
-          const free = !p && state.mySeat < 0 && !state.busy;
-          return (
-            <button
-              key={s}
-              type="button"
-              disabled={!free}
-              onClick={() => state.join(s)}
-              className={`rounded-xl border-2 py-2 text-center ${
-                s % 2 === 0 ? "border-sky-400/60" : "border-orange-400/60"
-              } ${p ? "bg-white/10" : "bg-white/[0.03] hover:bg-white/10"}`}
-            >
-              <div className="text-[10px] text-white/50">Team {teamName(s)}</div>
-              <div className="truncate px-1 text-xs font-bold">{p?.username || (state.mySeat < 0 ? "Sit" : "—")}</div>
-            </button>
-          );
-        })}
+    <div className="mt-1 rounded-[18px] border border-[#F2C94C]/45 bg-gradient-to-b from-[#2A1F6B] via-[#130F33] to-[#0C0A24] p-2">
+      {/* Entry · Pot strip */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {(
+          [
+            ["ENTRY", state.entry],
+            ["POT", state.pot],
+          ] as const
+        ).map(([label, v]) => (
+          <div key={label} className="flex items-center rounded-xl border border-white/15 bg-white/[0.07] px-2.5 py-1.5">
+            <span className="text-[9px] font-extrabold tracking-[1.2px] text-white/55">{label}</span>
+            <span className="flex-1" />
+            <span className="text-sm font-black">
+              <span style={goldText}>{v.toLocaleString()}</span> 🪙
+            </span>
+          </div>
+        ))}
       </div>
-      {state.mySeat < 0 && (
-        <button
-          type="button"
-          onClick={() => state.join()}
-          disabled={state.busy}
-          className="mt-2 w-full rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 py-2.5 text-sm font-black text-neutral-900 disabled:opacity-50"
-        >
-          Sit down ({state.entry.toLocaleString()})
-        </button>
-      )}
+
+      {/* The 4 seats around a mini felt table */}
+      <div
+        className="mt-2 rounded-[26px] p-[2.5px] shadow-[0_6px_18px_rgba(74,120,218,.55)]"
+        style={{ background: "linear-gradient(135deg, #FFF3C4, #D29B16, #FFE49A, #D29B16)" }}
+      >
+        <div className="tn-shine relative h-[226px] overflow-hidden rounded-[24px] bg-[radial-gradient(circle,_#5585E8,_#2D56B0_60%,_#142B63)]">
+          <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <span className="text-[10px] font-extrabold tracking-[4px] text-[#F2C94C]/70">miglife</span>
+            <span
+              className="text-lg font-black tracking-[1px]"
+              style={{ background: "linear-gradient(#FFFFFF, #FFE49A)", WebkitBackgroundClip: "text", backgroundClip: "text", color: "transparent" }}
+            >
+              29 CARD
+            </span>
+            <span
+              className={`mt-0.5 rounded-full px-[9px] py-0.5 text-[11px] font-extrabold text-white ${
+                urgent ? "bg-[#E5586A]" : "border border-[#F2C94C]/50 bg-black/30"
+              }`}
+            >
+              ⏳ {state.secondsLeft}s
+            </span>
+          </div>
+          {[0, 1, 2, 3].map((seat) => {
+            const p = state.seats[seat];
+            const teamColor = seat % 2 === 0 ? "#7DB6FF" : "#FF9B7A";
+            const isMe = mySeat === seat;
+            const canSit = !p && mySeat < 0 && !state.busy;
+            const name = p?.username.replace("🤖", "").trim() || "";
+            return (
+              <button
+                key={seat}
+                type="button"
+                disabled={!canSit}
+                onClick={() => state.join(seat)}
+                className={`absolute flex w-[72px] flex-col items-center ${posClass[(base - seat + 4) % 4]}`}
+              >
+                <span className="relative">
+                  {p ? (
+                    <span
+                      className="flex h-[42px] w-[42px] items-center justify-center rounded-full text-base font-black text-[#22204A]"
+                      style={{
+                        background: `radial-gradient(circle, #FFFFFF, ${teamColor})`,
+                        border: `2px solid ${isMe ? "#F2C94C" : "rgba(255,255,255,.8)"}`,
+                        boxShadow: isMe ? "0 0 12px #F2C94C" : "0 2px 5px rgba(0,0,0,.35)",
+                      }}
+                    >
+                      {(name[0] || "?").toUpperCase()}
+                    </span>
+                  ) : (
+                    // empty seat: dashed ring, glowing "+" when I can take it
+                    <span
+                      className={`flex h-[42px] w-[42px] items-center justify-center rounded-full bg-black/25 text-xl font-black ${canSit ? "tn-seat-pulse text-white" : "text-white/50"}`}
+                      style={{ border: `2px dashed ${teamColor}`, opacity: canSit ? undefined : 0.75, ["--tc" as string]: teamColor }}
+                    >
+                      {canSit ? "+" : "·"}
+                    </span>
+                  )}
+                  {p?.bot && <span className="absolute -bottom-0.5 -right-1 text-[11px]">🤖</span>}
+                </span>
+                <span
+                  className={`mt-[3px] max-w-[66px] truncate rounded-full px-[7px] py-px text-[9px] font-extrabold ${isMe ? "text-[#22204A]" : "text-white"}`}
+                  style={{
+                    background: isMe ? "linear-gradient(#FFE9A8, #F2C94C)" : p ? "rgba(0,0,0,.45)" : `${teamColor}40`,
+                  }}
+                >
+                  {p ? name : canSit ? `SIT · ${seat % 2 === 0 ? "A" : "B"}` : `Team ${seat % 2 === 0 ? "A" : "B"}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-2.5">
+        {mySeat < 0 ? (
+          <button
+            type="button"
+            onClick={() => state.join()}
+            disabled={state.busy}
+            className={`relative flex w-full items-center overflow-hidden rounded-[18px] py-[9px] pl-3 pr-2 text-left ${state.busy ? "" : "tn-open tn-shine"}`}
+            style={{
+              background: state.busy ? "linear-gradient(#6E6A8E, #4E4A6E)" : "linear-gradient(#FFE9A8, #F2C94C, #D29B16)",
+              border: state.busy ? "1.5px solid transparent" : "1.5px solid #FFF3C4",
+            }}
+          >
+            <span className="flex h-[34px] w-[34px] items-center justify-center rounded-full bg-[#22204A]/10 text-lg">🃏</span>
+            <span className="ml-2.5 min-w-0 flex-1">
+              <span className={`block text-base font-black ${state.busy ? "text-white" : "text-[#22204A]"}`}>Sit down</span>
+              <span className={`block text-[9px] font-bold ${state.busy ? "text-white/60" : "text-[#22204A]/60"}`}>
+                Or tap an empty seat · empty seats get bots
+              </span>
+            </span>
+            <span className="rounded-xl border border-[#F2C94C]/50 bg-gradient-to-b from-[#2E2A63] to-[#22204A] px-[11px] py-[7px] text-sm font-extrabold">
+              <span style={goldText}>{state.entry.toLocaleString()}</span> 🪙
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center rounded-[14px] border border-[#3DD68C]/50 bg-[#3DD68C]/15 px-3 py-[9px]">
+            <span className="text-base font-black text-[#6BF0AE]">✓</span>
+            <span className="ml-2 flex-1 text-[13px] font-extrabold text-white">You&apos;re in · Team {mySeat % 2 === 0 ? "A" : "B"}</span>
+            <span className="text-[11px] font-bold text-[#6BF0AE]">{seated}/4 seated</span>
+          </div>
+        )}
+      </div>
+      <p className="mt-1.5 text-center text-[9px] text-white/40">
+        Teams sit across: A = seats 1+3 · B = seats 2+4 · bots fill empty seats when the timer ends
+      </p>
     </div>
   );
 }
