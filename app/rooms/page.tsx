@@ -429,7 +429,10 @@ export default function RoomsPage() {
             ] as const
           ).map(([key, title, names]) => {
             const open = !closed[key];
-            const all = showAll[key];
+            // Public & Private: only the 5 HOTTEST rooms (most people inside),
+            // no "Show more" — every other room is found with Search (like the app).
+            const topOnly = key === "public" || key === "private";
+            const all = topOnly ? !!q : showAll[key];
             return (
               <div key={key} className="space-y-[7px]">
                 <button
@@ -445,7 +448,10 @@ export default function RoomsPage() {
                   <>
                     {names.length === 0 && <p className="py-2 text-center text-[13px] text-[#5B6B8C]">No rooms here.</p>}
                     <ul className="grid gap-[7px] md:grid-cols-2">{(all ? names : names.slice(0, 5)).map(row)}</ul>
-                    {names.length > 5 && (
+                    {topOnly && !q && names.length > 5 && (
+                      <p className="py-1.5 text-center text-[11.5px] text-[#5B6B8C]">🔍 Showing the 5 hottest rooms — search to find any other room</p>
+                    )}
+                    {!topOnly && names.length > 5 && (
                       <button
                         type="button"
                         onClick={() => setShowAll((s) => ({ ...s, [key]: !all }))}
