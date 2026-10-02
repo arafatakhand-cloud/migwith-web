@@ -41,6 +41,8 @@ export type TnState = {
   singleSeat: number;
   trumpRevealed: boolean;
   trumpSuit: string | null;
+  /** 7️⃣ the bidder chose "7th card" trump (the suit of their 7th card). */
+  seventhCard: boolean;
   trick: TrickCard[];
   /** The trick that just finished and who won it (shown until the next card). */
   lastTrick: TrickCard[];
@@ -90,6 +92,7 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
     singleSeat: -1,
     trumpRevealed: false,
     trumpSuit: null as string | null,
+    seventhCard: false,
     trick: [] as TrickCard[],
     lastTrick: [] as TrickCard[],
     lastTrickWinner: -1,
@@ -149,6 +152,7 @@ export function useTwentyNine(enabled: boolean, uid: string | undefined, note: (
         singleSeat: Number(d.get("singleSeat") ?? -1),
         trumpRevealed: d.get("trumpRevealed") === true,
         trumpSuit: d.get("trumpSuit") ? String(d.get("trumpSuit")) : null,
+        seventhCard: d.get("seventhCard") === true,
         trick: Array.isArray(rawTrick)
           ? rawTrick.map((t: any) => ({ seat: Number(t?.seat || 0), card: String(t?.card || "") }))
           : [],
@@ -457,11 +461,15 @@ function TnInfo({ state }: { state: TnState }) {
       ? "No trump (Single)"
       : state.trumpRevealed && state.trumpSuit
         ? `Trump ${state.trumpSuit}`
-        : state.myTrump
-          ? `Trump ${state.myTrump} (only you)`
-          : state.bidder >= 0 && state.phase !== "BIDDING" && state.phase !== "TRUMP"
-            ? "Trump 🂠 hidden"
-            : "";
+        : state.myTrump && state.seventhCard
+          ? `7th card: ${state.myTrump} (only you)`
+          : state.myTrump
+            ? `Trump ${state.myTrump} (only you)`
+            : state.seventhCard
+              ? "Trump 7th card 🂠"
+              : state.bidder >= 0 && state.phase !== "BIDDING" && state.phase !== "TRUMP"
+                ? "Trump 🂠 hidden"
+                : "";
   if (trump) chips.push([trump, false]);
   if (state.doubleLevel > 1) chips.push([state.doubleLevel === 4 ? "Redouble x4" : "Double x2", false]);
   chips.push([`A ${state.points[0]}${myTeam === 0 ? " (you)" : ""}`, false]);
@@ -512,7 +520,7 @@ function TnFelt({ state }: { state: TnState }) {
         >
           {(p.username.replace("🤖", "").trim()[0] || "?").toUpperCase()}
         </div>
-        <div className="max-w-[80px] truncate text-[10px] font-bold">
+        <div className="max-w-[80px] truncate text-[9px] font-bold">
           {(p.bot || p.auto) && "🤖"}
           {p.username.replace("🤖", "").trim()}
           {seat === state.bidder ? ` · ${state.bid}` : ""}
@@ -528,10 +536,10 @@ function TnFelt({ state }: { state: TnState }) {
     // Fixed height, so the table doesn't jump as cards are played.
     const winner = showingLast && t && t.seat === state.lastTrickWinner;
     return (
-      <div className="flex h-9 justify-center">
+      <div className="flex h-12 justify-center">
         {t ? (
-          <span className={winner ? "rounded-[4px] ring-2 ring-[#E8B84A]" : ""}>
-            <MiniCard card={t.card} />
+          <span className={winner ? "rounded-md ring-2 ring-[#E8B84A]" : ""}>
+            <MiniCard card={t.card} size="md" />
           </span>
         ) : null}
       </div>
@@ -544,24 +552,28 @@ function TnFelt({ state }: { state: TnState }) {
 
   return (
     <div className="mt-2 rounded-3xl bg-gradient-to-r from-amber-200 via-amber-600 to-amber-200 p-[3px]">
-      <div className="relative grid grid-cols-3 grid-rows-[auto_auto_auto] items-center gap-1 rounded-[22px] bg-[radial-gradient(circle,_#3F6CD0,_#2D56B0,_#142B63)] px-2 py-2">
+      <div className="relative grid min-h-[206px] grid-cols-3 grid-rows-[auto_auto_auto] items-center gap-1 rounded-[22px] bg-[radial-gradient(circle,_#3F6CD0,_#2D56B0,_#142B63)] px-2 py-2">
         {/* trump card, top-left */}
         <div className="flex flex-col items-center">
           {showTrump && (
             <>
-              <span className="text-[8px] font-black tracking-wider text-amber-300">TRUMP</span>
+              <span className="text-[8px] font-black tracking-wider text-amber-300">
+                {state.seventhCard ? "7TH CARD" : "TRUMP"}
+              </span>
               {state.singleSeat >= 0 ? (
                 <span className="text-sm font-bold">—</span>
               ) : shownSuit || mine ? (
                 <span
-                  className={`flex h-9 w-7 items-center justify-center rounded-md bg-white text-lg ${
+                  className={`flex h-12 w-[34px] items-center justify-center rounded-md bg-white text-[28px] leading-none ${
                     (shownSuit || mine) === "♥" || (shownSuit || mine) === "♦" ? "text-red-600" : "text-black"
                   } ${mine ? "ring-2 ring-amber-300" : ""}`}
                 >
                   {shownSuit || mine}
                 </span>
               ) : (
-                <CardBack />
+                <span className="inline-flex h-12 w-[34px] [&>span]:h-full [&>span]:w-full">
+                  <CardBack />
+                </span>
               )}
             </>
           )}
@@ -645,21 +657,35 @@ function TnActions({ state }: { state: TnState }) {
 
   if (state.phase === "TRUMP") {
     return (
-      <div className="mt-2 flex items-center gap-1.5">
-        <span className="text-xs font-black">Trump 🤫</span>
-        {SUITS.map((s) => (
-          <button
-            key={s}
-            type="button"
-            disabled={state.busy}
-            onClick={() => state.act("trump", { suit: s })}
-            className={`flex-1 rounded-lg border-2 border-amber-300 bg-white py-1 text-lg ${
-              s === "♥" || s === "♦" ? "text-red-600" : "text-black"
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mt-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-black">Trump 🤫</span>
+          {SUITS.map((s) => (
+            <button
+              key={s}
+              type="button"
+              disabled={state.busy}
+              onClick={() => state.act("trump", { suit: s })}
+              className={`flex-1 rounded-[10px] border-2 border-amber-300 bg-white py-1 text-[20px] leading-tight ${
+                s === "♥" || s === "♦" ? "text-red-600" : "text-black"
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        {/* 7️⃣ "7th card" trump: the suit of your 7th card (dealt next) is trump */}
+        <button
+          type="button"
+          disabled={state.busy}
+          onClick={() => state.act("trump", { suit: "7TH" })}
+          className="mt-1.5 w-full rounded-[10px] border-2 border-amber-300 bg-gradient-to-r from-violet-700 to-emerald-800 py-[7px] text-[13px] font-extrabold text-white disabled:opacity-50"
+        >
+          7️⃣&nbsp; 7th Card Trump
+        </button>
+        <p className="mt-[3px] text-center text-[10px] text-white/60">
+          The suit of your 7th card (dealt next) becomes trump — hidden from everyone else.
+        </p>
       </div>
     );
   }
@@ -714,7 +740,7 @@ function TnHand({ state }: { state: TnState }) {
   const playing = state.phase === "PLAYING" && state.turn === mySeat;
   const legal = new Set(playing ? legalCards(state, mySeat) : []);
   return (
-    <div className="mt-2 flex flex-wrap justify-center gap-1">
+    <div className="mt-3 flex flex-wrap justify-center pl-1.5">
       {sortHand(state.myCards).map((c) => {
         const ok = playing && legal.has(c) && !state.busy;
         return (
@@ -723,11 +749,11 @@ function TnHand({ state }: { state: TnState }) {
             type="button"
             disabled={!ok}
             onClick={() => state.act("play", { card: c })}
-            className={`transition ${ok ? "-translate-y-1 hover:-translate-y-2" : ""} ${
+            className={`-ml-1.5 transition ${ok ? "-translate-y-1.5 hover:-translate-y-2.5" : ""} ${
               playing && !ok ? "opacity-45" : ""
             }`}
           >
-            <MiniCard card={c} size="md" />
+            <MiniCard card={c} size="lg" />
           </button>
         );
       })}

@@ -1608,28 +1608,90 @@ function InlineCard({ card }: { card: string }) {
   );
 }
 
-// Cricket Bot's {4} {6} {OUT} {NOTOUT} {DRS} tokens become small badges.
+// 🏏 Cricket Bot's {6} {4} {OUT} {NOTOUT} {DRS} tokens become "Sports TV"
+// plates (slanted, shining frame, glow, metallic letters, moving shine; SIX
+// and OUT pulse, SIX twinkles, DRS has a blinking red dot). Runs 0-3 are
+// little red cricket balls (0 = dark dot ball) — like the app.
+type CricketPlate = { icon: string; label: string; frame: string[]; inside: string[]; letters: string[]; glow: string; striped?: boolean; pulse?: boolean };
+const CRICKET_PLATES: Record<string, CricketPlate> = {
+  "6": { icon: "🔥", label: "SIX!", frame: ["#FFF59D", "#FFB300", "#FF6F00", "#FFF59D"], inside: ["#4A148C", "#880E4F", "#311B92"], letters: ["#FFF9C4", "#FFD54F", "#FF8F00"], glow: "#FFB300", pulse: true },
+  "4": { icon: "⚡", label: "FOUR!", frame: ["#E0F7FA", "#00E5FF", "#2979FF", "#E0F7FA"], inside: ["#0D47A1", "#01579B", "#002171"], letters: ["#FFFFFF", "#80D8FF", "#00B0FF"], glow: "#00B0FF" },
+  OUT: { icon: "☝", label: "OUT!", frame: ["#FFCDD2", "#FF1744", "#B71C1C", "#FFCDD2"], inside: ["#1A0000", "#3B0000"], letters: ["#FF8A80", "#FF5252", "#FF1744"], glow: "#FF1744", striped: true, pulse: true },
+  NOTOUT: { icon: "✔", label: "NOT OUT", frame: ["#B9F6CA", "#00E676", "#00695C", "#B9F6CA"], inside: ["#004D40", "#1B5E20"], letters: ["#FFFFFF", "#B9F6CA", "#69F0AE"], glow: "#00E676" },
+  DRS: { icon: "", label: "DRS REVIEW", frame: ["#EDE7F6", "#B388FF", "#651FFF", "#EDE7F6"], inside: ["#1A0A3D", "#311B92"], letters: ["#FFFFFF", "#EDE7F6", "#B388FF"], glow: "#7C4DFF" },
+};
+const CRICKET_BADGE_W: Record<string, number> = { "6": 56, "4": 64, OUT: 56, NOTOUT: 76, DRS: 92 };
+const SLANT = "polygon(24% 0, 100% 0, calc(100% - 24%) 100%, 0 100%)";
+
 function CricketBadge({ token }: { token: string }) {
-  const [label, bg] =
-    token === "OUT"
-      ? ["OUT", "#D32F2F"]
-      : token === "NOTOUT"
-        ? ["NOT OUT", "#2E7D32"]
-        : token === "DRS"
-          ? ["📺 DRS", "#1565C0"]
-          : token === "4" || token === "6"
-            ? [token, "#E53935"]
-            : [token, "#E0E0E0"];
-  const single = token.length === 1;
-  const ink = single && token !== "4" && token !== "6" ? "#D32F2F" : "#FFFFFF";
+  const plate = CRICKET_PLATES[token];
+  // sizes follow the app's sp values relative to a 14sp line (em)
+  const em = (sp: number) => `${sp / 14}em`;
+  if (!plate) {
+    const dot = token === "0";
+    return (
+      <span className="relative mx-px inline-flex items-center justify-center align-middle" style={{ width: em(21), height: em(23) }}>
+        <span
+          className="relative flex items-center justify-center overflow-hidden rounded-full font-black leading-none text-white"
+          style={{
+            width: em(19),
+            height: em(19),
+            fontSize: em(10.5),
+            boxShadow: "0 1px 2px rgba(0,0,0,.45)",
+            background: dot ? "radial-gradient(circle at 35% 30%, #90A4AE, #455A64 55%, #263238)" : "radial-gradient(circle at 35% 30%, #FF8A80, #D32F2F 55%, #7F0000)",
+          }}
+        >
+          {/* stitched seam: two dashed arcs */}
+          <span className="pointer-events-none absolute inset-[16%] rounded-full" style={{ border: "1.3px dashed rgba(255,255,255,.8)", borderTopColor: "transparent", borderBottomColor: "transparent" }} />
+          <span className="relative">{token}</span>
+        </span>
+      </span>
+    );
+  }
+  const slantK = `${(0.24 * 23) / (CRICKET_BADGE_W[token] ?? 56) * 100}%`;
+  const clip = SLANT.replaceAll("24%", slantK);
+  const layers = [
+    "linear-gradient(to bottom, rgba(255,255,255,.25), rgba(255,255,255,0) 50%)",
+    plate.striped ? "repeating-linear-gradient(-45deg, rgba(255,23,68,.14) 0 3px, transparent 3px 6px)" : "",
+    token === "DRS" ? "repeating-linear-gradient(to bottom, rgba(255,255,255,.08) 0 1px, transparent 1px 3px)" : "",
+    `linear-gradient(135deg, ${plate.inside.join(", ")})`,
+  ].filter(Boolean);
   return (
     <span
-      className={`mx-px inline-flex h-4 items-center justify-center align-middle text-[9px] font-extrabold leading-none ${
-        single ? "w-4 rounded-full" : "rounded-full px-1.5"
-      }`}
-      style={{ background: bg, color: ink }}
+      className={`relative mx-px inline-block align-middle ${plate.pulse ? "cb-pulse" : ""}`}
+      style={{ width: em(CRICKET_BADGE_W[token]), height: em(23), padding: `${em(1.5)} ${em(2)}`, filter: `drop-shadow(0 0 3px ${plate.glow})` }}
     >
-      {label}
+      <span className="block h-full w-full" style={{ clipPath: clip, background: `linear-gradient(135deg, ${plate.frame.join(", ")})`, padding: em(1.5) }}>
+        <span className="relative flex h-full w-full items-center justify-center overflow-hidden" style={{ clipPath: clip, background: layers.join(", ") }}>
+          <span className="cb-shine pointer-events-none absolute inset-y-0 w-[40%]" />
+          {token === "DRS" ? (
+            <span className="cb-twinkle mr-[3px] inline-block rounded-full" style={{ width: 5, height: 5, background: "#FF1744" }} />
+          ) : (
+            <span className="mr-[2px] leading-none" style={{ fontSize: em(9) }}>
+              {plate.icon}
+            </span>
+          )}
+          <span
+            className="relative whitespace-nowrap font-black italic leading-none"
+            style={{
+              fontSize: em(10),
+              letterSpacing: em(0.7),
+              background: `linear-gradient(to bottom, ${plate.letters.join(", ")})`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              filter: "drop-shadow(0 1.5px 1px rgba(0,0,0,.6))",
+            }}
+          >
+            {plate.label}
+          </span>
+        </span>
+      </span>
+      {token === "6" && (
+        <span className="cb-twinkle pointer-events-none absolute right-[5px] top-0 leading-none text-white" style={{ fontSize: em(7) }}>
+          ✦
+        </span>
+      )}
     </span>
   );
 }

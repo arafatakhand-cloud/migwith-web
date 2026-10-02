@@ -1,9 +1,9 @@
 // A small playing card face ("10♥", "A♠"), shared by the card games.
-export function MiniCard({ card, size = "sm" }: { card: string; size?: "xs" | "sm" | "md" }) {
+export function MiniCard({ card, size = "sm" }: { card: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const suit = card.slice(-1);
   const rank = card.slice(0, -1);
   const red = suit === "♥" || suit === "♦";
-  const box = size === "md" ? "h-12 w-9 text-sm" : size === "xs" ? "h-7 w-5 text-[9px]" : "h-9 w-7 text-[11px]";
+  const box = size === "lg" ? "h-[62px] w-11 text-base" : size === "md" ? "h-12 w-9 text-sm" : size === "xs" ? "h-7 w-5 text-[9px]" : "h-9 w-7 text-[11px]";
   return (
     <span
       className={`inline-flex flex-col items-center justify-center rounded-md border border-black/10 bg-white font-black leading-none shadow ${box} ${
@@ -11,7 +11,7 @@ export function MiniCard({ card, size = "sm" }: { card: string; size?: "xs" | "s
       }`}
     >
       <span>{rank}</span>
-      <span className={size === "md" ? "text-xs" : size === "xs" ? "text-[8px]" : "text-[10px]"}>{suit}</span>
+      <span className={size === "lg" ? "text-sm" : size === "md" ? "text-xs" : size === "xs" ? "text-[8px]" : "text-[10px]"}>{suit}</span>
     </span>
   );
 }

@@ -209,3 +209,22 @@ body {
 .ach-glow { animation: ach-glow 1.6s ease-in-out infinite alternate; }
 @keyframes ach-glow { from { opacity: 0.35; } to { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .ach-glow { animation: none; } }
+
+/* 🏏 Cricket Bot score plates (room) */
+.cb-pulse { animation: cb-pulse 0.65s ease-in-out infinite alternate; }
+@keyframes cb-pulse { from { transform: scale(1); } to { transform: scale(1.07); } }
+.cb-twinkle { animation: cb-twinkle 0.52s ease-in-out infinite alternate; }
+@keyframes cb-twinkle { from { opacity: 0.2; } to { opacity: 1; } }
+.cb-shine {
+  left: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.33) 20% 80%, transparent 80%);
+  transform: skewX(-25deg);
+  animation: cb-shine 1.7s linear infinite;
+}
+@keyframes cb-shine { from { left: -40%; } to { left: 160%; } }
+@media (prefers-reduced-motion: reduce) { .cb-pulse, .cb-twinkle, .cb-shine { animation: none; } }
+.cr-live { animation: cr-live 0.6s ease-in-out infinite alternate; }
+@keyframes cr-live { from { opacity: 1; } to { opacity: 0.35; } }
+.cr-glow { animation: cr-glow 0.5s ease-in-out infinite alternate; }
+.cr-glow-fast { animation: cr-glow 0.25s ease-in-out infinite alternate; }
+@keyframes cr-glow { from { transform: scale(1.12); } to { transform: scale(0.9); opacity: 0.05; } }

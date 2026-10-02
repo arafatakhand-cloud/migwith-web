@@ -190,6 +190,98 @@ export function cricketHandleCommand(
   return false;
 }
 
+const GOLD_BTN = "linear-gradient(to bottom, #FFF59D, #FFC107, #FF8F00)";
+const RED_BTN = "linear-gradient(to bottom, #FF8A80, #E53935, #B71C1C)";
+const ACCENT = "#FFC83D";
+
+// 3D button: darker base peeking out under the gradient face.
+function CricketBtn({ label, face, base, ink, enabled, onClick }: { label: string; face: string; base: string; ink: string; enabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={!enabled}
+      className="shrink-0 rounded-[11px] pb-[2.5px] active:translate-y-px"
+      style={{ background: base, opacity: enabled ? 1 : 0.55 }}
+    >
+      <span className="block whitespace-nowrap rounded-[11px] px-3.5 py-1.5 text-xs font-black" style={{ background: face, color: ink }}>
+        {label}
+      </span>
+    </button>
+  );
+}
+
+// Glowing countdown ring (green → gold, red for the last 5 seconds).
+function CricketTimerRing({ secondsLeft, total }: { secondsLeft: number; total: number }) {
+  const urgent = secondsLeft >= 1 && secondsLeft <= 5;
+  const progress = Math.min(1, Math.max(0, secondsLeft / Math.max(total, secondsLeft)));
+  const r = 12;
+  const c = 2 * Math.PI * r;
+  const start = urgent ? "#FF5252" : "#2FBF71";
+  const end = urgent ? "#FF8A65" : ACCENT;
+  return (
+    <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+      {secondsLeft > 0 && (
+        <span className={`absolute inset-0 rounded-full ${urgent ? "cr-glow-fast" : "cr-glow"}`} style={{ background: end, opacity: 0.35 }} />
+      )}
+      <svg viewBox="0 0 32 32" className="absolute inset-0 h-8 w-8 -rotate-90">
+        <defs>
+          <linearGradient id={`crRing${urgent ? "u" : ""}`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor={start} />
+            <stop offset="1" stopColor={end} />
+          </linearGradient>
+        </defs>
+        <circle cx="16" cy="16" r={r} fill="#08261C" stroke="rgba(255,255,255,.2)" strokeWidth="3.5" />
+        <circle
+          cx="16"
+          cy="16"
+          r={r}
+          fill="none"
+          stroke={`url(#crRing${urgent ? "u" : ""})`}
+          strokeWidth="3.5"
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - progress)}
+          style={{ transition: "stroke-dashoffset .45s" }}
+        />
+      </svg>
+      <span className="relative text-[11px] font-extrabold" style={{ color: urgent ? "#FF8A80" : "#FFFFFF" }}>
+        {secondsLeft}
+      </span>
+    </span>
+  );
+}
+
+function CricketPlayerChip({ p, isMe, batted, inSuperOver, battingNow }: { p: Player; isMe: boolean; batted: boolean; inSuperOver: boolean; battingNow: boolean }) {
+  // waiting to bat this round → gold edge
+  const waiting = battingNow && !batted && !p.out;
+  const edge = inSuperOver || waiting ? "#FFD54F" : isMe ? "#FFFFFF" : "rgba(255,255,255,.2)";
+  return (
+    <span
+      className="flex shrink-0 items-center rounded-full py-0.5 pl-0.5 pr-[7px]"
+      style={{ background: p.out ? "rgba(85,17,17,.6)" : "rgba(0,0,0,.4)", border: `${waiting || inSuperOver ? 1.5 : 1}px solid ${edge}`, opacity: p.out ? 0.8 : 1 }}
+    >
+      <span
+        className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black text-[#0B2E13]"
+        style={{ background: p.out ? "linear-gradient(#FFCDD2, #E57373)" : "linear-gradient(#FFFFFF, #B9F6CA)" }}
+      >
+        {battingNow && batted && !p.out ? "✓" : p.username.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="ml-1 max-w-[80px] truncate text-[10px] font-bold text-white">
+        {p.username}
+        {waiting ? " 🏏" : ""}
+      </span>
+      {p.out ? (
+        <span className="ml-1 text-[9.5px] font-black text-[#FF8A80]">OUT {p.runs}</span>
+      ) : (
+        <span className="ml-1 text-[11px] font-black italic" style={{ color: ACCENT }}>
+          {p.runs}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function CricketBox({ state, uid }: { state: CricketState; uid: string }) {
   const [entry, setEntry] = useState(200);
   const [collapsed, setCollapsed] = useState(false);
@@ -199,137 +291,129 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
   const iAmBatter = !!me && batters.some((p) => p.uid === uid);
   const iBatted = state.batted.has(uid);
   const canBat = state.phase === "BATTING" && iAmBatter && !iBatted;
+  const top = state.players.reduce<Player | null>((best, p) => (!best || p.runs > best.runs ? p : best), null);
+  const sorted = [...state.players].sort((a, b) => Number(a.out) - Number(b.out) || b.runs - a.runs);
 
-  const title = !state.running
-    ? "🏏 Cricket"
-    : state.phase === "JOINING"
-      ? "🏏 Cricket • Joining"
-      : state.superOver
-        ? "🏏 Cricket • Super Over"
-        : `🏏 Cricket • Round ${Math.max(1, state.ball)}/${ROUNDS}`;
-
-  const ranked = [...state.players].sort((a, b) => b.runs - a.runs);
-
+  // ✨ compact "stadium" box: gold-green frame, striped grass, gold pills
   return (
-    <div className="border-t border-emerald-300/20 bg-gradient-to-b from-emerald-900/40 to-transparent px-2 py-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-black text-emerald-200">{title}</span>
-        {state.running && state.secondsLeft > 0 && (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-              state.secondsLeft <= 3 ? "bg-red-500/80" : "bg-emerald-700/80"
-            }`}
-          >
-            ⏱ {state.secondsLeft}s
-          </span>
-        )}
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          className="ml-auto rounded-lg border border-white/10 px-2 text-sm text-white/60 hover:bg-white/10"
+    <div className="px-[7px] py-[3px]">
+      <div className="rounded-2xl p-[1.5px]" style={{ background: "linear-gradient(135deg, #FFE082, #2E7D32, #00C853, #FFE082)" }}>
+        <div
+          className="rounded-[15px] px-2 py-[7px]"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(255,255,255,.13), rgba(255,255,255,0) 50%, rgba(0,0,0,.2)), repeating-linear-gradient(to right, #1E7B34 0 22px, #22883A 22px 44px)",
+          }}
         >
-          {collapsed ? "+" : "−"}
-        </button>
-      </div>
+          {/* Header */}
+          <div className="flex items-center">
+            {state.running && state.phase !== "IDLE" && (
+              <span className="mr-1.5">
+                <CricketTimerRing secondsLeft={state.secondsLeft} total={state.phase === "JOINING" ? 40 : state.phase === "COUNTDOWN" ? 5 : 17} />
+              </span>
+            )}
+            <span className="whitespace-nowrap rounded-full px-[9px] py-0.5 text-[11px] font-black italic text-[#3E2723]" style={{ background: "linear-gradient(135deg, #FFE082, #FFB300)" }}>
+              🏏 CRICKET
+            </span>
+            {state.running && (
+              <span className="ml-[5px] flex items-center rounded-[4px] bg-[#D50000] px-[5px] py-px">
+                <span className="cr-live h-[5px] w-[5px] rounded-full bg-white" />
+                <span className="ml-[3px] text-[8.5px] font-black tracking-[1px] text-white">
+                  {state.phase === "JOINING" ? "JOIN" : state.superOver ? "SUPER" : "LIVE"}
+                </span>
+              </span>
+            )}
+            <span className="flex-1" />
+            {!state.running ? (
+              <CricketBtn label="🏏 START" face={GOLD_BTN} base="#B26A00" ink="#3E2723" enabled={!state.busy} onClick={() => state.start(entry)} />
+            ) : state.phase === "JOINING" && !me ? (
+              <CricketBtn label="✋ JOIN" face={GOLD_BTN} base="#B26A00" ink="#3E2723" enabled={!state.busy} onClick={state.join} />
+            ) : canBat ? (
+              <CricketBtn label="🏏 BAT" face={RED_BTN} base="#7F0000" ink="#FFFFFF" enabled={!state.busy} onClick={state.bat} />
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setCollapsed((v) => !v)}
+              aria-label={collapsed ? "Expand" : "Collapse"}
+              className="ml-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/35 text-sm font-bold text-white"
+              style={{ border: "1px solid rgba(255,200,61,.7)" }}
+            >
+              {collapsed ? "+" : "−"}
+            </button>
+          </div>
 
-      {state.running && (
-        <p className="mt-0.5 text-xs text-amber-300">
-          💰 Pot {state.pot.toLocaleString()} • {state.players.length} player
-          {state.players.length === 1 ? "" : "s"}
-          {state.phase === "BATTING" ? ` • ${state.batted.size}/${batters.length} batted` : ""}
-        </p>
-      )}
-
-      {!collapsed && (
-        <>
-          {/* Scoreboard */}
-          {state.running && ranked.length > 0 && (
-            <div className="mt-2 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-              {ranked.map((p) => (
-                <div
-                  key={p.uid}
-                  className={`flex items-center gap-1 rounded-xl border px-2 py-1.5 text-xs ${
-                    p.out ? "border-white/5 bg-white/[0.02] opacity-50" : "border-emerald-400/30 bg-emerald-500/10"
-                  }`}
-                >
-                  <span className="truncate font-bold">
-                    {p.username}
-                    {p.uid === uid && " (you)"}
+          {/* Scoreboard strip (one line, TV style) */}
+          {state.running && (
+            <div className="mt-[5px] flex items-center whitespace-nowrap rounded-lg bg-black/65 px-2 py-[3px]" style={{ border: "1px solid rgba(255,193,7,.6)" }}>
+              <span className="text-[10px] font-bold text-white">
+                {state.phase === "JOINING" ? "Joining" : state.superOver ? "Super Over" : `Round ${Math.max(1, state.ball)}/${ROUNDS}`}
+              </span>
+              {top && top.runs > 0 && (
+                <>
+                  <span className="text-[10px] text-[#B9F6CA]">&nbsp; · &nbsp;Top&nbsp;</span>
+                  <span className="text-xs font-black italic" style={{ color: ACCENT }}>
+                    {top.runs}
                   </span>
-                  <span className="ml-auto font-black text-amber-300">{p.runs}</span>
-                  {p.out && <span className="text-[10px] text-red-300">OUT{p.outHow ? ` · ${p.outHow}` : ""}</span>}
-                  {state.phase === "BATTING" && state.batted.has(p.uid) && !p.out && <span>✅</span>}
-                </div>
-              ))}
+                  <span className="ml-1 max-w-[70px] truncate text-[10px] text-white">{top.username}</span>
+                </>
+              )}
+              <span className="flex-1" />
+              {state.phase === "BATTING" && (
+                <span className="mr-1.5 text-[9.5px] text-[#B9F6CA]">
+                  {state.batted.size}/{batters.length} batted
+                </span>
+              )}
+              <span className="text-[10px]">🏆&nbsp;</span>
+              <span className="text-[11px] font-black" style={{ color: ACCENT }}>
+                {state.pot.toLocaleString()}
+              </span>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {!state.running ? (
+          {/* Body */}
+          {!collapsed &&
+            (!state.running ? (
               <>
-                <span className="text-xs text-white/50">Entry</span>
-                {ENTRY_OPTIONS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => setEntry(e)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-                      entry === e
-                        ? "border-amber-300 bg-amber-300 text-neutral-900"
-                        : "border-white/10 text-white/70 hover:bg-white/5"
-                    }`}
-                  >
-                    {e}
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => state.start(entry)}
-                  disabled={state.busy}
-                  className="ml-auto rounded-xl bg-emerald-600 px-4 py-2 text-sm font-black disabled:opacity-50"
-                >
-                  ▶ Start
-                </button>
+                <div className="mt-1.5 flex gap-1">
+                  {ENTRY_OPTIONS.map((e) => {
+                    const sel = entry === e;
+                    return (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => setEntry(e)}
+                        className="flex-1 rounded-lg py-[5px] text-[11px] font-black"
+                        style={{
+                          background: sel ? GOLD_BTN : "linear-gradient(to bottom, rgba(255,255,255,.2), rgba(255,255,255,.08))",
+                          border: `1px solid ${sel ? "#FFF8E1" : "rgba(255,255,255,.25)"}`,
+                          color: sel ? "#3E2723" : "#FFFFFF",
+                        }}
+                      >
+                        {e >= 1000 ? `${e / 1000}K` : e}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-1 text-[9.5px] text-white/75">6 rounds • highest runs wins 90% of the pot • OUT = out of the game</p>
               </>
-            ) : state.phase === "JOINING" && !me ? (
-              <button
-                type="button"
-                onClick={state.join}
-                disabled={state.busy}
-                className="w-full rounded-xl bg-emerald-600 py-2.5 text-sm font-black disabled:opacity-50"
-              >
-                🏏 Join · 🪙 {state.entryCost.toLocaleString()}
-              </button>
-            ) : state.phase === "JOINING" ? (
-              <span className="text-xs text-white/70">✅ You joined — waiting for the game to start…</span>
-            ) : !me ? (
-              <span className="text-xs text-white/60">👀 Watching this game</span>
-            ) : canBat ? (
-              <button
-                type="button"
-                onClick={state.bat}
-                disabled={state.busy}
-                className="w-full animate-pulse rounded-xl bg-amber-400 py-3 text-sm font-black text-neutral-900 disabled:opacity-50"
-              >
-                🏏 BAT! (!d)
-              </button>
             ) : (
-              <span className="text-xs text-white/60">
-                {me.out
-                  ? "🚫 You are out · watching"
-                  : iBatted
-                    ? "✅ You batted — waiting for the others…"
-                    : state.phase === "COUNTDOWN"
-                      ? "⏳ Get ready…"
-                      : state.superOver && !iAmBatter
-                        ? "👀 Super Over — watching"
-                        : "⏳ Waiting…"}
-              </span>
-            )}
-          </div>
-        </>
-      )}
+              sorted.length > 0 && (
+                <div className="mt-[5px] flex gap-1 overflow-x-auto [scrollbar-width:none]">
+                  {sorted.map((p) => (
+                    <CricketPlayerChip
+                      key={p.uid}
+                      p={p}
+                      isMe={p.uid === uid}
+                      batted={state.batted.has(p.uid)}
+                      inSuperOver={state.superOver && state.superOverUids.includes(p.uid)}
+                      battingNow={state.phase === "BATTING"}
+                    />
+                  ))}
+                </div>
+              )
+            ))}
+        </div>
+      </div>
     </div>
   );
 }
