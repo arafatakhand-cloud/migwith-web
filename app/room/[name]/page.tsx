@@ -280,8 +280,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
   // 🎴 Teen Patti table (only in the Teen Patti room).
   const teenPatti = useTeenPatti(roomName === TEEN_PATTI_ROOM, user?.uid, note);
-  // 🤖 LowCard / Cricket Bot switched on in THIS room (/start lowcard,
-  // /start cricket — room_bots/{room} is written by the roomBotControl Cloud Function).
+  // 🤖 LowCard / Cricket Bot switched on in THIS room (/bot lowcard,
+  // /bot cricket — room_bots/{room} is written by the roomBotControl Cloud Function).
   const [roomActiveBot, setRoomActiveBot] = useState<string | null>(null);
   useEffect(() => {
     setRoomActiveBot(null);
@@ -998,19 +998,48 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
-    // 🤖 ROOM BOTS — /start lowcard · /stop lowcard · /start cricket · /stop
-    // cricket: the room's owner / mods (or admin / staff) switch a bot on or
-    // off. Stopping during a game refunds everyone (server: roomBotControl).
-    const botCmd = clean.trim().match(/^\/(start|stop)\s+(lowcard|cricket)$/i);
+    // 🤖 ROOM BOTS — /bot lowcard · /bot cricket: ANYBODY switches a game bot
+    // on in a public or private chat room; the full game then runs there for
+    // everyone (!start, !j, …). /bot stop switches it off — while a game is
+    // running only app Admin / Staff / Super Admin or the private room's owner
+    // may stop it (the server refunds everyone). roomBotControl checks the
+    // same rules on the server; this only gives a quick, friendly answer.
+    const botCmd = clean.trim().match(/^\/bot(?:\s+(\S+))?$/i);
     if (botCmd) {
       setText("");
-      const act = botCmd[1].toLowerCase();
-      const which = botCmd[2].toLowerCase();
-      const label = which === "lowcard" ? "LowCard Bot" : "Cricket Bot";
+      const arg = (botCmd[1] || "").toLowerCase();
+      const botLabel = (bot: string | null) => (bot === "cricket" ? "Cricket Bot" : "LowCard Bot");
+      if (!["lowcard", "cricket", "stop"].includes(arg)) {
+        note("🤖 Use /bot lowcard or /bot cricket to add a game bot, /bot stop to remove it.");
+        return;
+      }
       // chat rooms only (public or private) — never inside a game room
       if (/ official$/i.test(roomName.trim()) || roomName.startsWith("🎰 Luxury Bet")) {
-        note(`${label}: bots can be started only in chat rooms (public or private), not in game rooms.`);
+        note("🤖 Game bots can be added only in chat rooms (public or private), not in game rooms.");
         return;
+      }
+      let which: string;
+      let act: string;
+      if (arg === "stop") {
+        if (!roomActiveBot) {
+          note("🤖 No game bot is on in this room.");
+          return;
+        }
+        const gameRunning = roomActiveBot === "lowcard" ? lowCard?.running === true : roomActiveBot === "cricket" ? cricket?.running === true : false;
+        const canStopRunningGame = perms.isAppStaffHere || (perms.isUserRoom && !!roomInfo.ownerUid && roomInfo.ownerUid === user.uid);
+        if (gameRunning && !canStopRunningGame) {
+          note(`${botLabel(roomActiveBot)}: A game is running. Only Admin, Staff, Super Admin or the room owner can stop it.`);
+          return;
+        }
+        which = roomActiveBot;
+        act = "stop";
+      } else {
+        if (roomActiveBot && roomActiveBot !== arg) {
+          note(`${botLabel(roomActiveBot)} is already on in this room. Type /bot stop first.`);
+          return;
+        }
+        which = arg;
+        act = "start";
       }
       httpsCallable<{ roomId: string; bot: string; action: string }, { already?: boolean }>(functions, "roomBotControl")({
         roomId: roomName,
@@ -1018,9 +1047,15 @@ function RoomView({ roomName }: { roomName: string }) {
         action: act,
       })
         .then(({ data }) => {
-          if (data?.already === true) note(`${label}: already on in this room.`);
+          if (data?.already === true) note(`${botLabel(which)}: already on in this room.`);
         })
-        .catch((e: any) => note(`${label}: ${e?.message || "Could not change the bot."}`));
+        .catch((e: any) => note(`${botLabel(which)}: ${e?.message || "Could not change the bot."}`));
+      return;
+    }
+    // The old /start lowcard · /stop cricket … commands are gone.
+    if (/^\/(start|stop)\s+(lowcard|cricket)$/i.test(clean.trim())) {
+      setText("");
+      note("🤖 This command changed — use /bot lowcard, /bot cricket or /bot stop.");
       return;
     }
 

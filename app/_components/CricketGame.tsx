@@ -44,7 +44,7 @@ function opId(kind: string): string {
 }
 
 // roomId = the official Cricket room, or any room where Cricket Bot was
-// switched on with /start cricket (null = no Cricket Bot here).
+// switched on with /bot cricket (null = no Cricket Bot here).
 export function useCricket(roomId: string | null, uid: string | undefined, note: (t: string) => void): CricketState | null {
   const enabled = !!roomId;
   const [g, setG] = useState({
@@ -287,7 +287,9 @@ function CricketPlayerChip({ p, isMe, batted, inSuperOver, battingNow }: { p: Pl
 
 export function CricketBox({ state, uid }: { state: CricketState; uid: string }) {
   const [entry, setEntry] = useState(200);
-  const [collapsed, setCollapsed] = useState(false);
+  // Open by itself when a game starts, fold down when it ends (like the app).
+  const [collapsed, setCollapsed] = useState(!state.running);
+  useEffect(() => setCollapsed(!state.running), [state.running]);
 
   const me = state.players.find((p) => p.uid === uid);
   const batters = state.activeBatters();

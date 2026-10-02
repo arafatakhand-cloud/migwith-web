@@ -46,7 +46,7 @@ export type LowCardState = {
 };
 
 // roomId = the official LowCard room, or any room where LowCard Bot was
-// switched on with /start lowcard (null = no LowCard here).
+// switched on with /bot lowcard (null = no LowCard here).
 export function useLowCard(roomId: string | null, uid: string | undefined, note: (t: string) => void): LowCardState | null {
   const enabled = !!roomId;
   const [g, setG] = useState({
@@ -281,7 +281,9 @@ function LcTimerRing({ secondsLeft, total }: { secondsLeft: number; total: numbe
 // lowest card glows red with a LOW tag.
 export function LowCardBox({ state, uid }: { state: LowCardState; uid: string }) {
   const [entry, setEntry] = useState(200);
-  const [collapsed, setCollapsed] = useState(false);
+  // Opens by itself when a game or a new round starts, folds down when the game ends (like the app).
+  const [collapsed, setCollapsed] = useState(!state.running);
+  useEffect(() => setCollapsed(!state.running), [state.running, state.gameRound]);
 
   const joined = state.players.some((p) => p.uid === uid);
   const inTie = state.tieBreakActive && state.tieCandidates.includes(uid);

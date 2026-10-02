@@ -160,6 +160,7 @@ const HELP =
   "/record • /taunt • /torch • /win • /winner • /yingying\n" +
   "/goal • /penalty • /freekick • /offside • /handball • /red • /yellow\n" +
   "Friends: /f user (friend request) • /uf user (unfriend) • /block user • /unblock user\n" +
+  "Game bots: /bot lowcard • /bot cricket • /bot stop\n" +
   "/pick [code] (Lucky Voucher) • /invite @user • /commands • /help";
 
 const pickVoucher = httpsCallable<{ roomId: string; code: string }, { amount?: number }>(functions, "pickVoucher");
