@@ -1452,7 +1452,7 @@ function RoomView({ roomName }: { roomName: string }) {
                 {royale && <RoyaleTable state={royale} />}
                 {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
                 {cricket && <CricketBox state={cricket} uid={user.uid} />}
-                {twentyNine && <TwentyNineTable state={twentyNine} />}
+                {twentyNine && <TwentyNineTable state={twentyNine} roomUsers={roomUsers.map((u) => u.username)} />}
                 {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
                 {ludo && <LudoTable state={ludo} />}
               </div>
