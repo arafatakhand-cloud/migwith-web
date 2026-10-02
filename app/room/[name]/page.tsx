@@ -291,7 +291,8 @@ function RoomView({ roomName }: { roomName: string }) {
     return onSnapshot(
       doc(db, "room_bots", roomName),
       (d) => setRoomActiveBot(String(d.get("bot") || "") || null),
-      () => setRoomActiveBot(null)
+      // Usually the rules not letting us read room_bots — keep what we know instead of wiping it.
+      (err) => console.error("room_bots listener failed", err)
     );
   }, [user, roomName]);
   // 🏏 Cricket (the Cricket room, or any room where Cricket Bot is on).
@@ -1023,17 +1024,15 @@ function RoomView({ roomName }: { roomName: string }) {
       let which: string;
       let act: string;
       if (arg === "stop") {
-        if (!roomActiveBot) {
-          note("🤖 No game bot is on in this room.");
-          return;
-        }
+        // roomActiveBot can be null when room_bots couldn't be read — the
+        // server then stops whichever bot is on (or says none is).
         const gameRunning = roomActiveBot === "lowcard" ? lowCard?.running === true : roomActiveBot === "cricket" ? cricket?.running === true : false;
         const canStopRunningGame = perms.isAppStaffHere || (perms.isUserRoom && !!roomInfo.ownerUid && roomInfo.ownerUid === user.uid);
         if (gameRunning && !canStopRunningGame) {
           note(`${botLabel(roomActiveBot)}: A game is running. Only Admin, Staff, Super Admin or the room owner can stop it.`);
           return;
         }
-        which = roomActiveBot;
+        which = roomActiveBot || "";
         act = "stop";
       } else {
         if (roomActiveBot && roomActiveBot !== arg) {
@@ -1043,15 +1042,22 @@ function RoomView({ roomName }: { roomName: string }) {
         which = arg;
         act = "start";
       }
-      httpsCallable<{ roomId: string; bot: string; action: string }, { already?: boolean }>(functions, "roomBotControl")({
+      httpsCallable<{ roomId: string; bot: string; action: string }, { already?: boolean; stopped?: string }>(functions, "roomBotControl")({
         roomId: roomName,
         bot: which,
         action: act,
       })
         .then(({ data }) => {
+          // Show / hide the game box right away from the server's answer —
+          // don't depend only on the room_bots listener.
+          if (act === "start") setRoomActiveBot(which);
+          else if (data?.stopped) setRoomActiveBot(null);
           if (data?.already === true) note(`${botLabel(which)}: already on in this room.`);
         })
-        .catch((e: any) => note(`${botLabel(which)}: ${e?.message || "Could not change the bot."}`));
+        .catch((e: any) => {
+          const why = e?.message || "Could not change the bot.";
+          note(which ? `${botLabel(which)}: ${why}` : `🤖 ${why}`);
+        });
       return;
     }
     // The old /start lowcard · /stop cricket … commands are gone.
