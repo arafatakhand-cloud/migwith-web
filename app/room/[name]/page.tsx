@@ -69,6 +69,8 @@ import {
 } from "../../_components/TeenPatti";
 import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../../_components/CricketGame";
 import { TN_FREE_ROOM, TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
+import { CricketCelebrationHost } from "../../_components/CricketCelebration";
+import { TRIVIA_ROOM, TriviaPanel, triviaHandleCommand, useTrivia } from "../../_components/Trivia";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
@@ -301,6 +303,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const twentyNine = useTwentyNine(roomName === TN_ROOM || roomName === TN_FREE_ROOM ? roomName : null, user?.uid, note);
   // 🃏 LowCard (the LowCard room, or any room where LowCard Bot is on).
   const lowCard = useLowCard(roomName === LOWCARD_ROOM || roomActiveBot === "lowcard" ? roomName : null, user?.uid, note);
+  // 🧠 Trivia (the Trivia room, or a chat room where /bot trivia is on).
+  const trivia = useTrivia(roomName === TRIVIA_ROOM || roomActiveBot === "trivia" ? roomName : null, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
   const ludo = useLudo(roomName === LUDO_ROOM, user?.uid, note);
 
@@ -1011,9 +1015,9 @@ function RoomView({ roomName }: { roomName: string }) {
     if (botCmd) {
       setText("");
       const arg = (botCmd[1] || "").toLowerCase();
-      const botLabel = (bot: string | null) => (bot === "cricket" ? "Cricket Bot" : "LowCard Bot");
-      if (!["lowcard", "cricket", "stop"].includes(arg)) {
-        note("🤖 Use /bot lowcard or /bot cricket to add a game bot, /bot stop to remove it.");
+      const botLabel = (bot: string | null) => (bot === "cricket" ? "Cricket Bot" : bot === "trivia" ? "Trivia Bot" : "LowCard Bot");
+      if (!["lowcard", "cricket", "trivia", "stop"].includes(arg)) {
+        note("🤖 Use /bot lowcard, /bot cricket or /bot trivia to add a game bot, /bot stop to remove it.");
         return;
       }
       // chat rooms only (public or private) — never inside a game room
@@ -1026,7 +1030,14 @@ function RoomView({ roomName }: { roomName: string }) {
       if (arg === "stop") {
         // roomActiveBot can be null when room_bots couldn't be read — the
         // server then stops whichever bot is on (or says none is).
-        const gameRunning = roomActiveBot === "lowcard" ? lowCard?.running === true : roomActiveBot === "cricket" ? cricket?.running === true : false;
+        const gameRunning =
+          roomActiveBot === "lowcard"
+            ? lowCard?.running === true
+            : roomActiveBot === "cricket"
+              ? cricket?.running === true
+              : roomActiveBot === "trivia"
+                ? trivia?.running === true
+                : false;
         const canStopRunningGame = perms.isAppStaffHere || (perms.isUserRoom && !!roomInfo.ownerUid && roomInfo.ownerUid === user.uid);
         if (gameRunning && !canStopRunningGame) {
           note(`${botLabel(roomActiveBot)}: A game is running. Only Admin, Staff, Super Admin or the room owner can stop it.`);
@@ -1161,6 +1172,16 @@ function RoomView({ roomName }: { roomName: string }) {
       setText("");
       if (luxury.running) note("👻 Luxury Bot: A round is already running.");
       else luxury.start();
+      return;
+    }
+
+    if (trivia && triviaHandleCommand(trivia, clean, note)) {
+      setText("");
+      return;
+    }
+    if (!trivia && /^!trivia\b/i.test(clean.trim())) {
+      setText("");
+      note("🧠 Trivia Bot is not on in this room — type /bot trivia to switch it on (chat rooms only).");
       return;
     }
 
@@ -1452,9 +1473,18 @@ function RoomView({ roomName }: { roomName: string }) {
                 {royale && <RoyaleTable state={royale} />}
                 {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
                 {cricket && <CricketBox state={cricket} uid={user.uid} />}
+                {/* 🎉 SIX/FOUR clapping, OUT finger, DRS third-umpire pop-ups */}
+                {cricket && profile && <CricketCelebrationHost messages={messages} roomKey={roomName} myName={profile.username} />}
                 {twentyNine && <TwentyNineTable state={twentyNine} roomUsers={roomUsers.map((u) => u.username)} />}
                 {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
                 {ludo && <LudoTable state={ludo} />}
+              </div>
+            )}
+
+            {/* 🧠 Trivia panel above the input bar (light, like the app) */}
+            {trivia && (
+              <div data-noswipe>
+                <TriviaPanel state={trivia} uid={user.uid} isStaff={perms.isAppStaffHere} />
               </div>
             )}
 
@@ -1728,9 +1758,10 @@ const CRICKET_PLATES: Record<string, CricketPlate> = {
   "4": { icon: "⚡", label: "FOUR!", frame: ["#E0F7FA", "#00E5FF", "#2979FF", "#E0F7FA"], inside: ["#0D47A1", "#01579B", "#002171"], letters: ["#FFFFFF", "#80D8FF", "#00B0FF"], glow: "#00B0FF" },
   OUT: { icon: "☝", label: "OUT!", frame: ["#FFCDD2", "#FF1744", "#B71C1C", "#FFCDD2"], inside: ["#1A0000", "#3B0000"], letters: ["#FF8A80", "#FF5252", "#FF1744"], glow: "#FF1744", striped: true, pulse: true },
   NOTOUT: { icon: "✔", label: "NOT OUT", frame: ["#B9F6CA", "#00E676", "#00695C", "#B9F6CA"], inside: ["#004D40", "#1B5E20"], letters: ["#FFFFFF", "#B9F6CA", "#69F0AE"], glow: "#00E676" },
+  DUCK: { icon: "🦆", label: "DUCK", frame: ["#FFF9C4", "#FFEB3B", "#F57F17", "#FFF9C4"], inside: ["#3E2723", "#5D4037"], letters: ["#FFFDE7", "#FFEE58", "#FFB300"], glow: "#FFD600", pulse: true },
   DRS: { icon: "", label: "DRS REVIEW", frame: ["#EDE7F6", "#B388FF", "#651FFF", "#EDE7F6"], inside: ["#1A0A3D", "#311B92"], letters: ["#FFFFFF", "#EDE7F6", "#B388FF"], glow: "#7C4DFF" },
 };
-const CRICKET_BADGE_W: Record<string, number> = { "6": 56, "4": 64, OUT: 56, NOTOUT: 76, DRS: 92 };
+const CRICKET_BADGE_W: Record<string, number> = { "6": 56, "4": 64, OUT: 56, DUCK: 68, NOTOUT: 76, DRS: 92 };
 const SLANT = "polygon(24% 0, 100% 0, calc(100% - 24%) 100%, 0 100%)";
 
 function CricketBadge({ token }: { token: string }) {
@@ -1857,7 +1888,7 @@ function gameBotLine(text: string): ReactNode | null {
     parts.push(body.slice(last));
   } else if (name === "Cricket Bot") {
     let last = 0;
-    for (const m of body.matchAll(/\{(\d|OUT|NOTOUT|DRS)\}/g)) {
+    for (const m of body.matchAll(/\{(\d|OUT|NOTOUT|DRS|DUCK)\}/g)) {
       const i = m.index ?? 0;
       parts.push(body.slice(last, i), <CricketBadge key={`b${i}`} token={m[1]} />);
       last = i + m[0].length;

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { toggleCricketSound, useCricketSoundOn } from "./CricketCelebration";
 
 // 🏏 Cricket Bot — all outcomes and coins are decided by the Cloud Functions
 // (startCricketGame / joinCricketGame / batCricket / tickCricketGame). The web
@@ -17,6 +18,7 @@ const startCall = httpsCallable(functions, "startCricketGame");
 const joinCall = httpsCallable(functions, "joinCricketGame");
 const batCall = httpsCallable(functions, "batCricket");
 const tickCall = httpsCallable(functions, "tickCricketGame");
+const reviewCall = httpsCallable(functions, "cricketReview");
 
 type Player = { uid: string; username: string; runs: number; out: boolean; outHow: string };
 
@@ -29,6 +31,10 @@ export type CricketState = {
   pot: number;
   players: Player[];
   batted: Set<string>;
+  /** Players given OUT this ball who have not reviewed it yet (DRS). */
+  outUnreviewed: Set<string>;
+  /** How many DRS reviews each player has used this game (1 allowed). */
+  reviewsUsed: Record<string, number>;
   superOver: boolean;
   superOverUids: string[];
   secondsLeft: number;
@@ -37,6 +43,9 @@ export type CricketState = {
   start: (entry: number) => void;
   join: () => void;
   bat: () => void;
+  /** 📺 DRS: challenge your own OUT (1 review per game). */
+  review: () => void;
+  canReview: (uid: string | undefined) => boolean;
 };
 
 function opId(kind: string): string {
@@ -57,6 +66,8 @@ export function useCricket(roomId: string | null, uid: string | undefined, note:
     pot: 0,
     players: [] as Player[],
     batted: new Set<string>(),
+    outUnreviewed: new Set<string>(),
+    reviewsUsed: {} as Record<string, number>,
     superOver: false,
     superOverUids: [] as string[],
   });
@@ -95,6 +106,14 @@ export function useCricket(roomId: string | null, uid: string | undefined, note:
               }))
           : [],
         batted: new Set(Object.keys((snap.get("bats") || {}) as Record<string, unknown>)),
+        outUnreviewed: new Set(
+          Object.entries((snap.get("bats") || {}) as Record<string, any>)
+            .filter(([, b]) => b && b.out === true && b.reviewed !== true)
+            .map(([k]) => k)
+        ),
+        reviewsUsed: Object.fromEntries(
+          Object.entries((snap.get("reviewsUsed") || {}) as Record<string, unknown>).map(([k, v]) => [k, Number(v) || 0])
+        ),
         superOver: so.active === true,
         superOverUids: Array.isArray(so.candidateUids) ? so.candidateUids.map(String) : [],
       });
@@ -145,6 +164,11 @@ export function useCricket(roomId: string | null, uid: string | undefined, note:
     bat: () => {
       if (!busy) run(batCall({ roundNumber: g.round, roomId }), "Could not bat.");
     },
+    review: () => {
+      if (!busy) run(reviewCall({ roomId }), "Could not review.");
+    },
+    canReview: (me: string | undefined) =>
+      !!me && g.running && g.phase === "BATTING" && g.outUnreviewed.has(me) && (g.reviewsUsed[me] || 0) < 1,
   };
 }
 
@@ -177,6 +201,10 @@ export function cricketHandleCommand(
     state.bat();
     return true;
   }
+  if (lower === "!review" || lower === "!drs") {
+    state.review();
+    return true;
+  }
   if (lower === "!players") {
     note(
       state.players.length === 0
@@ -187,12 +215,13 @@ export function cricketHandleCommand(
     return true;
   }
   if (lower === "!help") {
-    note("Cricket Bot: !start [entry] starts a game · !j joins · !d bats · !players lists the players");
+    note("Cricket Bot: !start [entry] starts a game · !j joins · !d bats · !review (DRS, once per game) · !players lists the players");
     return true;
   }
   return false;
 }
 
+const DRS_BTN = "linear-gradient(to bottom, #B388FF, #7C4DFF, #4527A0)";
 const GOLD_BTN = "linear-gradient(to bottom, #FFF59D, #FFC107, #FF8F00)";
 const RED_BTN = "linear-gradient(to bottom, #FF8A80, #E53935, #B71C1C)";
 const ACCENT = "#FFC83D";
@@ -286,6 +315,7 @@ function CricketPlayerChip({ p, isMe, batted, inSuperOver, battingNow }: { p: Pl
 }
 
 export function CricketBox({ state, uid }: { state: CricketState; uid: string }) {
+  const soundOn = useCricketSoundOn();
   const [entry, setEntry] = useState(200);
   // Open by itself when a game starts, fold down when it ends (like the app).
   const [collapsed, setCollapsed] = useState(!state.running);
@@ -335,7 +365,22 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
               <CricketBtn label="✋ JOIN" face={GOLD_BTN} base="#B26A00" ink="#3E2723" enabled={!state.busy} onClick={state.join} />
             ) : canBat ? (
               <CricketBtn label="🏏 BAT" face={RED_BTN} base="#7F0000" ink="#FFFFFF" enabled={!state.busy} onClick={state.bat} />
+            ) : state.canReview(uid) ? (
+              <CricketBtn label="📺 REVIEW" face={DRS_BTN} base="#311B92" ink="#FFFFFF" enabled={!state.busy} onClick={state.review} />
             ) : null}
+            {/* 🔊 / 🔇 — crowd sounds for SIX / FOUR / OUT / DRS (saved on this device) */}
+            <button
+              type="button"
+              onClick={toggleCricketSound}
+              className="ml-1.5 h-6 shrink-0 whitespace-nowrap rounded-full px-2 text-[9px] font-black"
+              style={
+                soundOn
+                  ? { background: "linear-gradient(#69F0AE, #00C853)", border: "1px solid #B9F6CA", color: "#003D1A" }
+                  : { background: "rgba(0,0,0,.6)", border: "1px solid rgba(255,138,128,.6)", color: "#FF8A80" }
+              }
+            >
+              {soundOn ? "🔊 SOUND ON" : "🔇 SOUND OFF"}
+            </button>
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
@@ -399,7 +444,7 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
                     );
                   })}
                 </div>
-                <p className="mt-1 text-[9.5px] text-white/75">6 rounds • highest runs wins 90% of the pot • OUT = out of the game</p>
+                <p className="mt-1 text-[9.5px] text-white/75">6 rounds • highest runs wins 90% of the pot • OUT = out of the game • 1 DRS review (!review)</p>
               </>
             ) : (
               sorted.length > 0 && (

@@ -269,3 +269,39 @@ body {
 /* 29 Card: pulsing gold halo / ring on the seat whose turn it is */
 .tn-turn-halo { animation: tn-turn-halo 0.65s ease-in-out infinite alternate; }
 @keyframes tn-turn-halo { from { opacity: .15; } to { opacity: 1; } }
+
+/* 🏏 Cricket celebrations (CricketCelebration.tsx) */
+.ck-pop { animation: ck-pop 0.5s cubic-bezier(.34,1.7,.5,1) both; }
+@keyframes ck-pop { from { transform: scale(.25); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ck-spark { transform: translate(-50%, -50%) rotate(var(--a)) translateX(70px); animation: ck-spark 1.1s linear infinite; }
+@keyframes ck-spark { from { transform: translate(-50%, -50%) rotate(var(--a)) translateX(70px); opacity: 1; } to { transform: translate(-50%, -50%) rotate(calc(var(--a) + 35deg)) translateX(135px); opacity: .2; } }
+.ck-ball-six { animation: ck-ball-six 0.9s linear 0.18s both; }
+@keyframes ck-ball-six { 0% { transform: translate(-50%, -50%); opacity: 1; } 50% { transform: translate(40px, -150px); } 99% { transform: translate(160px, -10px); opacity: 1; } 100% { opacity: 0; } }
+.ck-ball-four { animation: ck-ball-four 0.9s linear 0.18s both; }
+@keyframes ck-ball-four { 0% { transform: translate(-50%, -50%); opacity: 1; } 50% { transform: translate(60px, -40px); } 99% { transform: translate(160px, -10px); opacity: 1; } 100% { opacity: 0; } }
+.ck-swing { animation: ck-swing 0.56s ease-out both; }
+@keyframes ck-swing { 0% { transform: rotate(-70deg); } 46% { transform: rotate(35deg); } 100% { transform: rotate(10deg); } }
+.ck-clap { display: inline-block; animation: ck-clap 0.19s ease-in-out infinite alternate; }
+.ck-clap-b { animation-direction: alternate-reverse; }
+@keyframes ck-clap { from { transform: scale(.75); } to { transform: scale(1.25); } }
+.ck-finger { animation: ck-finger 0.7s cubic-bezier(.34,1.9,.5,1) 0.22s both; }
+@keyframes ck-finger { from { transform: translateY(70px) rotate(21deg); } to { transform: translateY(0) rotate(0); } }
+.ck-flash { animation: ck-flash 0.26s ease-in-out infinite alternate; }
+@keyframes ck-flash { from { opacity: .55; } to { opacity: 1; } }
+.ck-dot { animation: ck-dot 0.9s linear infinite alternate both; }
+@keyframes ck-dot { 0%, 40% { opacity: 0; } 41%, 100% { opacity: 1; } }
+.ck-scan { animation: ck-scan 0.9s linear infinite alternate; }
+@keyframes ck-scan { from { left: 0; } to { left: calc(100% - 4px); } }
+.ck-track1 { stroke-dasharray: 100; animation: ck-track1 0.71s linear 0.15s both; }
+@keyframes ck-track1 { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+.ck-track2 { animation: ck-track2 0.52s ease-out 1.04s both; }
+@keyframes ck-track2 { from { opacity: 0; } to { opacity: .9; } }
+.ck-sky { animation: ck-sky 1.1s linear both; }
+@keyframes ck-sky { 0% { left: 14%; top: 80%; } 50% { left: 47%; top: 10%; } 100% { left: 78%; top: 62%; opacity: 0; } }
+.ck-fielder { animation: ck-fielder 0.85s ease-out 0.25s both; }
+@keyframes ck-fielder { from { transform: translateX(60px); } to { transform: translateX(0); } }
+.ck-word { animation: ck-pop 0.45s cubic-bezier(.34,1.9,.5,1) 1.15s both; }
+.ck-duck { animation: ck-duck-in 0.9s ease-out both, ck-waddle 0.22s ease-in-out 0.9s infinite alternate; }
+@keyframes ck-duck-in { from { transform: translateX(calc(-50% - 120px)); } to { transform: translateX(-50%); } }
+@keyframes ck-waddle { from { transform: translateX(-50%) rotate(-12deg); } to { transform: translateX(-50%) translateY(-6px) rotate(12deg); } }
+@media (prefers-reduced-motion: reduce) { .ck-spark, .ck-clap, .ck-flash, .ck-scan, .ck-duck { animation: none; } }

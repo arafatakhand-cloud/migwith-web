@@ -483,6 +483,7 @@ const OFFICIAL_GAME_CARDS: [string, string][] = [
   ["👑 MIG Royale Official", "MIG Royale"],
   ["🃏 29 Official", "29 Card"],
   ["🃏 29 Card Free", "29 Card Free"],
+  ["🧠 Trivia Official", "Trivia"],
   ["👻 Luxury Bot Official", "Luxury Bot"],
   ["🎰 Luxury Bet", "Luxury Bet"],
   ["🃏 LowCard Official", "LowCard"],
