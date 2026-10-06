@@ -3,6 +3,7 @@ import "./globals.css";
 import "./themes.css";
 import { AppSession } from "./_components/AppSession";
 import { Translator } from "./_components/Translator";
+import { RainbowFavicon } from "./_components/RainbowFavicon";
 
 export const metadata: Metadata = {
   title: "MIGlife",
@@ -46,6 +47,7 @@ export default function RootLayout({
         />
         <AppSession>{children}</AppSession>
         <Translator />
+        <RainbowFavicon />
       </body>
     </html>
   );
