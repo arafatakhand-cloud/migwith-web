@@ -198,6 +198,7 @@ async function sendFriendRequest(ctx: CommandContext, name: string) {
     ctx.note(`🤝 Friend request sent to ${target.username}!`);
     addDoc(collection(db, "alerts"), {
       toUsername: target.username,
+      fromUsername: ctx.username,
       message: `${ctx.username} sent you a friend request.`,
       type: "friend_request",
       read: false,

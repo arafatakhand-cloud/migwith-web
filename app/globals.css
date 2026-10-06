@@ -329,3 +329,12 @@ body {
 @keyframes ludo-auto { from { border-color: rgba(255,255,255,.55); } to { border-color: #fff; } }
 .ludo-auto { animation: ludo-auto 0.7s ease-in-out infinite alternate; }
 @media (prefers-reduced-motion: reduce) { .ludo-hop, .ludo-glow, .ludo-yard-glow, .ludo-turn, .ludo-dice-glow, .ludo-auto { animation: none; } }
+
+/* 💬 Chat bar: shine across ➤ while there is something to send, the plane flies off on send, mic ring while recording */
+.chat-send-shine::after { content: ""; position: absolute; inset: 0; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%) 0 0 / 300% 100%; animation: chat-shine 2.4s linear infinite; }
+@keyframes chat-shine { from { background-position: 150% 0; } to { background-position: -150% 0; } }
+@keyframes chat-send-fly { 0% { transform: none; opacity: 1; } 45% { transform: translate(14px, -14px); opacity: 0; } 55% { transform: translate(-14px, 14px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.chat-send-fly { animation: chat-send-fly 0.45s ease-in-out; }
+@keyframes chat-mic-rec { from { border-color: rgba(255,255,255,.35); } to { border-color: #fff; } }
+.chat-mic-rec { animation: chat-mic-rec 0.6s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .chat-send-shine::after, .chat-send-fly, .chat-mic-rec { animation: none; } }

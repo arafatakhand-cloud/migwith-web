@@ -98,7 +98,7 @@ export default function GiftShopsPage() {
         <div className="flex items-center gap-1">
           <BackButton onClick={() => router.back()} className="mr-1.5" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-[25px] font-bold text-[#0B1F3A]">🎁 Gift Shops</h1>
+            <h1 className="text-[25px] font-bold text-[#0B1F3A]">🎁 Gift Gallery</h1>
             <p className="text-xs text-[#68758D]">Coins • Special &amp; Limited</p>
           </div>
           {isAdmin && (

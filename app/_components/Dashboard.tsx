@@ -330,13 +330,13 @@ export function Dashboard() {
           </Link>
         </div>
         <div className="rounded-2xl bg-white p-3 shadow-md">
-          <p className="mb-2 text-sm font-black text-[#0B2A5B]">🧭 Explore</p>
+          <p className="mb-2 text-sm font-black text-[#0B2A5B]">◉ Discover</p>
           <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-[#0B2A5B]">
             {[
-              ["/gifts", "🎁", "Gift Shops"],
-              ["/leaderboard", "🏆", "Leader Board"],
+              ["/gifts", "🎁", "Gift Gallery"],
+              ["/leaderboard", "🏆", "Rankings"],
               ["/lucky", "🍀", "Lucky User"],
-              ["/members", "👥", "Members"],
+              ["/members", "👥", "Community"],
             ].map(([href, icon, label]) => (
               <Link key={href} href={href} className="rounded-xl bg-[#F4F9FF] py-3 hover:bg-[#EAF4FE]">
                 <span className="block text-xl">{icon}</span>

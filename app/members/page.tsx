@@ -47,7 +47,7 @@ const MANAGEMENT: Category[] = [
   { id: "elite_user", icon: "🛡", title: "Elite User", subtitle: "Elite members", color: "#12AFC7", roles: ["elite_user", "elite"] },
 ];
 const COMMUNITY: Category[] = [
-  { id: "mentor", icon: "🎓", title: "Mentor", subtitle: "Mentors", color: "#E12A2A", roles: ["mentor"] },
+  { id: "mentor", icon: "💼", title: "Mentor", subtitle: "Mentors", color: "#E12A2A", roles: ["mentor"] },
   { id: "merchant", icon: "🏪", title: "Merchant", subtitle: "Verified merchants", color: "#7B1FB8", roles: ["merchant"] },
   { id: "top", icon: "🏆", title: "Top Level Users", subtitle: "Highest level users", color: "#E0B000", roles: [] },
 ];
@@ -268,7 +268,7 @@ export default function MembersPage() {
           </>
         ) : (
           <>
-            <PageTitle title="Members" subtitle="Explore · Community" />
+            <PageTitle title="Community" subtitle="Discover · Community" />
             <SectionLabel>Management</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
               {MANAGEMENT.map((c) => (

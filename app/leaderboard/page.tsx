@@ -175,7 +175,7 @@ export default function LeaderboardPage() {
         <div className="flex items-center gap-3">
           <BackButton onClick={() => (picked ? setPicked(false) : router.back())} />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Leader Board"}</h1>
+            <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Rankings"}</h1>
             {picked && <p className="text-xs text-[#6B7A99]">{timed ? `${period} ranking` : "All time"}</p>}
           </div>
           <button

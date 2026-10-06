@@ -387,7 +387,7 @@ export default function WalletPage() {
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
         <div className="relative">
-          <PageTitle title="My Account" subtitle="Coins · Transfers" icon="💳" />
+          <PageTitle title="Wallet" subtitle="Coins · Transfers" icon="💳" />
           {/* ⋮ like the app: Refresh balance, and Add / Adjust Coins for migwith */}
           <button
             type="button"
@@ -509,7 +509,7 @@ export default function WalletPage() {
               <label className="flex items-center gap-3 rounded-xl bg-[#16325C] px-3 py-2.5">
                 <span className="min-w-0 flex-1">
                   <span className="block text-xs font-bold text-[#55DFA9]">
-                    ✓ Available — tag this user as your {role === "merchant" ? "merchant" : "mentor"}
+                    ✓ Available — tag this user to you ({role === "merchant" ? "Merchant" : "Mentor"} tag)
                   </span>
                   <span className="block text-[11px] text-[#8FA0C9]">Send tag request — they get a notification to accept</span>
                 </span>

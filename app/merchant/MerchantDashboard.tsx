@@ -22,6 +22,7 @@ import { PageShell } from "../_components/PageShell";
 import {
   amount,
   Avatar,
+  checkTagFree,
   DateBar,
   dayRange,
   daysLeft,
@@ -77,7 +78,7 @@ async function merchantTrailInBrowser(me: string, day: string): Promise<Row[]> {
 const dayStr = (daysAgo: number) =>
   new Date(Date.now() - daysAgo * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
 
-export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: string; merchantDoc: DocumentSnapshot }) {
+export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: string; merchantDoc: DocumentSnapshot | null }) {
   const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");
   const [refresh, setRefresh] = useState(0);
   return (
@@ -103,10 +104,11 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
   );
 }
 
-function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: DocumentSnapshot; refresh: number }) {
-  const mentor = String(merchantDoc.get("mentorUsername") || "");
-  const left = daysLeft(merchantDoc.get("expiresAt"));
-  const approvedMs = toMs(merchantDoc.get("createdAt"));
+// merchantDoc = null: a merchant by role whose mentor record is missing.
+function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: DocumentSnapshot | null; refresh: number }) {
+  const mentor = String(merchantDoc?.get("mentorUsername") || "");
+  const left = daysLeft(merchantDoc?.get("expiresAt"));
+  const approvedMs = toMs(merchantDoc?.get("createdAt"));
   const [tagged, setTagged] = useState<DocumentSnapshot[]>([]);
   const [stored, setStored] = useState({ today: 0, last7: 0, pending: 0, allTime: 0 });
   const [live, setLive] = useState<{ today: number; last7: number } | null>(null);
@@ -126,9 +128,10 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
   );
 
   useEffect(() => {
-    getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", me), where("toMentor", "==", mentor), where("status", "==", "pending"), limit(1)))
-      .then((s) => setRenewalPending(!s.empty))
-      .catch(() => {});
+    if (mentor)
+      getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", me), where("toMentor", "==", mentor), where("status", "==", "pending"), limit(1)))
+        .then((s) => setRenewalPending(!s.empty))
+        .catch(() => {});
     getDoc(doc(db, "merchant_earnings", me))
       .then((e) =>
         setStored({
@@ -247,7 +250,8 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
           {[
             ["Today", today, "#69E1F2"],
             ["Last 7 days", live?.last7 ?? stored.last7, "#32A852"],
-            ["Pending", live?.today ?? stored.pending, "#E9A625"],
+            // what's earned today and not settled yet IS the pending amount
+            ["Pending", live ? Math.max(live.today, stored.pending) : stored.pending, "#E9A625"],
           ].map(([l, v, c]) => (
             <div key={l as string}>
               <p className="text-[11px] text-[#8FA0C9]">{l}</p>
@@ -262,7 +266,7 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
         <Avatar name={mentor || "?"} />
         <div>
           <p className="text-[11px] text-[#8FA0C9]">Your Mentor</p>
-          <p data-notranslate className="font-bold text-[#D4AF37]">@{mentor}</p>
+          <p data-notranslate className="font-bold text-[#D4AF37]">{mentor ? `@${mentor}` : "Not linked yet"}</p>
           {approvedMs > 0 && <p className="text-[10px] text-[#8FA0C9]">Approved {new Date(approvedMs).toISOString().slice(0, 10)}</p>}
         </div>
       </div>
@@ -319,6 +323,8 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
       ]);
       if (!existing.empty) throw new Error("This user is already tagged.");
       if (!pending.empty) throw new Error("A tag request is already pending.");
+      const busyMsg = await checkTagFree(name, me);
+      if (busyMsg) throw new Error(busyMsg);
       const req = doc(collection(db, "merchant_tag_requests"));
       await setDoc(req, {
         merchantUsername: me,

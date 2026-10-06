@@ -1,5 +1,6 @@
 "use client";
 
+import { BAR_BTN, MIC_BG, MIC_REC_BG, MicGlyph, SEND_VOICE_BG, SendGlyph } from "./ChatBar";
 import { useEffect, useRef, useState } from "react";
 
 // 🎤 Voice message recorder: tap to record up to 60 s (same as the app),
@@ -158,11 +159,10 @@ export function VoiceRecorder({
       onClick={onTap}
       disabled={disabled && state !== "recording"}
       title={state === "recording" ? "Stop recording" : "Record a voice message"}
-      className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border-[1.5px] text-sm disabled:opacity-40 ${
-        state === "recording" ? "scale-110 border-red-400 bg-red-500" : "border-[#8C7B3E] bg-[#1E2B47]"
-      }`}
+      className={`${BAR_BTN} select-none disabled:opacity-40 ${state === "recording" ? "chat-mic-rec border-2" : ""}`}
+      style={state === "recording" ? MIC_REC_BG : MIC_BG}
     >
-      {state === "recording" ? <span className="block h-3 w-3 rounded-[2px] bg-white" /> : "🎤"}
+      {state === "recording" ? <span className="block h-[11px] w-[11px] rounded-[2.5px] bg-white" /> : <MicGlyph />}
     </button>
   );
 
@@ -205,9 +205,10 @@ export function VoiceRecorder({
             onClick={send}
             disabled={state === "sending"}
             aria-label="Send voice message"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-lg text-[#32A852] shadow-md disabled:opacity-50"
+            className={`${BAR_BTN} disabled:opacity-50`}
+            style={SEND_VOICE_BG}
           >
-            {state === "sending" ? "⏳" : "➤"}
+            {state === "sending" ? "⏳" : <SendGlyph />}
           </button>
         </>
       )}

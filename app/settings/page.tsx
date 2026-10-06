@@ -338,6 +338,8 @@ function SecurityGate({ onClose, onVerified }: { onClose: () => void; onVerified
   const [answer, setAnswer] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // No Security Question yet → set it right here, then carry straight on.
+  const [setNow, setSetNow] = useState(false);
 
   useEffect(() => {
     getSecurityQuestion({})
@@ -362,15 +364,25 @@ function SecurityGate({ onClose, onVerified }: { onClose: () => void; onVerified
     }
   };
 
+  // just made the question (and typed its answer twice) → go on
+  if (setNow) return <QuestionDialog onClose={() => setSetNow(false)} onDone={onVerified} />;
+
   return (
-    <Modal title="Verify it's you" onClose={() => !busy && onClose()}>
+    <Modal title={!loading && !hasQuestion ? "🔐 Security Question needed" : "Verify it's you"} onClose={() => !busy && onClose()}>
       {loading ? (
-        <p className="text-sm text-[#5B6B8C]">Checking your Security Question…</p>
+        <div className="h-1" />
       ) : !hasQuestion ? (
-        <p className="text-sm text-rose-600">
-          You need to set a Security Question first (in the MIGlife app: Settings › Security Question) before you can change
-          your password.
-        </p>
+        <>
+          <p className="text-sm">Set a Security Question first — it protects your PIN and password.</p>
+          <button
+            type="button"
+            onClick={() => setSetNow(true)}
+            className="w-full rounded-[14px] py-3.5 text-sm font-bold text-white"
+            style={{ background: "linear-gradient(90deg, #7B1FB8, #B04BD6)" }}
+          >
+            👉 SQ setup first — please click here
+          </button>
+        </>
       ) : (
         <>
           <p data-notranslate className="font-bold">

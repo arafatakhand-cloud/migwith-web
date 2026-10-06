@@ -100,6 +100,8 @@ function styleFor(type: string): Style {
       return { icon: "🎨", title: "Style Studio request", top: "#2EC5D6", bottom: "#0E7C9A", group: "requests" };
     case "color_purchase_result":
       return { icon: "🎨", title: "Style Studio", top: "#2EC5D6", bottom: "#0E7C9A", group: "requests" };
+    case "mentor_renewal":
+      return { icon: "⏳", title: "Mentorship renewal", top: "#FFB74D", bottom: "#E65100", group: "requests" };
     case "merchant_tag_request":
     case "mentor_tag_request":
     case "mentor_request":
@@ -274,7 +276,7 @@ function ColorRequestCard({ a }: { a: Alert }) {
   );
 }
 
-// 🏪 Merchant / 🎓 Mentor tag request: same Firestore writes as the app.
+// 🏪 Merchant / 💼 Mentor tag request: same Firestore writes as the app.
 function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid: string }) {
   const merchant = a.type === "merchant_tag_request";
   const [busy, setBusy] = useState(false);
@@ -321,7 +323,7 @@ function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid:
 
   return (
     <FancyCard top="#2B5FD9" bottom="#1B2A5C">
-      <p className="text-sm font-bold">{merchant ? "🏪 Merchant Tag Request" : "🎓 Tag Request"}</p>
+      <p className="text-sm font-bold">{merchant ? "🏪 Merchant Tag Request" : "💼 Tag Request"}</p>
       <p className="mt-1 text-[13px]">@{a.fromUsername} wants to tag you.</p>
       <p className="text-xs font-bold text-[#FFC04A]">
         Tag amount: {a.amount} Coins{merchant ? ` · Merchant trail: ${a.rate}%` : ""}
@@ -504,7 +506,7 @@ export default function AlertsPage() {
               } else if (a.type === "mentor_request" && a.requestId) {
                 card = (
                   <FancyCard top="#2B5FD9" bottom="#1B2A5C">
-                    <p className="text-sm font-bold">🎓 Mentor Tag Request</p>
+                    <p className="text-sm font-bold">💼 Mentor Tag Request</p>
                     <p className="mt-1 text-[13px]">@{a.fromUsername} tagged request you.</p>
                     <Link href="/mentor" className="text-xs text-[#8FA0C9] underline">
                       Review and accept or cancel it from your Mentor Dashboard → Requests tab.

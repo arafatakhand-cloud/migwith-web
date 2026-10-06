@@ -16,7 +16,9 @@ const syncLuxuryBetEarnings = httpsCallable<{ beneficiaryType: string; username:
 );
 
 export type TrailRow = { username: string; spend: number; earning: number; rate?: number };
-type TrailReport = { direct?: TrailRow[]; merchantSourced?: TrailRow[]; rows?: TrailRow[]; total: number };
+/** One line per game round (or gift) of the day — not paid yet, so "pending". */
+export type TrailActivity = { username: string; source?: string; roundNumber?: number; spend: number; earning: number; rate?: number; timeMs?: number };
+type TrailReport = { direct?: TrailRow[]; merchantSourced?: TrailRow[]; rows?: TrailRow[]; activity?: TrailActivity[]; total: number };
 const getTrailReport = httpsCallable<{ beneficiaryType: "mentor" | "merchant"; date: string }, TrailReport>(
   functions,
   "getTrailReport"
@@ -98,6 +100,26 @@ export async function uidsFor(names: string[], into = new Map<string, string>())
     s.docs.forEach((u) => into.set(String(u.get("username")), u.id));
   }
   return into;
+}
+
+/** Before a tag request: is this user already tagged (active, not run out) by
+ *  ANOTHER mentor or merchant? Returns the message to show, or null if free.
+ *  The other mentor / merchant's name is not shown (like the app). */
+export async function checkTagFree(tagged: string, me: string): Promise<string | null> {
+  const now = Date.now();
+  const untilOf = (d: { get: (f: string) => any }) => {
+    const exp = toMs(d.get("expiresAt"));
+    if (exp > 0) return exp;
+    const made = toMs(d.get("createdAt"));
+    return made > 0 ? made + 30 * DAY : Number.MAX_SAFE_INTEGER;
+  };
+  const read = (coll: string, owner: string) =>
+    getDocs(query(collection(db, coll), where("taggedUsername", "==", tagged), where("status", "==", "active")))
+      .then((s) => s.docs.map((d) => ({ owner: String(d.get(owner) || ""), until: untilOf(d) })))
+      .catch(() => [] as { owner: string; until: number }[]);
+  const hits = [...(await read("mentor_tagged", "mentorUsername")), ...(await read("merchant_tagged", "merchantUsername"))];
+  const other = hits.find((h) => h.until > now && lc(h.owner) !== lc(me));
+  return other ? `@${tagged} is already tagged by other mentor or merchant.` : null;
 }
 
 /** Date bar used by the Report tabs. */
@@ -197,6 +219,43 @@ export function EarningPanel({
   const [period, setPeriod] = useState<(typeof PERIODS)[number][0]>("today");
   const [menu, setMenu] = useState(false);
   const [viaOpen, setViaOpen] = useState(false);
+  // Live, from the same calculation the Report tab uses (getTrailReport), so
+  // Today / Last 7 days / Pending always match Report. Trail is settled at
+  // 12:00 AM Bangladesh time, so what's earned today IS the pending amount.
+  const [live, setLive] = useState<{ today: number; last7: number | null; activity: Record<string, any>[] } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const day = (n: number) => new Date(Date.now() - n * DAY).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
+    const ago = (ms?: number) => {
+      if (!ms) return "today";
+      const mins = Math.max(0, Math.floor((Date.now() - ms) / 60000));
+      return mins < 1 ? "just now" : mins < 60 ? `${mins}m ago` : `${Math.floor(mins / 60)}h ago`;
+    };
+    (async () => {
+      const today = await getTrailReport({ beneficiaryType: kind, date: day(0) }).then((r) => r.data).catch(() => null);
+      if (!alive || !today) return;
+      const fromRows = (rows: TrailRow[] | undefined, label: string) =>
+        (rows || [])
+          .filter((r) => r.username && r.spend > 0)
+          .map((r) => ({ username: r.username, source: label, amount: r.earning, spent: r.spend, rate: r.rate, status: "pending", timeLabel: "today" }))
+          .sort((a, b) => b.amount - a.amount);
+      const activity = (today.activity || []).length
+        ? (today.activity || [])
+            .filter((a) => a.username && a.spend > 0)
+            .map((a) => ({ username: a.username, source: a.source || "Other", roundNumber: a.roundNumber, amount: a.earning, spent: a.spend, rate: a.rate, status: "pending", timeLabel: ago(a.timeMs) }))
+        : kind === "mentor"
+          ? [...fromRows(today.direct, "Mentor Tag · Today"), ...fromRows(today.merchantSourced, "Merchant Tag · Today")]
+          : fromRows(today.rows, "Today");
+      setLive({ today: Number(today.total || 0), last7: null, activity });
+      const others = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => getTrailReport({ beneficiaryType: kind, date: day(n) }).then((r) => Number(r.data.total || 0))))
+        .catch(() => null);
+      if (alive && others) setLive((l) => l && { ...l, last7: Number(today.total || 0) + others.reduce((a, b) => a + b, 0) });
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [kind, me, refresh]);
 
   useEffect(() => {
     // Brings Luxury Bot bets into the totals first (same as the app); fine if it fails.
@@ -221,19 +280,23 @@ export function EarningPanel({
 
   const num = (v: any) => (typeof v === "number" ? v : Number(v) || 0);
   const view = useMemo(() => {
-    if (!d) return null;
-    const total = num(d.totalEarnings ?? d.total);
+    // Shown at once with zeros; the numbers fill in quietly (no "Loading…").
+    const e = d || {};
+    const total = num(e.totalEarnings ?? e.total);
     return {
       total,
-      pending: num(d.pending),
-      settled: num(d.settled),
-      periods: { today: num(d.today), last7Days: num(d.last7Days), last30Days: num(d.last30Days), allTime: num(d.allTime ?? total) } as Record<string, number>,
-      bySource: (Array.isArray(d.bySource) ? d.bySource : []) as Record<string, any>[],
-      recent: (Array.isArray(d.recentActivity) ? d.recentActivity : []) as Record<string, any>[],
+      pending: live ? Math.max(live.today, num(e.pending)) : num(e.pending),
+      settled: num(e.settled),
+      periods: {
+        today: live ? live.today : num(e.today),
+        last7Days: live?.last7 ?? num(e.last7Days),
+        last30Days: num(e.last30Days),
+        allTime: num(e.allTime ?? total),
+      } as Record<string, number>,
+      bySource: (Array.isArray(e.bySource) ? e.bySource : []) as Record<string, any>[],
+      recent: [...(live?.activity || []), ...((Array.isArray(e.recentActivity) ? e.recentActivity : []) as Record<string, any>[])],
     };
-  }, [d]);
-
-  if (!view) return <p className="py-16 text-center text-sm text-[#5A6B8C]">Loading {kind === "mentor" ? "Mentor" : "Merchant"} Earnings…</p>;
+  }, [d, live]);
 
   return (
     <div className="space-y-3 px-3 py-3">
@@ -333,7 +396,8 @@ export function EarningPanel({
                   <Avatar name={name || "?"} />
                   <div className="min-w-0 flex-1">
                     <p data-notranslate className="truncate text-xs font-bold text-[#0E1B3D]">
-                      @{name} · {String(r.source ?? "Mentor Tag")}
+                      @{name} · {String(r.source ?? (kind === "mentor" ? "Mentor Tag" : "Merchant Tag"))}
+                      {num(r.roundNumber) > 0 ? ` · Round ${num(r.roundNumber)}` : ""}
                     </p>
                     <p className="text-[10px] text-[#6B7A90]">
                       {amount(num(r.spent ?? r.spend))} spent · {amount(num(r.rate ?? 3))}% rate

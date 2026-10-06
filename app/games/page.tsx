@@ -22,7 +22,7 @@ import { BackButton } from "../_components/BackButton";
 
 const RUNNING: [string, string, string, string, string][] = [
   ["💎", "Luxury Bot", "Live betting game", "#D62F72", LUXURY_ROOM],
-  ["🎰", "Luxury Bet", "King, Queen, Jax, Max, Toto, Zozo", "#B8860B", LUXURY_BET_ROOM],
+  ["🎰", "Luxury Bet", "Laila–Majnu · Romeo–Juliet · Shirin–Farhad", "#B8860B", LUXURY_BET_ROOM],
   ["🃏", "LowCard", "Draw the lowest card, survive", "#1D9E75", LOWCARD_ROOM],
   ["🏏", "Cricket", "Bat 6 rounds, top scorer wins", "#3984D9", CRICKET_ROOM],
   ["🎴", "3 Patti", "Blind or seen — best hand wins", "#7B1FA2", TEEN_PATTI_ROOM],
@@ -48,7 +48,7 @@ export default function GameListPage() {
       <section className="mx-auto max-w-2xl pb-8">
         <div className="flex items-center gap-1 px-2 py-1">
           <BackButton onClick={() => router.back()} className="mr-1.5" />
-          <h1 className="text-xl font-bold text-[#12335E]">🎮 Game List</h1>
+          <h1 className="text-xl font-bold text-[#12335E]">🎮 Play Zone</h1>
         </div>
         {ready && (
           <div className="px-4 py-2.5">

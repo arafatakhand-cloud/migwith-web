@@ -37,6 +37,7 @@ import {
   todayStr,
   trailReport,
   uidsFor,
+  checkTagFree,
 } from "../_components/ProgramShared";
 import { isMainFounderName } from "../../lib/founder";
 
@@ -323,6 +324,8 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
         query(collection(db, "mentor_tagged"), where("mentorUsername", "==", me), where("taggedUsername", "==", name), where("status", "==", "active"), limit(1))
       );
       if (!existing.empty) throw new Error("This user is already tagged.");
+      const busyMsg = await checkTagFree(name, me);
+      if (busyMsg) throw new Error(busyMsg);
       const req = doc(collection(db, "mentor_tag_requests"));
       await setDoc(req, {
         mentorUsername: me,
@@ -355,7 +358,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={() => !busy && onClose()}>
       <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-black">🎓 Tag User</h2>
+        <h2 className="text-lg font-black">💼 Tag User</h2>
         <p className="text-xs text-[#5B6B8C]">Tag amount — minimum 5000 Coins, no maximum</p>
         <input value={amt} onChange={(e) => setAmt(e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="Amount (min 5000)" className={field} />
         <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Username" className={field} />

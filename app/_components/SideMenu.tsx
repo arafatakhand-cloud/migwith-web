@@ -40,15 +40,15 @@ export function MenuPanel() {
   }, [uid]);
 
   const links: [string, string, string, number][] = [
-    ["/", "🏠", "Home", 0],
-    ["/profile/me", "🪪", "My Profile", 0],
-    ["/wallet", "💳", "My Account", 0],
+    ["/", "⌂", "Lobby", 0],
+    ["/profile/me", "🪪", "My Space", 0],
+    ["/wallet", "▣", "Wallet", 0],
     ["/friends", "👥", "Friends", badges.requests],
-    ["/explore", "🧭", "Explore", 0],
+    ["/explore", "◉", "Discover", 0],
     // The founder tools, like the app's "miglife secret" (founders only).
     ...(founder.isAnyFounder ? ([["/secret", "▤", "miglife secret", 0]] as [string, string, string, number][]) : []),
-    ["/games", "🎮", "Game List", 0],
-    ["/settings", "⚙️", "Settings", 0],
+    ["/games", "🎮", "Play Zone", 0],
+    ["/settings", "⚙", "Settings", 0],
   ];
 
   return (

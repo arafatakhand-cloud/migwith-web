@@ -831,6 +831,66 @@ function RoomView({ roomName }: { roomName: string }) {
     );
   }, [myUid]);
 
+  // Live "is a game running?" line for game rooms (and chat rooms with a game
+  // bot on), shown under the 📢 announcement — only to someone who has no line
+  // from that bot in their chat yet (they came in after the game started).
+  const [gameStatusLine, setGameStatusLine] = useState<string | null>(null);
+  useEffect(() => {
+    const botName =
+      roomName === CRICKET_ROOM
+        ? "Cricket Bot"
+        : roomName === LOWCARD_ROOM
+          ? "LowCard Bot"
+          : roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM
+            ? "Ludo Bot"
+            : roomName === ROYALE_ROOM
+              ? "MIG Royale Bot"
+              : roomName === TN_ROOM || roomName === TN_FREE_ROOM
+                ? "29 Bot"
+                : roomName === TEEN_PATTI_ROOM
+                  ? "Teen Patti Bot"
+                  : roomActiveBot === "lowcard"
+                    ? "LowCard Bot"
+                    : roomActiveBot === "cricket"
+                      ? "Cricket Bot"
+                      : null;
+    if (!botName || !user) {
+      setGameStatusLine(null);
+      return;
+    }
+    const free = roomName === TN_FREE_ROOM || roomName === LUDO_FREE_ROOM;
+    const manyTables = [LUDO_ROOM, LUDO_FREE_ROOM, TEEN_PATTI_ROOM, TN_ROOM, TN_FREE_ROOM].includes(roomName);
+    return onSnapshot(
+      doc(db, "room_game", roomName),
+      (d) => {
+        // 29 writes "running" / "entry" (the other games "gameRunning" / "entryCost")
+        const running = d.get("gameRunning") === true || d.get("running") === true;
+        const phase = String(d.get("phase") || "").toUpperCase();
+        const cost = Number(d.get("entryCost") ?? d.get("entry") ?? d.get("fee") ?? d.get("boot") ?? 200);
+        const costText = free ? "free — no coins" : `${cost.toLocaleString()} coins`;
+        const gameName = botName.replace(/ Bot$/, "");
+        setGameStatusLine(
+          running && phase.includes("JOIN")
+            ? `${botName}: ${gameName} game is running. !j to join. Cost ${costText}`
+            : running && manyTables
+              ? `${botName}: Games are running. Type !start to open your own table (many tables can play at once).`
+              : running
+                ? `${botName}: A ${gameName} game is in progress. Wait for it to finish, then type !start to play.`
+                : `${botName}: No game running. Type !start to start a game (cost ${costText}).`
+        );
+      },
+      () => {}
+    );
+  }, [roomName, roomActiveBot, user]);
+  const statusBotInFeed = useMemo(() => {
+    if (!gameStatusLine) return false;
+    const prefix = gameStatusLine.slice(0, gameStatusLine.indexOf(":") + 1).toLowerCase();
+    return shown.some((m) => {
+      const l = m.text.trimStart().toLowerCase();
+      return l.startsWith(prefix) || l.includes(` ${prefix}`);
+    });
+  }, [gameStatusLine, shown]);
+
   // Eye mode (Luxury Bet): other people's bet lines are taken out of the list.
   const myName = (profile?.username || "").toLowerCase();
   // 🎴 Many tables at once: only the bot lines of the table this phone shows.
@@ -859,7 +919,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].includes(roomName);
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
@@ -1028,7 +1088,13 @@ function RoomView({ roomName }: { roomName: string }) {
         return;
       }
       // chat rooms only (public or private) — never inside a game room
-      if (/ official$/i.test(roomName.trim()) || roomName.startsWith("🎰 Luxury Bet") || roomName === TN_FREE_ROOM) {
+      // (also every extra game table "… #2", and the free game rooms)
+      if (
+        / official$/i.test(roomName.trim().replace(/ #\d+$/, "")) ||
+        roomName.startsWith("🎰 Luxury Bet") ||
+        roomName.startsWith(TN_FREE_ROOM) ||
+        roomName.startsWith(LUDO_FREE_ROOM)
+      ) {
         note("🤖 Game bots can be added only in chat rooms (public or private), not in game rooms.");
         return;
       }
@@ -1438,6 +1504,12 @@ function RoomView({ roomName }: { roomName: string }) {
                     <p className="min-w-0 flex-1 whitespace-pre-wrap text-[15px] leading-[21px] text-[#8A5A00]">{announcement}</p>
                   </div>
                 )}
+                {gameStatusLine && !statusBotInFeed && (
+                  <p className="rounded-[14px] bg-white px-3 py-2.5 text-[15px] leading-[21px] text-[#16315F] shadow-sm">
+                    <b className="text-[#1B8A3A]">{gameStatusLine.slice(0, gameStatusLine.indexOf(":"))}</b>
+                    {gameStatusLine.slice(gameStatusLine.indexOf(":"))}
+                  </p>
+                )}
               </div>
               {luxuryBet?.canSee && <LuxuryBetWelcomeLine state={luxuryBet} />}
               {visible.map((m) => (
@@ -1525,7 +1597,7 @@ function RoomView({ roomName }: { roomName: string }) {
                 </>
               }
               voiceActive={voiceActive}
-              reply={replyTo && { ...replyTo, onCancel: () => setReplyTo(null) }}
+              reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
             />
           </div>
 
@@ -2265,15 +2337,23 @@ function MessageRow({
               })}
             </span>
           )}
-          {quote && (
-            <span
-              className={`mb-0.5 block w-fit max-w-full truncate border-l-2 border-[#2F80ED] bg-[#2F80ED]/5 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${
-                rightSide ? "ml-auto" : ""
-              }`}
-            >
-              ↩ {quote}
-            </span>
-          )}
+          {quote &&
+            (() => {
+              // The quote shows its author in the SAME colour as their chat name.
+              const qc = quote.indexOf(":");
+              const qName = qc > 0 ? quote.slice(0, qc).trim() : "";
+              const author = qName.toLowerCase() === "you" ? senderName : qName;
+              const qColor = author ? colorOf(author) : "#2F80ED";
+              return (
+                <span
+                  className={`mb-0.5 block w-fit max-w-full truncate border-l-2 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${rightSide ? "ml-auto" : ""}`}
+                  style={{ borderColor: qColor, background: `color-mix(in srgb, ${qColor} 6%, transparent)` }}
+                >
+                  ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
+                  {qName ? quote.slice(qc + 1) : quote}
+                </span>
+              );
+            })()}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too. */}
           {(!mine || (!isRoomLine && special.has(senderName))) && senderName && (
             <span

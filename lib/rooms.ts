@@ -54,7 +54,7 @@ export function badgeForLevel(level: number): string {
   return hit ? hit[2] : "🥚";
 }
 
-// Same text as formatPresenceLine() in the app: "Room: name [12] 🎓 💎 has
+// Same text as formatPresenceLine() in the app: "Room: name [12] 💼 💎 has
 // entered." The level badge itself is not part of the line; the role badge
 // and the Color Shop badges are.
 export function presenceLine(
@@ -92,7 +92,8 @@ export function activeShopBadges(ownedColors: unknown): string[] {
 // every Color Shop badge by its colour id, every role badge by its role key.
 export const BADGE_EMOJI_TO_KEY: [string, string][] = [
   ...SHOP_BADGES.map(([id, badge]) => [badge, id] as [string, string]),
-  ["🎓", "MENTOR"],
+  ["💼", "MENTOR"],
+  ["🎓", "MENTOR"], // old room lines saved before the badge changed
   ["🛒", "MERCHANT"],
   ["🛠️", "STAFF"],
   ["⚙️", "ADMIN"],
@@ -104,7 +105,7 @@ export const BADGE_EMOJI_TO_KEY: [string, string][] = [
 /** Role badge (the app's roleBadgesFor): owner / founder and normal users have none. */
 export function roleBadgesFor(role: unknown): string[] {
   switch (String(role ?? "").trim().toLowerCase().replace(/[- ]/g, "_")) {
-    case "mentor": return ["🎓"];
+    case "mentor": return ["💼"];
     case "merchant": return ["🛒"];
     case "staff": return ["🛠️"];
     case "admin":
@@ -168,7 +169,7 @@ export function officialRoomDefaultDescription(roomName: string): string {
     case "👻 Luxury Bot Official":
       return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miglife team — place your bets, enjoy the game, and play responsibly. ✨";
     case "🎰 Luxury Bet":
-      return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b k 1000) to bet on King, Queen, Jax, Max, Toto or Zozo. Play responsibly! ✨";
+      return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b l 1000) to bet on Laila, Majnu, Romeo, Juliet, Shirin or Farhad. Play responsibly! ✨";
     case "🃏 LowCard Official":
       return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miglife team — join a game, draw your card, and play responsibly. ✨";
     case "🏏 Cricket Official":

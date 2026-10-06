@@ -128,13 +128,13 @@ export function HeroActions() {
           href="/wallet"
           className="flex w-full max-w-xs items-center justify-center rounded-2xl border border-amber-300/30 bg-amber-300/10 px-8 py-3 font-bold text-amber-200 transition hover:bg-amber-300/20"
         >
-          💰 My Account · Coins
+          💰 Wallet · Coins
         </Link>
         <Link
           href="/leaderboard"
           className="flex w-full max-w-xs items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-8 py-3 font-bold text-white/80 transition hover:bg-white/10"
         >
-          🏆 Leader Board
+          🏆 Rankings
         </Link>
       </div>
     );

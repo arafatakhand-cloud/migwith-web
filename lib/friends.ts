@@ -81,6 +81,7 @@ export function useFriendRequests(username: string) {
   const alert = (to: string, message: string, type: string) =>
     addDoc(collection(db, "alerts"), {
       toUsername: to,
+      fromUsername: username,
       message,
       type,
       read: false,

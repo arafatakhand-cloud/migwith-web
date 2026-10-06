@@ -13,7 +13,7 @@ import { FounderShell } from "../_Shell";
 
 const ROLES: [string, string, string][] = [
   ["REGULAR", "Normal User", "👤"],
-  ["MENTOR", "Mentor", "🎓"],
+  ["MENTOR", "Mentor", "💼"],
   ["MERCHANT", "Merchant", "🛒"],
   ["king", "Emperor", "👑"],
   ["queen", "Angel", "👼"],

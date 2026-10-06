@@ -1,5 +1,6 @@
 "use client";
 
+import { countryFlag, countryInfoFor } from "../../lib/countries";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -23,7 +24,7 @@ import { PageTitle } from "../_components/LightCards";
 import { MerchantDashboard } from "./MerchantDashboard";
 import { isMainFounderName } from "../../lib/founder";
 
-// Explore › Merchant Program, same documents as the app's MentorProgramPage:
+// Explore › miGlife Partner (Merchant Program), same documents as the app's MentorProgramPage:
 // a normal user picks a mentor and sends a mentor_requests entry; an active
 // mentor_merchants record opens the Merchant Dashboard; mentors get a link to
 // the Mentor Dashboard (/mentor).
@@ -42,6 +43,8 @@ export default function MerchantPage() {
   const [level, setLevel] = useState(1);
   const [pending, setPending] = useState<DocumentSnapshot | null>(null);
   const [merchant, setMerchant] = useState<DocumentSnapshot | null>(null);
+  // The account's role says "merchant" (role / membershipRole / memberType).
+  const [isMerchantRole, setIsMerchantRole] = useState(false);
   const [step, setStep] = useState<"INTRO" | "PICK">("INTRO");
   const [mentors, setMentors] = useState<Mentor[] | null>(null);
   const [selected, setSelected] = useState("");
@@ -59,6 +62,10 @@ export default function MerchantPage() {
         setLevel(Number(me.get("level") || 1));
         const mentor = role === "mentor" || isMainFounderName(username);
         setIsMentor(mentor);
+        // A role can be saved in role, membershipRole or memberType (older tools).
+        const roles = ["role", "membershipRole", "memberType"].map((f) => String(me.get(f) || "").trim().toLowerCase());
+        const merchantRole = !mentor && roles.includes("merchant");
+        setIsMerchantRole(merchantRole);
         if (!mentor) {
           const [req, merch] = await Promise.all([
             getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", username), where("status", "==", "pending"), limit(1))),
@@ -66,10 +73,13 @@ export default function MerchantPage() {
           ]);
           setPending(req.docs[0] || null);
           const active = merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
-          setMerchant(active);
+          // A merchant by role still opens the dashboard with the newest record,
+          // even if it ran out or is missing its date.
+          const latest = [...merch.docs].sort((a, b) => toMs(b.get("expiresAt")) - toMs(a.get("expiresAt")))[0] || null;
+          setMerchant(active || (merchantRole ? latest : null));
         }
       } catch (e: any) {
-        setError(e?.message || "Could not load the Merchant Program.");
+        setError(e?.message || "Could not load miGlife Partner.");
       } finally {
         setLoaded(true);
       }
@@ -143,18 +153,19 @@ export default function MerchantPage() {
   };
 
   // An active merchant gets the full Merchant Dashboard.
-  if (ready && loaded && merchant && uid) {
+  if (ready && loaded && (merchant || isMerchantRole) && uid) {
     return <MerchantDashboard me={username} uid={uid} merchantDoc={merchant} />;
   }
 
   let body: React.ReactNode;
   if (!ready || !loaded) {
-    body = <p className="py-16 text-center text-sm text-[#5B6B8C]">Loading…</p>;
+    // Waiting for the role check: plain page, no "Loading…" text.
+    body = null;
   } else if (isMentor) {
     body = (
       <div className={`${card} border border-[#D4AF37]/60`}>
-        <p className="text-4xl">🎓</p>
-        <p className="mt-2 text-xl font-bold">You are a Mentor 🎓</p>
+        <p className="text-4xl">💼</p>
+        <p className="mt-2 text-xl font-bold">You are a Mentor 💼</p>
         <p className="mt-1 text-sm text-white/70">Approve requests and manage your merchants.</p>
         <Link href="/mentor" className="mt-4 inline-block rounded-xl bg-[#69E1F2] px-6 py-2.5 text-sm font-black text-[#0B1F3A]">
           Open Mentor Dashboard
@@ -175,73 +186,132 @@ export default function MerchantPage() {
       </div>
     );
   } else if (step === "PICK") {
+    const grad = "linear-gradient(90deg, #4F7CFF, #9C5BFF)";
     body = (
-      <div className="space-y-3">
-        <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#35507E] shadow-sm">ℹ️ Pick a mentor and submit a request. They&apos;ll review and approve.</p>
-        {mentors === null ? (
-          <p className="py-8 text-center text-sm text-[#5B6B8C]">Loading…</p>
-        ) : mentors.length === 0 ? (
-          <p className="py-8 text-center text-sm text-[#5B6B8C]">No mentors available right now.</p>
-        ) : (
-          <ul className="space-y-2">
-            {mentors.map((m) => (
-              <li key={m.username}>
-                <button
-                  type="button"
-                  onClick={() => setSelected(m.username)}
-                  className={`flex w-full items-center gap-3 rounded-2xl border-2 bg-white px-3 py-2.5 text-left shadow-sm ${
-                    selected === m.username ? "border-[#2F80ED]" : "border-transparent"
-                  }`}
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DCEBFB] font-black text-[#174EA6]">
-                    {m.username.slice(0, 1).toUpperCase()}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span data-notranslate className="block truncate font-bold text-[#0B2A5B]">
-                      @{m.username}
-                    </span>
-                    <span className="block truncate text-xs text-[#5B6B8C]">
-                      Lv {m.level}
-                      {m.country && ` · ${m.country}`} · {m.merchants} merchants · {m.pending} pending
-                    </span>
-                  </span>
-                  {selected === m.username && <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#2F80ED] text-xs text-white">✓</span>}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        <textarea
-          value={note}
-          onChange={(e) => setNote(e.target.value.slice(0, 500))}
-          rows={3}
-          placeholder="Why do you want to be a merchant? (optional)"
-          className="w-full resize-none rounded-2xl border border-[#D5E3F5] bg-white px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
-        />
-        <p className="-mt-2 text-right text-[11px] text-[#8A9BBC]">{note.length}/500</p>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setStep("INTRO")} className="flex-1 rounded-xl border border-[#D5E3F5] bg-white py-3 text-sm font-bold text-[#5B6B8C]">
-            Back
-          </button>
-          <button
-            type="button"
-            onClick={send}
-            disabled={!selected || busy}
-            className="flex-[2] rounded-xl bg-[#0B2A5B] py-3 text-sm font-black text-white disabled:opacity-40"
-          >
-            {busy ? "Sending…" : selected ? `Send Request to @${selected}` : "Pick a mentor"}
-          </button>
+      <div>
+        {/* Hero card */}
+        <div
+          className="relative overflow-hidden rounded-3xl p-[18px] text-white shadow-[0_8px_22px_rgba(156,91,255,.45)]"
+          style={{ background: "linear-gradient(135deg, #2B4FD8, #6A3DE8, #B04BD6)" }}
+        >
+          <span className="absolute -right-12 -top-16 h-36 w-36 rounded-full bg-white/[0.08]" />
+          <span className="absolute -bottom-10 -left-2 h-20 w-20 rounded-full bg-white/[0.06]" />
+          <div className="relative flex items-center gap-3.5">
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.8px] border-[#FFD86B] bg-white/20 text-[28px]">💼</span>
+            <div>
+              <p className="text-lg font-extrabold">Start your Merchant journey</p>
+              <p className="mt-1 text-[12.5px] leading-[17px] text-white/90">Pick a mentor and send your request. They&apos;ll review and approve it.</p>
+            </div>
+          </div>
         </div>
+
+        <div className="mt-5 flex items-center">
+          <span className="h-[15px] w-1 rounded-sm" style={{ background: "linear-gradient(#4F7CFF, #9C5BFF)" }} />
+          <span className="ml-2 flex-1 text-xs font-extrabold tracking-[1.5px] text-[#5B6B8C]">AVAILABLE MENTORS</span>
+          {mentors && mentors.length > 0 && (
+            <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white" style={{ background: grad }}>
+              {mentors.length}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-2">
+          {mentors === null ? null : mentors.length === 0 ? (
+            <div className="flex flex-col items-center rounded-[20px] border border-[#E1EAF6] bg-white py-6">
+              <span className="text-3xl">🔍</span>
+              <p className="mt-1.5 text-[13px] text-[#5B6B8C]">No mentors available right now.</p>
+            </div>
+          ) : (
+            <ul className="space-y-3">
+              {mentors.map((m) => {
+                const sel = selected === m.username;
+                const info = m.country ? countryInfoFor(m.country) : undefined;
+                const flag = info ? countryFlag(info.iso) : "📍";
+                return (
+                  <li key={m.username}>
+                    <button
+                      type="button"
+                      onClick={() => setSelected(m.username)}
+                      className="flex w-full items-center rounded-[20px] p-3.5 text-left transition"
+                      style={{
+                        background: sel ? "linear-gradient(135deg, #F2ECFF, #E7F0FF) padding-box, linear-gradient(90deg, #4F7CFF, #9C5BFF) border-box" : "#FFFFFF",
+                        border: sel ? "2px solid transparent" : "1px solid #E1EAF6",
+                        boxShadow: sel ? "0 6px 16px rgba(156,91,255,.35)" : "0 2px 6px rgba(156,194,236,.45)",
+                      }}
+                    >
+                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full p-[2.5px]" style={{ background: "linear-gradient(135deg, #FFD86B, #9C5BFF)" }}>
+                        <span className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#3B8BE8] to-[#2A64A8] text-[21px] font-extrabold text-white">
+                          {m.username.slice(0, 1).toUpperCase()}
+                        </span>
+                      </span>
+                      <span className="ml-3 min-w-0 flex-1">
+                        <span data-notranslate className="block truncate text-base font-extrabold text-[#22304D]">
+                          @{m.username}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-[#5B6B8C]">
+                          ⭐ Lv {m.level}
+                          {m.country && `  ·  ${flag} ${m.country}`}
+                        </span>
+                        <span className="mt-[7px] flex gap-1.5">
+                          <span className="rounded-full border border-[#2E9E6B]/30 bg-[#2E9E6B]/10 px-[9px] py-[3px] text-[11px] font-bold text-[#1F7A50]">👥 {m.merchants} Subs</span>
+                          <span className="rounded-full border border-[#E08A00]/30 bg-[#E08A00]/10 px-[9px] py-[3px] text-[11px] font-bold text-[#A86500]">⏳ {m.pending} Pending</span>
+                        </span>
+                      </span>
+                      <span
+                        className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
+                        style={sel ? { background: grad } : { border: "1.5px solid #C9D6EA" }}
+                      >
+                        {sel ? "✓" : ""}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <p className="mb-1.5 ml-1 mt-5 text-xs font-extrabold tracking-[1.5px] text-[#5B6B8C]">MESSAGE</p>
+        <div className="flex rounded-[18px] border border-[#DCE6F4] bg-white px-3 py-2.5 shadow-[0_2px_6px_rgba(156,194,236,.45)] focus-within:border-[#9C5BFF]">
+          <span className="mr-2 text-lg">✍️</span>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, 500))}
+            rows={4}
+            placeholder="Add a message for your mentor (optional)"
+            className="min-w-0 flex-1 resize-none bg-transparent text-[15px] text-[#22304D] outline-none placeholder:text-[#8A9BBC]"
+          />
+        </div>
+        <p className="mr-1 mt-1 text-right text-[11px] text-[#8A9BBC]">{note.length}/500</p>
+
+        <button
+          type="button"
+          onClick={send}
+          disabled={!selected || busy}
+          className="mt-3 h-[54px] w-full truncate rounded-[18px] px-3 text-[15px] font-extrabold"
+          style={
+            selected || busy
+              ? { background: "linear-gradient(90deg, #4F7CFF, #9C5BFF, #D45BC9)", color: "#FFFFFF", boxShadow: "0 8px 20px rgba(156,91,255,.45)" }
+              : { background: "#D5DEEB", color: "#5B6B8C" }
+          }
+        >
+          {busy ? "Sending…" : selected ? `🚀  Send Request to @${selected}` : "Select a mentor first"}
+        </button>
+        <button type="button" onClick={() => setStep("INTRO")} className="mt-2 w-full py-2 text-sm font-bold text-[#5B6B8C]">
+          Back
+        </button>
       </div>
     );
   } else {
     body = (
-      <div className={card}>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#7B1FB8] text-3xl">🧳</div>
-        <p className="mt-3 text-xl font-bold">Become a Merchant</p>
-        <p className="mt-1 text-sm text-white/70">Get tagged-trail earnings when your tagged users spend coins. Requires approval from a mentor.</p>
-        <button type="button" onClick={() => setStep("PICK")} className="mt-4 rounded-xl bg-[#69E1F2] px-8 py-2.5 text-sm font-black text-[#0B1F3A]">
-          Get Started
+      <div className="rounded-[20px] border-[1.5px] border-[#F2B531]/70 bg-[#FFFBF0] p-6 text-center shadow-lg">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-3xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
+          🧳
+        </div>
+        <p className="mt-3 text-xl font-bold text-[#2B3552]">Join as a Merchant</p>
+        <p className="mt-1 text-sm text-[#5A6B8C]">Earn tagged-user rewards when they spend coins. Mentor approval required.</p>
+        <button type="button" onClick={() => setStep("PICK")} className="mt-4 w-full rounded-xl bg-[#F2A81D] py-2.5 text-sm font-black text-[#2B1A00]">
+          Join as a Merchant
         </button>
       </div>
     );
@@ -250,7 +320,7 @@ export default function MerchantPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
-        <PageTitle title={step === "PICK" && !pending ? "Pick a Mentor" : "Merchant Program"} subtitle="Become or manage a Merchant" icon="🏪" />
+        <PageTitle title={step === "PICK" && !pending ? "Choose Your Mentor" : "miGlife Partner"} subtitle="Become or manage a Merchant" icon="🏪" />
         {error && <p className="mb-3 rounded-xl bg-white px-4 py-2 text-sm text-rose-600 shadow-sm">{error}</p>}
         {body}
       </section>

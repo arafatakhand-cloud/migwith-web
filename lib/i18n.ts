@@ -28,6 +28,19 @@ export function setLang(lang: Lang) {
 }
 
 export const BN: Record<string, string> = {
+  // app's new page names (Oct 2026)
+  "Lobby": "লবি",
+  "My Space": "মাই স্পেস",
+  "Wallet": "ওয়ালেট",
+  "Discover": "ডিসকভার",
+  "Play Zone": "প্লে জোন",
+  "🎮 Play Zone": "🎮 প্লে জোন",
+  "Gift Gallery": "উপহার গ্যালারি",
+  "🎁 Gift Gallery": "🎁 উপহার গ্যালারি",
+  "Rankings": "র‍্যাঙ্কিং",
+  "🏆 Rankings": "🏆 র‍্যাঙ্কিং",
+  "◉ Discover": "◉ ডিসকভার",
+  "💰 Wallet · Coins": "💰 ওয়ালেট · কয়েন",
   // Header, menus, landing
   Login: "লগইন",
   Logout: "লগআউট",

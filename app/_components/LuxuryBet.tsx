@@ -8,20 +8,20 @@ import { db, functions } from "../../lib/firebase";
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
 // the round and sends !start / bets, same as the app's LuxuryBetGame.kt.
-// Commands: !start · !b [k|q|j|m|t|z or name] [amount]   (e.g. !b k 1000)
+// Commands: !start · !b [l|m|r|j|s|f or name] [amount]   (e.g. !b l 1000)
 
 export const LUXURY_BET_ROOM = "🎰 Luxury Bet";
 const LB_BOT = "🎰 Luxury Bet";
 
-export const LUXURY_BET_CHARACTERS = ["👑 King", "👸 Queen", "🃏 Jax", "🦁 Max", "🐼 Toto", "🦓 Zozo"];
+export const LUXURY_BET_CHARACTERS = ["🧕 Laila", "🧔 Majnu", "🤵 Romeo", "💁‍♀️ Juliet", "💃 Shirin", "🕺 Farhad"];
 
 const CODES: Record<string, string> = {
-  k: "👑 King",
-  q: "👸 Queen",
-  j: "🃏 Jax",
-  m: "🦁 Max",
-  t: "🐼 Toto",
-  z: "🦓 Zozo",
+  l: "🧕 Laila",
+  m: "🧔 Majnu",
+  r: "🤵 Romeo",
+  j: "💁‍♀️ Juliet",
+  s: "💃 Shirin",
+  f: "🕺 Farhad",
 };
 
 const CHIPS = [500, 1000, 2000, 5000, 10000, 12000];
@@ -232,7 +232,7 @@ export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note
   const character = parts[1] ? characterFor(parts[1]) : null;
   const amount = Number(parts[2]);
   if (!character || !Number.isInteger(amount)) {
-    note(`${LB_BOT}: Usage: !b [k/q/j/m/t/z] [amount] — e.g. !b k 1000 (King, Queen, Jax, Max, Toto, Zozo)`);
+    note(`${LB_BOT}: Usage: !b [l/m/r/j/s/f] [amount] — e.g. !b l 1000 (Laila, Majnu, Romeo, Juliet, Shirin, Farhad)`);
   } else {
     state.bet(character, amount);
   }

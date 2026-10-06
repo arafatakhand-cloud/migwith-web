@@ -26,22 +26,22 @@ function Badge({ n }: { n: number }) {
 
 // Page name shown in the pill, by path.
 const PAGE_NAMES: [string, string][] = [
-  ["/explore", "Explore"],
-  ["/members", "Members"],
-  ["/gifts", "Gift Shops"],
+  ["/explore", "Discover"],
+  ["/members", "Community"],
+  ["/gifts", "Gift Gallery"],
   ["/gift-contest", "Gift Contest"],
   ["/lucky", "Lucky User"],
   ["/style-studio", "Style Studio"],
-  ["/merchant", "Merchant"],
+  ["/merchant", "miGlife Partner"],
   ["/mentor", "Mentor"],
-  ["/leaderboard", "Leader Board"],
+  ["/leaderboard", "Rankings"],
   ["/security", "Security PIN"],
   ["/settings", "Settings"],
   ["/friends", "Friends"],
   ["/messages", "Messages"],
   ["/chat/", "Chat"],
   ["/alerts", "Alerts"],
-  ["/wallet", "My Account"],
+  ["/wallet", "Wallet"],
   ["/profile", "Profile"],
 ];
 

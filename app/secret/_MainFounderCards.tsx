@@ -698,3 +698,52 @@ export function FounderSpecialColorCard() {
     </div>
   );
 }
+
+// 🔒 One-time privacy move — miglife only. Runs migrateUserPrivacy again and
+// again until every account's real email + push token is off the public
+// profile (in a private store only the server reads). Safe to run twice.
+const migrateUserPrivacy = httpsCallable<{ cursor: string }, { done?: boolean; cursor?: string; moved?: number; scanned?: number }>(
+  functions,
+  "migrateUserPrivacy",
+  { timeout: 540_000 }
+);
+
+export function PrivateEmailsCard() {
+  const [running, setRunning] = useState(false);
+  const [status, setStatus] = useState("");
+  const run = async () => {
+    setRunning(true);
+    setStatus("Working…");
+    let moved = 0;
+    let scanned = 0;
+    let cursor = "";
+    try {
+      for (;;) {
+        const r = (await migrateUserPrivacy({ cursor })).data || {};
+        moved += Number(r.moved || 0);
+        scanned += Number(r.scanned || 0);
+        if (r.done) {
+          setStatus(`✅ Done — ${scanned} accounts checked, ${moved} moved.`);
+          break;
+        }
+        cursor = String(r.cursor || "");
+        setStatus(`… ${scanned} accounts checked so far`);
+      }
+    } catch (e: any) {
+      setStatus(`⚠ ${e?.message || "Failed"} — tap again to continue.`);
+    } finally {
+      setRunning(false);
+    }
+  };
+  return (
+    <div className="space-y-2.5 rounded-[18px] bg-white p-4 shadow-md">
+      <p className="text-[13px] text-[#0B2A5B]">
+        Moves every user&apos;s real email and push token off the public profile into a private store only the server can read. Safe to run more than once.
+      </p>
+      {status && <p className="text-xs text-[#5B6B8C]">{status}</p>}
+      <button type="button" disabled={running} onClick={run} className="w-full rounded-xl bg-[#37474F] py-3 text-sm font-bold text-white disabled:opacity-50">
+        {running ? "Moving…" : "🔒 Move emails & tokens to private"}
+      </button>
+    </div>
+  );
+}

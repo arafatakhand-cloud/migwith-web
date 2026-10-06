@@ -14,8 +14,7 @@ import {
   LevelCurveCard,
   LuxuryBetAccessCard,
   LuxuryBetLevelCard,
-  SecurityQuestionResetCard,
-} from "./_MainFounderCards";
+  SecurityQuestionResetCard, PrivateEmailsCard } from "./_MainFounderCards";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
@@ -127,7 +126,7 @@ export default function SecretPage() {
         "💰 Coins & Shop",
         [
           { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
-          { icon: "🎁", label: "Gift Shops", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
+          { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
           { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
@@ -138,6 +137,12 @@ export default function SecretPage() {
         [
           { icon: "🎰", label: "Luxury Bet", hint: "Access · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
           { icon: "🎲", label: "Luxury Bot Tiers", hint: "Turn result tiers on / off", tint: "#5E35B1", key: "luxury_tiers", ok: f.can("luxury_tiers") },
+        ],
+      ],
+      [
+        "⚠ Danger zone",
+        [
+          { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.isMigwith },
         ],
       ],
     ] as [string, Tool[]][]
@@ -269,6 +274,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
       {f.isMigwith && tool === "level" && <LevelCurveCard />}
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
+      {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
       {f.isMigwith && tool === "luxury_bet" && (
         <>
           <LuxuryBetAccessCard />
