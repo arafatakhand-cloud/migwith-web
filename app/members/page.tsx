@@ -19,6 +19,21 @@ const changeManagementRole = httpsCallable<{ targetUid: string; role: string; op
   functions,
   "changeManagementRole"
 );
+// Founder: renew a mentor's 30-day term (+30 days from the current end).
+const renewMentorship = httpsCallable<{ targetUid: string }, { ok?: boolean; mentorUntil?: number }>(functions, "renewMentorship");
+
+// 🧑‍🏫 Mentorship term line: end date + days left (like the app).
+function MentorTermLine({ untilMs }: { untilMs: number }) {
+  if (untilMs <= 0) return <span className="block text-[11px] text-[#CBD5E8]">⏳ 30-day term starts at the next daily check</span>;
+  const daysLeft = Math.ceil((untilMs - Date.now()) / 86_400_000);
+  const date = new Date(untilMs).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  const color = daysLeft <= 0 ? "#FF6F7D" : daysLeft <= 5 ? "#FFB74D" : "#7CFFB2";
+  return (
+    <span className="block text-[11px] font-bold" style={{ color }}>
+      {daysLeft <= 0 ? `⛔ Expired ${date} · renew now` : `⏳ Renew by ${date} · ${daysLeft} day${daysLeft > 1 ? "s" : ""} left`}
+    </span>
+  );
+}
 const MANAGED = new Set(["executive_board", "admin", "country_representative", "staff", "elite_user", "mentor"]);
 const PROTECTED = new Set(["ceo", "owner", "superadmin"]);
 
@@ -49,7 +64,7 @@ const NAME_COLORS: Record<string, string> = {
   top: "#FFD54F",
 };
 
-type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[] };
+type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number };
 
 const norm = (v: string) => v.trim().toLowerCase().replace(/[-\s]/g, "_");
 
@@ -65,6 +80,8 @@ function toMember(uid: string, d: DocumentData): Member {
     level: Number(d.level || 1),
     country: String(d.country || ""),
     roles,
+    mentorUntilMs:
+      d.mentorUntil && typeof d.mentorUntil.toMillis === "function" ? d.mentorUntil.toMillis() : Number(d.mentorUntil || 0) || 0,
   };
 }
 
@@ -195,7 +212,29 @@ export default function MembersPage() {
                         <span className="block truncate text-xs text-white/70">
                           {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
                         </span>
+                        {selected.id === "mentor" && <MentorTermLine untilMs={m.mentorUntilMs} />}
                       </span>
+                      {canManage && selected.id === "mentor" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (busy) return;
+                            setBusy(true);
+                            renewMentorship({ targetUid: m.uid })
+                              .then(() => {
+                                setMessage(`Mentorship renewed: ${m.name} (+30 days)`);
+                                setReload((n) => n + 1);
+                              })
+                              .catch((err) => setMessage(`Could not renew: ${err?.message || ""}`))
+                              .finally(() => setBusy(false));
+                          }}
+                          className="px-1 text-xs font-bold text-[#7CFFB2]"
+                        >
+                          RENEW
+                        </button>
+                      )}
                       {canManage ? (
                         <button
                           type="button"

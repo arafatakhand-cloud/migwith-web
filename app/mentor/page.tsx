@@ -172,38 +172,11 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
       const from = String(req.get("fromUsername") || "");
       const already = merchants.some((m) => lc(String(m.get("merchantUsername") || "")) === lc(from));
       if (!already && merchants.length >= MAX_MERCHANTS) throw new Error(`A mentor can have at most ${MAX_MERCHANTS} merchants.`);
-      // The server checks you really are this request's mentor and gives the merchant role.
+      // 🔒 approveMerchantRole (server) does everything: marks the request
+      // approved, gives the merchant role, and writes the mentor ↔ merchant
+      // link + the 30-day tag. Phones can't write those any more.
       await approveMerchantRole({ requestId: req.id, mentorUsername: me, merchantUsername: from, operationId: crypto.randomUUID() });
-      const expiresAt = Timestamp.fromMillis(Date.now() + 30 * DAY);
-      await updateDoc(req.ref, { status: "approved" });
-      // Renewal extends the existing record instead of adding another.
-      const existing = await getDocs(
-        query(collection(db, "mentor_merchants"), where("mentorUsername", "==", me), where("merchantUsername", "==", from), limit(1))
-      );
-      if (existing.docs[0]) await updateDoc(existing.docs[0].ref, { expiresAt });
-      else
-        await addDoc(collection(db, "mentor_merchants"), {
-          mentorUsername: me,
-          merchantUsername: from,
-          taggedUsersCount: 0,
-          expiresAt,
-          createdAt: serverTimestamp(),
-        });
-      // The merchant also joins your Tagged list (3% of their own spend).
-      const tagRef = doc(db, "mentor_tagged", `${me.trim()}_${from.trim()}`);
-      if (!(await getDoc(tagRef)).exists())
-        await setDoc(tagRef, {
-          mentorUsername: me,
-          taggedUsername: from,
-          status: "active",
-          initialAmount: 0,
-          tagAmount: 0,
-          rate: 3,
-          expiresAt,
-          source: "merchant",
-          createdAt: serverTimestamp(),
-        });
-      setMsg(`@${from} is now your merchant.`);
+      setMsg(`✅ @${from} is now your merchant (30 days).`);
     });
 
   const reject = (req: DocumentSnapshot) => withBusy(req.id, () => updateDoc(req.ref, { status: "rejected" }));

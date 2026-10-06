@@ -45,6 +45,8 @@ const adminAdjustCoins = httpsCallable<{ targetUid: string; delta: number; reaso
   functions,
   "adminAdjustCoins"
 );
+const sendTagRequest = httpsCallable<{ toUsername: string; amount: number }, { ok?: boolean }>(functions, "sendTagRequest");
+const getPinStatus = httpsCallable<Record<string, never>, { hasPin?: boolean; isDefault?: boolean }>(functions, "getPinStatus");
 const transferCoins = httpsCallable<{ toUid: string; amount: number; operationId: string }, { success: boolean }>(
   functions,
   "transferCoins"
@@ -138,6 +140,10 @@ export default function WalletPage() {
   const [todayGifts, setTodayGifts] = useState<DocumentData[]>([]);
 
   const [showTransfer, setShowTransfer] = useState(false);
+  // 🔐 PIN status (checked when the wallet opens, so Transfer reacts at once):
+  // null = not known; true = no own PIN yet (or still the sign-up PIN 123456).
+  const [pinNeedsSetup, setPinNeedsSetup] = useState<boolean | null>(null);
+  const [showPinPrompt, setShowPinPrompt] = useState(false);
   const [receiver, setReceiver] = useState("");
   const [amount, setAmount] = useState("");
   const [pin, setPin] = useState("");
@@ -165,6 +171,13 @@ export default function WalletPage() {
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    getPinStatus({})
+      .then(({ data }) => setPinNeedsSetup(data?.hasPin !== true || data?.isDefault === true))
+      .catch(() => setPinNeedsSetup(false)); // can't tell → don't block; the PIN box still guards the transfer
+  }, [user]);
 
   useEffect(() => {
     if (!user || !username) return;
@@ -335,50 +348,15 @@ export default function WalletPage() {
 
       // A mentor / merchant sending 5,000+ can also ask to tag the person
       // (they get an alert to accept), like the app.
+      // 🏷️ The server checks everything and writes the request + the
+      // receiver's alert (+ push) — so it can't fail silently (sendTagRequest).
       let tagNote = "";
       if (wantsTag) {
-        const merchant = role === "merchant";
-        const toRole = lower((await getDoc(doc(db, "users", target.uid))).get("role"));
-        if (merchant ? toRole === "mentor" : toRole === "merchant") {
-          tagNote = merchant ? " (a merchant can't tag a mentor — no request sent)" : " (a mentor can't tag a merchant — no request sent)";
-        } else {
-          const existing = await getDocs(
-            query(
-              collection(db, merchant ? "merchant_tagged" : "mentor_tagged"),
-              where(merchant ? "merchantUsername" : "mentorUsername", "==", username),
-              where("taggedUsername", "==", toName),
-              where("status", "==", "active"),
-              limit(1)
-            )
-          ).catch(() => null);
-          if (existing && !existing.empty) tagNote = " (user was already tagged, no new request sent)";
-          else {
-            const req = await addDoc(collection(db, merchant ? "merchant_tag_requests" : "mentor_tag_requests"), {
-              [merchant ? "merchantUsername" : "mentorUsername"]: username,
-              taggedUsername: toName,
-              taggedUid: target.uid,
-              amount: coins,
-              ...(merchant ? { rate: 2.5 } : {}),
-              status: "pending",
-              createdAt: serverTimestamp(),
-            }).catch(() => null);
-            if (req) {
-              addDoc(collection(db, "alerts"), {
-                toUsername: toName,
-                fromUsername: username,
-                requestId: req.id,
-                amount: coins,
-                ...(merchant ? { rate: 2.5 } : {}),
-                type: merchant ? "merchant_tag_request" : "mentor_tag_request",
-                message: merchant
-                  ? `@${username} wants to tag you. Tag amount: ${coins} Coins · Merchant trail: 2.5%`
-                  : `@${username} wants to tag you. Tag amount: ${coins} Coins`,
-                read: false,
-                createdAt: serverTimestamp(),
-              }).catch(() => {});
-              tagNote = " · tag request sent";
-            }
-          }
+        try {
+          await sendTagRequest({ toUsername: toName, amount: coins });
+          tagNote = ` · 🏷️ Tag request sent to @${toName}`;
+        } catch (e: any) {
+          tagNote = ` — but no tag request: ${e?.message || "try again"}`;
         }
       }
 
@@ -470,12 +448,30 @@ export default function WalletPage() {
           </div>
         </div>
 
+        {showPinPrompt && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setShowPinPrompt(false)}>
+            <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
+              <p className="text-lg font-black">🔐 Security PIN needed</p>
+              <p className="mt-2 text-sm">You haven&apos;t set your own Security PIN yet. Set it up first to transfer coins safely.</p>
+              <div className="mt-4 flex justify-end gap-2">
+                <button type="button" onClick={() => setShowPinPrompt(false)} className="rounded-lg px-3 py-2 text-sm font-bold text-[#5B6B8C]">
+                  Later
+                </button>
+                <Link href="/security" className="rounded-lg bg-[#2F80ED] px-4 py-2 text-sm font-black text-white">
+                  Set PIN
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Transfer */}
         {success && <p className="mt-4 text-sm font-semibold text-emerald-600">{success}</p>}
         {!showTransfer ? (
           <button
             type="button"
             onClick={() => {
+              if (pinNeedsSetup) return setShowPinPrompt(true);
               setShowTransfer(true);
               setSuccess("");
               setError("");

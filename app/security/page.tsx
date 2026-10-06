@@ -15,6 +15,8 @@ import { BackPill } from "../_components/BackButton";
 // by the Cloud Functions (setSecurityPin / requestPinResetEmailCode /
 // resetPinWithEmailCode); the web never sees or stores it.
 
+const getPinStatus = httpsCallable<Record<string, never>, { hasPin?: boolean; isDefault?: boolean }>(functions, "getPinStatus");
+const getMyContactEmail = httpsCallable<Record<string, never>, { contactEmail?: string }>(functions, "getMyContactEmail");
 const setSecurityPin = httpsCallable<{ pin: string; currentPin?: string }, { ok: boolean }>(
   functions,
   "setSecurityPin"
@@ -89,12 +91,14 @@ export default function SecurityPage() {
 
   useEffect(() => {
     if (!user) return;
-    getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
-        setHasPin(snap.get("hasSecurityPin") !== false);
-        setEmail(String(snap.get("contactEmail") || "").trim());
-      })
+    // 🔒 PIN state and your email are private now — only the server gives
+    // them, and only to you (getPinStatus / getMyContactEmail).
+    getPinStatus({})
+      .then(({ data }) => setHasPin(data?.hasPin === true))
       .catch(() => setHasPin(true));
+    getMyContactEmail({})
+      .then(({ data }) => setEmail(String(data?.contactEmail || "").trim()))
+      .catch(() => {});
   }, [user]);
 
   const sendEmailCode = async () => {

@@ -215,6 +215,7 @@ function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string 
 
 const approveColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "approveColorPurchase");
 const rejectColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "rejectColorPurchase");
+const approveTagRequest = httpsCallable<{ kind: string; requestId: string }, { ok?: boolean; result?: string }>(functions, "approveTagRequest");
 
 // 🎨 Style Studio purchase request (migwith accepts or rejects it here).
 function ColorRequestCard({ a }: { a: Alert }) {
@@ -280,46 +281,20 @@ function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid:
   const [done, setDone] = useState(a.resolution);
   const [error, setError] = useState("");
 
+  // 🔒 The server checks the request and creates the tag (approveTagRequest) —
+  // tags can no longer be written from a phone or the web.
   const approve = async () => {
     setBusy(true);
     setError("");
     try {
-      const reqRef = doc(db, merchant ? "merchant_tag_requests" : "mentor_tag_requests", a.requestId);
-      const req = await getDoc(reqRef);
-      if (req.get("status") !== "pending") return;
-      const owner = String(req.get(merchant ? "merchantUsername" : "mentorUsername") || "").trim();
-      if (!merchant) {
-        const ms = await getDocs(query(collection(db, "users"), where("username", "==", owner), limit(1)));
-        if (ms.empty) return;
+      const { data } = await approveTagRequest({ kind: merchant ? "merchant" : "mentor", requestId: a.requestId });
+      const result = String(data?.result || "");
+      if (result === "approved" || result === "blocked" || result === "cancelled") {
+        const res = result === "approved" ? "approved" : "cancelled";
+        await updateDoc(doc(db, "alerts", a.id), { read: true, resolved: true, resolution: res }).catch(() => {});
+        setDone(res);
+        if (result === "blocked") setError("You are already tagged by another mentor or merchant.");
       }
-      const expiresAt = Timestamp.fromMillis(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      await setDoc(
-        doc(db, merchant ? "merchant_tagged" : "mentor_tagged", `${owner}_${username.trim()}`),
-        {
-          [merchant ? "merchantUsername" : "mentorUsername"]: owner,
-          taggedUsername: username,
-          ...(merchant ? { taggedUid: uid } : {}),
-          status: "active",
-          initialAmount: a.amount,
-          tagAmount: a.amount,
-          rate: merchant ? 2.5 : 3.0,
-          expiresAt,
-          createdAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-      if (merchant) updateDoc(doc(db, "users", uid), { taggedByMerchant: owner }).catch(() => {});
-      await updateDoc(reqRef, { status: "approved", approvedAt: serverTimestamp() }).catch(() => {});
-      await updateDoc(doc(db, "alerts", a.id), { read: true, resolved: true, resolution: "approved" }).catch(() => {});
-      await addDoc(collection(db, "alerts"), {
-        toUsername: owner,
-        ...(merchant ? { fromUsername: username } : {}),
-        message: merchant ? `@${username} approved your merchant tag request.` : `@${username} approved your tag request.`,
-        type: merchant ? "merchant_tag_request_approved" : "mentor_tag_request_approved",
-        read: false,
-        createdAt: serverTimestamp(),
-      }).catch(() => {});
-      setDone("approved");
     } catch (e: any) {
       setError(e?.message || "Could not approve. Please try again.");
     } finally {
