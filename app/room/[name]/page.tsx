@@ -835,7 +835,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const myName = (profile?.username || "").toLowerCase();
   // 🎴 Many tables at once: only the bot lines of the table this phone shows.
   const tablesVersion = useGameTablesVersion();
-  const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : null;
+  const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : roomName === TN_ROOM || roomName === TN_FREE_ROOM ? "tn" : null;
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
     return shown.filter((m) => {
@@ -1207,7 +1207,7 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
-    if (twentyNine && twentyNineHandleCommand(twentyNine, clean, note, 500)) {
+    if (twentyNine && twentyNineHandleCommand(twentyNine, clean, note)) {
       setText("");
       return;
     }
