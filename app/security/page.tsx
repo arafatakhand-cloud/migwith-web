@@ -105,7 +105,7 @@ export default function SecurityPage() {
     setEmailMsg(null);
     const e = newEmail.trim().toLowerCase();
     if (!EMAIL.test(e)) return setEmailMsg({ text: "Enter a valid email address.", error: true });
-    if (e === email.toLowerCase()) return setEmailMsg({ text: "That is already your Recovery Email.", error: true });
+    if (email) return setEmailMsg({ text: "Your Recovery Email is already set and can't be changed.", error: true });
     setEmailBusy(true);
     try {
       await sendEmailVerificationCode({ email: e });
@@ -240,16 +240,19 @@ export default function SecurityPage() {
                   "No Recovery Email yet. Add one so you can reset a forgotten PIN or password."
                 )}
               </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingEmail(true);
-                  setEmailMsg(null);
-                }}
-                className="w-full rounded-2xl border border-[#2F80ED] py-3 font-bold text-[#2F80ED] hover:bg-[#EAF4FE]"
-              >
-                {email ? "Change email" : "➕ Add Recovery Email"}
-              </button>
+              {/* A Recovery Email can be added once; it can't be changed from here. */}
+              {!email && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingEmail(true);
+                    setEmailMsg(null);
+                  }}
+                  className="w-full rounded-2xl border border-[#2F80ED] py-3 font-bold text-[#2F80ED] hover:bg-[#EAF4FE]"
+                >
+                  ➕ Add Recovery Email
+                </button>
+              )}
             </>
           ) : (
             <>
