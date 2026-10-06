@@ -61,6 +61,7 @@ export default function SecurityPage() {
 
   const [hasPin, setHasPin] = useState<boolean | null>(null);
   const [email, setEmail] = useState("");
+  const [emailLoaded, setEmailLoaded] = useState(false);
 
   // Change PIN
   const [currentPin, setCurrentPin] = useState("");
@@ -98,7 +99,8 @@ export default function SecurityPage() {
       .catch(() => setHasPin(true));
     getMyContactEmail({})
       .then(({ data }) => setEmail(String(data?.contactEmail || "").trim()))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setEmailLoaded(true));
   }, [user]);
 
   const sendEmailCode = async () => {
@@ -225,7 +227,9 @@ export default function SecurityPage() {
         <h1 className="text-2xl font-black tracking-wide">🛡️ Security PIN</h1>
         <p className="mt-1 text-sm text-[#35507E]">Your PIN protects coin transfers. Never share it with anyone.</p>
 
-        {/* Recovery Email */}
+        {/* Recovery Email: only shown while there is none yet (it can be added
+            once, never changed), so a set email isn't on show here. */}
+        {emailLoaded && (!email || editingEmail || emailMsg) && (
         <div className="mt-6 space-y-3 rounded-3xl border border-[#BFD7F7] bg-white p-5 shadow-sm">
           <h2 className="font-black">📧 Recovery Email</h2>
           {!editingEmail ? (
@@ -314,6 +318,7 @@ export default function SecurityPage() {
             <p className={`text-sm ${emailMsg.error ? "text-rose-600" : "text-emerald-600"}`}>{emailMsg.text}</p>
           )}
         </div>
+        )}
 
         {/* Change */}
         <div className="mt-5 space-y-3 rounded-3xl border border-[#BFD7F7] bg-white p-5 shadow-sm">
