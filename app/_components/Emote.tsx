@@ -116,7 +116,8 @@ type Section = { key: string; title: string; tabId: string | null; glyph: string
 export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => void; onBackspace?: () => void }) {
   const [recent] = useState<string[]>(() => (typeof window === "undefined" ? [] : readRecentEmotes()));
   const sections: Section[] = [
-    ...(recent.length ? [{ key: "recent", title: "Recent", tabId: null, glyph: "🕒", ids: recent }] : []),
+    // 🕒 Recent is always the first tab (like the app), even before anything was picked.
+    { key: "recent", title: "Recent", tabId: null, glyph: "🕒", ids: recent },
     { key: GIF_GROUP.key, title: "😆 MIGLIFE Animated", tabId: null, glyph: "😆", ids: GIF_GROUP.ids },
     ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids })),
     ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: ANIM_GLYPHS[i] ?? "✨", ids: g.ids })),
@@ -162,6 +163,7 @@ export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => 
         <p className="px-1.5 pb-1 pt-2 text-[11px] font-bold tracking-[0.8px] text-gray-500">
           {sec.title.toUpperCase()} · {sec.ids.length}
         </p>
+        {sec.ids.length === 0 && <p className="px-1.5 py-6 text-center text-xs text-gray-400">Emotes you pick show up here.</p>}
         <div className="grid grid-cols-8 gap-0.5">
           {sec.ids.map((id) => (
             <button
