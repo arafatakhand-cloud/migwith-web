@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { deleteDoc, doc, getDoc, getDocFromServer, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocFromServer,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  type DocumentReference,
+} from "firebase/firestore";
 import { db } from "./firebase";
 import { leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
@@ -75,6 +84,27 @@ export function touchOpenRooms(uid: string, except: string | null) {
   }
 }
 
+/**
+ * Removes my presence doc unless it is /parked (like the app): a parked spot
+ * stays in "Currently in this room". True only when the delete really went
+ * through — "has left" is posted only then, never for a spot that stays.
+ */
+export async function deletePresenceUnlessParked(ref: DocumentReference): Promise<boolean> {
+  try {
+    const snap = await getDocFromServer(ref);
+    if (!snap.exists()) return false; // already gone (kicked, swept): no line
+    if (Number(snap.get("parkedUntil") || 0) > Date.now()) return false;
+  } catch {
+    return false; // can't tell → don't risk wiping a park; it goes stale on its own
+  }
+  try {
+    await deleteDoc(ref);
+    return true;
+  } catch {
+    return false; // refused by the rules (a parked spot) or offline
+  }
+}
+
 // Leave a room you are not currently looking at: remove the presence doc and
 // post "has left" (skipped when invisible / Presence Status INVISIBLE).
 export async function leaveRoomInBackground(uid: string, name: string) {
@@ -88,7 +118,8 @@ export async function leaveRoomInBackground(uid: string, name: string) {
   // exists (checked above) and is not INVISIBLE — the room decided who may hide.
   const quiet = String(presence.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
   const visitId = String(presence.get("visitId") || "") || null;
-  await deleteDoc(presenceRef).catch(() => {});
+  // "has left" only once the delete really went through (a /parked spot stays).
+  if (!(await deletePresenceUnlessParked(presenceRef))) return;
   if (quiet || !username) return;
   await setDoc(doc(db, "room_messages", name, "messages", leaveDocId(uid, visitId)), {
     text: presenceLine(name, username, level, false, presenceBadgesForDoc(me?.data())),

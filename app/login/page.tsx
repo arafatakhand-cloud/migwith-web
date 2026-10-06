@@ -12,6 +12,7 @@ import {
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
+import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
 
 const INVISIBLE_KEY = "migwith.loginInvisible";
 
@@ -76,6 +77,7 @@ export default function LoginPage() {
         presenceStatus: invisible ? "OFFLINE" : "ONLINE",
       }).catch((err) => console.error("presence on login failed", err));
 
+      requestWelcomeSplash();
       router.push("/");
       router.refresh();
     } catch (err: any) {
@@ -100,12 +102,7 @@ export default function LoginPage() {
       <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center px-6 pb-10 pt-12">
         {/* mig + life bubble */}
         <Link href="/welcome" aria-label="About MIGlife" className="relative mt-4 block">
-          <div className="flex h-28 w-52 items-center justify-center rounded-[56px] bg-gradient-to-b from-[#4FA8E8] to-[#1F74C4] shadow-[inset_0_-6px_12px_rgba(0,0,0,0.18),0_10px_24px_rgba(0,0,0,0.25)]">
-            <span className="text-6xl font-black tracking-tight text-white drop-shadow">mig</span>
-          </div>
-          <span className="absolute -right-6 -top-4 flex h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-[#8A3A0E] bg-gradient-to-b from-[#F58A3A] to-[#D6521A] text-xl font-bold text-white shadow-lg">
-            life
-          </span>
+          <MigLoginLogo />
         </Link>
 
         <p className="mt-8 text-xl text-white/95">Join the Fun!</p>

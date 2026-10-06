@@ -41,7 +41,14 @@ import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
-import { addOpenRoom, isRoomOpen, postStaleLeaveLineOnce, readOpenRooms, removeOpenRoom } from "../../../lib/openRooms";
+import {
+  addOpenRoom,
+  deletePresenceUnlessParked,
+  isRoomOpen,
+  postStaleLeaveLineOnce,
+  readOpenRooms,
+  removeOpenRoom,
+} from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
 import { useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
@@ -574,15 +581,19 @@ function RoomView({ roomName }: { roomName: string }) {
       if (left) return;
       left = true;
       if (hideMe) return;
-      deleteDoc(presenceRef).catch(() => {});
-      if (quietMe) return;
-      setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, visitId)), {
-        text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),
-        sender: profile.username,
-        senderUid: uid,
-        type: "room_leave",
-        createdAt: serverTimestamp(),
-      }).catch(() => {});
+      const leftVisit = visitId;
+      // "has left" only once the delete really went through: a /parked spot
+      // stays in the room and gets no line (like the app).
+      deletePresenceUnlessParked(presenceRef).then((deleted) => {
+        if (!deleted || quietMe) return;
+        setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, leftVisit)), {
+          text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),
+          sender: profile.username,
+          senderUid: uid,
+          type: "room_leave",
+          createdAt: serverTimestamp(),
+        }).catch(() => {});
+      });
     };
 
     (async () => {
