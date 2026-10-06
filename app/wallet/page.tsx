@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,10 +22,8 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
-import { PageTitle } from "../_components/LightCards";
 import { latestGifts } from "../../lib/giftActivity";
 import { isMainFounderName } from "../../lib/founder";
-import { BackPill } from "../_components/BackButton";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
 // users/{uid}/coin_transactions and gift_activity. Coins only ever move through
@@ -55,7 +53,7 @@ const transferCoins = httpsCallable<{ toUid: string; amount: number; operationId
 const MERCHANT_CAP = 1_500_000;
 const NORMAL_CAP = 400_000;
 
-type Item = { key: string; timeMs: number; title: string; amount: number; icon: string };
+type Item = { key: string; timeMs: number; title: string; amount: number; icon: string; gift?: boolean };
 
 const num = (v: unknown) => (typeof v === "number" ? Math.trunc(v) : Number(String(v ?? "").trim()) || 0);
 const ms = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
@@ -92,17 +90,18 @@ function txItem(id: string, t: DocumentData): Item | null {
   const source = lower(t.source);
   const round = num(t.roundNumber ?? t.round);
   const reason = String(t.reason || "");
-  const character = String(t.character || "").split(" ").slice(1).join(" ").trim();
+  const charRaw = String(t.character || "");
+  const character = (charRaw.includes(" ") ? charRaw.slice(charRaw.indexOf(" ") + 1) : charRaw).trim();
   const r = round > 0 ? ` #${round}` : "";
 
   let title: string;
-  if (type === "bet" && source === "lowcard") title = `LowCard${r} — bid ${raw.toLocaleString()} coins`;
+  if (type === "bet" && source === "lowcard") title = `LowCard${r} — bid ${short(Math.abs(raw))} coins`;
   else if (type === "bet")
-    title = `Luxury Bot${r} — bid ${character ? character + " " : ""}${Math.abs(raw).toLocaleString()} coins`;
+    title = `Luxury Bot${r} — bid ${character ? character + " " : ""}${short(Math.abs(raw))} coins`;
   else if (type === "payout" && source === "lowcard") title = "LowCard winning payout";
   else if (type === "payout" || type === "bot_payout" || type === "winning_payout") title = "Daily Luxury Bot winning payout";
   else if (type.includes("spin") || type.includes("daily_reward") || type === "reward")
-    title = reason || `Daily spin reward: ${Math.abs(raw).toLocaleString()} coins`;
+    title = reason || `Daily spin reward: ${short(Math.abs(raw))} coins`;
   else if (type.includes("commission") || type.includes("trail")) title = reason || "Trail settlement";
   else if (type === "transfer_out") title = `Transfer to ${t.toUsername || "another user"}`;
   else if (type === "transfer_in") title = `Coins received from ${t.fromUsername || "another user"}`;
@@ -272,6 +271,7 @@ export default function WalletPage() {
         title: `Sent ${g.data.giftName || "Gift"} to ${g.data.toUsername || "user"}`,
         amount: -Math.abs(num(g.data.cost)),
         icon: "🎁",
+        gift: true,
       }))
       .filter((g) => g.timeMs > 0);
 
@@ -281,9 +281,7 @@ export default function WalletPage() {
   const grouped = useMemo(() => {
     const out: [string, Item[]][] = [];
     for (const it of items) {
-      const day = new Date(it.timeMs)
-        .toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" })
-        .toUpperCase();
+      const day = dayLabel(it.timeMs);
       const last = out[out.length - 1];
       if (last && last[0] === day) last[1].push(it);
       else out.push([day, [it]]);
@@ -382,92 +380,83 @@ export default function WalletPage() {
 
   const field =
     "w-full rounded-xl border border-[#D5E3F5] bg-white px-4 py-3 text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]";
+  const remaining = cap === null ? null : Math.max(0, cap - transferredToday);
 
   return (
-    <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
-        <div className="relative">
-          <PageTitle title="Wallet" subtitle="Coins · Transfers" icon="💳" />
-          {/* ⋮ like the app: Refresh balance, and Add / Adjust Coins for migwith */}
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Account menu"
-            className="absolute right-0 top-1/2 -translate-y-1/2 rounded-full px-3 text-[26px] font-bold text-[#0A1E63]"
-          >
-            ⋮
-          </button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-full z-40 w-52 overflow-hidden rounded-xl bg-white py-1 text-sm text-[#0B2A5B] shadow-xl">
-                {isFounderName && (
-                  <button type="button" onClick={() => (setMenuOpen(false), setShowAdjust(true))} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]">
-                    Add / Adjust Coins
+    <PageShell light noTopBar>
+      {/* The app's sub-page bar: ← Wallet */}
+      <header className="sticky top-0 z-30 flex h-14 items-center bg-[#0B1A3A] px-2 text-white shadow">
+        <button
+          type="button"
+          aria-label="Back"
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/profile/me"))}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M11 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <h1 className="flex-1 pr-10 text-center text-lg font-bold">Wallet</h1>
+      </header>
+
+      <div className="min-h-[calc(100dvh-56px)]" style={{ background: "linear-gradient(180deg, #CDEBFB, #A9DAF5 55%, #86C8EE)" }}>
+        <section className="mx-auto max-w-2xl px-3 pb-6 sm:px-6">
+          <div className="pb-2 pt-2.5">
+            <BalanceHeroCard
+              balance={balance}
+              menu={
+                <div className="relative">
+                  {/* ⋮ like the app: Refresh balance, and Add / Adjust Coins for the founder */}
+                  <button
+                    type="button"
+                    onClick={() => setMenuOpen((v) => !v)}
+                    aria-label="Account menu"
+                    className="rounded-full px-3 text-[26px] font-bold leading-none text-[#0A1E63]"
+                  >
+                    ⋮
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    ensureCoinAccount({}).catch(() => {});
-                  }}
-                  className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]"
-                >
-                  Refresh balance
-                </button>
+                  {menuOpen && (
+                    <>
+                      <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+                      <div className="absolute right-0 top-full z-40 w-52 overflow-hidden rounded-xl bg-white py-1 text-sm text-[#0B2A5B] shadow-xl">
+                        {isFounderName && (
+                          <button type="button" onClick={() => (setMenuOpen(false), setShowAdjust(true))} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]">
+                            Add / Adjust Coins
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            ensureCoinAccount({}).catch(() => {});
+                          }}
+                          className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F9FF]"
+                        >
+                          Refresh balance
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              }
+            >
+              <div className="grid grid-cols-3 gap-1.5">
+                <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spend Today" value={short(spentToday)} />
+                <StatMiniCard tint="#14A044" top="#F0FBF4" bottom="#D5F5E1" icon="up" label="Earned Today" value={short(earnedToday)} />
+                <StatMiniCard
+                  tint="#4A1FD6"
+                  top="#F5F2FF"
+                  bottom="#E5DDFD"
+                  icon="swap"
+                  label="Transfer Limit"
+                  value={cap === null ? "No limit" : short(cap)}
+                  sub={remaining === null ? undefined : `(Remaining : ${short(remaining)})`}
+                />
               </div>
-            </>
-          )}
-        </div>
-        {showAdjust && <AdjustDialog onClose={() => setShowAdjust(false)} onDone={(m) => (setShowAdjust(false), setSuccess(m))} />}
-
-        {/* Balance */}
-        <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-5 text-white shadow-lg">
-          <p className="text-xs font-bold tracking-widest text-yellow-200">MIGLIFE BALANCE</p>
-          <p className="mt-1 text-4xl font-black text-white">
-            🪙 {balance === null ? "…" : balance.toLocaleString()}
-          </p>
-          <p className="mt-1 text-xs text-white/75">@{username}</p>
-        </div>
-
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-lg font-black text-rose-500">{short(spentToday)}</p>
-            <p className="text-[11px] text-[#5B6B8C]">Spent Today</p>
+            </BalanceHeroCard>
           </div>
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-lg font-black text-emerald-600">{short(earnedToday)}</p>
-            <p className="text-[11px] text-[#5B6B8C]">Earned Today</p>
-          </div>
-          <div className="rounded-2xl bg-white p-3 text-center shadow-sm">
-            <p className="text-lg font-black text-[#2F80ED]">
-              {cap === null ? "∞" : `${short(transferredToday)}/${short(cap)}`}
-            </p>
-            <p className="text-[11px] text-[#5B6B8C]">Transfer Limit</p>
-          </div>
-        </div>
+          {showAdjust && <AdjustDialog onClose={() => setShowAdjust(false)} onDone={(m) => (setShowAdjust(false), setSuccess(m))} />}
 
-        {showPinPrompt && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setShowPinPrompt(false)}>
-            <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
-              <p className="text-lg font-black">🔐 Security PIN needed</p>
-              <p className="mt-2 text-sm">You haven&apos;t set your own Security PIN yet. Set it up first to transfer coins safely.</p>
-              <div className="mt-4 flex justify-end gap-2">
-                <button type="button" onClick={() => setShowPinPrompt(false)} className="rounded-lg px-3 py-2 text-sm font-bold text-[#5B6B8C]">
-                  Later
-                </button>
-                <Link href="/security" className="rounded-lg bg-[#2F80ED] px-4 py-2 text-sm font-black text-white">
-                  Set PIN
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Transfer */}
-        {success && <p className="mt-4 text-sm font-semibold text-emerald-600">{success}</p>}
-        {!showTransfer ? (
           <button
             type="button"
             onClick={() => {
@@ -476,15 +465,57 @@ export default function WalletPage() {
               setSuccess("");
               setError("");
             }}
-            className="mt-4 w-full rounded-2xl bg-[#0B2A5B] py-3.5 font-black text-white shadow"
+            className="h-[46px] w-full rounded-[15px] bg-[#70B6FF] text-sm font-bold text-white shadow-sm active:scale-[.99]"
           >
-            💸 Transfer Coins
+            ➤&nbsp;&nbsp;Transfer Coins
           </button>
-        ) : (
-          <div className="mt-4 space-y-3 rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
+          {success && <p className="mt-2 text-sm font-semibold text-emerald-700">{success}</p>}
+
+          <div className="mt-2 flex items-center gap-[7px]">
+            <h2 className="text-[17px] font-bold text-[#0E1B3D]">Activity</h2>
+            <span className="rounded-full bg-[#65DDF1] px-2 py-[3px] text-[10px] font-bold leading-none text-[#16315F]">{items.length}</span>
+          </div>
+          <div className="h-[7px]" />
+
+          {grouped.length === 0 ? (
+            <p className="p-2.5 text-[13px] text-[#35507E]">No activity yet.</p>
+          ) : (
+            grouped.map(([day, list]) => (
+              <div key={day}>
+                <p className="pb-0.5 pl-[3px] pt-1 text-[10px] font-bold tracking-[1.1px] text-[#35507E]">{day}</p>
+                {list.map((it) => (
+                  <ActivityCard key={it.key} item={it} />
+                ))}
+              </div>
+            ))
+          )}
+        </section>
+      </div>
+
+      {showPinPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setShowPinPrompt(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-black">🔐 Security PIN needed</p>
+            <p className="mt-2 text-sm">You haven&apos;t set your own Security PIN yet. Set it up first to transfer coins safely.</p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowPinPrompt(false)} className="rounded-lg px-3 py-2 text-sm font-bold text-[#5B6B8C]">
+                Later
+              </button>
+              <Link href="/security" className="rounded-lg bg-[#2F80ED] px-4 py-2 text-sm font-black text-white">
+                Set PIN
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Coins dialog, like the app */}
+      {showTransfer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => !busy && setShowTransfer(false)}>
+          <div className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h2 className="font-black">💸 Transfer Coins</h2>
-              <button type="button" onClick={() => setShowTransfer(false)} className="text-[#5B6B8C] hover:text-[#0B2A5B]">
+              <h2 className="text-lg font-black">Transfer Coins</h2>
+              <button type="button" onClick={() => !busy && setShowTransfer(false)} className="px-1 text-[#5B6B8C] hover:text-[#0B2A5B]">
                 ✕
               </button>
             </div>
@@ -535,42 +566,241 @@ export default function WalletPage() {
               </Link>
             </p>
           </div>
-        )}
-
-        {/* History */}
-        <h2 className="mt-7 border-l-4 border-[#2F80ED] pl-2 text-sm font-bold tracking-widest text-[#35507E]">RECENT ACTIVITY</h2>
-        {grouped.length === 0 ? (
-          <p className="py-10 text-center text-sm text-[#6B7A99]">No coin activity yet.</p>
-        ) : (
-          grouped.map(([day, list]) => (
-            <div key={day} className="mt-3">
-              <p className="mb-1.5 text-[11px] font-bold tracking-widest text-[#35507E]">{day}</p>
-              <ul className="divide-y divide-[#E3ECF7] rounded-2xl bg-white shadow-sm">
-                {list.map((it) => (
-                  <li key={it.key} className="flex items-center gap-3 px-3 py-2.5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#EAF2FC]">{it.icon}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-[#0B2A5B]">{it.title}</p>
-                      <p className="text-[11px] text-[#6B7A99]">
-                        {new Date(it.timeMs).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-                      </p>
-                    </div>
-                    <span className={`shrink-0 font-black ${it.amount >= 0 ? "text-emerald-600" : "text-rose-500"}`}>
-                      {it.amount >= 0 ? "+" : ""}
-                      {it.amount.toLocaleString()}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))
-        )}
-
-        <p className="mt-6 text-center">
-          <BackPill href="/profile/me" label="Back to profile" />
-        </p>
-      </section>
+        </div>
+      )}
     </PageShell>
+  );
+}
+
+const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
+/** "06 OCT 2026", like the app's activity date headers. */
+function dayLabel(timeMs: number): string {
+  const d = new Date(timeMs);
+  return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** "18:46" */
+function timeLabel(timeMs: number): string {
+  const d = new Date(timeMs);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+// ---------- the app's AccountBalanceHeader ----------
+
+// Rough world map; '#' = dot. Drawn on the right side of the hero card.
+const WORLD_MASK = [
+  "         ####  ######        ##                  ",
+  "   ###########  ####        #   ##  ########     ",
+  " ##############  ##      ########################",
+  "   #############        ##########################",
+  "    ###########         ######################## ",
+  "     #########          # ####################   ",
+  "      #######          ######################    ",
+  "       ####           ##########  ###########    ",
+  "        ###           ###########  ######  #     ",
+  "          ##          ##########    ###    #     ",
+  "           ####        ########      ##   ##     ",
+  "           ######        #####        #  ##      ",
+  "            ######       #####            ###    ",
+  "             #####       ####            ######  ",
+  "             ####         ###            ####### ",
+  "             ###          ##               ###   ",
+  "             ##                                  ",
+  "             #                                   ",
+];
+const WORLD_COLS = Math.max(...WORLD_MASK.map((l) => l.length));
+const WORLD_DOTS: { x: number; y: number; o: number }[] = WORLD_MASK.flatMap((line, y) =>
+  Array.from(line).flatMap((ch, x) =>
+    // fade in from the left so it doesn't crowd the balance text
+    ch === "#" ? [{ x, y, o: Math.min(1, Math.max(0.35, (x / WORLD_COLS) * 2.2)) }] : []
+  )
+);
+
+function BalanceHeroCard({ balance, menu, children }: { balance: number | null; menu: ReactNode; children: ReactNode }) {
+  const amount = balance === null ? "…" : short(balance);
+  return (
+    <div
+      className="relative w-full overflow-hidden rounded-[22px] border-[1.5px] border-white/90"
+      style={{
+        background: "linear-gradient(135deg, #EFF6FF, #D6E8FC 50%, #C4DDFA)",
+        boxShadow: "0 4px 14px rgba(90,160,240,.45)",
+      }}
+    >
+      {/* background art: dotted world map + waves */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        <defs>
+          <linearGradient id="hero-band" gradientUnits="userSpaceOnUse" x1="30" y1="66" x2="100" y2="39.6">
+            <stop offset="0" stopColor="#9CCBFA" stopOpacity="0.7" />
+            <stop offset="1" stopColor="#2E7FEC" />
+          </linearGradient>
+        </defs>
+        <path d="M0,52.8 C28,44.9 52,67.3 100,52.8 L100,100 L0,100 Z" fill="#9FCBF8" fillOpacity="0.45" />
+        <path d="M30,66 C62,64 86,55.4 100,38.3 L100,100 L30,100 Z" fill="url(#hero-band)" />
+        <path d="M30,66 C62,64 86,55.4 100,38.3" fill="none" stroke="#fff" strokeOpacity="0.7" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+      </svg>
+      <svg
+        className="pointer-events-none absolute"
+        style={{ left: "42%", width: "55%", top: "10%", height: "45%" }}
+        viewBox={`0 0 ${WORLD_COLS} ${WORLD_MASK.length}`}
+        preserveAspectRatio="xMidYMin meet"
+        aria-hidden
+      >
+        {WORLD_DOTS.map((d) => (
+          <circle key={`${d.x}_${d.y}`} cx={d.x + 0.5} cy={d.y + 0.5} r={0.32} fill="#3F8EEA" fillOpacity={0.42 * d.o} />
+        ))}
+      </svg>
+
+      <div className="relative px-2.5 pb-2.5 pt-3">
+        <div className="pl-2">
+          <div className="flex items-center">
+            <CoinLogo size={30} />
+            <span className="ml-2 flex-1 text-[28px] font-black leading-tight tracking-[-0.5px]">
+              <span className="text-[#0A1E63]">mig</span>
+              <span className="text-[#1565E8]">life</span>
+            </span>
+            {menu}
+          </div>
+          <p className="mt-2.5 text-[15px] font-semibold text-[#0A1E63]">miglife Balance</p>
+          <p className={`whitespace-nowrap font-extrabold leading-tight tracking-[-0.5px] text-[#0A1E63] ${amount.length > 7 ? "text-[30px]" : "text-[36px]"}`}>
+            {amount}
+          </p>
+          <p className="text-sm font-medium text-[#6B7A90]">Coins</p>
+        </div>
+        <div className="h-2.5" />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Gold coin with an "M" in the middle.
+function CoinLogo({ size }: { size: number }) {
+  return (
+    <span className="relative inline-flex shrink-0 items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="absolute inset-0" width={size} height={size} viewBox="0 0 100 100" aria-hidden>
+        <defs>
+          <linearGradient id="coin-rim" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stopColor="#FFE08A" />
+            <stop offset="0.5" stopColor="#D99A12" />
+            <stop offset="1" stopColor="#B57606" />
+          </linearGradient>
+          <radialGradient id="coin-face" cx="35" cy="32.5" r="60" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#FFE9A6" />
+            <stop offset="0.5" stopColor="#F5C02E" />
+            <stop offset="1" stopColor="#E0A11A" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="50" fill="url(#coin-rim)" />
+        <circle cx="50" cy="50" r="40" fill="url(#coin-face)" />
+        <circle cx="50" cy="50" r="33" fill="none" stroke="#C98A0C" strokeWidth="3.5" />
+        {/* shine: arc from 200° to 270° */}
+        <path d="M8.65,34.95 A44,44 0 0 1 50,6" fill="none" stroke="#fff" strokeOpacity="0.55" strokeWidth="5" strokeLinecap="round" />
+      </svg>
+      <span className="relative text-[13px] font-black leading-none text-[#9A5F00]" style={{ fontSize: size * 0.43 }}>
+        M
+      </span>
+    </span>
+  );
+}
+
+function MiniIcon({ kind, color }: { kind: "down" | "up" | "swap"; color: string }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 100 100" aria-hidden>
+      {kind === "down" && <path d="M36,8 L64,8 L64,50 L90,50 L50,94 L10,50 L36,50 Z" fill={color} />}
+      {kind === "up" && <path d="M36,92 L64,92 L64,50 L90,50 L50,6 L10,50 L36,50 Z" fill={color} />}
+      {kind === "swap" && (
+        <g fill="none" stroke={color} strokeWidth="13" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12,32 L84,32 M62,12 L86,32 L62,52" />
+          <path d="M88,70 L16,70 M38,50 L14,70 L38,90" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+function StatMiniCard({
+  tint,
+  top,
+  bottom,
+  icon,
+  label,
+  value,
+  sub,
+}: {
+  tint: string;
+  top: string;
+  bottom: string;
+  icon: "down" | "up" | "swap";
+  label: string;
+  value: string;
+  sub?: string;
+}) {
+  return (
+    <div
+      className="relative overflow-hidden rounded-xl border-[1.5px] border-white/95"
+      style={{ background: `color-mix(in srgb, ${top} 92%, transparent)`, boxShadow: `0 1px 4px color-mix(in srgb, ${tint} 30%, transparent)` }}
+    >
+      {/* lower wave in the card's tint */}
+      <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+        <defs>
+          <linearGradient id={`mini-${icon}`} x1="0" y1="0.5" x2="0" y2="1">
+            <stop offset="0" stopColor={bottom} stopOpacity="0.6" />
+            <stop offset="1" stopColor={bottom} />
+          </linearGradient>
+        </defs>
+        <path d="M0,62 C35,78 65,48 100,60 L100,100 L0,100 Z" fill={`url(#mini-${icon})`} />
+      </svg>
+      <div className="relative flex flex-col items-center px-1 py-1.5 text-center">
+        <span
+          className="flex h-[26px] w-[26px] items-center justify-center rounded-full"
+          style={{ background: `color-mix(in srgb, ${tint} 16%, transparent)` }}
+        >
+          <MiniIcon kind={icon} color={tint} />
+        </span>
+        <span className="mt-[3px] w-full truncate text-[10px] font-semibold leading-3 text-[#0E1B3D]">{label}</span>
+        <span className={`whitespace-nowrap font-extrabold leading-[19px] ${value.length > 7 ? "text-[13px]" : "text-base"}`} style={{ color: tint }}>
+          {value}
+        </span>
+        {sub && <span className="text-[9px] leading-[11px] text-[#5B6478]">{sub}</span>}
+        <span className="text-[9px] leading-[11px] text-[#6B7A90]">Coins</span>
+      </div>
+    </div>
+  );
+}
+
+function ActivityCard({ item }: { item: Item }) {
+  const positive = item.amount >= 0;
+  const iconBorder = item.gift ? "#D27BC6" : positive ? "#6CC79B" : "#E2BC4A";
+  // "Sent Rose to bob" → the name after to / in / from is shown in blue.
+  const m = /\b(to|in|from)\s+(.+)$/i.exec(item.title);
+  const before = m ? item.title.slice(0, m.index).trimEnd() : item.title;
+  const highlighted = m ? m[0].slice(m[0].indexOf(" ") + 1).trim() : "";
+  return (
+    <div className="my-[3px] flex min-h-[58px] items-center rounded-[14px] border border-[#D3E4F8] bg-[#F6FAFF] px-2.5 py-[7px]">
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] border"
+        style={{ borderColor: iconBorder, background: `color-mix(in srgb, ${iconBorder} 12%, transparent)` }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icon-192.png" alt="" width={32} height={32} className="h-8 w-8 rounded-lg" />
+      </span>
+      <div className="ml-2.5 min-w-0 flex-1">
+        <p className="line-clamp-2 text-[13px] font-bold leading-[17px] text-[#0E1B3D]">
+          {highlighted ? (
+            <>
+              {before} <span className="text-[#1565E8]">{highlighted}</span>
+            </>
+          ) : (
+            item.title
+          )}
+        </p>
+        <p className="text-[10px] text-[#6B7A90]">{timeLabel(item.timeMs)}</p>
+      </div>
+      <span className={`ml-[5px] shrink-0 text-sm font-extrabold ${positive ? "text-[#14A044]" : "text-[#E5202E]"}`}>
+        {positive ? `+${short(item.amount)}` : `−${short(Math.abs(item.amount))}`}
+      </span>
+    </div>
   );
 }
 
