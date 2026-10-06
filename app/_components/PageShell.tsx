@@ -22,7 +22,10 @@ export function PageShell({
 }) {
   return (
     <main
-      className={`relative min-h-screen overflow-x-clip ${
+      // min-h-dvh (the screen as it is now), not 100vh: on Android Chrome 100vh
+      // also counts the space behind the address bar, so the chat pages could
+      // scroll a little and leave a gap under the message box.
+      className={`relative min-h-dvh overflow-x-clip ${
         pale
           ? "bg-gradient-to-b from-[#F4FAFE] to-[#EAF5FD] text-[#0B2A5B]"
           : light
