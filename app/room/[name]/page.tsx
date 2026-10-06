@@ -51,6 +51,7 @@ import {
   type Gift,
   type GiftResult,
 } from "../../_components/GiftPanel";
+import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ROOM,
@@ -64,6 +65,7 @@ import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale } from "../../
 import {
   TEEN_PATTI_ROOM,
   TeenPattiTable,
+  TpCardFace,
   teenPattiHandleCommand,
   useTeenPatti,
 } from "../../_components/TeenPatti";
@@ -831,9 +833,13 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Eye mode (Luxury Bet): other people's bet lines are taken out of the list.
   const myName = (profile?.username || "").toLowerCase();
+  // 🎴 Many tables at once: only the bot lines of the table this phone shows.
+  const tablesVersion = useGameTablesVersion();
+  const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : null;
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
     return shown.filter((m) => {
+      if (tableGame && m.type !== "room_entry" && m.type !== "room_leave" && hideGameTableLine(tableGame, m.text)) return false;
       if (blocked.size && !m.local && m.senderUid !== myUid) {
         const who = (m.sender || (m.text.indexOf(":") > 0 ? m.text.slice(0, m.text.indexOf(":")) : "")).trim().toLowerCase();
         if (who && blocked.has(who) && m.type !== "room_entry" && m.type !== "room_leave") return false;
@@ -844,7 +850,8 @@ function RoomView({ roomName }: { roomName: string }) {
       }
       return true;
     });
-  }, [shown, onlyMyBets, myName, blockedNames, myUid]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion]);
 
   // Uploaded pictures for the badges in the enter/left lines.
   const badgeImages = useBadgeImages(!!user);
@@ -1210,7 +1217,7 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
-    if (teenPatti && teenPattiHandleCommand(teenPatti, clean, note, 200)) {
+    if (teenPatti && teenPattiHandleCommand(teenPatti, clean, note)) {
       setText("");
       return;
     }
@@ -1471,7 +1478,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   <LuxuryBetTable state={luxuryBet} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
                 )}
                 {royale && <RoyaleTable state={royale} />}
-                {teenPatti && <TeenPattiTable state={teenPatti} uid={user.uid} />}
+                {teenPatti && profile && <TeenPattiTable state={teenPatti} uid={user.uid} myUsername={profile.username} roomUsers={roomUsers.map((u) => u.username)} />}
                 {cricket && <CricketBox state={cricket} uid={user.uid} />}
                 {/* 🎉 SIX/FOUR clapping, OUT finger, DRS third-umpire pop-ups */}
                 {cricket && profile && <CricketCelebrationHost messages={messages} roomKey={roomName} myName={profile.username} />}
@@ -1882,7 +1889,12 @@ function gameBotLine(text: string): ReactNode | null {
     let last = 0;
     for (const m of body.matchAll(/\[(10|[2-9JQKA])([♠♥♦♣])\]/g)) {
       const i = m.index ?? 0;
-      parts.push(body.slice(last, i), <InlineCard key={`c${i}`} card={m[1] + m[2]} />);
+      parts.push(
+        body.slice(last, i),
+        <span key={`c${i}`} className="mx-px inline-flex align-middle">
+          <TpCardFace card={m[1] + m[2]} width={15} />
+        </span>
+      );
       last = i + m[0].length;
     }
     parts.push(body.slice(last));

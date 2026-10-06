@@ -307,3 +307,14 @@ body {
 @keyframes ck-duck-in { from { transform: translateX(calc(-50% - 120px)); } to { transform: translateX(-50%); } }
 @keyframes ck-waddle { from { transform: translateX(-50%) rotate(-12deg); } to { transform: translateX(-50%) translateY(-6px) rotate(12deg); } }
 @media (prefers-reduced-motion: reduce) { .ck-spark, .ck-clap, .ck-flash, .ck-scan, .ck-duck { animation: none; } }
+
+/* 🎴 Teen Patti: glowing button on my turn, pulsing empty seats, turn halo, winner banner shimmer */
+@keyframes tp-glow { from { box-shadow: 0 0 4px color-mix(in srgb, var(--tp-glow), transparent 75%); } to { box-shadow: 0 0 14px color-mix(in srgb, var(--tp-glow), transparent 10%); } }
+.tp-glow { animation: tp-glow 0.65s ease-in-out infinite alternate; }
+@keyframes tp-seat { from { border-color: rgba(232,184,74,.45); } to { border-color: rgba(232,184,74,1); } }
+.tp-seat { animation: tp-seat 0.9s ease-in-out infinite alternate; }
+@keyframes tp-turn { from { filter: drop-shadow(0 0 8px rgba(255,200,61,.45)); } to { filter: drop-shadow(0 0 2px rgba(255,200,61,.18)); } }
+.tp-turn { animation: tp-turn 0.6s ease-in-out infinite alternate; }
+@keyframes tp-banner { from { background-position: 130% 0; } to { background-position: -30% 0; } }
+.tp-banner { background: linear-gradient(110deg, #9C7420 20%, #E8B84A 40%, #FFF3C4 50%, #E8B84A 60%, #9C7420 80%) 0 0 / 250% 100%; animation: tp-banner 1.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .tp-glow, .tp-seat, .tp-turn, .tp-banner { animation: none; } }
