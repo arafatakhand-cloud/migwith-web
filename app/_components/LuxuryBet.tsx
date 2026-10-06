@@ -258,10 +258,19 @@ export function LuxuryBetStartButton({ state }: { state: LuxuryBetState }) {
       onClick={state.start}
       disabled={state.running || state.starting}
       title={state.running ? "Round running" : "Start a round"}
-      className="flex h-[31px] w-[31px] shrink-0 items-center justify-center rounded-full border border-[#D4A017] text-base font-bold text-white"
-      style={{ background: state.running ? "#0B2A5B" : "#D4A017" }}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+      style={{ background: state.running ? "#0B2A5B" : "#D4AE3A", boxShadow: "0 2px 6px rgba(212,174,58,.4)" }}
     >
-      {state.starting ? "…" : state.running ? "⏳" : "▶\uFE0E"}
+      {state.starting ? (
+        "…"
+      ) : state.running ? (
+        "⏳"
+      ) : (
+        // white ▶, like the app's gold play button
+        <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden>
+          <path d="M7 4.5 L20 12 L7 19.5 Z" fill="#FFFFFF" />
+        </svg>
+      )}
     </button>
   );
 }

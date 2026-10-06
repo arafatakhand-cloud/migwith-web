@@ -1598,13 +1598,14 @@ function RoomView({ roomName }: { roomName: string }) {
               }}
               voice={
                 <>
-                {luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
                 <VoiceRecorder
                   disabled={!profile || !perms.canShareMedia}
                   onSend={sendVoice}
                   onError={(m) => note(`${roomName}: ${m}`)}
                   onActive={setVoiceActive}
                 />
+                {/* ▶ after 🎤, like the app (hidden while recording) */}
+                {luxuryBet && !voiceActive && <LuxuryBetStartButton state={luxuryBet} />}
                 </>
               }
               voiceActive={voiceActive}

@@ -10,28 +10,40 @@ import { EmojiPicker } from "./EmojiPicker";
 // Chat bar glyphs (the app's "style B"): drawn, not emoji, so they look the
 // same everywhere. Photo = pink → purple, mic = sky → blue, send = purple → blue.
 export const BAR_BTN = "flex h-8 w-8 shrink-0 items-center justify-center rounded-full";
-export const PHOTO_BG = { background: "linear-gradient(135deg, #FF5F6D, #C13584, #833AB4)", boxShadow: "0 2px 5px rgba(193,53,132,.45)" };
-export const MIC_BG = { background: "linear-gradient(135deg, #00C6FF, #0072FF)", boxShadow: "0 2px 5px rgba(0,114,255,.45)" };
+export const PHOTO_BG = { background: "linear-gradient(135deg, #EC4677, #C13A93, #9B3DAB)", boxShadow: "0 2px 6px rgba(193,58,147,.45)" };
+export const MIC_BG = { background: "linear-gradient(135deg, #00B8FF, #0A74FF)", boxShadow: "0 2px 6px rgba(10,116,255,.45)" };
 export const MIC_REC_BG = { background: "linear-gradient(135deg, #FF5252, #D32F2F)", boxShadow: "0 2px 5px rgba(229,57,53,.5)" };
 export const SEND_BG = { background: "linear-gradient(135deg, #833AB4, #5B5BF0, #0072FF)", boxShadow: "0 2px 6px rgba(91,91,240,.45)" };
 export const SEND_VOICE_BG = { background: "linear-gradient(135deg, #43E97B, #00B37E)", boxShadow: "0 2px 6px rgba(0,179,126,.45)" };
 
 export function PhotoGlyph() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
-      <rect x="3" y="4" width="18" height="16" rx="3.5" fill="#FFFFFF" />
-      <circle cx="9" cy="9.5" r="2" fill="rgba(0,0,0,.3)" />
-      <path d="M3 17 L8.5 11.5 L12.5 15.5 L15.5 12.5 L21 18 L21 18.5 Q21 20 19.5 20 L4.5 20 Q3 20 3 18.5Z" fill="rgba(0,0,0,.3)" />
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
+      {/* white picture with grey sun and hills, like the app */}
+      <rect x="2.5" y="4" width="19" height="16" rx="3" fill="#FFFFFF" />
+      <circle cx="8.5" cy="9.2" r="2.1" fill="#B4B4B8" />
+      <path d="M2.5 17.5 L8.5 11.8 L12.5 15.6 L15.8 12.4 L21.5 18 L21.5 18 Q21.5 20 19.5 20 L4.5 20 Q2.5 20 2.5 18Z" fill="#B4B4B8" />
     </svg>
   );
 }
 
 export function MicGlyph() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden fill="none" stroke="#FFFFFF" strokeWidth="2.2" strokeLinecap="round">
       <rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="#FFFFFF" stroke="none" />
       <path d="M5.5 11 A6.5 6.5 0 0 0 18.5 11" />
       <path d="M12 17.5 V21 M8.5 21 H15.5" />
+    </svg>
+  );
+}
+
+/** ⋮ drawn as three dots (the app's round grey "more" button). */
+export function MoreGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden fill="#FFFFFF">
+      <circle cx="12" cy="5" r="2.3" />
+      <circle cx="12" cy="12" r="2.3" />
+      <circle cx="12" cy="19" r="2.3" />
     </svg>
   );
 }
@@ -122,7 +134,7 @@ export function ChatBar({
         </button>
       </div>
     )}
-    <div className="flex items-center gap-1 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
+    <div className="flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
         <button
@@ -130,9 +142,9 @@ export function ChatBar({
           onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
           aria-label="More"
           aria-expanded={moreOpen}
-          className="flex h-9 w-6 items-center justify-center rounded-full bg-[#1E2B47] text-base font-black text-white"
+          className={`${BAR_BTN} bg-[#2E3E56]`}
         >
-          ⋮
+          <MoreGlyph />
         </button>
         {moreOpen && (
           <div className="absolute bottom-full left-0 z-40 mb-2 w-44 overflow-hidden rounded-2xl border border-[#D5E3F5] bg-white text-sm text-[#0B2A5B] shadow-xl">
