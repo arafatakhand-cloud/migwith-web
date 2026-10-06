@@ -92,6 +92,8 @@ export function ChatBar({
     onSend();
   };
   const moreRef = useRef<HTMLDivElement>(null);
+  // 😊 emotes open here, under the bar (like the app's emoji box)
+  const [emoteSlot, setEmoteSlot] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -191,7 +193,14 @@ export function ChatBar({
               placeholder={placeholder}
               className="min-w-0 flex-1 bg-transparent text-[14px] text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
             />
-            <EmojiPicker inputRef={inputRef} value={text} onChange={(v) => setText(v.slice(0, maxLength))} disabled={disabled} inline />
+            <EmojiPicker
+              inputRef={inputRef}
+              value={text}
+              onChange={(v) => setText(v.slice(0, maxLength))}
+              disabled={disabled}
+              inline
+              dockTo={emoteSlot}
+            />
           </div>
 
           {/* ➤ send */}
@@ -208,6 +217,7 @@ export function ChatBar({
         </>
       )}
     </div>
+    <div ref={setEmoteSlot} />
     </div>
   );
 }

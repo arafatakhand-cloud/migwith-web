@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { EmotePanel } from "./Emote";
 import { removeLastEmoteOrChar } from "../../lib/emotes";
 
-// 😊 button that opens the miglife emote panel (the app's emoji panel) above
-// the chat box; a tap adds that emote's code (":c12", ";a3" …) at the cursor.
+// 😊 button that opens the miglife emote panel (the app's emoji panel); a tap
+// adds that emote's code (":c12", ";a3" …) at the cursor. With `dockTo` the
+// panel opens UNDER the chat bar, in the keyboard's place, like the app.
 
 export function EmojiPicker({
   inputRef,
@@ -13,6 +15,7 @@ export function EmojiPicker({
   onChange,
   disabled,
   inline = false,
+  dockTo,
 }: {
   inputRef: React.RefObject<HTMLInputElement | null>;
   value: string;
@@ -20,15 +23,20 @@ export function EmojiPicker({
   disabled?: boolean;
   /** Borderless 😊 sitting inside the text box (the popup opens to the left). */
   inline?: boolean;
+  /** Element under the chat bar the panel opens in (the app's place for it). */
+  dockTo?: HTMLElement | null;
 }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close when tapping anywhere else.
+  // Close when tapping anywhere else (the text box too: the keyboard takes its place).
   useEffect(() => {
     if (!open) return;
     const close = (e: PointerEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (boxRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      setOpen(false);
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
@@ -53,7 +61,11 @@ export function EmojiPicker({
     <div ref={boxRef} className="relative flex">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          // Docked like the app: the phone keyboard goes away while the emotes show.
+          if (!open && dockTo) inputRef.current?.blur();
+          setOpen((v) => !v);
+        }}
         disabled={disabled}
         title="Emoji"
         aria-label="Emoji"
@@ -68,8 +80,16 @@ export function EmojiPicker({
       >
         😊
       </button>
-      {open && (
-        <div className={`absolute bottom-full ${inline ? "right-0" : "left-0"} z-40 mb-3 w-[min(360px,calc(100vw-16px))]`}>
+      {open &&
+        dockTo &&
+        createPortal(
+          <div ref={panelRef}>
+            <EmotePanel docked onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
+          </div>,
+          dockTo
+        )}
+      {open && !dockTo && (
+        <div ref={panelRef} className={`absolute bottom-full ${inline ? "right-0" : "left-0"} z-40 mb-3 w-[min(360px,calc(100vw-16px))]`}>
           <EmotePanel onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
         </div>
       )}

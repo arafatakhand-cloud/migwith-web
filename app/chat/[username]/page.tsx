@@ -80,6 +80,8 @@ export default function PrivateChatPage() {
   const emoteFontPx = chatPx(useChatTextSize());
 
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
+  // 😊 emotes open under the input bar (like the app's emoji box)
+  const [emoteSlot, setEmoteSlot] = useState<HTMLDivElement | null>(null);
   const [friendLastActive, setFriendLastActive] = useState(0);
   const [, setNow] = useState(0);
   const [text, setText] = useState("");
@@ -562,7 +564,7 @@ export default function PrivateChatPage() {
               placeholder="Write a message"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-[#12233F] outline-none placeholder:text-[#7D8DA6]"
             />
-            <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline />
+            <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
           </div>
           <button
             type="button"
@@ -573,6 +575,7 @@ export default function PrivateChatPage() {
             ➤
           </button>
         </div>
+        <div ref={setEmoteSlot} />
       </div>
 
       {viewImage && (

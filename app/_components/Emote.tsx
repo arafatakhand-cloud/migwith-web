@@ -113,7 +113,16 @@ const ANIM_GLYPHS = ["✨", "🎉", "💖", "🐾", "🍕", "🎈", "🌸"];
 
 type Section = { key: string; title: string; tabId: string | null; glyph: string | null; ids: string[] };
 
-export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => void; onBackspace?: () => void }) {
+export function EmotePanel({
+  onPick,
+  onBackspace,
+  docked = false,
+}: {
+  onPick: (code: string) => void;
+  onBackspace?: () => void;
+  /** Opened under the chat bar (full width, in the keyboard's place). */
+  docked?: boolean;
+}) {
   const [recent] = useState<string[]>(() => (typeof window === "undefined" ? [] : readRecentEmotes()));
   const sections: Section[] = [
     // 🕒 Recent is always the first tab (like the app), even before anything was picked.
@@ -126,7 +135,13 @@ export function EmotePanel({ onPick, onBackspace }: { onPick: (code: string) => 
   const sec = sections[Math.min(active, sections.length - 1)];
 
   return (
-    <div className="w-full overflow-hidden rounded-t-[18px] border border-b-0 border-[#D5E3F5] bg-white shadow-[0_-6px_20px_rgba(11,42,91,.15)]">
+    <div
+      className={
+        docked
+          ? "pb-safe w-full overflow-hidden bg-white"
+          : "w-full overflow-hidden rounded-t-[18px] border border-b-0 border-[#D5E3F5] bg-white shadow-[0_-6px_20px_rgba(11,42,91,.15)]"
+      }
+    >
       <div className="mx-auto mt-1.5 h-1 w-9 rounded-full bg-gray-300" />
       <div className="flex items-center gap-1 px-1.5 py-1.5">
         <div className="no-scrollbar flex min-w-0 flex-1 gap-0.5 overflow-x-auto">
