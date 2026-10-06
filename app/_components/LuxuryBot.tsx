@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { LB_KINDS, StyleShopDialog, useInventory, type ShopItem } from "./StyleShop";
 
 // 👻 Luxury Bot — the web side only shows the round and sends bets. Money,
 // results and the round itself are handled by the Cloud Functions
@@ -135,7 +136,81 @@ export function useLuxuryBot(enabled: boolean, uid: string | undefined, note: (t
   };
 }
 
-export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: string) => void }) {
+// 🎨 Bet box colours (the app's LbBoxSkins). Royal Night is free; the rest
+// are bought through buyLuxuryItem and kept in lb_inventory/{uid}.
+type LbSkin = ShopItem & {
+  bgTop: string; bgBottom: string; chip: string; accent: string; accent2: string; accentText: string;
+  cream: string; tileTop: string; tileBottom: string; tileBase: string; tileBorder: string;
+};
+
+export const LB_SKINS: LbSkin[] = [
+  { id: "royal", name: "Royal Night", emoji: "👑", price: 0, bgTop: "#1E1A2E", bgBottom: "#151222", chip: "#2A2440", accent: "#D4AF37", accent2: "#FFF0B3", accentText: "#F2D675", cream: "#F2E6C2", tileTop: "#3A3350", tileBottom: "#27213A", tileBase: "#0E0B18", tileBorder: "#5A4F7A" },
+  { id: "ocean", name: "Ocean Breeze", emoji: "🌊", price: 50000, bgTop: "#0B2A3F", bgBottom: "#061826", chip: "#12384F", accent: "#3FC1E8", accent2: "#B8F1FF", accentText: "#9BE7FF", cream: "#DDF6FF", tileTop: "#17506E", tileBottom: "#0E3349", tileBase: "#04121B", tileBorder: "#2E86A8" },
+  { id: "emerald", name: "Emerald Palace", emoji: "💚", price: 75000, bgTop: "#0E3324", bgBottom: "#071C13", chip: "#134430", accent: "#2ED48A", accent2: "#C8FFE3", accentText: "#9BF5C8", cream: "#DFF8EA", tileTop: "#1B5A3E", tileBottom: "#113B29", tileBase: "#05140D", tileBorder: "#31956A" },
+  { id: "rose", name: "Pink Velvet", emoji: "🌸", price: 100000, bgTop: "#3A1228", bgBottom: "#220818", chip: "#4E1A36", accent: "#FF5C9A", accent2: "#FFD1E3", accentText: "#FFB3D1", cream: "#FFE3EE", tileTop: "#66203F", tileBottom: "#45152B", tileBase: "#19060F", tileBorder: "#B0447A" },
+  { id: "pearl", name: "Pearl White", emoji: "🤍", price: 60000, bgTop: "#FFFFFF", bgBottom: "#EFF1F7", chip: "#E4E7F0", accent: "#C9A227", accent2: "#FFE58A", accentText: "#5A4300", cream: "#2B2B3A", tileTop: "#FFFFFF", tileBottom: "#EAEDF5", tileBase: "#C3C7D6", tileBorder: "#D3D7E3" },
+  { id: "sky", name: "Sky Blue", emoji: "☁️", price: 80000, bgTop: "#EAF6FF", bgBottom: "#D1EAFF", chip: "#CBE5FB", accent: "#2F8FE0", accent2: "#8FD3FF", accentText: "#0E4C80", cream: "#123A5C", tileTop: "#FFFFFF", tileBottom: "#DFF0FF", tileBase: "#A5CBEB", tileBorder: "#9CC9EE" },
+  { id: "mint", name: "Mint Fresh", emoji: "🍃", price: 90000, bgTop: "#EBFFF5", bgBottom: "#D0F6E2", chip: "#CAEEDB", accent: "#1FB878", accent2: "#9BF0C8", accentText: "#0B5B3A", cream: "#0F3D2A", tileTop: "#FFFFFF", tileBottom: "#DFF8EB", tileBase: "#A2DABD", tileBorder: "#98DDB9" },
+  { id: "peach", name: "Peach Blossom", emoji: "🍑", price: 110000, bgTop: "#FFF4ED", bgBottom: "#FFDFCF", chip: "#FFE1D3", accent: "#FF7A59", accent2: "#FFC2A8", accentText: "#8A3018", cream: "#4A2216", tileTop: "#FFFFFF", tileBottom: "#FFECE2", tileBase: "#EDB8A1", tileBorder: "#F5C3AE" },
+  { id: "lavender", name: "Lavender Dream", emoji: "💜", price: 130000, bgTop: "#F7F1FF", bgBottom: "#E5D8FF", chip: "#E5D9FF", accent: "#8A5CF5", accent2: "#D2BBFF", accentText: "#4A2A99", cream: "#2E1A63", tileTop: "#FFFFFF", tileBottom: "#EEE6FF", tileBase: "#C4AFF0", tileBorder: "#CDB8F7" },
+  { id: "sunset", name: "Golden Sunset", emoji: "🌅", price: 125000, bgTop: "#3A1E0A", bgBottom: "#221004", chip: "#4F2B10", accent: "#FF9A3C", accent2: "#FFE0A3", accentText: "#FFC98F", cream: "#FFEAD6", tileTop: "#6B3A16", tileBottom: "#47250C", tileBase: "#1A0C03", tileBorder: "#B8682C" },
+  { id: "crimson", name: "Crimson Fire", emoji: "🔥", price: 150000, bgTop: "#360A0E", bgBottom: "#1E0507", chip: "#4A1015", accent: "#FF4A3D", accent2: "#FFC66E", accentText: "#FF9E9B", cream: "#FFE1E0", tileTop: "#661A1F", tileBottom: "#431014", tileBase: "#160405", tileBorder: "#B8352F" },
+  { id: "galaxy", name: "Purple Galaxy", emoji: "🌌", price: 175000, bgTop: "#1A0E40", bgBottom: "#0B0524", chip: "#261659", accent: "#B388FF", accent2: "#7DF9FF", accentText: "#D9C2FF", cream: "#EEE4FF", tileTop: "#3A2478", tileBottom: "#241452", tileBase: "#07031A", tileBorder: "#7A55E6" },
+  { id: "diamond", name: "Diamond Ice", emoji: "💎", price: 200000, bgTop: "#1B2E3E", bgBottom: "#0C1823", chip: "#243C50", accent: "#DDEFFF", accent2: "#8FD3FF", accentText: "#FFFFFF", cream: "#E6F0F8", tileTop: "#34556E", tileBottom: "#213A4E", tileBase: "#08121A", tileBorder: "#A9D2F0" },
+];
+
+function LbSkinPreview({ skin }: { skin: LbSkin }) {
+  return (
+    <div
+      className="rounded-xl p-1.5"
+      style={{ background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom})`, border: `1.2px solid ${skin.accent}` }}
+    >
+      <div className="flex gap-[3px]">
+        {["🧕", "🤵", "💃"].map((e) => (
+          <span
+            key={e}
+            className="flex h-[30px] flex-1 items-center justify-center rounded-[7px] text-sm"
+            style={{ background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: `1px solid ${skin.tileBorder}` }}
+          >
+            {e}
+          </span>
+        ))}
+      </div>
+      <div className="mt-1 flex gap-[3px]">
+        {["1k", "5k", "10k"].map((t, i) => (
+          <span
+            key={t}
+            className="flex h-3.5 flex-1 items-center justify-center rounded-[7px] text-[7px] font-bold"
+            style={{
+              background: i === 1 ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
+              color: i === 1 ? "#1A1200" : skin.cream,
+            }}
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function LbStyleDialog({ inv, onClose }: { inv: ReturnType<typeof useInventory>; onClose: () => void }) {
+  return (
+    <StyleShopDialog
+      title="🎨 Bet Box Colours"
+      subtitle="Royal is free · others from 50,000 coins · saved to your account"
+      theme={{ bg: "#14111F", border: "#D4AF37", title: "#F2D675", sub: "#B9B2CC", accent: "linear-gradient(90deg, #D4AF37, #FFF0B3)", accentInk: "#1A1200" }}
+      tabs={[{ label: "Box", kind: "box", items: LB_SKINS, noun: "bet box colour", preview: (s: LbSkin) => <LbSkinPreview skin={s} /> }]}
+      inv={inv}
+      buyFn="buyLuxuryItem"
+      setFn="setLuxuryStyle"
+      opPrefix="lb"
+      onClose={onClose}
+    />
+  );
+}
+
+export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: string; note: (t: string) => void }) {
   const [amount, setAmount] = useState(500);
   const [inFlight, setInFlight] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
@@ -205,112 +280,174 @@ export function LuxuryBetBox({ state, note }: { state: LuxuryState; note: (t: st
   };
 
   const myTotal = LUXURY_CHARACTERS.reduce((a, c) => a + shownTotal(c), 0);
+  const inv = useInventory("lb_inventory", uid, LB_KINDS);
+  const [showStyles, setShowStyles] = useState(false);
+  const skin = LB_SKINS.find((k) => k.id === inv.active.box) || LB_SKINS[0];
+  const urgent = canBet && state.secondsLeft <= 10;
+  const iconBtn = "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold";
 
   return (
-    <div className="border-t border-amber-300/20 bg-gradient-to-b from-fuchsia-500/10 to-transparent px-2 py-2">
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-black text-pink-300">
-          {inFlight > 0 ? "⏳ Sending bet…" : "👻 Luxury Bot · tap 2x to bid"}
-        </span>
-        {state.running && state.phase === "BETTING" ? (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-              state.secondsLeft <= 10 ? "bg-red-500/80" : "bg-blue-500/60"
-            }`}
-          >
-            {state.secondsLeft > 0 ? `⏱ ${state.secondsLeft}s` : "🎲 Rolling…"}
+    <div className="px-[7px] py-[3px]">
+      <div
+        className="rounded-2xl px-[7px] py-1"
+        style={{
+          background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom}) padding-box, linear-gradient(135deg, ${skin.accent}, ${skin.accent2}, ${skin.accent}) border-box`,
+          border: "1.6px solid transparent",
+          boxShadow: `0 3px 10px ${skin.accent}55`,
+        }}
+      >
+        <div className="flex items-center gap-[3px]">
+          {state.running && (
+            <span
+              className={`rounded-xl px-1.5 text-[9px] font-bold ${urgent ? "lb-blink" : ""}`}
+              style={{
+                background: urgent ? "#E53935" : skin.chip,
+                color: urgent ? "#fff" : skin.accentText,
+                border: `1px solid ${urgent ? "#E53935" : skin.accentText}`,
+              }}
+            >
+              {state.phase === "BETTING" ? (state.secondsLeft > 0 ? `${state.secondsLeft}s` : "🎲") : "🎲"}
+            </span>
+          )}
+          <span className="min-w-0 flex-1 truncate text-[10px] font-bold" style={{ color: skin.accentText }}>
+            {inFlight > 0 ? "⏳ Sending bet…" : state.running && state.phase !== "BETTING" ? "🎲 Result…" : "👻 Luxury Bot · tap 2x to bid"}
           </span>
-        ) : state.running ? (
-          <span className="rounded-full bg-amber-500/60 px-2 py-0.5 text-xs font-bold">🎲 Result…</span>
-        ) : null}
-        {canBet && lastBet && (
-          <>
-            <button
-              type="button"
-              onClick={() => bet(lastBet.character, lastBet.amount)}
-              title="Repeat last bet"
-              className="rounded-lg border border-amber-300/40 px-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
-            >
-              ↻
-            </button>
-            <button
-              type="button"
-              onClick={() => bet(lastBet.character, Math.min(lastBet.amount * 2, 12000))}
-              title="Double last bet"
-              className="rounded-lg border border-amber-300/40 px-2 text-xs font-bold text-amber-200 hover:bg-amber-300/10"
-            >
-              ×2
-            </button>
-          </>
-        )}
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          className="ml-auto rounded-lg border border-white/10 px-2 text-sm text-white/60 hover:bg-white/10"
-        >
-          {collapsed ? "+" : "−"}
-        </button>
-      </div>
+          {canBet && lastBet && (
+            <>
+              <button
+                type="button"
+                onClick={() => bet(lastBet.character, lastBet.amount)}
+                title="Repeat last bet"
+                className={iconBtn}
+                style={{ background: skin.chip, border: `1px solid ${skin.accent}`, color: skin.accent }}
+              >
+                ↻
+              </button>
+              <button
+                type="button"
+                onClick={() => bet(lastBet.character, Math.min(lastBet.amount * 2, 12000))}
+                title="Double last bet"
+                className={`${iconBtn} !text-[8px]`}
+                style={{ background: skin.chip, border: `1px solid ${skin.accent}`, color: skin.accent }}
+              >
+                ×2
+              </button>
+            </>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowStyles(true)}
+            title="Box colours"
+            className={iconBtn}
+            style={{ background: `linear-gradient(135deg, ${skin.accent}, ${skin.accent2})` }}
+          >
+            🎨
+          </button>
+          <button
+            type="button"
+            onClick={() => setCollapsed((v) => !v)}
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-lg text-[11px] font-bold"
+            style={{ background: skin.chip, border: `1px solid ${skin.accent}`, color: skin.accent }}
+          >
+            {collapsed ? "+" : "−"}
+          </button>
+        </div>
+        <div
+          className="mt-px h-0.5 rounded"
+          style={{ background: `linear-gradient(90deg, transparent, ${skin.accent}, ${skin.accent2}, ${skin.accent}, transparent)` }}
+        />
 
-      {!collapsed && (
-        <>
-          {!state.running ? (
+        {!collapsed &&
+          (!state.running ? (
             <button
               type="button"
               onClick={state.start}
               disabled={state.starting}
-              className="mt-2 w-full rounded-xl bg-gradient-to-r from-pink-500 to-fuchsia-600 py-3 text-sm font-black disabled:opacity-50"
+              className="my-1.5 w-full rounded-xl py-2.5 text-sm font-black disabled:opacity-50"
+              style={{ background: `linear-gradient(${skin.accent2}, ${skin.accent})`, color: "#1A1200" }}
             >
-              {state.starting ? "Starting…" : "▶ Start Luxury Bot"}
+              {state.starting ? "Starting…" : "▶\uFE0E Start Luxury Bot"}
             </button>
           ) : (
             <>
-              <div className="mt-2 grid grid-cols-3 gap-1.5 sm:grid-cols-6">
-                {LUXURY_CHARACTERS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => tap(c)}
-                    disabled={!canBet}
-                    className="select-none touch-manipulation rounded-xl border border-amber-300/40 bg-white/[0.05] px-1 py-2 text-center text-xs font-bold transition hover:bg-amber-300/10 active:scale-95 disabled:opacity-40"
-                  >
-                    <div>{c}</div>
-                    {/* My total on it, the app's label: 500 → "500", 2000 → "2k", 2500 → "2.5k" */}
-                    <div className={`mt-0.5 text-xs font-extrabold ${shownTotal(c) > 0 ? "text-amber-300" : "text-white/40"}`}>
-                      {betTotalLabel(shownTotal(c))}
-                    </div>
-                  </button>
-                ))}
+              <div className="mt-1 grid grid-cols-6 gap-1">
+                {LUXURY_CHARACTERS.map((c) => {
+                  const total = shownTotal(c);
+                  const mine = total > 0;
+                  const sp = c.indexOf(" ");
+                  const emoji = c.slice(0, sp);
+                  const name = c.slice(sp + 1);
+                  const face = !canBet
+                    ? ["#2E2A3C", "#24212F", "#15131C", "#3A3648"]
+                    : mine
+                      ? ["#FFF8DC", "#FCD97A", "#C8901A", "#D4AF37"]
+                      : [skin.tileTop, skin.tileBottom, skin.tileBase, skin.tileBorder];
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => tap(c)}
+                      disabled={!canBet}
+                      className="select-none touch-manipulation rounded-xl pb-[3px] transition active:translate-y-px"
+                      style={{ background: face[2] }}
+                    >
+                      <span
+                        className="flex h-[58px] flex-col items-center justify-center rounded-xl"
+                        style={{ background: `linear-gradient(${face[0]}, ${face[1]})`, border: `${mine ? 2 : 1}px solid ${face[3]}` }}
+                      >
+                        <span className="text-lg leading-5" style={canBet ? undefined : { filter: "grayscale(1)", opacity: 0.6 }}>
+                          {emoji}
+                        </span>
+                        <span
+                          className="max-w-full truncate px-0.5 text-[8px] font-bold leading-[9px]"
+                          style={{ color: !canBet ? "#6E6880" : mine ? "#7A4E00" : skin.cream }}
+                        >
+                          {name}
+                        </span>
+                        {/* My total, the app's label: 500 → "500", 2000 → "2k", 2500 → "2.5k" */}
+                        <span
+                          className="text-[11px] font-extrabold leading-3"
+                          style={{ color: !canBet ? "#6E6880" : mine ? "#B8790A" : skin.cream, opacity: !canBet || mine ? 1 : 0.7 }}
+                        >
+                          {betTotalLabel(total)}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
-
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {CHIPS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setAmount(c)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-                      amount === c
-                        ? "border-pink-400 bg-pink-500/30 text-white"
-                        : "border-white/10 text-white/60 hover:bg-white/5"
-                    }`}
-                  >
-                    {c >= 1000 ? `${c / 1000}k` : c}
-                  </button>
-                ))}
-                {myTotal > 0 && (
-                  <span className="ml-auto text-xs text-white/50">
-                    Your bets: 🪙 {myTotal.toLocaleString()}
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-[10px] text-white/35">
-                Double-tap a character to bet {amount.toLocaleString()} coins on it · 100–12,000 per bet
+              <p className="py-px text-center text-[8px]" style={{ color: skin.accentText, opacity: 0.75 }}>
+                👆 Tap twice on a character to bid instantly{myTotal > 0 ? ` · Your bets: 🪙 ${myTotal.toLocaleString()}` : ""}
               </p>
+              <div className="flex gap-1 pb-[3px]">
+                {CHIPS.map((c) => {
+                  const sel = amount === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setAmount(c)}
+                      disabled={!canBet}
+                      className="h-[23px] flex-1 rounded-xl text-[10px] font-bold shadow-sm"
+                      style={
+                        !canBet
+                          ? { background: "linear-gradient(#2E2A3C, #24212F)", border: "1px solid #3A3648", color: "#6E6880" }
+                          : {
+                              background: sel ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
+                              border: `1px solid ${sel ? skin.accent : skin.tileBorder}`,
+                              color: sel ? "#2A1E00" : skin.cream,
+                            }
+                      }
+                    >
+                      {c >= 1000 ? `${c / 1000}k` : c}
+                    </button>
+                  );
+                })}
+              </div>
             </>
-          )}
-        </>
-      )}
+          ))}
+      </div>
+      {showStyles && <LbStyleDialog inv={inv} onClose={() => setShowStyles(false)} />}
     </div>
   );
 }

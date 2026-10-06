@@ -5,6 +5,8 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { toggleCricketSound, useCricketSoundOn } from "./CricketCelebration";
+import { CkStyleDialog, ckBackground, ckGrad, ckSkin, type CkSkin } from "./CricketStyles";
+import { LB_KINDS, useInventory } from "./StyleShop";
 
 // 🏏 Cricket Bot — all outcomes and coins are decided by the Cloud Functions
 // (startCricketGame / joinCricketGame / batCricket / tickCricketGame). The web
@@ -244,7 +246,7 @@ function CricketBtn({ label, face, base, ink, enabled, onClick }: { label: strin
 }
 
 // Glowing countdown ring (green → gold, red for the last 5 seconds).
-function CricketTimerRing({ secondsLeft, total }: { secondsLeft: number; total: number }) {
+function CricketTimerRing({ secondsLeft, total, ringBg }: { secondsLeft: number; total: number; ringBg: string }) {
   const urgent = secondsLeft >= 1 && secondsLeft <= 5;
   const progress = Math.min(1, Math.max(0, secondsLeft / Math.max(total, secondsLeft)));
   const r = 12;
@@ -263,7 +265,7 @@ function CricketTimerRing({ secondsLeft, total }: { secondsLeft: number; total: 
             <stop offset="1" stopColor={end} />
           </linearGradient>
         </defs>
-        <circle cx="16" cy="16" r={r} fill="#08261C" stroke="rgba(255,255,255,.2)" strokeWidth="3.5" />
+        <circle cx="16" cy="16" r={r} fill={ringBg} stroke="rgba(255,255,255,.2)" strokeWidth="3.5" />
         <circle
           cx="16"
           cy="16"
@@ -284,18 +286,18 @@ function CricketTimerRing({ secondsLeft, total }: { secondsLeft: number; total: 
   );
 }
 
-function CricketPlayerChip({ p, isMe, batted, inSuperOver, battingNow }: { p: Player; isMe: boolean; batted: boolean; inSuperOver: boolean; battingNow: boolean }) {
+function CricketPlayerChip({ skin, p, isMe, batted, inSuperOver, battingNow }: { skin: CkSkin; p: Player; isMe: boolean; batted: boolean; inSuperOver: boolean; battingNow: boolean }) {
   // waiting to bat this round → gold edge
   const waiting = battingNow && !batted && !p.out;
-  const edge = inSuperOver || waiting ? "#FFD54F" : isMe ? "#FFFFFF" : "rgba(255,255,255,.2)";
+  const edge = inSuperOver || waiting ? skin.waitEdge : isMe ? "#FFFFFF" : skin.chipBorder;
   return (
     <span
       className="flex shrink-0 items-center rounded-full py-0.5 pl-0.5 pr-[7px]"
-      style={{ background: p.out ? "rgba(85,17,17,.6)" : "rgba(0,0,0,.4)", border: `${waiting || inSuperOver ? 1.5 : 1}px solid ${edge}`, opacity: p.out ? 0.8 : 1 }}
+      style={{ background: p.out ? "rgba(85,17,17,.6)" : skin.chipBg, border: `${waiting || inSuperOver ? 1.5 : 1}px solid ${edge}`, opacity: p.out ? 0.8 : 1 }}
     >
       <span
-        className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black text-[#0B2E13]"
-        style={{ background: p.out ? "linear-gradient(#FFCDD2, #E57373)" : "linear-gradient(#FFFFFF, #B9F6CA)" }}
+        className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-black"
+        style={{ background: p.out ? "linear-gradient(#FFCDD2, #E57373)" : ckGrad(skin.avatar), color: p.out ? "#0B2E13" : skin.avatarInk }}
       >
         {battingNow && batted && !p.out ? "✓" : p.username.slice(0, 1).toUpperCase()}
       </span>
@@ -306,7 +308,7 @@ function CricketPlayerChip({ p, isMe, batted, inSuperOver, battingNow }: { p: Pl
       {p.out ? (
         <span className="ml-1 text-[9.5px] font-black text-[#FF8A80]">OUT {p.runs}</span>
       ) : (
-        <span className="ml-1 text-[11px] font-black italic" style={{ color: ACCENT }}>
+        <span className="ml-1 text-[11px] font-black italic" style={{ color: skin.accent }}>
           {p.runs}
         </span>
       )}
@@ -328,32 +330,29 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
   const canBat = state.phase === "BATTING" && iAmBatter && !iBatted;
   const top = state.players.reduce<Player | null>((best, p) => (!best || p.runs > best.runs ? p : best), null);
   const sorted = [...state.players].sort((a, b) => Number(a.out) - Number(b.out) || b.runs - a.runs);
+  const inv = useInventory("lb_inventory", uid, LB_KINDS);
+  const skin = ckSkin(inv.active.cricket);
+  const [showStyles, setShowStyles] = useState(false);
 
   // ✨ compact "stadium" box: gold-green frame, striped grass, gold pills
   return (
     <div className="px-[7px] py-[3px]">
-      <div className="rounded-2xl p-[1.5px]" style={{ background: "linear-gradient(135deg, #FFE082, #2E7D32, #00C853, #FFE082)" }}>
-        <div
-          className="rounded-[15px] px-2 py-[7px]"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(255,255,255,.13), rgba(255,255,255,0) 50%, rgba(0,0,0,.2)), repeating-linear-gradient(to right, #1E7B34 0 22px, #22883A 22px 44px)",
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center">
+      <div className="rounded-2xl p-[1.5px]" style={{ background: ckGrad(skin.frame, "135deg") }}>
+        <div className="rounded-[15px] px-2 py-[7px]" style={ckBackground(skin)}>
+          {/* Header (TV styles get a coloured band) */}
+          <div className="flex items-center" style={skin.band ? { background: ckGrad(skin.band, "to right"), borderRadius: 10, padding: "3px 4px" } : undefined}>
             {state.running && state.phase !== "IDLE" && (
               <span className="mr-1.5">
-                <CricketTimerRing secondsLeft={state.secondsLeft} total={state.phase === "JOINING" ? 40 : state.phase === "COUNTDOWN" ? 5 : 17} />
+                <CricketTimerRing secondsLeft={state.secondsLeft} total={state.phase === "JOINING" ? 40 : state.phase === "COUNTDOWN" ? 5 : 17} ringBg={skin.ringBg} />
               </span>
             )}
-            <span className="whitespace-nowrap rounded-full px-[9px] py-0.5 text-[11px] font-black italic text-[#3E2723]" style={{ background: "linear-gradient(135deg, #FFE082, #FFB300)" }}>
+            <span className="whitespace-nowrap rounded-full px-[9px] py-0.5 text-[11px] font-black italic" style={{ background: ckGrad(skin.logoBg, "135deg"), color: skin.logoInk }}>
               🏏 CRICKET
             </span>
             {state.running && (
-              <span className="ml-[5px] flex items-center rounded-[4px] bg-[#D50000] px-[5px] py-px">
-                <span className="cr-live h-[5px] w-[5px] rounded-full bg-white" />
-                <span className="ml-[3px] text-[8.5px] font-black tracking-[1px] text-white">
+              <span className="ml-[5px] flex items-center rounded-[4px] px-[5px] py-px" style={{ background: skin.liveBg }}>
+                <span className="cr-live h-[5px] w-[5px] rounded-full" style={{ background: skin.liveInk }} />
+                <span className="ml-[3px] text-[8.5px] font-black tracking-[1px]" style={{ color: skin.liveInk }}>
                   {state.phase === "JOINING" ? "JOIN" : state.superOver ? "SUPER" : "LIVE"}
                 </span>
               </span>
@@ -381,12 +380,24 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
             >
               {soundOn ? "🔊 SOUND ON" : "🔇 SOUND OFF"}
             </button>
+            {/* 🎨 Cricket box styles shop */}
+            {!state.running && (
+              <button
+                type="button"
+                onClick={() => setShowStyles(true)}
+                aria-label="Box styles"
+                className="ml-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/35 text-xs"
+                style={{ border: `1px solid ${skin.accent}cc` }}
+              >
+                🎨
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setCollapsed((v) => !v)}
               aria-label={collapsed ? "Expand" : "Collapse"}
               className="ml-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/35 text-sm font-bold text-white"
-              style={{ border: "1px solid rgba(255,200,61,.7)" }}
+              style={{ border: `1px solid ${skin.accent}b3` }}
             >
               {collapsed ? "+" : "−"}
             </button>
@@ -394,14 +405,14 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
 
           {/* Scoreboard strip (one line, TV style) */}
           {state.running && (
-            <div className="mt-[5px] flex items-center whitespace-nowrap rounded-lg bg-black/65 px-2 py-[3px]" style={{ border: "1px solid rgba(255,193,7,.6)" }}>
+            <div className="mt-[5px] flex items-center whitespace-nowrap rounded-lg px-2 py-[3px]" style={{ background: skin.scoreBg, border: `1px solid ${skin.scoreBorder}` }}>
               <span className="text-[10px] font-bold text-white">
                 {state.phase === "JOINING" ? "Joining" : state.superOver ? "Super Over" : `Round ${Math.max(1, state.ball)}/${ROUNDS}`}
               </span>
               {top && top.runs > 0 && (
                 <>
                   <span className="text-[10px] text-[#B9F6CA]">&nbsp; · &nbsp;Top&nbsp;</span>
-                  <span className="text-xs font-black italic" style={{ color: ACCENT }}>
+                  <span className="text-xs font-black italic" style={{ color: skin.accent }}>
                     {top.runs}
                   </span>
                   <span className="ml-1 max-w-[70px] truncate text-[10px] text-white">{top.username}</span>
@@ -414,7 +425,7 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
                 </span>
               )}
               <span className="text-[10px]">🏆&nbsp;</span>
-              <span className="text-[11px] font-black" style={{ color: ACCENT }}>
+              <span className="text-[11px] font-black" style={{ color: skin.accent }}>
                 {state.pot.toLocaleString()}
               </span>
             </div>
@@ -452,6 +463,7 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
                   {sorted.map((p) => (
                     <CricketPlayerChip
                       key={p.uid}
+                      skin={skin}
                       p={p}
                       isMe={p.uid === uid}
                       batted={state.batted.has(p.uid)}
@@ -464,6 +476,7 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
             ))}
         </div>
       </div>
+      {showStyles && <CkStyleDialog inv={inv} onClose={() => setShowStyles(false)} />}
     </div>
   );
 }
