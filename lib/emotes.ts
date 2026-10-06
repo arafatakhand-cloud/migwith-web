@@ -5,12 +5,13 @@
 //    Codes are not case-sensitive (":C12" = ":c12").
 //  * a Google emoji typed from the keyboard (😀, 👍 …) is drawn with its Google
 //    picture too (only when it stands alone, not inside 👍🏽 or 😮‍💨).
-// The app's older punctuation codes (":)", ":D" …) use pictures the web does not
-// carry, so they stay as plain text here.
+//  * the 120 classic emoticons (classicEmotes.ts) keep the app's typed codes:
+//    ":)", ":D", ":p", ":@", "<3", ":dk" (duck) …
 
 import { ANIMATED_GROUPS, EMOTE_GROUPS, GIF_GROUP, GIF_MOTION, type EmoteGroup, type GifMotion } from "./emoteData";
+import { CLASSIC_EMOTES } from "./classicEmotes";
 
-export { ANIMATED_GROUPS, EMOTE_GROUPS, GIF_GROUP, GIF_MOTION, type EmoteGroup, type GifMotion };
+export { ANIMATED_GROUPS, CLASSIC_EMOTES, EMOTE_GROUPS, GIF_GROUP, GIF_MOTION, type EmoteGroup, type GifMotion };
 
 const CODE_PREFIX: Record<string, string> = {
   classic: ":c",
@@ -44,6 +45,7 @@ export const EMOTE_CODES: Record<string, string> = (() => {
       out[id] = prefix + counters[prefix];
     }
   }
+  for (const e of CLASSIC_EMOTES) out[e.id] = e.code;
   return out;
 })();
 
@@ -80,15 +82,22 @@ const TRIGGERS: Map<string, string> = (() => {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Longest first, so ";a12" is tried before ";a1". A code ending in a digit only
-// counts when no letter/digit follows it; an emoji only when it isn't part of
-// a skin-tone or joined emoji.
+// Longest first, so ";a12" is tried before ";a1" and ":))" before ":)". Like
+// the app's EmoteTriggerRegex: a code that starts or ends with a letter/digit
+// only counts when it stands on its own (":dk" not inside "Note:dkim", "x(" not
+// inside "max("); ":9" / "<3" not after a digit-letter ("3:9", "x<3"); ":@" not
+// in a mention (":@john") and ":$" not in a price ("cost:$5"). An emoji only
+// counts when it isn't part of a skin-tone or joined emoji.
+const isAlnum = (c: string) => /[A-Za-z0-9]/.test(c);
 const TRIGGER_RE: RegExp = (() => {
   const parts = [...TRIGGERS.keys()]
     .sort((a, b) => b.length - a.length)
     .map((t) => {
       if ((t.codePointAt(0) || 0) >= 0x2600) return `(?<!\\u200D)${escapeRe(t)}(?![\\u{1F3FB}-\\u{1F3FF}\\u200D])`;
-      return `${escapeRe(t)}(?![A-Za-z0-9_])`;
+      const head = isAlnum(t[0]) || (t.length > 1 && (t[0] === ":" || t[0] === "<") && /[0-9]/.test(t[1])) ? "(?<![A-Za-z0-9])" : "";
+      const end = t[t.length - 1];
+      const tail = isAlnum(end) || end === "@" || end === "$" ? "(?![A-Za-z0-9_])" : "";
+      return `${head}${escapeRe(t)}${tail}`;
     });
   return new RegExp(parts.join("|"), "giu");
 })();
