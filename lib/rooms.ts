@@ -14,6 +14,7 @@ export const OFFICIAL_GAME_ROOMS = [
   "🏏 Cricket Official",
   "🎴 Teen Patti Official",
   "🎲 Ludo Bot Official",
+  "🎲 Ludo Bot Free",
   "👑 MIG Royale Official",
   "🃏 29 Official",
   "🃏 29 Card Free",
@@ -182,6 +183,8 @@ export function officialRoomDefaultDescription(roomName: string): string {
       return "🧠 Welcome to Trivia! 🎉\n\nPick বাংলা or English and type !start (in any chat room: /bot trivia, then !start bn / !start en) — 10 questions, tap A · B · C · D. Faster right answer = more points. !top shows the leaderboard. Have fun! ✨";
     case "👑 MIG Royale Official":
       return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
+    case "🎲 Ludo Bot Free":
+      return "🆓 Welcome to Ludo Bot Free! 🎉\n\nSame Ludo — no coins needed. Type !start to open a table, !j to sit down (or tap a yard), add bots, then roll and race your tokens home. Play for fun! ✨";
     case "🎲 Ludo Bot Official":
       return "🎲 Welcome to the official Ludo room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then roll and race all 4 tokens home. First one home wins. Play responsibly! ✨";
     case "🎁 Gift Official":

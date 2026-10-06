@@ -10,7 +10,7 @@ import { useSyncExternalStore } from "react";
 type Game = "tp" | "tn" | "ludo";
 
 const viewed: Record<Game, number> = { tp: 0, tn: 0, ludo: 0 };
-let tpHideAll = false;
+const hideAll: Record<Game, boolean> = { tp: false, tn: false, ludo: false };
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -25,22 +25,22 @@ export function setViewedTable(game: Game, table: number) {
   emit();
 }
 
-/** ⚙ "Hide game messages" in the Teen Patti menu. */
-export function setTpHideGameMessages(on: boolean) {
-  if (tpHideAll === on) return;
-  tpHideAll = on;
+/** "Hide game messages" (Teen Patti ⚙ menu, Ludo 💬 / 🙈). */
+export function setGameHideMessages(game: Game, on: boolean) {
+  if (hideAll[game] === on) return;
+  hideAll[game] = on;
   emit();
 }
 
-export function tpHideGameMessages(): boolean {
-  return tpHideAll;
+export function setTpHideGameMessages(on: boolean) {
+  setGameHideMessages("tp", on);
 }
 
 const PREFIX: Record<Game, string> = { tp: "Teen Patti Bot:", tn: "29 Bot:", ludo: "Ludo Bot:" };
 
 function hideForGame(game: Game, text: string): boolean {
   if (!text.startsWith(PREFIX[game])) return false;
-  if (game === "tp" && tpHideAll) return true;
+  if (hideAll[game]) return true;
   const m = /^[^:]+: \[T(\d+)] /.exec(text);
   if (!m) return false;
   const t = Number(m[1]);

@@ -480,6 +480,7 @@ const OFFICIAL_GAME_CARDS: [string, string][] = [
   ["🏏 Cricket Official", "Cricket"],
   ["🎴 Teen Patti Official", "Teen Patti"],
   ["🎲 Ludo Bot Official", "Ludo"],
+  ["🎲 Ludo Bot Free", "Ludo Free"],
   ["👑 MIG Royale Official", "MIG Royale"],
   ["🃏 29 Official", "29 Card"],
   ["🃏 29 Card Free", "29 Card Free"],

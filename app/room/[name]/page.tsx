@@ -74,7 +74,7 @@ import { TN_FREE_ROOM, TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwe
 import { CricketCelebrationHost } from "../../_components/CricketCelebration";
 import { TRIVIA_ROOM, TriviaPanel, triviaHandleCommand, useTrivia } from "../../_components/Trivia";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
-import { LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
+import { LUDO_FREE_ROOM, LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { handleRoomCommand } from "../../../lib/roomCommands";
 import { handleExtraCommand } from "../../../lib/extraCommands";
 import { rememberRecentRoom, useRoomPrefs } from "../../../lib/roomPrefs";
@@ -308,7 +308,7 @@ function RoomView({ roomName }: { roomName: string }) {
   // 🧠 Trivia (the Trivia room, or a chat room where /bot trivia is on).
   const trivia = useTrivia(roomName === TRIVIA_ROOM || roomActiveBot === "trivia" ? roomName : null, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
-  const ludo = useLudo(roomName === LUDO_ROOM, user?.uid, note);
+  const ludo = useLudo(roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? roomName : null, user?.uid, note);
 
   // Signed-out visitors go to the login page.
   useEffect(() => {
@@ -835,7 +835,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const myName = (profile?.username || "").toLowerCase();
   // 🎴 Many tables at once: only the bot lines of the table this phone shows.
   const tablesVersion = useGameTablesVersion();
-  const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : roomName === TN_ROOM || roomName === TN_FREE_ROOM ? "tn" : null;
+  const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : roomName === TN_ROOM || roomName === TN_FREE_ROOM ? "tn" : roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? "ludo" : null;
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
     return shown.filter((m) => {
@@ -1484,7 +1484,7 @@ function RoomView({ roomName }: { roomName: string }) {
                 {cricket && profile && <CricketCelebrationHost messages={messages} roomKey={roomName} myName={profile.username} />}
                 {twentyNine && <TwentyNineTable state={twentyNine} roomUsers={roomUsers.map((u) => u.username)} />}
                 {lowCard && <LowCardBox state={lowCard} uid={user.uid} />}
-                {ludo && <LudoTable state={ludo} />}
+                {ludo && <LudoTable state={ludo} myUsername={profile?.username || ""} roomUsers={roomUsers.map((u) => u.username)} />}
               </div>
             )}
 

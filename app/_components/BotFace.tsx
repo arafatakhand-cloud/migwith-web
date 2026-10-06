@@ -9,7 +9,7 @@ const FEMALE = new Set([
 const SKINS = ["#FFD9C0", "#F1C27D", "#D9A066", "#B57A4A"];
 const HAIR = ["#2B1B14", "#4A2C1A", "#1A1A1A", "#7A4A22"];
 
-export function BotFace({ name, size }: { name: string; size: number }) {
+export function BotFace({ name, size }: { name: string; size: number | string }) {
   const key = name.replace("🤖", "").trim().toLowerCase();
   let h = 0;
   for (const ch of key) h += ch.codePointAt(0) || 0;

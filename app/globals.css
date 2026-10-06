@@ -318,3 +318,14 @@ body {
 @keyframes tp-banner { from { background-position: 130% 0; } to { background-position: -30% 0; } }
 .tp-banner { background: linear-gradient(110deg, #9C7420 20%, #E8B84A 40%, #FFF3C4 50%, #E8B84A 60%, #9C7420 80%) 0 0 / 250% 100%; animation: tp-banner 1.4s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .tp-glow, .tp-seat, .tp-turn, .tp-banner { animation: none; } }
+
+/* 🎲 Ludo: movable pieces hop and glow, turn yard / photo / dice pulse, Auto ON pulse */
+@keyframes ludo-hop { from { transform: translateY(0); } to { transform: translateY(-0.22px); } }
+.ludo-hop { animation: ludo-hop 0.52s linear infinite alternate; }
+@keyframes ludo-glow { from { opacity: .35; } to { opacity: 1; } }
+.ludo-glow, .ludo-yard-glow { animation: ludo-glow 0.52s linear infinite alternate; }
+@keyframes ludo-turn { from { box-shadow: 0 0 4px var(--lc); } to { box-shadow: 0 0 14px var(--lc); } }
+.ludo-turn, .ludo-dice-glow { animation: ludo-turn 0.5s ease-in-out infinite alternate; }
+@keyframes ludo-auto { from { border-color: rgba(255,255,255,.55); } to { border-color: #fff; } }
+.ludo-auto { animation: ludo-auto 0.7s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) { .ludo-hop, .ludo-glow, .ludo-yard-glow, .ludo-turn, .ludo-dice-glow, .ludo-auto { animation: none; } }

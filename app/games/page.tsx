@@ -11,7 +11,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { LOWCARD_ROOM } from "../_components/LowCard";
 import { CRICKET_ROOM } from "../_components/CricketGame";
 import { TEEN_PATTI_ROOM } from "../_components/TeenPatti";
-import { LUDO_ROOM } from "../_components/Ludo";
+import { LUDO_FREE_ROOM, LUDO_ROOM } from "../_components/Ludo";
 import { ROYALE_ROOM } from "../_components/RoyaleGame";
 import { TN_FREE_ROOM, TN_ROOM } from "../_components/TwentyNine";
 import { TRIVIA_ROOM } from "../_components/Trivia";
@@ -27,6 +27,7 @@ const RUNNING: [string, string, string, string, string][] = [
   ["🏏", "Cricket", "Bat 6 rounds, top scorer wins", "#3984D9", CRICKET_ROOM],
   ["🎴", "3 Patti", "Blind or seen — best hand wins", "#7B1FA2", TEEN_PATTI_ROOM],
   ["🎲", "Ludo", "Race 4 tokens home, 2–4 players", "#E5484D", LUDO_ROOM],
+  ["🆓", "Ludo Free", "Same Ludo — no coins, play for fun", "#1E9B5A", LUDO_FREE_ROOM],
   ["👑", "MIG Royale", "Red vs Blue — bet on the better hand", "#6A3DE8", ROYALE_ROOM],
   ["🃏", "29 Card", "Twenty-Nine — 4 players, 2 teams", "#2E7D5B", TN_ROOM],
   ["🆓", "29 Card Free", "Same 29 — no coins, play for fun", "#1E9B5A", TN_FREE_ROOM],
