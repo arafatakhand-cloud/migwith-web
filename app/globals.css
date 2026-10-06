@@ -366,3 +366,13 @@ body {
 @keyframes wf-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
 .wf-twinkle { animation: wf-twinkle 1.8s ease-in-out infinite; }
 @keyframes wf-twinkle { 0%, 100% { opacity: .15; } 50% { opacity: .9; } }
+.wf-mascots {
+  animation: wf-mascots .7s cubic-bezier(.3,1.5,.5,1) .48s both;
+  /* the picture has its own blue background: blend it in and fade its edges */
+  mix-blend-mode: lighten;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 35%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 10%, #000 90%, transparent), linear-gradient(to bottom, transparent, #000 35%);
+  mask-composite: intersect;
+}
+@keyframes wf-mascots { from { transform: translateY(160px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

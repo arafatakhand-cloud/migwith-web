@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { LB_SKINS, LbStyleDialog } from "./LuxuryBot";
+import { LB_KINDS, useInventory } from "./StyleShop";
 
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
@@ -29,13 +31,6 @@ const CHIPS = [500, 1000, 2000, 5000, 10000, 12000];
 const startCall = httpsCallable(functions, "startLuxuryBet");
 const betCall = httpsCallable<unknown, { bets?: Record<string, number> }>(functions, "placeLuxuryBet");
 const tickCall = httpsCallable(functions, "tickLuxuryBet");
-
-// Black & gold bet box, like the app.
-const LB_DARK_BG = "#1E1A2E";
-const LB_DARK_CHIP = "#2A2440";
-const LB_GOLD = "#D4AF37";
-const LB_GOLD_TEXT = "#F2D675";
-const LB_CREAM = "#F2E6C2";
 
 function totalLabel(total: number): string {
   if (total <= 0) return "0";
@@ -298,18 +293,24 @@ function EyeIcon({ slashed, color }: { slashed: boolean; color: string }) {
   );
 }
 
-/** The bet box under the chat (the app's black & gold LuxuryBetBox). */
+/** The bet box under the chat (the app's LuxuryBetBox, in your 🎨 bet box colour). */
 export function LuxuryBetTable({
   state,
+  uid,
   onlyMine,
   onToggleOnlyMine,
 }: {
   state: LuxuryBetState;
+  uid: string;
   onlyMine: boolean;
   onToggleOnlyMine: () => void;
 }) {
   const [amount, setAmount] = useState(500);
   const [collapsed, setCollapsed] = useState(false);
+  // 🎨 the same bet box colour as Luxury Bot (lb_inventory/{uid}.box), like the app
+  const inv = useInventory("lb_inventory", uid, LB_KINDS);
+  const [showStyles, setShowStyles] = useState(false);
+  const skin = LB_SKINS.find((k) => k.id === inv.active.box) || LB_SKINS[0];
   const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
   const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 10;
   const blinkOn = useBlink(urgent);
@@ -337,15 +338,22 @@ export function LuxuryBetTable({
   const circle = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold";
 
   return (
-    <div className="m-1.5 rounded-2xl border-[1.5px] px-2 py-1.5" style={{ background: LB_DARK_BG, borderColor: LB_GOLD }}>
+    <div
+      className="m-1.5 rounded-2xl px-2 py-1.5"
+      style={{
+        border: "1.5px solid transparent",
+        background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom}) padding-box, linear-gradient(135deg, ${skin.accent}, ${skin.accent2}, ${skin.accent}) border-box`,
+        boxShadow: `0 3px 10px ${skin.accent}55`,
+      }}
+    >
       <div className="flex items-center gap-1.5">
         <span
           className="min-w-[34px] rounded-xl px-2 py-0.5 text-center text-sm font-black"
-          style={{ background: urgent && blinkOn ? "#E53935" : LB_DARK_CHIP, color: urgent ? (blinkOn ? "#fff" : "#E53935") : LB_GOLD_TEXT }}
+          style={{ background: urgent && blinkOn ? "#E53935" : skin.chip, color: urgent ? (blinkOn ? "#fff" : "#E53935") : skin.accentText }}
         >
           {state.secondsLeft}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: LB_GOLD_TEXT }}>
+        <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: skin.accentText }}>
           {title}
         </span>
         {open && state.lastBet && (
@@ -355,7 +363,7 @@ export function LuxuryBetTable({
               title="Repeat last bet"
               onClick={() => state.bet(state.lastBet!.character, state.lastBet!.amount)}
               className={circle}
-              style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+              style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
               ↻
             </button>
@@ -364,7 +372,7 @@ export function LuxuryBetTable({
               title="Double last bet"
               onClick={() => state.bet(state.lastBet!.character, Math.min(state.lastBet!.amount * 2, 12000))}
               className={circle}
-              style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+              style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
               2x
             </button>
@@ -372,18 +380,27 @@ export function LuxuryBetTable({
         )}
         <button
           type="button"
+          title="Bet box colours"
+          onClick={() => setShowStyles(true)}
+          className={`${circle} border-0 text-[13px]`}
+          style={{ background: `linear-gradient(135deg, ${skin.accent}, ${skin.accent2})` }}
+        >
+          🎨
+        </button>
+        <button
+          type="button"
           title={onlyMine ? "Showing only my bets" : "Showing everyone's bets"}
           onClick={onToggleOnlyMine}
           className={circle}
-          style={{ background: onlyMine ? LB_GOLD : LB_DARK_CHIP, borderColor: LB_GOLD }}
+          style={{ background: onlyMine ? skin.accent : skin.chip, borderColor: skin.accent }}
         >
-          <EyeIcon slashed={onlyMine} color={onlyMine ? LB_DARK_BG : LB_GOLD} />
+          <EyeIcon slashed={onlyMine} color={onlyMine ? skin.bgTop : skin.accent} />
         </button>
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
           className="rounded-lg border px-2 text-sm font-bold"
-          style={{ background: LB_DARK_CHIP, borderColor: LB_GOLD, color: LB_GOLD }}
+          style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
         >
           {collapsed ? "+" : "−"}
         </button>
@@ -391,7 +408,10 @@ export function LuxuryBetTable({
 
       {!collapsed && (
         <>
-          <div className="mt-1 h-[2px] rounded-sm" style={{ background: LB_GOLD }} />
+          <div
+            className="mt-1 h-[2px] rounded-sm"
+            style={{ background: `linear-gradient(90deg, transparent, ${skin.accent}, ${skin.accent2}, ${skin.accent}, transparent)` }}
+          />
           <div className="mt-1.5 grid grid-cols-6 gap-1">
             {LUXURY_BET_CHARACTERS.map((c) => {
               const total = Number(state.myBets[c] || 0);
@@ -404,7 +424,7 @@ export function LuxuryBetTable({
                   disabled={!open}
                   onClick={() => tap(c)}
                   className="relative select-none touch-manipulation rounded-xl pb-[3px] active:translate-y-px"
-                  style={{ background: !open ? "#15131C" : mine ? "#C8901A" : "#0E0B18" }}
+                  style={{ background: !open ? "#15131C" : mine ? "#C8901A" : skin.tileBase }}
                 >
                   <span
                     className="flex h-full flex-col items-center justify-center rounded-xl py-1"
@@ -413,20 +433,20 @@ export function LuxuryBetTable({
                         ? "linear-gradient(#2E2A3C,#24212F)"
                         : mine
                           ? "linear-gradient(#FFF8DC,#FCD97A)"
-                          : "linear-gradient(#3A3350,#27213A)",
-                      border: `${mine ? 2 : 1}px solid ${!open ? "#3A3648" : mine ? "#D4A017" : "#5A4F7A"}`,
+                          : `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`,
+                      border: `${mine ? 2 : 1}px solid ${!open ? "#3A3648" : mine ? "#D4A017" : skin.tileBorder}`,
                     }}
                   >
                     <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
                     <span
                       className="w-full truncate text-[9px] font-bold leading-[10px]"
-                      style={{ color: !open ? "#6E6880" : mine ? "#7A4E00" : LB_CREAM }}
+                      style={{ color: !open ? "#6E6880" : mine ? "#7A4E00" : skin.cream }}
                     >
                       {rest.join(" ")}
                     </span>
                     <span
                       className="text-[11px] font-extrabold leading-3"
-                      style={{ color: !open ? "#6E6880" : mine ? "#B8790A" : "rgba(242,230,194,.7)" }}
+                      style={{ color: !open ? "#6E6880" : mine ? "#B8790A" : skin.cream, opacity: !open || mine ? 1 : 0.7 }}
                     >
                       {totalLabel(total)}
                     </span>
@@ -435,7 +455,7 @@ export function LuxuryBetTable({
               );
             })}
           </div>
-          <p className="py-0.5 text-center text-[9px]" style={{ color: "rgba(242,214,117,.75)" }}>
+          <p className="py-0.5 text-center text-[9px]" style={{ color: skin.accentText, opacity: 0.75 }}>
             👆 Tap twice on a character to bid instantly
           </p>
           <div className="grid grid-cols-6 gap-1 pb-0.5">
@@ -452,10 +472,10 @@ export function LuxuryBetTable({
                     background: !open
                       ? "linear-gradient(#2E2A3C,#24212F)"
                       : selected
-                        ? "linear-gradient(#F2D675,#C9982A)"
-                        : "linear-gradient(#3A3350,#2A2440)",
-                    borderColor: !open ? "#3A3648" : selected ? LB_GOLD : "#5A4F7A",
-                    color: !open ? "#6E6880" : selected ? "#2A1E00" : LB_CREAM,
+                        ? `linear-gradient(${skin.accent2}, ${skin.accent})`
+                        : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
+                    borderColor: !open ? "#3A3648" : selected ? skin.accent : skin.tileBorder,
+                    color: !open ? "#6E6880" : selected ? "#2A1E00" : skin.cream,
                   }}
                 >
                   {c >= 1000 ? `${c / 1000}k` : c}
@@ -465,6 +485,7 @@ export function LuxuryBetTable({
           </div>
         </>
       )}
+      {showStyles && <LbStyleDialog inv={inv} onClose={() => setShowStyles(false)} />}
     </div>
   );
 }

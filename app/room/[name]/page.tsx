@@ -1558,7 +1558,7 @@ function RoomView({ roomName }: { roomName: string }) {
               <div data-noswipe className="bg-[#0B1F3A] text-white">
                 {luxury && <LuxuryBetBox state={luxury} uid={user.uid} note={note} />}
                 {luxuryBet && (
-                  <LuxuryBetTable state={luxuryBet} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
+                  <LuxuryBetTable state={luxuryBet} uid={user.uid} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
                 )}
                 {royale && <RoyaleTable state={royale} />}
                 {teenPatti && profile && <TeenPattiTable state={teenPatti} uid={user.uid} myUsername={profile.username} roomUsers={roomUsers.map((u) => u.username)} />}

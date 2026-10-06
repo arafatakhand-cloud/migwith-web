@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 // ✨ Welcome splash, shown once right after logging in (the app's
 // MaLoginWelcomeSplash): the logo pops in, "Join the Fun!" drops in letter by
-// letter with a golden shine, sparkles twinkle — then it fades into the page
+// letter with a golden shine, the mascots jump up, sparkles twinkle — then it fades into the page
 // (~2.6 s). Tap anywhere to skip.
 
 const FLAG = "migwith.welcomeSplash";
@@ -118,6 +118,9 @@ export function LoginWelcomeSplash() {
             </span>
           ))}
         </div>
+        {/* the mascots jump up from below (after the logo) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/login-mascots.webp" alt="" draggable={false} className="wf-mascots mt-[30px] w-[82vw] max-w-[440px] select-none" />
       </div>
     </div>
   );
