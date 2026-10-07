@@ -9,10 +9,11 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
 import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
+import { canBeInvisible } from "../../lib/invisible";
 
 const INVISIBLE_KEY = "migwith.loginInvisible";
 
@@ -67,14 +68,24 @@ export default function LoginPage() {
 
       // Same as the app: every login writes isInvisible (checked or not) and
       // presenceStatus ONLINE, or OFFLINE when logging in as Invisible.
+      // 🫥 Only the Founder, official Admins and Staff may log in invisible.
+      let hide = invisible;
+      if (hide) {
+        const me = await getDoc(doc(db, "users", cred.user.uid)).catch(() => null);
+        hide = await canBeInvisible(cred.user.uid, me?.get("username"), me?.get("role"));
+        if (!hide) {
+          setInvisible(false);
+          window.alert("Invisible is only for Founder, Admin & Staff.");
+        }
+      }
       try {
-        localStorage.setItem(INVISIBLE_KEY, invisible ? "1" : "0");
+        localStorage.setItem(INVISIBLE_KEY, hide ? "1" : "0");
       } catch {
         // storage blocked
       }
       await updateDoc(doc(db, "users", cred.user.uid), {
-        isInvisible: invisible,
-        presenceStatus: invisible ? "OFFLINE" : "ONLINE",
+        isInvisible: hide,
+        presenceStatus: hide ? "OFFLINE" : "ONLINE",
       }).catch((err) => console.error("presence on login failed", err));
 
       requestWelcomeSplash();

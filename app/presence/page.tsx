@@ -8,6 +8,7 @@ import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
+import { canBeInvisible } from "../../lib/invisible";
 
 // Presence Status, like the app's (tap the status dot on Home).
 
@@ -27,13 +28,18 @@ export default function PresencePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // 🫥 INVISIBLE is offered only to the Founder, official Admins and Staff.
+  const [canInvisible, setCanInvisible] = useState(false);
+  const statuses = STATUSES.filter(([s]) => s !== "INVISIBLE" || canInvisible);
 
   useEffect(() => {
     if (!ready || !user) return;
     getDoc(doc(db, "users", user.uid))
-      .then((d) => {
+      .then(async (d) => {
+        const can = await canBeInvisible(user.uid, d.get("username"), d.get("role"));
+        setCanInvisible(can);
         const saved = String(d.get("presenceStatus") || "ONLINE").trim().toUpperCase();
-        setSelected(STATUSES.some(([s]) => s === saved) ? saved : "ONLINE");
+        setSelected(saved === "INVISIBLE" && !can ? "ONLINE" : STATUSES.some(([s]) => s === saved) ? saved : "ONLINE");
       })
       .catch((e) => setError(e?.message || "Could not load presence status."))
       .finally(() => setLoading(false));
@@ -58,7 +64,7 @@ export default function PresencePage() {
         <PageTitle title="Presence Status" />
         <p className="text-[13px] text-[#5B6B8C]">Choose how your presence appears to other users.</p>
         <div className="mt-3.5 space-y-2">
-          {STATUSES.map(([status, icon]) => (
+          {statuses.map(([status, icon]) => (
             <button
               key={status}
               type="button"

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { deleteField, doc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { canBeInvisible } from "./invisible";
 
 // Online heartbeat, like the app: users/{uid}.lastActiveAt is refreshed every
 // 30 s while this tab is open and visible, so friends and profiles show
@@ -22,8 +23,16 @@ export function useOnlineHeartbeat(uid: string | undefined) {
       ref,
       (snap) => {
         const was = invisible;
-        invisible = snap.get("isInvisible") === true;
-        if (was && !invisible) beat();
+        if (snap.get("isInvisible") !== true) {
+          invisible = false;
+          if (was) beat();
+          return;
+        }
+        // 🫥 Only the Founder, official Admins and Staff are really invisible.
+        canBeInvisible(uid, snap.get("username"), snap.get("role")).then((can) => {
+          invisible = can;
+          if (was && !invisible) beat();
+        });
       },
       () => {}
     );

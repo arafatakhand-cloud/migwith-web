@@ -114,6 +114,7 @@ import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components
 import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
+import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost } from "../../_components/EntryEffects";
@@ -556,16 +557,13 @@ function RoomView({ roomName }: { roomName: string }) {
     }
     const uid = user.uid;
     // WHO MAY BE INVISIBLE (like the app): "Login as Invisible" and the
-    // Presence Status "INVISIBLE" only work for the Founder, Global Admin and
-    // Staff — and in a private room also for its owner and Super Mods.
-    // Everybody else enters normally, with "has entered" / "has left".
-    const me = profile.username.trim().toLowerCase();
-    const isPrivateRoom = info.exists && info.category === "user" && info.privacy !== "Public";
+    // Presence Status "INVISIBLE" only work for the Founder, official Admins
+    // and Staff — in every room (a private room's owner / Super Mods can no
+    // longer hide). Everybody else enters normally, with "has entered" / "has left".
     const invisibleAllowed =
       permsRef.current.isOwnerUser ||
       permsRef.current.isHiddenFounder ||
-      ["admin", "superadmin", "staff"].includes(profile.role) ||
-      (isPrivateRoom && ((!!info.ownerUid && info.ownerUid === uid) || info.superMods.includes(me)));
+      canBeInvisibleByRole(profile.username, profile.role);
     const hideMe = profile.invisible && invisibleAllowed; // no presence doc at all
     const quietMe = profile.quiet && invisibleAllowed; // no entered / left lines
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
