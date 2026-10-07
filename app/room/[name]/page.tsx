@@ -13,6 +13,7 @@ import {
   getDoc,
   getDocFromServer,
   getDocs,
+  limit,
   limitToLast,
   onSnapshot,
   orderBy,
@@ -20,6 +21,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
   type QueryDocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
@@ -1230,7 +1232,7 @@ function RoomView({ roomName }: { roomName: string }) {
       }
       httpsCallable<
         { roomId: string; target: string; giftName: string; message: string },
-        { giftName?: string; recipient?: string; giftIcon?: string }
+        { giftName?: string; recipient?: string; giftIcon?: string; recipientLevel?: number }
       >(functions, "sendGift")({ roomId: roomName, target, giftName, message })
         .then(({ data }) =>
           announceGift({
@@ -1238,6 +1240,7 @@ function RoomView({ roomName }: { roomName: string }) {
             giftIcon: data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁",
             recipient: data?.recipient || target,
             message,
+            recipientLevel: Number(data?.recipientLevel) || undefined,
           })
         )
         .catch((e: any) => note(`🎁 That gift did not actually send: ${e?.message || "Gift sending failed."}`));
@@ -1379,12 +1382,23 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // After the server took the coins, announce the gift in the room exactly the
   // way the app does ("<<name [level] gives a Rose 🌹 to friend[12]!>>").
-  const announceGift = (r: GiftResult) => {
+  const announceGift = async (r: GiftResult) => {
     if (!user || !profile) return;
-    const recipientLevel = roomUsers.find(
-      (u) => u.username.toLowerCase() === r.recipient.toLowerCase()
-    )?.level;
-    const tag = recipientLevel !== undefined ? `[${recipientLevel}]` : "";
+    // The receiver's level (like the app): the server's answer first, then
+    // who is in the room, else their profile — so it shows even when the
+    // person is not in the room.
+    let recipientLevel: number | undefined = r.recipientLevel && r.recipientLevel > 0 ? r.recipientLevel : undefined;
+    recipientLevel ??= roomUsers.find((u) => u.username.toLowerCase() === r.recipient.toLowerCase())?.level;
+    if (recipientLevel === undefined) {
+      try {
+        const snap = await getDocs(query(collection(db, "users"), where("username", "==", r.recipient), limit(1)));
+        const lvl = Number(snap.docs[0]?.get("level"));
+        if (lvl > 0) recipientLevel = Math.floor(lvl);
+      } catch {
+        // no level then
+      }
+    }
+    const tag = recipientLevel ? ` [${recipientLevel}]` : "";
     const suffix = r.message ? ` — "${r.message}"` : "";
     addDoc(collection(db, "room_messages", roomName, "messages"), {
       text: `<<${profile.username} [${profile.level}] gives a ${r.giftName} ${r.giftIcon} to ${r.recipient}${tag}!>>${suffix}`,

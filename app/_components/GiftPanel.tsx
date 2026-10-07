@@ -12,6 +12,8 @@ export type GiftResult = {
   giftIcon: string;
   recipient: string;
   message: string;
+  /** The receiver's level from the server (sendGift's recipientLevel). */
+  recipientLevel?: number;
 };
 
 type SendGiftResponse = {
@@ -19,6 +21,7 @@ type SendGiftResponse = {
   giftIcon?: string;
   recipient?: string;
   message?: string;
+  recipientLevel?: number;
 };
 
 const sendGiftCall = httpsCallable<
@@ -108,6 +111,7 @@ export function GiftPanel({
         giftIcon: data?.giftIcon || selected.icon,
         recipient: data?.recipient || cleanTarget,
         message: data?.message ?? message.trim().slice(0, 200),
+        recipientLevel: Number(data?.recipientLevel) || undefined,
       });
       onClose();
     } catch (err: any) {
