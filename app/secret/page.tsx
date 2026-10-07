@@ -8,6 +8,8 @@ import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
 import { ALL_COUNTRIES, countryFlag } from "../../lib/countries";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
+import { winFxKey } from "../../lib/cricketWinFx";
+import { useCurrentUser } from "../../lib/useCurrentUser";
 import { FounderShell, input } from "./_Shell";
 import {
   AppDownloadLinkCard,
@@ -76,8 +78,8 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 // fireworks play ONLY in the rooms switched ON here. The list lives in
 // app_settings/win_fx.cricketRooms; the server writes "CONGRATULATIONS"
 // (fireworks) in those rooms and "Congratulations" (no fireworks) elsewhere.
-const winFxKey = (r: string) => r.trim().toLowerCase();
 function CricketWinFxCard() {
+  const { username } = useCurrentUser();
   const [rooms, setRooms] = useState<string[] | null>(null);
   const [allRooms, setAllRooms] = useState<string[]>([]);
   const [q, setQ] = useState("");
@@ -107,13 +109,16 @@ function CricketWinFxCard() {
     if (!name) return;
     setBusy(true);
     setNote(null);
-    const rest = (rooms || []).filter((r) => winFxKey(r) !== winFxKey(name));
+    // Stored like the app: lowercase names, sorted.
+    const next = new Set((rooms || []).map(winFxKey));
+    if (turnOn) next.add(winFxKey(name));
+    else next.delete(winFxKey(name));
     try {
-      await setDoc(
-        doc(db, "app_settings", "win_fx"),
-        { cricketRooms: turnOn ? [...rest, name] : rest, updatedAt: serverTimestamp() },
-        { merge: true }
-      );
+      await setDoc(doc(db, "app_settings", "win_fx"), {
+        cricketRooms: [...next].sort(),
+        updatedAt: serverTimestamp(),
+        updatedBy: username || "miglife",
+      });
       setNote({ text: turnOn ? `✅ ON in "${name}"` : `⛔ OFF in "${name}"`, bad: false });
       if (turnOn) setQ("");
     } catch (e: any) {

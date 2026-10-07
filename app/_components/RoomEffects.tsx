@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cricketSoundOn } from "./CricketCelebration";
 import { brandMiglife } from "../../lib/brand";
+import { useCricketWinFxRooms, winFxKey } from "../../lib/cricketWinFx";
 
 // 🎆 Room-wide effects, like the app's RoomFireworks.kt / RoomHearts.kt:
 //  * someone WINS Cricket / LowCard / Ludo → fireworks + "🏆 name WINS!" banner;
@@ -321,7 +322,14 @@ function FireworksShow({ win, seed }: { win: Win; seed: number }) {
 
 /** Put this once over the room. */
 export function RoomFireworksHost({ messages, roomKey }: { messages: Line[]; roomKey: string }) {
-  const [queue, setQueue] = useNewLineEvents(messages, roomKey, parseWin);
+  // 🏏 Cricket fireworks only in rooms miglife switched ON (like the app).
+  const winFx = useCricketWinFxRooms();
+  const winFxRef = useRef(winFx);
+  winFxRef.current = winFx;
+  const [queue, setQueue] = useNewLineEvents(messages, roomKey, (m) => {
+    const w = parseWin(m);
+    return w && w.game === "Cricket" && !winFxRef.current?.has(winFxKey(roomKey)) ? null : w;
+  });
   const current = usePlayQueue(queue, setQueue, 5300, () => playFx("fx_fireworks"));
   if (!current) return null;
   return <FireworksShow key={current.key} win={current.e} seed={current.key % 100000} />;
