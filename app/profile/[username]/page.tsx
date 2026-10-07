@@ -590,7 +590,7 @@ export default function ProfilePage() {
               <p className="text-[15px] font-bold text-[#0B2A5B]">{avatar.look ? (isOwn ? "My Avatar" : `${username}'s Avatar`) : "No avatar yet"}</p>
               {isOwn && (
                 <Link href="/avatar" className="mt-1.5 inline-block rounded-lg bg-[#2F80ED] px-3 py-1.5 text-sm font-bold text-white">
-                  {avatar.look ? "🧍 Edit Avatar" : "🧍 Make my Avatar"}
+                  {avatar.look ? "🧍 Edit Avatar" : "🧍 Create Avatar"}
                 </Link>
               )}
             </div>
