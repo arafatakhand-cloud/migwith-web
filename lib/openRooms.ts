@@ -14,6 +14,7 @@ import {
 import { db } from "./firebase";
 import { leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
+import { serverNow } from "./serverTime";
 
 // Rooms you are in, shown as tabs in the top bar like the app. Moving between
 // tabs keeps you in the room (no "has left"); only closing a tab (✕) or
@@ -93,7 +94,7 @@ export async function deletePresenceUnlessParked(ref: DocumentReference): Promis
   try {
     const snap = await getDocFromServer(ref);
     if (!snap.exists()) return false; // already gone (kicked, swept): no line
-    if (Number(snap.get("parkedUntil") || 0) > Date.now()) return false;
+    if (Number(snap.get("parkedUntil") || 0) > serverNow()) return false;
   } catch {
     return false; // can't tell → don't risk wiping a park; it goes stale on its own
   }

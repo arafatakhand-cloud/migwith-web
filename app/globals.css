@@ -376,3 +376,33 @@ body {
   mask-composite: intersect;
 }
 @keyframes wf-mascots { from { transform: translateY(160px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* 🎆 Room effects (RoomEffects.tsx / EntryEffects.tsx) */
+.fx-fade { animation-name: fx-fade; animation-timing-function: linear; animation-fill-mode: both; }
+@keyframes fx-fade { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+.fx-pop { animation: fx-pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes fx-pop { from { transform: scale(.2); } to { transform: scale(1); } }
+.fx-bob { animation: fx-pop .5s cubic-bezier(.3, 1.6, .5, 1) both, fx-bob 2.1s ease-in-out .5s infinite; }
+@keyframes fx-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+.fx-gold-text {
+  background: linear-gradient(#fff, #FFE082 50%, #FFB300);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 8px rgba(255, 143, 0, .8));
+}
+.efx-slide { animation: efx-in .75s cubic-bezier(.3, 1.4, .5, 1) both, efx-out .42s ease-in 2.85s forwards; }
+@keyframes efx-in { from { transform: translateX(-120vw) rotate(10deg) scale(.85); } to { transform: none; } }
+@keyframes efx-out { to { transform: translateX(130vw) rotate(-10deg) scale(.85); } }
+.efx-thunder > .efx-card { animation: efx-shake .35s linear .25s 1; }
+@keyframes efx-shake { 0%, 100% { translate: 0 0; } 25% { translate: 8px 0; } 75% { translate: -8px 0; } }
+.efx-card::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, .35) 50%, transparent 65%);
+  background-size: 250% 100%; animation: efx-sweep 1.8s linear infinite;
+}
+@keyframes efx-sweep { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+.efx-beat { animation: efx-beat 1.05s ease-in-out infinite; }
+@keyframes efx-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+.efx-wave { display: inline-block; animation: efx-wave 1.05s ease-in-out infinite; }
+@keyframes efx-wave { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }

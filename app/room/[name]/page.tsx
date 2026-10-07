@@ -20,6 +20,7 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  type QueryDocumentSnapshot,
   type Timestamp,
 } from "firebase/firestore";
 import { db, functions, storage } from "../../../lib/firebase";
@@ -110,6 +111,10 @@ import { RainbowName } from "../../_components/RainbowName";
 import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
 import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
+import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
+import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
+import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
+import { EntryEffectHost } from "../../_components/EntryEffects";
 
 type ChatMessage = SessionMessage;
 
@@ -452,11 +457,18 @@ function RoomView({ roomName }: { roomName: string }) {
         // is cleared by whoever is watching, and their "has left" is posted
         // right after (the rules only accept a watcher's line once the doc is
         // gone). Invisible people were never announced, so no line.
-        const cutoff = Date.now() - ROOM_PRESENCE_STALE_MS;
+        // SERVER time, not this computer's clock (like the app): a clock
+        // running hours ahead would think everybody is stale and clear them.
+        // Learned from my own heartbeat's server stamp; until then, no clearing.
+        const mine = snap.docs.find((d) => d.id === user.uid);
+        if (mine && !mine.metadata.hasPendingWrites) noteServerTime(toMillis(mine.get("lastSeen")));
+        if (!serverTimeKnown()) return void setPresence(presenceList(snap.docs));
+        const now = serverNow();
+        const cutoff = now - ROOM_PRESENCE_STALE_MS;
         snap.docs.forEach((d) => {
           if (d.id === user.uid) return;
           const seen = toMillis(d.get("lastSeen"));
-          const parked = Number(d.get("parkedUntil") || 0) > Date.now();
+          const parked = Number(d.get("parkedUntil") || 0) > now;
           if (!seen || seen >= cutoff || parked || staleHandled.current.has(d.id + seen)) return;
           staleHandled.current.add(d.id + seen);
           const name = String(d.get("username") || "").trim();
@@ -477,16 +489,7 @@ function RoomView({ roomName }: { roomName: string }) {
             })
             .catch(() => {});
         });
-        setPresence(
-          snap.docs
-            .filter((d) => d.get("presenceStatus") !== "INVISIBLE")
-            .map((d) => ({
-              uid: d.id,
-              username: String(d.get("username") || ""),
-              level: Number(d.get("level") || 1),
-              lastSeenMs: toMillis(d.get("lastSeen", { serverTimestamps: "estimate" })),
-            }))
-        );
+        setPresence(presenceList(snap.docs));
       },
       (err) => console.error("presence listener failed", err)
     );
@@ -627,7 +630,7 @@ function RoomView({ roomName }: { roomName: string }) {
             const lastSeen = toMillis(existing.get("lastSeen"));
             const parkedUntil = Number(existing.get("parkedUntil") || 0);
             const fresh =
-              lastSeen >= Date.now() - ROOM_PRESENCE_STALE_MS || parkedUntil > Date.now();
+              lastSeen >= serverNow() - ROOM_PRESENCE_STALE_MS || parkedUntil > serverNow();
             if (fresh) {
               alreadyHere = true;
               visitId = String(existing.get("visitId") || "") || null;
@@ -948,7 +951,7 @@ function RoomView({ roomName }: { roomName: string }) {
         leftAt.set(m.senderUid, Math.max(leftAt.get(m.senderUid) || 0, m.createdAtMs));
       }
     });
-    const cutoff = Date.now() - ROOM_PRESENCE_STALE_MS;
+    const cutoff = serverNow() - ROOM_PRESENCE_STALE_MS;
     return presence
       .filter((p) => p.username && p.lastSeenMs >= cutoff)
       .filter((p) => p.uid === user?.uid || (leftAt.get(p.uid) || 0) <= p.lastSeenMs)
@@ -1241,6 +1244,13 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
+    // ✨ /entry or /effects — the Entry Effects shop (like the app).
+    if (/^\/(entry|effects)$/i.test(clean)) {
+      setText("");
+      router.push("/entry-effects");
+      return;
+    }
+
     // /park 1-24 — keep your name in "Currently in this room" (paid, on the server).
     if (/^\/park\b/i.test(clean)) {
       setText("");
@@ -1494,7 +1504,7 @@ function RoomView({ roomName }: { roomName: string }) {
               {/* Room cards, like the app: manager, welcome text, who is here */}
               <div className="space-y-1.5 pb-1">
                 <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
-                  👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}
+                  👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                 </p>
                 <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
                   {roomDescription}
@@ -1506,7 +1516,7 @@ function RoomView({ roomName }: { roomName: string }) {
                 )}
                 <div className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px]">
                   <p className="text-white">👫 Currently in this room:</p>
-                  {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => u.username).join(", ")}</p>}
+                  {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
                 </div>
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
@@ -1552,6 +1562,11 @@ function RoomView({ roomName }: { roomName: string }) {
               ))}
               </div>
             </div>
+
+            {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
+            <RoomFireworksHost messages={messages} roomKey={roomName} />
+            <RoomHeartsHost messages={messages} roomKey={roomName} />
+            <EntryEffectHost messages={messages} roomKey={roomName} />
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
@@ -1764,7 +1779,7 @@ function RoomView({ roomName }: { roomName: string }) {
               {roomDescription}
             </p>
             <ul className="space-y-1 pt-1">
-              <li>👑 Managed by: <b data-notranslate>{isMainFounderName(roomInfo.ownerName) ? "miglife" : roomInfo.ownerName || "miglife"}</b></li>
+              <li>👑 Managed by: <b data-notranslate>{isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}</b></li>
               <li>👥 In the room: <b>{roomUsers.length}</b>{roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`}</li>
               <li>🔐 {roomInfo.privacy || "Public"}{locked && " · 🔒 Locked"}{silenced && " · 🔇 Silenced"}</li>
               {roomInfo.lockLevel > 0 && <li>⭐ Entry level: {roomInfo.lockLevel}+</li>}
@@ -2162,7 +2177,7 @@ function MessageRow({
             {m.text.slice(0, colon + 1)}{" "}
           </span>
         )}
-        <span className="text-black">{withBadgeImages(colon > 0 ? m.text.slice(colon + 2) : m.text, badgeImages)}</span>
+        <span className="text-black">{withBadgeImages(brandMiglife(colon > 0 ? m.text.slice(colon + 2) : m.text), badgeImages)}</span>
         {stamp}
       </p>
     );
@@ -2172,7 +2187,7 @@ function MessageRow({
     const color = m.moderationColor === "red" ? "#D32F2F" : m.moderationColor === "green" ? "#2E7D32" : LINK_BLUE;
     return (
       <p className="whitespace-pre-wrap px-1 text-left text-[13px] font-semibold leading-snug" style={{ color }}>
-        {m.text}
+        {brandMiglife(m.text)}
         {stamp}
       </p>
     );
@@ -2187,7 +2202,7 @@ function MessageRow({
           className="max-w-[336px] whitespace-pre-wrap rounded-[9px] border px-[7px] py-[7px] text-[14px] leading-snug"
           style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: INK }}
         >
-          {withMentions(m.text)}
+          {withMentions(brandMiglife(m.text))}
           {stamp}
         </p>
       </div>
@@ -2198,7 +2213,7 @@ function MessageRow({
   if (m.type === "social") {
     return (
       <p className="px-2 text-center text-[14px] font-bold leading-snug" style={{ color: APP_RED }}>
-        {m.text.replace(/\*\*/g, "")}
+        {brandMiglife(m.text.replace(/\*\*/g, ""))}
         {stamp}
       </p>
     );
@@ -2209,7 +2224,7 @@ function MessageRow({
     const c = m.text.indexOf(":");
     return (
       <p className="px-1 text-left leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
-        {c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text}
+        {brandMiglife(c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text)}
         {stamp}
       </p>
     );
@@ -2373,7 +2388,12 @@ function MessageRow({
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
-              {!isRoomLine && special.has(senderName) ? <RainbowName name={senderName} style={special.styleOf(senderName)} /> : senderName}:
+              {!isRoomLine && special.has(senderName) ? (
+                <RainbowName name={brandMiglife(senderName)} style={special.styleOf(senderName)} />
+              ) : (
+                brandMiglife(senderName)
+              )}
+              :
             </span>
           )}
           {m.type === "image" && m.imageUrl ? (
@@ -2403,7 +2423,7 @@ function MessageRow({
                 }}
               >
                 {/* 🔗 links first: blue + underlined + tappable, and emote codes inside a link stay text */}
-                {withLinks(body, "b", onLink, (seg, k) => (
+                {withLinks(brandMiglife(body), "b", onLink, (seg, k) => (
                   <Fragment key={k}>{withEmotes(seg, fontPx, (t, k2) => withMentions(t, `${k}${k2}`))}</Fragment>
                 ))}
               </span>
@@ -2571,4 +2591,16 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
       </div>
     </div>
   );
+}
+
+/** People shown in the room (presence docs that are not INVISIBLE). */
+function presenceList(docs: QueryDocumentSnapshot[]) {
+  return docs
+    .filter((d) => d.get("presenceStatus") !== "INVISIBLE")
+    .map((d) => ({
+      uid: d.id,
+      username: String(d.get("username") || ""),
+      level: Number(d.get("level") || 1),
+      lastSeenMs: toMillis(d.get("lastSeen", { serverTimestamps: "estimate" })),
+    }));
 }
