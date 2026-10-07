@@ -26,6 +26,7 @@ import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
 import { latestGifts } from "../../../lib/giftActivity";
 import { PageShell } from "../../_components/PageShell";
+import { AvatarView, useAvatar } from "../../_components/Avatar";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
 import { useProfileAchievements } from "../../_components/Achievements";
@@ -152,8 +153,9 @@ export default function ProfilePage() {
   // "/profile/me" opens your own profile.
   const username = raw === "me" ? me : raw;
   const isOwn = !!me && sameName(username, me);
-
   const [profile, setProfile] = useState<Profile | null>(null);
+  // 🧍 their avatar (avatars/{uid}), if they made one
+  const avatar = useAvatar(profile?.uid);
   const [notFound, setNotFound] = useState(false);
   const [friends, setFriends] = useState(0);
   const [followers, setFollowers] = useState(0);
@@ -573,6 +575,27 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* 🧍 Avatar (when the person made one; your own profile can make / edit it) */}
+        {(avatar.look || isOwn) && avatar.loaded && (
+          <div className="mt-px flex items-center gap-3 bg-white px-3 py-2">
+            <span className="shrink-0 overflow-hidden rounded-xl border border-[#D5E3F5]">
+              {avatar.look ? (
+                <AvatarView look={avatar.look} size={64} />
+              ) : (
+                <span className="flex h-[128px] w-[64px] items-center justify-center bg-[#EAF4FE] text-4xl">🧍</span>
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-bold text-[#0B2A5B]">{avatar.look ? (isOwn ? "My Avatar" : `${username}'s Avatar`) : "No avatar yet"}</p>
+              {isOwn && (
+                <Link href="/avatar" className="mt-1.5 inline-block rounded-lg bg-[#2F80ED] px-3 py-1.5 text-sm font-bold text-white">
+                  {avatar.look ? "🧍 Edit Avatar" : "🧍 Create Avatar"}
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 4 × 2 grid of number tiles */}
         <div className="mt-px space-y-2 bg-white px-2 py-2">
