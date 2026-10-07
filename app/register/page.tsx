@@ -10,6 +10,7 @@ import { auth, db, functions } from "../../lib/firebase";
 import { countryFlag, countryInfoFor } from "../../lib/countries";
 import { CountryPickerDialog } from "../_components/CountryPicker";
 import { isMainFounderName } from "../../lib/founder";
+import { migAliasEmail } from "../../lib/migAlias";
 import { useSession } from "../_components/AppSession";
 import { BackPill } from "../_components/BackButton";
 
@@ -180,7 +181,7 @@ export default function RegisterPage() {
       return setError(e?.message || "MIG ID creation failed.");
     }
     try {
-      await signInWithEmailAndPassword(auth, `${created.toLowerCase()}@login.migwith.local`, password);
+      await signInWithEmailAndPassword(auth, migAliasEmail(created), password);
       // Every account starts with the default coin-transfer PIN, like the app.
       setSecurityPin({ pin: "123456" }).catch(() => {});
       setInfo("MIG ID created successfully. Welcome to miglife!");

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { migIdFromAliasEmail } from "./migAlias";
 
 // The signed-in user plus their MIG ID (users/{uid}.username), or null when logged out.
 export function useCurrentUser() {
@@ -29,8 +30,8 @@ export function useCurrentUser() {
       setUsername("");
       setLoading(true);
 
-      // Fallback: the part before "@" of "<migid>@login.migwith.local".
-      let name = next.email?.split("@")[0] ?? "";
+      // Fallback: the MIG ID from "<migid>@login.migwith.local" (see migAlias.ts).
+      let name = migIdFromAliasEmail(next.email);
 
       try {
         const snap = await getDoc(doc(db, "users", next.uid));

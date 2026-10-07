@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
+import { withEmotes } from "./Emote";
 
 // The chat text bar, same as the app's: a navy bar with ⋮ (more: gifts),
 // 🖼️ photo and 🎤 voice as round buttons, a white rounded box with 😊 inside,
@@ -126,7 +127,7 @@ export function ChatBar({
             {reply.sender}
           </p>
           <p data-notranslate className="truncate text-xs text-[#6B7A99]">
-            {reply.snippet}
+            {withEmotes(reply.snippet, 12)}
           </p>
         </div>
         <button type="button" onClick={reply.onCancel} aria-label="Cancel reply" className="px-1 text-sm text-[#6B7A99]">

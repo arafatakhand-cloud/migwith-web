@@ -115,6 +115,7 @@ import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
 import { canBeInvisibleByRole } from "../../../lib/invisible";
+import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost } from "../../_components/EntryEffects";
@@ -232,6 +233,9 @@ function RoomView({ roomName }: { roomName: string }) {
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
+  // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
+  const [newBelow, setNewBelow] = useState(0);
+  const lastSeenIdRef = useRef<string | null>(null);
   // Clear Chat for this device (set once the page has rendered; used by /cc).
   const clearChatRef = useRef<(() => void) | null>(null);
   const scrollTopRef = useRef(initial?.scrollTop ?? 0);
@@ -337,7 +341,7 @@ function RoomView({ roomName }: { roomName: string }) {
       .then((snap) => {
         const level = Number(snap.get("level") || 1);
         setProfile({
-          username: String(snap.get("username") || user.email?.split("@")[0] || ""),
+          username: String(snap.get("username") || migIdFromAliasEmail(user.email) || ""),
           level,
           badge: String(snap.get("levelBadgeIcon") || badgeForLevel(level)),
           badges: presenceBadgesForDoc(snap.data()),
@@ -927,6 +931,22 @@ function RoomView({ roomName }: { roomName: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion]);
 
+  // ✋ New lines never drag you down while you read older ones: they are
+  // counted for the "⬇ new messages" pill instead (your own lines don't count).
+  useEffect(() => {
+    const last = visible.length ? visible[visible.length - 1].id : null;
+    const prev = lastSeenIdRef.current;
+    lastSeenIdRef.current = last;
+    if (stickToBottom.current) {
+      setNewBelow(0);
+      return;
+    }
+    if (!prev || last === prev) return;
+    const i = visible.findIndex((m) => m.id === prev);
+    const added = i >= 0 ? visible.slice(i + 1).filter((m) => !(m.senderUid && m.senderUid === myUid)).length : 0;
+    if (added > 0) setNewBelow((n) => n + added);
+  }, [visible, myUid]);
+
   // Uploaded pictures for the badges in the enter/left lines.
   const badgeImages = useBadgeImages(!!user);
   // Room text size (Settings → Chat), in px.
@@ -1501,6 +1521,7 @@ function RoomView({ roomName }: { roomName: string }) {
               onScroll={(e) => {
                 const el = e.currentTarget;
                 stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                if (stickToBottom.current) setNewBelow((n) => (n ? 0 : n));
                 scrollTopRef.current = el.scrollTop;
                 if (user && isRoomOpen(user.uid, roomName)) {
                   const cur = readRoomSession(user.uid, roomName);
@@ -1573,6 +1594,23 @@ function RoomView({ roomName }: { roomName: string }) {
                 />
               ))}
               </div>
+              {/* ⬇ NEW MESSAGES: only while you are scrolled up reading older lines */}
+              {newBelow > 0 && (
+                <div className="pointer-events-none sticky bottom-0 flex h-0 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = listRef.current;
+                      stickToBottom.current = true;
+                      setNewBelow(0);
+                      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                    }}
+                    className="pointer-events-auto h-fit -translate-y-11 rounded-full bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF] px-3.5 py-1.5 text-[13px] font-bold text-white shadow-lg"
+                  >
+                    ⬇ {newBelow} new message{newBelow === 1 ? "" : "s"}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
@@ -2389,7 +2427,7 @@ function MessageRow({
                   style={{ borderColor: qColor, background: `color-mix(in srgb, ${qColor} 6%, transparent)` }}
                 >
                   ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
-                  {qName ? quote.slice(qc + 1) : quote}
+                  {withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}
                 </span>
               );
             })()}

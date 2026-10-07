@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
 import { ALL_COUNTRIES, countryFlag } from "../../lib/countries";
+import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { FounderShell, input } from "./_Shell";
 import {
   AppDownloadLinkCard,
@@ -68,6 +69,107 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
     >
       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${on ? "left-6" : "left-1"}`} />
     </button>
+  );
+}
+
+// 🎆 Cricket Win Effect (the app's FounderCricketWinFxCard): the Cricket win
+// fireworks play ONLY in the rooms switched ON here. The list lives in
+// app_settings/win_fx.cricketRooms; the server writes "CONGRATULATIONS"
+// (fireworks) in those rooms and "Congratulations" (no fireworks) elsewhere.
+const winFxKey = (r: string) => r.trim().toLowerCase();
+function CricketWinFxCard() {
+  const [rooms, setRooms] = useState<string[] | null>(null);
+  const [allRooms, setAllRooms] = useState<string[]>([]);
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ text: string; bad: boolean } | null>(null);
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "win_fx"),
+        (s) => {
+          const list = s.get("cricketRooms");
+          setRooms(Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && !!x.trim()) : []);
+        },
+        () => setRooms([])
+      ),
+    []
+  );
+  useEffect(() => {
+    getDocs(collection(db, "rooms"))
+      .then((snap) => setAllRooms(snap.docs.map((d) => String(d.get("name") || d.id).trim()).filter(Boolean)))
+      .catch(() => {});
+  }, []);
+  const on = new Set((rooms || []).map(winFxKey));
+  const isOn = (r: string) => on.has(winFxKey(r));
+  const change = async (room: string, turnOn: boolean) => {
+    const name = room.trim();
+    if (!name) return;
+    setBusy(true);
+    setNote(null);
+    const rest = (rooms || []).filter((r) => winFxKey(r) !== winFxKey(name));
+    try {
+      await setDoc(
+        doc(db, "app_settings", "win_fx"),
+        { cricketRooms: turnOn ? [...rest, name] : rest, updatedAt: serverTimestamp() },
+        { merge: true }
+      );
+      setNote({ text: turnOn ? `✅ ON in "${name}"` : `⛔ OFF in "${name}"`, bad: false });
+      if (turnOn) setQ("");
+    } catch (e: any) {
+      setNote({ text: `Failed: ${e?.message || e}`, bad: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+  const query = q.trim().toLowerCase();
+  const seen = new Set<string>();
+  const pool = [...OFFICIAL_COUNTRY_ROOMS, "👻 Luxury Bot Official", ...allRooms, ...(rooms || [])].filter((r) => {
+    const k = winFxKey(r);
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  const known = (
+    query
+      ? pool.filter((r) => r.toLowerCase().includes(query)).sort((a, b) => Number(!a.toLowerCase().startsWith(query)) - Number(!b.toLowerCase().startsWith(query)) || a.localeCompare(b))
+      : pool.sort((a, b) => Number(!isOn(a)) - Number(!isOn(b)) || a.toLowerCase().localeCompare(b.toLowerCase()))
+  ).slice(0, 60);
+  return (
+    <div className="space-y-2.5 rounded-[18px] border-[1.5px] border-[#FF6F00] bg-white p-4">
+      <p className="text-[17px] font-extrabold">🎆 Cricket Win Effect</p>
+      <p className="text-xs text-gray-500">
+        When someone wins Cricket, the whole room gets fireworks — but ONLY in the rooms switched ON here. Every other room shows no effect.
+      </p>
+      <div className="flex items-center gap-2">
+        <input value={q} onChange={(e) => setQ(e.target.value.slice(0, 60))} placeholder="🔎 Search room" className={`${input} flex-1`} />
+        <button
+          type="button"
+          disabled={busy || !q.trim()}
+          onClick={() => change(q, true)}
+          className="rounded-full bg-[#FF6F00] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+        >
+          ON
+        </button>
+      </div>
+      {note && <p className={`text-xs font-bold ${note.bad ? "text-[#E5484D]" : "text-[#2E7D32]"}`}>{note.text}</p>}
+      <p className="text-xs text-gray-500">{rooms === null ? "Loading…" : `ON in ${on.size} room${on.size === 1 ? "" : "s"}`}</p>
+      {query && known.length === 0 && (
+        <p className="text-xs text-gray-500">No room found with &quot;{q.trim()}&quot; — tap ON to switch it on by this exact name.</p>
+      )}
+      <div className="space-y-1">
+        {known.map((room) => {
+          const lit = isOn(room);
+          return (
+            <div key={room} className={`flex items-center gap-2 rounded-xl px-2.5 py-1 ${lit ? "bg-[#FF6F00]/15" : ""}`}>
+              <span className="text-base">{lit ? "🎆" : "▫"}</span>
+              <span className={`min-w-0 flex-1 truncate text-sm ${lit ? "font-bold" : ""}`}>{room}</span>
+              <Switch on={lit} onChange={(v) => !busy && change(room, v)} />
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -137,6 +239,7 @@ export default function SecretPage() {
         [
           { icon: "🎰", label: "Luxury Bet", hint: "Access · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
           { icon: "🎲", label: "Luxury Bot Tiers", hint: "Turn result tiers on / off", tint: "#5E35B1", key: "luxury_tiers", ok: f.can("luxury_tiers") },
+          { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
         ],
       ],
       [
@@ -273,6 +376,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "vip" && <FounderSpecialColorCard />}
       {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
       {f.isMigwith && tool === "level" && <LevelCurveCard />}
+      {f.isMigwith && tool === "cricket_winfx" && <CricketWinFxCard />}
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
       {f.isMigwith && tool === "luxury_bet" && (

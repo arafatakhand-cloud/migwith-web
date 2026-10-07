@@ -14,6 +14,7 @@ import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
 import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
 import { canBeInvisible } from "../../lib/invisible";
+import { migAliasEmail } from "../../lib/migAlias";
 
 const INVISIBLE_KEY = "migwith.loginInvisible";
 
@@ -51,7 +52,7 @@ export default function LoginPage() {
 
       const authEmail = cleanId.includes("@")
         ? cleanId.toLowerCase()
-        : `${cleanId.toLowerCase()}@login.migwith.local`;
+        : migAliasEmail(cleanId);
 
       await setPersistence(
         auth,
