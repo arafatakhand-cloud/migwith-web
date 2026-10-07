@@ -7,9 +7,9 @@ import { RainbowFavicon } from "./_components/RainbowFavicon";
 import { LoginWelcomeSplash } from "./_components/LoginWelcome";
 
 export const metadata: Metadata = {
-  title: "MIGlife",
+  title: "miGlife",
   description: "Connect with people, discover rooms, chat, share gifts and play games.",
-  applicationName: "MIGlife",
+  applicationName: "miGlife",
   icons: {
     icon: [
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   // iPhone "Add to Home Screen" opens full screen, like an app.
-  appleWebApp: { capable: true, title: "MIGlife", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "miGlife", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 // Lets phones install MIGlife to the home screen and open it like an app.
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "MIGlife",
-    short_name: "MIGlife",
+    name: "miGlife",
+    short_name: "miGlife",
     description: "Chat rooms, gifts and games — the MIGlife community.",
     start_url: "/",
     scope: "/",

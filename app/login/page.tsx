@@ -109,7 +109,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#1B4F86] via-[#154272] to-[#0E2F55] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white">
       <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center px-6 pb-10 pt-12">
         {/* mig + life bubble */}
         <Link href="/welcome" aria-label="About MIGlife" className="relative mt-4 block">

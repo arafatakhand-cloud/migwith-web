@@ -84,7 +84,7 @@ export function LoginWelcomeSplash() {
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center overflow-hidden transition-opacity duration-300"
-      style={{ background: "linear-gradient(180deg, #1B4F86, #154272 50%, #0E2F55)", opacity: leaving ? 0 : 1 }}
+      style={{ background: "linear-gradient(180deg, #6CCFF6, #36B1EC 50%, #1A8FD6)", opacity: leaving ? 0 : 1 }}
       onClick={() => setLeaving(true)}
       role="presentation"
     >

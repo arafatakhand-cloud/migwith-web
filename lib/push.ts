@@ -33,8 +33,12 @@ function setFlag(on: boolean) {
   }
 }
 
+// Vercel preview links (…vercel.app) never get pushes: a phone's notification
+// shows the site address, which should always be web.miglife.app.
+const isPreviewHost = () => typeof window !== "undefined" && /\.vercel\.app$/i.test(window.location.hostname);
+
 export async function pushStatus(): Promise<PushStatus> {
-  if (typeof window === "undefined" || !VAPID_KEY) return "unsupported";
+  if (typeof window === "undefined" || !VAPID_KEY || isPreviewHost()) return "unsupported";
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const standalone =
     window.matchMedia("(display-mode: standalone)").matches ||
@@ -77,6 +81,11 @@ export async function turnPushOff(): Promise<void> {
 
 /** After sign-in: keep this browser's (possibly refreshed) token saved for this user. */
 export async function syncPush(): Promise<void> {
+  // A preview link that was switched on before: stop its pushes.
+  if (isPreviewHost()) {
+    if (VAPID_KEY && flag() && typeof Notification !== "undefined" && Notification.permission === "granted") await turnPushOff();
+    return;
+  }
   if ((await pushStatus()) !== "on") return;
   try {
     const token = await currentToken();
