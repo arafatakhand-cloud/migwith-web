@@ -576,6 +576,10 @@ function RoomView({ roomName }: { roomName: string }) {
     let left = false;
     let disposed = false; // this effect was cleaned up (a leave may be pending)
     let heartbeat: ReturnType<typeof setInterval> | null = null;
+    // The presence write in flight (entering, or a heartbeat re-entering). A
+    // leave waits for it, so the spot can't be written again AFTER it was
+    // deleted and its "has left" posted (a ghost in "Currently in this room").
+    let presenceWrite: Promise<unknown> = Promise.resolve();
 
     const pending = pendingLeaves.get(leaveKey);
     const resumed = pending !== undefined;
@@ -591,7 +595,7 @@ function RoomView({ roomName }: { roomName: string }) {
       const leftVisit = visitId;
       // "has left" only once the delete really went through: a /parked spot
       // stays in the room and gets no line (like the app).
-      deletePresenceUnlessParked(presenceRef).then((deleted) => {
+      presenceWrite.then(() => deletePresenceUnlessParked(presenceRef)).then((deleted) => {
         if (!deleted || quietMe) return;
         setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, leftVisit)), {
           text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),
@@ -702,7 +706,7 @@ function RoomView({ roomName }: { roomName: string }) {
 
       visitId = visitId || newVisitId();
 
-      await setDoc(
+      await (presenceWrite = setDoc(
         presenceRef,
         {
           uid,
@@ -719,7 +723,7 @@ function RoomView({ roomName }: { roomName: string }) {
           ...(alreadyHere ? {} : { entryMarker: serverTimestamp() }),
         },
         { merge: true }
-      ).catch((err) => console.error("presence write failed", err));
+      ).catch((err) => console.error("presence write failed", err)));
 
       // Where this visit's chat starts.
       if (alreadyHere) {
@@ -767,7 +771,7 @@ function RoomView({ roomName }: { roomName: string }) {
         updateDoc(presenceRef, { lastSeen: serverTimestamp() }).catch((err) => {
           if (err?.code !== "not-found" || left || disposed) return;
           visitId = newVisitId();
-          setDoc(presenceRef, {
+          presenceWrite = setDoc(presenceRef, {
             uid,
             username: profile.username,
             activity: "",
@@ -963,18 +967,28 @@ function RoomView({ roomName }: { roomName: string }) {
     )
   );
 
-  // People in the room: fresh presence, and no "has left" newer than their last heartbeat.
+  // People in the room: fresh presence, and (like the app) a "has left" wins
+  // unless a newer "has entered" came after it, or the person really kept being
+  // active for 5+ minutes after it — a last heartbeat landing a moment AFTER the
+  // "has left" no longer keeps a ghost in "Currently in this room".
   const roomUsers = useMemo(() => {
     const leftAt = new Map<string, number>();
+    const enteredAt = new Map<string, number>();
     messages.forEach((m) => {
-      if (m.type === "room_leave" && m.senderUid) {
-        leftAt.set(m.senderUid, Math.max(leftAt.get(m.senderUid) || 0, m.createdAtMs));
+      if ((m.type === "room_leave" || m.type === "room_entry") && m.senderUid && m.createdAtMs > 0) {
+        const map = m.type === "room_leave" ? leftAt : enteredAt;
+        map.set(m.senderUid, Math.max(map.get(m.senderUid) || 0, m.createdAtMs));
       }
     });
     const cutoff = serverNow() - ROOM_PRESENCE_STALE_MS;
     return presence
       .filter((p) => p.username && p.lastSeenMs >= cutoff)
-      .filter((p) => p.uid === user?.uid || (leftAt.get(p.uid) || 0) <= p.lastSeenMs)
+      .filter((p) => {
+        if (p.uid === user?.uid) return true;
+        const left = leftAt.get(p.uid);
+        if (!left) return true;
+        return (enteredAt.get(p.uid) || 0) > left || p.lastSeenMs > left + 5 * 60_000;
+      })
       .sort((a, b) => a.username.localeCompare(b.username));
   }, [presence, messages, user]);
 
