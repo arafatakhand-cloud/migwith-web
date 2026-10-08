@@ -15,6 +15,7 @@ import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
 import { useLiveSports } from "../../lib/liveSports";
+import { totalXpForLevel } from "../../lib/level";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
 // friend search, online strip and friend cards (ModernHome.tsx). Classic: the
@@ -251,8 +252,14 @@ export function Dashboard() {
   // 📟 Classic: a light strip with a small square photo, ● name + role, the
   // status in grey italics, and the level on the right.
   const presenceDot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[me?.presence || "ONLINE"] || "#9AA3AE";
+  const xpNow = me?.xp ?? 0;
+  const lvlNow = me?.level ?? 1;
+  const xpStart = totalXpForLevel(lvlNow);
+  const xpNext = totalXpForLevel(lvlNow + 1);
+  const xpFrac = xpNext > xpStart ? Math.min(1, Math.max(0, (xpNow - xpStart) / (xpNext - xpStart))) : 0;
   const classicStrip = (
-    <div className="flex items-center border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] px-2.5 py-2 text-[#16315F]">
+    <div className="border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] text-[#16315F]">
+    <div className="flex items-center px-2.5 pb-1.5 pt-2">
       <Link href="/profile/me" className="flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded border border-[#B9C4D2] bg-[#FFE0B8] text-xl font-bold text-[#F07A00]">
         {me?.photoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -307,6 +314,20 @@ export function Dashboard() {
       >
         <span>{badgeForLevel(me?.level ?? 1)}</span>Lv {me?.level ?? "…"}
       </Link>
+    </div>
+    {/* 📟 Classic XP bar: a flat meter — square corners, grey frame, blue fill
+        with a light top half, numbers on the right. */}
+    <Link href="/level" className="flex items-center px-2.5 pb-[7px]">
+      <span className="text-[11px] font-extrabold text-[#F07A00]">XP</span>
+      <span className="mx-1.5 block h-2.5 min-w-0 flex-1 border border-[#9FB0C6] bg-[#DDE4EC] p-px">
+        <span className="relative block h-full bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" style={{ width: `${xpFrac * 100}%` }}>
+          <span className="absolute inset-x-0 top-0 h-[45%] bg-white/[0.28]" />
+        </span>
+      </span>
+      <span className="shrink-0 text-[11px] font-bold text-[#4A5A70]">
+        {xpNow.toLocaleString("en-US")} / {xpNext.toLocaleString("en-US")}
+      </span>
+    </Link>
     </div>
   );
 
