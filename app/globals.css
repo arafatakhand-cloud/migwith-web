@@ -400,8 +400,9 @@ body {
 @keyframes efx-wave { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
 
 /* 📟 Classic header: the "✉ NEW" alerts pill pulses and blinks every 0.7 s (like the app). */
-.classic-new-pulse { animation: classic-new-pulse 0.7s ease-in-out infinite alternate; }
-@keyframes classic-new-pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.07); opacity: 0.45; } }
+.classic-new-pulse { animation: classic-new-pulse 1.4s steps(1, end) infinite; }
+/* A simple bright / dim step every 0.7 s (not a smooth animation), like the app. */
+@keyframes classic-new-pulse { 0% { transform: scale(1.05); opacity: 1; } 50% { transform: scale(1); opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .classic-new-pulse { animation: none; } }
 
 /* 📟 Classic: list lines sit right under each other (no gaps between them). */
@@ -411,3 +412,9 @@ html[data-ui="classic"] .classic-row { margin-top: 0 !important; margin-bottom: 
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light.text-white { color: #16315F; }
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light input { color: #16315F; }
 html[data-ui="classic"] .classic-hide { display: none; }
+
+/* 📟 Classic: square corners everywhere (4px, the app's clsR / clsPill). Round
+   things stay round: avatars, dots and anything else with rounded-full. */
+html[data-ui="classic"] :is([class*="rounded-lg"], [class*="rounded-xl"], [class*="rounded-2xl"], [class*="rounded-3xl"], [class*="rounded-["], [class*="rounded-md"]):not([class*="rounded-full"]) {
+  border-radius: 4px;
+}
