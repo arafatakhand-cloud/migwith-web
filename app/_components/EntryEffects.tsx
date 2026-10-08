@@ -81,8 +81,27 @@ function entryNameOf(m: { text: string; type: string }): string | null {
 }
 
 /** Put this once over the room: plays the effect of whoever just came in. */
-export function EntryEffectHost({ messages, roomKey }: { messages: { id: string; text: string; type: string }[]; roomKey: string }) {
+export function EntryEffectHost({
+  messages,
+  roomKey,
+  myName = "",
+}: {
+  messages: { id: string; text: string; type: string }[];
+  roomKey: string;
+  /** My own name: my "has entered" line usually comes in the very first batch
+   *  (it is written as I open the room), which counts as history — so it is
+   *  looked for there and my own effect plays for me too, once per visit. */
+  myName?: string;
+}) {
   const [names, setNames] = useNewLineEvents(messages, roomKey, entryNameOf, 4);
+  const ownChecked = useRef("");
+  useEffect(() => {
+    const me = myName.trim().toLowerCase();
+    if (!me || ownChecked.current === roomKey || messages.length === 0) return;
+    ownChecked.current = roomKey;
+    const own = messages.slice(-10).some((m) => entryNameOf(m)?.toLowerCase() === me);
+    if (own) setNames((q) => (q.length ? q : [myName.trim()]));
+  }, [messages, roomKey, myName, setNames]);
   const [queue, setQueue] = useState<{ fx: EntryFx; name: string }[]>([]);
   const mounted = useRef(true);
   useEffect(

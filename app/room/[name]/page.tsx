@@ -1673,7 +1673,7 @@ function RoomView({ roomName }: { roomName: string }) {
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
             <RoomFireworksHost messages={messages} roomKey={roomName} />
             <RoomHeartsHost messages={messages} roomKey={roomName} />
-            <EntryEffectHost messages={messages} roomKey={roomName} />
+            <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} />
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
