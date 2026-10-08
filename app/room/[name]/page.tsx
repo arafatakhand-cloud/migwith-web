@@ -100,6 +100,7 @@ import {
   normRole,
   roomInfoFrom,
   roomPerms,
+  setEntryLevel,
   setModerator,
   type ModContext,
   type RoomInfo,
@@ -109,6 +110,7 @@ import { useBadgeImages } from "../../../lib/badgeImages";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
+import { RoomInfoPage } from "../../_components/RoomInfoPage";
 import { RainbowName } from "../../_components/RainbowName";
 import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
 import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
@@ -1835,27 +1837,24 @@ function RoomView({ roomName }: { roomName: string }) {
         </div>
       )}
 
-      {/* Room Info */}
-      {infoOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setInfoOpen(false)}>
-          <div className="w-full max-w-sm space-y-2 rounded-3xl bg-white p-5 text-sm text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 data-notranslate className="text-lg font-black">ℹ️ {roomDisplayName(roomName)}</h2>
-            <p data-notranslate className="whitespace-pre-wrap text-[#35507E]">
-              {roomDescription}
-            </p>
-            <ul className="space-y-1 pt-1">
-              <li>👑 Managed by: <b data-notranslate>{isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}</b></li>
-              <li>👥 In the room: <b>{roomUsers.length}</b>{roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`}</li>
-              <li>🔐 {roomInfo.privacy || "Public"}{locked && " · 🔒 Locked"}{silenced && " · 🔇 Silenced"}</li>
-              {roomInfo.lockLevel > 0 && <li>⭐ Entry level: {roomInfo.lockLevel}+</li>}
-              {roomInfo.superMods.length > 0 && <li data-notranslate>🌟 Super Mods: {roomInfo.superMods.join(", ")}</li>}
-              {roomInfo.moderators.length > 0 && <li data-notranslate>⭐ Mods: {roomInfo.moderators.join(", ")}</li>}
-            </ul>
-            <button type="button" onClick={() => setInfoOpen(false)} className="mt-2 w-full rounded-xl bg-[#2F80ED] py-2.5 font-bold text-white">
-              OK
-            </button>
-          </div>
-        </div>
+      {/* ℹ️ Room Info — a full page with ✎ edit, like the app */}
+      {infoOpen && profile && (
+        <RoomInfoPage
+          roomName={roomName}
+          shownRoomName={roomDisplayName(roomName)}
+          ownerName={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
+          description={perms.isUserRoom ? roomInfo.description : roomDescription}
+          info={roomInfo}
+          perms={perms}
+          roomMembers={roomUsers.map((u) => u.username)}
+          modName={perms.isHiddenFounder ? "Admin" : profile.username}
+          onClose={() => setInfoOpen(false)}
+          onNote={note}
+          onSetEntryLevel={(lvl) => {
+            const ctx = modCtx();
+            if (ctx) setEntryLevel(ctx, lvl);
+          }}
+        />
       )}
 
       {/* Kick User */}
