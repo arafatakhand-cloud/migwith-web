@@ -114,7 +114,8 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
     canKick: isUserRoom ? canModeratePrivate : isAppStaffHere,
     canBan: isUserRoom ? canModeratePrivate : isRoomAdmin || isRoomMod,
     canUnban: isUserRoom ? canModeratePrivate : isRoomAdmin,
-    canMute: isRoomAdmin || isRoomMod,
+    // Private rooms: the owner, Super Mods and Mods may mute there too.
+    canMute: isRoomAdmin || isRoomMod || canModeratePrivate,
     canRoomWide: isRoomAdmin || isRoomMod || canModeratePrivate, // silence / lock
     canSetLevel: isUserRoom ? canManagePrivate : isRoomAdmin || isRoomMod,
     canShareMedia: room.allowMedia || isAppStaffHere || canModeratePrivate,
@@ -226,6 +227,7 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
     return isMainFounderName(k) || k === key(room.ownerName) || (!perms.isAppStaffHere && STAFF_ROLES.has(appRole));
   }
   return (
+    isMainFounderName(k) ||
     k === key(room.ownerName) ||
     STAFF_ROLES.has(appRole) ||
     (room.superMods.includes(k) && !(perms.isThisRoomOwner || perms.isRoomAdmin)) ||
