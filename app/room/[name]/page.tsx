@@ -223,6 +223,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const [showUsers, setShowUsers] = useState(false);
   // ⋮ Room menu (like the app's) and its Room Info / Kick User sheets.
   const [menuOpen, setMenuOpen] = useState(false);
+  // The Participants panel beside the room menu (like the app).
+  const [menuPeople, setMenuPeople] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [kickOpen, setKickOpen] = useState(false);
   const { favorites, toggleFavorite } = useRoomPrefs();
@@ -1505,11 +1507,10 @@ function RoomView({ roomName }: { roomName: string }) {
   const favorite = favorites.includes(roomName);
   const menuItems: [string, string, () => void, boolean?][] = [
     ["ℹ️", "Room Info", () => setInfoOpen(true)],
-    [favorite ? "💔" : "❤️", favorite ? "Remove from favorites" : "Add to favorites", () => toggleFavorite(roomName)],
+    [favorite ? "💔" : "❤️", favorite ? "Remove from favorites" : "Add as favorite", () => toggleFavorite(roomName)],
     ["🧹", "Clear Chat", clearChat],
     ["💰", "Check Balance", checkBalance],
-    ["🎁", "Send Gift", () => setGiftTarget("")],
-    ["👥", `Participants (${roomUsers.length})`, () => setShowUsers(true)],
+    ["👥", `Participants (${roomUsers.length})`, () => setMenuPeople((v) => !v)],
     ...(perms.canKick ? ([["👢", "Kick User", () => setKickOpen(true)]] as [string, string, () => void][]) : []),
     ["🚪", "Leave Room", leaveRoom, true],
   ];
@@ -1801,39 +1802,79 @@ function RoomView({ roomName }: { roomName: string }) {
 
       {/* ⋮ Room menu */}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/40 p-2 pb-safe" onClick={() => setMenuOpen(false)}>
-          <div className="w-[62%] min-w-[230px] max-w-[280px] overflow-hidden rounded-[24px] bg-[#EEF0F3] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-gradient-to-r from-[#1E5BC6] to-[#1A4DA8] px-4 py-3 text-white">
-              <p data-notranslate className="truncate text-[15px] font-black">
+        <div
+          className="fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe"
+          onClick={() => {
+            setMenuOpen(false);
+            setMenuPeople(false);
+          }}
+        >
+          {/* A floating, fully rounded card, like the app's room menu */}
+          <div className="w-[62%] min-w-[220px] max-w-[300px] overflow-hidden rounded-[28px] bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-r from-[#1E63D6] to-[#174EA6] px-4 py-[11px] text-white">
+              <p data-notranslate className="truncate text-[15px] font-bold">
                 {roomDisplayName(roomName)}
                 {locked && <span className="ml-1.5 text-sm">🔒</span>}
                 {silenced && <span className="ml-1 text-sm">🔇</span>}
               </p>
-              <p className="text-[11px] text-white/85">Room menu · {roomUsers.length} here</p>
+              <p className="text-[11px] text-[#CFE0F6]">Room menu · {roomUsers.length} here</p>
             </div>
-            <ul className="max-h-[70vh] space-y-1.5 overflow-y-auto p-2">
-              {menuItems.map(([icon, label, run, danger]) => (
-                <li key={label}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      run();
-                    }}
-                    className={`flex w-full items-center gap-2.5 rounded-full px-2 py-1.5 text-left text-[13px] font-semibold ${
-                      danger ? "bg-[#F4DDDD] text-[#C62828]" : "bg-[#E1E4EA] text-[#0B1F3A]"
-                    }`}
-                  >
-                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${danger ? "bg-[#EFC6C6]" : "bg-[#CFDDF0]"}`}>
-                      {icon}
-                    </span>
-                    <span className="flex-1">{label}</span>
-                    <span className={`pr-1 text-sm ${danger ? "text-[#C62828]" : "text-[#6B7A99]"}`}>›</span>
-                  </button>
-                </li>
-              ))}
+            <ul className="max-h-[70vh] space-y-1.5 overflow-y-auto px-2 pb-2.5 pt-2">
+              {menuItems.map(([icon, label, run, danger]) => {
+                const isPeople = label.startsWith("Participants");
+                return (
+                  <li key={label}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Participants opens its panel beside the menu; the rest close the menu.
+                        if (!isPeople) {
+                          setMenuOpen(false);
+                          setMenuPeople(false);
+                        }
+                        run();
+                      }}
+                      className={`flex w-full items-center gap-2.5 rounded-2xl px-2 py-1.5 text-left text-[13px] font-semibold ${
+                        danger ? "bg-[#FDECEC] text-[#FF514A]" : isPeople && menuPeople ? "bg-[#DCE7F5] text-[#0B1F3A]" : "bg-[#F1F4F8] text-[#0B1F3A]"
+                      }`}
+                    >
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${danger ? "bg-[#F9D6D6]" : "bg-[#DCE7F5]"}`}>
+                        {icon}
+                      </span>
+                      <span className="flex-1">{label}</span>
+                      <span className={`pr-1 text-sm ${danger ? "text-[#FF514A]" : "text-[#6B7A99]"}`}>›</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
+          {menuPeople && (
+            <div
+              className="max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-gradient-to-b from-[#0B2A5B] to-[#15589B] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="px-3.5 py-3.5 text-[13px] font-bold text-white">👥 Participants ({roomUsers.length})</p>
+              <div className="border-t border-[#3C557F]" />
+              <ul data-notranslate>
+                {roomUsers.map((u) => (
+                  <li key={u.uid}>
+                    <Link
+                      href={`/profile/${encodeURIComponent(u.username)}`}
+                      className="flex items-center gap-2.5 px-3.5 py-2.5"
+                    >
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2F6FD0] text-[12px] font-bold text-white">
+                        {u.username.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="truncate text-[13px] font-semibold" style={{ color: colorOf(u.username) }}>
+                        {u.username}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
