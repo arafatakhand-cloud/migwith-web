@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import type { RoomInfo } from "../../lib/roomModeration";
@@ -330,10 +331,24 @@ export function RoomInfoPage({
     );
   };
 
-  return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-gradient-to-b from-[#DDF1FF] to-[#F4FAFF]">
+  // Drawn on <body> (the room page sits under the site's top bar), starting
+  // right below that bar — like the app, where the bar stays visible above.
+  const [top, setTop] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+    const bar = document.querySelector("header");
+    const measure = () => setTop(bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-gradient-to-b from-[#DDF1FF] to-[#F4FAFF]" style={{ top }}>
       {/* header: gradient, rounded bottom */}
-      <div className="flex shrink-0 items-center gap-2 rounded-b-[26px] bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3 pb-2.5 pt-[max(10px,env(safe-area-inset-top))] shadow-lg">
+      <div className="flex shrink-0 items-center gap-2 rounded-b-[26px] bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3 pb-2.5 pt-2.5 shadow-lg">
         <button
           type="button"
           aria-label="Back"
@@ -513,6 +528,7 @@ export function RoomInfoPage({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
