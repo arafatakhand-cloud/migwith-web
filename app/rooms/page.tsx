@@ -203,7 +203,7 @@ export default function RoomsPage() {
     } catch (err) {
       console.error(err);
       setCreateError(
-        `Room create failed. You may have reached the ${MAX_ROOMS_PER_USER}-room limit or your level is too low.`
+        `Room creation failed. You may have reached the ${MAX_ROOMS_PER_USER}-room limit or your level is too low.`
       );
       setCreating(false);
     }

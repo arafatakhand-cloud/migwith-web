@@ -204,7 +204,7 @@ export function LuxuryBetAccessCard() {
     <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#B8860B] bg-white p-4">
       <p className="text-[17px] font-extrabold">🎰 Luxury Bet Access</p>
       <p className="text-xs" style={{ color: access.open ? OK : "#6B7280" }}>
-        {access.open ? "OPEN — everyone sees the room now." : "Testing — only the IDs below can see and play the room."}
+        {access.open ? "OPEN — everyone sees the room now." : "Testing — only the IDs below can see and play in the room."}
       </p>
       <input
         value={target}

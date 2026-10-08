@@ -326,7 +326,7 @@ function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid:
       <p className="text-sm font-bold">{merchant ? "🏪 Merchant Tag Request" : "💼 Tag Request"}</p>
       <p className="mt-1 text-[13px]">@{a.fromUsername} wants to tag you.</p>
       <p className="text-xs font-bold text-[#FFC04A]">
-        Tag amount: {a.amount} Coins{merchant ? ` · Merchant trail: ${a.rate}%` : ""}
+        Tag amount: {a.amount} coins{merchant ? ` · Merchant trail: ${a.rate}%` : ""}
       </p>
       <div className="mt-2">
         {done === "approved" ? (
@@ -507,7 +507,7 @@ export default function AlertsPage() {
                 card = (
                   <FancyCard top="#2B5FD9" bottom="#1B2A5C">
                     <p className="text-sm font-bold">💼 Mentor Tag Request</p>
-                    <p className="mt-1 text-[13px]">@{a.fromUsername} tagged request you.</p>
+                    <p className="mt-1 text-[13px]">@{a.fromUsername} sent you a tag request.</p>
                     <Link href="/mentor" className="text-xs text-[#8FA0C9] underline">
                       Review and accept or cancel it from your Mentor Dashboard → Requests tab.
                     </Link>

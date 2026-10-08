@@ -127,7 +127,7 @@ export default function RegisterPage() {
   // Step 1 → 2: MIG ID and password.
   const nextFromStep1 = () => {
     setError("");
-    if (!isFounder && !enabled) return setError("ID creation is currently disabled by FOUNDER.");
+    if (!isFounder && !enabled) return setError("ID creation is currently disabled by the founder.");
     if (!idOk)
       return setError(`MIG ID must be ${minLen}-${maxLen} characters and contain at least 1 English letter. Allowed: A-Z, a-z, 0-9, . _ -`);
     if (password.length < 6) return setError("Password must be at least 6 characters.");
@@ -138,7 +138,7 @@ export default function RegisterPage() {
   // Step 2 → 3: profile, then the code is sent.
   const submitForm = () => {
     setError("");
-    if (!isFounder && !enabled) return setError("ID creation is currently disabled by FOUNDER.");
+    if (!isFounder && !enabled) return setError("ID creation is currently disabled by the founder.");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return setError("Please enter a valid email.");
     if (!GENDERS.includes(gender)) return setError("Please select Male, Female or Other.");
     if (!country) return setError("Please select your country.");

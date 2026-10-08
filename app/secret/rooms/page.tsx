@@ -126,7 +126,7 @@ export default function RoomInfoPage() {
   };
 
   return (
-    <FounderShell title="ℹ Room info" allowed={f.can("room_info")} loaded={f.loaded}>
+    <FounderShell title="ℹ Room Info" allowed={f.can("room_info")} loaded={f.loaded}>
       <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search room or owner" className={input} />
       {result && <p className="text-[13px] font-semibold text-[#2E7D32]">{result}</p>}
       {rows.map((r) => (

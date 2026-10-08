@@ -342,7 +342,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
         amount: tagAmount,
         rate: RATE,
         type: "merchant_tag_request",
-        message: `@${me} wants to tag you. Tag amount: ${tagAmount} Coins · Merchant trail: 2.5%`,
+        message: `@${me} wants to tag you. Tag amount: ${tagAmount} coins · Merchant trail: 2.5%`,
         read: false,
         createdAt: serverTimestamp(),
       });

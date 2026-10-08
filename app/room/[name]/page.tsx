@@ -1895,7 +1895,7 @@ function RoomView({ roomName }: { roomName: string }) {
                 [
                   ["💰", "Check Balance", () => (closeMenu(), checkBalance())],
                   ["🧹", "Clear Chat", () => (closeMenu(), clearChat())],
-                  ["📤", "Invite friend", () => prefill("/invite ")],
+                  ["📤", "Invite Friend", () => prefill("/invite ")],
                 ] as [string, string, () => void][]
               ).map(([icon, label, act]) => (
                 <li key={label}>

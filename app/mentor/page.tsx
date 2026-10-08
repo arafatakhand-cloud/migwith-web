@@ -341,7 +341,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
         requestId: req.id,
         amount: tagAmount,
         type: "mentor_tag_request",
-        message: `@${me} wants to tag you. Tag amount: ${tagAmount} Coins`,
+        message: `@${me} wants to tag you. Tag amount: ${tagAmount} coins`,
         read: false,
         createdAt: serverTimestamp(),
       });
@@ -489,11 +489,11 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
             <p className="text-3xl font-black text-[#FFC04A]">🪙 {amount(mentorTotal + merchantTotal)}</p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#B9C4DD]">Mentor Tag 3%</p>
+                <p className="text-[10px] text-[#B9C4DD]">My Tags · 3%</p>
                 <p className="font-black text-[#FFC04A]">🪙 {amount(mentorTotal)}</p>
               </div>
               <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#B9C4DD]">Merchant Tag 0.5%</p>
+                <p className="text-[10px] text-[#B9C4DD]">Via My Merchants · 0.5%</p>
                 <p className="font-black text-[#69A9F0]">🪙 {amount(merchantTotal)}</p>
               </div>
             </div>

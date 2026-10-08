@@ -436,7 +436,7 @@ export default function ProfilePage() {
   if (isOwn) {
     menu.push(["✎ Edit Profile", () => router.push("/profile/edit")]);
     menu.push(["👣 Who viewed me", () => setPeopleList("footprints")]);
-    menu.push(["❤️ Who voted me", () => setPeopleList("votes")]);
+    menu.push(["❤️ Who voted for me", () => setPeopleList("votes")]);
   } else {
     menu.push([hasVoted ? "💔 Remove vote" : "❤️ Vote", toggleVote]);
     menu.push(["✉️ Message", () => router.push(chatHref(username))]);

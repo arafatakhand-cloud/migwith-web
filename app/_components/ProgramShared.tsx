@@ -119,7 +119,7 @@ export async function checkTagFree(tagged: string, me: string): Promise<string |
       .catch(() => [] as { owner: string; until: number }[]);
   const hits = [...(await read("mentor_tagged", "mentorUsername")), ...(await read("merchant_tagged", "merchantUsername"))];
   const other = hits.find((h) => h.until > now && lc(h.owner) !== lc(me));
-  return other ? `@${tagged} is already tagged by other mentor or merchant.` : null;
+  return other ? `@${tagged} is already tagged by another mentor or merchant.` : null;
 }
 
 /** Date bar used by the Report tabs. */

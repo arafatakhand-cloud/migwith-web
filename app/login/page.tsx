@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  // "Login as Invisible", remembered like the app's checkbox.
+  // "Log in as Invisible", remembered like the app's checkbox.
   const [invisible, setInvisible] = useState(false);
   useEffect(() => {
     try {
@@ -198,7 +198,7 @@ export default function LoginPage() {
               onChange={(e) => setInvisible(e.target.checked)}
               className="h-7 w-7 rounded accent-[#E0762A]"
             />
-            Login as Invisible
+            Log in as Invisible
           </label>
         </div>
 

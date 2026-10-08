@@ -461,7 +461,7 @@ export const BN: Record<string, string> = {
   "Notifications": "নোটিফিকেশন",
   "👫 Currently in this room:": "👫 এখন এই রুমে আছেন:",
   // Explore extras, invisible login, emoji
-  "Login as Invisible": "অদৃশ্য হয়ে লগইন",
+  "Log in as Invisible": "অদৃশ্য হয়ে লগইন",
   "Emoji": "ইমোজি",
   "Coming soon": "শীঘ্রই আসছে",
   "Lucky User": "লাকি ইউজার",

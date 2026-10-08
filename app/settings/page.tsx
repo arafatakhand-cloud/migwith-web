@@ -380,7 +380,7 @@ function SecurityGate({ onClose, onVerified }: { onClose: () => void; onVerified
             className="w-full rounded-[14px] py-3.5 text-sm font-bold text-white"
             style={{ background: "linear-gradient(90deg, #7B1FB8, #B04BD6)" }}
           >
-            👉 SQ setup first — please click here
+            👉 Set up SQ first — please tap here
           </button>
         </>
       ) : (
