@@ -167,15 +167,15 @@ const isOfficialRoomName = (name: string) =>
 export function officialRoomDefaultDescription(roomName: string): string {
   switch (roomName) {
     case "👻 Luxury Bot Official":
-      return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miglife team — place your bets, enjoy the game, and play responsibly. ✨";
+      return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miGlife team — place your bets, enjoy the game, and play responsibly. ✨";
     case "🎰 Luxury Bet":
       return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b l 1000) to bet on Laila, Majnu, Romeo, Juliet, Shirin or Farhad. Play responsibly! ✨";
     case "🃏 LowCard Official":
-      return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miglife team — join a game, draw your card, and play responsibly. ✨";
+      return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miGlife team — join a game, draw your card, and play responsibly. ✨";
     case "🏏 Cricket Official":
-      return "🏏 Welcome to the official Cricket room! 🎉\n\nOn behalf of the miglife team — type !start to start a game, !j to join and !d to bat. Highest run scorer wins. Play responsibly! ✨";
+      return "🏏 Welcome to the official Cricket room! 🎉\n\nOn behalf of the miGlife team — type !start to start a game, !j to join and !d to bat. Highest run scorer wins. Play responsibly! ✨";
     case "🎴 Teen Patti Official":
-      return "🎴 Welcome to the official Teen Patti room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then play blind or see your cards. Best hand wins. Play responsibly! ✨";
+      return "🎴 Welcome to the official Teen Patti room! 🎉\n\nOn behalf of the miGlife team — type !start to open a table, !j to sit down, then play blind or see your cards. Best hand wins. Play responsibly! ✨";
     case "🃏 29 Official":
       return "🃏 Welcome to 29 Card! 🎉\n\n4 players, 2 teams — bid, hide your trump and win the tricks. Empty seats get bots. Type !start to open a table. Play responsibly! ✨";
     case "🃏 29 Card Free":
@@ -187,12 +187,12 @@ export function officialRoomDefaultDescription(roomName: string): string {
     case "🎲 Ludo Bot Free":
       return "🆓 Welcome to Ludo Bot Free! 🎉\n\nSame Ludo — no coins needed. Type !start to open a table, !j to sit down (or tap a yard), add bots, then roll and race your tokens home. Play for fun! ✨";
     case "🎲 Ludo Bot Official":
-      return "🎲 Welcome to the official Ludo room! 🎉\n\nOn behalf of the miglife team — type !start to open a table, !j to sit down, then roll and race all 4 tokens home. First one home wins. Play responsibly! ✨";
+      return "🎲 Welcome to the official Ludo room! 🎉\n\nOn behalf of the miGlife team — type !start to open a table, !j to sit down, then roll and race all 4 tokens home. First one home wins. Play responsibly! ✨";
     case "🎁 Gift Official":
-      return "🎁 Welcome to the official Gift room! 🎉\n\nOn behalf of the miglife team — join the official gift contests and enjoy! ✨";
+      return "🎁 Welcome to the official Gift room! 🎉\n\nOn behalf of the miGlife team — join the official gift contests and enjoy! ✨";
   }
   if (OFFICIAL_COUNTRY_ROOMS.includes(roomName)) {
-    return `🏷️ Welcome to the official ${roomName} room! 🎉\n\nOn behalf of the miglife team — chat, connect and enjoy your time with fellow members from ${roomName}. Please be respectful and have fun! ✨`;
+    return `🏷️ Welcome to the official ${roomName} room! 🎉\n\nOn behalf of the miGlife team — chat, connect and enjoy your time with fellow members from ${roomName}. Please be respectful and have fun! ✨`;
   }
   return LEGACY_DEFAULT_DESCRIPTION;
 }

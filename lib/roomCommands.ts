@@ -144,7 +144,7 @@ const FORTUNES = [
 ];
 
 const HELP =
-  "📜 miglife Commands:\n" +
+  "📜 miGlife Commands:\n" +
   "/hug @user • /kiss @user • /love @user • /heart @user • /cuddle @user • /pat @user • /poke @user • /tickle @user\n" +
   "/highfive @user • /wink @user • /blush @user • /slap @user • /hold @user • /boo @user • /laugh @user • /cry @user • /dance @user • /sing @user\n" +
   "/wave @user • /smile @user • /angry @user • /scare @user • /surprise @user • /clap @user • /cheer @user\n" +

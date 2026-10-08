@@ -90,7 +90,7 @@ function LeaveMiglife({ url, onClose }: { url: string; onClose: () => void }) {
   return (
     <div className="flex flex-col items-center rounded-[22px] border border-white/30 bg-[#141C33] p-5 text-center text-white">
       <span className="text-[34px]">🔗</span>
-      <p className="mt-2 text-[17px] font-extrabold">You are leaving miglife</p>
+      <p className="mt-2 text-[17px] font-extrabold">You are leaving miGlife</p>
       <p className="mt-1.5 break-all text-[15px] font-bold text-[#FFD66B]">{host || url}</p>
       <p className="mt-1 line-clamp-2 break-all text-[11px] text-[#9EA9C0]">{url}</p>
       <p className="mt-2 text-xs text-[#B8C1D3]">Only open links from people you trust. Never type your password on another site.</p>
@@ -150,7 +150,7 @@ function YouTubePlayer({ id, url, onClose }: { id: string; url: string; onClose:
           className="bg-clip-text text-transparent"
           style={{ backgroundImage: "linear-gradient(90deg, #FF9F1C, #FFD93D, #4CD964, #34AADC, #AF52DE, #FF2D95)", WebkitBackgroundClip: "text" }}
         >
-          miglife
+          miGlife
         </span>
       </p>
       <p className="px-2.5 pb-2.5 text-center text-[10px] text-[#7D88A3]">

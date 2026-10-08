@@ -824,7 +824,7 @@ function TnJoinFelt({ state, onInvite }: { state: TnState; onInvite: (seat: numb
       {/* centre: title, countdown, entry / pot and what I can do now */}
       <div className="absolute left-1/2 top-1/2 flex max-w-[200px] -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1">
         <span className="text-[10px] font-extrabold tracking-[4px]" style={{ color: `${GOLD}b3` }}>
-          miglife
+          miGlife
         </span>
         <span className="text-lg font-black tracking-[1px]" style={whiteGoldText}>
           29 CARD
@@ -969,7 +969,7 @@ function TnFeltTable({ state }: { state: TnState }) {
         )}
         <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
           <span className="text-[15px] font-extrabold tracking-[5px]" style={{ color: `${GOLD}73` }}>
-            miglife
+            miGlife
           </span>
           <span className="text-[8px] font-bold tracking-[3px] text-white/30">29 CARD</span>
         </div>

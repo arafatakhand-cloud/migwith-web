@@ -525,7 +525,7 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
         // Public room: /mod makes the person an app moderator (staff) — only
         // miglife can do that (the server checks too). Say why instead of
         // silently doing nothing.
-        if (!ctx.perms.isRoomAdmin) ctx.note(`${ctx.roomName}: In public rooms only miglife can make or remove moderators. In your own private room you can use ${cmd} name.`);
+        if (!ctx.perms.isRoomAdmin) ctx.note(`${ctx.roomName}: In public rooms only miGlife can make or remove moderators. In your own private room you can use ${cmd} name.`);
         else if (!arg) ctx.note(`${ctx.roomName}: Usage: ${cmd} username`);
         else setAppRole(ctx, arg, cmd === "/mod" ? "staff" : "user");
         return true;

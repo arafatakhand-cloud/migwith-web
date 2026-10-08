@@ -262,7 +262,7 @@ export default function SecretPage() {
 
   return (
     <FounderShell
-      title={openTool ? `${openTool.icon} ${openTool.label}` : "miglife secret"}
+      title={openTool ? `${openTool.icon} ${openTool.label}` : "miGlife secret"}
       allowed={f.isAnyFounder}
       loaded={f.loaded}
       onBack={openTool ? () => setTool(null) : undefined}

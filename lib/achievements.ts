@@ -79,7 +79,7 @@ export const ACH_SERIES: AchSeries[] = [
   { id: "allround", field: "gamesPlayed", title: "All-Rounder", emoji: "🎯", steps: [GAME_COUNT], category: "GAMES", goal: `Play all ${GAME_COUNT} games at least once`, soloMetal: 9 },
   // ⭐ Level & time
   { id: "level", field: "level", title: "Rising Star", emoji: "🌟", steps: [10, 30, 50, 100], category: "LEVEL", goal: "Reach level %s" },
-  { id: "loyal", field: "bestStreak", title: "Loyal", emoji: "📅", steps: [7, 30, 100, 365], category: "LEVEL", goal: "Open miglife %s days in a row" },
+  { id: "loyal", field: "bestStreak", title: "Loyal", emoji: "📅", steps: [7, 30, 100, 365], category: "LEVEL", goal: "Open miGlife %s days in a row" },
   { id: "veteran", field: "ageYears", title: "Veteran", emoji: "🎖️", steps: [1, 2, 3], category: "LEVEL", goal: "Account %s year(s) old" },
   { id: "early", field: "earlyBird", title: "Early Bird", emoji: "🐣", steps: [1], category: "LEVEL", goal: "One of the first 1000 members — can never be earned again", soloMetal: 12 },
   // 🍀 Special

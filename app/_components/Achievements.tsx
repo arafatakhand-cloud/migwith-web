@@ -316,7 +316,7 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
             <>
               {earnedEvents.length === 0 && waiting.length === 0 && (
                 <p className="p-5 text-center text-xs" style={{ color: SUB }}>
-                  Special badges for Eid, Puja, Noboborsho and other days appear here. Open miglife during the event to earn one — after it ends, it can never be earned again.
+                  Special badges for Eid, Puja, Noboborsho and other days appear here. Open miGlife during the event to earn one — after it ends, it can never be earned again.
                 </p>
               )}
               {waiting.map((ev) => (
@@ -578,7 +578,7 @@ const PRESETS: [string, string][] = [
   ["🎊", "Noboborsho 1433"],
   ["🇧🇩", "Victory Day"],
   ["🎆", "New Year"],
-  ["🎂", "miglife Birthday"],
+  ["🎂", "miGlife Birthday"],
 ];
 
 // 🎉 Event badges: name + emoji + start/end (Bangladesh time). Everyone who
@@ -618,7 +618,7 @@ function FounderEventBadgesCard() {
     <div className="space-y-2 rounded-[18px] border-[1.5px] border-[#B04BD6] bg-white p-4">
       <p className="text-[17px] font-extrabold">🎉 Event Badges</p>
       <p className="text-xs text-gray-500">
-        Limited-time badge: everyone who opens miglife between start and end gets it. After the end it can never be earned again. Time is Bangladesh
+        Limited-time badge: everyone who opens miGlife between start and end gets it. After the end it can never be earned again. Time is Bangladesh
         time.
       </p>
       <div className="no-scrollbar flex gap-1.5 overflow-x-auto">

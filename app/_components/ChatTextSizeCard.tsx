@@ -54,7 +54,7 @@ export function ChatTextSizeCard() {
         ))}
       </div>
       <p className="mt-2.5 rounded-[10px] bg-[#174EA6]/5 px-2.5 py-2 text-[#0B1F3A]" style={{ fontSize: chatPx(size), lineHeight: `${chatPx(size) + 5}px` }}>
-        <span className="font-bold text-[#D2691E]">miglife</span>: Hello everyone! 👋
+        <span className="font-bold text-[#D2691E]">miGlife</span>: Hello everyone! 👋
       </p>
     </div>
   );

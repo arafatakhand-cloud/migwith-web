@@ -161,7 +161,7 @@ export default function SpecialColourPage() {
       });
       setTrxId("");
       setNote("");
-      setMsg("✅ Sent! miglife will check your payment and approve it.");
+      setMsg("✅ Sent! miGlife will check your payment and approve it.");
     } catch (e: any) {
       setMsg(`❌ ${e?.message || "Could not send. Try again."}`);
     } finally {
@@ -232,19 +232,19 @@ export default function SpecialColourPage() {
           <div className="mt-3.5 space-y-2.5">
             {isMiglife ? (
               <Card>
-                <p className="text-sm">👑 You are miglife — the rainbow name is always yours.</p>
+                <p className="text-sm">👑 You are miGlife — the rainbow name is always yours.</p>
               </Card>
             ) : pending ? (
               <Card>
                 <p className="text-base font-bold text-[#FFD86B]">⏳ Waiting for approval</p>
                 <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#E8E2FF]">
-                  {`${pending.months} month(s) · $${pending.amountUsd} · ${pending.method} · Trx ${pending.trxId}\nmiglife will check your payment and turn your rainbow name on. You will get an alert.`}
+                  {`${pending.months} month(s) · $${pending.amountUsd} · ${pending.method} · Trx ${pending.trxId}\nmiGlife will check your payment and turn your rainbow name on. You will get an alert.`}
                 </p>
               </Card>
             ) : !applyOpen ? (
               <Card>
                 <p className="text-base font-bold text-[#FFD86B]">🔒 Applications are closed right now</p>
-                <p className="mt-1 text-[13px] text-[#E8E2FF]">miglife will open it again soon — check back later.</p>
+                <p className="mt-1 text-[13px] text-[#E8E2FF]">miGlife will open it again soon — check back later.</p>
               </Card>
             ) : (
               <>
@@ -313,7 +313,7 @@ export default function SpecialColourPage() {
                     </p>
                   </div>
                   <p className="mt-1.5 whitespace-pre-wrap rounded-[10px] bg-[#FFD86B]/15 p-2.5 text-[13px] text-[#FFE9A8]">
-                    {paymentInfo || "Payment details will be shown here. Ask miglife how to pay."}
+                    {paymentInfo || "Payment details will be shown here. Ask miGlife how to pay."}
                   </p>
                   <p className="mt-2.5 text-xs text-[#B9A8E8]">How did you pay?</p>
                   <div className="no-scrollbar mt-1.5 flex gap-2 overflow-x-auto">

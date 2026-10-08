@@ -1044,7 +1044,7 @@ function TpOvalTable({
                 <span className="absolute left-[17%] top-[20%] h-[60%] w-[66%] rounded-[50%] border-2 border-dashed" style={{ borderColor: `${sk.line}8c` }} />
                 <span className="absolute left-[14%] top-[8%] h-[42%] w-[72%] rounded-[50%] bg-gradient-to-b from-white/20 to-white/[0.04]" />
                 <span className="relative text-[13px] font-bold tracking-[5px]" style={{ color: `${sk.logo}d9` }}>
-                  miglife
+                  miGlife
                 </span>
                 <span className="relative">
                   <TpChipStack />

@@ -184,7 +184,7 @@ export default function RegisterPage() {
       await signInWithEmailAndPassword(auth, migAliasEmail(created), password);
       // Every account starts with the default coin-transfer PIN, like the app.
       setSecurityPin({ pin: "123456" }).catch(() => {});
-      setInfo("MIG ID created successfully. Welcome to miglife!");
+      setInfo("MIG ID created successfully. Welcome to miGlife!");
       router.replace("/");
     } catch {
       setBusy("");
@@ -263,7 +263,7 @@ export default function RegisterPage() {
         <div className="rounded-full bg-gradient-to-br from-[#FFC84A] to-[#9C5BFF] p-[3px] shadow-[0_0_24px_rgba(255,200,74,.45)]">
           <div className="flex h-[78px] w-[78px] items-center justify-center rounded-full bg-[#0E1530]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icon-192.png" alt="miglife" className="h-[60px] w-[60px] rounded-full" />
+            <img src="/icon-192.png" alt="miGlife" className="h-[60px] w-[60px] rounded-full" />
           </div>
         </div>
         <p className="mt-3 text-[28px] font-extrabold text-[#FFD66B]">Create your ID</p>

@@ -441,7 +441,7 @@ export default function WalletPage() {
               }
             >
               <div className="grid grid-cols-3 gap-1.5">
-                <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spend Today" value={short(spentToday)} />
+                <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spent Today" value={short(spentToday)} />
                 <StatMiniCard tint="#14A044" top="#F0FBF4" bottom="#D5F5E1" icon="up" label="Earned Today" value={short(earnedToday)} />
                 <StatMiniCard
                   tint="#4A1FD6"
@@ -661,7 +661,7 @@ function BalanceHeroCard({ balance, menu, children }: { balance: number | null; 
             </span>
             {menu}
           </div>
-          <p className="mt-2.5 text-[15px] font-semibold text-[#0A1E63]">miglife Balance</p>
+          <p className="mt-2.5 text-[15px] font-semibold text-[#0A1E63]">miGlife Balance</p>
           <p className={`whitespace-nowrap font-extrabold leading-tight tracking-[-0.5px] text-[#0A1E63] ${amount.length > 7 ? "text-[30px]" : "text-[36px]"}`}>
             {amount}
           </p>

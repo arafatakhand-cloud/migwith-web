@@ -460,7 +460,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-2 bg-gradient-to-b from-[#3A3A3A] to-[#1C1C1C] px-2 py-2">
           <BackButton variant="dark" onClick={goBack} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon-192.png" alt="miglife" className="h-[38px] w-[38px] rounded-lg" />
+          <img src="/icon-192.png" alt="miGlife" className="h-[38px] w-[38px] rounded-lg" />
           <h1 data-notranslate className="min-w-0 flex-1 truncate pl-1 text-[21px] font-medium text-white">
             {username}
           </h1>
@@ -520,7 +520,7 @@ export default function ProfilePage() {
               {profile.presence}
             </p>
             <p className="mt-1">
-              miglife Level {profile.level} <span className="text-base">{badgeForLevel(profile.level)}</span>
+              miGlife Level {profile.level} <span className="text-base">{badgeForLevel(profile.level)}</span>
             </p>
             {facts.length > 0 && <p className="mt-1 truncate">{facts.join(", ")}</p>}
             {profile.relationship && <p className="mt-0.5 truncate text-sm">💍 {profile.relationship}</p>}
