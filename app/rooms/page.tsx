@@ -31,6 +31,11 @@ import { PageShell } from "../_components/PageShell";
 import { isMainFounderName } from "../../lib/founder";
 import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
 
+/** A Firestore Timestamp (or anything else) as milliseconds; 0 when missing. */
+function toMillisSafe(v: unknown): number {
+  return v && typeof (v as { toMillis?: unknown }).toMillis === "function" ? (v as { toMillis: () => number }).toMillis() : 0;
+}
+
 type UserRoom = { name: string; description: string; ownerName: string; ownerUid: string; maxUsers: number; capped: boolean };
 
 // Same limits as the app (MainActivity.kt).
@@ -117,8 +122,17 @@ export default function RoomsPage() {
     const names = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM, ...userRooms.map((r) => r.name)]));
     const cutoff = Timestamp.fromMillis(Date.now() - ROOM_PRESENCE_STALE_MS);
     names.forEach((name) => {
-      getCountFromServer(query(collection(db, "room_presence", name, "users"), where("lastSeen", ">=", cutoff)))
-        .then((c) => setCounts((prev) => ({ ...prev, [name]: c.data().count })))
+      const users = collection(db, "room_presence", name, "users");
+      // Like the app's list: fresh heartbeats PLUS /parked spots (paid — they
+      // stay listed until parkedUntil passes, however old lastSeen is).
+      Promise.all([
+        getCountFromServer(query(users, where("lastSeen", ">=", cutoff))),
+        getDocs(query(users, where("parkedUntil", ">", Date.now()))).catch(() => null),
+      ])
+        .then(([c, parked]) => {
+          const extra = parked ? parked.docs.filter((d) => toMillisSafe(d.get("lastSeen")) < cutoff.toMillis()).length : 0;
+          setCounts((prev) => ({ ...prev, [name]: c.data().count + extra }));
+        })
         .catch(() => {});
     });
     getDocs(collection(db, "rooms"))

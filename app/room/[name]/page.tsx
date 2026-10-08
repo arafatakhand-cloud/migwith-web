@@ -122,7 +122,7 @@ import { EntryEffectHost } from "../../_components/EntryEffects";
 
 type ChatMessage = SessionMessage;
 
-type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number };
+type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number; parkedUntil?: number };
 
 // invisible: logged in as Invisible (users.isInvisible) — no presence doc,
 // no heartbeat, no "has entered/left". quiet: that, or Presence Status
@@ -982,7 +982,8 @@ function RoomView({ roomName }: { roomName: string }) {
     });
     const cutoff = serverNow() - ROOM_PRESENCE_STALE_MS;
     return presence
-      .filter((p) => p.username && p.lastSeenMs >= cutoff)
+      // Like the app: a fresh heartbeat, no heartbeat stamp yet, or a /parked spot.
+      .filter((p) => p.username && (!p.lastSeenMs || p.lastSeenMs >= cutoff || (p.parkedUntil || 0) > serverNow()))
       .filter((p) => {
         if (p.uid === user?.uid) return true;
         const left = leftAt.get(p.uid);
@@ -2666,5 +2667,8 @@ function presenceList(docs: QueryDocumentSnapshot[]) {
       username: String(d.get("username") || ""),
       level: Number(d.get("level") || 1),
       lastSeenMs: toMillis(d.get("lastSeen", { serverTimestamps: "estimate" })),
+      // /park (paid): the spot stays listed until parkedUntil passes, however
+      // old lastSeen is — the same rule as the app's list and the server.
+      parkedUntil: Number(d.get("parkedUntil") || 0),
     }));
 }
