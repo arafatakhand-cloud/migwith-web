@@ -120,7 +120,7 @@ import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
-import { EntryEffectHost } from "../../_components/EntryEffects";
+import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
 
 type ChatMessage = SessionMessage;
@@ -761,6 +761,7 @@ function RoomView({ roomName }: { roomName: string }) {
       if (!left) addOpenRoom(uid, roomName);
 
       if (!alreadyHere && !left && !quietMe) {
+        requestOwnEntryFx(roomName); // ✨ a real entry → my own entry effect plays for me
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
           sender: profile.username,
@@ -794,6 +795,7 @@ function RoomView({ roomName }: { roomName: string }) {
             entryMarker: serverTimestamp(),
           }).catch(() => {});
           if (!quietMe) {
+            requestOwnEntryFx(roomName);
             addDoc(collection(db, "room_messages", roomName, "messages"), {
               text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
               sender: profile.username,

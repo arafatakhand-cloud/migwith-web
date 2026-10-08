@@ -249,7 +249,7 @@ export function Dashboard() {
   );
 
   // 📟 Classic: a light strip with a small square photo, ● name + role, the
-  // status in grey italics, coins and level on the right.
+  // status in grey italics, and the level on the right.
   const presenceDot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[me?.presence || "ONLINE"] || "#9AA3AE";
   const classicStrip = (
     <div className="flex items-center border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] px-2.5 py-2 text-[#16315F]">
@@ -300,14 +300,13 @@ export function Dashboard() {
           </button>
         )}
       </div>
-      <div className="ml-2 flex shrink-0 flex-col items-end">
-        <Link href="/wallet" className="rounded px-1 text-sm font-extrabold text-[#C78A00]">
-          🪙 {me ? me.coins.toLocaleString("en-US") : "…"}
-        </Link>
-        <Link href="/level" className="flex items-center gap-[3px] rounded px-1 text-[13px] font-extrabold text-[#2F6ABD]">
-          <span>{badgeForLevel(me?.level ?? 1)}</span>Lv {me?.level ?? "…"}
-        </Link>
-      </div>
+      {/* Level only (coins removed), at the top, level with the name */}
+      <Link
+        href="/level"
+        className="ml-2 flex shrink-0 items-center gap-[3px] self-start rounded border border-[#C9D2DE] bg-[#E6ECF4] px-1.5 py-0.5 text-[13px] font-extrabold text-[#2F6ABD]"
+      >
+        <span>{badgeForLevel(me?.level ?? 1)}</span>Lv {me?.level ?? "…"}
+      </Link>
     </div>
   );
 

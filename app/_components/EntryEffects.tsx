@@ -80,9 +80,19 @@ function entryNameOf(m: { text: string; type: string }): string | null {
   return name && name.length <= 30 && !name.includes(" ") ? name : null;
 }
 
-// room → when my own entry effect last played in this tab
+// ✨ My own effect plays ONLY on a real entry: the room page calls
+// requestOwnEntryFx when it posts my "has entered" line (never on a tab
+// switch, a reload of a room I never left, or coming back to the tab), and the
+// room's EntryEffectHost plays it.
+const ownRequests = new Map<string, number>(); // room → when I really entered
+// room → when my own effect last played (so my own line isn't played twice)
 const ownPlayed = new Map<string, number>();
 const OWN_GAP_MS = 10 * 60_000;
+const OWN_EVENT = "migwith-own-entry-fx";
+export function requestOwnEntryFx(roomKey: string) {
+  ownRequests.set(roomKey, Date.now());
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(OWN_EVENT));
+}
 
 /** Put this once over the room: plays the effect of whoever just came in. */
 export function EntryEffectHost({
@@ -104,30 +114,40 @@ export function EntryEffectHost({
     },
     []
   );
-  // ✨ MY OWN entry effect, on my screen: played when I open the room, without
-  // waiting for my "has entered" line (it often comes in the first batch, which
-  // counts as old, or isn't written again when I come back soon). Once per room
-  // every 10 minutes, so switching tabs doesn't replay it. Looked up fresh, so
-  // an effect I just bought or switched shows right away.
+  // ✨ MY OWN entry effect, on my screen: played only when I REALLY entered
+  // (my "has entered" line was just written). Looked up fresh, so an effect I
+  // just bought or switched shows right away.
   useEffect(() => {
     const me = myName.trim();
     if (!me) return;
-    if (Date.now() - (ownPlayed.get(roomKey) ?? 0) < OWN_GAP_MS) return;
     let gone = false;
-    // marked now, so my "has entered" line arriving meanwhile isn't played as well
-    ownPlayed.set(roomKey, Date.now());
-    const t = setTimeout(async () => {
-      const fx = await entryFxFor(me, true);
-      if (gone || !fx) return;
-      setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
-    }, 700);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const check = () => {
+      const at = ownRequests.get(roomKey);
+      if (at === undefined) return;
+      ownRequests.delete(roomKey);
+      if (Date.now() - at > 60_000) return; // stale request
+      // marked now, so my "has entered" line arriving meanwhile isn't played as well
+      ownPlayed.set(roomKey, Date.now());
+      timer = setTimeout(async () => {
+        const fx = await entryFxFor(me, true);
+        if (gone || !fx) return;
+        setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
+      }, 700); // let the room draw first
+    };
+    check();
+    window.addEventListener(OWN_EVENT, check);
     return () => {
       gone = true;
-      clearTimeout(t);
-      // left before it played: let it play next time
-      if (Date.now() - (ownPlayed.get(roomKey) ?? 0) < 700) ownPlayed.delete(roomKey);
+      if (timer) clearTimeout(timer);
+      window.removeEventListener(OWN_EVENT, check);
     };
   }, [roomKey, myName]);
+  // The first few seconds after opening a room the chat fills in (cache, then
+  // the server) — those older lines are not new entries, so they're absorbed.
+  const openedAt = useRef({ room: "", at: 0 });
+  if (openedAt.current.room !== roomKey) openedAt.current = { room: roomKey, at: 0 };
+  if (openedAt.current.at === 0 && messages.length > 0) openedAt.current.at = Date.now();
   // Look up each new name, then queue the ones with a running effect.
   useEffect(() => {
     if (!names.length) return;
@@ -135,6 +155,7 @@ export function EntryEffectHost({
     const me = myName.trim().toLowerCase();
     const batch = names.filter((n) => !(me && n.toLowerCase() === me && Date.now() - (ownPlayed.get(roomKey) ?? 0) < OWN_GAP_MS));
     setNames(() => []);
+    if (Date.now() - openedAt.current.at < 4_000) return;
     if (!batch.length) return;
     Promise.all(batch.map(async (n) => ({ fx: await entryFxFor(n), name: n }))).then((found) => {
       if (!mounted.current) return;
