@@ -484,7 +484,7 @@ function RoomView({ roomName }: { roomName: string }) {
         const cutoff = now - ROOM_PRESENCE_STALE_MS;
         snap.docs.forEach((d) => {
           if (d.id === user.uid) return;
-          const seen = toMillis(d.get("lastSeen"));
+          const seen = toMillis(d.get("lastSeen", { serverTimestamps: "estimate" }));
           const parked = Number(d.get("parkedUntil") || 0) > now;
           if (!seen || seen >= cutoff || parked || staleHandled.current.has(d.id + seen)) return;
           staleHandled.current.add(d.id + seen);
@@ -645,7 +645,7 @@ function RoomView({ roomName }: { roomName: string }) {
           const existing = await getDocFromServer(presenceRef);
           checked = true;
           if (existing.exists()) {
-            const lastSeen = toMillis(existing.get("lastSeen"));
+            const lastSeen = toMillis(existing.get("lastSeen", { serverTimestamps: "estimate" }));
             const parkedUntil = Number(existing.get("parkedUntil") || 0);
             const fresh =
               lastSeen >= serverNow() - ROOM_PRESENCE_STALE_MS || parkedUntil > serverNow();
@@ -700,7 +700,7 @@ function RoomView({ roomName }: { roomName: string }) {
           const snap = await getDocs(collection(db, "room_presence", roomName, "users"));
           const fresh = Date.now() - ROOM_FULL_FRESH_MS;
           const inside = snap.docs.filter(
-            (d) => d.id !== uid && toMillis(d.get("lastSeen")) >= fresh
+            (d) => d.id !== uid && toMillis(d.get("lastSeen", { serverTimestamps: "estimate" })) >= fresh
           ).length;
           const max = roomInfoRef.current.maxUsers;
           if (inside >= max) {

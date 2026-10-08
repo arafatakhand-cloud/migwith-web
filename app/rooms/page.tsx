@@ -130,7 +130,7 @@ export default function RoomsPage() {
         getDocs(query(users, where("parkedUntil", ">", Date.now()))).catch(() => null),
       ])
         .then(([c, parked]) => {
-          const extra = parked ? parked.docs.filter((d) => toMillisSafe(d.get("lastSeen")) < cutoff.toMillis()).length : 0;
+          const extra = parked ? parked.docs.filter((d) => toMillisSafe(d.get("lastSeen", { serverTimestamps: "estimate" })) < cutoff.toMillis()).length : 0;
           setCounts((prev) => ({ ...prev, [name]: c.data().count + extra }));
         })
         .catch(() => {});

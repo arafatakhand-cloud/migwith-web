@@ -183,7 +183,7 @@ export default function PrivateChatPage() {
   useEffect(() => {
     if (!user || !friend) return;
     return onSnapshot(query(collection(db, "users"), where("username", "==", friend), limit(1)), (snap) =>
-      setFriendLastActive(toMillis(snap.docs[0]?.get("lastActiveAt")))
+      setFriendLastActive(toMillis(snap.docs[0]?.get("lastActiveAt", { serverTimestamps: "estimate" })))
     );
   }, [user, friend]);
 

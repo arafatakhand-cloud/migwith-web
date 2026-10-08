@@ -27,7 +27,7 @@ function LiveCount({ room }: { room: string }) {
     getDocs(collection(db, "room_presence", room, "users"))
       .then((snap) => {
         const cutoff = Date.now() - ROOM_PRESENCE_STALE_MS;
-        setN(snap.docs.filter((d) => (d.get("lastSeen")?.toMillis?.() ?? 0) >= cutoff || Number(d.get("parkedUntil") || 0) > Date.now()).length);
+        setN(snap.docs.filter((d) => (d.get("lastSeen", { serverTimestamps: "estimate" })?.toMillis?.() ?? 0) >= cutoff || Number(d.get("parkedUntil") || 0) > Date.now()).length);
       })
       .catch(() => setN(null));
   }, [room]);
