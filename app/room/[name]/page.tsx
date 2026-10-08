@@ -968,6 +968,13 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Game rooms read as a plain running log: every line on the left.
   const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].includes(roomName);
+  // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
+  const entryFxGameRoom =
+    gameRoom ||
+    !!roomActiveBot ||
+    [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].some((g) =>
+      roomName.startsWith(`${g} #`)
+    );
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
@@ -1673,7 +1680,9 @@ function RoomView({ roomName }: { roomName: string }) {
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
             <RoomFireworksHost messages={messages} roomKey={roomName} />
             <RoomHeartsHost messages={messages} roomKey={roomName} />
-            <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} />
+            {/* ✨ Entry Effects play only in CHAT rooms — never in game rooms (official
+                game rooms, their extra "#2" tables, or any room with a game bot on). */}
+            {!entryFxGameRoom && <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} />}
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
