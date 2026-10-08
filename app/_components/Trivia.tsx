@@ -295,8 +295,9 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
 export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: string; isStaff: boolean }) {
   const reveal = state.phase === "BREAK" && state.correctIndex >= 0;
   const locked = state.phase !== "QUESTION" || state.iAnswered || state.myPick >= 0;
-  const frac = Math.min(1, Math.max(0, state.secondsLeft / 20));
-  const low = state.secondsLeft <= 6;
+  // 7-second questions (TRIVIA_QUESTION_MS on the server); red for the last 2 seconds.
+  const frac = Math.min(1, Math.max(0, state.secondsLeft / 7));
+  const low = state.secondsLeft <= 2;
   return (
     <div className="px-2 py-1">
       <div
