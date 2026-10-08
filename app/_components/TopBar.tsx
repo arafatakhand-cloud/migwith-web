@@ -12,6 +12,7 @@ import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { LanguageToggle } from "./LanguageToggle";
 import { useIsClassic } from "../../lib/uiStyle";
+import { isOnSwipeContent } from "./SwipeToReply";
 
 // The app's top bar: ☰ menu, 👥 Home and 💬 Rooms tabs, and a blue pill naming
 // the page you are on (Explore, Members, Settings …). Signed out: logo + Login.
@@ -88,7 +89,14 @@ export function TopBar() {
         return;
       }
       // A right-swipe on someone's message is swipe-to-reply (the room page handles it).
-      start = { x, y: e.touches[0].clientY, t: Date.now(), reply: !!el?.closest("[data-swipe-reply]") };
+      const replyLine = el?.closest("[data-swipe-reply]");
+      start = {
+        x,
+        y: e.touches[0].clientY,
+        t: Date.now(),
+        // On a full-width line only the message itself replies; empty space slides rooms.
+        reply: !!replyLine && isOnSwipeContent(replyLine, x, e.touches[0].clientY),
+      };
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
