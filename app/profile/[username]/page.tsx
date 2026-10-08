@@ -136,8 +136,8 @@ function Tile({ value, label, tint: tintIn, icon, onClick }: { value: string; la
         </>
       )}
       <span className="relative block text-[15px] leading-[17px]">{icon}</span>
-      <span className="relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
-      <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
+      <span className={`relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)] ${classic ? "text-[#16315F]" : ""}`}>{value}</span>
+      <span className={`relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)] ${classic ? "text-[#16315F]" : ""}`}>{label}</span>
     </>
   );
   const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "rounded-[22px]"}`;
@@ -161,6 +161,8 @@ export default function ProfilePage() {
   const username = raw === "me" ? me : raw;
   const isOwn = !!me && sameName(username, me);
   const classic = useIsClassic();
+  // 📟 Classic: the main button keeps its colour with navy text and a light frame (like the app).
+  const mainBtnInk = classic ? "border-[#C9D2DE] text-[#16315F]" : "border-[#B8350A] text-white";
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -474,7 +476,7 @@ export default function ProfilePage() {
           <BackButton variant="dark" onClick={goBack} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon-192.png" alt="miGlife" className="h-[38px] w-[38px] rounded-lg" />
-          <h1 data-notranslate className="min-w-0 flex-1 truncate pl-1 text-[21px] font-medium text-white">
+          <h1 data-notranslate className={`min-w-0 flex-1 truncate pl-1 text-[21px] font-medium ${classic ? "text-[#16315F]" : "text-white"}`}>
             {username}
           </h1>
         </div>
@@ -549,8 +551,14 @@ export default function ProfilePage() {
             )}
             {bubble && (
               <div className="mt-1.5">
-                <span className="ml-[34px] block h-0 w-0 border-x-[7px] border-b-[7px] border-x-transparent border-b-[#5E5E5E]" />
-                <p data-notranslate className="whitespace-pre-wrap rounded-lg bg-[#5E5E5E] px-2.5 py-1.5 text-sm text-white">
+                {/* 📟 Classic: light grey speech bubble with navy text */}
+                <span
+                  className={`ml-[34px] block h-0 w-0 border-x-[7px] border-b-[7px] border-x-transparent ${classic ? "border-b-[#E3E8EE]" : "border-b-[#5E5E5E]"}`}
+                />
+                <p
+                  data-notranslate
+                  className={`whitespace-pre-wrap rounded-lg px-2.5 py-1.5 text-sm ${classic ? "bg-[#E3E8EE] text-[#16315F]" : "bg-[#5E5E5E] text-white"}`}
+                >
                   {bubble}
                 </p>
               </div>
@@ -559,7 +567,7 @@ export default function ProfilePage() {
               {isOwn ? (
                 <Link
                   href="/profile/edit"
-                  className="rounded-lg border border-[#B8350A] bg-gradient-to-b from-[#FF9A3C] to-[#E8480C] px-[26px] py-2 text-base font-medium text-white"
+                  className={`rounded-lg border bg-gradient-to-b from-[#FF9A3C] to-[#E8480C] px-[26px] py-2 text-base font-medium ${mainBtnInk}`}
                 >
                   Edit Profile
                 </Link>
@@ -569,7 +577,7 @@ export default function ProfilePage() {
                     type="button"
                     disabled={!!busy}
                     onClick={() => toggleMine("following", !isFollowing)}
-                    className={`rounded-lg border border-[#B8350A] px-[26px] py-2 text-base font-medium text-white disabled:opacity-60 ${
+                    className={`rounded-lg border px-[26px] py-2 text-base font-medium disabled:opacity-60 ${mainBtnInk} ${
                       isFollowing ? "bg-gradient-to-b from-[#9A9A9A] to-[#6A6A6A]" : "bg-gradient-to-b from-[#FF9A3C] to-[#E8480C]"
                     }`}
                   >
@@ -581,7 +589,7 @@ export default function ProfilePage() {
                     onClick={toggleVote}
                     aria-label={hasVoted ? "Remove vote" : "Vote"}
                     className={`flex h-[38px] w-[38px] items-center justify-center rounded-lg text-[17px] disabled:opacity-60 ${
-                      hasVoted ? "bg-[#E0303F]" : "bg-[#6A6A6A]"
+                      hasVoted ? "bg-[#E0303F]" : classic ? "bg-[#F4F6F9]" : "bg-[#6A6A6A]"
                     }`}
                   >
                     {hasVoted ? "❤️" : "🤍"}
