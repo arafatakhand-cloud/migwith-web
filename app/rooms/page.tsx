@@ -79,12 +79,9 @@ export default function RoomsPage() {
   const [createError, setCreateError] = useState("");
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [maxes, setMaxes] = useState<Record<string, number>>({});
-  // "All": the three sections (Public / Game / Private), each open and showing 5 at first.
-  const [closed, setClosed] = useState<Record<string, boolean>>({});
-  const [showAll, setShowAll] = useState<Record<string, boolean>>({});
-  const [filter, setFilter] = useState<"all" | "fav" | "recent" | "mine">("all");
   const [refreshKey, setRefreshKey] = useState(0);
   const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
+  const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
   const classic = useIsClassic();
   const { favorites, recent, toggleFavorite } = useRoomPrefs();
 
@@ -236,10 +233,6 @@ export default function RoomsPage() {
   const privateSection = Array.from(new Set(nonGame.filter((r) => !byMigwith(r)).map((r) => r.name)))
     .filter((n) => matches(n) && !OFFICIAL_COUNTRY_ROOMS.includes(n) && !isBannedRoomName(n))
     .sort(byLive);
-  const hotName = [...OFFICIAL_COUNTRY_ROOMS, ...gameRooms, ...userRooms.map((r) => r.name)]
-    .filter((n) => !isBannedRoomName(n))
-    .sort(byLive)[0];
-  const hotLive = hotName ? live(hotName) : 0;
 
   const others = {
     fav: { names: favorites.filter(matches), empty: "No favorite rooms yet — tap ☆ on a room." },
@@ -254,17 +247,6 @@ export default function RoomsPage() {
   };
   const gameCapacity = (name: string) =>
     /millionaire/i.test(name) ? 40 : name === "🃏 LowCard Official" ? 30 : name === "🎁 Gift Official" ? 500 : 50;
-  const row = (name: string) => (
-    <RoomRow
-      key={name}
-      name={name}
-      subtitle={subtitle(name)}
-      count={counts[name]}
-      max={roomMax(name)}
-      favorite={favorites.includes(name)}
-      onStar={() => toggleFavorite(name)}
-    />
-  );
 
   const tryCreate = () => {
     // Same checks as the app, before the form opens.
@@ -448,238 +430,172 @@ export default function RoomsPage() {
     );
   }
 
+  // ✨ MODERN Chat Rooms list (the app's ModernRoomsList): the same folders as
+  // Classic (Favorites, Recent, My Rooms, Game, Public, Private — 5 busiest
+  // each, Search finds the rest), drawn as a "🔥 Hot now" strip, then each
+  // folder as a rounded card with an icon tile, a count chip and a turning
+  // arrow, and every room a row with a colour avatar, live dot and "4/30" pill.
+  const sections: [string, string, string[]][] = [
+    ["fav", "Favorites", others.fav.names],
+    ["recent", "Recent", others.recent.names],
+    ["mine", "My Rooms", others.mine.names],
+    ["game", "Game Rooms", gameSection.filter(matches)],
+    ["public", "Public Rooms", publicSection],
+    ["private", "Private Rooms", privateSection],
+  ];
+  const LOOK: Record<string, [string, string]> = {
+    fav: ["⭐", "#F5A623"],
+    recent: ["🕘", "#3B7BF0"],
+    mine: ["🏠", "#22A06B"],
+    game: ["🎮", "#7B5CF0"],
+    public: ["🌍", "#1FA2B8"],
+    private: ["🔐", "#E5484D"],
+  };
+  const HOT_GRADS = [
+    ["#FF8A5B", "#FF4F8B"],
+    ["#6FB0FF", "#3B7BF0"],
+    ["#34C77B", "#1FA2B8"],
+    ["#B08CFF", "#7B5CF0"],
+  ];
+  const hot = Array.from(new Set(sections.flatMap(([, , names]) => names)))
+    .filter((n) => live(n) > 0)
+    .sort(byLive)
+    .slice(0, 8);
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl space-y-4 px-3 lg:max-w-4xl py-4 sm:px-6">
-        {/* Search · create */}
-        <div className="flex items-center gap-2">
-          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#D5E3F5] bg-white px-4 py-2.5 shadow-sm">
-            <span className="text-[#8A9BBC]">⌕</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search room"
-              className="min-w-0 flex-1 bg-transparent text-sm text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC]"
-            />
-          </label>
+      <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl space-y-2.5 bg-gradient-to-b from-[#EAF4FE] to-[#EFEAFB] px-3 pb-6 pt-2.5 lg:max-w-4xl">
+        {/* search + create + refresh */}
+        <div className="flex items-center">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="🔍  Search any room"
+            className="h-[46px] min-w-0 flex-1 rounded-full bg-white px-4 text-sm font-semibold text-[#0B2A5B] shadow-[0_2px_6px_rgba(0,0,0,.1)] outline-none placeholder:font-normal placeholder:text-[#6B7A99]"
+          />
           <button
             type="button"
             onClick={tryCreate}
             title="Create Room"
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] to-[#3B7BF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
+            className="ml-2 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] via-[#3B7BF0] to-[#7B5CF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
           >
             +
           </button>
-        </div>
-
-        {/* Hot now (only while someone is in it) */}
-        {hotName && hotLive > 0 && (
-          <Link
-            href={roomHref(hotName)}
-            className="flex items-center gap-3 rounded-3xl bg-gradient-to-r from-[#FFD2B3] via-[#FFB8A8] to-[#FFC7C7] px-[18px] py-4 shadow-[0_6px_14px_rgba(255,154,107,.45)]"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-[#9A3A1C]">Hot now</p>
-              <p data-notranslate className="truncate text-[21px] font-extrabold text-[#5A1E0C]">
-                {roomDisplayName(hotName)}
-              </p>
-              <p className="text-xs text-[#9A3A1C]">
-                {hotLive} people · {hotLive >= 20 ? "very active" : "active"}
-              </p>
-            </div>
-            <span className="rounded-full bg-white px-5 py-2 text-[15px] font-bold text-[#D2553A]">Join</span>
-          </Link>
-        )}
-
-        {/* Official games */}
-        <div>
-          <p className="mb-2 pl-1 text-[15px] font-bold text-[#0B2A5B]">Official games</p>
-          <div className="no-scrollbar -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1">
-            {OFFICIAL_GAME_CARDS.filter(([name]) => name !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([name, label], i) => {
-              const [bg, ink] = GAME_PASTELS[i % GAME_PASTELS.length];
-              const n = counts[name] ?? 0;
-              return (
-                <Link
-                  key={name}
-                  href={roomHref(name)}
-                  className="w-[120px] shrink-0 rounded-[20px] border p-3.5 shadow-sm"
-                  style={{ background: `linear-gradient(135deg, ${bg}, #FFFFFF80)`, borderColor: `${ink}2E` }}
-                >
-                  <p data-notranslate className="truncate text-[15px] font-extrabold" style={{ color: ink }}>
-                    {label}
-                  </p>
-                  <p className="flex items-center gap-1.5 text-xs" style={{ color: `${ink}CC` }}>
-                    <span className="h-[7px] w-[7px] rounded-full" style={{ background: n > 0 ? "#34C77B" : `${ink}4D` }} />
-                    {n} playing
-                  </p>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Filter pills + refresh */}
-        <div className="no-scrollbar flex gap-2 overflow-x-auto">
-          {(
-            [
-              ["all", "All"],
-              ["fav", "Favorites"],
-              ["recent", "Recent"],
-              ["mine", "My rooms"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setFilter(id)}
-              className={`shrink-0 rounded-full border px-[18px] py-2 text-sm ${
-                filter === id
-                  ? "border-transparent bg-gradient-to-b from-[#6FB0FF] to-[#3B7BF0] font-bold text-white"
-                  : "border-[#D3E1F3] bg-white font-medium text-[#0B2A5B]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
           <button
             type="button"
             onClick={() => setRefreshKey((k) => k + 1)}
             title="Refresh"
-            className="shrink-0 rounded-full border border-[#D3E1F3] bg-white px-3.5 py-2 text-sm font-bold text-[#5B6B8C]"
+            className="ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[17px] font-bold text-[#6B7A99]"
           >
             ↻
           </button>
         </div>
 
-        {createDialog}
-
-        {/* Room list */}
-        {filter === "all" ? (
-          (
-            [
-              ["public", "Public rooms", publicSection],
-              ["game", "Game rooms", gameSection],
-              ["private", "Private rooms", privateSection],
-            ] as const
-          ).map(([key, title, names]) => {
-            const open = !closed[key];
-            // Public & Private: only the 5 HOTTEST rooms (most people inside),
-            // no "Show more" — every other room is found with Search (like the app).
-            const topOnly = key === "public" || key === "private";
-            const all = topOnly ? !!q : showAll[key];
-            return (
-              <div key={key} className="space-y-[7px]">
-                <button
-                  type="button"
-                  onClick={() => setClosed((c) => ({ ...c, [key]: open }))}
-                  className="flex w-full items-center gap-2 rounded-[14px] bg-gradient-to-r from-[#E2EFFD] to-[#EDE7FB] px-3.5 py-2.5 text-left"
+        {/* 🔥 hot now */}
+        {hot.length > 0 && !q && (
+          <div>
+            <p className="pb-1.5 pl-1 text-sm font-extrabold text-[#0B2A5B]">🔥 Hot now</p>
+            <div className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3">
+              {hot.map((name, i) => (
+                <Link
+                  key={name}
+                  href={roomHref(name)}
+                  className="w-32 shrink-0 rounded-[18px] p-3 text-white shadow-[0_3px_8px_rgba(0,0,0,.18)]"
+                  style={{ background: `linear-gradient(135deg, ${HOT_GRADS[i % 4][0]}, ${HOT_GRADS[i % 4][1]})` }}
                 >
-                  <span className="text-[15px] font-bold text-[#0B2A5B]">{title}</span>
-                  <span className="rounded-full bg-white/85 px-2 text-xs font-bold leading-5 text-[#5B6B8C]">{names.length}</span>
-                  <span className="ml-auto text-base font-bold text-[#5B6B8C]">{open ? "▴" : "▾"}</span>
-                </button>
-                {open && (
-                  <>
-                    {names.length === 0 && <p className="py-2 text-center text-[13px] text-[#5B6B8C]">No rooms here.</p>}
-                    <ul className="grid gap-[7px] md:grid-cols-2">{(all ? names : names.slice(0, 5)).map(row)}</ul>
-                    {topOnly && !q && names.length > 5 && (
-                      <p className="py-1.5 text-center text-[11.5px] text-[#5B6B8C]">🔍 Showing the 5 hottest rooms — search to find any other room</p>
-                    )}
-                    {!topOnly && names.length > 5 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAll((s) => ({ ...s, [key]: !all }))}
-                        className="w-full py-2 text-center text-[13px] font-bold text-[#3B7BF0]"
-                      >
-                        {all ? "Show less ▴" : `Show more (${names.length - 5}) ▾`}
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })
-        ) : others[filter].names.length === 0 ? (
-          <p className="py-6 text-center text-[13px] text-[#5B6B8C]">{others[filter].empty}</p>
-        ) : (
-          <ul className="grid gap-[7px] md:grid-cols-2">{others[filter].names.map(row)}</ul>
+                  <span data-notranslate className="block truncate text-sm font-extrabold">
+                    {roomDisplayName(name)}
+                  </span>
+                  <span className="mt-1 block text-[11.5px] font-semibold text-white/90">● {live(name)} in room</span>
+                </Link>
+              ))}
+            </div>
+          </div>
         )}
+
+        {sections.map(([key, title, allRooms]) => {
+          const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game");
+          const limited = key !== "fav" && !q && allRooms.length > 5;
+          const rooms = limited ? [...allRooms].sort(byLive).slice(0, 5) : allRooms;
+          const [icon, accent] = LOOK[key];
+          return (
+            <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
+              <button
+                type="button"
+                onClick={() => setModernOpen((o) => ({ ...o, [key]: !isOpen }))}
+                className="flex w-full items-center px-3 py-2.5 text-left"
+                style={{ background: `linear-gradient(90deg, ${accent}1A, transparent)` }}
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
+                  {icon}
+                </span>
+                <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
+                <span className="ml-2 rounded-full px-2 text-[11px] font-extrabold" style={{ color: accent, background: `${accent}24` }}>
+                  {allRooms.length}
+                </span>
+                <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
+              </button>
+              {isOpen && (
+                <>
+                  {rooms.length === 0 && <p className="pb-3 pl-[54px] pt-1 text-[12.5px] text-[#6B7A99]">No rooms here yet</p>}
+                  {rooms.map((name, i) => {
+                    const users = counts[name] ?? 0;
+                    const fav = favorites.includes(name);
+                    const shown = roomDisplayName(name);
+                    const letter = (shown.match(/[\p{L}\p{N}]/u)?.[0] || "#").toUpperCase();
+                    return (
+                      <div key={name}>
+                        {i > 0 && <div className="ml-16 h-px bg-[#EEF2F7]" />}
+                        <div className="flex items-center py-2 pl-3 pr-1">
+                          <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
+                            <span className="relative h-10 w-10 shrink-0">
+                              <span
+                                className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[17px] font-extrabold text-white"
+                                style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent}8C)` }}
+                              >
+                                {letter}
+                              </span>
+                              {users > 0 && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#34C77B]" />
+                              )}
+                            </span>
+                            <span className="ml-3 min-w-0 flex-1">
+                              <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
+                                {shown}
+                              </span>
+                              <span className="block truncate text-[11.5px] text-[#6B7A99]">{subtitle(name)}</span>
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full px-[9px] py-[3px] text-[11.5px] font-extrabold ${
+                                users > 0 ? "bg-[#DDF6E8] text-[#15824B]" : "bg-[#F0F3F8] text-[#6B7A99]"
+                              }`}
+                            >
+                              {users}/{roomMax(name)}
+                            </span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => toggleFavorite(name)}
+                            aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+                            className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center text-[19px] ${fav ? "text-[#F5A623]" : "text-[#B4C0D0]"}`}
+                          >
+                            {fav ? "★" : "☆"}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {limited ? (
+                    <p className="pb-2.5 pt-0.5 text-center text-[11px] text-[#6B7A99]">🔍 Top 5 busiest · search to find any other room</p>
+                  ) : (
+                    <div className="h-1.5" />
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
       </section>
+      {createDialog}
     </PageShell>
-  );
-}
-
-const OFFICIAL_GAME_CARDS: [string, string][] = [
-  ["🏏 Cricket Official", "Cricket"],
-  ["🎴 Teen Patti Official", "Teen Patti"],
-  ["🎲 Ludo Bot Official", "Ludo"],
-  ["🎲 Ludo Bot Free", "Ludo Free"],
-  ["👑 MIG Royale Official", "MIG Royale"],
-  ["🃏 29 Official", "29 Card"],
-  ["🃏 29 Card Free", "29 Card Free"],
-  ["🧠 Trivia Official", "Trivia"],
-  ["👻 Luxury Bot Official", "Luxury Bot"],
-  ["🎰 Luxury Bet", "Luxury Bet"],
-  ["🃏 LowCard Official", "LowCard"],
-  ["🎁 Gift Official", "Gift"],
-];
-
-const GAME_PASTELS: [string, string][] = [
-  ["#D7F4E6", "#178A5A"],
-  ["#FCE1EC", "#C2336E"],
-  ["#DDEBFD", "#2F6BD6"],
-  ["#EFE3FD", "#7B45C9"],
-  ["#FFF0D6", "#B7791F"],
-  ["#FFE4DC", "#D2553A"],
-];
-
-// The app's LightRoomCard.
-function RoomRow({
-  name,
-  subtitle,
-  count,
-  max,
-  favorite,
-  onStar,
-}: {
-  name: string;
-  subtitle: string;
-  count: number | undefined;
-  max: number;
-  favorite: boolean;
-  onStar: () => void;
-}) {
-  const n = count ?? 0;
-  return (
-    <li>
-      <Link
-        href={roomHref(name)}
-        className="flex items-center gap-2 rounded-[14px] border border-[#E1EAF6] bg-white px-3.5 py-[9px] shadow-[0_1px_3px_rgba(156,194,236,.6)] hover:bg-[#F7FBFF]"
-      >
-        <span className="min-w-0 flex-1">
-          <span data-notranslate className="flex items-center gap-1.5 text-sm font-semibold text-[#0B2A5B]">
-            <span className="truncate">{roomDisplayName(name)}</span>
-            {n > 0 && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#6FCFA4]" />}
-          </span>
-          <span data-notranslate className="block truncate text-xs text-[#5B6B8C]">
-            {subtitle}
-          </span>
-        </span>
-        <span className={`shrink-0 text-[13px] font-semibold ${n > 0 ? "text-[#0B2A5B]" : "text-[#5B6B8C]"}`}>
-          {count === undefined ? "…" : n}/{max}
-        </span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            onStar();
-          }}
-          aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
-          className={`shrink-0 pl-2.5 text-base ${favorite ? "text-[#F2B53A]" : "text-[#5B6B8C]/60"}`}
-        >
-          {favorite ? "★" : "☆"}
-        </button>
-      </Link>
-    </li>
   );
 }

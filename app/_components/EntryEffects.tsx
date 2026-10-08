@@ -52,12 +52,12 @@ export const entryFxById = (id: string | null | undefined) => ENTRY_FX.find((f) 
 
 const lookupCache = new Map<string, { at: number; active: string; expiresAt: number }>();
 
-async function entryFxFor(name: string): Promise<EntryFx | null> {
+async function entryFxFor(name: string, fresh = false): Promise<EntryFx | null> {
   const key = name.trim().toLowerCase();
   if (!key) return null;
   const now = Date.now();
   let v = lookupCache.get(key);
-  if (!v || now - v.at >= 120_000) {
+  if (!v || fresh || now - v.at >= 120_000) {
     try {
       const snap = await getDoc(doc(db, "entry_fx_public", key));
       v = { at: now, active: String(snap.get("active") || "none"), expiresAt: Number(snap.get("expiresAt") || 0) };
@@ -80,6 +80,10 @@ function entryNameOf(m: { text: string; type: string }): string | null {
   return name && name.length <= 30 && !name.includes(" ") ? name : null;
 }
 
+// room → when my own entry effect last played in this tab
+const ownPlayed = new Map<string, number>();
+const OWN_GAP_MS = 10 * 60_000;
+
 /** Put this once over the room: plays the effect of whoever just came in. */
 export function EntryEffectHost({
   messages,
@@ -88,20 +92,10 @@ export function EntryEffectHost({
 }: {
   messages: { id: string; text: string; type: string }[];
   roomKey: string;
-  /** My own name: my "has entered" line usually comes in the very first batch
-   *  (it is written as I open the room), which counts as history — so it is
-   *  looked for there and my own effect plays for me too, once per visit. */
+  /** My own name: my own effect plays for me when I open the room (see below). */
   myName?: string;
 }) {
   const [names, setNames] = useNewLineEvents(messages, roomKey, entryNameOf, 4);
-  const ownChecked = useRef("");
-  useEffect(() => {
-    const me = myName.trim().toLowerCase();
-    if (!me || ownChecked.current === roomKey || messages.length === 0) return;
-    ownChecked.current = roomKey;
-    const own = messages.slice(-10).some((m) => entryNameOf(m)?.toLowerCase() === me);
-    if (own) setNames((q) => (q.length ? q : [myName.trim()]));
-  }, [messages, roomKey, myName, setNames]);
   const [queue, setQueue] = useState<{ fx: EntryFx; name: string }[]>([]);
   const mounted = useRef(true);
   useEffect(
@@ -110,17 +104,44 @@ export function EntryEffectHost({
     },
     []
   );
+  // ✨ MY OWN entry effect, on my screen: played when I open the room, without
+  // waiting for my "has entered" line (it often comes in the first batch, which
+  // counts as old, or isn't written again when I come back soon). Once per room
+  // every 10 minutes, so switching tabs doesn't replay it. Looked up fresh, so
+  // an effect I just bought or switched shows right away.
+  useEffect(() => {
+    const me = myName.trim();
+    if (!me) return;
+    if (Date.now() - (ownPlayed.get(roomKey) ?? 0) < OWN_GAP_MS) return;
+    let gone = false;
+    // marked now, so my "has entered" line arriving meanwhile isn't played as well
+    ownPlayed.set(roomKey, Date.now());
+    const t = setTimeout(async () => {
+      const fx = await entryFxFor(me, true);
+      if (gone || !fx) return;
+      setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
+    }, 700);
+    return () => {
+      gone = true;
+      clearTimeout(t);
+      // left before it played: let it play next time
+      if (Date.now() - (ownPlayed.get(roomKey) ?? 0) < 700) ownPlayed.delete(roomKey);
+    };
+  }, [roomKey, myName]);
   // Look up each new name, then queue the ones with a running effect.
   useEffect(() => {
     if (!names.length) return;
-    const batch = names;
+    // my own entry is played by the effect above (not twice)
+    const me = myName.trim().toLowerCase();
+    const batch = names.filter((n) => !(me && n.toLowerCase() === me && Date.now() - (ownPlayed.get(roomKey) ?? 0) < OWN_GAP_MS));
     setNames(() => []);
+    if (!batch.length) return;
     Promise.all(batch.map(async (n) => ({ fx: await entryFxFor(n), name: n }))).then((found) => {
       if (!mounted.current) return;
       const add = found.filter((f): f is { fx: EntryFx; name: string } => !!f.fx);
       if (add.length) setQueue((q) => [...q, ...add].slice(0, 4));
     });
-  }, [names, setNames]);
+  }, [names, setNames, myName, roomKey]);
   const current = usePlayQueue(queue, setQueue, 3400);
   if (!current) return null;
   return (

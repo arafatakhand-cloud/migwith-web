@@ -13,11 +13,14 @@ import { InstallHint } from "./InstallHint";
 import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
+import { ModernHomeTop } from "./ModernHome";
 
-// Signed-in home, like the app's Home tab: orange profile header, then
-// Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
+// Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
+// friend search, online strip and friend cards (ModernHome.tsx). Classic: the
+// profile strip in the top bar, Email / Messages / migAlerts rows and the
+// Online / Offline folders. Both end with Find Friends and Invite Friends.
 
-type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string; coins: number };
+type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string; coins: number; xp: number };
 type Friend = {
   name: string;
   photo: string;
@@ -67,6 +70,7 @@ export function Dashboard() {
   const [openOnline, setOpenOnline] = useState(true);
   const [openOffline, setOpenOffline] = useState(true);
   const classic = useIsClassic();
+  const [friendSearch, setFriendSearch] = useState("");
   const [info, setInfo] = useState<Record<string, Friend>>({});
 
   const fr = useFriendRequests(username);
@@ -83,6 +87,7 @@ export function Dashboard() {
         online: String(d.presenceStatus || "ONLINE").toUpperCase() === "ONLINE",
         presence: String(d.presenceStatus || "ONLINE").toUpperCase(),
         coins: Number(d.balance || 0),
+        xp: Number(d.xp || 0),
       });
     });
   }, [user]);
@@ -309,82 +314,61 @@ export function Dashboard() {
       {classic ? (
         stripSlot ? createPortal(classicStrip, stripSlot) : classicStrip
       ) : (
-      <section className="bg-gradient-to-r from-[#F7931E] to-[#F58220] px-4 py-3 text-white shadow">
-        <div className="flex items-center gap-3">
-          <Link href="/profile/me" className="shrink-0 rounded-lg bg-white p-0.5">
-            <span className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-md bg-white text-2xl font-black text-[#0B2A5B]">
-              {me?.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={me.photoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                username.slice(0, 1).toUpperCase()
-              )}
-            </span>
-          </Link>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <Link href="/profile/me" data-notranslate className="truncate text-lg font-black">
-                {username}
-              </Link>
-              <span className="rounded-full border border-white/70 bg-white/25 px-2 text-[11px] font-bold">
-                {roleLabel(me?.role || "")}
-              </span>
-              {/* Presence dot — tap to change it (the app's Presence Status page) */}
-              <Link
-                href="/presence"
-                aria-label="Presence status"
-                className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-white"
-                style={{
-                  background:
-                    { ONLINE: "#3DAA3D", BUSY: "#B3261E", AWAY: "#B8860B" }[me?.presence || "ONLINE"] || "#8A8A8A",
-                }}
-              />
-              <Link href="/messages" aria-label="Messages" className="text-base">
-                💬
-              </Link>
-            </div>
-            {editing ? (
-              <div className="mt-1 flex gap-2">
-                <input
-                  autoFocus
-                  value={statusDraft}
-                  onChange={(e) => setStatusDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveStatus()}
-                  maxLength={300}
-                  placeholder="What are you thinking?"
-                  className="min-w-0 flex-1 rounded-lg bg-white px-2 py-1 text-sm text-[#0B2A5B] outline-none"
-                />
-                <button type="button" onClick={saveStatus} className="rounded-lg bg-white/90 px-3 text-sm font-bold text-[#F58220]">
-                  ✓
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusDraft(me?.statusMessage || "");
-                  setEditing(true);
-                }}
-                data-notranslate
-                className="mt-0.5 block w-full truncate text-left text-sm text-white/90"
-              >
-                {me?.statusMessage || "What are you thinking?"}
+        <ModernHomeTop
+          username={username}
+          photo={me?.photoUrl || ""}
+          roleLabel={roleLabel(me?.role || "")}
+          presence={me?.presence || "ONLINE"}
+          status={me?.statusMessage || ""}
+          xp={me?.xp ?? 0}
+          level={me?.level ?? 1}
+          levelIcon={badgeForLevel(me?.level ?? 1)}
+          coins={me?.coins ?? 0}
+          friends={friends.filter((f) => !friendSearch.trim() || f.name.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
+          unreadEmails={badges.emails}
+          unreadAlerts={badges.alerts}
+          search={friendSearch}
+          onSearch={setFriendSearch}
+          onStatus={() => {
+            setStatusDraft(me?.statusMessage || "");
+            setEditing(true);
+          }}
+        />
+      )}
+      {/* Modern: status editor (tap the status in the hero card) */}
+      {!classic && editing && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 pb-safe sm:items-center" onClick={() => setEditing(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-sm font-bold text-[#0B2A5B]">💬 Your status</p>
+            <input
+              autoFocus
+              value={statusDraft}
+              onChange={(e) => setStatusDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveStatus()}
+              maxLength={300}
+              placeholder="What are you thinking?"
+              className="mt-2 w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-3 py-2.5 text-sm text-[#0B2A5B] outline-none focus:border-[#2F80ED]"
+            />
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => setEditing(false)} className="flex-1 rounded-xl border border-[#D5E3F5] py-2.5 text-sm font-bold text-[#5B6B8C]">
+                Cancel
               </button>
-            )}
+              <button type="button" onClick={saveStatus} className="flex-1 rounded-xl bg-[#2F80ED] py-2.5 text-sm font-bold text-white">
+                Save
+              </button>
+            </div>
           </div>
-          {/* Level badge + number; tap opens the Level page (like the app) */}
-          <Link href="/level" className="flex shrink-0 items-center gap-1.5 text-[17px] font-bold">
-            <span className="text-lg">{badgeForLevel(me?.level ?? 1)}</span>
-            {me?.level ?? "…"}
-          </Link>
         </div>
-      </section>
       )}
 
       <InstallHint />
 
       {/* Rows */}
       <div className="bg-white shadow-sm">
+        {/* Classic keeps the Email / Messages / migAlerts rows and the Online / Offline folders;
+            Modern shows them in the new top part instead (like the app). */}
+        {classic && (
+        <>
         <Link href="/mail" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
           {/* An envelope, like the app's */}
           <svg width="26" height="19" viewBox="0 0 26 19" className="shrink-0" aria-hidden>
@@ -409,6 +393,8 @@ export function Dashboard() {
             <Section title="Online" list={online} open={openOnline} toggle={() => setOpenOnline((v) => !v)} />
             <Section title="Offline" list={offline} open={openOffline} toggle={() => setOpenOffline((v) => !v)} />
           </div>
+        )}
+        </>
         )}
 
         <Link href="/friends" className="flex items-center gap-3 border-b border-[#E3ECF7] bg-[#EAF4FE] px-4 py-3 text-[#0B2A5B] hover:bg-[#DCEBFB]">
