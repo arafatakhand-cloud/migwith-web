@@ -24,6 +24,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { latestGifts } from "../../lib/giftActivity";
 import { isMainFounderName } from "../../lib/founder";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
 // users/{uid}/coin_transactions and gift_activity. Coins only ever move through
@@ -619,15 +620,20 @@ const WORLD_DOTS: { x: number; y: number; o: number }[] = WORLD_MASK.flatMap((li
 
 function BalanceHeroCard({ balance, menu, children }: { balance: number | null; menu: ReactNode; children: ReactNode }) {
   const amount = balance === null ? "…" : short(balance);
+  // 📟 Classic: square white box, grey frame, no map / wave art.
+  const classic = useIsClassic();
   return (
     <div
-      className="relative w-full overflow-hidden rounded-[22px] border-[1.5px] border-white/90"
-      style={{
-        background: "linear-gradient(135deg, #EFF6FF, #D6E8FC 50%, #C4DDFA)",
-        boxShadow: "0 4px 14px rgba(90,160,240,.45)",
-      }}
+      className={`relative w-full overflow-hidden ${classic ? "rounded border border-[#C9D2DE]" : "rounded-[22px] border-[1.5px] border-white/90"}`}
+      style={
+        classic
+          ? { background: "linear-gradient(180deg, #FFFFFF, #F1F3F6)", boxShadow: "0 1px 2px rgba(90,160,240,.35)" }
+          : { background: "linear-gradient(135deg, #EFF6FF, #D6E8FC 50%, #C4DDFA)", boxShadow: "0 4px 14px rgba(90,160,240,.45)" }
+      }
     >
-      {/* background art: dotted world map + waves */}
+      {/* background art: dotted world map + waves (Modern only) */}
+      {!classic && (
+      <>
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
         <defs>
           <linearGradient id="hero-band" gradientUnits="userSpaceOnUse" x1="30" y1="66" x2="100" y2="39.6">
@@ -650,6 +656,8 @@ function BalanceHeroCard({ balance, menu, children }: { balance: number | null; 
           <circle key={`${d.x}_${d.y}`} cx={d.x + 0.5} cy={d.y + 0.5} r={0.32} fill="#3F8EEA" fillOpacity={0.42 * d.o} />
         ))}
       </svg>
+      </>
+      )}
 
       <div className="relative px-2.5 pb-2.5 pt-3">
         <div className="pl-2">
@@ -736,12 +744,19 @@ function StatMiniCard({
   value: string;
   sub?: string;
 }) {
+  // 📟 Classic: square white tile with a coloured frame, no wave.
+  const classic = useIsClassic();
   return (
     <div
-      className="relative overflow-hidden rounded-xl border-[1.5px] border-white/95"
-      style={{ background: `color-mix(in srgb, ${top} 92%, transparent)`, boxShadow: `0 1px 4px color-mix(in srgb, ${tint} 30%, transparent)` }}
+      className={`relative overflow-hidden ${classic ? "rounded" : "rounded-xl border-[1.5px] border-white/95"}`}
+      style={
+        classic
+          ? { background: "#FFFFFF", border: `1px solid color-mix(in srgb, ${tint} 45%, transparent)` }
+          : { background: `color-mix(in srgb, ${top} 92%, transparent)`, boxShadow: `0 1px 4px color-mix(in srgb, ${tint} 30%, transparent)` }
+      }
     >
-      {/* lower wave in the card's tint */}
+      {/* lower wave in the card's tint (Modern only) */}
+      {!classic && (
       <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
         <defs>
           <linearGradient id={`mini-${icon}`} x1="0" y1="0.5" x2="0" y2="1">
@@ -751,6 +766,7 @@ function StatMiniCard({
         </defs>
         <path d="M0,62 C35,78 65,48 100,60 L100,100 L0,100 Z" fill={`url(#mini-${icon})`} />
       </svg>
+      )}
       <div className="relative flex flex-col items-center px-1 py-1.5 text-center">
         <span
           className="flex h-[26px] w-[26px] items-center justify-center rounded-full"

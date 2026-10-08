@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🧠 TRIVIA BOT — the "🧠 Trivia Official" room, plus any CHAT room where
 // somebody typed /bot trivia (/bot stop switches it off). Points + leaderboard
@@ -271,7 +272,9 @@ export function triviaHandleCommand(state: TriviaState, clean: string, note: (t:
 
 const INK = "#1B1446";
 const SOFT = "#6B6690";
-const VIOLET = "#6A4BD8";
+// 📟 Classic app style: orange + blue instead of gold + violet.
+const violet = () => (isClassicNow() ? "#2F6ABD" : "#6A4BD8");
+const gold = () => (isClassicNow() ? "#F07A00" : "#F2B705");
 const PINK = "#E5586A";
 const MEDALS = ["🥇", "🥈", "🥉"];
 
@@ -281,7 +284,7 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
       type="button"
       onClick={onClick}
       className="rounded-full border px-2.5 py-1 text-xs font-bold"
-      style={{ background: selected ? VIOLET : "#FFFFFF", color: selected ? "#FFFFFF" : VIOLET, borderColor: `${VIOLET}99` }}
+      style={{ background: selected ? violet() : "#FFFFFF", color: selected ? "#FFFFFF" : violet(), borderColor: `${violet()}99` }}
     >
       {label}
     </button>
@@ -298,7 +301,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
     <div className="px-2 py-1">
       <div
         className="rounded-[18px] p-[1.5px]"
-        style={{ background: `linear-gradient(135deg, ${VIOLET}, #F2B705, ${VIOLET})` }}
+        style={{ background: `linear-gradient(135deg, ${violet()}, ${gold()}, ${violet()})` }}
       >
         <div className="rounded-[17px] bg-gradient-to-b from-[#F4F0FF] to-[#E9E2FF] p-2.5" style={{ color: INK }}>
           <div className="flex items-center gap-1.5">
@@ -332,7 +335,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
                 type="button"
                 disabled={state.busy}
                 onClick={() => state.start(state.pickedLang)}
-                className="mt-2 h-10 w-full rounded-full bg-gradient-to-r from-[#6A4BD8] to-[#9B6BFF] text-sm font-bold text-white disabled:opacity-60"
+                className={`mt-2 h-10 w-full rounded-full bg-gradient-to-r ${isClassicNow() ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-[#6A4BD8] to-[#9B6BFF]"} text-sm font-bold text-white disabled:opacity-60`}
               >
                 {state.busy ? "…" : state.pickedLang === "bn" ? "▶\uFE0E শুরু করুন (বাংলা)" : "▶\uFE0E Start (English)"}
               </button>
@@ -345,7 +348,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
                   const isMine = idx === state.myPick;
                   const isCorrect = reveal && idx === state.correctIndex;
                   const isWrongMine = reveal && isMine && idx !== state.correctIndex;
-                  const bg = isCorrect ? "#1E9E5A" : isWrongMine ? PINK : isMine ? VIOLET : "#F4F0FF";
+                  const bg = isCorrect ? "#1E9E5A" : isWrongMine ? PINK : isMine ? violet() : "#F4F0FF";
                   const lit = isCorrect || isWrongMine || isMine;
                   return (
                     <button
@@ -354,11 +357,11 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
                       disabled={locked}
                       onClick={() => state.pick(idx)}
                       className="flex items-center rounded-xl border px-2 py-[9px] text-left"
-                      style={{ background: bg, borderColor: isCorrect ? "#1E9E5A" : `${VIOLET}73`, color: lit ? "#FFFFFF" : INK }}
+                      style={{ background: bg, borderColor: isCorrect ? "#1E9E5A" : `${violet()}73`, color: lit ? "#FFFFFF" : INK }}
                     >
                       <span
                         className="shrink-0 rounded-full px-[7px] py-px text-xs font-extrabold text-white"
-                        style={{ background: lit ? "rgba(255,255,255,.25)" : VIOLET }}
+                        style={{ background: lit ? "rgba(255,255,255,.25)" : violet() }}
                       >
                         {"ABCD"[idx] || "?"}
                       </span>
@@ -381,7 +384,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
                 <>
                   <div className="mt-1.5 flex items-center gap-2">
                     <div className="h-1.5 flex-1 overflow-hidden rounded bg-[#E6E1F7]">
-                      <div className="h-full transition-[width] duration-300" style={{ width: `${frac * 100}%`, background: low ? PINK : VIOLET }} />
+                      <div className="h-full transition-[width] duration-300" style={{ width: `${frac * 100}%`, background: low ? PINK : violet() }} />
                     </div>
                     <span className="text-xs font-bold" style={{ color: low ? PINK : SOFT }}>
                       {state.secondsLeft}s
@@ -438,7 +441,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
                   <div key={`${n}${i}`} className="flex items-center">
                     <span className="w-8 text-center text-[15px]">{MEDALS[i] || `${i + 1}.`}</span>
                     <span className="flex-1 truncate text-sm font-bold">{n}</span>
-                    <span className="text-[13px] font-bold" style={{ color: VIOLET }}>
+                    <span className="text-[13px] font-bold" style={{ color: violet() }}>
                       {p} pts
                     </span>
                   </div>
@@ -446,7 +449,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
               )}
             </div>
             <div className="mt-3 text-right">
-              <button type="button" onClick={state.closeTop} className="rounded-lg px-3 py-1.5 text-sm font-bold" style={{ color: VIOLET }}>
+              <button type="button" onClick={state.closeTop} className="rounded-lg px-3 py-1.5 text-sm font-bold" style={{ color: violet() }}>
                 Close
               </button>
             </div>

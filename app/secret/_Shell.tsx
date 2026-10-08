@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { BackButton } from "../_components/BackButton";
+import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // Frame for the founder pages: back arrow + title, and "FOUNDER ONLY" for everyone else.
 export function FounderShell({
@@ -23,13 +24,20 @@ export function FounderShell({
 }) {
   const ready = useRequireLogin();
   const router = useRouter();
+  const classic = useIsClassic();
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl space-y-2.5 p-4 pb-10 text-[#0B1F3A]">
-        <div className="flex items-center gap-1">
-          <BackButton onClick={() => (onBack ? onBack() : router.back())} className="mr-1.5" />
-          <h1 className="flex-1 text-[22px] font-extrabold">{title}</h1>
-        </div>
+        {classic ? (
+          <div className="-mx-4 -mt-4">
+            <ClassicTitleBar title={title} subtitle="Founder tools" onBack={() => (onBack ? onBack() : router.back())} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <BackButton onClick={() => (onBack ? onBack() : router.back())} className="mr-1.5" />
+            <h1 className="flex-1 text-[22px] font-extrabold">{title}</h1>
+          </div>
+        )}
         {!ready || !loaded ? (
           <p className="py-10 text-center text-sm text-[#5B6B8C]">Loading…</p>
         ) : !allowed ? (

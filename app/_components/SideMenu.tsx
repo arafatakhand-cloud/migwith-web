@@ -12,11 +12,13 @@ import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { useFounderPerms } from "../../lib/founder";
 import { markOfflineForLogout } from "../../lib/heartbeat";
+import { useIsClassic } from "../../lib/uiStyle";
+import { brandMiglife } from "../../lib/brand";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
 // Phones open it from ☰; laptops show it as a sidebar (DesktopSidebar).
 
-type Me = { level: number; xp: number; coins: number; photo: string; online: boolean };
+type Me = { level: number; xp: number; coins: number; photo: string; online: boolean; presence: string };
 
 export function MenuPanel() {
   const pathname = usePathname() || "/";
@@ -24,6 +26,7 @@ export function MenuPanel() {
   const uid = user?.uid;
   const [me, setMe] = useState<Me | null>(null);
   const founder = useFounderPerms();
+  const classic = useIsClassic();
 
   useEffect(() => {
     if (!uid) return;
@@ -35,6 +38,7 @@ export function MenuPanel() {
         coins: Number(d.balance || 0),
         photo: String(d.photoUrl || d.profilePic || d.avatarUrl || d.imageUrl || "").trim(),
         online: String(d.presenceStatus || "ONLINE").toUpperCase() === "ONLINE",
+        presence: String(d.presenceStatus || "ONLINE").toUpperCase(),
       });
     });
   }, [uid]);
@@ -50,6 +54,101 @@ export function MenuPanel() {
     ["/games", "🎮", "Play Zone", 0],
     ["/settings", "⚙", "Settings", 0],
   ];
+
+  const logout = async () => {
+    await detachPushForLogout();
+    if (uid) await leaveAllOpenRooms(uid);
+    await markOfflineForLogout(uid);
+    await signOut(auth);
+  };
+  const coinsText = me
+    ? me.coins >= 1_000_000
+      ? `${(me.coins / 1_000_000).toFixed(1)}M`
+      : me.coins >= 1000
+        ? `${(me.coins / 1000).toFixed(1)}K`
+        : String(me.coins)
+    : "…";
+
+  // 📟 CLASSIC menu: orange header with a square photo, name, presence + level,
+  // a blue XP | Coins strip, then plain white rows with an orange icon tile,
+  // thin dividers and a blue bar on the open page.
+  if (classic) {
+    const presence = me?.presence || "ONLINE";
+    const presenceLabel = { ONLINE: "Online", BUSY: "Busy", AWAY: "Away" }[presence] || "Offline";
+    const presenceColor = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[presence] || "#9AA3AE";
+    return (
+      <div className="-m-3 min-h-full bg-white pb-2 text-[#16315F]">
+        <Link href="/profile/me" className="flex items-center gap-3 bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] p-3">
+          <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center overflow-hidden rounded border-2 border-white bg-[#FFE0B8] text-[26px] font-bold text-[#F07A00]">
+            {me?.photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={me.photo} alt="" className="h-full w-full rounded-sm object-cover p-0.5" />
+            ) : (
+              username.slice(0, 1).toUpperCase() || "U"
+            )}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span data-notranslate className="block truncate text-[19px] font-bold text-white">
+              {username || "User"}
+            </span>
+            <span className="mt-1 flex items-center gap-[5px] text-[13px] font-semibold text-white/95">
+              <span className="h-2.5 w-2.5 rounded-full border border-white" style={{ background: presenceColor }} />
+              {presenceLabel} · Level {me?.level ?? "…"}
+            </span>
+          </span>
+          <span className="text-[26px] text-white">›</span>
+        </Link>
+        <div className="flex bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] py-[7px] text-white">
+          <Link href="/leaderboard" className="flex-1 text-center">
+            <span className="block text-sm font-extrabold">{me ? me.xp.toLocaleString() : "…"}</span>
+            <span className="block text-[11px] text-white/85">⭐ XP</span>
+          </Link>
+          <span className="w-px bg-white/35" />
+          <Link href="/wallet" className="flex-1 text-center">
+            <span className="block text-sm font-extrabold">{coinsText}</span>
+            <span className="block text-[11px] text-white/85">🪙 Coins</span>
+          </Link>
+        </div>
+        <div className="h-[2px] bg-[#F07A00]" />
+        {links.map(([href, icon, label]) => {
+          const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+          const n = href === "/friends" ? badges.messages : 0;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`relative flex items-center after:absolute after:bottom-0 after:left-[50px] after:right-0 after:h-px after:bg-[#DDE3EA] ${
+                active ? "bg-[#E3EEFB]" : "hover:bg-[#F6F8FB]"
+              }`}
+            >
+              <span className={`w-1 self-stretch ${active ? "bg-[#2F6ABD]" : ""}`} />
+              <span className="flex flex-1 items-center py-[11px] pl-2.5 pr-3">
+                <span
+                  className={`flex h-[26px] w-[26px] items-center justify-center rounded bg-gradient-to-b text-sm text-white ${
+                    active ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-[#FF9D2E] to-[#F07A00]"
+                  }`}
+                >
+                  {icon}
+                </span>
+                <span className={`ml-3 flex-1 text-[15px] ${active ? "font-bold text-[#2F6ABD]" : "font-medium"}`}>
+                  {brandMiglife(label)}
+                </span>
+                {n > 0 && <span className="mr-1.5 text-[13px] font-bold text-[#F07A00]">✉ {n > 99 ? "99+" : n}</span>}
+                <span className="text-xl text-[#A9B4C2]">›</span>
+              </span>
+            </Link>
+          );
+        })}
+        <div className="mt-2.5 h-px bg-[#DDE3EA]" />
+        <button type="button" onClick={logout} className="flex w-full items-center bg-[#FFF3F3] px-3.5 py-3 text-left">
+          <span className="flex h-[26px] w-[26px] items-center justify-center rounded bg-[#E53935] text-[15px] font-bold text-white">↪</span>
+          <span className="ml-3 text-[15px] font-bold text-[#D32F2F]">Logout</span>
+        </button>
+        <div className="h-px bg-[#DDE3EA]" />
+        <p className="mt-2 text-center text-[10px] text-[#8A97A8]">miGlife Web</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -132,12 +231,7 @@ export function MenuPanel() {
 
     <button
       type="button"
-      onClick={async () => {
-        await detachPushForLogout();
-        if (uid) await leaveAllOpenRooms(uid);
-        await markOfflineForLogout(uid);
-        await signOut(auth);
-      }}
+      onClick={logout}
       className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50 px-2.5 py-2 text-left text-sm font-bold text-rose-600"
     >
       <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-100">↪</span>

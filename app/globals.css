@@ -403,3 +403,11 @@ body {
 .classic-new-pulse { animation: classic-new-pulse 0.7s ease-in-out infinite alternate; }
 @keyframes classic-new-pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.07); opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .classic-new-pulse { animation: none; } }
+
+/* 📟 Classic: list lines sit right under each other (no gaps between them). */
+html[data-ui="classic"] :is(.grid, .flex):has(> .classic-row) { gap: 0; }
+html[data-ui="classic"] .classic-row { margin-top: 0 !important; margin-bottom: 0 !important; }
+/* 📟 Classic: the dark windows (Badges, Entry Effects, VIP, Create ID) get navy text on their light look. */
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light.text-white { color: #16315F; }
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light input { color: #16315F; }
+html[data-ui="classic"] .classic-hide { display: none; }

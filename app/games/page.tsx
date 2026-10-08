@@ -16,6 +16,7 @@ import { ROYALE_ROOM } from "../_components/RoyaleGame";
 import { TN_FREE_ROOM, TN_ROOM } from "../_components/TwentyNine";
 import { TRIVIA_ROOM } from "../_components/Trivia";
 import { BackButton } from "../_components/BackButton";
+import { ClassicListRow, ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // 🎮 Game List, like the app's (menu → Game List): the running games, each
 // opening its official room, and what's coming soon.
@@ -43,14 +44,38 @@ export default function GameListPage() {
   const router = useRouter();
   const { user } = useCurrentUser();
   const luxuryBetAccess = useLuxuryBetAccess(user?.uid);
+  const classic = useIsClassic();
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl pb-8">
-        <div className="flex items-center gap-1 px-2 py-1">
-          <BackButton onClick={() => router.back()} className="mr-1.5" />
-          <h1 className="text-xl font-bold text-[#12335E]">🎮 Play Zone</h1>
-        </div>
-        {ready && (
+        {classic ? (
+          <ClassicTitleBar title="🎮 Play Zone" subtitle="Running games" onBack={() => router.back()} />
+        ) : (
+          <div className="flex items-center gap-1 px-2 py-1">
+            <BackButton onClick={() => router.back()} className="mr-1.5" />
+            <h1 className="text-xl font-bold text-[#12335E]">🎮 Play Zone</h1>
+          </div>
+        )}
+        {/* 📟 Classic: plain list lines. */}
+        {ready && classic && (
+          <div>
+            {RUNNING.filter(([, , , , room]) => room !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([icon, name, sub, color, room]) => (
+              <ClassicListRow
+                key={room}
+                icon={icon}
+                title={name}
+                subtitle={sub}
+                color={color}
+                href={roomHref(room)}
+                right={<span className="text-[11px] font-bold text-[#2E9B3A]">● LIVE</span>}
+              />
+            ))}
+            {SOON.map(([icon, name]) => (
+              <ClassicListRow key={name} icon={icon} title={name} color="#9AA3AE" right={<span className="text-[10px] font-bold text-[#8A97A8]">COMING SOON</span>} />
+            ))}
+          </div>
+        )}
+        {ready && !classic && (
           <div className="px-4 py-2.5">
             <p className="pb-2 text-xs font-bold tracking-[1.2px] text-[#6C87B0]">RUNNING GAMES</p>
             {RUNNING.filter(([, , , , room]) => room !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([icon, name, sub, color, room]) => (

@@ -10,6 +10,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
+import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // Same boards as the app's Leader Board. Game boards come from the
 // getLeaderboard function (ranked by spend, but only win counts are sent);
@@ -122,6 +123,7 @@ const MEDALS = ["🥇", "🥈", "🥉"];
 
 export default function LeaderboardPage() {
   const router = useRouter();
+  const classic = useIsClassic();
   const { user, loading } = useCurrentUser();
   const [ranking, setRanking] = useState<Ranking>(RANKINGS[0]);
   // The board list first, like the app; a board opens when picked.
@@ -172,6 +174,19 @@ export default function LeaderboardPage() {
   return (
     <PageShell>
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 pt-4 sm:px-6">
+        {classic ? (
+          <div className="-mx-3 -mt-4 sm:-mx-6">
+            <ClassicTitleBar
+              title={picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}
+              subtitle={picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
+              onBack={() => (picked ? setPicked(false) : router.back())}
+            >
+              <button type="button" onClick={() => setRefresh((n) => n + 1)} title="Refresh" className="rounded px-2 text-xl font-bold text-white">
+                ↻
+              </button>
+            </ClassicTitleBar>
+          </div>
+        ) : (
         <div className="flex items-center gap-3">
           <BackButton onClick={() => (picked ? setPicked(false) : router.back())} />
           <div className="min-w-0 flex-1">
@@ -187,6 +202,7 @@ export default function LeaderboardPage() {
             ↻
           </button>
         </div>
+        )}
 
         {!picked ? (
           <>

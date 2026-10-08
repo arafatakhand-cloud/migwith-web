@@ -11,6 +11,7 @@ import { PageShell } from "../../_components/PageShell";
 import { PhotoCropDialog } from "../../_components/PhotoCropDialog";
 import { CountryPickerDialog } from "../../_components/CountryPicker";
 import { countryFlag, countryInfoFor } from "../../../lib/countries";
+import { ClassicTitleBar, useIsClassic } from "../../_components/Classic";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
@@ -26,6 +27,7 @@ const nameKey = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
 
 export default function EditProfilePage() {
   const router = useRouter();
+  const classic = useIsClassic();
   const { user, username, loading } = useCurrentUser();
 
   const [loaded, setLoaded] = useState(false);
@@ -140,12 +142,18 @@ export default function EditProfilePage() {
   return (
     <PageShell light pale>
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+        {classic ? (
+          <div className="-mx-4 -mt-6 sm:-mx-6">
+            <ClassicTitleBar title="✎ Edit Profile" backHref={`/profile/${encodeURIComponent(username || "me")}`} />
+          </div>
+        ) : (
         <div className="flex items-center gap-3">
           <Link href={`/profile/${encodeURIComponent(username || "me")}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
             ←
           </Link>
           <h1 className="text-2xl font-black text-[#0B2A5B]">Edit Profile</h1>
         </div>
+        )}
 
         {!loaded ? (
           <p className="py-16 text-center text-[#5B6B8C]">{error || "Loading…"}</p>

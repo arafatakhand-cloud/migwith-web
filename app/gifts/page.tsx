@@ -18,6 +18,7 @@ import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { isMainFounderName, useFounderPerms } from "../../lib/founder";
 import { BackButton } from "../_components/BackButton";
+import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // Explore › Gift Shops, like the app's GiftStorePage: the catalog in the
 // app's order with FEATURED / LIMITED badges; migwith adds, edits and
@@ -42,6 +43,7 @@ const bool = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
 export default function GiftShopsPage() {
   const ready = useRequireLogin();
   const router = useRouter();
+  const classic = useIsClassic();
   const { user, username } = useSession();
   // miglife, or a founder with the 🎁 Gift Edit tool (founderHas("gift_shop") in the rules)
   const founderPerms = useFounderPerms();
@@ -95,6 +97,21 @@ export default function GiftShopsPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl p-3.5 pb-8 lg:max-w-4xl">
+        {classic ? (
+          <div className="-mx-3.5 -mt-3.5">
+            <ClassicTitleBar title="🎁 Gift Gallery" subtitle="Coins • Special & Limited" onBack={() => router.back()}>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setEditing({ id: `gift_${Date.now()}`, initial: null })}
+                  className="rounded bg-[#F07A00] px-2.5 py-1 text-xs font-semibold text-white"
+                >
+                  ＋ Add Gift
+                </button>
+              )}
+            </ClassicTitleBar>
+          </div>
+        ) : (
         <div className="flex items-center gap-1">
           <BackButton onClick={() => router.back()} className="mr-1.5" />
           <div className="min-w-0 flex-1">
@@ -111,6 +128,7 @@ export default function GiftShopsPage() {
             </button>
           )}
         </div>
+        )}
 
         {isAdmin && (
           <>

@@ -3,14 +3,33 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackButton } from "./BackButton";
+import { ClassicListRow, ClassicSectionBar, ClassicTitleBar } from "./Classic";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // Pieces shared by the app-style light pages (Explore, Members, Gift Shops).
 
 export function PageTitle({ title, subtitle, icon }: { title: string; subtitle?: string; icon?: string }) {
   const router = useRouter();
+  const classic = useIsClassic();
+  const back = () => (window.history.length > 1 ? router.back() : router.push("/"));
+  if (classic)
+    return (
+      <div className="-mx-3 mb-2 sm:-mx-6">
+        <ClassicTitleBar
+          title={
+            <>
+              {icon && <span className="mr-1">{icon}</span>}
+              {title}
+            </>
+          }
+          subtitle={subtitle ? subtitle.toLowerCase().replace(/^./, (c) => c.toUpperCase()) : undefined}
+          onBack={back}
+        />
+      </div>
+    );
   return (
     <div className="flex items-center gap-3 py-3">
-      <BackButton onClick={() => (window.history.length > 1 ? router.back() : router.push("/"))} />
+      <BackButton onClick={back} />
       <div className="min-w-0 flex-1 text-center">
         <h1 className="text-xl font-black text-[#0B2A5B]">
           {icon && <span className="mr-1">{icon}</span>}
@@ -24,6 +43,8 @@ export function PageTitle({ title, subtitle, icon }: { title: string; subtitle?:
 }
 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
+  const classic = useIsClassic();
+  if (classic) return <ClassicSectionBar>{children}</ClassicSectionBar>;
   return (
     <p className="mb-2 mt-4 border-l-4 border-[#2F80ED] pl-2 text-xs font-bold uppercase tracking-widest text-[#35507E]">
       {children}
@@ -52,6 +73,19 @@ export function PastelCard({
   /** Replaces the › on the right (a switch, say). */
   right?: React.ReactNode;
 }) {
+  const classic = useIsClassic();
+  if (classic)
+    return (
+      <ClassicListRow
+        icon={icon}
+        title={title}
+        subtitle={subtitle}
+        color={color}
+        href={href}
+        onClick={onClick}
+        right={right ?? (note ? <span className="shrink-0 text-[10px] font-bold text-[#8A97A8]">{note}</span> : undefined)}
+      />
+    );
   const body = (
     <>
       <span

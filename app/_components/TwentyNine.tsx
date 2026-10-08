@@ -8,6 +8,7 @@ import { isOnlineNow } from "../../lib/heartbeat";
 import { setViewedTable } from "../../lib/gameTables";
 import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🃏 29 (Twenty-Nine) — server-driven (tnStart / tnJoin / tnAction / tnTick).
 // 4 seats, teams A (seats 1+3) vs B (seats 2+4); empty seats get bots. Your own
@@ -77,6 +78,16 @@ const TN_KINDS = [
 ];
 const boardSkinOf = (id: string | undefined) => TN_BOARD_SKINS.find((s) => s.id === id) || TN_BOARD_SKINS[0];
 const cardSkinOf = (id: string | undefined) => TN_CARD_SKINS.find((s) => s.id === id) || TN_CARD_SKINS[0];
+// 📟 Classic app style: blue felt with an orange rim and Classic Red cards for
+// everyone (not sold in the shop); bought styles return in Modern.
+const TN_CLASSIC_BOARD: TnBoardSkin = {
+  id: "classic_ui", name: "Classic", price: 0,
+  felt: ["#5A8FD6", "#2F6ABD", "#1D4378"],
+  rim: ["#FFE0B8", "#F07A00", "#FFC27A", "#F07A00"],
+  glow: "#F07A00", pattern: "#FFFFFF",
+};
+const boardNow = (id: string | undefined) => (isClassicNow() ? TN_CLASSIC_BOARD : boardSkinOf(id));
+const cardNow = () => cardSkinOf(isClassicNow() ? "classic" : myCardSkinId);
 // My card style — read by every 29 card drawn.
 let myCardSkinId = "ivory";
 
@@ -515,7 +526,7 @@ export function TwentyNineTable({ state, roomUsers = [] }: { state: TnState; roo
   }, [state.running]);
   const mySeat = state.mySeat;
   const playing = state.running && state.phase !== "JOINING";
-  const felt = boardSkinOf(state.inv.active.board).felt;
+  const felt = boardNow(state.inv.active.board).felt;
   const phaseLabel: Record<string, string> = {
     JOINING: "Seats",
     BIDDING: "Bidding",
@@ -607,7 +618,7 @@ export function TwentyNineTable({ state, roomUsers = [] }: { state: TnState; roo
  * whatever the board shows on top.
  */
 function TnBoardFrame({ state, children }: { state: TnState; children: ReactNode }) {
-  const sk = boardSkinOf(state.inv.active.board);
+  const sk = boardNow(state.inv.active.board);
   return (
     <div
       className="rounded-[34px] p-[3px]"
@@ -1342,7 +1353,7 @@ function TnInfo({ state }: { state: TnState }) {
             style={{
               background:
                 kind === "strong"
-                  ? `linear-gradient(to right, ${boardSkinOf(state.inv.active.board).felt[1]}, #6A4BD8)`
+                  ? `linear-gradient(to right, ${boardNow(state.inv.active.board).felt[1]}, #6A4BD8)`
                   : tint
                     ? `linear-gradient(to right, ${tint}4D, ${tint}1F)`
                     : "rgba(255,255,255,.07)",
@@ -1543,7 +1554,7 @@ function TnHand({ state }: { state: TnState }) {
 // (J 3 · 9 2 · A 1 · 10 1). Height = width × 1.4.
 const CARD_POINTS: Record<string, number> = { J: 3, "9": 2, A: 1, "10": 1 };
 
-function TnCard({ card, w, skin = cardSkinOf(myCardSkinId) }: { card: string; w: number; skin?: TnCardSkin }) {
+function TnCard({ card, w, skin = cardNow() }: { card: string; w: number; skin?: TnCardSkin }) {
   const rank = card.slice(0, -1);
   const suit = card.slice(-1);
   const ink = suit === "♥" || suit === "♦" ? skin.red : skin.black;
@@ -1613,7 +1624,7 @@ function TnCard({ card, w, skin = cardSkinOf(myCardSkinId) }: { card: string; w:
 }
 
 // Card back: royal blue with a gold rim, diamond lattice and a "29" medallion.
-function TnCardBack({ w, skin = cardSkinOf(myCardSkinId) }: { w: number; skin?: TnCardSkin }) {
+function TnCardBack({ w, skin = cardNow() }: { w: number; skin?: TnCardSkin }) {
   const line = skin.backLine === "#FFFFFF" ? "rgba(255,255,255,.14)" : `${skin.backLine}24`;
   return (
     <span

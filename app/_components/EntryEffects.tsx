@@ -813,7 +813,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
 
   const pill = "rounded-full px-3 py-1.5 text-xs font-extrabold";
   return (
-    <div className="rounded-[22px] bg-[#140F24] p-4 text-white shadow-xl">
+    <div className="classic-light rounded-[22px] bg-[#140F24] p-4 text-white shadow-xl">
       <h2 className="text-[19px] font-extrabold text-[#FFD54F]">✨ Entry Effects</h2>
       <p className="text-[11px] text-[#B9B2CC]">30 days each · 1,00,000 – 5,00,000 coins · everyone in the room sees it</p>
 

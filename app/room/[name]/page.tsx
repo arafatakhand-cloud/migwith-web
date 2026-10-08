@@ -219,6 +219,10 @@ function RoomView({ roomName }: { roomName: string }) {
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
+  // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
+  const infoBox = classic
+    ? "rounded border border-[#C9D2DE] bg-gradient-to-b from-[#F6F7F9] to-[#ECEFF3] text-[#9A2E14]"
+    : "rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] text-white";
   // Swipe right on someone's message to reply (same "↩ name: snippet" quote the app writes).
   const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(initial?.replyTo ?? null);
   const [sending, setSending] = useState(false);
@@ -1556,7 +1560,7 @@ function RoomView({ roomName }: { roomName: string }) {
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
-          <div className="relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] bg-[#E8F4FC] sm:rounded-b-2xl sm:border-b">
+          <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] sm:rounded-b-2xl sm:border-b ${classic ? "bg-white" : "bg-[#E8F4FC]"}`}>
             {giftQuery !== null && (
               <GiftNamePicker
                 queryText={giftQuery.q}
@@ -1588,10 +1592,10 @@ function RoomView({ roomName }: { roomName: string }) {
               <div ref={contentRef} className="space-y-1">
               {/* Room cards, like the app: manager, welcome text, who is here */}
               <div className="space-y-1.5 pb-1">
-                <p className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
+                <p className={`${infoBox} px-3.5 py-2.5 text-[15px]`}>
                   👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                 </p>
-                <p className="whitespace-pre-wrap rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px] text-white">
+                <p className={`whitespace-pre-wrap ${infoBox} px-3.5 py-2.5 text-[15px]`}>
                   {roomDescription}
                 </p>
                 {locked && (
@@ -1599,9 +1603,9 @@ function RoomView({ roomName }: { roomName: string }) {
                     🔒 This room is locked. Only admins/mods can enter until it&apos;s unlocked.
                   </p>
                 )}
-                <div className="rounded-xl border border-[#1B8F7A] bg-gradient-to-r from-[#1FA2B8] to-[#2FAE85] px-3.5 py-2.5 text-[15px]">
-                  <p className="text-white">👫 Currently in this room:</p>
-                  {roomUsers.length > 0 && <p className="mt-1 text-black">{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
+                <div className={`${infoBox} px-3.5 py-2.5 text-[15px]`}>
+                  <p>👫 Currently in this room:</p>
+                  {roomUsers.length > 0 && <p className={`mt-1 ${classic ? "text-[#16315F]" : "text-black"}`}>{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
                 </div>
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
@@ -1658,7 +1662,7 @@ function RoomView({ roomName }: { roomName: string }) {
                       setNewBelow(0);
                       el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
                     }}
-                    className="pointer-events-auto h-fit -translate-y-11 rounded-full bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF] px-3.5 py-1.5 text-[13px] font-bold text-white shadow-lg"
+                    className={`pointer-events-auto h-fit -translate-y-11 rounded-full px-3.5 py-1.5 text-[13px] font-bold text-white shadow-lg ${classic ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" : "bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF]"}`}
                   >
                     ⬇ {newBelow} new message{newBelow === 1 ? "" : "s"}
                   </button>
@@ -1844,7 +1848,7 @@ function RoomView({ roomName }: { roomName: string }) {
             className="max-h-[85vh] w-[62%] min-w-[230px] max-w-[300px] overflow-y-auto rounded-[28px] bg-white pb-2.5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4] px-3 py-[11px] text-white">
+            <div className={`px-3 py-[11px] text-white ${classic ? "bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" : "bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4]"}`}>
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-white/55 bg-white/20 text-lg">🏠</span>
                 <div className="min-w-0 flex-1">

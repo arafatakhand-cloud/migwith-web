@@ -13,6 +13,7 @@ import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
 import { ChatTextSizeCard } from "../_components/ChatTextSizeCard";
+import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -69,6 +70,7 @@ const primary = "flex-1 rounded-xl bg-[#2F80ED] py-3 text-sm font-black text-whi
 const secondary = "flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]";
 
 export default function SettingsPage() {
+  const classic = useIsClassic();
   const ready = useRequireLogin();
   const { user } = useSession();
   const uid = user?.uid;
@@ -111,11 +113,19 @@ export default function SettingsPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-10 sm:px-6">
-        <div className="flex items-center gap-3 pt-4">
-          <BackButton href="/" />
-          <h1 className="text-2xl font-black tracking-wide">SETTINGS</h1>
-        </div>
-        <p className="mt-1 text-sm text-[#35507E]">MIGlife · Privacy, security & account controls</p>
+        {classic ? (
+          <div className="-mx-3 sm:-mx-6">
+            <ClassicTitleBar title="⚙ Settings" subtitle="Privacy, security & account controls" backHref="/" />
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 pt-4">
+              <BackButton href="/" />
+              <h1 className="text-2xl font-black tracking-wide">SETTINGS</h1>
+            </div>
+            <p className="mt-1 text-sm text-[#35507E]">MIGlife · Privacy, security & account controls</p>
+          </>
+        )}
 
         {message && <p className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{message}</p>}
 

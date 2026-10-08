@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // The app-wide ← back button: a round glossy button with a drawn chevron.
 //   light — on light pages: white pearl button, blue arrow, soft blue shadow
@@ -34,8 +35,13 @@ const STYLES = {
     "border border-white/45 bg-white/15 text-white shadow-[0_4px_12px_rgba(0,0,0,.18),inset_0_1px_0_rgba(255,255,255,.35)] backdrop-blur-sm hover:bg-white/25 focus-visible:ring-white/60",
 };
 
+// 📟 Classic: a small square orange button with a white arrow.
+const CLASSIC =
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded border border-white/70 bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] text-white shadow-[0_1px_2px_rgba(0,0,0,.3)] active:scale-95";
+
 export function BackButton({ variant = "light", href, onClick, className = "", label = "Back" }: Props) {
-  const cls = `${BASE} ${STYLES[variant]} ${className}`;
+  const classic = useIsClassic();
+  const cls = classic ? `${CLASSIC} ${className}` : `${BASE} ${STYLES[variant]} ${className}`;
   const inner = (
     <span className="transition-transform duration-150 group-hover:-translate-x-0.5">
       <Chevron />

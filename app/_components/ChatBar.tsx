@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
 import { withEmotes } from "./Emote";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // The chat text bar, same as the app's: a navy bar with ⋮ (more: gifts),
 // 🖼️ photo and 🎤 voice as round buttons, a white rounded box with 😊 inside,
@@ -15,6 +16,8 @@ export const PHOTO_BG = { background: "linear-gradient(135deg, #EC4677, #C13A93,
 export const MIC_BG = { background: "linear-gradient(135deg, #00B8FF, #0A74FF)", boxShadow: "0 2px 6px rgba(10,116,255,.45)" };
 export const MIC_REC_BG = { background: "linear-gradient(135deg, #FF5252, #D32F2F)", boxShadow: "0 2px 5px rgba(229,57,53,.5)" };
 export const SEND_BG = { background: "linear-gradient(135deg, #833AB4, #5B5BF0, #0072FF)", boxShadow: "0 2px 6px rgba(91,91,240,.45)" };
+// 📟 Classic: the photo and send buttons are orange.
+export const CLASSIC_BTN_BG = { background: "linear-gradient(180deg, #FF9D2E, #F07A00)", boxShadow: "0 1px 3px rgba(240,122,0,.45)" };
 export const SEND_VOICE_BG = { background: "linear-gradient(135deg, #43E97B, #00B37E)", boxShadow: "0 2px 6px rgba(0,179,126,.45)" };
 
 export function PhotoGlyph() {
@@ -98,6 +101,7 @@ export function ChatBar({
   reply?: { sender: string; snippet: string; color?: string; onCancel: () => void } | null;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
+  const classic = useIsClassic();
   // ➤ the paper plane flies off and comes back on every send
   const [fly, setFly] = useState(0);
   const send = () => {
@@ -170,7 +174,7 @@ export function ChatBar({
       <label
         title={photo.title}
         className={`${BAR_BTN} cursor-pointer text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
-        style={PHOTO_BG}
+        style={classic ? CLASSIC_BTN_BG : PHOTO_BG}
       >
         {photo.uploading ? "⏳" : <PhotoGlyph />}
         <input
@@ -223,7 +227,7 @@ export function ChatBar({
             disabled={!canSend}
             aria-label="Send"
             className={`${BAR_BTN} relative overflow-hidden ${canSend ? "chat-send-shine" : "opacity-60"}`}
-            style={SEND_BG}
+            style={classic ? CLASSIC_BTN_BG : SEND_BG}
           >
             <SendGlyph key={fly} fly={fly > 0} />
           </button>

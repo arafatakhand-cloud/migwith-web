@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -16,7 +17,7 @@ import { useIsClassic } from "../../lib/uiStyle";
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
 
-type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string };
+type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string; coins: number };
 type Friend = {
   name: string;
   photo: string;
@@ -81,9 +82,21 @@ export function Dashboard() {
         statusMessage: String(d.statusMessage || "").trim(),
         online: String(d.presenceStatus || "ONLINE").toUpperCase() === "ONLINE",
         presence: String(d.presenceStatus || "ONLINE").toUpperCase(),
+        coins: Number(d.balance || 0),
       });
     });
   }, [user]);
+
+  // 📟 Classic Home: the profile strip sits in the top bar, between the orange
+  // header and the blue tabs (TopBar leaves a slot for it).
+  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!classic) return setStripSlot(null);
+    const find = () => setStripSlot(document.getElementById("classic-home-strip"));
+    find();
+    const t = setTimeout(find, 300);
+    return () => clearTimeout(t);
+  }, [classic, user]);
 
   // Photo, level, country and online state of my friends ("in" takes 30 at a time).
   const friendsKey = fr.friends.join("|");
@@ -227,10 +240,75 @@ export function Dashboard() {
     </>
   );
 
+  // 📟 Classic: a light strip with a small square photo, ● name + role, the
+  // status in grey italics, coins and level on the right.
+  const presenceDot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[me?.presence || "ONLINE"] || "#9AA3AE";
+  const classicStrip = (
+    <div className="flex items-center border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] px-2.5 py-2 text-[#16315F]">
+      <Link href="/profile/me" className="flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded border border-[#B9C4D2] bg-[#FFE0B8] text-xl font-bold text-[#F07A00]">
+        {me?.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={me.photoUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          username.slice(0, 1).toUpperCase() || "U"
+        )}
+      </Link>
+      <div className="ml-2.5 min-w-0 flex-1">
+        <div className="flex items-center">
+          <Link href="/presence" aria-label="Presence status" className="h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
+          <Link href="/profile/me" data-notranslate className="ml-1.5 min-w-0 truncate text-base font-bold">
+            {username || "User"}
+          </Link>
+          <span className="ml-1.5 shrink-0 rounded-[3px] border border-[#2F6ABD]/60 px-1 text-[10px] font-bold text-[#2F6ABD]">
+            {roleLabel(me?.role || "")}
+          </span>
+        </div>
+        {editing ? (
+          <div className="mt-0.5 flex gap-1.5">
+            <input
+              autoFocus
+              value={statusDraft}
+              onChange={(e) => setStatusDraft(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && saveStatus()}
+              maxLength={300}
+              placeholder="What are you thinking?"
+              className="min-w-0 flex-1 rounded border border-[#B9C4D2] bg-white px-1.5 py-0.5 text-[13px] outline-none"
+            />
+            <button type="button" onClick={saveStatus} className="rounded bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-2 text-xs font-bold text-white">
+              ✓
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            data-notranslate
+            onClick={() => {
+              setStatusDraft(me?.statusMessage || "");
+              setEditing(true);
+            }}
+            className="block h-5 w-full truncate text-left text-[13px] italic text-[#6B7788]"
+          >
+            {me?.statusMessage || "What are you thinking?"}
+          </button>
+        )}
+      </div>
+      <div className="ml-2 flex shrink-0 flex-col items-end">
+        <Link href="/wallet" className="rounded px-1 text-sm font-extrabold text-[#C78A00]">
+          🪙 {me ? me.coins.toLocaleString("en-US") : "…"}
+        </Link>
+        <Link href="/level" className="flex items-center gap-[3px] rounded px-1 text-[13px] font-extrabold text-[#2F6ABD]">
+          <span>{badgeForLevel(me?.level ?? 1)}</span>Lv {me?.level ?? "…"}
+        </Link>
+      </div>
+    </div>
+  );
+
   return (
     <div className="mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
       <div className="min-w-0 flex-1 lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-md">
-      {/* Orange profile header */}
+      {classic ? (
+        stripSlot ? createPortal(classicStrip, stripSlot) : classicStrip
+      ) : (
       <section className="bg-gradient-to-r from-[#F7931E] to-[#F58220] px-4 py-3 text-white shadow">
         <div className="flex items-center gap-3">
           <Link href="/profile/me" className="shrink-0 rounded-lg bg-white p-0.5">
@@ -301,6 +379,7 @@ export function Dashboard() {
           </Link>
         </div>
       </section>
+      )}
 
       <InstallHint />
 

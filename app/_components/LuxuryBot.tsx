@@ -5,6 +5,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { LB_KINDS, StyleShopDialog, useInventory, type ShopItem } from "./StyleShop";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 👻 Luxury Bot — the web side only shows the round and sends bets. Money,
 // results and the round itself are handled by the Cloud Functions
@@ -159,6 +160,18 @@ export const LB_SKINS: LbSkin[] = [
   { id: "diamond", name: "Diamond Ice", emoji: "💎", price: 200000, bgTop: "#1B2E3E", bgBottom: "#0C1823", chip: "#243C50", accent: "#DDEFFF", accent2: "#8FD3FF", accentText: "#FFFFFF", cream: "#E6F0F8", tileTop: "#34556E", tileBottom: "#213A4E", tileBase: "#08121A", tileBorder: "#A9D2F0" },
 ];
 
+// 📟 Classic app style: a light box (white / grey, orange accents, navy text)
+// for everyone — not sold in the shop; bought colours return in Modern.
+export const LB_CLASSIC_SKIN: LbSkin = {
+  id: "classic_ui", name: "Classic", emoji: "📟", price: 0, bgTop: "#FFFFFF", bgBottom: "#EEF1F5", chip: "#E3E8EE",
+  accent: "#F07A00", accent2: "#FFC27A", accentText: "#7A3A00", cream: "#16315F",
+  tileTop: "#FFFFFF", tileBottom: "#E9EEF4", tileBase: "#B9C4D2", tileBorder: "#C9D2DE",
+};
+export function lbSkinNow(id: string | undefined): LbSkin {
+  if (isClassicNow()) return LB_CLASSIC_SKIN;
+  return LB_SKINS.find((k) => k.id === id) || LB_SKINS[0];
+}
+
 function LbSkinPreview({ skin }: { skin: LbSkin }) {
   return (
     <div
@@ -282,7 +295,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
   const myTotal = LUXURY_CHARACTERS.reduce((a, c) => a + shownTotal(c), 0);
   const inv = useInventory("lb_inventory", uid, LB_KINDS);
   const [showStyles, setShowStyles] = useState(false);
-  const skin = LB_SKINS.find((k) => k.id === inv.active.box) || LB_SKINS[0];
+  const skin = lbSkinNow(inv.active.box);
   const urgent = canBet && state.secondsLeft <= 10;
   const iconBtn = "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold";
 

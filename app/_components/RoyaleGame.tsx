@@ -5,6 +5,10 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
+import { isClassicNow } from "../../lib/uiStyle";
+
+// 📟 Classic app style: the purple accent becomes blue (team red / blue stay).
+const royaleBtn = () => (isClassicNow() ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-violet-500 to-purple-700");
 
 // 👑 MIG Royale — Red vs Blue. Server-driven (startRoyale / royaleBet /
 // tickRoyale): the web only shows the round and sends bets, same as the app's
@@ -273,7 +277,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 type="button"
                 onClick={state.start}
                 disabled={state.busy}
-                className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-700 py-3 text-sm font-black disabled:opacity-50"
+                className={`mt-2 w-full rounded-xl bg-gradient-to-r py-3 text-sm font-black disabled:opacity-50 ${royaleBtn()}`}
               >
                 {state.busy ? "Starting…" : "▶ Start MIG Royale"}
               </button>
@@ -362,7 +366,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 type="button"
                 disabled={!ready}
                 onClick={() => opt && state.bet(opt.key, amount)}
-                className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-700 py-2.5 text-sm font-black disabled:from-neutral-600 disabled:to-neutral-700 disabled:opacity-60"
+                className={`mt-2 w-full rounded-xl bg-gradient-to-r py-2.5 text-sm font-black disabled:from-neutral-600 disabled:to-neutral-700 disabled:opacity-60 ${royaleBtn()}`}
               >
                 {!canBet
                   ? "🃏 Dealing cards…"

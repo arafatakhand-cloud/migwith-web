@@ -171,7 +171,7 @@ export default function SpecialColourPage() {
 
   return (
     <PageShell light>
-      <div className="min-h-screen bg-gradient-to-b from-[#1B0B3A] via-[#2A1260] to-[#12082A] px-4 pb-10 pt-4 text-white">
+      <div className="classic-light min-h-screen bg-gradient-to-b from-[#1B0B3A] via-[#2A1260] to-[#12082A] px-4 pb-10 pt-4 text-white">
         <div className="mx-auto max-w-xl">
           <div className="flex items-center gap-2">
             <BackButton variant="dark" href="/explore" />

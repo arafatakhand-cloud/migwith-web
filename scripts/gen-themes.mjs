@@ -140,8 +140,10 @@ const withAlpha = (hex, alpha) => {
 };
 const pseudo = (variants) => {
   const v = variants.split(":").filter(Boolean);
-  const states = { hover: ":hover", focus: ":focus", active: ":active", disabled: ":disabled", "focus-within": ":focus-within", placeholder: "::placeholder" };
-  return v.map((x) => states[x] || "").join("");
+  const states = { hover: ":hover", focus: ":focus", active: ":active", disabled: ":disabled", "focus-within": ":focus-within", placeholder: "::placeholder", before: "::before", after: "::after" };
+  // Pseudo-elements (::before / ::after / ::placeholder) must come last.
+  const parts = v.map((x) => states[x] || "");
+  return [...parts.filter((x) => !x.startsWith("::")), ...parts.filter((x) => x.startsWith("::"))].join("");
 };
 // sm: / md: / lg: / xl: colours only apply from that width up, like Tailwind.
 const BREAKPOINTS = { sm: "40rem", md: "48rem", lg: "64rem", xl: "80rem" };
@@ -177,6 +179,49 @@ html[data-theme="dark_night"] .bg-white\\/70,html[data-theme="dark_night"] .bg-w
 html[data-theme="dark_night"] .text-black,html[data-theme="dark_night"] .text-gray-500,html[data-theme="dark_night"] .text-gray-400{color:#AEBBD6}
 html[data-theme="dark_night"] input,html[data-theme="dark_night"] textarea,html[data-theme="dark_night"] select{color:#E8EEF9}
 html[data-theme="dark_night"] .bg-sky-app{background:linear-gradient(180deg,#131E38 0%,#0F1A31 45%,#0B1424 100%);background-attachment:fixed}
+`;
+
+// 📟 Classic app style (html[data-ui="classic"], Settings › Appearance › App
+// style): like the app's classicNeutralSurface, pale blue / purple page and
+// card tints become plain white / light grey. Strong colours (buttons, bars,
+// icons) and the Dark Night theme are left as they are.
+function classicSurface(hex) {
+  const [h, s, l] = rgbToHsl(hexToRgb(hex));
+  if (l < 0.8 || s < 0.08 || h < 170 || h > 290) return null;
+  return toHex(hslToRgb(215, s * 0.18, l));
+}
+for (const [cls, info] of entries) {
+  if (!SURFACE.has(info.kind)) continue;
+  const out = classicSurface(info.hex);
+  if (!out) continue;
+  css += media(info.variants, `html[data-ui="classic"]:not([data-theme="dark_night"]) .${esc(cls)}${pseudo(info.variants)}{${PROPS[info.kind]}:${withAlpha(out, info.alpha)}}`);
+}
+
+// 📟 Classic: the app's dark windows (Badges, Entry Effects, VIP, Create ID)
+// get a light look — white page, navy text, orange + blue instead of pink +
+// violet + gold. Only inside an element marked .classic-light.
+function classicLight(hex, kind) {
+  const [h, s, l] = rgbToHsl(hexToRgb(hex));
+  const strong = s > 0.45 && l > 0.35 && l < 0.85;
+  if (strong && h >= 245 && h < 295) return "#2F6ABD"; // violet → blue
+  if (strong && (h >= 295 || h < 10)) return "#F07A00"; // pink → orange
+  if (s > 0.6 && h >= 35 && h < 55 && l > 0.5) return "#F07A00"; // gold → orange
+  if (SURFACE.has(kind)) {
+    if (l < 0.35) return toHex(hslToRgb(215, 0.18, 0.985 - l * 0.25));
+    return null;
+  }
+  if (l > 0.7 && s < 0.6) return "#16315F";
+  if (l >= 0.5 && l <= 0.7 && s < 0.5) return "#6B7788";
+  return null;
+}
+for (const [cls, info] of entries) {
+  const out = classicLight(info.hex, info.kind);
+  if (!out) continue;
+  css += media(info.variants, `html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .${esc(cls)}${pseudo(info.variants)},html[data-ui="classic"]:not([data-theme="dark_night"]) .${esc(cls)}.classic-light{${PROPS[info.kind]}:${withAlpha(out, info.alpha)}}`);
+}
+css += `html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light :is(.bg-white\\/5,.bg-white\\/10,.bg-white\\/\\[0\\.08\\],.bg-white\\/\\[0\\.06\\]){background-color:#F1F3F6}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light :is(.border-white\\/10,.border-white\\/15,.border-white\\/20){border-color:#C9D2DE}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light :is(.text-white\\/60,.text-white\\/70,.text-white\\/80){color:#6B7788}
 `;
 
 writeFileSync(join(ROOT, "app", "themes.css"), css);

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, getDocs, limit, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { BackButton } from "./BackButton";
+import { ClassicTitleBar, useIsClassic } from "./Classic";
 
 // Owner-only list of everyone who visited (Footprints) or voted for (Votes)
 // this profile, latest first — like the app's ProfileFootprintsDialog. Reads
@@ -49,6 +50,7 @@ export function ProfilePeopleList({
   const [people, setPeople] = useState<Person[] | null>(null);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const classic = useIsClassic();
 
   useEffect(() => {
     setPeople(null);
@@ -73,6 +75,52 @@ export function ProfilePeopleList({
       })
       .catch((err) => setError(err?.message || "Could not load the list."));
   }, [ownerName, ownerUid, listField, timeField, reload]);
+
+  // 📟 Classic: white page, blue title bar, plain list lines with square photos.
+  const subtitle = people ? `${people.length} ${people.length === 1 ? "person" : "people"} ${votes ? "voted for you" : "viewed your profile"}` : "";
+  if (classic)
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-white">
+        <ClassicTitleBar title={votes ? "❤️ Votes" : "👣 Footprints"} subtitle={subtitle} onBack={onClose} />
+        <div className="flex-1 overflow-y-auto">
+          {error ? (
+            <div className="mt-16 text-center text-[#16315F]">
+              <p className="text-sm">{error}</p>
+              <button type="button" onClick={() => setReload((r) => r + 1)} className="mt-3 rounded bg-[#F07A00] px-5 py-2 font-bold text-white">
+                Retry
+              </button>
+            </div>
+          ) : !people ? (
+            <p className="mt-16 text-center text-sm text-[#6B7788]">Loading…</p>
+          ) : people.length === 0 ? (
+            <p className="mt-16 text-center text-sm text-[#6B7788]">{votes ? "No one has voted for you yet." : "No one has viewed your profile yet."}</p>
+          ) : (
+            <ul data-notranslate>
+              {people.map((p) => (
+                <li key={p.username}>
+                  <Link
+                    href={`/profile/${encodeURIComponent(p.username)}`}
+                    className="relative flex items-center px-2.5 py-2 after:absolute after:bottom-0 after:left-[58px] after:right-0 after:h-px after:bg-[#DDE3EA] hover:bg-[#F6F8FB]"
+                  >
+                    <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded border border-[#B9C4D2] bg-[#FFE0B8] text-[17px] font-bold text-[#F07A00]">
+                      {p.photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={p.photo} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        p.username.slice(0, 1).toUpperCase()
+                      )}
+                    </span>
+                    <span className="ml-2.5 min-w-0 flex-1 truncate text-[15px] font-bold text-[#16315F]">{p.username}</span>
+                    <span className="shrink-0 text-xs text-[#6B7788]">{timeLabel(p.at)}</span>
+                    <span className="ml-1 text-lg text-[#A9B4C2]">›</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-sky-app">

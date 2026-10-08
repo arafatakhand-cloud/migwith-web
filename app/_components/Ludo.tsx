@@ -7,6 +7,7 @@ import { db, functions } from "../../lib/firebase";
 import { gameInvitedMe, setGameHideMessages, setViewedTable } from "../../lib/gameTables";
 import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🎲 Ludo — dice rolls, moves, cuts, coins and the winner are all decided by
 // the Cloud Functions (startLudo / joinLudo / ludoAction / tickLudo /
@@ -86,6 +87,12 @@ const LUDO_KINDS = [
 ];
 const boardSkinOf = (id: string | undefined) => BOARD_SKINS.find((s) => s.id === id) || BOARD_SKINS[0];
 const diceSkinOf = (id: string | undefined) => DICE_SKINS.find((s) => s.id === id) || DICE_SKINS[0];
+// 📟 Classic app style: everyone sees the plain Classic board and dice and the
+// coin pieces, whatever they bought (their own style comes back in Modern).
+// The style picker's previews ("preview") always show the real style.
+const boardNow = (state: LudoState) =>
+  isClassicNow() && !(state as unknown as { preview?: boolean }).preview ? "classic" : state.inv.active.board;
+const diceNow = (id: string | undefined) => (isClassicNow() ? "classic" : id);
 
 // ---------------- Board geometry ----------------
 // Shared 52-square track [row, col], clockwise from Red's start square.
@@ -865,7 +872,7 @@ function Piece({ style, x, y, s, c, movable }: { style: string; x: number; y: nu
 
 /** The board (turned so MY yard is bottom-left), with the pieces when [live]. */
 function Board({ state, mySeat, canMove, live, turns }: { state: LudoState; mySeat: number; canMove: boolean; live: boolean; turns: number }) {
-  const sk = boardSkinOf(state.inv.active.board);
+  const sk = boardSkinOf(boardNow(state));
   const bgId = useGradId("lb");
   const turnColor = live ? (state.players[state.turnIndex]?.color ?? -1) : -1;
   const legal = canMove ? state.legal : [];
@@ -1026,7 +1033,7 @@ function Board({ state, mySeat, canMove, live, turns }: { state: LudoState; mySe
               style={movable ? { cursor: "pointer" } : undefined}
             >
               {movable && <circle cx={cx} cy={p.r} r={0.75} fill="transparent" />}
-              <Piece style={state.inv.active.token} x={cx} y={p.r + s * 0.35} s={s} c={p.color} movable={movable} />
+              <Piece style={isClassicNow() ? "coin" : state.inv.active.token} x={cx} y={p.r + s * 0.35} s={s} c={p.color} movable={movable} />
             </g>
           );
         })}
@@ -1274,7 +1281,7 @@ function TablesStrip({ state }: { state: LudoState }) {
  * seats) sits ON the board as an overlay; once the game starts the pieces appear.
  */
 function BoardFrame({ state, mySeat, canMove, live, children }: { state: LudoState; mySeat: number; canMove: boolean; live: boolean; children?: ReactNode }) {
-  const sk = boardSkinOf(state.inv.active.board);
+  const sk = boardSkinOf(boardNow(state));
   return (
     <div className="flex justify-center px-1.5">
       <div
@@ -1556,7 +1563,7 @@ function PlayingBody({ state, mySeat, myTurn, canRoll, canMove }: { state: LudoS
           value={state.dice}
           fromColor={Math.min(3, Math.max(0, roller?.color ?? turnColor))}
           turns={turns}
-          skin={diceSkinOf(roller?.dice)}
+          skin={diceSkinOf(diceNow(roller?.dice))}
         />
       </BoardFrame>
       {/* Bottom bar: whose turn it is + the dice */}
@@ -1570,9 +1577,9 @@ function PlayingBody({ state, mySeat, myTurn, canRoll, canMove }: { state: LudoS
           disabled={!canRoll}
           onClick={() => state.act("roll")}
           className={`shrink-0 rounded-[14px] ${canRoll ? "ludo-dice-glow" : ""}`}
-          style={{ opacity: myTurn ? 1 : 0.55, ["--lc" as string]: diceSkinOf(turnPlayer?.dice).glow }}
+          style={{ opacity: myTurn ? 1 : 0.55, ["--lc" as string]: diceSkinOf(diceNow(turnPlayer?.dice)).glow }}
         >
-          <DiceFace value={state.dice} rollKey={state.rollNo} skin={diceSkinOf(turnPlayer?.dice)} glow={canRoll} />
+          <DiceFace value={state.dice} rollKey={state.rollNo} skin={diceSkinOf(diceNow(turnPlayer?.dice))} glow={canRoll} />
         </button>
       </div>
     </div>
@@ -1721,7 +1728,7 @@ function InviteDialog({ state, myUsername, roomUsers, onClose }: { state: LudoSt
 
 /** Small picture of a board style for the style picker. */
 function BoardPreview({ sk }: { sk: BoardSkin }) {
-  const fake = { inv: { active: { board: sk.id, token: "coin", dice: "neon" } }, players: [], turnIndex: -1, legal: [], shown: {} } as unknown as LudoState;
+  const fake = { preview: true, inv: { active: { board: sk.id, token: "coin", dice: "neon" } }, players: [], turnIndex: -1, legal: [], shown: {} } as unknown as LudoState;
   return (
     <span className="block aspect-square w-full overflow-hidden rounded-[10px]">
       <Board state={fake} mySeat={-1} canMove={false} live={false} turns={0} />

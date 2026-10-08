@@ -56,3 +56,8 @@ export const CLASSIC = {
   blueTop: "#5A8FD6",
   blueBottom: "#2F6ABD",
 } as const;
+
+/** Classic right now, for plain (non-hook) code such as the games' style pickers. */
+export function isClassicNow(): boolean {
+  return typeof document !== "undefined" && document.documentElement.dataset.ui === "classic";
+}

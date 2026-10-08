@@ -13,6 +13,7 @@ import { isMainFounderName } from "../../lib/founder";
 import { migAliasEmail } from "../../lib/migAlias";
 import { useSession } from "../_components/AppSession";
 import { BackPill } from "../_components/BackButton";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // Create ID, the same flow (and the same redesigned look) as the app's
 // RegisterPage — 👤 Account → 🪪 Profile → ✉️ Verify: fill in the form, get a
@@ -27,8 +28,13 @@ const createId = httpsCallable<Record<string, unknown>, { username?: string }>(f
 const setSecurityPin = httpsCallable(functions, "setSecurityPin");
 
 const GENDERS = ["Male", "Female", "Other"];
-const GOLD = "#FFC84A";
-const GOLD_BUTTON = "linear-gradient(90deg, #FFD86B, #F5B533, #E09A1E)";
+// Register page colour: its own dark look in Modern, a light look in 📟 Classic
+// (white page, navy text, orange buttons, blue accents) — see .classic-light.
+// Set by RegisterPage on every render (the server always draws Modern first).
+let classicRender = false;
+const rc = (dark: string, classic: string) => (classicRender ? classic : dark);
+const goldC = () => rc("#FFC84A", "#F07A00");
+const goldButton = () => rc("linear-gradient(90deg, #FFD86B, #F5B533, #E09A1E)", "linear-gradient(90deg, #FF9D2E, #F07A00, #E06A00)");
 const fieldBox =
   "flex items-center gap-2 rounded-2xl border border-[#2E3A58] bg-[#141C33] px-3 focus-within:border-[#FFC84A] focus-within:bg-[#18223D]";
 const fieldInput = "min-w-0 flex-1 bg-transparent py-3.5 text-[15px] text-white outline-none placeholder:text-[#66718C] disabled:opacity-60";
@@ -57,6 +63,7 @@ function strengthOf(pw: string): [number, string, string] {
 }
 
 export default function RegisterPage() {
+  classicRender = useIsClassic();
   const router = useRouter();
   const { username } = useSession();
   const isFounder = isMainFounderName(username);
@@ -194,10 +201,10 @@ export default function RegisterPage() {
   };
 
   const shell = (children: React.ReactNode) => (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#060914] via-[#0E1530] to-[#1B0F2E] px-[18px] py-3 text-white">
+    <main className="classic-light relative min-h-screen overflow-hidden bg-gradient-to-b from-[#060914] via-[#0E1530] to-[#1B0F2E] px-[18px] py-3 text-white">
       {/* soft glows, like the app */}
-      <span className="pointer-events-none absolute -right-[110px] -top-[90px] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(156,91,255,.27),transparent_70%)]" />
-      <span className="pointer-events-none absolute -bottom-[80px] -left-[100px] h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,rgba(255,200,74,.19),transparent_70%)]" />
+      <span className="classic-hide pointer-events-none absolute -right-[110px] -top-[90px] h-[340px] w-[340px] rounded-full bg-[radial-gradient(circle,rgba(156,91,255,.27),transparent_70%)]" />
+      <span className="classic-hide pointer-events-none absolute -bottom-[80px] -left-[100px] h-[300px] w-[300px] rounded-full bg-[radial-gradient(circle,rgba(255,200,74,.19),transparent_70%)]" />
       <div className="relative mx-auto w-full max-w-md">{children}</div>
     </main>
   );
@@ -206,8 +213,8 @@ export default function RegisterPage() {
       type="button"
       onClick={onClick}
       disabled={!enabledBtn}
-      className="h-14 w-full rounded-[18px] text-base font-extrabold tracking-[0.5px] text-black shadow-[0_6px_18px_rgba(255,200,74,.35)] disabled:text-[#9EA9C0] disabled:shadow-none"
-      style={{ background: enabledBtn || busy ? GOLD_BUTTON : "#3A4360" }}
+      className={`h-14 w-full rounded-[18px] text-base font-extrabold tracking-[0.5px] shadow-[0_6px_18px_rgba(255,200,74,.35)] disabled:text-[#9EA9C0] disabled:shadow-none ${classicRender ? "text-white" : "text-black"}`}
+      style={{ background: enabledBtn || busy ? goldButton() : rc("#3A4360", "#C9D2DE") }}
     >
       {label}
     </button>
@@ -219,12 +226,12 @@ export default function RegisterPage() {
     return shell(
       <div
         className="mt-24 rounded-[28px] bg-[#111833]/90 p-[26px] text-center"
-        style={{ border: "1.5px solid transparent", background: "linear-gradient(rgba(17,24,51,.92), rgba(17,24,51,.92)) padding-box, linear-gradient(135deg, #FFC84A, #9C5BFF) border-box" }}
+        style={classicRender ? { background: "#FFFFFF", border: "1px solid #C9D2DE" } : { border: "1.5px solid transparent", background: "linear-gradient(rgba(17,24,51,.92), rgba(17,24,51,.92)) padding-box, linear-gradient(135deg, #FFC84A, #9C5BFF) border-box" }}
       >
         <div className="text-[44px]">🔒</div>
         <p className="mt-3 text-[21px] font-extrabold text-[#FFD66B]">ID CREATION IS OFF</p>
         <p className="mt-2 text-[13px] text-[#B8C1D3]">New IDs can&apos;t be created right now. Please try again later.</p>
-        <Link href="/login" className="mt-[18px] inline-block rounded-[18px] px-[26px] py-[13px] font-extrabold text-black" style={{ background: GOLD_BUTTON }}>
+        <Link href="/login" className={`mt-[18px] inline-block rounded-[18px] px-[26px] py-[13px] font-extrabold ${classicRender ? "text-white" : "text-black"}`} style={{ background: goldButton() }}>
           BACK TO LOGIN
         </Link>
       </div>
@@ -275,11 +282,15 @@ export default function RegisterPage() {
       {/* glass card */}
       <div
         className="space-y-[13px] rounded-[30px] p-[18px] shadow-[0_10px_40px_rgba(156,91,255,.3)]"
-        style={{
-          border: "1.2px solid transparent",
-          background:
-            "linear-gradient(180deg, rgba(20,28,54,.95), rgba(13,19,40,.95)) padding-box, linear-gradient(135deg, rgba(255,200,74,.67), rgba(156,91,255,.4), rgba(255,255,255,.13)) border-box",
-        }}
+        style={
+          classicRender
+            ? { background: "#FFFFFF", border: "1.2px solid #C9D2DE" }
+            : {
+                border: "1.2px solid transparent",
+                background:
+                  "linear-gradient(180deg, rgba(20,28,54,.95), rgba(13,19,40,.95)) padding-box, linear-gradient(135deg, rgba(255,200,74,.67), rgba(156,91,255,.4), rgba(255,255,255,.13)) border-box",
+              }
+        }
       >
         {/* steps: progress bar + labels */}
         <div>
@@ -288,7 +299,7 @@ export default function RegisterPage() {
               <span
                 key={i}
                 className="h-[5px] flex-1 rounded-full"
-                style={{ background: step > i ? "linear-gradient(90deg, #FFC84A, #FF9BD2)" : "#26314D" }}
+                style={{ background: step > i ? `linear-gradient(90deg, ${goldC()}, ${rc("#FF9BD2", "#FFB46B")})` : rc("#26314D", "#E3E8EE") }}
               />
             ))}
           </div>
@@ -297,7 +308,7 @@ export default function RegisterPage() {
               <span
                 key={l}
                 className={`flex-1 text-center text-[11px] ${step === i + 1 ? "font-bold" : "font-medium"}`}
-                style={{ color: step === i + 1 ? GOLD : step > i + 1 ? "#52E38A" : "#7D88A3" }}
+                style={{ color: step === i + 1 ? goldC() : step > i + 1 ? "#52E38A" : rc("#7D88A3", "#8A97A8") }}
               >
                 {step > i + 1 ? "✓ " : ""}
                 {l}
@@ -355,7 +366,7 @@ export default function RegisterPage() {
               <div className="flex items-center gap-2.5">
                 <div className="flex flex-1 gap-1">
                   {[0, 1, 2, 3].map((i) => (
-                    <span key={i} className="h-1 flex-1 rounded-full" style={{ background: i < pwN ? pwColor : "#26314D" }} />
+                    <span key={i} className="h-1 flex-1 rounded-full" style={{ background: i < pwN ? pwColor : rc("#26314D", "#E3E8EE") }} />
                   ))}
                 </div>
                 <span className="text-[11px] font-bold" style={{ color: pwColor }}>

@@ -31,6 +31,7 @@ import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPan
 import { BackButton } from "../../_components/BackButton";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
+import { useIsClassic } from "../../../lib/uiStyle";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -79,6 +80,7 @@ export default function PrivateChatPage() {
   // Emotes the same size as in room chat (Settings → Chat text size), like the app.
   const emoteFontPx = chatPx(useChatTextSize());
 
+  const classic = useIsClassic();
   const [messages, setMessages] = useState<PrivateMessage[]>([]);
   // 😊 emotes open under the input bar (like the app's emoji box)
   const [emoteSlot, setEmoteSlot] = useState<HTMLDivElement | null>(null);
@@ -367,16 +369,21 @@ export default function PrivateChatPage() {
           {visible.map((m) => {
             const mine = m.from.toLowerCase() === username.toLowerCase();
             const label = mine ? "You" : friend;
+            // 📟 Classic: every line on the LEFT as "name: message", your own name
+            // too, no bubbles (blue for you, orange for them).
+            const mineRight = mine && !classic;
+            const pmName = mine ? username : friend;
+            const pmNameColor = mine ? "#2F6ABD" : "#F07A00";
             let quote: string | null = null;
             let body = m.text;
             if (body.startsWith("↩ ") && body.includes("\n")) {
               quote = body.slice(2, body.indexOf("\n"));
               body = body.slice(body.indexOf("\n") + 1);
             }
-            const ink = mine ? "text-white" : "text-[#12233F]";
-            const sub = mine ? "text-white/75" : "text-[#6D7A90]";
+            const ink = mineRight ? "text-white" : "text-[#12233F]";
+            const sub = mineRight ? "text-white/75" : "text-[#6D7A90]";
             return (
-              <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
+              <div key={m.id} className={`flex flex-col ${mineRight ? "items-end" : "items-start"}`}>
                 {pickerFor === m.id && (
                   <div className="mb-1.5 flex items-center gap-2 rounded-full bg-[#1E2A47] px-2.5 py-1.5">
                     {REACTIONS.map((e) => (
@@ -422,14 +429,22 @@ export default function PrivateChatPage() {
                     if (longPressed.current) return;
                     if (m.type !== "image" && m.type !== "file") startReply(label, body);
                   }}
-                  className={`max-w-[260px] cursor-pointer select-none px-3.5 py-2.5 shadow-sm ${
-                    mine
-                      ? "rounded-[18px] rounded-br-[4px] bg-gradient-to-br from-[#3B8BE6] to-[#1F63C4]"
-                      : "rounded-[18px] rounded-bl-[4px] bg-gradient-to-br from-white to-[#F1F7FD]"
+                  className={`cursor-pointer select-none ${
+                    classic
+                      ? "w-full px-1 py-[3px]"
+                      : mine
+                        ? "max-w-[260px] rounded-[18px] rounded-br-[4px] bg-gradient-to-br from-[#3B8BE6] to-[#1F63C4] px-3.5 py-2.5 shadow-sm"
+                        : "max-w-[260px] rounded-[18px] rounded-bl-[4px] bg-gradient-to-br from-white to-[#F1F7FD] px-3.5 py-2.5 shadow-sm"
                   }`}
                 >
+                  {/* Classic: "name:" over pictures, files and gifts (text lines get it at the start). */}
+                  {classic && (m.type === "image" || m.type === "file" || m.type === "gift") && (
+                    <p data-notranslate className="text-sm font-bold" style={{ color: pmNameColor }}>
+                      {pmName}:
+                    </p>
+                  )}
                   {quote && (
-                    <p className={`mb-1.5 line-clamp-2 rounded-lg px-2 py-1 text-xs ${mine ? "bg-black/[0.18] text-white/85" : "bg-[#1F63C4]/10 text-[#12233F]/85"}`}>
+                    <p className={`mb-1.5 line-clamp-2 rounded-lg px-2 py-1 text-xs ${mineRight ? "bg-black/[0.18] text-white/85" : "bg-[#1F63C4]/10 text-[#12233F]/85"}`}>
                       {quote}
                     </p>
                   )}
@@ -453,7 +468,7 @@ export default function PrivateChatPage() {
                       onClick={(e) => e.stopPropagation()}
                       className="flex items-center gap-2.5 py-0.5"
                     >
-                      <span className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-lg ${mine ? "bg-white/20" : "bg-[#1F63C4]/10"}`}>
+                      <span className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-lg ${mineRight ? "bg-white/20" : "bg-[#1F63C4]/10"}`}>
                         📎
                       </span>
                       <span className="min-w-0 max-w-[170px]">
@@ -472,7 +487,14 @@ export default function PrivateChatPage() {
                       <span className={`text-xl font-bold ${ink}`}>{m.giftName || m.text}</span>
                     </span>
                   ) : (
-                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>{withEmotes(body, emoteFontPx)}</p>
+                    <p className={`whitespace-pre-wrap break-words text-[15px] ${ink}`}>
+                      {classic && (
+                        <b data-notranslate style={{ color: pmNameColor }}>
+                          {pmName}:{" "}
+                        </b>
+                      )}
+                      {withEmotes(body, emoteFontPx)}
+                    </p>
                   )}
                   {m.createdAtMs > 0 && <p className={`mt-0.5 text-[9px] ${sub}`}>{timeLabel(m.createdAtMs)}</p>}
                 </div>

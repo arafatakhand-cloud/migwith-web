@@ -6,6 +6,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { gameInvitedMe, setTpHideGameMessages, setViewedTable } from "../../lib/gameTables";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🎴 Teen Patti — dealing, betting, coins and winners are decided by the Cloud
 // Functions (startTeenPatti / joinTeenPatti / teenPattiAction / tickTeenPatti).
@@ -71,8 +72,19 @@ const cardSkinOf = (id: string | undefined) => TP_CARD_SKINS.find((s) => s.id ==
 // My card style — also used by the chat's little cards ("Teen Patti Bot: … [A♥]").
 let myCardSkinId = "royal";
 export function tpCardSkinNow(): TpCardSkin {
-  return cardSkinOf(myCardSkinId);
+  return cardSkinOf(isClassicNow() ? "classic" : myCardSkinId);
 }
+
+// 📟 Classic app style: a blue room with an orange rim and green felt for
+// everyone (not sold in the shop); bought styles return in Modern.
+const TP_CLASSIC_TABLE: TpTableSkin = {
+  id: "classic_ui", name: "Classic", price: 0,
+  bg: ["#3A74C2", "#2A5A9E", "#1D4378"],
+  rim: ["#FF9D2E", "#E06A00", "#FF9D2E"],
+  ring: ["#FFFFFF", "#FFD39A", "#F07A00", "#FFFFFF"],
+  felt: ["#2E9E5B", "#1B6E3C", "#0B3D1F"],
+  line: "#A5E1B8", glow: "#F07A00", logo: "#FFFFFF",
+};
 
 type Player = { uid: string; username: string; seen: boolean; packed: boolean; invested: number };
 
@@ -1001,7 +1013,7 @@ function TpOvalTable({
     return () => ro.disconnect();
   }, []);
 
-  const sk = tableSkinOf(state.inv.active.table);
+  const sk = isClassicNow() ? TP_CLASSIC_TABLE : tableSkinOf(state.inv.active.table);
   const winners = new Set(state.lastWinners);
   const busy = state.running || justFinished;
   const aspect = busy ? 1.7 : 2.8;

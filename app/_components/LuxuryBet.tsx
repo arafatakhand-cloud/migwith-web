@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
-import { LB_SKINS, LbStyleDialog } from "./LuxuryBot";
+import { LbStyleDialog, lbSkinNow } from "./LuxuryBot";
 import { LB_KINDS, useInventory } from "./StyleShop";
 
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
@@ -319,7 +319,7 @@ export function LuxuryBetTable({
   // 🎨 the same bet box colour as Luxury Bot (lb_inventory/{uid}.box), like the app
   const inv = useInventory("lb_inventory", uid, LB_KINDS);
   const [showStyles, setShowStyles] = useState(false);
-  const skin = LB_SKINS.find((k) => k.id === inv.active.box) || LB_SKINS[0];
+  const skin = lbSkinNow(inv.active.box);
   const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
   const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 10;
   const blinkOn = useBlink(urgent);

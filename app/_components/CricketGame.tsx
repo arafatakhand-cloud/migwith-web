@@ -7,6 +7,7 @@ import { db, functions } from "../../lib/firebase";
 import { toggleCricketSound, useCricketSoundOn } from "./CricketCelebration";
 import { CkStyleDialog, ckBackground, ckGrad, ckSkin, type CkSkin } from "./CricketStyles";
 import { LB_KINDS, useInventory } from "./StyleShop";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🏏 Cricket Bot — all outcomes and coins are decided by the Cloud Functions
 // (startCricketGame / joinCricketGame / batCricket / tickCricketGame). The web
@@ -331,7 +332,8 @@ export function CricketBox({ state, uid }: { state: CricketState; uid: string })
   const top = state.players.reduce<Player | null>((best, p) => (!best || p.runs > best.runs ? p : best), null);
   const sorted = [...state.players].sort((a, b) => Number(a.out) - Number(b.out) || b.runs - a.runs);
   const inv = useInventory("lb_inventory", uid, LB_KINDS);
-  const skin = ckSkin(inv.active.cricket);
+  // 📟 Classic: everyone sees the free Classic Green box.
+  const skin = ckSkin(isClassicNow() ? "classic" : inv.active.cricket);
   const [showStyles, setShowStyles] = useState(false);
 
   // ✨ compact "stadium" box: gold-green frame, striped grass, gold pills

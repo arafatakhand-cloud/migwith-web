@@ -23,6 +23,7 @@ import {
   type AchEvent,
   type AchSeries,
 } from "../../lib/achievements";
+import { isClassicNow } from "../../lib/uiStyle";
 
 // 🏅 ACHIEVEMENT BADGES, like the app's Achievements.kt: a row on every profile
 // (anyone can tap it to see that person's badges), the server sync, and the
@@ -186,10 +187,13 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
 }
 
 // ---- Modern dark "trophy room" look for the Achievements window (like the app) ----
-const GOLD = "#FFD36B";
-const PINK = "#FF5FA2";
-const VIOLET = "#8B5CFF";
-const SUB = "#AFA3D6";
+// 📟 Classic: white window, navy text, orange + blue instead of pink + violet
+// (medals keep their metals). The window opens on a tap, so this is read then.
+const achC = (dark: string, classic: string) => (isClassicNow() ? classic : dark);
+const gold = () => achC("#FFD36B", "#F07A00");
+const pink = () => achC("#FF5FA2", "#F07A00");
+const violet = () => achC("#8B5CFF", "#2F6ABD");
+const subC = () => achC("#AFA3D6", "#6B7788");
 
 function ModernChip({ label, count, on, onClick }: { label: string; count: string; on: boolean; onClick: () => void }) {
   return (
@@ -238,7 +242,7 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 px-3 py-[22px]" onClick={onClose}>
       <div
-        className="relative flex max-h-[min(680px,94vh)] w-full max-w-lg flex-col overflow-hidden rounded-[26px] bg-gradient-to-b from-[#150A30] to-[#0B0620] text-[#F3EEFF] shadow-[0_10px_40px_rgba(139,92,255,.55)]"
+        className="classic-light relative flex max-h-[min(680px,94vh)] w-full max-w-lg flex-col overflow-hidden rounded-[26px] bg-gradient-to-b from-[#150A30] to-[#0B0620] text-[#F3EEFF] shadow-[0_10px_40px_rgba(139,92,255,.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* gradient border */}
@@ -257,9 +261,9 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
             <svg width="78" height="78" className="absolute inset-0 -rotate-90">
               <defs>
                 <linearGradient id="achRing" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor={GOLD} />
-                  <stop offset="50%" stopColor={PINK} />
-                  <stop offset="100%" stopColor={VIOLET} />
+                  <stop offset="0%" stopColor={gold()} />
+                  <stop offset="50%" stopColor={pink()} />
+                  <stop offset="100%" stopColor={violet()} />
                 </linearGradient>
               </defs>
               <circle cx="39" cy="39" r={R} fill="none" stroke="rgba(255,255,255,.13)" strokeWidth="7" />
@@ -277,17 +281,17 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
             <span className="ach-glow absolute h-[56px] w-[56px] rounded-full bg-[#FFD36B]/20" />
             <span className="relative flex flex-col items-center leading-none">
               <span className="text-[22px]">🏆</span>
-              <span className="mt-0.5 text-xs font-extrabold" style={{ color: GOLD }}>
+              <span className="mt-0.5 text-xs font-extrabold" style={{ color: gold() }}>
                 {pct}%
               </span>
             </span>
           </div>
           <div className="ml-3.5 min-w-0 flex-1">
-            <p className="text-[11px] font-bold tracking-[2px]" style={{ color: GOLD }}>
+            <p className="text-[11px] font-bold tracking-[2px]" style={{ color: gold() }}>
               ACHIEVEMENTS
             </p>
             <p className="text-[32px] font-extrabold leading-[34px]">{earnedCount}</p>
-            <p className="text-xs" style={{ color: SUB }}>
+            <p className="text-xs" style={{ color: subC() }}>
               of {total} badges unlocked
             </p>
           </div>
@@ -315,7 +319,7 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
           {showEvents ? (
             <>
               {earnedEvents.length === 0 && waiting.length === 0 && (
-                <p className="p-5 text-center text-xs" style={{ color: SUB }}>
+                <p className="p-5 text-center text-xs" style={{ color: subC() }}>
                   Special badges for Eid, Puja, Noboborsho and other days appear here. Open miGlife during the event to earn one — after it ends, it can never be earned again.
                 </p>
               )}
@@ -349,11 +353,11 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
                 <div key={c} className="space-y-2">
                   {tab === null && (
                     <div className="flex items-center gap-2 pb-0.5 pt-2">
-                      <span className="text-[11px] font-bold tracking-[1.5px]" style={{ color: GOLD }}>
+                      <span className="text-[11px] font-bold tracking-[1.5px]" style={{ color: gold() }}>
                         {label.toUpperCase()}
                       </span>
                       <span className="h-px flex-1 bg-gradient-to-r from-[#FFD36B]/50 to-transparent" />
-                      <span className="text-[11px]" style={{ color: SUB }}>
+                      <span className="text-[11px]" style={{ color: subC() }}>
                         {got}/{all}
                       </span>
                     </div>
@@ -393,7 +397,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
           ? {
               // gold → pink → violet border on a finished series
               border: "1px solid transparent",
-              background: `linear-gradient(135deg, #2A1A40, #1E103A) padding-box, linear-gradient(135deg, ${GOLD}, ${PINK}, ${VIOLET}) border-box`,
+              background: `${achC("linear-gradient(135deg, #2A1A40, #1E103A)", "linear-gradient(#FFFFFF, #FFFFFF)")} padding-box, linear-gradient(135deg, ${gold()}, ${pink()}, ${violet()}) border-box`,
             }
           : {
               border: `1px solid ${best !== null ? "rgba(255,211,107,.45)" : "rgba(255,255,255,.15)"}`,
@@ -422,7 +426,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
               </span>
             )}
           </div>
-          <p className="line-clamp-2 text-[11px]" style={{ color: SUB }}>
+          <p className="line-clamp-2 text-[11px]" style={{ color: subC() }}>
             {complete ? "Every step unlocked 🎉" : achGoalText(s, next!)}
           </p>
           {next !== null && s.steps[next] > 1 && (
@@ -450,7 +454,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
             </div>
           )}
         </div>
-        <span className="ml-1.5 text-sm" style={{ color: SUB }}>
+        <span className="ml-1.5 text-sm" style={{ color: subC() }}>
           {open ? "▴" : "▾"}
         </span>
       </div>
@@ -467,14 +471,14 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
                 >
                   <AchMedal emoji={s.emoji} label={achMedalLabel(s, i)} metal={achMetal(s, i)} earned={!!b} size={50} />
                   <p className={`mt-1 line-clamp-2 text-[10px] font-semibold leading-3 ${b ? "" : "text-[#AFA3D6]"}`}>{achStepTitle(s, i)}</p>
-                  <p className="text-[9px]" style={{ color: b ? GOLD : "#7F74A8" }}>
+                  <p className="text-[9px]" style={{ color: b ? gold() : achC("#7F74A8", "#8A97A8") }}>
                     {b ? (b.earnedAt > 0 ? fmtDate(b.earnedAt) : "Unlocked") : "🔒 Locked"}
                   </p>
                 </div>
               );
             })}
           </div>
-          <p className="mt-1.5 text-[10px]" style={{ color: SUB }}>
+          <p className="mt-1.5 text-[10px]" style={{ color: subC() }}>
             {s.steps.map((_, i) => achGoalText(s, i)).join(" · ")}
           </p>
         </>
@@ -493,7 +497,7 @@ function EventRow({ emoji, title, earned, sub }: { emoji: string; title: string;
       <AchMedal emoji={emoji} label="" metal={EVENT_METAL} earned={earned} size={48} />
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-bold">{title}</p>
-        <p className="text-[11px]" style={{ color: earned ? GOLD : SUB }}>
+        <p className="text-[11px]" style={{ color: earned ? gold() : subC() }}>
           {sub}
         </p>
       </div>

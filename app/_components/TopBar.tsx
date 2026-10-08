@@ -236,6 +236,8 @@ export function TopBar() {
             <LanguageToggle />
           </div>
         </div>
+        {/* On Home the profile strip sits here, between the orange header and the blue tabs (the Dashboard fills it). */}
+        {onHome && <div id="classic-home-strip" />}
         <div className="no-scrollbar flex items-end gap-[3px] overflow-x-auto bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1 pt-1">
           {classicTab("Contacts", onHome, "home", "/")}
           {classicTab("Rooms", onRooms, "rooms", "/rooms")}
