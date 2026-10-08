@@ -217,9 +217,16 @@ export function TopBar() {
             <span className="ml-0.5 rounded-full bg-white px-[5px] text-xs font-black text-[#F07A00]">life</span>
           </Link>
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            {badges.messages > 0 && !onHome && (
-              <Link href="/" className="rounded-md bg-[#E53935] px-[7px] py-[3px] text-[11px] font-bold text-white">
-                ✉ new
+            {/* New alerts: a glossy red "✉ NEW" pill with the count, gently pulsing and blinking. */}
+            {badges.alerts > 0 && !onHome && (
+              <Link href="/" aria-label="New alerts" className="classic-new-pulse relative block pr-1 pt-1">
+                <span className="flex items-center rounded-full border-[1.5px] border-white/90 bg-gradient-to-b from-[#FF6B6B] via-[#E53935] to-[#B71C1C] py-[3px] pl-[3px] pr-2.5 shadow-[0_2px_6px_rgba(183,28,28,.6)]">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-bold text-[#E53935]">{"\u2709\uFE0E"}</span>
+                  <span className="ml-[5px] text-[11px] font-extrabold tracking-[1px] text-white">NEW</span>
+                </span>
+                <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-[#FFD54F] px-[3px] text-[9px] font-extrabold text-[#7A2E00]">
+                  {badges.alerts > 99 ? "99+" : badges.alerts}
+                </span>
               </Link>
             )}
             <Link href="/alerts" aria-label="Alerts" className="relative flex h-8 w-8 items-center justify-center text-base">

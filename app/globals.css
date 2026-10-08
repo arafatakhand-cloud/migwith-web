@@ -398,3 +398,8 @@ body {
 @keyframes efx-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 .efx-wave { display: inline-block; animation: efx-wave 1.05s ease-in-out infinite; }
 @keyframes efx-wave { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(3px); } }
+
+/* 📟 Classic header: the "✉ NEW" alerts pill pulses and blinks every 0.7 s (like the app). */
+.classic-new-pulse { animation: classic-new-pulse 0.7s ease-in-out infinite alternate; }
+@keyframes classic-new-pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(1.07); opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .classic-new-pulse { animation: none; } }
