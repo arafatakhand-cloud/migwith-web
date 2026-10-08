@@ -2248,13 +2248,24 @@ function luxuryLine(text: string): ReactNode | null {
 }
 
 // One badge picture; if it can't load (deleted / bad link / offline), its emoji
-// is shown instead, so the badge never turns into an empty gap (like the app).
+// is shown instead, so the badge never turns into an empty gap. A failed
+// picture is remembered for this visit, so other lines (and redraws) show the
+// emoji straight away instead of trying and blinking again (like the app).
+const failedBadgeUrls = new Set<string>();
 function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <>{emoji}</>;
+  const [failed, setFailed] = useState(() => failedBadgeUrls.has(src));
+  if (failed || failedBadgeUrls.has(src)) return <>{emoji}</>;
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={src} alt={emoji} onError={() => setFailed(true)} className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle" />
+    <img
+      src={src}
+      alt={emoji}
+      onError={() => {
+        failedBadgeUrls.add(src);
+        setFailed(true);
+      }}
+      className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle"
+    />
   );
 }
 
