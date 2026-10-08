@@ -11,6 +11,7 @@ import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { LanguageToggle } from "./LanguageToggle";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // The app's top bar: ☰ menu, 👥 Home and 💬 Rooms tabs, and a blue pill naming
 // the page you are on (Explore, Members, Settings …). Signed out: logo + Login.
@@ -50,6 +51,7 @@ export function TopBar() {
   const { user, loading, badges } = useSession();
   const [open, setOpen] = useState(false);
   const uid = user?.uid;
+  const classic = useIsClassic();
 
   // Rooms you are in: one tab each, like the app.
   const openRooms = useOpenRooms(uid);
@@ -159,6 +161,89 @@ export function TopBar() {
   const onHome = pathname === "/";
   const onRooms = pathname === "/rooms";
   const pageName = currentRoom ? undefined : PAGE_NAMES.find(([p]) => pathname.startsWith(p))?.[1];
+  const chatWith = pathname.startsWith("/chat/") ? decodeURIComponent(pathname.slice("/chat/".length)) : null;
+
+  const menu =
+    open &&
+    createPortal(
+      <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
+        <div className="absolute inset-0 bg-black/40" />
+        <nav
+          className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl pb-safe pt-[max(0.75rem,env(safe-area-inset-top))]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MenuPanel />
+        </nav>
+      </div>,
+      document.body
+    );
+
+  // 📟 CLASSIC style (Settings › Appearance › App style): orange header with the
+  // mig·life logo, a blue strip of flat tabs (the open one is a white "folder"
+  // tab) and an orange line under it.
+  if (classic) {
+    const classicTab = (label: string, selected: boolean, key: string, href?: string, ref?: React.Ref<HTMLSpanElement>) => {
+      const cls = `block max-w-[130px] shrink-0 truncate rounded-t-md px-2.5 text-[11.5px] font-bold ${
+        selected ? "bg-white py-[7px] text-[#2F6ABD]" : "bg-[#9AB8E4] py-[5px] text-[#16315F]"
+      }`;
+      return href && !selected ? (
+        <Link key={key} href={href} className={cls} data-notranslate={key.startsWith("r:") || key.startsWith("c:") ? true : undefined}>
+          {label}
+        </Link>
+      ) : (
+        <span key={key} ref={ref} className={cls} data-notranslate={key.startsWith("r:") || key.startsWith("c:") ? true : undefined}>
+          {label}
+        </span>
+      );
+    };
+    const title = currentRoom || chatWith || onHome || onRooms ? null : pageName ?? null;
+    return (
+      <>
+        <div
+          className="flex h-[42px] items-center border-b border-[#C45F00] bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-2"
+          style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)" }}
+        >
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Menu"
+            className="relative flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-white/40 bg-white/20 text-base font-bold text-white lg:hidden"
+          >
+            ☰
+            <Badge n={badges.messages + badges.requests} />
+          </button>
+          <Link href="/" className="ml-[9px] flex items-center" data-notranslate>
+            <span className="text-[19px] font-black text-white">mig</span>
+            <span className="ml-0.5 rounded-full bg-white px-[5px] text-xs font-black text-[#F07A00]">life</span>
+          </Link>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            {badges.messages > 0 && !onHome && (
+              <Link href="/" className="rounded-md bg-[#E53935] px-[7px] py-[3px] text-[11px] font-bold text-white">
+                ✉ new
+              </Link>
+            )}
+            <Link href="/alerts" aria-label="Alerts" className="relative flex h-8 w-8 items-center justify-center text-base">
+              🔔
+              <Badge n={badges.alerts} />
+            </Link>
+            <LanguageToggle />
+          </div>
+        </div>
+        <div className="no-scrollbar flex items-end gap-[3px] overflow-x-auto bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1 pt-1">
+          {classicTab("Contacts", onHome, "home", "/")}
+          {classicTab("Rooms", onRooms, "rooms", "/rooms")}
+          {title && classicTab(title, true, "page")}
+          {openRooms.map((r) =>
+            classicTab(roomDisplayName(r), r === currentRoom, `r:${r}`, roomHref(r), r === currentRoom ? activeTabRef : undefined)
+          )}
+          {chatWith && classicTab(chatWith, true, `c:${chatWith}`)}
+        </div>
+        <div className="h-[2px] bg-[#F07A00]" />
+        {menu}
+      </>
+    );
+  }
+
   const tab = (active: boolean) =>
     `relative flex h-9 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition ${
       active ? "bg-[#2F80ED] text-white shadow-md" : "text-[#0B2A5B] hover:bg-[#E3F0FD]"
@@ -228,19 +313,7 @@ export function TopBar() {
       </div>
 
       {/* Side menu — in <body>, so nothing in the header can box it in */}
-      {open &&
-        createPortal(
-        <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
-          <div className="absolute inset-0 bg-black/40" />
-          <nav
-            className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl pb-safe pt-[max(0.75rem,env(safe-area-inset-top))]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MenuPanel />
-          </nav>
-        </div>,
-          document.body
-        )}
+      {menu}
     </>
   );
 }

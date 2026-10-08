@@ -15,6 +15,7 @@ import { AndroidDownload } from "../_components/AndroidDownload";
 import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
 import { canBeInvisible } from "../../lib/invisible";
 import { migAliasEmail } from "../../lib/migAlias";
+import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
 const INVISIBLE_KEY = "migwith.loginInvisible";
 
@@ -211,9 +212,37 @@ export default function LoginPage() {
         <Link href="/forgot-password" className="mt-3 text-base text-white underline underline-offset-4">
           Forgot Password?
         </Link>
+        {/* ✨ / 📟 The site opens in whichever style is ticked here (same switch as Settings › Appearance). */}
+        <LoginStyleChoice />
         {/* Android app download (the link miglife sets in miglife secret) */}
         <AndroidDownload />
       </section>
     </main>
+  );
+}
+
+function LoginStyleChoice() {
+  const style = useUiStyle();
+  return (
+    <div className="mt-5 flex w-full items-center justify-evenly gap-2 px-2">
+      {(
+        [
+          ["modern", "✨ Modern mode"],
+          ["classic", "📟 Classic mode"],
+        ] as const
+      ).map(([id, label]) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => setUiStyle(id)}
+          className="flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white"
+        >
+          <span className="flex h-[26px] w-[26px] items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-lg font-bold text-[#2B2B2B]">
+            {style === id ? "✓" : ""}
+          </span>
+          <span className={`whitespace-nowrap ${style === id ? "font-bold" : ""}`}>{label}</span>
+        </button>
+      ))}
+    </div>
   );
 }

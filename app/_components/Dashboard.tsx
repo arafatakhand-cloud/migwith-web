@@ -11,6 +11,7 @@ import { useSession } from "./AppSession";
 import { InstallHint } from "./InstallHint";
 import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
+import { useIsClassic } from "../../lib/uiStyle";
 
 // Signed-in home, like the app's Home tab: orange profile header, then
 // Messages / migAlerts rows, friends split into Online and Offline, Invite Friends.
@@ -64,6 +65,7 @@ export function Dashboard() {
   const [statusDraft, setStatusDraft] = useState("");
   const [openOnline, setOpenOnline] = useState(true);
   const [openOffline, setOpenOffline] = useState(true);
+  const classic = useIsClassic();
   const [info, setInfo] = useState<Record<string, Friend>>({});
 
   const fr = useFriendRequests(username);
@@ -147,7 +149,29 @@ export function Dashboard() {
     }
   };
 
-  const FriendRow = ({ f }: { f: Friend }) => (
+  // 📟 Classic style: a small presence icon + "name - status" on one line.
+  const ClassicFriendRow = ({ f }: { f: Friend }) => (
+    <div className="flex items-center bg-white py-[9px] pl-3 pr-2.5 hover:bg-[#F4F9FF]">
+      <Link
+        href={`/profile/${encodeURIComponent(f.name)}`}
+        aria-label={f.name}
+        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white bg-gradient-to-b text-xs font-bold text-white ${
+          f.online ? "from-[#7EE06A] to-[#34A82A]" : "from-[#D3D8DF] to-[#9AA3AE]"
+        }`}
+      >
+        ☺
+      </Link>
+      <Link href={chatHref(f.name)} data-notranslate className="ml-[9px] flex min-w-0 flex-1 items-center text-[15px]">
+        <span className={`max-w-[190px] shrink-0 truncate font-bold ${f.online ? "text-[#16315F]" : "text-[#6B7788]"}`}>{f.name}</span>
+        <span className={`min-w-0 flex-1 truncate text-sm text-[#6B7788] ${f.status ? "italic" : ""}`}>
+          {" - "}
+          {f.status || [f.gender, `Level: ${f.level}`, f.country].filter(Boolean).join(", ")}
+        </span>
+      </Link>
+    </div>
+  );
+
+  const FriendRow = ({ f }: { f: Friend }) => classic ? <ClassicFriendRow f={f} /> : (
     <Link href={chatHref(f.name)} className="flex items-center gap-3 border-b border-[#E3ECF7] bg-white px-4 py-2.5 hover:bg-[#F4F9FF]">
       <span className="relative">
         <Avatar name={f.name} photo={f.photo} />
@@ -172,7 +196,22 @@ export function Dashboard() {
     list: Friend[];
     open: boolean;
     toggle: () => void;
-  }) => (
+  }) => classic ? (
+    // 📟 Classic style: grey folder bar "▼ Online (4)" / "► Offline (12)".
+    <>
+      <button
+        type="button"
+        onClick={toggle}
+        className="flex w-full items-center border-b border-[#C9D2DE] bg-gradient-to-b from-[#E9EEF4] to-[#D6DEE8] px-2.5 py-2 text-left"
+      >
+        <span className="w-[18px] text-[11px] text-[#2F6ABD]">{open ? "▼" : "►"}</span>
+        <span className="text-sm font-bold text-[#16315F]">
+          {title} ({list.length})
+        </span>
+      </button>
+      {open && list.map((f) => <FriendRow key={f.name} f={f} />)}
+    </>
+  ) : (
     <>
       <button
         type="button"

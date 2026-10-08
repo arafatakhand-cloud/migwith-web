@@ -30,6 +30,7 @@ import { useRoomPrefs } from "../../lib/roomPrefs";
 import { PageShell } from "../_components/PageShell";
 import { isMainFounderName } from "../../lib/founder";
 import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
+import { useIsClassic } from "../../lib/uiStyle";
 
 /** A Firestore Timestamp (or anything else) as milliseconds; 0 when missing. */
 function toMillisSafe(v: unknown): number {
@@ -83,6 +84,8 @@ export default function RoomsPage() {
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
   const [filter, setFilter] = useState<"all" | "fav" | "recent" | "mine">("all");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
+  const classic = useIsClassic();
   const { favorites, recent, toggleFavorite } = useRoomPrefs();
 
   useEffect(() => {
@@ -257,11 +260,191 @@ export default function RoomsPage() {
       name={name}
       subtitle={subtitle(name)}
       count={counts[name]}
-      max={gameSet.has(name) ? gameCapacity(name) : maxes[name] || byName.get(name)?.maxUsers || 50}
+      max={roomMax(name)}
       favorite={favorites.includes(name)}
       onStar={() => toggleFavorite(name)}
     />
   );
+
+  const tryCreate = () => {
+    // Same checks as the app, before the form opens.
+    if (level > 0 && level < MIN_LEVEL_TO_CREATE)
+      return window.alert(
+        `Can't create a room\n\nYou need to reach Level ${MIN_LEVEL_TO_CREATE} to create a chat room. Your level: ${level}.`
+      );
+    if (!isFounder && myRooms.length >= MAX_ROOMS_PER_USER)
+      return window.alert(
+        `Can't create a room\n\nYou can create up to ${MAX_ROOMS_PER_USER} rooms. You have already created ${myRooms.length}.`
+      );
+    setShowCreate(true);
+    setCreateError("");
+  };
+  const roomMax = (name: string) => (gameSet.has(name) ? gameCapacity(name) : maxes[name] || byName.get(name)?.maxUsers || 50);
+
+  const createDialog = (
+    <>
+        {showCreate && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center"
+          onClick={() => !creating && setShowCreate(false)}
+        >
+          <div
+            className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-black">➕ Create a Chat Room</h2>
+            <p className="text-xs text-[#5B6B8C]">
+              Level {MIN_LEVEL_TO_CREATE}+ · up to {MAX_ROOMS_PER_USER} rooms · you are Level {level || "…"}
+              {!isFounder && level >= MIN_LEVEL_TO_CREATE && ` · holds ${capacityForLevel(level)} people`}
+            </p>
+            <input
+              value={newName}
+              onChange={(e) => {
+                setNewName(e.target.value.slice(0, MAX_NAME));
+                setCreateError("");
+              }}
+              placeholder={`Room name (${MIN_NAME}–${MAX_NAME} characters)`}
+              className="w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
+            />
+            <textarea
+              value={newDesc}
+              onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
+              placeholder="Description"
+              rows={3}
+              className="w-full resize-none rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
+            />
+            {createError && <p className="text-center text-sm text-rose-600">{createError}</p>}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowCreate(false)}
+                disabled={creating}
+                className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={create}
+                disabled={creating}
+                className="flex-1 rounded-xl bg-[#2F80ED] py-3 text-sm font-black text-white disabled:opacity-50"
+              >
+                {creating ? "Creating…" : "Create"}
+              </button>
+            </div>
+            <p className="text-center text-[11px] text-[#8A9BBC]">
+              In your room: /kick /ban /unban /lock /silence room /level /mod — type /modhelp
+            </p>
+          </div>
+        </div>
+      )}
+
+    </>
+  );
+
+  // 📟 CLASSIC style: search + Create + refresh, then plain ▼/► folders with
+  // "Room (4/30)" lines. Favorites, Recent and Public start open; Private shows
+  // the 10 busiest (search finds the rest). While searching every folder opens.
+  if (classic) {
+    const sections: [string, string, string[]][] = [
+      ["fav", "Favorites", others.fav.names],
+      ["recent", "Recent", others.recent.names],
+      ["mine", "My Rooms", others.mine.names],
+      ["game", "Game Rooms", gameSection.filter(matches)],
+      ["public", "Public Rooms", publicSection],
+      ["private", "Private Rooms", privateSection],
+    ];
+    return (
+      <PageShell light>
+        <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl bg-white pb-6 text-[#16315F] lg:max-w-4xl">
+          <div className="flex items-center gap-1.5 border-b border-[#D5DCE6] bg-[#EFF2F6] px-2 py-[7px]">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="🔍 Search room"
+              className="h-9 min-w-0 flex-1 rounded border border-[#B9C4D2] bg-white px-2.5 text-sm text-[#16315F] outline-none placeholder:text-[#8A97A8]"
+            />
+            <button
+              type="button"
+              onClick={tryCreate}
+              className="h-9 shrink-0 rounded bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-3 text-[13px] font-bold text-white"
+            >
+              + Create
+            </button>
+            <button
+              type="button"
+              onClick={() => setRefreshKey((k) => k + 1)}
+              title="Refresh"
+              className="h-9 w-9 shrink-0 rounded border border-[#B9C4D2] bg-white text-base font-bold text-[#4A5F7E]"
+            >
+              ↻
+            </button>
+          </div>
+          {sections.map(([key, title, allRooms]) => {
+            const isOpen = !!q || (key in classicOpen ? classicOpen[key] : key === "fav" || key === "recent" || key === "public");
+            const rooms = key === "private" && !q ? allRooms.slice(0, 10) : allRooms;
+            return (
+              <div key={key}>
+                <button
+                  type="button"
+                  onClick={() => setClassicOpen((o) => ({ ...o, [key]: !isOpen }))}
+                  className="flex w-full items-center border-b border-[#D5DCE6] bg-gradient-to-b from-[#E9EEF4] to-[#D6DEE8] px-2.5 py-2 text-left"
+                >
+                  <span className="w-[18px] text-[11px] text-[#2F6ABD]">{isOpen ? "▼" : "►"}</span>
+                  <span className="text-sm font-bold">
+                    {title} ({allRooms.length})
+                  </span>
+                </button>
+                {isOpen && (
+                  <>
+                    {rooms.length === 0 && (
+                      <p className="border-b border-[#D5DCE6] py-[7px] pl-8 text-[13px] italic text-[#8A97A8]">No rooms</p>
+                    )}
+                    {rooms.map((name) => {
+                      const users = counts[name] ?? 0;
+                      const fav = favorites.includes(name);
+                      return (
+                        <div key={name} className="relative flex items-center after:absolute after:bottom-0 after:left-8 after:right-0 after:h-px after:bg-[#D5DCE6]">
+                          <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center py-2.5 pl-3">
+                            <span className="relative h-4 w-4 shrink-0">
+                              <span className="flex h-4 w-4 items-center justify-center rounded-[3px] bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] text-[9px] font-bold text-white">
+                                #
+                              </span>
+                              {users > 0 && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-[7px] w-[7px] rounded-full border border-white bg-[#3CC24A]" />
+                              )}
+                            </span>
+                            <span data-notranslate className="ml-2 min-w-0 truncate text-[15px]">
+                              {roomDisplayName(name)}
+                            </span>
+                            <span className={`shrink-0 whitespace-pre text-sm ${users > 0 ? "font-bold text-[#2E9B3A]" : "text-[#8A97A8]"}`}>
+                              {` (${users}/${roomMax(name)})`}
+                            </span>
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => toggleFavorite(name)}
+                            aria-label={fav ? "Remove from favorites" : "Add to favorites"}
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center text-lg ${fav ? "text-[#F07A00]" : "text-[#A9B4C2]"}`}
+                          >
+                            {fav ? "★" : "☆"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {key === "private" && !q && allRooms.length > 10 && (
+                      <p className="py-1.5 pl-8 text-[11.5px] text-[#8A97A8]">Showing the 10 busiest — search to find any other room</p>
+                    )}
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </section>
+        {createDialog}
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell light>
@@ -279,19 +462,7 @@ export default function RoomsPage() {
           </label>
           <button
             type="button"
-            onClick={() => {
-              // Same checks as the app, before the form opens.
-              if (level > 0 && level < MIN_LEVEL_TO_CREATE)
-                return window.alert(
-                  `Can't create a room\n\nYou need to reach Level ${MIN_LEVEL_TO_CREATE} to create a chat room. Your level: ${level}.`
-                );
-              if (!isFounder && myRooms.length >= MAX_ROOMS_PER_USER)
-                return window.alert(
-                  `Can't create a room\n\nYou can create up to ${MAX_ROOMS_PER_USER} rooms. You have already created ${myRooms.length}.`
-                );
-              setShowCreate(true);
-              setCreateError("");
-            }}
+            onClick={tryCreate}
             title="Create Room"
             className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] to-[#3B7BF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
           >
@@ -378,61 +549,7 @@ export default function RoomsPage() {
           </button>
         </div>
 
-        {showCreate && (
-          <div
-            className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center"
-            onClick={() => !creating && setShowCreate(false)}
-          >
-            <div
-              className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="text-lg font-black">➕ Create a Chat Room</h2>
-              <p className="text-xs text-[#5B6B8C]">
-                Level {MIN_LEVEL_TO_CREATE}+ · up to {MAX_ROOMS_PER_USER} rooms · you are Level {level || "…"}
-                {!isFounder && level >= MIN_LEVEL_TO_CREATE && ` · holds ${capacityForLevel(level)} people`}
-              </p>
-              <input
-                value={newName}
-                onChange={(e) => {
-                  setNewName(e.target.value.slice(0, MAX_NAME));
-                  setCreateError("");
-                }}
-                placeholder={`Room name (${MIN_NAME}–${MAX_NAME} characters)`}
-                className="w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
-              />
-              <textarea
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
-                placeholder="Description"
-                rows={3}
-                className="w-full resize-none rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
-              />
-              {createError && <p className="text-center text-sm text-rose-600">{createError}</p>}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowCreate(false)}
-                  disabled={creating}
-                  className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={create}
-                  disabled={creating}
-                  className="flex-1 rounded-xl bg-[#2F80ED] py-3 text-sm font-black text-white disabled:opacity-50"
-                >
-                  {creating ? "Creating…" : "Create"}
-                </button>
-              </div>
-              <p className="text-center text-[11px] text-[#8A9BBC]">
-                In your room: /kick /ban /unban /lock /silence room /level /mod — type /modhelp
-              </p>
-            </div>
-          </div>
-        )}
+        {createDialog}
 
         {/* Room list */}
         {filter === "all" ? (

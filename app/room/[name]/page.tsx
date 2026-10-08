@@ -121,6 +121,7 @@ import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost } from "../../_components/EntryEffects";
+import { useIsClassic } from "../../../lib/uiStyle";
 
 type ChatMessage = SessionMessage;
 
@@ -217,6 +218,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const [voiceActive, setVoiceActive] = useState(false);
   const [blocked, setBlocked] = useState("");
   const [text, setText] = useState(initial?.text ?? "");
+  const classic = useIsClassic();
   // Swipe right on someone's message to reply (same "↩ name: snippet" quote the app writes).
   const [replyTo, setReplyTo] = useState<{ sender: string; snippet: string } | null>(initial?.replyTo ?? null);
   const [sending, setSending] = useState(false);
@@ -1621,6 +1623,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   key={m.id}
                   m={m}
                   mine={!!m.senderUid && m.senderUid === user.uid}
+                  classic={classic}
                   roomName={roomName}
                   gameRoom={gameRoom}
                   colorOf={colorOf}
@@ -2321,6 +2324,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[
 function MessageRow({
   m,
   mine,
+  classic,
   roomName,
   gameRoom,
   colorOf,
@@ -2336,6 +2340,8 @@ function MessageRow({
 }: {
   m: ChatMessage;
   mine: boolean;
+  /** 📟 Classic style: every line on the left, own name shown too. */
+  classic: boolean;
   roomName: string;
   /** Game rooms: everything on the left, full-width plain lines, no swipe reply. */
   gameRoom: boolean;
@@ -2483,8 +2489,9 @@ function MessageRow({
 
   // 🔗 The first YouTube link of a normal message gets a thumbnail card.
   const ytLink = m.type === "image" || m.type === "voice" ? null : firstYouTubeLink(body);
-  // Own messages sit on the right in EVERY room, game rooms included (like the app).
-  const rightSide = mine;
+  // Own messages sit on the right in EVERY room, game rooms included (like the
+  // app) — except in the Classic style, where every line is on the left.
+  const rightSide = mine && !classic;
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
   const canReply = !mine && !gameRoom && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
@@ -2529,7 +2536,7 @@ function MessageRow({
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
-          className={`relative ${gameRoom && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`}
+          className={`relative ${(gameRoom || classic) && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`}
           style={{ fontSize: fontPx, WebkitTouchCallout: canReact ? "none" : undefined }}
           {...holdHandlers}
         >
@@ -2581,8 +2588,9 @@ function MessageRow({
                 </span>
               );
             })()}
-          {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too. */}
-          {(!mine || (!isRoomLine && special.has(senderName))) && senderName && (
+          {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
+              and the Classic style, which shows your own name ("legend: hi"). */}
+          {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}

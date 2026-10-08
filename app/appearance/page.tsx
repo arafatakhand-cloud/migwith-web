@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
+import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
 // Settings › Appearance, like the app: colour themes (the whole site changes
 // colour; see scripts/gen-themes.mjs) and the four font styles. Kept in this browser.
@@ -42,6 +43,7 @@ export default function AppearancePage() {
   const ready = useRequireLogin();
   const [font, setFont] = useState("modern");
   const [theme, setTheme] = useState("sky_blue");
+  const uiStyle = useUiStyle();
 
   useEffect(() => {
     try {
@@ -100,7 +102,51 @@ export default function AppearancePage() {
         <PageTitle title="Appearance" subtitle="Customize the MIGlife visual style" icon="🎨" />
         {ready && (
           <>
-            <p className="text-sm font-bold text-[#0B2A5B]">APP THEMES</p>
+            {/* 📟 APP STYLE: today's Modern look, or the old Classic look. */}
+            <p className="text-sm font-bold text-[#0B2A5B]">APP STYLE</p>
+            <p className="mt-0.5 text-xs text-[#5B6B8C]">Modern is today&apos;s miGlife. Classic brings back the old look.</p>
+            <div className="mt-2 grid grid-cols-2 gap-2.5">
+              {(
+                [
+                  ["modern", "✨ Modern"],
+                  ["classic", "📟 Classic"],
+                ] as const
+              ).map(([id, name]) => {
+                const chosen = uiStyle === id;
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setUiStyle(id)}
+                    className={`rounded-2xl bg-white p-2.5 text-left ${
+                      chosen ? "border-[3px] border-[#2F80ED] shadow-md" : "border border-[#D5DEE9] shadow-sm"
+                    }`}
+                  >
+                    {/* tiny picture of the top of the site in that style */}
+                    {id === "classic" ? (
+                      <span className="block">
+                        <span className="block h-4 rounded-t-md bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
+                        <span className="flex items-end gap-[3px] bg-[#2F6ABD] pl-1 pt-[3px]">
+                          <span className="h-[9px] w-[26px] rounded-t-[3px] bg-white" />
+                          <span className="h-[7px] w-[22px] rounded-t-[3px] bg-[#9AB8E4]" />
+                          <span className="h-[7px] w-[22px] rounded-t-[3px] bg-[#FFD27A]" />
+                        </span>
+                        <span className="block h-[2px] bg-[#F07A00]" />
+                      </span>
+                    ) : (
+                      <span className="flex h-[27px] gap-1 rounded-md bg-[#EEF5FE] p-1">
+                        <span className="h-[19px] w-[19px] rounded-[5px] border border-[#C8DEF6] bg-white" />
+                        <span className="h-[19px] w-[19px] rounded-[5px] border border-[#C8DEF6] bg-white" />
+                        <span className="h-[19px] w-[34px] rounded-[5px] bg-gradient-to-b from-[#45B0FF] to-[#0A5BE8]" />
+                      </span>
+                    )}
+                    <span className="mt-2 block text-sm font-bold text-[#0B2A5B]">{chosen ? `${name}  ✓` : name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="mt-5 text-sm font-bold text-[#0B2A5B]">APP THEMES</p>
             <ThemeGrid list={APP_THEMES} />
             <p className="mt-4 text-sm font-bold text-[#0B2A5B]">MORE THEMES</p>
             <ThemeGrid list={MORE_THEMES} />

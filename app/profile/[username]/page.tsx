@@ -32,6 +32,7 @@ import { useProfileAchievements } from "../../_components/Achievements";
 import { badgeForLevel } from "../../../lib/rooms";
 import { RainbowName } from "../../_components/RainbowName";
 import { useSpecialColors } from "../../../lib/specialColor";
+import { useIsClassic } from "../../../lib/uiStyle";
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -116,23 +117,30 @@ const PRESENCE_DOT: Record<Profile["presence"], [string, string]> = {
 
 // One rounded "bubble" tile in its own colour (the app's migTile): big round
 // corners, glossy dome, a shine dot and an icon on top.
-function Tile({ value, label, tint, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
+function Tile({ value, label, tint: tintIn, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
+  // 📟 Classic: every tile the same blue, square, no gloss.
+  const classic = useIsClassic();
+  const tint = classic ? "#2F6ABD" : tintIn;
   const style = {
     background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
     borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
-    boxShadow: `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
+    boxShadow: classic ? "0 1px 2px rgba(0,0,0,.3)" : `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
   };
   const inner = (
     <>
-      <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
-      <span className="pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
-      <span className="pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
+      {!classic && (
+        <>
+          <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
+          <span className="pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
+          <span className="pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
+        </>
+      )}
       <span className="relative block text-[15px] leading-[17px]">{icon}</span>
       <span className="relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
       <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
     </>
   );
-  const cls = "relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[22px] border text-white";
+  const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "rounded-[22px]"}`;
   return onClick ? (
     <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
       {inner}
@@ -152,6 +160,7 @@ export default function ProfilePage() {
   // "/profile/me" opens your own profile.
   const username = raw === "me" ? me : raw;
   const isOwn = !!me && sameName(username, me);
+  const classic = useIsClassic();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -456,8 +465,12 @@ export default function ProfilePage() {
   return (
     <PageShell light noTopBar>
       <div className="mx-auto max-w-2xl bg-[#EEF3F8] pb-6">
-        {/* Title bar: back · miglife logo · the person's ID */}
-        <div className="flex items-center gap-2 bg-gradient-to-b from-[#3A3A3A] to-[#1C1C1C] px-2 py-2">
+        {/* Title bar: back · miglife logo · the person's ID (📟 Classic: the orange bar) */}
+        <div
+          className={`flex items-center gap-2 bg-gradient-to-b px-2 py-2 ${
+            classic ? "from-[#FF9D2E] to-[#F07A00]" : "from-[#3A3A3A] to-[#1C1C1C]"
+          }`}
+        >
           <BackButton variant="dark" onClick={goBack} />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/icon-192.png" alt="miGlife" className="h-[38px] w-[38px] rounded-lg" />
@@ -483,8 +496,13 @@ export default function ProfilePage() {
         <div className="flex gap-3 bg-white p-2.5">
           {/* ROUND photo (like the rest of the app). With a cover photo it sits
               half on the cover's bottom edge, Facebook-style. */}
-          <div className={`mig-frame relative z-10 h-[112px] w-[112px] shrink-0 rounded-full ${profile.coverPhotoUrl ? "-mt-[60px]" : ""}`}>
-            <div className="h-full overflow-hidden rounded-full bg-[#E8EEF5]">
+          {/* 📟 Classic: a square photo with a plain grey frame. */}
+          <div
+            className={`relative z-10 h-[112px] w-[112px] shrink-0 ${
+              classic ? "rounded bg-gradient-to-b from-[#C9CED6] to-[#9AA3AE] p-[3px] shadow" : "mig-frame rounded-full"
+            } ${profile.coverPhotoUrl ? "-mt-[60px]" : ""}`}
+          >
+            <div className={`h-full overflow-hidden bg-[#E8EEF5] ${classic ? "rounded-sm border-[1.5px] border-white/95" : "rounded-full"}`}>
               {profile.photoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
