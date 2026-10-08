@@ -4,6 +4,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   limit,
   query,
@@ -111,6 +112,11 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
     canManagePrivate,
     canAssignSuperMod,
     canModeratePrivate,
+    isPrivateSuperMod: isSuperMod,
+    isPrivateMod,
+    // 📢 /broadcast: app admin / staff, and in a private room its Owner and
+    // Super Mods (not plain Mods) — like the app.
+    canBroadcast: isAppStaffHere || (isUserRoom && (isThisRoomOwner || isSuperMod)),
     canKick: isUserRoom ? canModeratePrivate : isAppStaffHere,
     canBan: isUserRoom ? canModeratePrivate : isRoomAdmin || isRoomMod,
     canUnban: isUserRoom ? canModeratePrivate : isRoomAdmin,
@@ -404,6 +410,51 @@ export async function setSuperMod(ctx: ModContext, name: string, add: boolean) {
   }
 }
 
+// 📌 Room announcement (room_moderation/{room}.announcement): app admin /
+// staff, and in a private room its Owner, Super Mods and Mods — like the app.
+async function setAnnouncement(ctx: ModContext, message: string, minutes?: number) {
+  if (!ctx.perms.canRoomWide) {
+    return ctx.note(`${ctx.username}: Only the room's Owner, Super Mods, Mods or staff can set an announcement.`);
+  }
+  const ref = doc(db, "room_moderation", ctx.roomName);
+  const before = await getDoc(ref).catch(() => null);
+  const prevText = String(before?.get("announcement") || "");
+  const prevBy = String(before?.get("announcementBy") || "");
+  try {
+    await setDoc(
+      ref,
+      {
+        roomId: ctx.roomName,
+        announcement: message,
+        announcementBy: message ? ctx.modName : "",
+        updatedBy: ctx.modName,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    // Only the person who turned it off sees who made it.
+    if (!message && prevText && prevBy) ctx.note(`📢 Previous announcement made by ${prevBy}`);
+    ctx.post(
+      !message
+        ? `📢 ${ctx.modName} stopped the room announcement.`
+        : minutes
+          ? `📢 ${ctx.modName} set a room announcement for ${minutes} minute(s).`
+          : `📢 ${ctx.modName} set a room announcement.`
+    );
+    if (message && minutes) {
+      // This device clears it again when the time is up — unless someone set a newer one.
+      setTimeout(async () => {
+        const now = await getDoc(ref).catch(() => null);
+        if (now?.get("announcement") === message) {
+          setDoc(ref, { announcement: "", announcementBy: "", updatedBy: "system", updatedAt: serverTimestamp() }, { merge: true }).catch(() => {});
+        }
+      }, minutes * 60_000);
+    }
+  } catch (e) {
+    fail(ctx, "Announcement")(e);
+  }
+}
+
 function modHelp(ctx: ModContext): string[] {
   const p = ctx.perms;
   const lines: string[] = [];
@@ -414,6 +465,8 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
   if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
+  if (p.canRoomWide) lines.push("/announcement text   /announcement stop");
+  if (p.canBroadcast) lines.push("/broadcast text");
   if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
   if (p.canAssignSuperMod) lines.push("/smod name   /dsmod name");
   return lines;
@@ -479,6 +532,33 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
       }
       needName(() => setModerator(ctx, arg, cmd === "/mod"));
       return true;
+    // 📌 /announcement text | stop — the pinned banner under "Currently in this
+    // room". /announce text [minutes] — the same, optionally timed.
+    case "/announcement":
+    case "/announce": {
+      const rest = clean.trim().slice(parts[0].length).trim();
+      if (!rest) {
+        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (${cmd} stop to remove it)`);
+        return true;
+      }
+      if (["off", "stop", "clear"].includes(rest.toLowerCase())) {
+        setAnnouncement(ctx, "");
+        return true;
+      }
+      const words = rest.split(/\s+/);
+      const mins = cmd === "/announce" && words.length > 1 ? Number(words[words.length - 1]) : NaN;
+      if (Number.isInteger(mins) && mins > 0) setAnnouncement(ctx, words.slice(0, -1).join(" "), mins);
+      else setAnnouncement(ctx, rest);
+      return true;
+    }
+    // 📢 /broadcast text — a one-time gold message.
+    case "/broadcast": {
+      const msg = clean.trim().slice(parts[0].length).trim();
+      if (!msg) ctx.note(`${ctx.username}: Usage: /broadcast message`);
+      else if (!ctx.perms.canBroadcast) ctx.note(`${ctx.username}: Only the room's Owner, Super Mods or staff can /broadcast.`);
+      else ctx.post(`📢 ${msg}`, "broadcast");
+      return true;
+    }
     case "/cc":
     case "/clearchat":
       if (ctx.perms.isRoomAdmin) clearRoomChat(ctx);
