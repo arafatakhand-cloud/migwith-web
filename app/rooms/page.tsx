@@ -343,8 +343,9 @@ export default function RoomsPage() {
   );
 
   // 📟 CLASSIC style: search + Create + refresh, then plain ▼/► folders with
-  // "Room (4/30)" lines. Favorites, Recent and Public start open; Private shows
-  // the 10 busiest (search finds the rest). While searching every folder opens.
+  // "Room (4/30)" lines. Favorites, Recent and Public start open. Each folder
+  // (except Favorites) shows only its 5 busiest rooms; Search finds the rest.
+  // While searching every folder opens.
   if (classic) {
     const sections: [string, string, string[]][] = [
       ["fav", "Favorites", others.fav.names],
@@ -382,7 +383,8 @@ export default function RoomsPage() {
           </div>
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : key === "fav" || key === "recent" || key === "public");
-            const rooms = key === "private" && !q ? allRooms.slice(0, 10) : allRooms;
+            const limited = key !== "fav" && !q && allRooms.length > 5;
+            const rooms = limited ? [...allRooms].sort(byLive).slice(0, 5) : allRooms;
             return (
               <div key={key}>
                 <button
@@ -432,8 +434,8 @@ export default function RoomsPage() {
                         </div>
                       );
                     })}
-                    {key === "private" && !q && allRooms.length > 10 && (
-                      <p className="py-1.5 pl-8 text-[11.5px] text-[#8A97A8]">Showing the 10 busiest — search to find any other room</p>
+                    {limited && (
+                      <p className="py-1.5 pl-8 text-[11.5px] text-[#8A97A8]">🔍 Top 5 busiest — search to find any other room</p>
                     )}
                   </>
                 )}
