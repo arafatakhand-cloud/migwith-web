@@ -10,6 +10,7 @@ import { levelFromXp, totalXpForLevel } from "../../lib/level";
 import { badgeForLevel, badgeNameForLevel } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
+import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // 🛡️ Level System, like the app's (tap your level on Home): level, XP bar,
 // how XP is earned, unlocked rewards and the last 5 XP events.
@@ -39,6 +40,7 @@ type History = { id: string; amount: number; reason: string; ms: number };
 export default function LevelPage() {
   const ready = useRequireLogin();
   const router = useRouter();
+  const classic = useIsClassic();
   const { user, username } = useSession();
   const [xp, setXp] = useState(0);
   const [lastLevelUp, setLastLevelUp] = useState(1);
@@ -78,10 +80,22 @@ export default function LevelPage() {
 
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl space-y-3.5 p-[18px]">
+      {/* 📟 Classic: white cards with navy text (.classic-light) */}
+      <section className="classic-light mx-auto max-w-2xl space-y-3.5 p-[18px]">
         {ready && (
           <>
-            <div className="rounded-3xl border-[1.5px] border-[#5B6F9D] bg-[#2A365A] p-5 text-white">
+            {/* Back button at the TOP, like the app (it used to sit at the bottom). */}
+            {classic ? (
+              <div className="-mx-[18px] -mt-[18px]">
+                <ClassicTitleBar title="🛡️ Level System" onBack={() => router.back()} />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <BackButton onClick={() => router.back()} />
+                <span className="text-xl font-bold text-[#0B2A5B]">Level System</span>
+              </div>
+            )}
+            <div className="classic-light rounded-3xl border-[1.5px] border-[#5B6F9D] bg-[#2A365A] p-5 text-white">
               <h1 className="text-2xl font-bold">🛡️ Level System</h1>
               <p className="mt-1.5 text-sm text-[#B9C5DF]">{username}</p>
               <div className="mt-3.5 flex items-center gap-1.5">
@@ -112,7 +126,7 @@ export default function LevelPage() {
             <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">How you earn XP</h2>
             <div className="space-y-1.5">
               {EARN.map(([icon, label]) => (
-                <div key={label} className="flex items-center gap-3 rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-white">
+                <div key={label} className="classic-light flex items-center gap-3 rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-white">
                   <span className="text-[22px]">{icon}</span>
                   {label}
                 </div>
@@ -154,7 +168,6 @@ export default function LevelPage() {
                 ))}
               </div>
             )}
-            <BackButton onClick={() => router.back()} className="mt-2" />
           </>
         )}
       </section>
