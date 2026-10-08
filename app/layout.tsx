@@ -3,6 +3,7 @@ import "./globals.css";
 import "./themes.css";
 import { AppSession } from "./_components/AppSession";
 import { Translator } from "./_components/Translator";
+import { BrandName } from "./_components/BrandName";
 import { RainbowFavicon } from "./_components/RainbowFavicon";
 import { LoginWelcomeSplash } from "./_components/LoginWelcome";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
         />
         <AppSession>{children}</AppSession>
         <Translator />
+        <BrandName />
         <RainbowFavicon />
         <LoginWelcomeSplash />
       </body>
