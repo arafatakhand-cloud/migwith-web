@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { dhakaTime, useLiveSports, type SportRow } from "../../lib/liveSports";
 import { totalXpForLevel } from "../../lib/level";
 import { chatHref } from "../../lib/privateChat";
 
 // ✨ MODERN Home (the app's ModernHomeTop): gradient hero card (photo with a
-// rainbow ring, name + role, status, level bar with XP, Coins / Friends /
-// Online), four quick buttons, friend search, an "online now" strip and
-// friend cards. Classic keeps its own strip and folder list.
+// rainbow ring, name + role, status, level bar with XP, Email / Alerts /
+// Friends / Online), a live sports card, friend search, an "online now" strip
+// and friend cards. Classic keeps its own strip and folder list.
 
 export type HomeFriend = {
   name: string;
@@ -17,12 +19,6 @@ export type HomeFriend = {
   country: string;
   status: string;
 };
-
-function shortCoins(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
-  return String(n);
-}
 
 function Avatar({ name, photo, size, ring }: { name: string; photo: string; size: number; ring?: string }) {
   return (
@@ -49,7 +45,6 @@ export function ModernHomeTop({
   xp,
   level,
   levelIcon,
-  coins,
   friends,
   unreadEmails,
   unreadAlerts,
@@ -65,7 +60,6 @@ export function ModernHomeTop({
   xp: number;
   level: number;
   levelIcon: string;
-  coins: number;
   friends: HomeFriend[];
   unreadEmails: number;
   unreadAlerts: number;
@@ -78,12 +72,6 @@ export function ModernHomeTop({
   const next = totalXpForLevel(level + 1);
   const frac = next > start ? Math.min(1, Math.max(0, (xp - start) / (next - start))) : 0;
   const dot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[presence] || "#9AA3AE";
-  const quick: [string, string, string, string, number][] = [
-    ["/mail", "✉️", "Email", "#E6F0FB", unreadEmails],
-    ["/alerts", "🔔", "Alerts", "#FFF1E0", unreadAlerts],
-    ["/rooms", "💬", "Rooms", "#EAF8EE", 0],
-    ["/games", "🎮", "Games", "#F2ECFF", 0],
-  ];
   return (
     <div className="bg-[#EEF4FD] pb-1.5">
       {/* hero card */}
@@ -133,10 +121,11 @@ export function ModernHomeTop({
           </span>
         </Link>
         {/* stats */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-4 gap-2">
           {(
             [
-              ["/wallet", `🪙 ${shortCoins(coins)}`, "Coins"],
+              ["/mail", `✉️ ${unreadEmails}`, "Email"],
+              ["/alerts", `🔔 ${unreadAlerts}`, "Alerts"],
               ["/friends", `👥 ${friends.length}`, "Friends"],
               ["/friends", `🟢 ${online.length}`, "Online"],
             ] as const
@@ -149,22 +138,10 @@ export function ModernHomeTop({
         </div>
       </div>
 
-      {/* quick buttons */}
-      <div className="grid grid-cols-4 gap-2 px-2.5">
-        {quick.map(([href, icon, label, tint, badge]) => (
-          <Link key={href} href={href} className="relative flex flex-col items-center rounded-2xl bg-white py-[9px] shadow-[0_2px_6px_rgba(0,0,0,.08)]">
-            <span className="flex h-[34px] w-[34px] items-center justify-center rounded-xl text-[17px]" style={{ background: tint }}>
-              {icon}
-            </span>
-            <span className="mt-1 text-[10.5px] font-bold text-[#2E3B4E]">{label}</span>
-            {badge > 0 && (
-              <span className="absolute right-2 top-[3px] rounded-[9px] border-[1.5px] border-white bg-[#E5484D] px-[5px] text-[9px] font-extrabold text-white">
-                {badge > 99 ? "99+" : badge}
-              </span>
-            )}
-          </Link>
-        ))}
-      </div>
+      {/* (Email / Alerts now sit in the hero card's stat row; the Rooms / Games
+          buttons were removed — the tabs above already open them.) */}
+      {/* 📺 live sports card (rotating live / next match) */}
+      <HomeLiveSportsCard />
 
       {/* search */}
       <div className="mx-2.5 my-2.5 rounded-[14px] bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,.1)]">
@@ -217,5 +194,54 @@ export function ModernHomeTop({
         ))}
       </div>
     </div>
+  );
+}
+
+/** Matches worth showing on Home: live ones first, then the next ones today. */
+export function homeSportsPicks(rows: SportRow[]): SportRow[] {
+  const live = rows.filter((r) => r.status === "LIVE");
+  if (live.length) return live.slice(0, 6);
+  const now = Date.now();
+  return rows
+    .filter((r) => r.status === "UPCOMING" && r.startMs >= now - 3600_000)
+    .sort((a, b) => a.startMs - b.startMs)
+    .slice(0, 6);
+}
+
+// 📺 Home card: one live (or next) match at a time, switching every 5 seconds.
+function HomeLiveSportsCard() {
+  const data = useLiveSports(true);
+  const picks = data ? homeSportsPicks([...data.cricket, ...data.football]) : [];
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    if (picks.length < 2) return;
+    const t = setInterval(() => setI((n) => n + 1), 5000);
+    return () => clearInterval(t);
+  }, [picks.length]);
+  if (!data || picks.length === 0) return null;
+  const r = picks[i % picks.length];
+  const live = r.status === "LIVE";
+  return (
+    <Link
+      href="/live-scores"
+      className="mx-2.5 block rounded-2xl bg-white px-3 py-2.5 shadow-[0_2px_6px_rgba(0,0,0,.08)]"
+    >
+      <span className="flex items-center gap-2 text-[11px] font-bold">
+        <span className={live ? "text-[#E53935]" : "text-[#1E63D6]"}>{live ? "● LIVE" : `⏰ ${dhakaTime(r.startMs)}`}</span>
+        <span className="min-w-0 flex-1 truncate text-[#6B7A99]">
+          {r.sport === "cricket" ? "🏏" : "⚽"} {r.league}
+        </span>
+        <span className="text-[#2F80ED]">All ›</span>
+      </span>
+      <span className="mt-1 flex items-center gap-2 text-[13.5px] font-bold text-[#16264A]">
+        <span className="min-w-0 flex-1 truncate">{r.home}</span>
+        <span className="shrink-0 font-extrabold">{r.homeScore || "–"}</span>
+      </span>
+      <span className="flex items-center gap-2 text-[13.5px] font-bold text-[#16264A]">
+        <span className="min-w-0 flex-1 truncate">{r.away}</span>
+        <span className="shrink-0 font-extrabold">{r.awayScore || "–"}</span>
+      </span>
+      {live && r.statusText && <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#1E7A34]">{r.statusText}</span>}
+    </Link>
   );
 }

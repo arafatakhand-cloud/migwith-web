@@ -2247,6 +2247,17 @@ function luxuryLine(text: string): ReactNode | null {
   );
 }
 
+// One badge picture; if it can't load (deleted / bad link / offline), its emoji
+// is shown instead, so the badge never turns into an empty gap (like the app).
+function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <>{emoji}</>;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={emoji} onError={() => setFailed(true)} className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle" />
+  );
+}
+
 // The badges in "name [12] 🎓 💎 has entered." drawn as miglife's uploaded
 // pictures when there are any (the app's badge_images swap).
 function withBadgeImages(text: string, images: Record<string, string>): ReactNode[] {
@@ -2260,10 +2271,7 @@ function withBadgeImages(text: string, images: Record<string, string>): ReactNod
     if (hit) {
       if (plain) out.push(plain);
       plain = "";
-      out.push(
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={i} src={images[hit]} alt={hit} className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle" />
-      );
+      out.push(<BadgeImg key={i} src={images[hit]} emoji={hit} />);
       i += hit.length;
     } else {
       plain += text[i];

@@ -14,6 +14,7 @@ import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
+import { useLiveSports } from "../../lib/liveSports";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
 // friend search, online strip and friend cards (ModernHome.tsx). Classic: the
@@ -71,6 +72,8 @@ export function Dashboard() {
   const [openOffline, setOpenOffline] = useState(true);
   const classic = useIsClassic();
   const [friendSearch, setFriendSearch] = useState("");
+  const sports = useLiveSports(classic);
+  const liveMatches = sports ? [...sports.cricket, ...sports.football].filter((r) => r.status === "LIVE").length : 0;
   const [info, setInfo] = useState<Record<string, Friend>>({});
 
   const fr = useFriendRequests(username);
@@ -323,7 +326,6 @@ export function Dashboard() {
           xp={me?.xp ?? 0}
           level={me?.level ?? 1}
           levelIcon={badgeForLevel(me?.level ?? 1)}
-          coins={me?.coins ?? 0}
           friends={friends.filter((f) => !friendSearch.trim() || f.name.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
           unreadEmails={badges.emails}
           unreadAlerts={badges.alerts}
@@ -376,6 +378,11 @@ export function Dashboard() {
             <path d="M2 3 L13 11.4 L24 3" fill="none" stroke="#2A6F9E" strokeWidth="2" />
           </svg>
           <span className="font-semibold">Email ({badges.emails})</span>
+        </Link>
+        {/* 📺 Live Scores (n live) */}
+        <Link href="/live-scores" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
+          <span className="text-lg">📺</span>
+          <span className="font-semibold">Live Scores ({liveMatches})</span>
         </Link>
         <Link href="/messages" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
           <span className="text-lg text-[#174EA6]">💬</span>
