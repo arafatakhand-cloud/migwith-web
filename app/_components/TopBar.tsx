@@ -126,17 +126,38 @@ export function TopBar() {
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
+    const root = document.documentElement;
     const set = () => {
-      document.documentElement.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
+      root.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
       // iPhone scrolls the page up under the keyboard; put it back so the top bar stays.
       // Only on the chat pages, which fit the screen; elsewhere let it scroll to the box.
-      if (vv.height < window.innerHeight - 80 && document.querySelector(".h-screen-minus-bar")) window.scrollTo(0, 0);
+      const chat = !!document.querySelector(".h-screen-minus-bar");
+      const kbOpen = vv.height < window.innerHeight - 80;
+      root.classList.toggle("kb-lock", chat && kbOpen);
+      if (chat && kbOpen && (window.scrollY !== 0 || vv.offsetTop !== 0)) window.scrollTo(0, 0);
+    };
+    // iPhone moves the page in steps while the keyboard slides in, so check again a few times.
+    let timers: number[] = [];
+    const settle = () => {
+      timers.forEach(clearTimeout);
+      set();
+      timers = [50, 150, 300, 500, 800].map((ms) => window.setTimeout(set, ms));
     };
     set();
-    vv.addEventListener("resize", set);
+    vv.addEventListener("resize", settle);
+    vv.addEventListener("scroll", set);
+    window.addEventListener("scroll", set, { passive: true });
+    window.addEventListener("focusin", settle);
+    window.addEventListener("focusout", settle);
     return () => {
-      vv.removeEventListener("resize", set);
-      document.documentElement.style.removeProperty("--vvh");
+      timers.forEach(clearTimeout);
+      vv.removeEventListener("resize", settle);
+      vv.removeEventListener("scroll", set);
+      window.removeEventListener("scroll", set);
+      window.removeEventListener("focusin", settle);
+      window.removeEventListener("focusout", settle);
+      root.classList.remove("kb-lock");
+      root.style.removeProperty("--vvh");
     };
   }, []);
 

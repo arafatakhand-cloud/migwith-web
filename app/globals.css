@@ -83,6 +83,14 @@ body {
 .h-screen-minus-bar {
   height: calc(var(--vvh, 100dvh) - 53px);
 }
+/* While the keyboard is open on a chat page, the page must not scroll at all
+   (iPhone would push the top bar away and leave a gap above the keyboard). */
+html.kb-lock,
+html.kb-lock body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  height: var(--vvh, 100dvh);
+}
 /* Room above the iPhone home bar. */
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
