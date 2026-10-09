@@ -12,6 +12,15 @@ import { useEffect, useState } from "react";
 
 const KEY = "migwith.installHintClosed";
 
+// iPhone: the owner's steps (each line has its বাংলা in lib/i18n.ts).
+const IOS_STEPS = [
+  "Open web.miglife.app in Safari. On newer iPhones Chrome works too.",
+  "Tap the Share ⬆️ button (at the bottom or top).",
+  "Scroll down and tap \"Add to Home Screen\" ➕.",
+  "Tap Add (top right).",
+  "The miGlife icon appears on your Home screen.",
+];
+
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 type InstallWindow = Window & { __migInstall?: InstallPrompt | null };
 
@@ -69,9 +78,11 @@ export function InstallHint() {
         <p className="font-bold">Use miGlife like an app</p>
         <p className="mt-0.5 text-xs leading-5 text-[#5B6B8C]">Full screen, no browser bar on top, opens from your Home screen.</p>
         {ios ? (
-          <p className="mt-1.5 text-xs leading-5 text-[#5B6B8C]">
-            In Safari tap <b>Share</b> <span aria-hidden>⬆️</span>, then <b>Add to Home Screen</b>.
-          </p>
+          <ol className="mt-1.5 list-decimal space-y-0.5 pl-4 text-xs leading-5 text-[#35445F]">
+            {IOS_STEPS.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
         ) : (
           <>
             <button
