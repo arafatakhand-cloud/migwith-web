@@ -6,6 +6,8 @@ import { Translator } from "./_components/Translator";
 import { BrandName } from "./_components/BrandName";
 import { RainbowFavicon } from "./_components/RainbowFavicon";
 import { LoginWelcomeSplash } from "./_components/LoginWelcome";
+import { BootSplash } from "./_components/BootSplash";
+import { BOOT_SPLASH_SCRIPT } from "../lib/bootSplash";
 
 export const metadata: Metadata = {
   title: "miGlife",
@@ -47,6 +49,8 @@ export default function RootLayout({
             __html: `try{var f=localStorage.getItem("migwith.font");if(f&&f!=="modern")document.documentElement.dataset.font=f;var t=localStorage.getItem("migwith.theme");if(t&&t!=="sky_blue")document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
           }}
         />
+        <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />
+        <BootSplash />
         <AppSession>{children}</AppSession>
         <Translator />
         <BrandName />
