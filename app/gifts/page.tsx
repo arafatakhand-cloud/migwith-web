@@ -19,6 +19,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { isMainFounderName, useFounderPerms } from "../../lib/founder";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { GiftImg } from "../_components/GiftImg";
 
 // Explore › Gift Shops, like the app's GiftStorePage: the catalog in the
 // app's order with FEATURED / LIMITED badges; migwith adds, edits and
@@ -179,8 +180,7 @@ export default function GiftShopsPage() {
                     }`}
                   >
                     {g.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={g.imageUrl} alt="" className="h-full w-full object-cover" />
+                      <GiftImg src={g.imageUrl} fallback={g.icon} className="h-full w-full object-cover" />
                     ) : (
                       g.icon
                     )}

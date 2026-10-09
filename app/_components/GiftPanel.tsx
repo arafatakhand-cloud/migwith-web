@@ -5,6 +5,7 @@ import { awardUserXp } from "../../lib/xp";
 import { collection, doc, getDocs, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { GiftImg } from "./GiftImg";
 
 export type Gift = { name: string; icon: string; imageUrl: string; price: number };
 
@@ -202,8 +203,7 @@ export function GiftPanel({
                 } ${cantAfford ? "opacity-45" : ""}`}
               >
                 {g.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={g.imageUrl} alt={g.name} className="h-10 w-10 object-contain" />
+                  <GiftImg src={g.imageUrl} alt={g.name} fallback={<span className="text-3xl leading-10">{g.icon}</span>} className="h-10 w-10 object-contain" />
                 ) : (
                   <span className="text-3xl leading-10">{g.icon}</span>
                 )}

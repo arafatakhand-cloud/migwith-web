@@ -126,6 +126,7 @@ import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog } from "../../_components/RoomPopups";
+import { GiftImg } from "../../_components/GiftImg";
 
 type ChatMessage = SessionMessage;
 
@@ -2359,6 +2360,7 @@ function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
     <img
       src={src}
       alt={emoji}
+      referrerPolicy="no-referrer"
       onError={() => {
         failedBadgeUrls.add(src);
         setFailed(true);
@@ -2430,8 +2432,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[
       seg.split(giftIcon).forEach((piece, i) => {
         if (i > 0)
           out.push(
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={`g${k++}`} src={giftImage} alt="" className="mx-0.5 inline h-[1.25em] w-[1.25em] rounded-full object-cover align-middle" />
+            <GiftImg key={`g${k++}`} src={giftImage} fallback={giftIcon} className="mx-0.5 inline h-[1.25em] w-[1.25em] rounded-full object-cover align-middle" />
           );
         if (piece) out.push(piece);
       });

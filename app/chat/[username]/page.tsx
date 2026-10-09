@@ -32,6 +32,7 @@ import { BackButton } from "../../_components/BackButton";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { useIsClassic } from "../../../lib/uiStyle";
+import { GiftImg } from "../../_components/GiftImg";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -479,8 +480,11 @@ export default function PrivateChatPage() {
                   ) : m.type === "gift" ? (
                     <span className="flex items-center gap-1.5">
                       {giftImages.get((m.giftName || m.text).toLowerCase()) ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={giftImages.get((m.giftName || m.text).toLowerCase())} alt="" className="h-5 w-5 rounded-full object-cover" />
+                        <GiftImg
+                          src={giftImages.get((m.giftName || m.text).toLowerCase()) || ""}
+                          fallback={m.giftIcon || "🎁"}
+                          className="h-5 w-5 rounded-full object-cover"
+                        />
                       ) : (
                         <span className="text-xl">{m.giftIcon || "🎁"}</span>
                       )}
