@@ -278,42 +278,46 @@ export function Dashboard() {
             {roleLabel(me?.role || "")}
           </span>
         </div>
-        {editing ? (
-          <div className="mt-0.5 flex gap-1.5">
-            <input
-              autoFocus
-              value={statusDraft}
-              onChange={(e) => setStatusDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveStatus()}
-              maxLength={300}
-              placeholder="What are you thinking?"
-              className="min-w-0 flex-1 rounded border border-[#B9C4D2] bg-white px-1.5 py-0.5 text-[13px] outline-none"
-            />
-            <button type="button" onClick={saveStatus} className="rounded bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-2 text-xs font-bold text-white">
-              ✓
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            data-notranslate
-            onClick={() => {
-              setStatusDraft(me?.statusMessage || "");
-              setEditing(true);
-            }}
-            className="block h-5 w-full truncate text-left text-[13px] italic text-[#6B7788]"
-          >
-            {me?.statusMessage || "What are you thinking?"}
-          </button>
-        )}
       </div>
-      {/* Level only (coins removed), at the top, level with the name */}
+      {/* 🏅 level badge in the top-right corner, the level under it (square box, like the app) */}
       <Link
         href="/level"
-        className="ml-2 flex shrink-0 items-center gap-[3px] self-start rounded border border-[#C9D2DE] bg-[#E6ECF4] px-1.5 py-0.5 text-[13px] font-extrabold text-[#2F6ABD]"
+        className="ml-2 flex shrink-0 flex-col items-center self-start rounded border border-[#B9C4D2] bg-gradient-to-b from-white to-[#E6ECF4] px-2 py-[3px] text-[#2F6ABD]"
       >
-        <span>{badgeForLevel(me?.level ?? 1)}</span>Lv {me?.level ?? "…"}
+        <span className="text-xl leading-tight">{badgeForLevel(me?.level ?? 1)}</span>
+        <span className="whitespace-nowrap text-[11px] font-extrabold">Level {me?.level ?? "…"}</span>
       </Link>
+    </div>
+    {/* status, under the photo row, full width */}
+    <div className="px-2.5 pb-1">
+      {editing ? (
+        <div className="mt-0.5 flex gap-1.5">
+          <input
+            autoFocus
+            value={statusDraft}
+            onChange={(e) => setStatusDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && saveStatus()}
+            maxLength={300}
+            placeholder="What are you thinking?"
+            className="min-w-0 flex-1 rounded border border-[#B9C4D2] bg-white px-1.5 py-0.5 text-[13px] outline-none"
+          />
+          <button type="button" onClick={saveStatus} className="rounded bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-2 text-xs font-bold text-white">
+            ✓
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          data-notranslate
+          onClick={() => {
+            setStatusDraft(me?.statusMessage || "");
+            setEditing(true);
+          }}
+          className="block h-5 w-full truncate text-left text-[13px] italic text-[#6B7788]"
+        >
+          {me?.statusMessage || "What are you thinking?"}
+        </button>
+      )}
     </div>
     {/* 📟 Classic XP bar: a flat meter — square corners, grey frame, blue fill
         with a light top half, numbers on the right. */}

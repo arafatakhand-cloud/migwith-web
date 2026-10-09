@@ -103,15 +103,24 @@ export function ModernHomeTop({
                 {roleLabel}
               </span>
             </div>
-            <button type="button" onClick={onStatus} data-notranslate className="block w-full truncate text-left text-[13px] text-white/90">
-              💬 {status || "What are you thinking?"}
-            </button>
           </div>
+          {/* 🏅 level badge in the top-right corner, the level under it (like the app) */}
+          <Link
+            href="/level"
+            className="ml-2 flex shrink-0 flex-col items-center self-start rounded-[14px] border border-white/35 bg-white/[0.16] px-2.5 py-[5px]"
+          >
+            <span className="text-2xl leading-tight">{levelIcon}</span>
+            <span className="whitespace-nowrap text-[11px] font-extrabold">Level {level}</span>
+          </Link>
         </div>
+        {/* status, under the photo row, full width */}
+        <button type="button" onClick={onStatus} data-notranslate className="mt-2 block w-full truncate text-left text-[13px] text-white/90">
+          💬 {status || "What are you thinking?"}
+        </button>
         {/* level bar */}
         <Link href="/level" className="mt-3 block">
           <span className="flex items-center text-[11.5px] font-bold">
-            {levelIcon} Level {level}
+            <span className="text-white/85">XP</span>
             <span className="ml-auto text-[11px] text-white/90">
               {xp.toLocaleString("en-US")} / {next.toLocaleString("en-US")} XP
             </span>
