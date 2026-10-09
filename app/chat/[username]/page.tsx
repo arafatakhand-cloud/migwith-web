@@ -577,6 +577,13 @@ export default function PrivateChatPage() {
               ref={inputRef}
               value={text}
               onChange={(e) => setText(e.target.value.slice(0, 2000))}
+              autoComplete="off"
+              autoCorrect="on"
+              name="migwith-chat-message"
+              enterKeyHint="send"
+              data-1p-ignore
+              data-lpignore="true"
+              data-form-type="other"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
