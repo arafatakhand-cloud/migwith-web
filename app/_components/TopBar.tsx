@@ -45,6 +45,7 @@ const PAGE_NAMES: [string, string][] = [
   ["/chat/", "Chat"],
   ["/alerts", "Alerts"],
   ["/wallet", "Wallet"],
+  ["/profile/edit", "Edit Profile"],
   ["/profile", "Profile"],
 ];
 
