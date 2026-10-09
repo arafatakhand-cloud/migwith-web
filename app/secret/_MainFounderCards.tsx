@@ -14,9 +14,9 @@ import { SPECIAL_COLOR_DEFAULT_BDT_RATE, SPECIAL_COLOR_SLOTS, SPECIAL_COLOR_STYL
 // level curve step, Security Question Reset and the 🎰 Luxury Bet section
 // (Access · Level · Schedule). Everything runs through the Cloud Functions.
 
-const migrateLevelCurveV2 = httpsCallable<void, { changed?: number; scanned?: number; alreadyDone?: boolean }>(
+const migrateLevelCurveV3 = httpsCallable<void, { changed?: number; scanned?: number; alreadyDone?: boolean }>(
   functions,
-  "migrateLevelCurveV2"
+  "migrateLevelCurveV3"
 );
 const founderResetSecurityQuestion = httpsCallable<{ username: string }, { username?: string; hadQuestion?: boolean }>(
   functions,
@@ -47,15 +47,15 @@ function Message({ text, failed }: { text: string | null; failed: boolean }) {
 
 const errText = (e: any) => `Failed: ${e?.message || "unknown error"}`;
 
-/** 🔁 New level curve (after Lv.40) — run ONCE; IDs above Lv.40 keep their level. */
+/** 🔁 New level curve (after Lv.50) — run ONCE; IDs above Lv.50 keep their level. */
 export function LevelCurveCard() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   return (
     <div className="space-y-2 rounded-[18px] border border-[#E0A82E] bg-white p-4">
-      <p className="text-[14px] font-bold">🔁 New level curve (after Lv.40)</p>
-      <p className="text-xs text-gray-500">Run ONCE right after publishing the new rules and functions. IDs above Lv.40 keep their level.</p>
+      <p className="text-[14px] font-bold">🔁 New level curve (after Lv.50)</p>
+      <p className="text-xs text-gray-500">Run ONCE right after deploying the new functions, then deploy the rules. IDs above Lv.50 keep their level.</p>
       <button
         type="button"
         disabled={busy}
@@ -63,7 +63,7 @@ export function LevelCurveCard() {
           setBusy(true);
           setMsg(null);
           setFailed(false);
-          migrateLevelCurveV2()
+          migrateLevelCurveV3()
             .then(({ data }) =>
               setMsg(
                 data?.alreadyDone

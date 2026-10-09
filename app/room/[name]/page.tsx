@@ -122,6 +122,7 @@ import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverT
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
+import { CommandListPage } from "../../_components/CommandList";
 
 type ChatMessage = SessionMessage;
 
@@ -1521,6 +1522,8 @@ function RoomView({ roomName }: { roomName: string }) {
 
   const favorite = favorites.includes(roomName);
   // ⋮ Room menu helpers (like the app's RoomMenuContent).
+  // 📜 The Command page (every room command; tap one → into the message box).
+  const [commandsOpen, setCommandsOpen] = useState(false);
   const closeMenu = () => {
     setMenuOpen(false);
     setMenuPeople(false);
@@ -1851,6 +1854,7 @@ function RoomView({ roomName }: { roomName: string }) {
       )}
 
       {/* ⋮ Room menu */}
+      {commandsOpen && <CommandListPage onPick={(cmd) => (setCommandsOpen(false), prefill(cmd))} onBack={() => setCommandsOpen(false)} />}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe" onClick={closeMenu}>
           {/* ✨ Room menu (half-page card), like the app: header with my role, three big
@@ -1914,6 +1918,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   ["💰", "Check Balance", () => (closeMenu(), checkBalance())],
                   ["🧹", "Clear Chat", () => (closeMenu(), clearChat())],
                   ["📤", "Invite Friend", () => prefill("/invite ")],
+                  ["📜", "Command", () => (closeMenu(), setCommandsOpen(true))],
                 ] as [string, string, () => void][]
               ).map(([icon, label, act]) => (
                 <li key={label}>

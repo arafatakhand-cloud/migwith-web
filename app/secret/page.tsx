@@ -214,7 +214,7 @@ export default function SecretPage() {
         "👥 Team & Users",
         [
           { icon: "👑", label: "Founders", hint: "Add / remove founders & their tools", tint: "#E0A82E", href: "/secret/founders", ok: f.isMigwith },
-          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.40)", tint: "#F2B705", key: "level", ok: f.isMigwith },
+          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.isMigwith },
           { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
           { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
           { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },

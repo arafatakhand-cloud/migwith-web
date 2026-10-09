@@ -3,6 +3,7 @@
 import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
+import { extraSocialMessage } from "./socialExtra";
 
 // Room chat "/" commands, with the same texts and message types as the app's
 // RoomPage.kt so web and app users see identical lines.
@@ -281,6 +282,13 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
 
   if (SOCIAL[command]) {
     ctx.post(`**${SOCIAL[command](u, target)}**`, "social");
+    return true;
+  }
+
+  // 📜 The extra fun commands (the app's RoomCommands.kt): /agree, /bearhug, /poetrybangla …
+  const extra = extraSocialMessage(command, u, target);
+  if (extra) {
+    ctx.post(`**${extra}**`, "social");
     return true;
   }
 
