@@ -133,7 +133,7 @@ export type TnState = {
   resultShare: number;
   match: [number, number];
   dealNo: number;
-  lastDeal: { winTeam: number; gp: number; bidderTeam: number };
+  lastDeal: { winTeam: number; gp: number; bidderTeam: number; annulled: boolean; reason: string };
   /** Each seat's own last bid this deal + who has passed (bidding duel badges). */
   seatBids: number[];
   passed: boolean[];
@@ -216,7 +216,13 @@ function parseGame(d: Record<string, any> | undefined) {
     resultShare: Number(res.share || 0),
     match: pair(d?.match),
     dealNo: Number(d?.dealNo || 0),
-    lastDeal: { winTeam: Number(ld.winTeam ?? -1), gp: Number(ld.gp || 0), bidderTeam: Number(ld.bidderTeam ?? -1) },
+    lastDeal: {
+      winTeam: Number(ld.winTeam ?? -1),
+      gp: Number(ld.gp || 0),
+      bidderTeam: Number(ld.bidderTeam ?? -1),
+      annulled: ld.annulled === true,
+      reason: typeof ld.reason === "string" ? ld.reason : "",
+    },
     seatBids: [0, 1, 2, 3].map((i) => Number((d?.seatBids || [])[i]) || 0),
     passed: [0, 1, 2, 3].map((i) => (d?.passed || [])[i] === true),
     bidH: Number(d?.bidH ?? -1),
@@ -1374,6 +1380,18 @@ const goldLabel = "mb-1 block text-[10px] font-extrabold tracking-[1.5px]";
 
 function TnActions({ state }: { state: TnState }) {
   const mySeat = state.mySeat;
+
+  if (state.phase === "NEXTDEAL" && state.lastDeal.annulled) {
+    // 🔄 cancelled deal (four Jacks, no trump with the opponents, …)
+    return (
+      <p
+        className="rounded-xl px-2.5 py-[7px] text-center text-xs font-bold"
+        style={{ background: `${GOLD}26`, border: `1px solid ${GOLD}99`, color: GOLD }}
+      >
+        🔄 Deal {state.dealNo} cancelled — {state.lastDeal.reason} · new deal in {state.secondsLeft}s
+      </p>
+    );
+  }
 
   if (state.phase === "NEXTDEAL") {
     const made = state.lastDeal.winTeam === state.lastDeal.bidderTeam;
