@@ -29,6 +29,10 @@ export function isOnSwipeContent(wrapper: Element, x: number, y: number): boolea
   return false;
 }
 
+/** When a message last took a swipe for reply (Date.now()); a right flick it
+ *  did NOT take is left to the room slide. */
+export const swipeReplyClaim = { at: 0 };
+
 export function SwipeToReply({
   enabled,
   onReply,
@@ -44,9 +48,10 @@ export function SwipeToReply({
   const [dx, setDx] = useState(0);
   // The latest distance, for pointerup (a quick swipe can end before React re-renders).
   const dxRef = useRef(0);
-  const drag = useRef<{ x: number; y: number; id: number; sideways: boolean | null } | null>(null);
+  const drag = useRef<{ x: number; y: number; t: number; id: number; sideways: boolean | null } | null>(null);
   if (!enabled) return <>{children}</>;
-  const MARK = 64;
+  // A little further than before = fewer accidental replies (like the app).
+  const MARK = 76;
   const end = () => {
     if (drag.current?.sideways && dxRef.current >= MARK) {
       onReply();
@@ -69,7 +74,7 @@ export function SwipeToReply({
           drag.current = null;
           return;
         }
-        drag.current = { x: e.clientX, y: e.clientY, id: e.pointerId, sideways: null };
+        drag.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, id: e.pointerId, sideways: null };
       }}
       onPointerMove={(e) => {
         const d = drag.current;
@@ -77,8 +82,15 @@ export function SwipeToReply({
         const mx = e.clientX - d.x;
         const my = e.clientY - d.y;
         if (d.sideways === null && (Math.abs(mx) > 8 || Math.abs(my) > 8)) {
-          d.sideways = mx > 0 && Math.abs(mx) > Math.abs(my);
-          if (d.sideways) e.currentTarget.setPointerCapture(e.pointerId);
+          // 🧠 Only a DELIBERATE right drag opens reply. A quick flick (how people
+          // change rooms), a mostly-vertical move (scrolling) or a left drag is
+          // left alone for the room slide / the list.
+          const deliberateRight = mx > 0 && Math.abs(mx) > 2 * Math.abs(my);
+          d.sideways = deliberateRight && e.timeStamp - d.t >= 70;
+          if (d.sideways) {
+            swipeReplyClaim.at = Date.now();
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }
         }
         if (d.sideways) {
           dxRef.current = Math.max(0, Math.min(mx, 110));

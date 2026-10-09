@@ -124,15 +124,20 @@ export function EntryEffectHost({
     let timer: ReturnType<typeof setTimeout> | null = null;
     const check = () => {
       const at = ownRequests.get(roomKey);
-      if (at === undefined) return;
-      ownRequests.delete(roomKey);
-      if (Date.now() - at > 60_000) return; // stale request
+      if (at === undefined || timer) return;
+      if (Date.now() - at > 60_000) {
+        ownRequests.delete(roomKey); // stale request
+        return;
+      }
       // marked now, so my "has entered" line arriving meanwhile isn't played as well
       ownPlayed.set(roomKey, Date.now());
+      // The request is removed only once the effect is queued: if this effect is
+      // restarted meanwhile (my name loading in …), the next run still finds it.
       timer = setTimeout(async () => {
         const fx = await entryFxFor(me, true);
-        if (gone || !fx) return;
-        setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
+        if (gone) return;
+        ownRequests.delete(roomKey);
+        if (fx) setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
       }, 700); // let the room draw first
     };
     check();

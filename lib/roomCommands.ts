@@ -16,6 +16,19 @@ export type CommandContext = {
   post: (text: string, type: string) => void;
   /** Show a line only on this device. */
   note: (text: string) => void;
+  /** Open the 📜 Command page (tap a command to use it). */
+  openCommands?: () => void;
+};
+
+// Short forms people actually type: /gn = /goodnight, /gm = /goodmorning, …
+const SOCIAL_ALIASES: Record<string, string> = {
+  "/gn": "/goodnight",
+  "/gm": "/goodmorning",
+  "/ga": "/goodafternoon",
+  "/ge": "/goodevening",
+  "/ty": "/thanks",
+  "/hbd": "/birthday",
+  "/gl": "/luck",
 };
 
 const SOCIAL: Record<string, (u: string, t: string) => string> = {
@@ -56,7 +69,9 @@ const SOCIAL: Record<string, (u: string, t: string) => string> = {
   "/welcome": (u, t) => `${u} gives ${t} a warm welcome! 🌟`,
   "/birthday": (u, t) => `${u} wishes ${t} a very Happy Birthday! 🎂🎉`,
   "/goodmorning": (u, t) => `${u} wishes ${t} a good morning! 🌅`,
-  "/goodnight": (u, t) => `${u} wishes ${t} good night! 🌙`,
+  "/goodnight": (u, t) => `${u} signs off — good night & sweet dreams, ${t}! 🌙`,
+  "/goodafternoon": (u, t) => `${u} wishes ${t} a good afternoon! ☀️`,
+  "/goodevening": (u, t) => `${u} wishes ${t} a good evening! 🌇`,
   "/rose": (u, t) => `${u} hands ${t} a rose! 🌹`,
   "/flower": (u, t) => `${u} sends flowers to ${t}! 🌸`,
   "/cake": (u, t) => `${u} sends a cake to ${t}! 🎂`,
@@ -150,7 +165,8 @@ const HELP =
   "/highfive @user • /wink @user • /blush @user • /slap @user • /hold @user • /boo @user • /laugh @user • /cry @user • /dance @user • /sing @user\n" +
   "/wave @user • /smile @user • /angry @user • /scare @user • /surprise @user • /clap @user • /cheer @user\n" +
   "/bro @user • /sis @user • /friend @user • /bestie @user • /respect @user • /sorry @user • /thanks @user • /welcome @user\n" +
-  "/birthday @user • /goodmorning @user • /goodnight @user\n" +
+  "/birthday @user • /goodmorning @user • /goodafternoon @user • /goodevening @user • /goodnight @user\n" +
+  "Short: /gm • /ga • /ge • /gn • /ty • /hbd • /gl (+ @user)\n" +
   "/rose @user • /flower @user • /cake @user • /coffee @user • /chocolate @user • /diamond @user • /ring @user • /crown @user • /teddy @user • /present @user\n" +
   "/hi • /hello • /bye • /sleep • /wb\n" +
   "Status: /brb • /away • /afk (🟠 Away) • /busy (🔴 Busy) • /back • /online (🟢 Online)\n" +
@@ -237,12 +253,14 @@ const pickRandom = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.le
  */
 export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
   const parts = clean.trim().split(/\s+/);
-  const command = (parts[0] || "").toLowerCase();
+  const typed = (parts[0] || "").toLowerCase();
+  const command = SOCIAL_ALIASES[typed] ?? typed;
   const target = (parts[1] || "").replace(/^@/, "").trim() || "everyone";
   const { username: u } = ctx;
 
   if (command === "/commands" || command === "/command" || command === "/help") {
-    ctx.note(HELP);
+    if (ctx.openCommands) ctx.openCommands();
+    else ctx.note(HELP);
     return true;
   }
 

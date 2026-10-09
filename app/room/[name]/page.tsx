@@ -763,8 +763,10 @@ function RoomView({ roomName }: { roomName: string }) {
       rememberRecentRoom(roomName);
       if (!left) addOpenRoom(uid, roomName);
 
+      // ✨ a REAL entry → my own entry effect plays for me (also when I'm
+      // invisible: nobody else sees it, but I do). Not on a tab switch.
+      if (!alreadyHere && !left) requestOwnEntryFx(roomName);
       if (!alreadyHere && !left && !quietMe) {
-        requestOwnEntryFx(roomName); // ✨ a real entry → my own entry effect plays for me
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
           sender: profile.username,
@@ -797,8 +799,8 @@ function RoomView({ roomName }: { roomName: string }) {
             visitId,
             entryMarker: serverTimestamp(),
           }).catch(() => {});
+          requestOwnEntryFx(roomName);
           if (!quietMe) {
-            requestOwnEntryFx(roomName);
             addDoc(collection(db, "room_messages", roomName, "messages"), {
               text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
               sender: profile.username,
@@ -1379,6 +1381,7 @@ function RoomView({ roomName }: { roomName: string }) {
         uid: user.uid,
         roomName,
         note,
+        openCommands: () => setCommandsOpen(true),
         post: (t, type) => {
           // /me, /hug, /roll … are seen by everyone, so mute / silence apply.
           if (muted || (silenced && !perms.canRoomWide)) {

@@ -12,7 +12,7 @@ import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { LanguageToggle } from "./LanguageToggle";
 import { useIsClassic } from "../../lib/uiStyle";
-import { isOnSwipeContent } from "./SwipeToReply";
+import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
 
 // The app's top bar: ☰ menu, 👥 Home and 💬 Rooms tabs, and a blue pill naming
 // the page you are on (Explore, Members, Settings …). Signed out: logo + Login.
@@ -104,8 +104,10 @@ export function TopBar() {
       const dy = e.changedTouches[0].clientY - start.y;
       const quick = Date.now() - start.t < 700;
       const onMessage = start.reply;
+      const start0 = start.t;
       start = null;
-      if (onMessage && dx > 0) return;
+      // A right drag the message took for reply isn't a room slide; a quick flick it left alone is.
+      if (onMessage && dx > 0 && swipeReplyClaim.at >= start0) return;
       if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
       const { order, here } = orderRef.current;
       const i = order.indexOf(here);
