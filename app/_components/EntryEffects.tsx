@@ -135,6 +135,7 @@ export function EntryEffectHost({
       // restarted meanwhile (my name loading in …), the next run still finds it.
       timer = setTimeout(async () => {
         const fx = await entryFxFor(me, true);
+        timer = null; // ready for my next real entry in this room
         if (gone) return;
         ownRequests.delete(roomKey);
         if (fx) setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
