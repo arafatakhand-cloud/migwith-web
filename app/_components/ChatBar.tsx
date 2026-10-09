@@ -83,7 +83,7 @@ export function ChatBar({
 }: {
   text: string;
   setText: (v: string) => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
   onSend: () => void;
   canSend: boolean;
   placeholder: string;
@@ -195,10 +195,14 @@ export function ChatBar({
         <>
           {/* White box with 😊 inside */}
           <div className="flex h-[34px] min-w-0 flex-1 items-center rounded-[17px] border border-[#1E4FA8] bg-white pl-3.5 pr-0.5">
-            <input
+            {/* A one-line textarea, not an input: Chrome and Safari show no
+                password / card / address AutoFill bar above the keyboard for it. */}
+            <textarea
               ref={inputRef}
+              rows={1}
+              wrap="off"
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
               autoComplete="off"
               autoCorrect="on"
               name="migwith-chat-message"
@@ -215,7 +219,7 @@ export function ChatBar({
               maxLength={maxLength}
               disabled={disabled}
               placeholder={placeholder}
-              className="min-w-0 flex-1 bg-transparent text-[14px] text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
+              className="h-5 min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[14px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
             />
             <EmojiPicker
               inputRef={inputRef}

@@ -17,7 +17,7 @@ export function EmojiPicker({
   inline = false,
   dockTo,
 }: {
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   value: string;
   onChange: (next: string) => void;
   disabled?: boolean;

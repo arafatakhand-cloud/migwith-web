@@ -242,7 +242,7 @@ function RoomView({ roomName }: { roomName: string }) {
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);

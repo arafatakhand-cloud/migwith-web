@@ -98,7 +98,7 @@ export default function PrivateChatPage() {
   const [viewImage, setViewImage] = useState<string | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const stickToBottom = useRef(true);
@@ -573,10 +573,13 @@ export default function PrivateChatPage() {
           <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => (sendPhoto(e.target.files?.[0]), (e.target.value = ""))} />
           <input ref={fileRef} type="file" hidden onChange={(e) => (sendFile(e.target.files?.[0]), (e.target.value = ""))} />
           <div className="flex h-[46px] min-w-0 flex-1 items-center rounded-full border border-[#D6E0EC] bg-[#EEF2F7] pl-4 pr-1.5">
-            <input
+            {/* One-line textarea: no AutoFill bar above the keyboard (see ChatBar). */}
+            <textarea
               ref={inputRef}
+              rows={1}
+              wrap="off"
               value={text}
-              onChange={(e) => setText(e.target.value.slice(0, 2000))}
+              onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000))}
               autoComplete="off"
               autoCorrect="on"
               name="migwith-chat-message"
@@ -591,7 +594,7 @@ export default function PrivateChatPage() {
                 }
               }}
               placeholder="Write a message"
-              className="min-w-0 flex-1 bg-transparent text-[15px] text-[#12233F] outline-none placeholder:text-[#7D8DA6]"
+              className="h-[22px] min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[#7D8DA6]"
             />
             <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
           </div>

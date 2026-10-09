@@ -418,7 +418,7 @@ html[data-ui="classic"] :is(.grid, .flex):has(> .classic-row) { gap: 0; }
 html[data-ui="classic"] .classic-row { margin-top: 0 !important; margin-bottom: 0 !important; }
 /* 📟 Classic: the dark windows (Badges, Entry Effects, VIP, Create ID) get navy text on their light look. */
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light.text-white { color: #16315F; }
-html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light input { color: #16315F; }
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light :is(input, textarea) { color: #16315F; }
 html[data-ui="classic"] .classic-hide { display: none; }
 
 /* 📟 Classic: square corners everywhere (4px, the app's clsR / clsPill). Round
