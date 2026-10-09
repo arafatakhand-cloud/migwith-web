@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { EmotePanel } from "./Emote";
 import { removeLastEmoteOrChar } from "../../lib/emotes";
 
-// 😊 button that opens the miglife emote panel (the app's emoji panel); a tap
+// 🙂 button (⌨️ while open, like the app) that opens the miglife emote panel (the app's emoji panel); a tap
 // adds that emote's code (":c12", ";a3" …) at the cursor. With `dockTo` the
 // panel opens UNDER the chat bar, in the keyboard's place, like the app.
 
@@ -62,13 +62,19 @@ export function EmojiPicker({
       <button
         type="button"
         onClick={() => {
+          if (open) {
+            // ⌨️ like the app: emotes away, the keyboard comes back.
+            setOpen(false);
+            inputRef.current?.focus();
+            return;
+          }
           // Docked like the app: the phone keyboard goes away while the emotes show.
-          if (!open && dockTo) inputRef.current?.blur();
-          setOpen((v) => !v);
+          if (dockTo) inputRef.current?.blur();
+          setOpen(true);
         }}
         disabled={disabled}
-        title="Emoji"
-        aria-label="Emoji"
+        title={open ? "Keyboard" : "Emoji"}
+        aria-label={open ? "Keyboard" : "Emoji"}
         aria-expanded={open}
         className={
           inline
@@ -78,7 +84,7 @@ export function EmojiPicker({
               }`
         }
       >
-        😊
+        {open ? "⌨️" : "🙂"}
       </button>
       {open &&
         dockTo &&
