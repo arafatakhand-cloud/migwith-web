@@ -438,8 +438,9 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light :is(input,
 html[data-ui="classic"] .classic-hide { display: none; }
 
 /* 📟 Classic: square corners everywhere (4px, the app's clsR / clsPill). Round
-   things stay round: avatars, dots and anything else with rounded-full. */
-html[data-ui="classic"] :is([class*="rounded-lg"], [class*="rounded-xl"], [class*="rounded-2xl"], [class*="rounded-3xl"], [class*="rounded-["], [class*="rounded-md"]):not([class*="rounded-full"]) {
+   things stay round: avatars, dots and anything else with rounded-full, and
+   .keep-round (the room chat bar and its message pill, round in the app too). */
+html[data-ui="classic"] :is([class*="rounded-lg"], [class*="rounded-xl"], [class*="rounded-2xl"], [class*="rounded-3xl"], [class*="rounded-["], [class*="rounded-md"]):not([class*="rounded-full"]):not(.keep-round) {
   border-radius: 4px;
 }
 

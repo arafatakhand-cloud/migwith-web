@@ -31,15 +31,18 @@ export function EmojiPicker({
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close when tapping anywhere else (the text box too: the keyboard takes its place).
+  // On "click", not "pointerdown": closing on the press moved the chat bar down
+  // before the finger came up, so ➤ Send needed a second tap. Now the tap sends
+  // first (one tap, like the app) and the panel closes after it.
   useEffect(() => {
     if (!open) return;
-    const close = (e: PointerEvent) => {
+    const close = (e: MouseEvent) => {
       const t = e.target as Node;
       if (boxRef.current?.contains(t) || panelRef.current?.contains(t)) return;
       setOpen(false);
     };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
   }, [open]);
 
   // Like the app: the code goes in with a space after it, at the cursor.

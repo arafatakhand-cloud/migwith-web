@@ -139,7 +139,7 @@ export function ChatBar({
         </button>
       </div>
     )}
-    <div className="flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
+    <div className="keep-round flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
         <button
@@ -193,8 +193,8 @@ export function ChatBar({
 
       {!voiceActive && (
         <>
-          {/* White box with 😊 inside */}
-          <div className="flex h-[34px] min-w-0 flex-1 items-center rounded-[17px] border border-[#1E4FA8] bg-white pl-3.5 pr-0.5">
+          {/* White pill with 🙂 inside — round in Classic too, like the app */}
+          <div className="keep-round flex h-[34px] min-w-0 flex-1 items-center rounded-[17px] border border-[#1E4FA8] bg-white pl-3.5 pr-0.5">
             {/* A one-line textarea, not an input: Chrome and Safari show no
                 password / card / address AutoFill bar above the keyboard for it. */}
             <textarea
