@@ -208,10 +208,11 @@ export default function WalletPage() {
     return () => offs.forEach((off) => off());
   }, [user, username]);
 
-  // My newest 30 sent gifts, read again whenever today's gift list changes.
+  // My newest sent gifts, read again whenever today's gift list changes. More
+  // than 30: one Gift Shower alone is up to 40 docs, shown as ONE line.
   useEffect(() => {
     if (!username) return;
-    latestGifts("fromUsername", username, 30)
+    latestGifts("fromUsername", username, 150)
       .then((docs) => setGifts(docs.map((d) => ({ id: d.id, data: d.data() }))))
       .catch((e) => console.error("gifts", e));
   }, [username, todayGifts.length]);
@@ -265,16 +266,31 @@ export default function WalletPage() {
         icon: "🏆",
       }));
 
-    const fromGifts: Item[] = gifts
-      .map((g) => ({
-        key: `gift_${g.id}`,
-        timeMs: ms(g.data.createdAt),
-        title: `Sent ${g.data.giftName || "Gift"} to ${g.data.toUsername || "user"}`,
-        amount: -Math.abs(num(g.data.cost)),
-        icon: "🎁",
-        gift: true,
-      }))
-      .filter((g) => g.timeMs > 0);
+    // 🎁 A Gift Shower is ONE line with its total: the server writes all of a
+    // shower's gifts in one transaction, so they share the exact same time
+    // (and gift). Single gifts each have their own time.
+    const showers = new Map<string, { id: string; time: number; gift: string; total: number; names: string[] }>();
+    for (const g of gifts) {
+      const time = ms(g.data.createdAt);
+      if (time <= 0) continue;
+      const gift = String(g.data.giftName || "Gift");
+      const k = `${time}|${gift.toLowerCase()}`;
+      const cur = showers.get(k) || { id: g.id, time, gift, total: 0, names: [] as string[] };
+      cur.total += Math.abs(num(g.data.cost));
+      cur.names.push(String(g.data.toUsername || "user"));
+      showers.set(k, cur);
+    }
+    const fromGifts: Item[] = Array.from(showers.values()).map((v) => ({
+      key: `gift_${v.id}`,
+      timeMs: v.time,
+      title:
+        v.names.length > 1
+          ? `Gift Shower ${v.gift} to ${v.names.length} people`
+          : `Sent ${v.gift} to ${v.names[0]}`,
+      amount: -v.total,
+      icon: "🎁",
+      gift: true,
+    }));
 
     return [...fromTx, ...fromRounds, ...fromGifts].sort((a, b) => b.timeMs - a.timeMs).slice(0, 30);
   }, [txs, gifts]);
