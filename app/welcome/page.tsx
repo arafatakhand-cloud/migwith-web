@@ -25,11 +25,8 @@ const BADGES = ["🥚", "🥈", "🥇", "💎", "🔥", "👑", "🏆"];
 
 function Logo({ small = false }: { small?: boolean }) {
   return (
-    <span className="flex items-center gap-1" data-notranslate>
-      <span className={`font-black tracking-tight text-white ${small ? "text-xl" : "text-2xl"}`}>mig</span>
-      <span className={`rounded-full bg-gradient-to-b from-[#FF9A4D] to-[#E5541A] font-black text-white shadow-[0_0_16px_rgba(255,138,61,0.6)] ${small ? "px-1.5 text-[11px]" : "px-2 text-xs"}`}>
-        life
-      </span>
+    <span className={`font-black tracking-tight text-white drop-shadow-sm ${small ? "text-xl" : "text-2xl"}`} data-notranslate>
+      mi<span className="text-[#FF7A00]">G</span>life
     </span>
   );
 }
