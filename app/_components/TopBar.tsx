@@ -66,9 +66,23 @@ export function TopBar() {
     return () => clearInterval(t);
   }, [uid, currentRoom]);
 
-  // Swipe left / right to move between Home, Rooms and the open rooms, like the app.
+  // Swipe left / right to move between the tabs, in the order they are shown:
+  // Contacts, Rooms, this page's own tab (Alerts, Wallet …), the open rooms,
+  // then an open private chat — like the app. (A page tab used to be left out,
+  // so on Alerts etc. a swipe did nothing.)
   const router = useRouter();
-  const order = ["/", "/rooms", ...openRooms.map((r) => roomHref(r))];
+  const swipeChat = pathname.startsWith("/chat/") ? pathname : null;
+  const swipePage =
+    !swipeChat && !pathname.startsWith("/room/") && pathname !== "/" && pathname !== "/rooms" && PAGE_NAMES.some(([p]) => pathname.startsWith(p))
+      ? pathname
+      : null;
+  const order = [
+    "/",
+    "/rooms",
+    ...(swipePage ? [swipePage] : []),
+    ...openRooms.map((r) => roomHref(r)),
+    ...(swipeChat ? [swipeChat] : []),
+  ];
   const here = currentRoom ? roomHref(currentRoom) : pathname;
   const orderRef = useRef({ order, here });
   orderRef.current = { order, here };
