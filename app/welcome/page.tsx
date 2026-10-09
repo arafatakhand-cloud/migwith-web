@@ -34,26 +34,26 @@ function Logo({ small = false }: { small?: boolean }) {
   );
 }
 
-const card = "relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl";
+const card = "relative overflow-hidden rounded-[28px] border border-white/25 bg-[#0B3D78]/35 p-6 shadow-lg shadow-[#0B3D78]/10 backdrop-blur-xl";
 
 export default function Landing() {
   return (
-    <main className="relative min-h-screen overflow-x-clip bg-[#060D22] text-white">
+    <main className="relative min-h-screen overflow-x-clip bg-gradient-to-b from-[#62CDF7] via-[#33ABEC] to-[#1A7DD0] text-white">
       {/* aurora */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] overflow-hidden">
-        <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#3B82F6]/35 blur-[120px]" />
-        <div className="lp-aurora-2 absolute -right-32 top-20 h-[460px] w-[460px] rounded-full bg-[#C86BFA]/25 blur-[120px]" />
-        <div className="lp-aurora absolute left-1/3 top-[520px] h-[380px] w-[380px] rounded-full bg-[#FF8A3D]/20 blur-[120px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+        <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/30 blur-[120px]" />
+        <div className="lp-aurora-2 absolute -right-32 top-20 h-[460px] w-[460px] rounded-full bg-[#B9F0FF]/40 blur-[120px]" />
+        <div className="lp-aurora absolute left-1/3 top-[520px] h-[380px] w-[380px] rounded-full bg-[#FFD27A]/25 blur-[120px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.18)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40">
-        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white/10 bg-[#0B1430]/70 px-4 py-2.5 backdrop-blur-xl sm:mx-6 lg:mx-auto">
+        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white/10 bg-white/15 px-4 py-2.5 backdrop-blur-xl sm:mx-6 lg:mx-auto">
           <a href="#top" aria-label="miGlife">
             <Logo />
           </a>
-          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-white/70 md:flex">
+          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-white/90 md:flex">
             <a href="#features" className="hover:text-white">Features</a>
             <a href="#games" className="hover:text-white">Games</a>
             <a href="#start" className="hover:text-white">Get started</a>
@@ -85,7 +85,7 @@ export default function Landing() {
               <br />
               <RotatingWord />
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/65 sm:text-lg lg:mx-0">
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/90 sm:text-lg lg:mx-0">
               miGlife is your hangout: live chat rooms, real friends, gifts that light up the room and games you play
               right inside the chat.
             </p>
@@ -99,7 +99,7 @@ export default function Landing() {
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </WebLink>
             </div>
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-white/55 lg:justify-start">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-white/85 lg:justify-start">
               <span>✓ Free</span>
               <span>✓ No phone number</span>
               <span>✓ Android & web</span>
@@ -109,10 +109,10 @@ export default function Landing() {
         </div>
 
         {/* command marquee */}
-        <div className="relative border-y border-white/10 bg-white/[0.03] py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="relative border-y border-white/25 bg-white/10 py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="lp-marquee flex w-max gap-3">
             {[...COMMANDS, ...COMMANDS].map((c, i) => (
-              <span key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1 font-mono text-sm text-white/70">
+              <span key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1 font-mono text-sm text-white/90">
                 {c}
               </span>
             ))}
@@ -125,14 +125,14 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <h2 className="max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
             Not just chat.
-            <span className="block text-white/45">A whole little world.</span>
+            <span className="block text-[#0B3D78]/70">A whole little world.</span>
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-6">
             {/* Rooms */}
             <div className={`${card} md:col-span-4`}>
-              <p className="text-sm font-bold text-[#7FB2FF]">💬 Live rooms</p>
+              <p className="text-sm font-bold text-[#D6ECFF]">💬 Live rooms</p>
               <h3 className="mt-1 text-2xl font-black">Find your crowd</h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-white/60">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-white/85">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {[
                   ["🇧🇩", "Bangladesh", "#3DDC84"],
@@ -152,7 +152,7 @@ export default function Landing() {
             <div className={`${card} md:col-span-2`}>
               <p className="text-sm font-bold text-[#FFD36B]">⭐ Levels</p>
               <h3 className="mt-1 text-2xl font-black">Level up</h3>
-              <p className="mt-2 text-sm leading-6 text-white/60">Chat, join rooms and send gifts to earn XP.</p>
+              <p className="mt-2 text-sm leading-6 text-white/85">Chat, join rooms and send gifts to earn XP.</p>
               <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
                 <div className="lp-xp h-full rounded-full bg-gradient-to-r from-[#FFB547] to-[#FF6B6B]" />
               </div>
@@ -173,13 +173,13 @@ export default function Landing() {
               </div>
               <p className="relative text-sm font-bold text-[#FF8FC7]">🎁 Gifts</p>
               <h3 className="relative mt-1 text-2xl font-black">Make it rain</h3>
-              <p className="relative mt-2 text-sm leading-6 text-white/60">Send a gift to one friend — or shower the whole room.</p>
+              <p className="relative mt-2 text-sm leading-6 text-white/85">Send a gift to one friend — or shower the whole room.</p>
             </div>
             {/* Friends */}
             <div className={`${card} md:col-span-2`}>
               <p className="text-sm font-bold text-[#6BF0AE]">👥 Friends</p>
               <h3 className="mt-1 text-2xl font-black">Your people</h3>
-              <p className="mt-2 text-sm leading-6 text-white/60">Private chat, photos, voice notes and mail.</p>
+              <p className="mt-2 text-sm leading-6 text-white/85">Private chat, photos, voice notes and mail.</p>
               <div className="mt-5 flex -space-x-3">
                 {[
                   ["N", "#FF6B8A"],
@@ -199,7 +199,7 @@ export default function Landing() {
             <div className={`${card} md:col-span-2`}>
               <p className="text-sm font-bold text-[#B8A6FF]">✨ Style</p>
               <h3 className="mt-1 text-2xl font-black">Make an entrance</h3>
-              <p className="mt-2 text-sm leading-6 text-white/60">Entry effects, colour themes and the classic look.</p>
+              <p className="mt-2 text-sm leading-6 text-white/85">Entry effects, colour themes and the classic look.</p>
               <div className="mt-5 rounded-2xl border border-[#C86BFA]/30 bg-gradient-to-r from-[#C86BFA]/20 to-[#3B82F6]/20 px-3 py-2.5 text-sm font-bold">
                 <span className="lp-sparkle inline-block">✨</span> nila [32] has entered.
               </div>
@@ -214,9 +214,9 @@ export default function Landing() {
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <h2 className="text-3xl font-black tracking-tight sm:text-5xl">
               Games, right
-              <span className="block bg-gradient-to-r from-[#FFB547] to-[#FF6B6B] bg-clip-text text-transparent">in the chat.</span>
+              <span className="block bg-gradient-to-r from-[#FF7A00] to-[#FF3D6E] bg-clip-text text-transparent">in the chat.</span>
             </h2>
-            <p className="max-w-sm text-sm leading-6 text-white/60">No extra apps. Start a game in the room and everyone can jump in.</p>
+            <p className="max-w-sm text-sm leading-6 text-white/85">No extra apps. Start a game in the room and everyone can jump in.</p>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {GAMES.map((g) => (
@@ -236,12 +236,12 @@ export default function Landing() {
 
       {/* Get started */}
       <section id="start" className="scroll-mt-24 px-4 pb-20 sm:px-6">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#1B2A6B] via-[#2B1D5E] to-[#4A1F4F] px-6 py-14 sm:px-12">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#0E4C92] via-[#1560B0] to-[#1E88E5] px-6 py-14 sm:px-12">
           <div className="lp-aurora pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#FF8A3D]/30 blur-[100px]" />
           <div className="relative grid items-center gap-10 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-black tracking-tight sm:text-5xl">Your seat is waiting.</h2>
-              <p className="mt-4 max-w-md text-white/70">Three steps and you&apos;re in a room.</p>
+              <p className="mt-4 max-w-md text-white/90">Three steps and you&apos;re in a room.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <DownloadButton big />
                 <WebLink
@@ -259,24 +259,24 @@ export default function Landing() {
                 ["Join a room", "Say hi, send a gift, start a game."],
               ].map(([t, d], i) => (
                 <li key={t} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base font-black text-[#2B1D5E]">{i + 1}</span>
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base font-black text-[#0E4C92]">{i + 1}</span>
                   <span>
                     <span className="block font-black">{t}</span>
-                    <span className="block text-sm text-white/65">{d}</span>
+                    <span className="block text-sm text-white/90">{d}</span>
                   </span>
                 </li>
               ))}
             </ol>
           </div>
         </div>
-        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-white/45">
+        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-white/80">
           On iPhone? Open the web version in Safari and tap Share → “Add to Home Screen”.
         </p>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/10">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-white/50 sm:flex-row sm:px-6">
+      <footer className="border-t border-white/25 bg-[#0E4C92]/30">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-white/80 sm:flex-row sm:px-6">
           <Logo small />
           <span>Chat · Play · Make friends</span>
           <div className="flex gap-5 sm:ml-auto">

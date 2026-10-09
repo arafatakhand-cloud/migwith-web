@@ -66,7 +66,7 @@ export function RotatingWord() {
   }, [words.length]);
   return (
     <span className="relative inline-block min-h-[1.1em]">
-      <span key={i} className="lp-word inline-block bg-gradient-to-r from-[#FFB547] via-[#FF6B6B] to-[#C86BFA] bg-clip-text pb-2 text-transparent">
+      <span key={i} className="lp-word inline-block bg-gradient-to-r from-[#FF7A00] via-[#FF3D6E] to-[#E0249A] bg-clip-text pb-2 text-transparent [filter:drop-shadow(0_2px_10px_rgba(255,255,255,0.35))]">
         {words[i]}
       </span>
     </span>
