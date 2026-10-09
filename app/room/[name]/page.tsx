@@ -2425,9 +2425,10 @@ function luxuryBetLine(text: string): ReactNode | null {
 }
 
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
-// swapped for its uploaded picture when there is one.
+// swapped for its uploaded picture when there is one. The "<< … >>" around it
+// stays, like the app.
 function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[] {
-  const clean = text.replace(/^<</, "").replace(/>>/, "");
+  const clean = text;
   const out: ReactNode[] = [];
   let k = 0;
   const pushSegment = (seg: string) => {
