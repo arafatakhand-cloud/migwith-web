@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DownloadButton, PhoneMock, WebLink } from "./LandingParts";
+import { DownloadButton, LiveDemo, RotatingWord, WebLink } from "./LandingParts";
 
 // The miGlife landing page: miglife.app shows it at "/" (middleware.ts), and
 // web.miglife.app keeps it at /welcome (the login logo links here).
@@ -10,172 +10,278 @@ export const metadata: Metadata = {
     "miGlife is a free social chat app: live chat rooms, friends and private chat, gifts, levels and games like Cricket, Ludo, 29 and Teen Patti. On Android and the web.",
 };
 
-const FEATURES: { icon: string; title: string; text: string; tint: string }[] = [
-  { icon: "💬", title: "Live chat rooms", text: "Join country, city and fun rooms, or make your own. Fun commands like /hug, /gn and 200 more.", tint: "#E3F0FD" },
-  { icon: "🎮", title: "Games in the room", text: "Cricket, Ludo, 29, Teen Patti, LowCard, Trivia and more — play with everyone in the room.", tint: "#EDE7FE" },
-  { icon: "🎁", title: "Gifts & gift showers", text: "Send a gift to a friend, or shower the whole room. Every gift shows up in the chat.", tint: "#FFE6F2" },
-  { icon: "⭐", title: "Levels & badges", text: "Chat, join rooms and send gifts to earn XP. Level up and unlock new badges.", tint: "#FFF4D6" },
-  { icon: "👥", title: "Friends & private chat", text: "Add friends, see who's online, chat one-to-one, send photos, voice and mail.", tint: "#E2F6EA" },
-  { icon: "✨", title: "Your own style", text: "Entry effects when you walk in, colour themes and the classic look if you like it.", tint: "#FDEBDF" },
+const COMMANDS = ["/hug", "/gn", "/gm", "/love", "/highfive", "/rose", "/cake", "/dance", "/8ball", "/roll", "/hbd", "/cheers", "/wave", "/teddy", "/crown", "/poetry", "/ty", "/boo"];
+
+const GAMES: { icon: string; name: string; from: string; to: string }[] = [
+  { icon: "🏏", name: "Cricket", from: "#22C55E", to: "#15803D" },
+  { icon: "🎲", name: "Ludo", from: "#F59E0B", to: "#DC2626" },
+  { icon: "🃏", name: "29", from: "#6366F1", to: "#4338CA" },
+  { icon: "♠️", name: "Teen Patti", from: "#EC4899", to: "#9D174D" },
+  { icon: "🂠", name: "LowCard", from: "#06B6D4", to: "#0E7490" },
+  { icon: "🧠", name: "Trivia", from: "#A855F7", to: "#6B21A8" },
 ];
 
-const GAMES = ["🏏 Cricket", "🎲 Ludo", "🃏 29", "♠️ Teen Patti", "🂠 LowCard", "🧠 Trivia", "🍀 Lucky User", "👑 Royale"];
-
-const STEPS: { n: string; title: string; text: string }[] = [
-  { n: "1", title: "Get miGlife", text: "Download the Android app, or open it right here in your browser." },
-  { n: "2", title: "Create your ID", text: "Pick a username and a password. No phone number needed." },
-  { n: "3", title: "Join a room", text: "Say hi, make friends, send a gift or start a game." },
-];
+const BADGES = ["🥚", "🥈", "🥇", "💎", "🔥", "👑", "🏆"];
 
 function Logo({ small = false }: { small?: boolean }) {
   return (
     <span className="flex items-center gap-1" data-notranslate>
-      <span className={`font-black tracking-tight text-[#1F74C4] ${small ? "text-xl" : "text-2xl"}`}>mig</span>
-      <span className={`rounded-full bg-gradient-to-b from-[#F58A3A] to-[#D6521A] font-black text-white ${small ? "px-1.5 text-[11px]" : "px-2 text-xs"}`}>
+      <span className={`font-black tracking-tight text-white ${small ? "text-xl" : "text-2xl"}`}>mig</span>
+      <span className={`rounded-full bg-gradient-to-b from-[#FF9A4D] to-[#E5541A] font-black text-white shadow-[0_0_16px_rgba(255,138,61,0.6)] ${small ? "px-1.5 text-[11px]" : "px-2 text-xs"}`}>
         life
       </span>
     </span>
   );
 }
 
+const card = "relative overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl";
+
 export default function Landing() {
   return (
-    <main className="min-h-screen overflow-x-clip bg-[#F7FBFF] text-[#0B2A5B]">
+    <main className="relative min-h-screen overflow-x-clip bg-[#060D22] text-white">
+      {/* aurora */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] overflow-hidden">
+        <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#3B82F6]/35 blur-[120px]" />
+        <div className="lp-aurora-2 absolute -right-32 top-20 h-[460px] w-[460px] rounded-full bg-[#C86BFA]/25 blur-[120px]" />
+        <div className="lp-aurora absolute left-1/3 top-[520px] h-[380px] w-[380px] rounded-full bg-[#FF8A3D]/20 blur-[120px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.07)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-[#E3ECF7] bg-white/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
+      <header className="sticky top-0 z-40">
+        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white/10 bg-[#0B1430]/70 px-4 py-2.5 backdrop-blur-xl sm:mx-6 lg:mx-auto">
           <a href="#top" aria-label="miGlife">
             <Logo />
           </a>
-          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-[#41597A] md:flex">
-            <a href="#features" className="hover:text-[#1F74C4]">Features</a>
-            <a href="#games" className="hover:text-[#1F74C4]">Games</a>
-            <a href="#how" className="hover:text-[#1F74C4]">How it works</a>
-            <a href="#download" className="hover:text-[#1F74C4]">Download</a>
+          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-white/70 md:flex">
+            <a href="#features" className="hover:text-white">Features</a>
+            <a href="#games" className="hover:text-white">Games</a>
+            <a href="#start" className="hover:text-white">Get started</a>
           </nav>
           <WebLink
             path="/login"
-            className="ml-auto rounded-full bg-[#1F74C4] px-4 py-2 text-sm font-bold text-white shadow-md shadow-[#1F74C4]/25 hover:bg-[#1A64AA] md:ml-0"
+            className="ml-auto rounded-full bg-white px-4 py-1.5 text-sm font-bold text-[#071330] transition hover:bg-white/90 md:ml-0"
           >
-            Open web
+            Log in
           </WebLink>
         </div>
       </header>
 
       {/* Hero */}
       <section id="top" className="relative">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-[480px] w-[780px] -translate-x-1/2 rounded-full bg-[#56CCF2]/20 blur-[120px]" />
-          <div className="absolute -right-32 top-40 h-[360px] w-[360px] rounded-full bg-[#F2994A]/15 blur-[110px]" />
-        </div>
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-12 sm:px-6 lg:grid-cols-[1.1fr_1fr] lg:pb-24 lg:pt-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pb-24 lg:pt-20">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#FFD8B8] bg-[#FFF3E8] px-3.5 py-1.5 text-xs font-bold text-[#C2541A]">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-[#F07A00]" />
-              Free · Android & web
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-white/80 backdrop-blur">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC84] opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC84]" />
+              </span>
+              Live chat · games · gifts
             </span>
-            <h1 className="mt-5 text-[44px] font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-7xl">
-              Chat. Play.
+            <h1 className="mt-6 text-[46px] font-black leading-[1.02] tracking-tight sm:text-6xl lg:text-[76px]">
+              Come in.
               <br />
-              <span className="bg-gradient-to-r from-[#F07A00] to-[#E5484D] bg-clip-text text-transparent">Level up.</span>
+              Say hi.
+              <br />
+              <RotatingWord />
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#41597A] sm:text-lg lg:mx-0">
-              miGlife is the place to hang out with friends: live chat rooms, gifts, levels and games you play right
-              inside the chat — all in one app.
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/65 sm:text-lg lg:mx-0">
+              miGlife is your hangout: live chat rooms, real friends, gifts that light up the room and games you play
+              right inside the chat.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <DownloadButton />
               <WebLink
-                path="/login"
-                className="inline-flex items-center gap-2 rounded-2xl border border-[#BFD7F2] bg-white px-5 py-3.5 font-bold text-[#1F74C4] shadow-sm transition hover:-translate-y-0.5 hover:border-[#1F74C4]"
+                path="/register"
+                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] px-6 py-3.5 font-bold text-white shadow-[0_10px_40px_-10px_rgba(99,102,241,0.8)] transition hover:-translate-y-0.5"
               >
-                🌐 Use it in your browser
+                Start in your browser
+                <span className="transition-transform group-hover:translate-x-1">→</span>
               </WebLink>
             </div>
-            <p className="mt-4 text-xs text-[#6B7F99]">On iPhone? Open the web version in Safari and tap Share → “Add to Home Screen”.</p>
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-white/55 lg:justify-start">
+              <span>✓ Free</span>
+              <span>✓ No phone number</span>
+              <span>✓ Android & web</span>
+            </div>
           </div>
-          <PhoneMock />
+          <LiveDemo />
         </div>
-      </section>
 
-      {/* Features */}
-      <section id="features" className="scroll-mt-20 border-t border-[#E3ECF7] bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <p className="text-center text-xs font-extrabold uppercase tracking-[0.2em] text-[#F07A00]">Features</p>
-          <h2 className="mt-2 text-center text-3xl font-black tracking-tight sm:text-4xl">Everything in one app</h2>
-          <p className="mx-auto mt-3 max-w-xl text-center text-[#41597A]">From a quick hello to a full cricket match — miGlife has it in the chat.</p>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((f) => (
-              <div key={f.title} className="rounded-3xl border border-[#E3ECF7] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl text-2xl" style={{ background: f.tint }}>
-                  {f.icon}
-                </span>
-                <h3 className="mt-4 text-lg font-black">{f.title}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-[#41597A]">{f.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Games */}
-      <section id="games" className="scroll-mt-20 bg-gradient-to-br from-[#0E2A52] to-[#1F4F94] text-white">
-        <div className="mx-auto max-w-6xl px-4 py-14 text-center sm:px-6">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Games in the chat room</h2>
-          <p className="mx-auto mt-3 max-w-xl text-white/75">No extra apps — start a game in the room and everyone can join.</p>
-          <div className="mx-auto mt-8 flex max-w-3xl flex-wrap justify-center gap-2.5">
-            {GAMES.map((g) => (
-              <span key={g} className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold">
-                {g}
+        {/* command marquee */}
+        <div className="relative border-y border-white/10 bg-white/[0.03] py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+          <div className="lp-marquee flex w-max gap-3">
+            {[...COMMANDS, ...COMMANDS].map((c, i) => (
+              <span key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1 font-mono text-sm text-white/70">
+                {c}
               </span>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="scroll-mt-20 bg-[#F7FBFF]">
-        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-20">
-          <p className="text-center text-xs font-extrabold uppercase tracking-[0.2em] text-[#F07A00]">How it works</p>
-          <h2 className="mt-2 text-center text-3xl font-black tracking-tight sm:text-4xl">Up and chatting in a minute</h2>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-3xl border border-[#E3ECF7] bg-white p-6 shadow-sm">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1F74C4] text-lg font-black text-white">{s.n}</span>
-                <h3 className="mt-4 text-lg font-black">{s.title}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-[#41597A]">{s.text}</p>
+      {/* Bento features */}
+      <section id="features" className="relative scroll-mt-24">
+        <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+          <h2 className="max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
+            Not just chat.
+            <span className="block text-white/45">A whole little world.</span>
+          </h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-6">
+            {/* Rooms */}
+            <div className={`${card} md:col-span-4`}>
+              <p className="text-sm font-bold text-[#7FB2FF]">💬 Live rooms</p>
+              <h3 className="mt-1 text-2xl font-black">Find your crowd</h3>
+              <p className="mt-2 max-w-md text-sm leading-6 text-white/60">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
+              <div className="mt-5 grid gap-2 sm:grid-cols-2">
+                {[
+                  ["🇧🇩", "Bangladesh", "#3DDC84"],
+                  ["🏏", "Cricket", "#FFB547"],
+                  ["🏙️", "Ctg", "#C86BFA"],
+                  ["💬", "Chat", "#5AA8FF"],
+                ].map(([i, n, c]) => (
+                  <div key={n} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-2.5">
+                    <span className="text-lg">{i}</span>
+                    <span className="font-bold">{n}</span>
+                    <span className="ml-auto h-2 w-2 rounded-full" style={{ background: c, boxShadow: `0 0 10px ${c}` }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Levels */}
+            <div className={`${card} md:col-span-2`}>
+              <p className="text-sm font-bold text-[#FFD36B]">⭐ Levels</p>
+              <h3 className="mt-1 text-2xl font-black">Level up</h3>
+              <p className="mt-2 text-sm leading-6 text-white/60">Chat, join rooms and send gifts to earn XP.</p>
+              <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+                <div className="lp-xp h-full rounded-full bg-gradient-to-r from-[#FFB547] to-[#FF6B6B]" />
+              </div>
+              <div className="mt-4 flex justify-between text-xl">
+                {BADGES.map((b) => (
+                  <span key={b}>{b}</span>
+                ))}
+              </div>
+            </div>
+            {/* Gifts */}
+            <div className={`${card} md:col-span-2`}>
+              <div className="pointer-events-none absolute inset-0">
+                {["🌹", "🎂", "💎", "🧸", "👑", "🍫"].map((g, i) => (
+                  <span key={g} className="lp-fall absolute text-xl opacity-80" style={{ left: `${58 + (i % 3) * 13}%`, animationDelay: `${i * 0.7}s` }}>
+                    {g}
+                  </span>
+                ))}
+              </div>
+              <p className="relative text-sm font-bold text-[#FF8FC7]">🎁 Gifts</p>
+              <h3 className="relative mt-1 text-2xl font-black">Make it rain</h3>
+              <p className="relative mt-2 text-sm leading-6 text-white/60">Send a gift to one friend — or shower the whole room.</p>
+            </div>
+            {/* Friends */}
+            <div className={`${card} md:col-span-2`}>
+              <p className="text-sm font-bold text-[#6BF0AE]">👥 Friends</p>
+              <h3 className="mt-1 text-2xl font-black">Your people</h3>
+              <p className="mt-2 text-sm leading-6 text-white/60">Private chat, photos, voice notes and mail.</p>
+              <div className="mt-5 flex -space-x-3">
+                {[
+                  ["N", "#FF6B8A"],
+                  ["R", "#5AA8FF"],
+                  ["S", "#3DDC84"],
+                  ["T", "#FFB547"],
+                  ["A", "#C86BFA"],
+                ].map(([l, c]) => (
+                  <span key={l} className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#0B1430] text-sm font-black" style={{ background: c }}>
+                    {l}
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0B1430] bg-[#3DDC84]" />
+                  </span>
+                ))}
+              </div>
+            </div>
+            {/* Style */}
+            <div className={`${card} md:col-span-2`}>
+              <p className="text-sm font-bold text-[#B8A6FF]">✨ Style</p>
+              <h3 className="mt-1 text-2xl font-black">Make an entrance</h3>
+              <p className="mt-2 text-sm leading-6 text-white/60">Entry effects, colour themes and the classic look.</p>
+              <div className="mt-5 rounded-2xl border border-[#C86BFA]/30 bg-gradient-to-r from-[#C86BFA]/20 to-[#3B82F6]/20 px-3 py-2.5 text-sm font-bold">
+                <span className="lp-sparkle inline-block">✨</span> nila [32] has entered.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Games */}
+      <section id="games" className="scroll-mt-24">
+        <div className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+          <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+            <h2 className="text-3xl font-black tracking-tight sm:text-5xl">
+              Games, right
+              <span className="block bg-gradient-to-r from-[#FFB547] to-[#FF6B6B] bg-clip-text text-transparent">in the chat.</span>
+            </h2>
+            <p className="max-w-sm text-sm leading-6 text-white/60">No extra apps. Start a game in the room and everyone can jump in.</p>
+          </div>
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {GAMES.map((g) => (
+              <div
+                key={g.name}
+                className="group relative overflow-hidden rounded-3xl p-4 shadow-lg transition hover:-translate-y-1"
+                style={{ background: `linear-gradient(145deg, ${g.from}, ${g.to})` }}
+              >
+                <span className="absolute -right-3 -top-3 text-6xl opacity-25 transition group-hover:scale-110">{g.icon}</span>
+                <span className="relative text-3xl">{g.icon}</span>
+                <p className="relative mt-6 text-lg font-black">{g.name}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Download */}
-      <section id="download" className="scroll-mt-20 px-4 pb-16 sm:px-6">
-        <div className="mx-auto max-w-5xl rounded-[32px] bg-gradient-to-br from-[#F58A3A] via-[#F07A00] to-[#E5484D] px-6 py-12 text-center text-white shadow-xl shadow-[#F07A00]/25 sm:px-12">
-          <h2 className="text-3xl font-black tracking-tight sm:text-4xl">Join miGlife today</h2>
-          <p className="mx-auto mt-3 max-w-lg text-white/90">It&apos;s free. Get the Android app, or start right now in your browser.</p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <DownloadButton big />
-            <WebLink
-              path="/register"
-              className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 text-lg font-black text-[#C2541A] shadow-lg transition hover:-translate-y-0.5"
-            >
-              ✨ Create your ID
-            </WebLink>
+      {/* Get started */}
+      <section id="start" className="scroll-mt-24 px-4 pb-20 sm:px-6">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#1B2A6B] via-[#2B1D5E] to-[#4A1F4F] px-6 py-14 sm:px-12">
+          <div className="lp-aurora pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#FF8A3D]/30 blur-[100px]" />
+          <div className="relative grid items-center gap-10 lg:grid-cols-2">
+            <div>
+              <h2 className="text-3xl font-black tracking-tight sm:text-5xl">Your seat is waiting.</h2>
+              <p className="mt-4 max-w-md text-white/70">Three steps and you&apos;re in a room.</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <DownloadButton big />
+                <WebLink
+                  path="/register"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-lg font-black backdrop-blur transition hover:bg-white/20"
+                >
+                  ✨ Create your ID
+                </WebLink>
+              </div>
+            </div>
+            <ol className="space-y-3">
+              {[
+                ["Get miGlife", "Download the Android app or open it in your browser."],
+                ["Create your ID", "A username and a password — that's it."],
+                ["Join a room", "Say hi, send a gift, start a game."],
+              ].map(([t, d], i) => (
+                <li key={t} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base font-black text-[#2B1D5E]">{i + 1}</span>
+                  <span>
+                    <span className="block font-black">{t}</span>
+                    <span className="block text-sm text-white/65">{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
+        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-white/45">
+          On iPhone? Open the web version in Safari and tap Share → “Add to Home Screen”.
+        </p>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-[#E3ECF7] bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-[#6B7F99] sm:flex-row sm:px-6">
+      <footer className="border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-white/50 sm:flex-row sm:px-6">
           <Logo small />
           <span>Chat · Play · Make friends</span>
           <div className="flex gap-5 sm:ml-auto">
-            <WebLink path="/login" className="hover:text-[#1F74C4]">Log in</WebLink>
-            <WebLink path="/register" className="hover:text-[#1F74C4]">Sign up</WebLink>
-            <a href="#download" className="hover:text-[#1F74C4]">Download</a>
+            <WebLink path="/login" className="hover:text-white">Log in</WebLink>
+            <WebLink path="/register" className="hover:text-white">Sign up</WebLink>
           </div>
           <span className="text-xs sm:ml-4">© {new Date().getFullYear()} miGlife</span>
         </div>

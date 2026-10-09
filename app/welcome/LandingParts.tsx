@@ -38,84 +38,191 @@ export function DownloadButton({ big = false }: { big?: boolean }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group inline-flex items-center gap-3 rounded-2xl bg-[#0E2A52] text-left text-white shadow-lg shadow-[#0E2A52]/25 transition hover:-translate-y-0.5 hover:bg-[#123566] ${
+      className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl bg-white text-left text-[#071330] shadow-[0_10px_40px_-10px_rgba(61,220,132,0.6)] transition hover:-translate-y-0.5 ${
         big ? "px-6 py-4" : "px-5 py-3"
       }`}
     >
-      <svg viewBox="0 0 24 24" width={big ? 30 : 26} height={big ? 30 : 26} fill="#3DDC84" aria-hidden>
+      <span className="lp-shine pointer-events-none absolute inset-0" />
+      <svg viewBox="0 0 24 24" width={big ? 30 : 26} height={big ? 30 : 26} fill="#1FB866" aria-hidden>
         <path d={ANDROID_PATH} />
       </svg>
       <span>
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-white/70">Free download</span>
+        <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[#4B5B78]">Free download</span>
         <span className={`block font-black leading-tight ${big ? "text-xl" : "text-lg"}`}>
-          Android app{version && <span className="ml-1.5 align-middle text-xs font-bold text-[#3DDC84]">v{version}</span>}
+          Android app{version && <span className="ml-1.5 align-middle text-xs font-bold text-[#1FB866]">v{version}</span>}
         </span>
       </span>
     </a>
   );
 }
 
-/** A small live-looking chat room, drawn with HTML (no screenshots needed). */
-export function PhoneMock() {
-  const lines: { who?: string; color?: string; text: string; kind?: "enter" | "gift" | "bot" }[] = [
-    { kind: "enter", text: "Bangladesh: rafi [24] has entered." },
-    { who: "nila", color: "#E5484D", text: "good evening everyone 🌇" },
-    { who: "rafi", color: "#2F80ED", text: "who's up for cricket? 🏏" },
-    { kind: "gift", text: "🎁 *GIFT SHOWER* sumon[31] gives a Rose 🌹 to nila, rafi and 4 other! Hurray!" },
-    { kind: "bot", text: "Cricket Bot: Over 3 · rafi hits a SIX! 🔥" },
-    { who: "tania", color: "#1E8E3E", text: "/hug rafi 🤗" },
-  ];
+/** The headline's last word changes: Chat → Play → Gift → Level up. */
+export function RotatingWord() {
+  const words = ["chat.", "play.", "gift.", "level up."];
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % words.length), 2200);
+    return () => clearInterval(t);
+  }, [words.length]);
   return (
-    <div className="relative mx-auto w-[280px] sm:w-[300px]">
-      <div className="absolute -inset-6 -z-10 rounded-[48px] bg-gradient-to-br from-[#2F80ED]/25 via-[#56CCF2]/20 to-[#F2994A]/25 blur-2xl" />
-      <div className="rounded-[40px] border-[10px] border-[#0E2A52] bg-[#0E2A52] shadow-2xl">
-        <div className="overflow-hidden rounded-[30px] bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7]">
-          {/* status bar */}
-          <div className="flex items-center justify-between bg-white px-5 pb-1 pt-2 text-[10px] font-bold text-[#0B2A5B]">
+    <span className="relative inline-block min-h-[1.1em]">
+      <span key={i} className="lp-word inline-block bg-gradient-to-r from-[#FFB547] via-[#FF6B6B] to-[#C86BFA] bg-clip-text pb-2 text-transparent">
+        {words[i]}
+      </span>
+    </span>
+  );
+}
+
+// ─── The live demo phone ────────────────────────────────────────────────────
+type Line =
+  | { k: "enter"; name: string; lv: number }
+  | { k: "msg"; who: string; color: string; text: string }
+  | { k: "gift"; text: string }
+  | { k: "bot"; text: string }
+  | { k: "fun"; text: string };
+
+const SCENES: { id: string; label: string; room: string; lines: Line[] }[] = [
+  {
+    id: "chat",
+    label: "💬 Chat",
+    room: "Bangladesh",
+    lines: [
+      { k: "enter", name: "rafi", lv: 24 },
+      { k: "msg", who: "nila", color: "#FF6B8A", text: "good evening everyone 🌇" },
+      { k: "msg", who: "rafi", color: "#5AA8FF", text: "hey nila! 👋" },
+      { k: "fun", text: "tania gives rafi a warm tight hug! 🤗" },
+      { k: "msg", who: "sumon", color: "#3DDC84", text: "who's up for a game later? 🎮" },
+    ],
+  },
+  {
+    id: "play",
+    label: "🏏 Play",
+    room: "Cricket",
+    lines: [
+      { k: "bot", text: "🏏 Cricket Bot: Match starts! Type !bat" },
+      { k: "msg", who: "rafi", color: "#5AA8FF", text: "!bat" },
+      { k: "bot", text: "🏏 Over 3.2 · rafi hits a SIX! 🔥" },
+      { k: "msg", who: "nila", color: "#FF6B8A", text: "what a shot 😮" },
+      { k: "bot", text: "🏆 rafi wins the match · +XP" },
+    ],
+  },
+  {
+    id: "gift",
+    label: "🎁 Gift",
+    room: "Friends",
+    lines: [
+      { k: "msg", who: "sumon", color: "#3DDC84", text: "happy birthday nila 🎂" },
+      { k: "gift", text: "🎁 sumon[31] gives a Rose 🌹 to nila! Hurray!" },
+      { k: "gift", text: "🎁 *GIFT SHOWER* rafi[24] gives a Cake 🎂 to nila, sumon and 4 other! Hurray!" },
+      { k: "msg", who: "nila", color: "#FF6B8A", text: "thank you all 🥹💖" },
+    ],
+  },
+];
+
+export function LiveDemo() {
+  const [scene, setScene] = useState(0);
+  const [shown, setShown] = useState(1);
+  const s = SCENES[scene];
+  // Lines appear one by one; at the end the next scene starts by itself.
+  useEffect(() => {
+    if (shown < s.lines.length) {
+      const t = setTimeout(() => setShown((n) => n + 1), 1100);
+      return () => clearTimeout(t);
+    }
+    const t = setTimeout(() => {
+      setScene((n) => (n + 1) % SCENES.length);
+      setShown(1);
+    }, 2600);
+    return () => clearTimeout(t);
+  }, [shown, s.lines.length]);
+
+  return (
+    <div className="relative mx-auto w-[290px] sm:w-[310px]">
+      {/* floating chips around the phone */}
+      <span className="lp-float absolute -left-10 top-16 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+        ⭐ +2 XP
+      </span>
+      <span className="lp-float-slow absolute -right-12 top-40 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+        🥈 Level 12
+      </span>
+      <span className="lp-float absolute -left-6 bottom-24 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+        🌹 Gift sent
+      </span>
+
+      <div className="absolute -inset-8 -z-10 rounded-[60px] bg-gradient-to-br from-[#3B82F6]/40 via-[#C86BFA]/30 to-[#FF8A3D]/40 blur-3xl" />
+      <div className="rounded-[44px] border border-white/15 bg-gradient-to-b from-[#1B2A4E] to-[#0B1430] p-[9px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+        <div className="overflow-hidden rounded-[36px] bg-[#0E1A38]">
+          <div className="flex items-center justify-between px-6 pb-1 pt-3 text-[10px] font-bold text-white/80">
             <span>9:41</span>
-            <span className="h-[14px] w-16 rounded-full bg-[#0E2A52]" />
-            <span>4G ▮▮▮</span>
+            <span className="h-[18px] w-20 rounded-full bg-black" />
+            <span>5G ▮▮▮</span>
           </div>
-          {/* top bar */}
-          <div className="flex items-center gap-2 border-b border-[#BFD7F2] bg-white px-3 py-2">
-            <span className="text-[#0B2A5B]">☰</span>
-            <span className="rounded-lg bg-[#2F80ED] px-2.5 py-1 text-[11px] font-bold text-white">💬 Bangladesh</span>
-            <span className="ml-auto text-sm">🔔</span>
+          <div className="flex items-center gap-2 px-3 py-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-xs text-white">☰</span>
+            <span className="rounded-full bg-gradient-to-r from-[#3B82F6] to-[#6366F1] px-3 py-1 text-[11px] font-bold text-white">
+              💬 {s.room}
+            </span>
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-[#3DDC84]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#3DDC84]" /> live
+            </span>
           </div>
-          {/* messages */}
-          <div className="space-y-1.5 bg-white/70 px-3 py-3 text-[11.5px] leading-snug text-[#0B2A5B]">
-            {lines.map((l, i) =>
-              l.kind === "enter" ? (
-                <p key={i}>
-                  <span className="font-bold text-[#E8833A]">Bangladesh:</span> rafi [24] has entered.
-                </p>
-              ) : l.kind === "gift" ? (
-                <p key={i} className="rounded-md bg-[#FFE6F2] px-2 py-1.5 text-[#FF2D95]">
-                  {l.text}
-                </p>
-              ) : l.kind === "bot" ? (
-                <p key={i} className="font-semibold text-[#7B3FE4]">
-                  {l.text}
-                </p>
-              ) : (
-                <p key={i}>
-                  <span className="font-bold" style={{ color: l.color }}>
-                    {l.who}:
-                  </span>{" "}
-                  {l.text}
-                </p>
-              )
+          <div className="flex h-[330px] flex-col justify-end gap-1.5 overflow-hidden bg-gradient-to-b from-[#0E1A38] to-[#13234A] px-3 py-3 text-[11.5px] leading-snug text-white/90">
+            {s.lines.slice(0, shown).map((l, i) => (
+              <div key={`${s.id}-${i}`} className="lp-in">
+                {l.k === "enter" ? (
+                  <p className="text-white/60">
+                    <span className="font-bold text-[#FFB547]">{s.room}:</span> {l.name} [{l.lv}] has entered.
+                  </p>
+                ) : l.k === "msg" ? (
+                  <p className="w-fit max-w-[92%] rounded-2xl rounded-tl-md bg-white/[0.07] px-2.5 py-1.5">
+                    <span className="font-bold" style={{ color: l.color }}>
+                      {l.who}:
+                    </span>{" "}
+                    {l.text}
+                  </p>
+                ) : l.k === "gift" ? (
+                  <p className="rounded-xl bg-gradient-to-r from-[#FF4FA3]/25 to-[#FF8A3D]/20 px-2.5 py-1.5 font-semibold text-[#FFB3D9]">{l.text}</p>
+                ) : l.k === "bot" ? (
+                  <p className="rounded-xl border border-[#C86BFA]/30 bg-[#C86BFA]/10 px-2.5 py-1.5 font-semibold text-[#E2B8FF]">{l.text}</p>
+                ) : (
+                  <p className="font-bold italic text-[#7FD3FF]">{l.text}</p>
+                )}
+              </div>
+            ))}
+            {shown < s.lines.length && (
+              <p className="flex items-center gap-1 pl-1 text-white/40">
+                <span className="lp-dot h-1.5 w-1.5 rounded-full bg-white/50" />
+                <span className="lp-dot h-1.5 w-1.5 rounded-full bg-white/50 [animation-delay:150ms]" />
+                <span className="lp-dot h-1.5 w-1.5 rounded-full bg-white/50 [animation-delay:300ms]" />
+              </p>
             )}
           </div>
-          {/* chat bar */}
-          <div className="flex items-center gap-1.5 bg-[#0E2A52] px-2.5 py-2">
-            <span className="h-6 w-6 rounded-full bg-white/15" />
-            <span className="h-6 w-6 rounded-full bg-gradient-to-b from-[#F06292] to-[#C2185B]" />
-            <span className="flex h-7 flex-1 items-center rounded-full bg-white px-3 text-[10.5px] text-[#7A8599]">Type a message…</span>
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2F80ED] text-[11px] text-white">➤</span>
+          <div className="flex items-center gap-1.5 border-t border-white/10 bg-[#0B1430] px-2.5 py-2.5">
+            <span className="h-7 w-7 rounded-full bg-white/10" />
+            <span className="h-7 w-7 rounded-full bg-gradient-to-b from-[#FF4FA3] to-[#C2185B]" />
+            <span className="flex h-8 flex-1 items-center rounded-full bg-white/10 px-3 text-[10.5px] text-white/45">Type a message…</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#3B82F6] to-[#6366F1] text-[11px] text-white">➤</span>
           </div>
-          <div className="h-8 bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7]" />
         </div>
+      </div>
+
+      {/* scene switcher */}
+      <div className="mt-6 flex justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-md">
+        {SCENES.map((sc, k) => (
+          <button
+            key={sc.id}
+            type="button"
+            onClick={() => {
+              setScene(k);
+              setShown(1);
+            }}
+            className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+              k === scene ? "bg-white text-[#071330] shadow" : "text-white/70 hover:text-white"
+            }`}
+          >
+            {sc.label}
+          </button>
+        ))}
       </div>
     </div>
   );

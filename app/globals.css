@@ -446,3 +446,32 @@ html.no-boot-splash #boot-splash { display: none; }
   from { transform: scale(0.6); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* 🌐 Landing page (/welcome) motion. */
+@keyframes lp-aurora { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, 30px) scale(1.12); } }
+@keyframes lp-aurora-2 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-50px, 40px) scale(0.92); } }
+@keyframes lp-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes lp-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes lp-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes lp-word { from { opacity: 0; transform: translateY(0.35em); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes lp-dot { 0%, 80%, 100% { opacity: 0.25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@keyframes lp-xp { 0% { width: 8%; } 70%, 100% { width: 78%; } }
+@keyframes lp-fall { 0% { transform: translateY(-30px) rotate(0); opacity: 0; } 15% { opacity: 0.9; } 100% { transform: translateY(220px) rotate(40deg); opacity: 0; } }
+@keyframes lp-shine { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+@keyframes lp-sparkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.35) rotate(20deg); } }
+.lp-aurora { animation: lp-aurora 14s ease-in-out infinite; }
+.lp-aurora-2 { animation: lp-aurora-2 17s ease-in-out infinite; }
+.lp-float { animation: lp-float 4s ease-in-out infinite; }
+.lp-float-slow { animation: lp-float 5.5s ease-in-out infinite; }
+.lp-marquee { animation: lp-marquee 40s linear infinite; }
+.lp-in { animation: lp-in 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.lp-word { animation: lp-word 0.5s ease-out both; }
+.lp-dot { animation: lp-dot 1s ease-in-out infinite; }
+.lp-xp { animation: lp-xp 3.5s ease-out infinite; }
+.lp-fall { top: 0; animation: lp-fall 4.2s linear infinite; }
+.lp-shine { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent); width: 40%; animation: lp-shine 3.2s ease-in-out infinite; }
+.lp-sparkle { animation: lp-sparkle 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-aurora, .lp-aurora-2, .lp-float, .lp-float-slow, .lp-marquee, .lp-xp, .lp-fall, .lp-shine, .lp-sparkle, .lp-dot { animation: none; }
+  .lp-xp { width: 70%; }
+}
