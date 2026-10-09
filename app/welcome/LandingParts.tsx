@@ -38,7 +38,7 @@ export function DownloadButton({ big = false }: { big?: boolean }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl bg-white text-left text-[#071330] shadow-[0_10px_40px_-10px_rgba(61,220,132,0.6)] transition hover:-translate-y-0.5 ${
+      className={`group relative inline-flex items-center gap-3 overflow-hidden rounded-2xl border border-[#D7EBDD] bg-white text-left text-[#071330] shadow-[0_10px_40px_-10px_rgba(61,220,132,0.6)] transition hover:-translate-y-0.5 ${
         big ? "px-6 py-4" : "px-5 py-3"
       }`}
     >
@@ -66,7 +66,7 @@ export function RotatingWord() {
   }, [words.length]);
   return (
     <span className="relative inline-block min-h-[1.1em]">
-      <span key={i} className="lp-word inline-block bg-gradient-to-r from-[#FF7A00] via-[#FF3D6E] to-[#E0249A] bg-clip-text pb-2 text-transparent [filter:drop-shadow(0_2px_10px_rgba(255,255,255,0.35))]">
+      <span key={i} className="lp-word inline-block bg-gradient-to-r from-[#FF7A00] via-[#FF3D6E] to-[#E0249A] bg-clip-text pb-2 text-transparent ">
         {words[i]}
       </span>
     </span>
@@ -139,13 +139,13 @@ export function LiveDemo() {
   return (
     <div className="relative mx-auto w-[290px] sm:w-[310px]">
       {/* floating chips around the phone */}
-      <span className="lp-float absolute -left-10 top-16 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float absolute -left-10 top-16 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
         ⭐ +2 XP
       </span>
-      <span className="lp-float-slow absolute -right-12 top-40 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float-slow absolute -right-12 top-40 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
         🥈 Level 12
       </span>
-      <span className="lp-float absolute -left-6 bottom-24 z-20 hidden rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float absolute -left-6 bottom-24 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
         🌹 Gift sent
       </span>
 
@@ -207,7 +207,7 @@ export function LiveDemo() {
       </div>
 
       {/* scene switcher */}
-      <div className="mt-6 flex justify-center gap-1.5 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-md">
+      <div className="mt-6 flex justify-center gap-1.5 rounded-full border border-white bg-white/60 p-1 shadow-sm backdrop-blur-md">
         {SCENES.map((sc, k) => (
           <button
             key={sc.id}
@@ -217,7 +217,7 @@ export function LiveDemo() {
               setShown(1);
             }}
             className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-              k === scene ? "bg-white text-[#071330] shadow" : "text-white/70 hover:text-white"
+              k === scene ? "bg-[#1F74C4] text-white shadow" : "text-[#3D5A80] hover:text-[#1F74C4]"
             }`}
           >
             {sc.label}

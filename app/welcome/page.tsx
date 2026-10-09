@@ -25,39 +25,39 @@ const BADGES = ["🥚", "🥈", "🥇", "💎", "🔥", "👑", "🏆"];
 
 function Logo({ small = false }: { small?: boolean }) {
   return (
-    <span className={`font-black tracking-tight text-white drop-shadow-sm ${small ? "text-xl" : "text-2xl"}`} data-notranslate>
+    <span className={`font-black tracking-tight text-[#0B2A5B] ${small ? "text-xl" : "text-2xl"}`} data-notranslate>
       mi<span className="text-[#FF7A00]">G</span>life
     </span>
   );
 }
 
-const card = "relative overflow-hidden rounded-[28px] border border-white/25 bg-[#0B3D78]/35 p-6 shadow-lg shadow-[#0B3D78]/10 backdrop-blur-xl";
+const card = "relative overflow-hidden rounded-[28px] border border-white bg-white/75 p-6 shadow-[0_10px_30px_-12px_rgba(31,116,196,0.35)] backdrop-blur-xl";
 
 export default function Landing() {
   return (
-    <main className="relative min-h-screen overflow-x-clip bg-gradient-to-b from-[#62CDF7] via-[#33ABEC] to-[#1A7DD0] text-white">
+    <main className="relative min-h-screen overflow-x-clip bg-gradient-to-b from-[#EAF7FF] via-[#D3EEFD] to-[#B9E2FA] text-[#0B2A5B]">
       {/* aurora */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] overflow-hidden">
-        <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/30 blur-[120px]" />
-        <div className="lp-aurora-2 absolute -right-32 top-20 h-[460px] w-[460px] rounded-full bg-[#B9F0FF]/40 blur-[120px]" />
-        <div className="lp-aurora absolute left-1/3 top-[520px] h-[380px] w-[380px] rounded-full bg-[#FFD27A]/25 blur-[120px]" />
-        <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.18)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
+        <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/70 blur-[120px]" />
+        <div className="lp-aurora-2 absolute -right-32 top-20 h-[460px] w-[460px] rounded-full bg-[#9FDDFB]/50 blur-[120px]" />
+        <div className="lp-aurora absolute left-1/3 top-[520px] h-[380px] w-[380px] rounded-full bg-[#FFD9A8]/40 blur-[120px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(31,116,196,0.10)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
       </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40">
-        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white/10 bg-white/15 px-4 py-2.5 backdrop-blur-xl sm:mx-6 lg:mx-auto">
+        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white bg-white/75 px-4 py-2.5 shadow-sm backdrop-blur-xl sm:mx-6 lg:mx-auto">
           <a href="#top" aria-label="miGlife">
             <Logo />
           </a>
-          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-white/90 md:flex">
-            <a href="#features" className="hover:text-white">Features</a>
-            <a href="#games" className="hover:text-white">Games</a>
-            <a href="#start" className="hover:text-white">Get started</a>
+          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-[#3D5A80] md:flex">
+            <a href="#features" className="hover:text-[#1F74C4]">Features</a>
+            <a href="#games" className="hover:text-[#1F74C4]">Games</a>
+            <a href="#start" className="hover:text-[#1F74C4]">Get started</a>
           </nav>
           <WebLink
             path="/login"
-            className="ml-auto rounded-full bg-white px-4 py-1.5 text-sm font-bold text-[#071330] transition hover:bg-white/90 md:ml-0"
+            className="ml-auto rounded-full bg-[#1F74C4] px-4 py-1.5 text-sm font-bold text-white transition hover:bg-[#1A64AA] md:ml-0"
           >
             Log in
           </WebLink>
@@ -68,7 +68,7 @@ export default function Landing() {
       <section id="top" className="relative">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pb-24 lg:pt-20">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-white/80 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-[#3D5A80] backdrop-blur">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC84] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC84]" />
@@ -82,7 +82,7 @@ export default function Landing() {
               <br />
               <RotatingWord />
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-white/90 sm:text-lg lg:mx-0">
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#3D5A80] sm:text-lg lg:mx-0">
               miGlife is your hangout: live chat rooms, real friends, gifts that light up the room and games you play
               right inside the chat.
             </p>
@@ -96,7 +96,7 @@ export default function Landing() {
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </WebLink>
             </div>
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-white/85 lg:justify-start">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-[#3D5A80] lg:justify-start">
               <span>✓ Free</span>
               <span>✓ No phone number</span>
               <span>✓ Android & web</span>
@@ -106,10 +106,10 @@ export default function Landing() {
         </div>
 
         {/* command marquee */}
-        <div className="relative border-y border-white/25 bg-white/10 py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="relative border-y border-white bg-white/50 py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="lp-marquee flex w-max gap-3">
             {[...COMMANDS, ...COMMANDS].map((c, i) => (
-              <span key={i} className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1 font-mono text-sm text-white/90">
+              <span key={i} className="rounded-full border border-[#CFE6F8] bg-white/80 px-3.5 py-1 font-mono text-sm text-[#1F74C4]">
                 {c}
               </span>
             ))}
@@ -122,14 +122,14 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <h2 className="max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
             Not just chat.
-            <span className="block text-[#0B3D78]/70">A whole little world.</span>
+            <span className="block text-[#1F74C4]/70">A whole little world.</span>
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-6">
             {/* Rooms */}
             <div className={`${card} md:col-span-4`}>
-              <p className="text-sm font-bold text-[#D6ECFF]">💬 Live rooms</p>
+              <p className="text-sm font-bold text-[#1F74C4]">💬 Live rooms</p>
               <h3 className="mt-1 text-2xl font-black">Find your crowd</h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-white/85">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-[#3D5A80]">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {[
                   ["🇧🇩", "Bangladesh", "#3DDC84"],
@@ -137,7 +137,7 @@ export default function Landing() {
                   ["🏙️", "Ctg", "#C86BFA"],
                   ["💬", "Chat", "#5AA8FF"],
                 ].map(([i, n, c]) => (
-                  <div key={n} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-3 py-2.5">
+                  <div key={n} className="flex items-center gap-3 rounded-2xl border border-[#DCEBF8] bg-[#F4FAFF] px-3 py-2.5">
                     <span className="text-lg">{i}</span>
                     <span className="font-bold">{n}</span>
                     <span className="ml-auto h-2 w-2 rounded-full" style={{ background: c, boxShadow: `0 0 10px ${c}` }} />
@@ -147,10 +147,10 @@ export default function Landing() {
             </div>
             {/* Levels */}
             <div className={`${card} md:col-span-2`}>
-              <p className="text-sm font-bold text-[#FFD36B]">⭐ Levels</p>
+              <p className="text-sm font-bold text-[#C2810A]">⭐ Levels</p>
               <h3 className="mt-1 text-2xl font-black">Level up</h3>
-              <p className="mt-2 text-sm leading-6 text-white/85">Chat, join rooms and send gifts to earn XP.</p>
-              <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/10">
+              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Chat, join rooms and send gifts to earn XP.</p>
+              <div className="mt-5 h-3 overflow-hidden rounded-full bg-[#E3EEF8]">
                 <div className="lp-xp h-full rounded-full bg-gradient-to-r from-[#FFB547] to-[#FF6B6B]" />
               </div>
               <div className="mt-4 flex justify-between text-xl">
@@ -168,15 +168,15 @@ export default function Landing() {
                   </span>
                 ))}
               </div>
-              <p className="relative text-sm font-bold text-[#FF8FC7]">🎁 Gifts</p>
+              <p className="relative text-sm font-bold text-[#D6337F]">🎁 Gifts</p>
               <h3 className="relative mt-1 text-2xl font-black">Make it rain</h3>
-              <p className="relative mt-2 text-sm leading-6 text-white/85">Send a gift to one friend — or shower the whole room.</p>
+              <p className="relative mt-2 text-sm leading-6 text-[#3D5A80]">Send a gift to one friend — or shower the whole room.</p>
             </div>
             {/* Friends */}
             <div className={`${card} md:col-span-2`}>
-              <p className="text-sm font-bold text-[#6BF0AE]">👥 Friends</p>
+              <p className="text-sm font-bold text-[#1E8E3E]">👥 Friends</p>
               <h3 className="mt-1 text-2xl font-black">Your people</h3>
-              <p className="mt-2 text-sm leading-6 text-white/85">Private chat, photos, voice notes and mail.</p>
+              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Private chat, photos, voice notes and mail.</p>
               <div className="mt-5 flex -space-x-3">
                 {[
                   ["N", "#FF6B8A"],
@@ -185,19 +185,19 @@ export default function Landing() {
                   ["T", "#FFB547"],
                   ["A", "#C86BFA"],
                 ].map(([l, c]) => (
-                  <span key={l} className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#0B1430] text-sm font-black" style={{ background: c }}>
+                  <span key={l} className="relative flex h-11 w-11 items-center justify-center rounded-full border-2 border-white text-sm font-black text-white" style={{ background: c }}>
                     {l}
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-[#0B1430] bg-[#3DDC84]" />
+                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#3DDC84]" />
                   </span>
                 ))}
               </div>
             </div>
             {/* Style */}
             <div className={`${card} md:col-span-2`}>
-              <p className="text-sm font-bold text-[#B8A6FF]">✨ Style</p>
+              <p className="text-sm font-bold text-[#6D4BD8]">✨ Style</p>
               <h3 className="mt-1 text-2xl font-black">Make an entrance</h3>
-              <p className="mt-2 text-sm leading-6 text-white/85">Entry effects, colour themes and the classic look.</p>
-              <div className="mt-5 rounded-2xl border border-[#C86BFA]/30 bg-gradient-to-r from-[#C86BFA]/20 to-[#3B82F6]/20 px-3 py-2.5 text-sm font-bold">
+              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Entry effects, colour themes and the classic look.</p>
+              <div className="mt-5 rounded-2xl border border-[#D9CCFA] bg-gradient-to-r from-[#F1EBFF] to-[#E3F0FD] px-3 py-2.5 text-sm font-bold">
                 <span className="lp-sparkle inline-block">✨</span> nila [32] has entered.
               </div>
             </div>
@@ -213,13 +213,13 @@ export default function Landing() {
               Games, right
               <span className="block bg-gradient-to-r from-[#FF7A00] to-[#FF3D6E] bg-clip-text text-transparent">in the chat.</span>
             </h2>
-            <p className="max-w-sm text-sm leading-6 text-white/85">No extra apps. Start a game in the room and everyone can jump in.</p>
+            <p className="max-w-sm text-sm leading-6 text-[#3D5A80]">No extra apps. Start a game in the room and everyone can jump in.</p>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {GAMES.map((g) => (
               <div
                 key={g.name}
-                className="group relative overflow-hidden rounded-3xl p-4 shadow-lg transition hover:-translate-y-1"
+                className="group relative overflow-hidden rounded-3xl p-4 text-white shadow-lg transition hover:-translate-y-1"
                 style={{ background: `linear-gradient(145deg, ${g.from}, ${g.to})` }}
               >
                 <span className="absolute -right-3 -top-3 text-6xl opacity-25 transition group-hover:scale-110">{g.icon}</span>
@@ -233,7 +233,7 @@ export default function Landing() {
 
       {/* Get started */}
       <section id="start" className="scroll-mt-24 px-4 pb-20 sm:px-6">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#0E4C92] via-[#1560B0] to-[#1E88E5] px-6 py-14 sm:px-12">
+        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#0E4C92] via-[#1560B0] to-[#1E88E5] px-6 py-14 text-white sm:px-12">
           <div className="lp-aurora pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#FF8A3D]/30 blur-[100px]" />
           <div className="relative grid items-center gap-10 lg:grid-cols-2">
             <div>
@@ -266,19 +266,19 @@ export default function Landing() {
             </ol>
           </div>
         </div>
-        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-white/80">
+        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-[#3D5A80]">
           On iPhone? Open the web version in Safari and tap Share → “Add to Home Screen”.
         </p>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white/25 bg-[#0E4C92]/30">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-white/80 sm:flex-row sm:px-6">
+      <footer className="border-t border-white bg-white/60">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-[#3D5A80] sm:flex-row sm:px-6">
           <Logo small />
           <span>Chat · Play · Make friends</span>
           <div className="flex gap-5 sm:ml-auto">
-            <WebLink path="/login" className="hover:text-white">Log in</WebLink>
-            <WebLink path="/register" className="hover:text-white">Sign up</WebLink>
+            <WebLink path="/login" className="hover:text-[#1F74C4]">Log in</WebLink>
+            <WebLink path="/register" className="hover:text-[#1F74C4]">Sign up</WebLink>
           </div>
           <span className="text-xs sm:ml-4">© {new Date().getFullYear()} miGlife</span>
         </div>
