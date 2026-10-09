@@ -1318,11 +1318,30 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
+    // 🅿️ /unpark or /park cancel — end my park early; the whole hours still left
+    // come back as coins (server: unparkRoomPresence).
+    const parkArg = (clean.split(/\s+/)[1] || "").toLowerCase();
+    if (/^\/unpark$/i.test(clean) || (/^\/park\b/i.test(clean) && ["cancel", "off", "stop", "end"].includes(parkArg))) {
+      setText("");
+      httpsCallable<{ roomId: string }, { wasParked?: boolean; refund?: number; refundHours?: number }>(functions, "unparkRoomPresence")({ roomId: roomName })
+        .then(({ data }) =>
+          note(
+            !data?.wasParked
+              ? `🅿️ You are not parked in ${roomName}.`
+              : (data.refund ?? 0) > 0
+                ? `🅿️ Park cancelled in ${roomName} — ${data.refundHours ?? 0}h unused, ${data.refund} coins refunded.`
+                : `🅿️ Park cancelled in ${roomName} (less than 1 hour was left, nothing to refund).`
+          )
+        )
+        .catch((e: any) => note(`Could not cancel park: ${e?.message || "Please try again."}`));
+      return;
+    }
+
     // /park 1-24 — keep your name in "Currently in this room" (paid, on the server).
     if (/^\/park\b/i.test(clean)) {
       setText("");
       const hours = Number(clean.split(/\s+/)[1]);
-      if (!Number.isInteger(hours) || hours < 1 || hours > 24) return note("Usage: /park <hours> — a whole number from 1 to 24.");
+      if (!Number.isInteger(hours) || hours < 1 || hours > 24) return note("Usage: /park <hours> (1-24) · /park cancel");
       httpsCallable<{ roomId: string; hours: number }, { cost?: number }>(functions, "parkRoomPresence")({ roomId: roomName, hours })
         .then(({ data }) => note(`🅿️ Parked in ${roomName} for ${hours}h (${data?.cost ?? hours * 50} coins).`))
         .catch((e: any) => note(`Could not park: ${e?.message || "Please try again."}`));
