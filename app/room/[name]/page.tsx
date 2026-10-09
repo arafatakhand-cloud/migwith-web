@@ -2577,9 +2577,11 @@ function MessageRow({
       <div>
         {/* ONE text size for every gift line (the chat text size + 1, like the
             app), so a gift shower doesn't look big-small-big. Full width, so
-            its edges line up with the other chat lines on both sides. */}
+            its edges line up with the other chat lines on both sides.
+            Justified (like Word's "Justify"): every full line ends at the same
+            right edge, whatever names / gift fill it. */}
         <p
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-left leading-snug text-[#FF2D95]"
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-justify leading-snug text-[#FF2D95]"
           style={{ fontSize: fontPx }}
         >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "")}
