@@ -79,3 +79,32 @@ export function dhakaTime(ms: number): string {
   if (!ms) return "";
   return new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "Asia/Dhaka" });
 }
+
+/** "08:30 PM" in Bangladesh time, like the app's lsTime ("--:--" when unknown). */
+export function lsTime(ms: number): string {
+  if (!ms) return "--:--";
+  return new Date(ms).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Dhaka" });
+}
+
+/** "Updated 5 min ago". */
+export function lsAgo(ms: number, now: number): string {
+  if (!ms) return "";
+  const mins = Math.max(0, Math.floor((now - ms) / 60_000));
+  if (mins < 1) return "Updated just now";
+  if (mins < 60) return `Updated ${mins} min ago`;
+  return `Updated ${Math.floor(mins / 60)} h ago`;
+}
+
+/** Home: live matches first (up to 6); if none, the next ones that start today (up to 4). */
+export function lsHighlights(rows: SportRow[], now: number): SportRow[] {
+  const live = rows.filter((r) => r.status === "LIVE");
+  if (live.length) return live.slice(0, 6);
+  return rows
+    .filter((r) => r.status === "UPCOMING" && r.startMs >= now - 30 * 60_000)
+    .sort((a, b) => a.startMs - b.startMs)
+    .slice(0, 4);
+}
+
+export function lsShortName(full: string, short: string): string {
+  return short || (full.length <= 12 ? full : full.slice(0, 11) + "…");
+}

@@ -1,107 +1,243 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { PageShell } from "../_components/PageShell";
-import { PageTitle } from "../_components/LightCards";
+import { ClassicSectionBar, ClassicTitleBar } from "../_components/Classic";
+import { LsLiveBadge } from "../_components/LiveSportsWidgets";
 import { useRequireLogin } from "../../lib/useRequireLogin";
-import { dhakaTime, useLiveSports, type SportRow } from "../../lib/liveSports";
+import { useIsClassic } from "../../lib/uiStyle";
+import { lsAgo, lsTime, useLiveSports, type SportRow } from "../../lib/liveSports";
 
-// 📺 Live Scores, like the app's: live cricket & football and today's schedule
-// (Bangladesh time). Live matches first, then upcoming, then finished.
+// 📺 Live Scores, like the app's LiveScores.kt: 🔴 Live / 🗓️ Today tabs (opens
+// on Today when nothing is live), All / Cricket / Football chips, league
+// headers on Today, and "Updated x min ago". The page only READS
+// live_sports/today; the refreshLiveSports Cloud Function writes it.
 
-function Logo({ src, name }: { src: string; name: string }) {
-  const [bad, setBad] = useState(false);
-  if (!src || bad)
+const ORDER: Record<SportRow["status"], number> = { LIVE: 0, UPCOMING: 1, FINISHED: 2, OFF: 3 };
+
+function StatusPill({ m, classic }: { m: SportRow; classic: boolean }) {
+  const shape = classic ? "rounded-[3px]" : "rounded-full";
+  if (m.status === "LIVE")
     return (
-      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E3ECF7] text-[11px] font-bold text-[#35507E]">
-        {name.slice(0, 2).toUpperCase()}
+      <span className={`inline-flex shrink-0 items-center bg-[#E53935] px-2 py-[3px] text-[10px] font-extrabold text-white ${shape}`}>
+        <span className="mr-1 h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
+        {m.sport === "football" && m.statusText ? `LIVE ${m.statusText}` : "LIVE"}
       </span>
     );
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" onError={() => setBad(true)} className="h-7 w-7 shrink-0 rounded-full bg-white object-contain" />;
-}
-
-function StatusChip({ r }: { r: SportRow }) {
-  if (r.status === "LIVE")
-    return (
-      <span className="rounded-full bg-[#E53935] px-2 py-0.5 text-[10px] font-extrabold text-white">
-        ● LIVE{r.sport === "football" && r.statusText ? ` ${r.statusText}` : ""}
-      </span>
-    );
-  if (r.status === "UPCOMING") return <span className="rounded-full bg-[#E6F0FB] px-2 py-0.5 text-[10px] font-bold text-[#1E63D6]">{dhakaTime(r.startMs) || "Today"}</span>;
-  if (r.status === "FINISHED") return <span className="rounded-full bg-[#EEF1F5] px-2 py-0.5 text-[10px] font-bold text-[#6B7788]">Finished</span>;
-  return <span className="rounded-full bg-[#FFF1E0] px-2 py-0.5 text-[10px] font-bold text-[#B7791F]">{r.statusText || "Off"}</span>;
-}
-
-function MatchCard({ r }: { r: SportRow }) {
+  if (m.status === "FINISHED") return <span className={`shrink-0 bg-[#6A7896] px-2 py-[3px] text-[10px] font-extrabold text-white ${shape}`}>FT</span>;
+  if (m.status === "OFF") return <span className={`shrink-0 bg-[#9E9E9E] px-2 py-[3px] text-[10px] font-bold text-white ${shape}`}>{m.statusText || "Off"}</span>;
   return (
-    <div className={`rounded-2xl bg-white p-3 shadow-sm ${r.status === "LIVE" ? "ring-1 ring-[#E53935]/40" : ""}`}>
-      <div className="flex items-center gap-2 text-[11px] text-[#6B7A99]">
-        <span className="min-w-0 flex-1 truncate">
-          {r.league}
-          {r.format ? ` · ${r.format}` : ""}
+    <span className={`shrink-0 px-2 py-[3px] text-[11px] font-bold ${shape} ${classic ? "bg-[#E6EEF8] text-[#2F6ABD]" : "bg-[#EAF1FF] text-[#3B7BF0]"}`}>
+      🕒 {lsTime(m.startMs)}
+    </span>
+  );
+}
+
+function TeamLine({ name, short, logo, score, sport, live, classic }: { name: string; short: string; logo: string; score: string; sport: string; live: boolean; classic: boolean }) {
+  const [bad, setBad] = useState(false);
+  const letter = ((short || name).match(/[A-Za-z0-9]/)?.[0] || "?").toUpperCase();
+  return (
+    <div className="flex items-center">
+      <span className={`relative flex h-[26px] w-[26px] shrink-0 items-center justify-center bg-[#F0F3F8] text-xs font-bold text-[#6A7896] ${classic ? "rounded-[3px]" : "rounded-full"}`}>
+        {letter}
+        {logo && !bad && !/\.svg$/i.test(logo) && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={logo} alt="" onError={() => setBad(true)} className="absolute h-[22px] w-[22px] bg-[#F0F3F8] object-contain" />
+        )}
+      </span>
+      <span className="ml-[9px] min-w-0 flex-1 truncate text-sm font-semibold text-[#16264A]">{name || "TBD"}</span>
+      {score && (
+        <span
+          className={`ml-2 shrink-0 font-extrabold ${sport === "football" ? "text-lg" : "text-[13px]"} ${
+            live ? (classic ? "text-[#1B7F3A]" : "text-[#1E9E55]") : "text-[#16264A]"
+          }`}
+        >
+          {score}
         </span>
-        <StatusChip r={r} />
+      )}
+    </div>
+  );
+}
+
+function MatchCard({ m, classic }: { m: SportRow; classic: boolean }) {
+  const live = m.status === "LIVE";
+  const note =
+    m.sport === "cricket" && m.statusText && m.status !== "UPCOMING" ? m.statusText : m.venue ? `📍 ${m.venue}` : "";
+  return (
+    <div
+      className={
+        classic
+          ? "border-b border-[#DDE3EA] bg-white px-2.5 py-[9px]"
+          : `mx-3 my-[5px] rounded-2xl border bg-white p-3 ${live ? "border-[#E53935]/45" : "border-[#E2E8F3]"}`
+      }
+    >
+      <div className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate text-[11px] text-[#6A7896]">
+          {[m.sport === "cricket" ? "🏏" : "⚽", m.format, m.league].filter(Boolean).join(" · ")}
+        </span>
+        <StatusPill m={m} classic={classic} />
       </div>
-      {[
-        [r.home, r.homeLogo, r.homeScore],
-        [r.away, r.awayLogo, r.awayScore],
-      ].map(([name, logo, score], i) => (
-        <div key={i} className="mt-2 flex items-center gap-2">
-          <Logo src={logo} name={name} />
-          <span className="min-w-0 flex-1 truncate text-[14px] font-bold text-[#0B2A5B]">{name}</span>
-          <span className="shrink-0 text-[14px] font-extrabold text-[#0B2A5B]">{score}</span>
-        </div>
-      ))}
-      {r.sport === "cricket" && r.statusText && <p className="mt-2 text-[11.5px] font-semibold text-[#1E7A34]">{r.statusText}</p>}
-      {r.venue && <p className="mt-1 truncate text-[10.5px] text-[#8A97A8]">📍 {r.venue}</p>}
+      <div className="mt-2 space-y-1.5">
+        <TeamLine name={m.home} short={m.homeShort} logo={m.homeLogo} score={m.homeScore} sport={m.sport} live={live} classic={classic} />
+        <TeamLine name={m.away} short={m.awayShort} logo={m.awayLogo} score={m.awayScore} sport={m.sport} live={live} classic={classic} />
+      </div>
+      {note && (
+        <p className={`mt-[7px] line-clamp-2 text-xs ${live ? `font-semibold ${classic ? "text-[#C62828]" : "text-[#E53935]"}` : "text-[#51607D]"}`}>{note}</p>
+      )}
+    </div>
+  );
+}
+
+// 🗓 Today's date (Bangladesh time) as a little calendar page.
+function TodayTile() {
+  const now = new Date();
+  const month = now.toLocaleString("en-US", { month: "long", timeZone: "Asia/Dhaka" });
+  const day = now.toLocaleString("en-US", { day: "numeric", timeZone: "Asia/Dhaka" });
+  return (
+    <span className="mx-auto block w-16 overflow-hidden rounded-lg border border-[#C9D2DE] bg-white text-center">
+      <span className="block bg-[#E53935] py-0.5 text-[11px] font-bold text-white">{month}</span>
+      <span className="block py-0.5 text-[28px] font-extrabold text-[#16264A]">{day}</span>
+    </span>
+  );
+}
+
+function Empty({ icon, title, sub }: { icon: string; title: string; sub?: string }) {
+  return (
+    <div className="px-6 pt-14 text-center">
+      {icon === "DATE" ? <TodayTile /> : <p className="text-[44px]">{icon}</p>}
+      <p className="mt-2.5 text-base font-bold text-[#16264A]">{title}</p>
+      {sub && <p className="mt-1 text-[13px] text-[#6A7896]">{sub}</p>}
     </div>
   );
 }
 
 export default function LiveScoresPage() {
   const ready = useRequireLogin();
+  const router = useRouter();
+  const classic = useIsClassic();
   const data = useLiveSports(ready);
-  const [tab, setTab] = useState<"cricket" | "football">("cricket");
-  const list = data ? data[tab] : [];
-  const liveCount = (s: "cricket" | "football") => (data ? data[s].filter((r) => r.status === "LIVE").length : 0);
+  const [tab, setTab] = useState<0 | 1>(0); // 0 = Live, 1 = Today
+  const [sport, setSport] = useState<"all" | "cricket" | "football">("all");
+  const [now, setNow] = useState(() => Date.now());
+  const autoTabDone = useRef(false);
+
+  const cricket = data?.cricket ?? [];
+  const football = data?.football ?? [];
+  const liveCount = [...cricket, ...football].filter((r) => r.status === "LIVE").length;
+
+  // First load: nothing live → open straight on 🗓️ Today.
+  useEffect(() => {
+    if (!data || autoTabDone.current) return;
+    autoTabDone.current = true;
+    setTab(liveCount > 0 ? 0 : 1);
+  }, [data, liveCount]);
+  // Only refreshes "Updated x min ago" — once a minute.
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const all = sport === "cricket" ? cricket : sport === "football" ? football : [...cricket, ...football];
+  const shown =
+    tab === 0 ? all.filter((r) => r.status === "LIVE") : [...all].sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.startMs - b.startMs);
+  const ago = lsAgo(data?.updatedAtMs ?? 0, now);
+
+  // League headers on the Today tab.
+  const items: ({ header: string } | { m: SportRow })[] = [];
+  let last = "";
+  for (const m of shown) {
+    const key = `${m.sport === "cricket" ? "🏏 " : "⚽ "}${m.league || m.sport.charAt(0).toUpperCase() + m.sport.slice(1)}`;
+    if (tab === 1 && key !== last) {
+      items.push({ header: key });
+      last = key;
+    }
+    items.push({ m });
+  }
+
+  const tabBtn = (label: string, selected: boolean, onClick: () => void) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 py-2.5 text-sm font-bold ${classic ? "rounded-[3px]" : "rounded-[11px]"} ${
+        selected
+          ? classic
+            ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] text-white"
+            : "bg-gradient-to-r from-[#3B7BF0] to-[#7B4DE0] text-white"
+          : classic
+            ? "text-[#16315F]"
+            : "text-[#51607D]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  const chip = (label: string, selected: boolean, onClick: () => void) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 border px-3.5 py-[7px] text-[13px] font-semibold ${classic ? "rounded-[3px]" : "rounded-full"} ${
+        selected
+          ? `border-transparent text-white ${classic ? "bg-[#2F6ABD]" : "bg-[#16264A]"}`
+          : `bg-white text-[#35445F] ${classic ? "border-[#B9C6D6]" : "border-[#DCE4F2]"}`
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
-        <PageTitle title="Live Scores" subtitle="Live cricket & football · Today" icon="📺" />
+      <section className={`mx-auto max-w-2xl pb-8 ${classic ? "bg-[#EEF1F5]" : ""}`}>
+        {classic ? (
+          <ClassicTitleBar title="📺 Live Scores" subtitle={ago || "Cricket & Football"} onBack={() => router.back()} />
+        ) : (
+          <div className="flex items-center px-3 py-3 text-white sm:rounded-b-2xl" style={{ background: "linear-gradient(90deg, #0F1B3D, #233A7A, #5B2A86)" }}>
+            <button type="button" onClick={() => router.back()} aria-label="Back" className="px-1.5 text-2xl leading-none">
+              ‹
+            </button>
+            <div className="ml-1 min-w-0 flex-1">
+              <p className="text-[21px] font-extrabold">📺 Live Scores</p>
+              <p className="text-[11px] text-white/75">{ago || "Cricket & Football • Bangladesh time"}</p>
+            </div>
+            {liveCount > 0 && <LsLiveBadge count={liveCount} />}
+          </div>
+        )}
+
         {ready && (
           <>
-            <div className="mb-3 grid grid-cols-2 gap-2">
-              {(
-                [
-                  ["cricket", "🏏 Cricket"],
-                  ["football", "⚽ Football"],
-                ] as const
-              ).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => setTab(id)}
-                  className={`rounded-xl py-2.5 text-sm font-bold ${tab === id ? "bg-[#2F80ED] text-white shadow" : "bg-white text-[#0B2A5B]"}`}
-                >
-                  {label}
-                  {liveCount(id) > 0 && <span className="ml-1.5 rounded-full bg-[#E53935] px-1.5 text-[10px] text-white">{liveCount(id)} live</span>}
-                </button>
-              ))}
+            <div className={classic ? "flex bg-[#DDE3EA]" : "mx-3 my-2.5 flex rounded-[14px] border border-[#DCE4F2] bg-white p-1"}>
+              {tabBtn(`🔴 Live${liveCount > 0 ? ` (${liveCount})` : ""}`, tab === 0, () => setTab(0))}
+              {tabBtn("🗓️ Today", tab === 1, () => setTab(1))}
             </div>
+            <div className={`no-scrollbar flex gap-2 overflow-x-auto px-3 ${classic ? "py-2" : "pb-2"}`}>
+              {chip("All", sport === "all", () => setSport("all"))}
+              {chip(`🏏 Cricket (${cricket.length})`, sport === "cricket", () => setSport("cricket"))}
+              {chip(`⚽ Football (${football.length})`, sport === "football", () => setSport("football"))}
+            </div>
+
             {!data ? (
-              <p className="py-10 text-center text-sm text-[#5B6B8C]">Loading…</p>
-            ) : list.length === 0 ? (
-              <p className="py-10 text-center text-sm text-[#5B6B8C]">No {tab} matches today.</p>
+              <Empty icon="⏳" title="Loading scores…" />
+            ) : shown.length === 0 && tab === 0 ? (
+              <Empty icon="😴" title="No live match right now" sub="Open the 🗓️ Today tab to see today's schedule." />
+            ) : shown.length === 0 ? (
+              <Empty icon="DATE" title="No matches today" sub="The schedule refreshes every few minutes." />
             ) : (
-              <div className="grid gap-2.5 md:grid-cols-2">
-                {list.map((r) => (
-                  <MatchCard key={r.id || `${r.home}-${r.away}`} r={r} />
-                ))}
+              <div className="pb-6">
+                {items.map((it, i) =>
+                  "header" in it ? (
+                    classic ? (
+                      <ClassicSectionBar key={`h${i}`}>{it.header}</ClassicSectionBar>
+                    ) : (
+                      <p key={`h${i}`} className="truncate px-4 pb-1 pt-3 text-xs font-extrabold text-[#3B7BF0]">
+                        {it.header}
+                      </p>
+                    )
+                  ) : (
+                    <MatchCard key={`${it.m.sport}-${it.m.id || i}`} m={it.m} classic={classic} />
+                  )
+                )}
               </div>
-            )}
-            {data && data.updatedAtMs > 0 && (
-              <p className="mt-3 text-center text-[11px] text-[#8A97A8]">Updated {dhakaTime(data.updatedAtMs)} · refreshes every 10 minutes</p>
             )}
           </>
         )}

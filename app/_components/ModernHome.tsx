@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { dhakaTime, useLiveSports, type SportRow } from "../../lib/liveSports";
+import { HomeLiveSportsCard } from "./LiveSportsWidgets";
 import { totalXpForLevel } from "../../lib/level";
 import { chatHref } from "../../lib/privateChat";
 
@@ -45,6 +44,7 @@ export function ModernHomeTop({
   xp,
   level,
   levelIcon,
+  levelBadgeUrl = "",
   friends,
   unreadEmails,
   unreadAlerts,
@@ -60,6 +60,8 @@ export function ModernHomeTop({
   xp: number;
   level: number;
   levelIcon: string;
+  /** The uploaded tier picture, if miglife set one. */
+  levelBadgeUrl?: string;
   friends: HomeFriend[];
   unreadEmails: number;
   unreadAlerts: number;
@@ -109,7 +111,14 @@ export function ModernHomeTop({
             href="/level"
             className="ml-2 flex shrink-0 flex-col items-center self-start rounded-[14px] border border-white/35 bg-white/[0.16] px-2.5 py-[5px]"
           >
-            <span className="text-2xl leading-tight">{levelIcon}</span>
+            <span className="flex h-8 w-8 items-center justify-center">
+              {levelBadgeUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={levelBadgeUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+              ) : (
+                <span className="text-2xl leading-tight">{levelIcon}</span>
+              )}
+            </span>
             <span className="whitespace-nowrap text-[11px] font-extrabold">Level {level}</span>
           </Link>
         </div>
@@ -203,54 +212,5 @@ export function ModernHomeTop({
         ))}
       </div>
     </div>
-  );
-}
-
-/** Matches worth showing on Home: live ones first, then the next ones today. */
-export function homeSportsPicks(rows: SportRow[]): SportRow[] {
-  const live = rows.filter((r) => r.status === "LIVE");
-  if (live.length) return live.slice(0, 6);
-  const now = Date.now();
-  return rows
-    .filter((r) => r.status === "UPCOMING" && r.startMs >= now - 3600_000)
-    .sort((a, b) => a.startMs - b.startMs)
-    .slice(0, 6);
-}
-
-// 📺 Home card: one live (or next) match at a time, switching every 5 seconds.
-function HomeLiveSportsCard() {
-  const data = useLiveSports(true);
-  const picks = data ? homeSportsPicks([...data.cricket, ...data.football]) : [];
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    if (picks.length < 2) return;
-    const t = setInterval(() => setI((n) => n + 1), 5000);
-    return () => clearInterval(t);
-  }, [picks.length]);
-  if (!data || picks.length === 0) return null;
-  const r = picks[i % picks.length];
-  const live = r.status === "LIVE";
-  return (
-    <Link
-      href="/live-scores"
-      className="mx-2.5 block rounded-2xl bg-white px-3 py-2.5 shadow-[0_2px_6px_rgba(0,0,0,.08)]"
-    >
-      <span className="flex items-center gap-2 text-[11px] font-bold">
-        <span className={live ? "text-[#E53935]" : "text-[#1E63D6]"}>{live ? "● LIVE" : `⏰ ${dhakaTime(r.startMs)}`}</span>
-        <span className="min-w-0 flex-1 truncate text-[#6B7A99]">
-          {r.sport === "cricket" ? "🏏" : "⚽"} {r.league}
-        </span>
-        <span className="text-[#2F80ED]">All ›</span>
-      </span>
-      <span className="mt-1 flex items-center gap-2 text-[13.5px] font-bold text-[#16264A]">
-        <span className="min-w-0 flex-1 truncate">{r.home}</span>
-        <span className="shrink-0 font-extrabold">{r.homeScore || "–"}</span>
-      </span>
-      <span className="flex items-center gap-2 text-[13.5px] font-bold text-[#16264A]">
-        <span className="min-w-0 flex-1 truncate">{r.away}</span>
-        <span className="shrink-0 font-extrabold">{r.awayScore || "–"}</span>
-      </span>
-      {live && r.statusText && <span className="mt-0.5 block truncate text-[11px] font-semibold text-[#1E7A34]">{r.statusText}</span>}
-    </Link>
   );
 }

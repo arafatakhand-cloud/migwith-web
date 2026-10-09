@@ -7,14 +7,15 @@ import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc
 import { db } from "../../lib/firebase";
 import { useFriendRequests } from "../../lib/friends";
 import { chatHref } from "../../lib/privateChat";
-import { OFFICIAL_COUNTRY_ROOMS, badgeForLevel, roomHref } from "../../lib/rooms";
+import { OFFICIAL_COUNTRY_ROOMS, badgeForLevel, badgeNameForLevel, roomHref } from "../../lib/rooms";
+import { useLevelBadgeImages } from "../../lib/badgeImages";
 import { useSession } from "./AppSession";
 import { InstallHint } from "./InstallHint";
 import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
-import { useLiveSports } from "../../lib/liveSports";
+import { ClassicHomeLiveRow } from "./LiveSportsWidgets";
 import { totalXpForLevel } from "../../lib/level";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
@@ -73,8 +74,6 @@ export function Dashboard() {
   const [openOffline, setOpenOffline] = useState(true);
   const classic = useIsClassic();
   const [friendSearch, setFriendSearch] = useState("");
-  const sports = useLiveSports(classic);
-  const liveMatches = sports ? [...sports.cricket, ...sports.football].filter((r) => r.status === "LIVE").length : 0;
   const [info, setInfo] = useState<Record<string, Friend>>({});
 
   const fr = useFriendRequests(username);
@@ -257,6 +256,9 @@ export function Dashboard() {
   const xpStart = totalXpForLevel(lvlNow);
   const xpNext = totalXpForLevel(lvlNow + 1);
   const xpFrac = xpNext > xpStart ? Math.min(1, Math.max(0, (xpNow - xpStart) / (xpNext - xpStart))) : 0;
+  // the uploaded tier picture (Share Permissions → Level Badges), else the emoji
+  const levelBadgeImages = useLevelBadgeImages(true);
+  const levelBadgeUrl = levelBadgeImages[badgeNameForLevel(me?.level ?? 1)] || "";
   const classicStrip = (
     <div className="border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] text-[#16315F]">
     <div className="flex items-center px-2.5 pb-1.5 pt-2">
@@ -284,7 +286,14 @@ export function Dashboard() {
         href="/level"
         className="ml-2 flex shrink-0 flex-col items-center self-start rounded border border-[#B9C4D2] bg-gradient-to-b from-white to-[#E6ECF4] px-2 py-[3px] text-[#2F6ABD]"
       >
-        <span className="text-xl leading-tight">{badgeForLevel(me?.level ?? 1)}</span>
+        <span className="flex h-[30px] w-[30px] items-center justify-center">
+          {levelBadgeUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={levelBadgeUrl} alt="" className="h-full w-full rounded-full object-cover" />
+          ) : (
+            <span className="text-xl leading-tight">{badgeForLevel(me?.level ?? 1)}</span>
+          )}
+        </span>
         <span className="whitespace-nowrap text-[11px] font-extrabold">Level {me?.level ?? "…"}</span>
       </Link>
     </div>
@@ -350,6 +359,7 @@ export function Dashboard() {
           xp={me?.xp ?? 0}
           level={me?.level ?? 1}
           levelIcon={badgeForLevel(me?.level ?? 1)}
+          levelBadgeUrl={levelBadgeUrl}
           friends={friends.filter((f) => !friendSearch.trim() || f.name.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
           unreadEmails={badges.emails}
           unreadAlerts={badges.alerts}
@@ -403,11 +413,8 @@ export function Dashboard() {
           </svg>
           <span className="font-semibold">Email ({badges.emails})</span>
         </Link>
-        {/* 📺 Live Scores (n live) */}
-        <Link href="/live-scores" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
-          <span className="text-lg">📺</span>
-          <span className="font-semibold">Live Scores ({liveMatches})</span>
-        </Link>
+        {/* 📺 Live Scores (n) with the live / next match under it */}
+        <ClassicHomeLiveRow />
         <Link href="/messages" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
           <span className="text-lg text-[#174EA6]">💬</span>
           <span className="font-semibold">Messages ({badges.messages})</span>
