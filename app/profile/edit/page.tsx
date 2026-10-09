@@ -11,7 +11,7 @@ import { PageShell } from "../../_components/PageShell";
 import { PhotoCropDialog } from "../../_components/PhotoCropDialog";
 import { CountryPickerDialog } from "../../_components/CountryPicker";
 import { countryFlag, countryInfoFor } from "../../../lib/countries";
-import { ClassicTitleBar, useIsClassic } from "../../_components/Classic";
+import { useIsClassic } from "../../_components/Classic";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
@@ -150,11 +150,9 @@ export default function EditProfilePage() {
   return (
     <PageShell light pale>
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
-        {classic ? (
-          <div className="-mx-4 -mt-6 sm:-mx-6">
-            <ClassicTitleBar title="✎ Edit Profile" onBack={leave} />
-          </div>
-        ) : (
+        {/* Classic: no blue "✎ Edit Profile" bar — the page tab already says
+            "Edit Profile" (owner's choice). */}
+        {classic ? null : (
         <div className="flex items-center gap-3">
           <button type="button" onClick={leave} aria-label="Back" className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
             ←
