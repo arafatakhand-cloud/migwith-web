@@ -237,6 +237,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const { favorites, toggleFavorite } = useRoomPrefs();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
+  // 📜 The Command page (every room command; tap one → into the message box).
+  const [commandsOpen, setCommandsOpen] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -1522,8 +1524,6 @@ function RoomView({ roomName }: { roomName: string }) {
 
   const favorite = favorites.includes(roomName);
   // ⋮ Room menu helpers (like the app's RoomMenuContent).
-  // 📜 The Command page (every room command; tap one → into the message box).
-  const [commandsOpen, setCommandsOpen] = useState(false);
   const closeMenu = () => {
     setMenuOpen(false);
     setMenuPeople(false);
