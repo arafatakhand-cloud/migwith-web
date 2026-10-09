@@ -10,7 +10,6 @@ import { touchOpenRooms, useOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
-import { LanguageToggle } from "./LanguageToggle";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
 
@@ -269,13 +268,8 @@ export function TopBar() {
             <span className="text-[19px] font-black text-white">mig</span>
             <span className="ml-0.5 rounded-full bg-white px-[5px] text-xs font-black text-[#F07A00]">life</span>
           </Link>
-          <div className="ml-auto flex shrink-0 items-center gap-1.5">
-            <Link href="/alerts" aria-label="Alerts" className="relative flex h-8 w-8 items-center justify-center text-base">
-              🔔
-              <Badge n={badges.alerts} />
-            </Link>
-            <LanguageToggle />
-          </div>
+          {/* No 🔔 / বাংলা here, like the app: new alerts make the Contacts tab
+              blink, and the language is in Settings. */}
         </div>
         {/* On Home the profile strip sits here, between the orange header and the blue tabs (the Dashboard fills it). */}
         {onHome && <div id="classic-home-strip" />}
@@ -350,17 +344,7 @@ export function TopBar() {
             💬 {pageName}
           </span>
         )}
-        <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <Link
-            href="/alerts"
-            aria-label="Alerts"
-            className="relative flex h-9 w-9 items-center justify-center rounded-xl text-lg hover:bg-[#E3F0FD]"
-          >
-            🔔
-            <Badge n={badges.alerts} />
-          </Link>
-          <LanguageToggle />
-        </div>
+        {/* No 🔔 / বাংলা here, like the app (alerts: on Home; language: Settings). */}
       </div>
 
       {/* Side menu — in <body>, so nothing in the header can box it in */}
