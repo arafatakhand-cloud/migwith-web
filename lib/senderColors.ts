@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "./firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth, db } from "./firebase";
 import { isMainFounderName } from "./founder";
 
 // Name colours in room chat, the app's roomRoleColor + Color Shop rule:
@@ -49,6 +50,35 @@ type Profile = { role: string; shopColor: string | null; luckyUntil: number };
 // Shared by every room, so switching rooms shows the right colours at once.
 const cache = new Map<string, Profile>();
 
+// Also kept on this device, so after a reload (e.g. a language switch) every
+// name has its right colour AT ONCE — no blue first. Refreshed by the lookups.
+const STORE_KEY = "migwith.senderColors";
+const STORE_MAX_AGE = 3 * 86_400_000;
+const savedAt = new Map<string, number>();
+(() => {
+  if (typeof window === "undefined") return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || "{}") as Record<string, Profile & { at: number }>;
+    const now = Date.now();
+    for (const [k, v] of Object.entries(saved)) {
+      if (!v || now - (v.at || 0) >= STORE_MAX_AGE) continue;
+      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil });
+      savedAt.set(k, v.at);
+    }
+  } catch {}
+})();
+// Looked up in THIS page load (the saved ones are shown at once, then checked again).
+const fresh = new Set<string>();
+function persist() {
+  try {
+    const now = Date.now();
+    const out: Record<string, Profile & { at: number }> = {};
+    const entries = Array.from(cache.entries()).slice(-500);
+    for (const [k, v] of entries) out[k] = { ...v, at: savedAt.get(k) ?? now };
+    localStorage.setItem(STORE_KEY, JSON.stringify(out));
+  } catch {}
+}
+
 function colorFor(name: string, p: Profile | undefined): string {
   if (!p) return USER_BLUE;
   if (p.luckyUntil > Date.now()) return LUCKY_PINK;
@@ -82,12 +112,18 @@ export function useSenderColors(names: string[]): (name: string) => string {
     return () => clearInterval(t);
   }, []);
 
+  // Right after a reload the login isn't back yet and the lookup would be
+  // refused — wait for it, then look up.
+  const [signedIn, setSignedIn] = useState(() => !!auth.currentUser);
+  useEffect(() => onAuthStateChanged(auth, (u) => setSignedIn(!!u)), []);
+
   useEffect(() => {
+    if (!signedIn) return;
     const all = refreshAll.current;
     refreshAll.current = false;
     const missing = key
       .split("|")
-      .filter((n) => n && (all || !cache.has(n.toLowerCase())) && !asked.current.has(n.toLowerCase()))
+      .filter((n) => n && (all || !fresh.has(n.toLowerCase())) && !asked.current.has(n.toLowerCase()))
       .slice(0, 200);
     if (missing.length === 0) return;
     missing.forEach((n) => asked.current.add(n.toLowerCase()));
@@ -113,6 +149,8 @@ export function useSenderColors(names: string[]): (name: string) => string {
             const entry = activeId ? owned?.[activeId] : undefined;
             if (entry?.active === true && Number(entry.expiresAt || 0) > now) shopColor = SHOP_TEXT_COLORS[activeId] || null;
             cache.set(name.toLowerCase(), { role, shopColor, luckyUntil: Number(d.get("luckyUntil") || 0) });
+            savedAt.set(name.toLowerCase(), now);
+            fresh.add(name.toLowerCase());
           });
         } catch {
           // not marked as fetched: tried again in a few seconds (it used to wait
@@ -121,6 +159,7 @@ export function useSenderColors(names: string[]): (name: string) => string {
           failed = true;
         }
       }
+      persist();
       if (!cancelled) setTick((t) => t + 1);
       if (!cancelled && failed) retry = setTimeout(() => setRound((r) => r + 1), 5000);
     })();
@@ -128,7 +167,7 @@ export function useSenderColors(names: string[]): (name: string) => string {
       cancelled = true;
       if (retry) clearTimeout(retry);
     };
-  }, [key, round]);
+  }, [key, round, signedIn]);
 
   return (name: string) => {
     const k = name.trim().toLowerCase();
