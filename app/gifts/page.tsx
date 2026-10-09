@@ -264,6 +264,7 @@ function GiftEditor({
   const [active, setActive] = useState(initial?.active ?? true);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [pictureFailed, setPictureFailed] = useState(false);
 
   const upload = async (file: File | undefined) => {
     if (!file) return;
@@ -299,7 +300,14 @@ function GiftEditor({
           <span className="text-sm">Picture (optional)</span>
           {imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="h-10 w-10 rounded-full object-cover" />
+            <img
+              src={imageUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              onError={() => setPictureFailed(true)}
+              onLoad={() => setPictureFailed(false)}
+              className="h-10 w-10 rounded-full object-cover"
+            />
           )}
           <label className="ml-auto cursor-pointer rounded-full bg-[#EAF1FB] px-3 py-1.5 text-xs font-bold text-[#15589B]">
             {uploading ? "Uploading…" : "Upload"}
@@ -312,6 +320,19 @@ function GiftEditor({
           )}
         </div>
         {uploadError && <p className="text-xs text-[#C23B3B]">{uploadError}</p>}
+        {/* The picture's link, so a link that can't load on the web is easy to spot. */}
+        {imageUrl && (
+          <div className="rounded-xl bg-[#F4F7FB] px-3 py-2 text-[11px] text-[#5B6B8C]">
+            <p className="font-bold">Picture link</p>
+            <p className="select-all break-all font-mono">{imageUrl}</p>
+            {!/^https:\/\//i.test(imageUrl) && (
+              <p className="mt-1 font-bold text-[#C23B3B]">⚠ This is not a web link, so the picture can only show on the phone that picked it. Tap Upload to upload it again.</p>
+            )}
+            {pictureFailed && (
+              <p className="mt-1 font-bold text-[#C23B3B]">⚠ This picture can&apos;t be loaded on the web. Tap Upload to upload it again.</p>
+            )}
+          </div>
+        )}
         <input value={animation} onChange={(e) => setAnimation(e.target.value)} placeholder="Animation/Effect (optional)" className={field} />
         <input value={sortOrder} onChange={(e) => setSortOrder(e.target.value.replace(/[^\d-]/g, ""))} placeholder="Sort Order" inputMode="numeric" className={field} />
         {check("Limited Gift", limited, setLimited)}
