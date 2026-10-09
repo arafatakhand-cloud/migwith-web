@@ -81,7 +81,7 @@ body {
 /* Height of what is visible above the keyboard (set by the top bar); pages
    like chat rooms size themselves to it so the message box stays in view. */
 .h-screen-minus-bar {
-  height: calc(var(--vvh, 100dvh) - 53px);
+  height: calc(var(--vvh, 100dvh) - var(--topbar-h, 53px));
 }
 /* While the keyboard is open on a chat page, the page must not scroll at all
    (iPhone would push the top bar away and leave a gap above the keyboard). */

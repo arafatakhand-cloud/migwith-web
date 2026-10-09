@@ -161,6 +161,22 @@ export function TopBar() {
     };
   }, []);
 
+  // The real height of the top bar (the Classic one with its tabs is taller), so
+  // chat pages that fit the screen leave exactly the rest for the message list.
+  useEffect(() => {
+    const header = document.querySelector<HTMLElement>("header[data-topbar]");
+    if (!header) return;
+    const root = document.documentElement;
+    const set = () => root.style.setProperty("--topbar-h", `${Math.round(header.getBoundingClientRect().height)}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(header);
+    return () => {
+      ro.disconnect();
+      root.style.removeProperty("--topbar-h");
+    };
+  }, []);
+
   // Keep the current room's tab in view.
   const activeTabRef = useRef<HTMLSpanElement>(null);
   useEffect(() => {

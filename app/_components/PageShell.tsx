@@ -34,7 +34,7 @@ export function PageShell({
       }`}
     >
       {!noTopBar && (
-        <header className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
+        <header data-topbar className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
           <TopBar />
         </header>
       )}
