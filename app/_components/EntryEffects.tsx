@@ -62,12 +62,24 @@ async function entryFxFor(name: string, fresh = false): Promise<EntryFx | null> 
       const snap = await getDoc(doc(db, "entry_fx_public", key));
       v = { at: now, active: String(snap.get("active") || "none"), expiresAt: Number(snap.get("expiresAt") || 0) };
     } catch {
-      v = { at: now, active: "none", expiresAt: 0 };
+      // not cached: looked up again next time (and "could not be checked" is shown)
+      lookupCache.delete(key);
+      return null;
     }
     lookupCache.set(key, v);
   }
   if (v.expiresAt <= serverNow()) return null;
   return entryFxById(v.active);
+}
+
+/** Why my own effect didn't play (from the last lookup), in plain words. */
+function ownMissingReason(name: string): string {
+  const v = lookupCache.get(name.trim().toLowerCase());
+  if (!v) return "✨ Your entry effect could not be checked (no connection?). Please try again.";
+  if (!v.active || v.active === "none") return "✨ No entry effect is ON for you. Open Entry Effects (/entry) and tap ON on one you own.";
+  if (!entryFxById(v.active)) return `✨ Your entry effect "${v.active}" is not known here yet. Please update the app / reload the page.`;
+  if (v.expiresAt <= serverNow()) return "✨ Your entry effect has expired. Buy it again in Entry Effects (/entry).";
+  return "✨ Your entry effect could not play.";
 }
 
 /** "Bangladesh: name [12] 👑 has entered." → "name" */
@@ -99,15 +111,20 @@ export function EntryEffectHost({
   messages,
   roomKey,
   myName = "",
+  onOwnMissing,
 }: {
   messages: { id: string; text: string; type: string }[];
   roomKey: string;
   /** My own name: my own effect plays for me when I open the room (see below). */
   myName?: string;
+  /** Told why my own effect could not play (no effect on / expired …), shown in the chat. */
+  onOwnMissing?: (why: string) => void;
 }) {
   const [names, setNames] = useNewLineEvents(messages, roomKey, entryNameOf, 4);
   const [queue, setQueue] = useState<{ fx: EntryFx; name: string }[]>([]);
   const mounted = useRef(true);
+  const onOwnMissingRef = useRef(onOwnMissing);
+  onOwnMissingRef.current = onOwnMissing;
   useEffect(
     () => () => {
       mounted.current = false;
@@ -139,6 +156,7 @@ export function EntryEffectHost({
         if (gone) return;
         ownRequests.delete(roomKey);
         if (fx) setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
+        else onOwnMissingRef.current?.(ownMissingReason(me));
       }, 700); // let the room draw first
     };
     check();

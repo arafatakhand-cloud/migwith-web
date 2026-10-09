@@ -1767,7 +1767,7 @@ function RoomView({ roomName }: { roomName: string }) {
             <RoomHeartsHost messages={messages} roomKey={roomName} />
             {/* ✨ Entry Effects play only in CHAT rooms — never in game rooms (official
                 game rooms, their extra "#2" tables, or any room with a game bot on). */}
-            {!entryFxGameRoom && <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} />}
+            {!entryFxGameRoom && <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} onOwnMissing={note} />}
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
