@@ -280,7 +280,7 @@ export function TopBar() {
         {onHome && <div id="classic-home-strip" />}
         <div className="no-scrollbar flex items-end gap-[3px] overflow-x-auto bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1 pt-1">
           {/* New alerts: the Contacts tab blinks orange (Home shows the alerts) */}
-          {classicTab("Contacts", onHome, "home", "/", undefined, badges.alerts > 0)}
+          {classicTab(badges.alerts > 0 && !onHome ? "Contacts *" : "Contacts", onHome, "home", "/", undefined, badges.alerts > 0)}
           {classicTab("Rooms", onRooms, "rooms", "/rooms")}
           {title && classicTab(title, true, "page")}
           {openRooms.map((r) =>

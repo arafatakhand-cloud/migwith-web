@@ -424,10 +424,10 @@ html.kb-lock main[data-shell] {
 /* A simple bright / dim step every 0.7 s (not a smooth animation), like the app. */
 @keyframes classic-new-pulse { 0% { transform: scale(1.05); opacity: 1; } 50% { transform: scale(1); opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .classic-new-pulse { animation: none; } }
-/* 📟 Classic: new alerts → the Contacts tab blinks orange / blue in steps. */
-.classic-tab-blink { animation: classic-tab-blink 1.2s steps(1, end) infinite; }
-@keyframes classic-tab-blink { 0% { background: #F07A00; color: #FFFFFF; } 50% { background: #9AB8E4; color: #16315F; } }
-@media (prefers-reduced-motion: reduce) { .classic-tab-blink { animation: none; background: #F07A00; color: #FFFFFF; } }
+/* 📟 Classic: new alerts → the Contacts tab blinks yellow-orange / pale yellow (the app's new-stuff tab). */
+.classic-tab-blink { animation: classic-tab-blink 1.4s steps(1, end) infinite; }
+@keyframes classic-tab-blink { 0% { background: #FFA726; } 50% { background: #FFE9B0; } }
+@media (prefers-reduced-motion: reduce) { .classic-tab-blink { animation: none; background: #FFA726; } }
 
 /* 📟 Classic: list lines sit right under each other (no gaps between them). */
 html[data-ui="classic"] :is(.grid, .flex):has(> .classic-row) { gap: 0; }
