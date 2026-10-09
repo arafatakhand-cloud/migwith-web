@@ -124,6 +124,7 @@ import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects
 import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
+import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 
 type ChatMessage = SessionMessage;
 
@@ -240,6 +241,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
   // 📜 The Command page (every room command; tap one → into the message box).
   const [commandsOpen, setCommandsOpen] = useState(false);
+  // 👤 /whois popup (whoisUser result); null = closed
+  const [whoisInfo, setWhoisInfo] = useState<WhoisInfo | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -1408,6 +1411,7 @@ function RoomView({ roomName }: { roomName: string }) {
         roomName,
         note,
         openCommands: () => setCommandsOpen(true),
+        showWhois: setWhoisInfo,
         post: (t, type) => {
           // /me, /hug, /roll … are seen by everyone, so mute / silence apply.
           if (muted || (silenced && !perms.canRoomWide)) {
@@ -1884,6 +1888,7 @@ function RoomView({ roomName }: { roomName: string }) {
       )}
 
       {/* ⋮ Room menu */}
+      {whoisInfo && <WhoisPopup info={whoisInfo} onClose={() => setWhoisInfo(null)} />}
       {commandsOpen && <CommandListPage onPick={(cmd) => (setCommandsOpen(false), prefill(cmd))} onBack={() => setCommandsOpen(false)} />}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe" onClick={closeMenu}>

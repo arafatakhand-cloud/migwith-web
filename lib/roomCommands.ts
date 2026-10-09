@@ -18,6 +18,8 @@ export type CommandContext = {
   note: (text: string) => void;
   /** Open the 📜 Command page (tap a command to use it). */
   openCommands?: () => void;
+  /** Show the /whois popup (whoisUser result). */
+  showWhois?: (info: Record<string, unknown>) => void;
 };
 
 // Short forms people actually type: /gn = /goodnight, /gm = /goodmorning, …
@@ -366,6 +368,10 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
     }
     whoisUser({ username: who })
       .then(({ data }) => {
+        if (ctx.showWhois && data) {
+          ctx.showWhois(data);
+          return;
+        }
         const lines = Object.entries(data || {})
           .filter(([, v]) => v !== null && v !== "" && typeof v !== "object")
           .map(([k, v]) => `${k}: ${v}`);
