@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { awardUserXp } from "../../lib/xp";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
@@ -261,6 +262,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
         expectedRound: state.round,
         operationId: opId(),
       });
+      awardUserXp(uid, 3, "luxury_bot_bet", 15_000); // like the app
     } catch (err: any) {
       setOptimistic((o) => ({ ...o, [character]: Math.max(0, Number(o[character] || 0) - betAmount) }));
       const msg = String(err?.message || "");

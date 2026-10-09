@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { awardUserXp } from "../../lib/xp";
 import { collection, doc, getDocs, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
@@ -106,6 +107,7 @@ export function GiftPanel({
         giftName: selected.name,
         message: message.trim().slice(0, 200),
       });
+      awardUserXp(uid, 5, "gift", 30_000); // +5 XP for a gift, like the app
       onSent({
         giftName: data?.giftName || selected.name,
         giftIcon: data?.giftIcon || selected.icon,

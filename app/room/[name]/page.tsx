@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { awardUserXp } from "../../../lib/xp";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -765,7 +766,10 @@ function RoomView({ roomName }: { roomName: string }) {
 
       // ✨ a REAL entry → my own entry effect plays for me (also when I'm
       // invisible: nobody else sees it, but I do). Not on a tab switch.
-      if (!alreadyHere && !left) requestOwnEntryFx(roomName);
+      if (!alreadyHere && !left) {
+        requestOwnEntryFx(roomName);
+        awardUserXp(uid, 5, "room_enter", 30 * 60_000); // like the app
+      }
       if (!alreadyHere && !left && !quietMe) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
@@ -1269,6 +1273,8 @@ function RoomView({ roomName }: { roomName: string }) {
             const shownGift = data?.giftName || giftName;
             const icon = data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁";
             if (sent.length) {
+              // +10 XP for a gift shower (the most one award may give), 30 s "gift" cooldown
+              awardUserXp(user.uid, 10, "gift", 30_000);
               const others = sent.length - 5;
               const toText = sent.slice(0, 5).join(", ") + (others > 0 ? ` and ${others} other` : "");
               addDoc(collection(db, "room_messages", roomName, "messages"), {
@@ -1291,15 +1297,16 @@ function RoomView({ roomName }: { roomName: string }) {
         { roomId: string; target: string; giftName: string; message: string },
         { giftName?: string; recipient?: string; giftIcon?: string; recipientLevel?: number }
       >(functions, "sendGift")({ roomId: roomName, target, giftName, message })
-        .then(({ data }) =>
+        .then(({ data }) => {
+          awardUserXp(user.uid, 5, "gift", 30_000); // +5 XP for a gift, like the app
           announceGift({
             giftName: data?.giftName || giftName,
             giftIcon: data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁",
             recipient: data?.recipient || target,
             message,
             recipientLevel: Number(data?.recipientLevel) || undefined,
-          })
-        )
+          });
+        })
         .catch((e: any) => note(`🎁 That gift did not actually send: ${e?.message || "Gift sending failed."}`));
       return;
     }
@@ -1416,6 +1423,7 @@ function RoomView({ roomName }: { roomName: string }) {
       return;
     }
 
+    awardUserXp(user.uid, 2, "chat_message", 15_000); // like the app
     setSending(true);
     try {
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
