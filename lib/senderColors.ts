@@ -64,19 +64,36 @@ function colorFor(name: string, p: Profile | undefined): string {
 /** lowercase name → CSS colour, for everyone named in `names`. */
 export function useSenderColors(names: string[]): (name: string) => string {
   const [, setTick] = useState(0);
+  // Bumped to try again after a failed lookup (5 s) and to refresh everyone
+  // every 5 minutes, so a new role / colour shows without reopening (like the app).
+  const [round, setRound] = useState(0);
   const asked = useRef(new Set<string>());
+  const refreshAll = useRef(false);
   const key = Array.from(new Set(names.map((n) => n.trim()).filter((n) => n && n.length <= 30)))
     .sort()
     .join("|");
 
   useEffect(() => {
+    const t = setInterval(() => {
+      asked.current.clear();
+      refreshAll.current = true;
+      setRound((r) => r + 1);
+    }, 300_000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const all = refreshAll.current;
+    refreshAll.current = false;
     const missing = key
       .split("|")
-      .filter((n) => n && !cache.has(n.toLowerCase()) && !asked.current.has(n.toLowerCase()))
+      .filter((n) => n && (all || !cache.has(n.toLowerCase())) && !asked.current.has(n.toLowerCase()))
       .slice(0, 200);
     if (missing.length === 0) return;
     missing.forEach((n) => asked.current.add(n.toLowerCase()));
     let cancelled = false;
+    let failed = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
     (async () => {
       for (let i = 0; i < missing.length; i += 10) {
         const chunk = missing.slice(i, i + 10);
@@ -98,16 +115,20 @@ export function useSenderColors(names: string[]): (name: string) => string {
             cache.set(name.toLowerCase(), { role, shopColor, luckyUntil: Number(d.get("luckyUntil") || 0) });
           });
         } catch {
-          // not marked as fetched: tried again next time
+          // not marked as fetched: tried again in a few seconds (it used to wait
+          // for a new name in the chat, so a role colour could stay blue)
           chunk.forEach((n) => asked.current.delete(n.toLowerCase()));
+          failed = true;
         }
       }
       if (!cancelled) setTick((t) => t + 1);
+      if (!cancelled && failed) retry = setTimeout(() => setRound((r) => r + 1), 5000);
     })();
     return () => {
       cancelled = true;
+      if (retry) clearTimeout(retry);
     };
-  }, [key]);
+  }, [key, round]);
 
   return (name: string) => {
     const k = name.trim().toLowerCase();
