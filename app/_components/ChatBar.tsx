@@ -139,7 +139,10 @@ export function ChatBar({
         </button>
       </div>
     )}
-    <div className="keep-round flex items-center gap-1.5 rounded-t-[22px] bg-[#0B1F3A] px-2 pt-1.5 pb-safe sm:gap-2 sm:px-3">
+    {/* The app's bar: a dark navy pill (round at all four corners) a little
+        in from the sides, 32 px round buttons 5 px apart, and a 39 px white
+        message pill. The phone's safe area goes under it, not inside it. */}
+    <div className="keep-round mx-1 my-1 flex items-center gap-[5px] rounded-[26px] bg-[#0B1F3A] px-1.5 py-1.5 sm:gap-2 sm:px-3">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative shrink-0">
         <button
@@ -194,7 +197,7 @@ export function ChatBar({
       {!voiceActive && (
         <>
           {/* White pill with 🙂 inside — round in Classic too, like the app */}
-          <div className="keep-round flex h-[34px] min-w-0 flex-1 items-center rounded-[17px] border border-[#1E4FA8] bg-white pl-3.5 pr-0.5">
+          <div className="keep-round flex h-[39px] min-w-0 flex-1 items-center rounded-full border border-[#1E4FA8] bg-white pl-4 pr-1">
             {/* A one-line textarea, not an input: Chrome and Safari show no
                 password / card / address AutoFill bar above the keyboard for it. */}
             <textarea
@@ -219,7 +222,7 @@ export function ChatBar({
               maxLength={maxLength}
               disabled={disabled}
               placeholder={placeholder}
-              className="h-5 min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[14px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
+              className="h-5 min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
             />
             <EmojiPicker
               inputRef={inputRef}
@@ -241,7 +244,7 @@ export function ChatBar({
             onClick={send}
             disabled={!canSend}
             aria-label="Send"
-            className={`${BAR_BTN} relative overflow-hidden ${canSend ? "chat-send-shine" : "opacity-60"}`}
+            className={`${BAR_BTN} relative overflow-hidden ${canSend ? "chat-send-shine" : ""}`}
             style={classic ? CLASSIC_BTN_BG : SEND_BG}
           >
             <SendGlyph key={fly} fly={fly > 0} />
@@ -249,6 +252,7 @@ export function ChatBar({
         </>
       )}
     </div>
+    <div className="pb-safe" />
     <div ref={setEmoteSlot} />
     </div>
   );

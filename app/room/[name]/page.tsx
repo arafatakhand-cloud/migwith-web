@@ -1803,7 +1803,7 @@ function RoomView({ roomName }: { roomName: string }) {
               inputRef={inputRef}
               onSend={send}
               canSend={!sending && !!text.trim() && !!profile}
-              placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message..."}
+              placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message…"}
               maxLength={1000}
               disabled={!profile}
               onGift={() => setGiftTarget("")}
