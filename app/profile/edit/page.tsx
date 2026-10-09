@@ -117,12 +117,20 @@ export default function EditProfilePage() {
         },
         { merge: true }
       );
-      router.push(`/profile/${encodeURIComponent(username)}`);
+      leave();
     } catch (err: any) {
       console.error(err);
       setError(err?.message || "Could not save profile.");
       setSaving(false);
     }
+  };
+
+  // ‹ and Save go BACK to the page that opened Edit Profile (the profile), like
+  // the app. Opening the profile as a new page instead made a loop: the
+  // profile's ‹ went back to Edit Profile, whose ‹ opened the profile again …
+  const leave = () => {
+    if (window.history.length > 1) router.back();
+    else router.replace(`/profile/${encodeURIComponent(username || "me")}`);
   };
 
   if (!loading && !user) {
@@ -144,13 +152,13 @@ export default function EditProfilePage() {
       <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
         {classic ? (
           <div className="-mx-4 -mt-6 sm:-mx-6">
-            <ClassicTitleBar title="✎ Edit Profile" backHref={`/profile/${encodeURIComponent(username || "me")}`} />
+            <ClassicTitleBar title="✎ Edit Profile" onBack={leave} />
           </div>
         ) : (
         <div className="flex items-center gap-3">
-          <Link href={`/profile/${encodeURIComponent(username || "me")}`} className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
+          <button type="button" onClick={leave} aria-label="Back" className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#0B2A5B] shadow-sm">
             ←
-          </Link>
+          </button>
           <h1 className="text-2xl font-black text-[#0B2A5B]">Edit Profile</h1>
         </div>
         )}
