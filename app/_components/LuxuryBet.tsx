@@ -6,6 +6,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { LbStyleDialog, lbSkinNow } from "./LuxuryBot";
 import { LB_KINDS, useInventory } from "./StyleShop";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
@@ -314,7 +315,7 @@ export function LuxuryBetTable({
   onlyMine: boolean;
   onToggleOnlyMine: () => void;
 }) {
-  const [amount, setAmount] = useState(500);
+  const [amount, setAmount] = useRememberedAmount("bet", 500);
   const [collapsed, setCollapsed] = useState(false);
   // 🎨 the same bet box colour as Luxury Bot (lb_inventory/{uid}.box), like the app
   const inv = useInventory("lb_inventory", uid, LB_KINDS);

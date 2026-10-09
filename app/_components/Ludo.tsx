@@ -8,6 +8,7 @@ import { gameInvitedMe, setGameHideMessages, setViewedTable } from "../../lib/ga
 import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
+import { readRememberedAmount, rememberAmount } from "../../lib/amountMemory";
 
 // 🎲 Ludo — dice rolls, moves, cuts, coins and the winner are all decided by
 // the Cloud Functions (startLudo / joinLudo / ludoAction / tickLudo /
@@ -351,7 +352,8 @@ export function useLudo(roomId: string | null, uid: string | undefined, note: (t
   const [table, setTable] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
-  const [setup, setSetupRaw] = useState({ fee: 200, tokens: 4, players: 4, team: false });
+  // the entry fee is remembered until the tab is closed / logout (like the app)
+  const [setup, setSetupRaw] = useState(() => ({ fee: readRememberedAmount("ludo_fee") ?? 200, tokens: 4, players: 4, team: false }));
   const [soundOn, setSoundOnRaw] = useState(true);
   const [hideMessages, setHideRaw] = useState(false);
   const [shown, setShown] = useState<Record<string, number>>({});
@@ -577,7 +579,10 @@ export function useLudo(roomId: string | null, uid: string | undefined, note: (t
     selectedTokens: setup.tokens,
     selectedPlayers: setup.players,
     selectedTeam: setup.team,
-    setSetup: (p) => setSetupRaw((s) => ({ ...s, ...p })),
+    setSetup: (p) => {
+      if (typeof p.fee === "number") rememberAmount("ludo_fee", p.fee);
+      setSetupRaw((s) => ({ ...s, ...p }));
+    },
     soundOn,
     setSoundOn: (on) => (setSoundOnRaw(on), writePref("sound", on)),
     hideMessages,

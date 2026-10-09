@@ -8,6 +8,7 @@ import { toggleCricketSound, useCricketSoundOn } from "./CricketCelebration";
 import { CkStyleDialog, ckBackground, ckGrad, ckSkin, type CkSkin } from "./CricketStyles";
 import { LB_KINDS, useInventory } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 🏏 Cricket Bot — all outcomes and coins are decided by the Cloud Functions
 // (startCricketGame / joinCricketGame / batCricket / tickCricketGame). The web
@@ -319,7 +320,7 @@ function CricketPlayerChip({ skin, p, isMe, batted, inSuperOver, battingNow }: {
 
 export function CricketBox({ state, uid }: { state: CricketState; uid: string }) {
   const soundOn = useCricketSoundOn();
-  const [entry, setEntry] = useState(200);
+  const [entry, setEntry] = useRememberedAmount("cricket_entry", 200);
   // Open by itself when a game starts, fold down when it ends (like the app).
   const [collapsed, setCollapsed] = useState(!state.running);
   useEffect(() => setCollapsed(!state.running), [state.running]);

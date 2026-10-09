@@ -14,6 +14,7 @@ import { useFounderPerms } from "../../lib/founder";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { brandMiglife } from "../../lib/brand";
+import { clearRememberedAmounts } from "../../lib/amountMemory";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
 // Phones open it from ☰; laptops show it as a sidebar (DesktopSidebar).
@@ -59,6 +60,7 @@ export function MenuPanel() {
     await detachPushForLogout();
     if (uid) await leaveAllOpenRooms(uid);
     await markOfflineForLogout(uid);
+    clearRememberedAmounts(); // logout resets the chosen game amounts
     await signOut(auth);
   };
   const coinsText = me

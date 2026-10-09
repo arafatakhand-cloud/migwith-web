@@ -7,6 +7,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { LB_KINDS, StyleShopDialog, useInventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 👻 Luxury Bot — the web side only shows the round and sends bets. Money,
 // results and the round itself are handled by the Cloud Functions
@@ -225,7 +226,7 @@ export function LbStyleDialog({ inv, onClose }: { inv: ReturnType<typeof useInve
 }
 
 export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: string; note: (t: string) => void }) {
-  const [amount, setAmount] = useState(500);
+  const [amount, setAmount] = useRememberedAmount("bot", 500);
   const [inFlight, setInFlight] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   // Bets sent but not yet seen in the round document, like the app's

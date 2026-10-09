@@ -6,6 +6,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
 import { isClassicNow } from "../../lib/uiStyle";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 📟 Classic app style: the purple accent becomes blue (team red / blue stay).
 const royaleBtn = () => (isClassicNow() ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-violet-500 to-purple-700");
@@ -224,7 +225,7 @@ export function royaleHandleCommand(state: RoyaleState, text: string, note: (t: 
 
 export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [selected, setSelected] = useState<string | null>(null);
-  const [amount, setAmount] = useState(500);
+  const [amount, setAmount] = useRememberedAmount("royale_bet", 500);
   const [collapsed, setCollapsed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 

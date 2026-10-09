@@ -7,6 +7,7 @@ import { db, functions } from "../../lib/firebase";
 import { gameInvitedMe, setTpHideGameMessages, setViewedTable } from "../../lib/gameTables";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 🎴 Teen Patti — dealing, betting, coins and winners are decided by the Cloud
 // Functions (startTeenPatti / joinTeenPatti / teenPattiAction / tickTeenPatti).
@@ -215,7 +216,7 @@ export function useTeenPatti(enabled: boolean, uid: string | undefined, note: (t
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [revealing, setRevealing] = useState(false);
-  const [selectedBoot, setSelectedBoot] = useState(200);
+  const [selectedBoot, setSelectedBoot] = useRememberedAmount("tp_boot", 200);
   const [soundOn, setSoundOnRaw] = useState(true);
   const [autoBlind, setAutoBlindRaw] = useState(false);
   const [autoCall, setAutoCallRaw] = useState(false);

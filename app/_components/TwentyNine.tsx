@@ -9,6 +9,7 @@ import { setViewedTable } from "../../lib/gameTables";
 import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
+import { useRememberedAmount } from "../../lib/amountMemory";
 
 // 🃏 29 (Twenty-Nine) — server-driven (tnStart / tnJoin / tnAction / tnTick).
 // 4 seats, teams A (seats 1+3) vs B (seats 2+4); empty seats get bots. Your own
@@ -244,7 +245,7 @@ export function useTwentyNine(roomId: string | null, uid: string | undefined, no
   const [hand, setHand] = useState({ key: "", round: 0, cards: [] as string[], trump: null as string | null });
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
-  const [selectedEntry, setSelectedEntry] = useState(500);
+  const [selectedEntry, setSelectedEntry] = useRememberedAmount("tn_entry", 500);
   const autoPicked = useRef(false);
   const inviteJump = useRef("");
   const lastTick = useRef<Record<number, number>>({});
