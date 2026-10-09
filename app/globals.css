@@ -91,6 +91,18 @@ html.kb-lock body {
   overscroll-behavior: none;
   height: var(--vvh, 100dvh);
 }
+/* …and the whole page is pinned to exactly the part you can see above the
+   keyboard (top bar at the top, message box right on the keyboard), wherever
+   iPhone slides the view to. */
+html.kb-lock main[data-shell] {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: var(--vvtop, 0px);
+  height: var(--vvh, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+}
 /* Room above the iPhone home bar. */
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));

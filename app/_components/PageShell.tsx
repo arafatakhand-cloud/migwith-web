@@ -22,6 +22,7 @@ export function PageShell({
 }) {
   return (
     <main
+      data-shell
       // min-h-dvh (the screen as it is now), not 100vh: on Android Chrome 100vh
       // also counts the space behind the address bar, so the chat pages could
       // scroll a little and leave a gap under the message box.

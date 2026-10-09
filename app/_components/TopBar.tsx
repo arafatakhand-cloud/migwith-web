@@ -129,6 +129,9 @@ export function TopBar() {
     const root = document.documentElement;
     const set = () => {
       root.style.setProperty("--vvh", `${Math.round(vv.height)}px`);
+      // Where the visible part starts: iPhone can slide the view down under the
+      // keyboard even when the page itself can't scroll; the page follows it.
+      root.style.setProperty("--vvtop", `${Math.max(0, Math.round(vv.offsetTop))}px`);
       // iPhone scrolls the page up under the keyboard; put it back so the top bar stays.
       // Only on the chat pages, which fit the screen; elsewhere let it scroll to the box.
       const chat = !!document.querySelector(".h-screen-minus-bar");
@@ -158,6 +161,7 @@ export function TopBar() {
       window.removeEventListener("focusout", settle);
       root.classList.remove("kb-lock");
       root.style.removeProperty("--vvh");
+      root.style.removeProperty("--vvtop");
     };
   }, []);
 
