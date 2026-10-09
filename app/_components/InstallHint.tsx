@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 
 const KEY = "migwith.installHintClosed";
 
-// iPhone: the owner's steps (each line has its বাংলা in lib/i18n.ts).
+// iPhone: the owner's steps.
 const IOS_STEPS = [
   "Open web.miglife.app in Safari. On newer iPhones Chrome works too.",
   "Tap the Share ⬆️ button (at the bottom or top).",
@@ -72,7 +72,8 @@ export function InstallHint() {
   };
 
   return (
-    <div className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-[#BFD7F2] bg-white p-3 text-[#0B2A5B] shadow-sm">
+    // Always in English (owner's choice), also when বাংলা is picked.
+    <div data-notranslate className="mx-3 mt-3 flex items-start gap-3 rounded-2xl border border-[#BFD7F2] bg-white p-3 text-[#0B2A5B] shadow-sm">
       <span className="text-2xl">📲</span>
       <div className="min-w-0 flex-1 text-sm">
         <p className="font-bold">Use miGlife like an app</p>
