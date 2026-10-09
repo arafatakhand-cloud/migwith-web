@@ -23,10 +23,18 @@ const GAMES: { icon: string; name: string; from: string; to: string }[] = [
 
 const BADGES = ["🥚", "🥈", "🥇", "💎", "🔥", "👑", "🏆"];
 
+// "miG" + the orange "life" pill.
 function Logo({ small = false }: { small?: boolean }) {
   return (
-    <span className={`font-black tracking-tight text-[#0B2A5B] ${small ? "text-xl" : "text-2xl"}`} data-notranslate>
-      mi<span className="text-[#FF7A00]">G</span>life
+    <span className="flex items-center gap-1" data-notranslate>
+      <span className={`font-black tracking-tight text-[#0B2A5B] ${small ? "text-xl" : "text-2xl"}`}>miG</span>
+      <span
+        className={`rounded-full bg-gradient-to-b from-[#FF9A4D] to-[#E5541A] font-black text-white shadow-[0_2px_8px_rgba(229,84,26,0.45)] ${
+          small ? "px-1.5 py-px text-[11px]" : "px-2 py-0.5 text-xs"
+        }`}
+      >
+        life
+      </span>
     </span>
   );
 }
@@ -50,7 +58,7 @@ export default function Landing() {
           <a href="#top" aria-label="miGlife">
             <Logo />
           </a>
-          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-[#3D5A80] md:flex">
+          <nav className="ml-auto hidden items-center gap-7 text-sm font-semibold text-[#24416B] md:flex">
             <a href="#features" className="hover:text-[#1F74C4]">Features</a>
             <a href="#games" className="hover:text-[#1F74C4]">Games</a>
             <a href="#start" className="hover:text-[#1F74C4]">Get started</a>
@@ -68,7 +76,7 @@ export default function Landing() {
       <section id="top" className="relative">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pb-24 lg:pt-20">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-[#3D5A80] backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-[#24416B] backdrop-blur">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC84] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC84]" />
@@ -82,7 +90,7 @@ export default function Landing() {
               <br />
               <RotatingWord />
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#3D5A80] sm:text-lg lg:mx-0">
+            <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#24416B] sm:text-lg lg:mx-0">
               miGlife is your hangout: live chat rooms, real friends, gifts that light up the room and games you play
               right inside the chat.
             </p>
@@ -96,7 +104,7 @@ export default function Landing() {
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </WebLink>
             </div>
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-[#3D5A80] lg:justify-start">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-[#24416B] lg:justify-start">
               <span>✓ Free</span>
               <span>✓ No phone number</span>
               <span>✓ Android & web</span>
@@ -109,7 +117,7 @@ export default function Landing() {
         <div className="relative border-y border-white bg-white/50 py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="lp-marquee flex w-max gap-3">
             {[...COMMANDS, ...COMMANDS].map((c, i) => (
-              <span key={i} className="rounded-full border border-[#CFE6F8] bg-white/80 px-3.5 py-1 font-mono text-sm text-[#1F74C4]">
+              <span key={i} className="rounded-full border border-[#CFE6F8] bg-white/80 px-3.5 py-1 font-mono text-sm font-semibold text-[#155A9E]">
                 {c}
               </span>
             ))}
@@ -122,14 +130,14 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6">
           <h2 className="max-w-2xl text-3xl font-black tracking-tight sm:text-5xl">
             Not just chat.
-            <span className="block text-[#1F74C4]/70">A whole little world.</span>
+            <span className="block text-[#1F74C4]">A whole little world.</span>
           </h2>
           <div className="mt-10 grid gap-4 md:grid-cols-6">
             {/* Rooms */}
             <div className={`${card} md:col-span-4`}>
               <p className="text-sm font-bold text-[#1F74C4]">💬 Live rooms</p>
               <h3 className="mt-1 text-2xl font-black">Find your crowd</h3>
-              <p className="mt-2 max-w-md text-sm leading-6 text-[#3D5A80]">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
+              <p className="mt-2 max-w-md text-sm leading-6 text-[#24416B]">Country, city, game and fun rooms — or make your own. 200+ fun commands keep it lively.</p>
               <div className="mt-5 grid gap-2 sm:grid-cols-2">
                 {[
                   ["🇧🇩", "Bangladesh", "#3DDC84"],
@@ -147,9 +155,9 @@ export default function Landing() {
             </div>
             {/* Levels */}
             <div className={`${card} md:col-span-2`}>
-              <p className="text-sm font-bold text-[#C2810A]">⭐ Levels</p>
+              <p className="text-sm font-bold text-[#A86400]">⭐ Levels</p>
               <h3 className="mt-1 text-2xl font-black">Level up</h3>
-              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Chat, join rooms and send gifts to earn XP.</p>
+              <p className="mt-2 text-sm leading-6 text-[#24416B]">Chat, join rooms and send gifts to earn XP.</p>
               <div className="mt-5 h-3 overflow-hidden rounded-full bg-[#E3EEF8]">
                 <div className="lp-xp h-full rounded-full bg-gradient-to-r from-[#FFB547] to-[#FF6B6B]" />
               </div>
@@ -163,20 +171,20 @@ export default function Landing() {
             <div className={`${card} md:col-span-2`}>
               <div className="pointer-events-none absolute inset-0">
                 {["🌹", "🎂", "💎", "🧸", "👑", "🍫"].map((g, i) => (
-                  <span key={g} className="lp-fall absolute text-xl opacity-80" style={{ left: `${58 + (i % 3) * 13}%`, animationDelay: `${i * 0.7}s` }}>
+                  <span key={g} className="lp-fall absolute text-xl opacity-80" style={{ left: `${70 + (i % 3) * 10}%`, animationDelay: `${i * 0.7}s` }}>
                     {g}
                   </span>
                 ))}
               </div>
-              <p className="relative text-sm font-bold text-[#D6337F]">🎁 Gifts</p>
-              <h3 className="relative mt-1 text-2xl font-black">Make it rain</h3>
-              <p className="relative mt-2 text-sm leading-6 text-[#3D5A80]">Send a gift to one friend — or shower the whole room.</p>
+              <p className="relative text-sm font-bold text-[#C2256E]">🎁 Gifts</p>
+              <h3 className="relative mt-1 max-w-[66%] text-2xl font-black">Make it rain</h3>
+              <p className="relative mt-2 max-w-[66%] text-sm leading-6 text-[#24416B]">Send a gift to one friend — or shower the whole room.</p>
             </div>
             {/* Friends */}
             <div className={`${card} md:col-span-2`}>
-              <p className="text-sm font-bold text-[#1E8E3E]">👥 Friends</p>
+              <p className="text-sm font-bold text-[#18793A]">👥 Friends</p>
               <h3 className="mt-1 text-2xl font-black">Your people</h3>
-              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Private chat, photos, voice notes and mail.</p>
+              <p className="mt-2 text-sm leading-6 text-[#24416B]">Private chat, photos, voice notes and mail.</p>
               <div className="mt-5 flex -space-x-3">
                 {[
                   ["N", "#FF6B8A"],
@@ -196,7 +204,7 @@ export default function Landing() {
             <div className={`${card} md:col-span-2`}>
               <p className="text-sm font-bold text-[#6D4BD8]">✨ Style</p>
               <h3 className="mt-1 text-2xl font-black">Make an entrance</h3>
-              <p className="mt-2 text-sm leading-6 text-[#3D5A80]">Entry effects, colour themes and the classic look.</p>
+              <p className="mt-2 text-sm leading-6 text-[#24416B]">Entry effects, colour themes and the classic look.</p>
               <div className="mt-5 rounded-2xl border border-[#D9CCFA] bg-gradient-to-r from-[#F1EBFF] to-[#E3F0FD] px-3 py-2.5 text-sm font-bold">
                 <span className="lp-sparkle inline-block">✨</span> nila [32] has entered.
               </div>
@@ -211,9 +219,9 @@ export default function Landing() {
           <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <h2 className="text-3xl font-black tracking-tight sm:text-5xl">
               Games, right
-              <span className="block bg-gradient-to-r from-[#FF7A00] to-[#FF3D6E] bg-clip-text text-transparent">in the chat.</span>
+              <span className="block bg-gradient-to-r from-[#E8590C] to-[#D6336C] bg-clip-text text-transparent">in the chat.</span>
             </h2>
-            <p className="max-w-sm text-sm leading-6 text-[#3D5A80]">No extra apps. Start a game in the room and everyone can jump in.</p>
+            <p className="max-w-sm text-sm leading-6 text-[#24416B]">No extra apps. Start a game in the room and everyone can jump in.</p>
           </div>
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {GAMES.map((g) => (
@@ -266,14 +274,14 @@ export default function Landing() {
             </ol>
           </div>
         </div>
-        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-[#3D5A80]">
+        <p className="mx-auto mt-5 max-w-6xl text-center text-xs text-[#24416B]">
           On iPhone? Open the web version in Safari and tap Share → “Add to Home Screen”.
         </p>
       </section>
 
       {/* Footer */}
       <footer className="border-t border-white bg-white/60">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-[#3D5A80] sm:flex-row sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-[#24416B] sm:flex-row sm:px-6">
           <Logo small />
           <span>Chat · Play · Make friends</span>
           <div className="flex gap-5 sm:ml-auto">
