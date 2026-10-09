@@ -50,6 +50,13 @@ export default function RootLayout({
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />
+        {/* 📲 Chrome's "install this app" offer comes once, often before React is
+            ready: keep it for the Install miGlife button on Home (InstallHint). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__migInstall=e;window.dispatchEvent(new Event("mig-install"))})`,
+          }}
+        />
         <BootSplash />
         <AppSession>{children}</AppSession>
         <Translator />
