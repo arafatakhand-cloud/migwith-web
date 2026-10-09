@@ -656,6 +656,9 @@ function RoomView({ roomName }: { roomName: string }) {
       if (hideMe) {
         // No presence doc to stamp, so the browser clock marks the visit.
         const saved = savedEntry(uid, roomName);
+        // ✨ a real entry while invisible: nobody else sees it, but my own entry
+        // effect still plays for me (like the app). Not on a tab switch.
+        if (!isRoomOpen(uid, roomName) && !resumed) requestOwnEntryFx(roomName);
         const at = saved && isRoomOpen(uid, roomName) ? saved.at : Date.now() - 30_000;
         saveEntry(uid, roomName, { visitId: "invisible", at });
         setSinceMs(at);
