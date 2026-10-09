@@ -125,6 +125,7 @@ import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffec
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
+import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog } from "../../_components/RoomPopups";
 
 type ChatMessage = SessionMessage;
 
@@ -243,6 +244,13 @@ function RoomView({ roomName }: { roomName: string }) {
   const [commandsOpen, setCommandsOpen] = useState(false);
   // 👤 /whois popup (whoisUser result); null = closed
   const [whoisInfo, setWhoisInfo] = useState<WhoisInfo | null>(null);
+  // 🪟 popups like the app's: title + text + OK, the balance card, the Luxury
+  // Bot round result and the "Send this photo?" confirmation
+  const [popup, setPopup] = useState<{ title: string; text: string } | null>(null);
+  const [balanceCard, setBalanceCard] = useState<{ text: string; sub: string } | null>(null);
+  const [roundResult, setRoundResult] = useState<{ round: number; won: number; bet: number } | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const lastResultRound = useRef(0);
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -314,6 +322,24 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // 👻 Luxury Bot round + bets (only in the Luxury Bot room).
   const luxury = useLuxuryBot(roomName === LUXURY_ROOM, user?.uid, note);
+  // 🎉 Luxury Bot: the server writes the round result onto my own bet doc;
+  // show it once, right away (an old result, e.g. on opening the room, isn't news).
+  useEffect(() => {
+    if (roomName !== LUXURY_ROOM || !user?.uid) return;
+    return onSnapshot(doc(db, "room_game", LUXURY_ROOM, "user_bets", user.uid), (snap) => {
+      const r = Number(snap.get("resultRound") || 0);
+      if (!r || r <= lastResultRound.current) return;
+      lastResultRound.current = r;
+      if (serverNow() - Number(snap.get("resultAt") || 0) > 45_000) return;
+      const bet = Number(snap.get("totalBet") || 0);
+      if (bet > 0) setRoundResult({ round: r, won: Number(snap.get("wonAmount") || 0), bet });
+    });
+  }, [roomName, user?.uid]);
+  useEffect(() => {
+    if (!roundResult) return;
+    const t = setTimeout(() => setRoundResult(null), 4000);
+    return () => clearTimeout(t);
+  }, [roundResult]);
   // 🎰 Luxury Bet (only in the Luxury Bet room) — run by the server.
   const luxuryBet = useLuxuryBet(roomName === LUXURY_BET_ROOM, user?.uid, note);
   // Eye button: show only my own Luxury Bet bet lines.
@@ -1291,9 +1317,9 @@ function RoomView({ roomName }: { roomName: string }) {
               }).catch(() => {});
             }
             const failed = (data?.failed || []).map((f) => `• ${f.target || ""} — ${String(f.reason || "").replace(/^🎁/, "").trim() || "Gift sending failed."}`);
-            if (failed.length) note(`These people did not get the ${shownGift}:\n${failed.join("\n")}`);
+            if (failed.length) setPopup({ title: "🎁 Gift Shower", text: `These people did not get the ${shownGift}:\n${failed.join("\n")}` });
           })
-          .catch((e: any) => note(`The gift shower did not send. Reason: ${e?.message || "Gift sending failed."}`));
+          .catch((e: any) => setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\nReason: ${e?.message || "Gift sending failed."}` }));
         return;
       }
       httpsCallable<
@@ -1412,6 +1438,7 @@ function RoomView({ roomName }: { roomName: string }) {
         note,
         openCommands: () => setCommandsOpen(true),
         showWhois: setWhoisInfo,
+        popup: (title, text) => setPopup({ title, text }),
         post: (t, type) => {
           // /me, /hug, /roll … are seen by everyone, so mute / silence apply.
           if (muted || (silenced && !perms.canRoomWide)) {
@@ -1517,6 +1544,18 @@ function RoomView({ roomName }: { roomName: string }) {
     );
   }
 
+  if (blocked === "You are banned from this room." || blocked === "You were kicked from this room.") {
+    const banned = blocked.startsWith("You are banned");
+    return (
+      <PageShell light>
+        <SimpleDialog
+          title={banned ? "🚫 Room Access Denied" : "👢 Removed from Room"}
+          text={banned ? "🚫 You are banned from this room. Please contact the room Admin." : "👢 You have been kicked from this room."}
+          onClose={() => router.push("/rooms")}
+        />
+      </PageShell>
+    );
+  }
   if (blocked) {
     return (
       <PageShell light>
@@ -1547,12 +1586,15 @@ function RoomView({ roomName }: { roomName: string }) {
   };
   clearChatRef.current = clearChat;
 
+  // 💰 the compact gold balance card (like the app's)
   const checkBalance = async () => {
+    setBalanceCard({ text: "Checking...", sub: "" });
     try {
       const snap = await getDoc(doc(db, "users", user.uid));
-      note(`💰 Your balance: ${Number(snap.get("balance") || 0).toLocaleString()} coins`);
+      const bal = Number(snap.get("balance") || 0);
+      setBalanceCard({ text: bal.toLocaleString("en-US"), sub: `${new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(bal)} coins` });
     } catch {
-      note("Could not read your balance. Please try again.");
+      setBalanceCard({ text: "Could not load your balance.", sub: "" });
     }
   };
 
@@ -1761,7 +1803,8 @@ function RoomView({ roomName }: { roomName: string }) {
               onGift={() => setGiftTarget("")}
               onMore={() => setMenuOpen(true)}
               photo={{
-                onFile: sendPhoto,
+                // picking a photo never posts it straight away: "Send this photo?" first
+                onFile: (f: File | undefined) => f && setPendingPhoto(f),
                 disabled: !perms.canShareMedia,
                 uploading,
                 title: perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room",
@@ -1888,6 +1931,20 @@ function RoomView({ roomName }: { roomName: string }) {
       )}
 
       {/* ⋮ Room menu */}
+      {popup && <SimpleDialog title={popup.title} text={popup.text} onClose={() => setPopup(null)} />}
+      {balanceCard && <BalanceCard text={balanceCard.text} sub={balanceCard.sub} onClose={() => setBalanceCard(null)} />}
+      {roundResult && <RoundResultCard round={roundResult.round} won={roundResult.won} bet={roundResult.bet} onClose={() => setRoundResult(null)} />}
+      {pendingPhoto && (
+        <PhotoConfirm
+          file={pendingPhoto}
+          onCancel={() => setPendingPhoto(null)}
+          onSend={() => {
+            const f = pendingPhoto;
+            setPendingPhoto(null);
+            void sendPhoto(f);
+          }}
+        />
+      )}
       {whoisInfo && <WhoisPopup info={whoisInfo} onClose={() => setWhoisInfo(null)} />}
       {commandsOpen && <CommandListPage onPick={(cmd) => (setCommandsOpen(false), prefill(cmd))} onBack={() => setCommandsOpen(false)} />}
       {menuOpen && (

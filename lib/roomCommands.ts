@@ -20,6 +20,8 @@ export type CommandContext = {
   openCommands?: () => void;
   /** Show the /whois popup (whoisUser result). */
   showWhois?: (info: Record<string, unknown>) => void;
+  /** A title + text + OK popup (like the app's AlertDialog). */
+  popup?: (title: string, text: string) => void;
 };
 
 // Short forms people actually type: /gn = /goodnight, /gm = /goodmorning, …
@@ -318,11 +320,15 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
       ctx.note(`${u}: Usage: /pick [code]`);
       return true;
     }
+    // The result is shown only to the picker, in a popup (like the app).
+    const show = (title: string, text: string) => (ctx.popup ? ctx.popup(title, text) : ctx.note(`${title}\n${text}`));
     pickVoucher({ roomId: ctx.roomName, code })
-      .then(({ data }) =>
-        ctx.note(`🎉 You picked the Lucky Voucher and won ${Number(data?.amount || 0).toLocaleString()} coins!`)
-      )
-      .catch((err: any) => ctx.note(`🎟️ ${err?.message || "Could not claim that voucher."}`));
+      .then(({ data }) => show("🎉 You Won!", `You picked the Lucky Voucher and won ${Number(data?.amount || 0).toLocaleString()} coins!`))
+      .catch((err: any) => {
+        const msg = String(err?.message || "Could not claim that voucher.");
+        const title = /already picked/i.test(msg) ? "😢 Already Claimed" : /expired/i.test(msg) ? "⏰ Time's Up" : /doesn't match/i.test(msg) ? "❌ Wrong Code" : "🎁 Voucher";
+        show(title, msg);
+      });
     return true;
   }
 
