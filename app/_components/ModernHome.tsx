@@ -109,14 +109,14 @@ export function ModernHomeTop({
           {/* 🏅 level badge in the top-right corner, the level under it (like the app) */}
           <Link
             href="/level"
-            className="ml-2 flex shrink-0 flex-col items-center self-start rounded-[14px] border border-white/35 bg-white/[0.16] px-2.5 py-[5px]"
+            className="ml-2 flex shrink-0 flex-col items-center self-start px-0.5"
           >
-            <span className="flex h-8 w-8 items-center justify-center">
+            <span className="flex h-[50px] w-[50px] items-center justify-center">
               {levelBadgeUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={levelBadgeUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                <img src={levelBadgeUrl} alt="" className="h-full w-full object-contain" />
               ) : (
-                <span className="text-2xl leading-tight">{levelIcon}</span>
+                <span className="text-4xl leading-tight">{levelIcon}</span>
               )}
             </span>
             <span className="whitespace-nowrap text-[11px] font-extrabold">Level {level}</span>

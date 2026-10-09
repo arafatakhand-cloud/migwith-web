@@ -284,14 +284,14 @@ export function Dashboard() {
       {/* 🏅 level badge in the top-right corner, the level under it (square box, like the app) */}
       <Link
         href="/level"
-        className="ml-2 flex shrink-0 flex-col items-center self-start rounded border border-[#B9C4D2] bg-gradient-to-b from-white to-[#E6ECF4] px-2 py-[3px] text-[#2F6ABD]"
+        className="ml-2 flex shrink-0 flex-col items-center self-start px-0.5 text-[#2F6ABD]"
       >
-        <span className="flex h-[30px] w-[30px] items-center justify-center">
+        <span className="flex h-[46px] w-[46px] items-center justify-center">
           {levelBadgeUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={levelBadgeUrl} alt="" className="h-full w-full rounded-full object-cover" />
+            <img src={levelBadgeUrl} alt="" className="h-full w-full object-contain" />
           ) : (
-            <span className="text-xl leading-tight">{badgeForLevel(me?.level ?? 1)}</span>
+            <span className="text-[32px] leading-tight">{badgeForLevel(me?.level ?? 1)}</span>
           )}
         </span>
         <span className="whitespace-nowrap text-[11px] font-extrabold">Level {me?.level ?? "…"}</span>

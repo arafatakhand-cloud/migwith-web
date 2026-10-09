@@ -62,7 +62,6 @@ html[data-theme="mint"] .text-\[\#35507E\]{color:#255948}
 html[data-theme="mint"] .to-\[\#EEF2F7\]{--tw-gradient-to:#eef7f4}
 html[data-theme="mint"] .border-\[\#B9C4D2\]{border-color:#b9d2c9}
 html[data-theme="mint"] .border-\[\#2F6ABD\]\/60{border-color:rgb(30 121 89 / 0.6)}
-html[data-theme="mint"] .to-\[\#E6ECF4\]{--tw-gradient-to:#e6f4ef}
 html[data-theme="mint"] .border-\[\#9FB0C6\]{border-color:#9fc6b8}
 html[data-theme="mint"] .bg-\[\#DDE4EC\]{background-color:#ddece6}
 html[data-theme="mint"] .text-\[\#4A5A70\]{color:#3f5f54}
@@ -423,7 +422,6 @@ html[data-theme="lavender"] .text-\[\#35507E\]{color:#5e3e94}
 html[data-theme="lavender"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f1eef7}
 html[data-theme="lavender"] .border-\[\#B9C4D2\]{border-color:#c2b9d2}
 html[data-theme="lavender"] .border-\[\#2F6ABD\]\/60{border-color:rgb(125 78 211 / 0.6)}
-html[data-theme="lavender"] .to-\[\#E6ECF4\]{--tw-gradient-to:#ebe6f4}
 html[data-theme="lavender"] .border-\[\#9FB0C6\]{border-color:#ac9fc6}
 html[data-theme="lavender"] .bg-\[\#DDE4EC\]{background-color:#e2ddec}
 html[data-theme="lavender"] .text-\[\#4A5A70\]{color:#60527c}
@@ -784,7 +782,6 @@ html[data-theme="rose_pink"] .text-\[\#35507E\]{color:#80365b}
 html[data-theme="rose_pink"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f7eef3}
 html[data-theme="rose_pink"] .border-\[\#B9C4D2\]{border-color:#d2b9c6}
 html[data-theme="rose_pink"] .border-\[\#2F6ABD\]\/60{border-color:rgb(191 48 122 / 0.6)}
-html[data-theme="rose_pink"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f4e6ed}
 html[data-theme="rose_pink"] .border-\[\#9FB0C6\]{border-color:#c69fb3}
 html[data-theme="rose_pink"] .bg-\[\#DDE4EC\]{background-color:#ecdde5}
 html[data-theme="rose_pink"] .text-\[\#4A5A70\]{color:#754d61}
@@ -1145,7 +1142,6 @@ html[data-theme="sunset"] .text-\[\#35507E\]{color:#6d472e}
 html[data-theme="sunset"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f7f1ee}
 html[data-theme="sunset"] .border-\[\#B9C4D2\]{border-color:#d2c2b9}
 html[data-theme="sunset"] .border-\[\#2F6ABD\]\/60{border-color:rgb(161 87 40 / 0.6)}
-html[data-theme="sunset"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f4ebe6}
 html[data-theme="sunset"] .border-\[\#9FB0C6\]{border-color:#c6ae9f}
 html[data-theme="sunset"] .bg-\[\#DDE4EC\]{background-color:#ece2dd}
 html[data-theme="sunset"] .text-\[\#4A5A70\]{color:#6b5446}
@@ -1506,7 +1502,6 @@ html[data-theme="sunshine"] .text-\[\#35507E\]{color:#5b4f26}
 html[data-theme="sunshine"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f7f5ee}
 html[data-theme="sunshine"] .border-\[\#B9C4D2\]{border-color:#d2ccb9}
 html[data-theme="sunshine"] .border-\[\#2F6ABD\]\/60{border-color:rgb(128 104 32 / 0.6)}
-html[data-theme="sunshine"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f4f0e6}
 html[data-theme="sunshine"] .border-\[\#9FB0C6\]{border-color:#c6bc9f}
 html[data-theme="sunshine"] .bg-\[\#DDE4EC\]{background-color:#ece8dd}
 html[data-theme="sunshine"] .text-\[\#4A5A70\]{color:#615840}
@@ -1867,7 +1862,6 @@ html[data-theme="aqua"] .text-\[\#35507E\]{color:#27575d}
 html[data-theme="aqua"] .to-\[\#EEF2F7\]{--tw-gradient-to:#eef6f7}
 html[data-theme="aqua"] .border-\[\#B9C4D2\]{border-color:#b9d0d2}
 html[data-theme="aqua"] .border-\[\#2F6ABD\]\/60{border-color:rgb(31 117 125 / 0.6)}
-html[data-theme="aqua"] .to-\[\#E6ECF4\]{--tw-gradient-to:#e6f3f4}
 html[data-theme="aqua"] .border-\[\#9FB0C6\]{border-color:#9fc3c6}
 html[data-theme="aqua"] .bg-\[\#DDE4EC\]{background-color:#ddebec}
 html[data-theme="aqua"] .text-\[\#4A5A70\]{color:#405e61}
@@ -2228,7 +2222,6 @@ html[data-theme="cherry"] .text-\[\#35507E\]{color:#84373d}
 html[data-theme="cherry"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f7eeef}
 html[data-theme="cherry"] .border-\[\#B9C4D2\]{border-color:#d2b9bc}
 html[data-theme="cherry"] .border-\[\#2F6ABD\]\/60{border-color:rgb(198 49 64 / 0.6)}
-html[data-theme="cherry"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f4e6e7}
 html[data-theme="cherry"] .border-\[\#9FB0C6\]{border-color:#c69fa3}
 html[data-theme="cherry"] .bg-\[\#DDE4EC\]{background-color:#ecdddf}
 html[data-theme="cherry"] .text-\[\#4A5A70\]{color:#764e52}
@@ -2589,7 +2582,6 @@ html[data-theme="teal"] .text-\[\#35507E\]{color:#255852}
 html[data-theme="teal"] .to-\[\#EEF2F7\]{--tw-gradient-to:#eef7f6}
 html[data-theme="teal"] .border-\[\#B9C4D2\]{border-color:#b9d2ce}
 html[data-theme="teal"] .border-\[\#2F6ABD\]\/60{border-color:rgb(30 119 106 / 0.6)}
-html[data-theme="teal"] .to-\[\#E6ECF4\]{--tw-gradient-to:#e6f4f2}
 html[data-theme="teal"] .border-\[\#9FB0C6\]{border-color:#9fc6c0}
 html[data-theme="teal"] .bg-\[\#DDE4EC\]{background-color:#ddece9}
 html[data-theme="teal"] .text-\[\#4A5A70\]{color:#3f5f5a}
@@ -2950,7 +2942,6 @@ html[data-theme="emerald"] .text-\[\#35507E\]{color:#265a3c}
 html[data-theme="emerald"] .to-\[\#EEF2F7\]{--tw-gradient-to:#eef7f2}
 html[data-theme="emerald"] .border-\[\#B9C4D2\]{border-color:#b9d2c3}
 html[data-theme="emerald"] .border-\[\#2F6ABD\]\/60{border-color:rgb(30 122 67 / 0.6)}
-html[data-theme="emerald"] .to-\[\#E6ECF4\]{--tw-gradient-to:#e6f4ec}
 html[data-theme="emerald"] .border-\[\#9FB0C6\]{border-color:#9fc6ae}
 html[data-theme="emerald"] .bg-\[\#DDE4EC\]{background-color:#ddece3}
 html[data-theme="emerald"] .text-\[\#4A5A70\]{color:#3f604c}
@@ -3311,7 +3302,6 @@ html[data-theme="ruby"] .text-\[\#35507E\]{color:#833749}
 html[data-theme="ruby"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f7eef0}
 html[data-theme="ruby"] .border-\[\#B9C4D2\]{border-color:#d2b9c0}
 html[data-theme="ruby"] .border-\[\#2F6ABD\]\/60{border-color:rgb(196 49 88 / 0.6)}
-html[data-theme="ruby"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f4e6ea}
 html[data-theme="ruby"] .border-\[\#9FB0C6\]{border-color:#c69faa}
 html[data-theme="ruby"] .bg-\[\#DDE4EC\]{background-color:#ecdde1}
 html[data-theme="ruby"] .text-\[\#4A5A70\]{color:#764e58}
@@ -3672,7 +3662,6 @@ html[data-theme="purple"] .text-\[\#35507E\]{color:#613d92}
 html[data-theme="purple"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f2eef7}
 html[data-theme="purple"] .border-\[\#B9C4D2\]{border-color:#c3b9d2}
 html[data-theme="purple"] .border-\[\#2F6ABD\]\/60{border-color:rgb(130 76 210 / 0.6)}
-html[data-theme="purple"] .to-\[\#E6ECF4\]{--tw-gradient-to:#ece6f4}
 html[data-theme="purple"] .border-\[\#9FB0C6\]{border-color:#ae9fc6}
 html[data-theme="purple"] .bg-\[\#DDE4EC\]{background-color:#e3ddec}
 html[data-theme="purple"] .text-\[\#4A5A70\]{color:#62517b}
@@ -4033,7 +4022,6 @@ html[data-theme="black_gold"] .text-\[\#35507E\]{color:#535046}
 html[data-theme="black_gold"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f3f3f2}
 html[data-theme="black_gold"] .border-\[\#B9C4D2\]{border-color:#c8c7c3}
 html[data-theme="black_gold"] .border-\[\#2F6ABD\]\/60{border-color:rgb(113 106 89 / 0.6)}
-html[data-theme="black_gold"] .to-\[\#E6ECF4\]{--tw-gradient-to:#eeeeec}
 html[data-theme="black_gold"] .border-\[\#9FB0C6\]{border-color:#b6b4af}
 html[data-theme="black_gold"] .bg-\[\#DDE4EC\]{background-color:#e6e5e3}
 html[data-theme="black_gold"] .text-\[\#4A5A70\]{color:#5b5954}
@@ -4394,7 +4382,6 @@ html[data-theme="dark_luxury"] .text-\[\#35507E\]{color:#4c5056}
 html[data-theme="dark_luxury"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f2f2f3}
 html[data-theme="dark_luxury"] .border-\[\#B9C4D2\]{border-color:#c4c5c7}
 html[data-theme="dark_luxury"] .border-\[\#2F6ABD\]\/60{border-color:rgb(99 107 119 / 0.6)}
-html[data-theme="dark_luxury"] .to-\[\#E6ECF4\]{--tw-gradient-to:#ecedee}
 html[data-theme="dark_luxury"] .border-\[\#9FB0C6\]{border-color:#b0b2b5}
 html[data-theme="dark_luxury"] .bg-\[\#DDE4EC\]{background-color:#e3e4e6}
 html[data-theme="dark_luxury"] .text-\[\#4A5A70\]{color:#57595c}
@@ -4755,7 +4742,6 @@ html[data-theme="light_clean"] .text-\[\#35507E\]{color:#395076}
 html[data-theme="light_clean"] .to-\[\#EEF2F7\]{--tw-gradient-to:#eff2f6}
 html[data-theme="light_clean"] .border-\[\#B9C4D2\]{border-color:#bbc4d0}
 html[data-theme="light_clean"] .border-\[\#2F6ABD\]\/60{border-color:rgb(58 106 180 / 0.6)}
-html[data-theme="light_clean"] .to-\[\#E6ECF4\]{--tw-gradient-to:#e7ecf3}
 html[data-theme="light_clean"] .border-\[\#9FB0C6\]{border-color:#a2afc3}
 html[data-theme="light_clean"] .bg-\[\#DDE4EC\]{background-color:#dee3eb}
 html[data-theme="light_clean"] .text-\[\#4A5A70\]{color:#4d5a6d}
@@ -5116,7 +5102,6 @@ html[data-theme="rose_gold"] .text-\[\#35507E\]{color:#6d4548}
 html[data-theme="rose_gold"] .to-\[\#EEF2F7\]{--tw-gradient-to:#f5f0f1}
 html[data-theme="rose_gold"] .border-\[\#B9C4D2\]{border-color:#ccbfc0}
 html[data-theme="rose_gold"] .border-\[\#2F6ABD\]\/60{border-color:rgb(163 82 90 / 0.6)}
-html[data-theme="rose_gold"] .to-\[\#E6ECF4\]{--tw-gradient-to:#f1e9ea}
 html[data-theme="rose_gold"] .border-\[\#9FB0C6\]{border-color:#bda8aa}
 html[data-theme="rose_gold"] .bg-\[\#DDE4EC\]{background-color:#e9e0e1}
 html[data-theme="rose_gold"] .text-\[\#4A5A70\]{color:#695456}
@@ -5454,7 +5439,6 @@ html[data-theme="dark_night"] .to-\[\#EEF2F7\]{--tw-gradient-to:#131d28}
 html[data-theme="dark_night"] .border-\[\#B9C4D2\]{border-color:#2b3542}
 html[data-theme="dark_night"] .bg-\[\#FFE0B8\]{background-color:#392c1c}
 html[data-theme="dark_night"] .text-\[\#F07A00\]{color:#f7b46e}
-html[data-theme="dark_night"] .to-\[\#E6ECF4\]{--tw-gradient-to:#151f2c}
 html[data-theme="dark_night"] .bg-\[\#DDE4EC\]{background-color:#1b2530}
 html[data-theme="dark_night"] .text-\[\#4A5A70\]{color:#b9c3d0}
 html[data-theme="dark_night"] .bg-\[\#F4F9FF\]{background-color:#111923}
@@ -5752,7 +5736,6 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#D3D8DF\]{--tw-g
 html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#C9D2DE\]{border-color:#d2d3d5}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#F3F8FE\]{background-color:#f8f8f9}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#EEF2F7\]{--tw-gradient-to:#f2f2f3}
-html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#E6ECF4\]{--tw-gradient-to:#ecedee}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#DDE4EC\]{background-color:#e3e4e6}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#F4F9FF\]{background-color:#f9f9fa}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#EAF4FE\]{background-color:#f2f4f6}
@@ -6152,6 +6135,7 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#D0D5E0\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#D0D5E0\].classic-light{color:#16315F}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#16374F\],html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#16374F\].classic-light{background-color:#eceef2}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#7A8792\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#7A8792\].classic-light{color:#6B7788}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#F5B731\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#F5B731\].classic-light{--tw-gradient-from:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#FFF8EE\],html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#FFF8EE\].classic-light{background-color:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#FF4F8B\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#FF4F8B\].classic-light{--tw-gradient-from:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#FF4F8B\]\/20,html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#FF4F8B\]\/20.classic-light{background-color:rgb(240 122 0 / 0.2)}

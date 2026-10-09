@@ -8,6 +8,9 @@ import { useFounderPerms } from "../../../lib/founder";
 import { LEVEL_TIERS } from "../../../lib/rooms";
 import { FounderShell } from "../_Shell";
 
+// The miGlife level badge pictures served by the website (public/level-badges).
+const LEVEL_BADGE_PACK_BASE = "https://web.miglife.app/level-badges";
+
 // 🔐 Share Permissions (founder tool), like the app's MediaSharePermissionsPage:
 // who may share pictures / voice / video, and the badge / level-badge pictures.
 
@@ -92,7 +95,7 @@ export default function SharePermissionsPage() {
       <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-[#F1F5FB] text-lg">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="" className="h-full w-full object-cover" />
+          <img src={url} alt="" className={`h-full w-full ${docId === "level_badge_images" ? "object-contain" : "object-cover"}`} />
         ) : (
           icon
         )}
@@ -143,6 +146,28 @@ export default function SharePermissionsPage() {
       ))}
 
       <p className="pt-2 text-lg font-extrabold">🎖️ Level Badges</p>
+      {/* One tap: the miGlife badge set (public/level-badges) for every tier, for the app and the web. */}
+      <button
+        type="button"
+        disabled={uploading === "pack"}
+        onClick={async () => {
+          setUploading("pack");
+          setStatus("");
+          const set: Record<string, string> = {};
+          for (const [name] of LEVEL_TIERS) set[name] = `${LEVEL_BADGE_PACK_BASE}/${name.toLowerCase().replace(/\s+/g, "_")}.webp`;
+          try {
+            await setDoc(doc(db, "app_settings", "level_badge_images"), set, { merge: true });
+            setStatus("✅ The miGlife level badges are on for every tier.");
+          } catch (e: any) {
+            setStatus(e?.message || "Could not set the badges.");
+          } finally {
+            setUploading(null);
+          }
+        }}
+        className="w-full rounded-xl bg-gradient-to-r from-[#F5B731] to-[#E58A00] py-2.5 text-sm font-extrabold text-white shadow disabled:opacity-60"
+      >
+        {uploading === "pack" ? "Saving…" : "✨ Use the miGlife badge set for all tiers"}
+      </button>
       {LEVEL_TIERS.map(([name, icon]) => (
         <ImageRow key={name} docId="level_badge_images" k={name} icon={icon} label={name} url={levelBadges[name]} />
       ))}
