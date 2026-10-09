@@ -234,6 +234,10 @@ export function ChatBar({
           {/* ➤ send */}
           <button
             type="button"
+            // Like the app: tapping ➤ never takes the focus off the message box,
+            // so the keyboard stays open for the next line.
+            onPointerDown={(e) => e.preventDefault()}
+            onMouseDown={(e) => e.preventDefault()}
             onClick={send}
             disabled={!canSend}
             aria-label="Send"
