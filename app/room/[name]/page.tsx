@@ -1297,10 +1297,12 @@ function RoomView({ roomName }: { roomName: string }) {
         const everyone = roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== profile.username.toLowerCase()).slice(0, 40);
         if (everyone.length === 0) return note("🎁 There is nobody else in this room right now.");
         if (gifts.length && !giftByName.has(giftName.toLowerCase())) return note(`🎁 No active gift named "${giftName}".`);
-        httpsCallable<
+        const sendShower = httpsCallable<
           { roomId: string; targets: string[]; giftName: string; message: string },
           { sentTo?: string[]; giftName?: string; giftIcon?: string; failed?: { target?: string; reason?: string }[] }
-        >(functions, "sendGiftShower")({ roomId: roomName, targets: everyone, giftName, message })
+        >(functions, "sendGiftShower");
+        // at least 2 s between two Gift Showers (a quick second one waits its turn)
+        queueGiftShower(() => sendShower({ roomId: roomName, targets: everyone, giftName, message }))
           .then(({ data }) => {
             const sent = data?.sentTo || [];
             const shownGift = data?.giftName || giftName;
@@ -2422,6 +2424,23 @@ function luxuryBetLine(text: string): ReactNode | null {
       </span>
     </>
   );
+}
+
+// 🎁 Gift Showers go out at least 2 s apart (the app does the same): one sent
+// sooner waits until 2 s after the last one, then goes. Its room line is
+// posted when the server answers, so the lines come 2 s apart too.
+const GIFT_SHOWER_GAP_MS = 2_000;
+let giftShowerChain: Promise<unknown> = Promise.resolve();
+let lastGiftShowerAt = 0;
+function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
+  const next = giftShowerChain.then(async () => {
+    const wait = lastGiftShowerAt + GIFT_SHOWER_GAP_MS - Date.now();
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastGiftShowerAt = Date.now();
+    return run();
+  });
+  giftShowerChain = next.catch(() => {});
+  return next;
 }
 
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
