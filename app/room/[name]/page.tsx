@@ -2461,21 +2461,39 @@ function luxuryLine(text: string): ReactNode | null {
 // picture is remembered for this visit, so other lines (and redraws) show the
 // emoji straight away instead of trying and blinking again (like the app).
 const failedBadgeUrls = new Set<string>();
+// A badge picture in an enter / left line: its 15 px place is kept from the
+// start (the line never jumps), and the picture fades in once loaded.
+const loadedBadgeUrls = new Set<string>();
 function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
   const [failed, setFailed] = useState(() => failedBadgeUrls.has(src));
+  const [loaded, setLoaded] = useState(() => loadedBadgeUrls.has(src));
   if (failed || failedBadgeUrls.has(src)) return <>{emoji}</>;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={emoji}
-      referrerPolicy="no-referrer"
-      onError={() => {
-        failedBadgeUrls.add(src);
-        setFailed(true);
-      }}
-      className="mx-px inline h-[15px] w-[15px] rounded-full object-cover align-middle"
-    />
+    <span className="relative mx-px inline-block h-[15px] w-[15px] shrink-0 overflow-hidden rounded-full align-middle" style={{ background: loaded ? undefined : "rgba(0,0,0,.08)" }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={emoji}
+        referrerPolicy="no-referrer"
+        decoding="async"
+        ref={(el) => {
+          // already in the browser's cache: show it at once
+          if (el && el.complete && el.naturalWidth > 0 && !loaded) {
+            loadedBadgeUrls.add(src);
+            setLoaded(true);
+          }
+        }}
+        onLoad={() => {
+          loadedBadgeUrls.add(src);
+          setLoaded(true);
+        }}
+        onError={() => {
+          failedBadgeUrls.add(src);
+          setFailed(true);
+        }}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
+      />
+    </span>
   );
 }
 
