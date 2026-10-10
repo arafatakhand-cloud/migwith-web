@@ -5,8 +5,8 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 // /gift recipient list: as soon as "/gift" is typed, everyone in the room is
-// listed in a card over the top half of the chat (never more than half, so
-// the chat and the message box stay in view), one compact row each with their round photo (or a colored letter)
+// listed in a half-width card on the left of the chat (the rest of the chat
+// stays in view), one compact row each with their round photo (or a colored letter)
 // and ID. Typing part of a name narrows it; tapping a name fills in
 // "/gift <name> ". The first row, "Everyone", starts a Gift Shower.
 // The same list opens for /f, /fr (friend request) and /uf (unfriend).
@@ -103,30 +103,27 @@ export function GiftNamePicker({
 
   return (
     <div
-      className="absolute inset-x-2 top-2 z-30 flex max-h-[50%] flex-col overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white shadow-[0_10px_30px_-8px_rgba(11,31,58,.35)]"
+      className="absolute left-2 top-2 z-30 flex max-h-[65%] w-[52%] min-w-[175px] max-w-[300px] flex-col overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white shadow-[0_10px_30px_-8px_rgba(11,31,58,.35)]"
       data-notranslate
     >
-      <div className="flex items-center justify-between border-b border-[#EEF2F7] bg-gradient-to-r from-[#F5F8FD] to-[#FDF3F9] px-3 py-2">
-        <span className="text-[12.5px] font-extrabold text-[#0B1F3A]">{TITLES[cmd] || "Pick a name…"}</span>
-        <span className="rounded-full bg-[#E8EEF8] px-2 py-0.5 text-[10.5px] font-bold text-[#4A5A78]">
-          {list.length} {list.length === 1 ? "person" : "people"}
-        </span>
+      <div className="flex items-center justify-between border-b px-2.5 border-[#EEF2F7] bg-gradient-to-r from-[#F5F8FD] to-[#FDF3F9] py-2">
+        <span className="min-w-0 truncate text-[12px] font-extrabold text-[#0B1F3A]">{TITLES[cmd] || "Pick a name…"}</span>
+        <span className="ml-1.5 shrink-0 rounded-full bg-[#E8EEF8] px-1.5 py-0.5 text-[10px] font-bold text-[#4A5A78]">{list.length}</span>
       </div>
       <div className="min-h-0 overflow-y-auto overscroll-contain py-1">
         {cmd === "/gift" && !queryText && (
           <button
             type="button"
             onClick={() => onPick("/gift all ")}
-            className="mx-1.5 mb-1 flex w-[calc(100%-12px)] items-center gap-2.5 rounded-xl bg-gradient-to-r from-[#FFE3F1] to-[#FFF4E5] px-2.5 py-1.5 text-left active:scale-[.99]"
+            className="mx-1.5 mb-1 flex w-[calc(100%-12px)] items-center gap-2 rounded-xl bg-gradient-to-r from-[#FFE3F1] to-[#FFF4E5] px-2.5 py-1.5 text-left active:scale-[.99]"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5FA8] to-[#FF2D95] text-lg shadow-sm">
               🎁
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-bold leading-5 text-[#C2185B]">Everyone</span>
-              <span className="block text-[11px] text-[#8A5A75]">Gift Shower · /gift all</span>
+              <span className="block truncate text-[10.5px] text-[#8A5A75]">Gift Shower · /gift all</span>
             </span>
-            <span className="rounded-full bg-[#FF2D95] px-2.5 py-1 text-[10.5px] font-extrabold text-white">ALL</span>
           </button>
         )}
         {list.map((name) => {
@@ -136,7 +133,7 @@ export function GiftNamePicker({
               key={name}
               type="button"
               onClick={() => onPick(`${cmd} ${name} `)}
-              className="flex w-full items-center gap-2.5 px-3 py-[5px] text-left hover:bg-[#F3F7FC] active:bg-[#EAF1FB]"
+              className="flex w-full items-center gap-2 px-2.5 py-[5px] text-left hover:bg-[#F3F7FC] active:bg-[#EAF1FB]"
             >
               <span className="shrink-0 rounded-full bg-gradient-to-br from-[#FF9D2E] via-[#FF4F9A] to-[#7B4DE0] p-[2px]">
                 {photo ? (
@@ -152,7 +149,6 @@ export function GiftNamePicker({
                 )}
               </span>
               <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#0B1F3A]">{name}</span>
-              <span className="text-sm text-[#B4C0D0]">{cmd === "/gift" ? "🎁" : "›"}</span>
             </button>
           );
         })}
