@@ -8,6 +8,10 @@ import { LsLiveBadge } from "../_components/LiveSportsWidgets";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useIsClassic } from "../../lib/uiStyle";
 import { lsAgo, lsTime, useLiveSports, type SportRow } from "../../lib/liveSports";
+import { httpsCallable } from "firebase/functions";
+import { functions } from "../../lib/firebase";
+import { useCurrentUser } from "../../lib/useCurrentUser";
+import { isMainFounderName } from "../../lib/founder";
 
 // 📺 Live Scores, like the app's LiveScores.kt: 🔴 Live / 🗓️ Today tabs (opens
 // on Today when nothing is live), All / Cricket / Football chips, league
@@ -121,6 +125,23 @@ export default function LiveScoresPage() {
   const [sport, setSport] = useState<"all" | "cricket" | "football">("all");
   const [now, setNow] = useState(() => Date.now());
   const autoTabDone = useRef(false);
+  // 🔧 miglife: why nothing is listed + "Refresh now" (founderRefreshLiveSports)
+  const { username } = useCurrentUser();
+  const isFounder = isMainFounderName(username);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshMsg, setRefreshMsg] = useState("");
+  const refreshNow = async () => {
+    setRefreshing(true);
+    setRefreshMsg("");
+    try {
+      const { data: r } = await httpsCallable<Record<string, never>, { cricket?: number; football?: number }>(functions, "founderRefreshLiveSports")({});
+      setRefreshMsg(`✓ Refreshed: ${r?.cricket ?? 0} cricket · ${r?.football ?? 0} football`);
+    } catch (e: any) {
+      setRefreshMsg(e?.message || "Could not refresh.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const cricket = data?.cricket ?? [];
   const football = data?.football ?? [];
@@ -216,6 +237,26 @@ export default function LiveScoresPage() {
               {chip(`⚽ Football (${football.length})`, sport === "football", () => setSport("football"))}
             </div>
 
+            {isFounder && data && (
+              <div className="mx-3 mb-2 rounded-xl border border-[#F5D77A] bg-[#FFF8E1] p-3 text-xs text-[#5B4300]">
+                <p className="font-extrabold">🔧 Server status (only miglife sees this)</p>
+                <p className="mt-1">
+                  {data.exists ? `Last update: ${ago || "—"}` : "The server has not written any scores yet (refreshLiveSports has never run)."}
+                </p>
+                {data.problems.cricket && <p className="mt-1 text-[#B3261E]">🏏 {data.problems.cricket}</p>}
+                {data.problems.football && <p className="mt-1 text-[#B3261E]">⚽ {data.problems.football}</p>}
+                {data.exists && !data.problems.cricket && !data.problems.football && <p className="mt-1 text-[#1E7A34]">✓ No problems reported.</p>}
+                <button
+                  type="button"
+                  disabled={refreshing}
+                  onClick={refreshNow}
+                  className="mt-2 rounded-lg bg-[#F07A00] px-3 py-1.5 font-bold text-white disabled:opacity-60"
+                >
+                  {refreshing ? "Refreshing…" : "🔄 Refresh now"}
+                </button>
+                {refreshMsg && <p className="mt-1.5 font-bold">{refreshMsg}</p>}
+              </div>
+            )}
             {!data ? (
               <Empty icon="⏳" title="Loading scores…" />
             ) : shown.length === 0 && tab === 0 ? (

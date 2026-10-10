@@ -28,7 +28,16 @@ export type SportRow = {
   venue: string;
 };
 
-export type LiveSports = { updatedAtMs: number; day: string; cricket: SportRow[]; football: SportRow[] } | null;
+export type LiveSports = {
+  updatedAtMs: number;
+  day: string;
+  cricket: SportRow[];
+  football: SportRow[];
+  /** Why a sport is empty (missing key, CricAPI limit, …), written by the server. */
+  problems: { cricket?: string; football?: string };
+  /** The live_sports/today doc exists (the server function has run at least once). */
+  exists: boolean;
+} | null;
 
 function rows(v: unknown, sport: SportRow["sport"]): SportRow[] {
   if (!Array.isArray(v)) return [];
@@ -61,14 +70,21 @@ export function useLiveSports(enabled: boolean): LiveSports {
     if (!enabled) return;
     return onSnapshot(
       doc(db, "live_sports", "today"),
-      (d) =>
+      (d) => {
+        const pr = d.get("problems");
         setData({
           updatedAtMs: Number(d.get("updatedAtMs") || 0),
           day: String(d.get("day") || ""),
           cricket: rows(d.get("cricket"), "cricket"),
           football: rows(d.get("football"), "football"),
-        }),
-      () => setData({ updatedAtMs: 0, day: "", cricket: [], football: [] })
+          problems: {
+            cricket: pr && typeof pr.cricket === "string" ? pr.cricket : undefined,
+            football: pr && typeof pr.football === "string" ? pr.football : undefined,
+          },
+          exists: d.exists(),
+        });
+      },
+      () => setData({ updatedAtMs: 0, day: "", cricket: [], football: [], problems: {}, exists: false })
     );
   }, [enabled]);
   return data;
