@@ -7,6 +7,8 @@ import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
 import { brandMiglife } from "../../lib/brand";
 import { useIsClassic } from "../../lib/uiStyle";
+import { isMainFounderName } from "../../lib/founder";
+import { ShopItemEditDialog, shopName, shopPrice, useShopOverrides } from "./ShopEdit";
 import { FxCanvas, clamp01, dot, hashStr, heartPath, rgba, rng, useNewLineEvents, usePlayQueue } from "./RoomEffects";
 
 // ✨ ENTRY EFFECTS (the app's EntryEffects.kt) — 30-day subscriptions bought
@@ -1185,6 +1187,12 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
   const [preview, setPreview] = useState<{ fx: EntryFx; key: number } | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const now = serverNow();
+  // ✏️ miglife renames / re-prices effects (app_settings/shop_overrides)
+  const isFounder = isMainFounderName(myName);
+  const ov = useShopOverrides();
+  const [editing, setEditing] = useState<EntryFx | null>(null);
+  const nameOf = (fx: EntryFx) => shopName(ov.entryFx, fx.id, fx.name);
+  const priceOf = (fx: EntryFx) => shopPrice(ov.entryFx, fx.id, fx.price);
 
   useEffect(
     () =>
@@ -1201,7 +1209,8 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
     try {
       await httpsCallable(functions, "setEntryEffect")({ id });
       setInv((s) => ({ ...s, active: id }));
-      setMessage(id === "none" ? "Entry effect turned off." : `✓ ${entryFxById(id)?.name} is on.`);
+      const on = entryFxById(id);
+      setMessage(id === "none" || !on ? "Entry effect turned off." : `✓ ${nameOf(on)} is on.`);
     } catch (e: any) {
       setMessage(e?.message || "Could not change.");
     } finally {
@@ -1212,7 +1221,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
     setBusy(fx.id);
     try {
       await httpsCallable(functions, "buyEntryEffect")({ id: fx.id, operationId: opId() });
-      setMessage(`${fx.emoji} ${fx.name} is yours for 30 days!`);
+      setMessage(`${fx.emoji} ${nameOf(fx)} is yours for 30 days!`);
     } catch (e: any) {
       setMessage(e?.message || "Purchase failed.");
     } finally {
@@ -1226,7 +1235,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
   };
 
   const owned = ENTRY_FX.filter((f) => (inv.owned[f.id] || 0) > now);
-  const shown = ENTRY_FX.filter((f) => tab === "All" || f.category === tab).sort((a, b) => a.price - b.price);
+  const shown = ENTRY_FX.filter((f) => tab === "All" || f.category === tab).sort((a, b) => priceOf(a) - priceOf(b));
   const daysLeft = (id: string) => Math.max(0, Math.floor(((inv.owned[id] || 0) - now) / 86_400_000));
   const rad = classic ? "rounded-[4px]" : "rounded-[14px]";
   const btn = `${classic ? "rounded-[4px]" : "rounded-full"} px-3 py-1.5 text-xs font-extrabold`;
@@ -1259,7 +1268,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                   </span>
                   <span className="ml-2 min-w-0 flex-1">
                     <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[13px] font-bold text-[#1A1A2E]">{fx.name}</span>
+                      <span className="truncate text-[13px] font-bold text-[#1A1A2E]">{nameOf(fx)}</span>
                       {on && <span className="rounded-md bg-[#2E9E6B] px-[5px] py-px text-[8px] font-black text-white">ON</span>}
                     </span>
                     <span className="block text-[9px] text-[#8A8060]">⏱ {daysLeft(fx.id)} days left</span>
@@ -1309,7 +1318,8 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
           const exp = inv.owned[fx.id] || 0;
           const isOwned = exp > now;
           const on = isOwned && inv.active === fx.id;
-          const canAfford = balance !== null && balance >= fx.price;
+          const price = priceOf(fx);
+          const canAfford = balance !== null && balance >= price;
           return (
             <div key={fx.id} className={`pb-[3px] ${rad}`} style={{ background: rgba(fx.accent, 0.55) }}>
               <div className={`flex overflow-hidden bg-gradient-to-b from-white to-[#F6F6F8] shadow-[0_2px_4px_rgba(0,0,0,.18)] ${rad}`}>
@@ -1317,10 +1327,15 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                 <div className="min-w-0 flex-1 p-[11px]">
                   <div className="flex items-center gap-2">
                     <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-[#1A1A2E]">
-                      {fx.emoji} {fx.name}
+                      {fx.emoji} {nameOf(fx)}
                     </p>
+                    {isFounder && (
+                      <button type="button" onClick={() => setEditing(fx)} aria-label="Edit" className="shrink-0 rounded-lg px-1.5 text-[15px]">
+                        ✏️
+                      </button>
+                    )}
                     <span className={`shrink-0 border border-[#D4AF37] bg-[#FFF3D6] px-2 py-[3px] text-[11px] font-bold text-[#8A5A00] ${classic ? "rounded-[4px]" : "rounded-xl"}`}>
-                      💲 {fx.price.toLocaleString("en-US")}
+                      💲 {price.toLocaleString("en-US")}
                     </span>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-[5px]">
@@ -1366,7 +1381,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                     ) : (
                       <button
                         type="button"
-                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${fx.price.toLocaleString("en-US")} coins for ${fx.name}.`))}
+                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
                         className={`${btn} text-white`}
                         style={{ background: canAfford ? (classic ? "#F07A00" : "#7B4DE0") : "#B0B8C4" }}
                       >
@@ -1390,12 +1405,12 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-6" onClick={() => setConfirm(null)}>
           <div className="w-full max-w-xs rounded-2xl bg-white p-4 text-[#1b1b1f]" onClick={(e) => e.stopPropagation()}>
             <p className="text-base font-bold">
-              {confirm.emoji} {confirm.name}
+              {confirm.emoji} {nameOf(confirm)}
             </p>
             <p className="mt-2 text-sm">
               {(inv.owned[confirm.id] || 0) > now
-                ? `Add 30 more days for ${confirm.price.toLocaleString("en-US")} coins?`
-                : `Buy this entry effect for 30 days for ${confirm.price.toLocaleString("en-US")} coins? It switches on right away.`}
+                ? `Add 30 more days for ${priceOf(confirm).toLocaleString("en-US")} coins?`
+                : `Buy this entry effect for 30 days for ${priceOf(confirm).toLocaleString("en-US")} coins? It switches on right away.`}
             </p>
             <div className="mt-3 flex justify-end gap-4 text-sm font-bold text-[#6750A4]">
               <button type="button" onClick={() => setConfirm(null)}>
@@ -1414,6 +1429,20 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
             </div>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <ShopItemEditDialog
+          kind="fx"
+          id={editing.id}
+          title={`${editing.emoji} ${nameOf(editing)}`}
+          currentName={nameOf(editing)}
+          currentPrice={priceOf(editing)}
+          defaultName={editing.name}
+          defaultPrice={editing.price}
+          onDone={setMessage}
+          onDismiss={() => setEditing(null)}
+        />
       )}
 
       {/* full-screen preview of the effect, with your own name */}

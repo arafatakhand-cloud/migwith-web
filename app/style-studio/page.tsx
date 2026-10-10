@@ -8,6 +8,9 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, SectionLabel } from "../_components/LightCards";
+import { ShopItemEditDialog, shopName, shopPrice, useShopOverrides } from "../_components/ShopEdit";
+import { isMainFounderName } from "../../lib/founder";
+import { useCurrentUser } from "../../lib/useCurrentUser";
 
 // Explore › Style Studio: premium username colors, same catalog and Cloud
 // Functions as the app (requestColorPurchase → approved by migwith,
@@ -54,6 +57,13 @@ export default function StyleStudioPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  // ✏️ miglife renames / re-prices colors (app_settings/shop_overrides)
+  const { username } = useCurrentUser();
+  const isFounder = isMainFounderName(username);
+  const ov = useShopOverrides(!!uid);
+  const [editing, setEditing] = useState<ShopColor | null>(null);
+  const nameOf = (c: ShopColor) => shopName(ov.colors, c.id, c.name);
+  const priceOf = (c: ShopColor) => shopPrice(ov.colors, c.id, c.price);
 
   useEffect(() => {
     if (!uid) return;
@@ -130,7 +140,7 @@ export default function StyleStudioPage() {
                     <span className="text-xl">{c.badge}</span>
                     <span className="min-w-0 flex-1">
                       <span className="font-bold" style={{ color: c.color }}>
-                        {c.name}
+                        {nameOf(c)}
                       </span>
                       {on && <span className="ml-1.5 rounded-md bg-[#FFE1DE] px-1.5 text-[10px] font-bold text-[#B3261E]">ACTIVE</span>}
                       <span className="block text-[11px] text-[#8A8060]">{days} days left</span>
@@ -156,17 +166,23 @@ export default function StyleStudioPage() {
         <div className="grid gap-3 md:grid-cols-2">
           {available.map((c) => {
             const isPending = pending.has(c.id);
-            const canAfford = balance !== null && balance >= c.price;
+            const price = priceOf(c);
+            const canAfford = balance !== null && balance >= price;
             return (
               <div key={c.id} className="rounded-2xl bg-white p-4 shadow-sm">
                 <div className="flex items-center gap-2">
                   <span className="text-lg" style={{ color: c.color, fontWeight: c.bold ? 900 : 700 }}>
-                    {c.name}
+                    {nameOf(c)}
                   </span>
                   <span>{c.badge}</span>
                   <span className="ml-auto rounded-full border border-[#F5D77A] bg-[#FFF8E1] px-2.5 py-0.5 text-xs font-bold text-[#8A5A00]">
-                    🪙 {c.price.toLocaleString()}
+                    🪙 {price.toLocaleString()}
                   </span>
+                  {isFounder && (
+                    <button type="button" onClick={() => setEditing(c)} aria-label="Edit" className="rounded-lg px-1 text-[15px]">
+                      ✏️
+                    </button>
+                  )}
                 </div>
                 <div className="mt-1.5 flex gap-1.5 text-[11px]">
                   <span className="rounded-md bg-[#EAF2FC] px-2 py-0.5 text-[#35507E]">{c.days} days</span>
@@ -201,7 +217,7 @@ export default function StyleStudioPage() {
                     : isPending
                       ? "⏳ Waiting for approval"
                       : canAfford
-                        ? `Buy for 🪙 ${c.price.toLocaleString()}`
+                        ? `Buy for 🪙 ${price.toLocaleString()}`
                         : "Not enough coins"}
                 </button>
               </div>
@@ -214,10 +230,10 @@ export default function StyleStudioPage() {
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={() => setConfirmId(null)}>
           <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-black">
-              {confirming.badge} Buy {confirming.name}?
+              {confirming.badge} Buy {nameOf(confirming)}?
             </h2>
             <p className="text-sm text-[#5B6B8C]">
-              🪙 {confirming.price.toLocaleString()} for {confirming.days} days. The coins are held now, and the color is yours once an admin approves the request.
+              🪙 {priceOf(confirming).toLocaleString()} for {confirming.days} days. The coins are held now, and the color is yours once an admin approves the request.
             </p>
             <div className="flex gap-2">
               <button type="button" onClick={() => setConfirmId(null)} className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]">
@@ -229,6 +245,19 @@ export default function StyleStudioPage() {
             </div>
           </div>
         </div>
+      )}
+      {editing && (
+        <ShopItemEditDialog
+          kind="color"
+          id={editing.id}
+          title={nameOf(editing)}
+          currentName={nameOf(editing)}
+          currentPrice={priceOf(editing)}
+          defaultName={editing.name}
+          defaultPrice={editing.price}
+          onDone={setMessage}
+          onDismiss={() => setEditing(null)}
+        />
       )}
     </PageShell>
   );
