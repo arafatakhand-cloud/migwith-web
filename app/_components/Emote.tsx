@@ -94,13 +94,14 @@ export function EmoteView({ id, size, playing = true }: { id: string; size: numb
  */
 export function withEmotes(text: string, fontPx: number, renderText: (s: string, key: string) => ReactNode = (s) => s): ReactNode[] {
   const size = Math.round((fontPx * 10) / 7);
-  return splitEmotes(text).map((p, i) =>
-    "emote" in p ? (
-      <EmoteView key={`e${i}`} id={p.emote} size={size} />
-    ) : (
-      <Fragment key={`t${i}`}>{renderText(p.text, `t${i}_`)}</Fragment>
-    )
-  );
+  const pieces = splitEmotes(text);
+  return pieces.map((p, i) => {
+    if ("emote" in p) return <EmoteView key={`e${i}`} id={p.emote} size={size} />;
+    // Only a space between two emotes (";f2 ;f2"): they sit side by side, no gap.
+    const prev = pieces[i - 1], next = pieces[i + 1];
+    if (prev && next && "emote" in prev && "emote" in next && /^\s+$/.test(p.text)) return null;
+    return <Fragment key={`t${i}`}>{renderText(p.text, `t${i}_`)}</Fragment>;
+  });
 }
 
 // ---------------------------------------------------------------------------

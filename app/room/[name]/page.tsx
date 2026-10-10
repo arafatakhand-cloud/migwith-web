@@ -1,5 +1,6 @@
 "use client";
 
+import type { User } from "firebase/auth";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { awardUserXp } from "../../../lib/xp";
 import Link from "next/link";
@@ -185,13 +186,15 @@ export default function RoomPage() {
   const roomName = decodeURIComponent(params.name);
   const { user, loading } = useCurrentUser();
   // Wait for the account first, so the room's saved session can be read on mount.
-  if (loading || !user) return <RoomView key="" roomName={roomName} />;
-  return <RoomView key={roomName} roomName={roomName} />;
+  if (loading || !user) return <RoomView key="" roomName={roomName} user={user} loading />;
+  return <RoomView key={roomName} roomName={roomName} user={user} loading={false} />;
 }
 
-function RoomView({ roomName }: { roomName: string }) {
+// The account comes from RoomPage: a hook of its own here started as "no user"
+// on every tab switch, so the saved session (the half-typed message, chat,
+// scroll) wasn't read and an empty draft was saved over it.
+function RoomView({ roomName, user, loading }: { roomName: string; user: User | null; loading: boolean }) {
   const router = useRouter();
-  const { user, loading } = useCurrentUser();
   const founder = useFounderPerms();
   const specialColors = useSpecialColors();
   // 🔗 a link tapped in the room chat (normal link → "leaving miglife" check,
