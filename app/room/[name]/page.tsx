@@ -425,6 +425,13 @@ function RoomView({ roomName }: { roomName: string }) {
 
   // Latest room document for the entry effect (which must not re-run on every edit).
   const giftQuery = giftPickerQuery(text);
+  // "@" + part of a name at the end of the text → the mention list (like the app)
+  const mentionQuery = (() => {
+    const at = text.lastIndexOf("@");
+    if (at < 0) return null;
+    const after = text.slice(at + 1);
+    return /\s/.test(after) ? null : after;
+  })();
   const roomDescription = resolveRoomDescription(roomName, roomInfo.description);
   const roomInfoRef = useRef(roomInfo);
   roomInfoRef.current = roomInfo;
@@ -1690,7 +1697,9 @@ function RoomView({ roomName }: { roomName: string }) {
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
           <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] sm:rounded-b-2xl sm:border-b ${classic ? "bg-white" : "bg-[#E8F4FC]"}`}>
-            {giftQuery !== null && (
+            {/* The chat area: the /gift and @ name lists sit over it (never over the message box). */}
+            <div className="relative flex min-h-0 flex-1 flex-col">
+            {giftQuery !== null ? (
               <GiftNamePicker
                 queryText={giftQuery.q}
                 cmd={giftQuery.cmd}
@@ -1700,6 +1709,20 @@ function RoomView({ roomName }: { roomName: string }) {
                   inputRef.current?.focus();
                 }}
               />
+            ) : (
+              mentionQuery !== null && (
+                // 👤 "@" — mention someone in the room (the app's "Mention a user")
+                <GiftNamePicker
+                  queryText={mentionQuery}
+                  cmd="@"
+                  names={roomUsers.map((u) => u.username)}
+                  onPick={(t) => {
+                    setText(t);
+                    inputRef.current?.focus();
+                  }}
+                  pickText={(name) => `${text.slice(0, text.lastIndexOf("@"))}@${name} `}
+                />
+              )
             )}
             <div
               ref={listRef} data-notranslate
@@ -1797,6 +1820,7 @@ function RoomView({ roomName }: { roomName: string }) {
                   </button>
                 </div>
               )}
+            </div>
             </div>
 
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}

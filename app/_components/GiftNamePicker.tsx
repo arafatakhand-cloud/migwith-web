@@ -5,11 +5,12 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
 // /gift recipient list: as soon as "/gift" is typed, everyone in the room is
-// listed in a half-width card on the left of the chat (the rest of the chat
-// stays in view), one compact row each with their round photo (or a colored letter)
+// listed in a half-width card on the left of the chat, as tall as the chat
+// (never over the message box), one compact row each with their round photo (or a colored letter)
 // and ID. Typing part of a name narrows it; tapping a name fills in
 // "/gift <name> ". The first row, "Everyone", starts a Gift Shower.
-// The same list opens for /f, /fr (friend request) and /uf (unfriend).
+// The same list opens for /f, /fr (friend request) and /uf (unfriend), and
+// for "@" (mention someone).
 
 const photos = new Map<string, string>();
 
@@ -44,6 +45,7 @@ const TITLES: Record<string, string> = {
   "/fr": "👋 Send a friend request to…",
   "/f": "👋 Send a friend request to…",
   "/uf": "💔 Unfriend…",
+  "@": "👤 Mention a user",
 };
 
 export type PickerQuery = { cmd: string; q: string };
@@ -62,6 +64,7 @@ export function GiftNamePicker({
   cmd = "/gift",
   names,
   onPick,
+  pickText,
 }: {
   queryText: string;
   /** The command the picked name is put after. */
@@ -69,6 +72,8 @@ export function GiftNamePicker({
   /** Everyone in the room except me. */
   names: string[];
   onPick: (text: string) => void;
+  /** The whole message box text when a name is tapped (default: "<cmd> <name> "). */
+  pickText?: (name: string) => string;
 }) {
   const [, setTick] = useState(0);
   const q = queryText.toLowerCase();
@@ -103,7 +108,7 @@ export function GiftNamePicker({
 
   return (
     <div
-      className="absolute left-2 top-2 z-30 flex max-h-[65%] w-[52%] min-w-[175px] max-w-[300px] flex-col overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white shadow-[0_10px_30px_-8px_rgba(11,31,58,.35)]"
+      className="absolute left-2 top-2 z-30 flex max-h-[calc(100%-16px)] w-[52%] min-w-[175px] max-w-[300px] flex-col overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white shadow-[0_10px_30px_-8px_rgba(11,31,58,.35)]"
       data-notranslate
     >
       <div className="flex items-center justify-between border-b px-2.5 border-[#EEF2F7] bg-gradient-to-r from-[#F5F8FD] to-[#FDF3F9] py-2">
@@ -132,7 +137,7 @@ export function GiftNamePicker({
             <button
               key={name}
               type="button"
-              onClick={() => onPick(`${cmd} ${name} `)}
+              onClick={() => onPick(pickText ? pickText(name) : `${cmd} ${name} `)}
               className="flex w-full items-center gap-2 px-2.5 py-[5px] text-left hover:bg-[#F3F7FC] active:bg-[#EAF1FB]"
             >
               <span className="shrink-0 rounded-full bg-gradient-to-br from-[#FF9D2E] via-[#FF4F9A] to-[#7B4DE0] p-[2px]">
@@ -148,7 +153,9 @@ export function GiftNamePicker({
                   </span>
                 )}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#0B1F3A]">{name}</span>
+              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#0B1F3A]">
+                {cmd === "@" ? `@${name}` : name}
+              </span>
             </button>
           );
         })}
