@@ -8,7 +8,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, SectionLabel } from "../_components/LightCards";
-import { ShopItemEditDialog, shopName, shopPrice, useShopOverrides } from "../_components/ShopEdit";
+import { ShopItemEditDialog, shopName, shopPrev, shopPrice, useShopOverrides } from "../_components/ShopEdit";
 import { isMainFounderName } from "../../lib/founder";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 
@@ -253,8 +253,7 @@ export default function StyleStudioPage() {
           title={nameOf(editing)}
           currentName={nameOf(editing)}
           currentPrice={priceOf(editing)}
-          defaultName={editing.name}
-          defaultPrice={editing.price}
+          previous={shopPrev(ov.colors, editing.id)}
           onDone={setMessage}
           onDismiss={() => setEditing(null)}
         />

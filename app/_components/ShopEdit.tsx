@@ -11,7 +11,8 @@ import { db, functions } from "../../lib/firebase";
 // function; everyone signed in can read it), shown on top of the built-in
 // catalogs. The server charges the edited price too.
 
-type Override = { name: string | null; price: number | null };
+// prev = the value BEFORE the last change (the last history entry): what ↺ Reset goes back to.
+type Override = { name: string | null; price: number | null; prev: { name: string; price: number } | null };
 export type ShopOverrides = { colors: Record<string, Override>; entryFx: Record<string, Override> };
 
 function parse(raw: unknown): Record<string, Override> {
@@ -22,7 +23,10 @@ function parse(raw: unknown): Record<string, Override> {
     const m = v as { name?: unknown; price?: unknown };
     const name = typeof m.name === "string" && m.name.trim() ? m.name.trim() : null;
     const price = typeof m.price === "number" && m.price > 0 ? Math.trunc(m.price) : null;
-    out[id] = { name, price };
+    const history = Array.isArray((m as { history?: unknown }).history) ? ((m as { history: unknown[] }).history) : [];
+    const last = history[history.length - 1] as { name?: unknown; price?: unknown } | undefined;
+    const prev = last && typeof last.name === "string" && typeof last.price === "number" ? { name: last.name, price: last.price } : null;
+    out[id] = { name, price, prev };
   }
   return out;
 }
@@ -43,21 +47,22 @@ export function useShopOverrides(enabled = true): ShopOverrides {
 
 export const shopName = (map: Record<string, Override>, id: string, fallback: string) => map[id]?.name ?? fallback;
 export const shopPrice = (map: Record<string, Override>, id: string, fallback: number) => map[id]?.price ?? fallback;
+export const shopPrev = (map: Record<string, Override>, id: string) => map[id]?.prev ?? null;
 
 const founderEditShopItem = httpsCallable<
-  { kind: "color" | "fx"; id: string; name?: string; price?: number; reset?: boolean },
+  { kind: "color" | "fx"; id: string; name?: string; price?: number; currentName?: string; reset?: boolean },
   { ok?: boolean }
 >(functions, "founderEditShopItem");
 
-/** miglife's edit dialog: name + price, Save / Reset to default. */
+/** miglife's edit dialog: name + price. Save keeps the old value; ↺ Reset goes
+ *  back to the value before the last change (one step per tap). */
 export function ShopItemEditDialog({
   kind,
   id,
   title,
   currentName,
   currentPrice,
-  defaultName,
-  defaultPrice,
+  previous,
   onDone,
   onDismiss,
 }: {
@@ -66,8 +71,8 @@ export function ShopItemEditDialog({
   title: string;
   currentName: string;
   currentPrice: number;
-  defaultName: string;
-  defaultPrice: number;
+  /** What ↺ Reset restores (null = nothing saved yet). */
+  previous: { name: string; price: number } | null;
   onDone: (message: string) => void;
   onDismiss: () => void;
 }) {
@@ -92,7 +97,8 @@ export function ShopItemEditDialog({
     const p = Number(price);
     if (!name.trim()) return setError("Enter a name.");
     if (!Number.isInteger(p) || p < 1000 || p > 100_000_000) return setError("Price: 1,000 – 100,000,000.");
-    void call({ kind, id, name: name.trim(), price: p }, `✓ Saved: ${name.trim()} · ${p.toLocaleString("en-US")} coins`);
+    // currentName: the server keeps it as the value Reset goes back to.
+    void call({ kind, id, name: name.trim(), price: p, currentName }, `✓ Saved: ${name.trim()} · ${p.toLocaleString("en-US")} coins`);
   };
 
   const field = "w-full rounded-xl border border-[#C9D6E8] bg-white px-3 py-2.5 text-sm text-[#0B2A5B] outline-none focus:border-[#2F80ED]";
@@ -110,17 +116,21 @@ export function ShopItemEditDialog({
           className={`mt-1 ${field}`}
         />
         <p className="mt-1.5 text-[11px] text-[#8A97A8]">
-          Default: {defaultName} · {defaultPrice.toLocaleString("en-US")} coins
+          {previous
+            ? `↺ Reset goes back to: ${previous.name} · ${previous.price.toLocaleString("en-US")} coins`
+            : "No earlier name/price saved yet."}
         </p>
         {error && <p className="mt-1 text-xs font-bold text-[#E5484D]">{error}</p>}
         <div className="mt-3 flex items-center justify-between text-sm font-bold">
           <button
             type="button"
-            disabled={busy}
-            onClick={() => void call({ kind, id, reset: true }, `↺ ${defaultName} is back to its default name and price`)}
-            className="text-[#E5484D] disabled:opacity-50"
+            disabled={busy || !previous}
+            onClick={() =>
+              previous && void call({ kind, id, reset: true }, `↺ Back to ${previous.name} · ${previous.price.toLocaleString("en-US")} coins`)
+            }
+            className="text-[#E5484D] disabled:text-[#B0B8C4]"
           >
-            Reset to default
+            ↺ Reset
           </button>
           <button type="button" disabled={busy} onClick={save} className="text-[#6750A4] disabled:opacity-50">
             {busy ? "Saving…" : "Save"}

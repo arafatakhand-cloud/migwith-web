@@ -8,7 +8,7 @@ import { serverNow } from "../../lib/serverTime";
 import { brandMiglife } from "../../lib/brand";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isMainFounderName } from "../../lib/founder";
-import { ShopItemEditDialog, shopName, shopPrice, useShopOverrides } from "./ShopEdit";
+import { ShopItemEditDialog, shopName, shopPrev, shopPrice, useShopOverrides } from "./ShopEdit";
 import { FxCanvas, clamp01, dot, hashStr, heartPath, rgba, rng, useNewLineEvents, usePlayQueue } from "./RoomEffects";
 
 // ✨ ENTRY EFFECTS (the app's EntryEffects.kt) — 30-day subscriptions bought
@@ -1438,8 +1438,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
           title={`${editing.emoji} ${nameOf(editing)}`}
           currentName={nameOf(editing)}
           currentPrice={priceOf(editing)}
-          defaultName={editing.name}
-          defaultPrice={editing.price}
+          previous={shopPrev(ov.entryFx, editing.id)}
           onDone={setMessage}
           onDismiss={() => setEditing(null)}
         />
