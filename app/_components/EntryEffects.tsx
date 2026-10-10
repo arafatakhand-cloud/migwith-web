@@ -6,6 +6,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
 import { brandMiglife } from "../../lib/brand";
+import { useIsClassic } from "../../lib/uiStyle";
 import { FxCanvas, clamp01, dot, hashStr, heartPath, rgba, rng, useNewLineEvents, usePlayQueue } from "./RoomEffects";
 
 // ✨ ENTRY EFFECTS (the app's EntryEffects.kt) — 30-day subscriptions bought
@@ -19,7 +20,7 @@ export type EntryFx = {
   banner: [string, string]; ink: string; accent: string; subtitle: string;
 };
 
-export const ENTRY_FX_CATEGORIES = ["🌟 Classic", "🌸 Nature", "💖 Love", "🎉 Party", "🏮 Festival", "🔥 Elements", "💰 Rich", "👑 Royal", "🚀 Legend", "🐉 Mythic"];
+export const ENTRY_FX_CATEGORIES = ["🌟 Classic", "🌸 Nature", "💖 Love", "🎉 Party", "🏮 Festival", "🔥 Elements", "💰 Rich", "👑 Royal", "🚀 Legend", "🐉 Mythic", "💎 Exclusive"];
 
 export const ENTRY_FX: EntryFx[] = [
   { id: "sparkle", name: "Golden Sparkle", emoji: "✨", category: "🌟 Classic", price: 100000, banner: ["#3E2723", "#6D4C41"], ink: "#FFF8E1", accent: "#FFD54F", subtitle: "sparkles into the room" },
@@ -44,6 +45,13 @@ export const ENTRY_FX: EntryFx[] = [
   { id: "rainbow", name: "Rainbow Bridge", emoji: "🌈", category: "🌸 Nature", price: 170000, banner: ["#0277BD", "#7E57C2"], ink: "#FFFFFF", accent: "#FFF176", subtitle: "crosses the rainbow bridge" },
   { id: "neon", name: "Neon Sign", emoji: "💡", category: "🎉 Party", price: 240000, banner: ["#0A0014", "#1A0033"], ink: "#FFE6FA", accent: "#FF2BD6", subtitle: "is LIVE in neon!" },
   { id: "lanterns", name: "Sky Lanterns", emoji: "🏮", category: "🏮 Festival", price: 280000, banner: ["#3E1A00", "#B34700"], ink: "#FFF3E0", accent: "#FFB74D", subtitle: "lights up the night sky" },
+  // 💎 EXCLUSIVE — big, full-screen shows like Phoenix Rise
+  { id: "fireworks", name: "Fireworks Show", emoji: "🎆", category: "💎 Exclusive", price: 520000, banner: ["#05061F", "#1A237E"], ink: "#FFFFFF", accent: "#FFD54F", subtitle: "lights up the sky with fireworks!" },
+  { id: "lotus", name: "Golden Lotus", emoji: "🪷", category: "💎 Exclusive", price: 550000, banner: ["#4A0033", "#C2185B"], ink: "#FFF0F6", accent: "#FFD54F", subtitle: "blooms like a golden lotus" },
+  { id: "angel", name: "Angel Wings", emoji: "👼", category: "💎 Exclusive", price: 600000, banner: ["#0D47A1", "#42A5F5"], ink: "#FFFFFF", accent: "#FFF59D", subtitle: "descends on angel wings" },
+  { id: "frost", name: "Frost Wings", emoji: "❄️", category: "💎 Exclusive", price: 600000, banner: ["#001E3C", "#0277BD"], ink: "#E1F5FE", accent: "#80D8FF", subtitle: "soars in on wings of ice!" },
+  { id: "blackhole", name: "Black Hole", emoji: "🕳️", category: "💎 Exclusive", price: 700000, banner: ["#0A0014", "#311B92"], ink: "#FFE0B2", accent: "#FF9100", subtitle: "bends space and time!" },
+  { id: "dragon", name: "Dragon King", emoji: "🐉", category: "💎 Exclusive", price: 800000, banner: ["#3E0000", "#B71C1C"], ink: "#FFF8E1", accent: "#FFC400", subtitle: "rides in on a fire dragon!" },
 ];
 
 export const entryFxById = (id: string | null | undefined) => ENTRY_FX.find((f) => f.id === id) || null;
@@ -296,6 +304,49 @@ function rotated(ctx: CanvasRenderingContext2D, deg: number, x: number, y: numbe
   ctx.translate(-x, -y);
   body();
   ctx.restore();
+}
+
+const CLEAR = "rgba(0,0,0,0)";
+
+function spread(g: CanvasGradient, stops: readonly string[]) {
+  stops.forEach((c, i) => g.addColorStop(stops.length === 1 ? 0 : i / (stops.length - 1), c));
+  return g;
+}
+
+/** Compose's verticalGradient(colors, startY, endY). */
+function vgrad(ctx: CanvasRenderingContext2D, y0: number, y1: number, stops: readonly string[]) {
+  return spread(ctx.createLinearGradient(0, y0, 0, y1 === y0 ? y0 + 0.01 : y1), stops);
+}
+
+/** Compose's radialGradient(colors, center, radius). */
+function rgrad(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, stops: readonly string[]) {
+  return spread(ctx.createRadialGradient(x, y, 0, x, y, Math.max(0.1, radius)), stops);
+}
+
+/** drawRect(brush, alpha) over the whole canvas. */
+function fillStyled(ctx: CanvasRenderingContext2D, style: string | CanvasGradient, alpha: number, w: number, h: number) {
+  ctx.save();
+  ctx.globalAlpha = clamp01(alpha);
+  ctx.fillStyle = style;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+/** A filled circle with a color or a gradient. */
+function disc(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, style: string | CanvasGradient) {
+  ctx.fillStyle = style;
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(0.1, radius), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** A circle outline (Compose's Stroke style). */
+function ring(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string, width: number) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(0.1, radius), 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 /** The app's drawEntryFx, one case per effect (density = 1 CSS px). */
@@ -813,6 +864,286 @@ function drawEntryFx(ctx: CanvasRenderingContext2D, w: number, h: number, fx: En
       }
       break;
     }
+    // ===================== 💎 EXCLUSIVE (big full-screen shows) =====================
+    case "fireworks": {
+      fillStyled(ctx, vgrad(ctx, 0, h, ["#020214", "#0B1240"]), 0.78 * dimA, w, h);
+      for (let i = 0; i < 40; i++) {
+        const a = 0.25 + 0.5 * r(), s = 0.6 + r();
+        dot(ctx, r() * w, r() * h * 0.7, s, rgba("#FFFFFF", a));
+      }
+      const cols = ["#FF4D6D", "#FFD54F", "#4DD8FF", "#B388FF", "#69F0AE", "#FF9E40"];
+      for (let k = 0; k < 8; k++) {
+        const launch = 0.05 + k * 0.3;
+        const bx = w * (0.15 + r() * 0.7), by = h * (0.14 + r() * 0.32);
+        const col = cols[k % cols.length], col2 = cols[(k + 2) % cols.length];
+        const tt = t - launch;
+        if (tt >= 0 && tt <= 0.42) {
+          // the rocket goes up
+          const p = tt / 0.42;
+          const y = h - (h - by) * (1 - (1 - p) * (1 - p));
+          line(ctx, bx, y, bx, y + 46, rgba(col, 0.55), 3);
+          dot(ctx, bx, y, 3.2, "#FFFFFF");
+        } else if (tt > 0.42 && tt <= 1.7) {
+          // …and bursts
+          const e = (tt - 0.42) / 1.28;
+          const rad = 24 + 120 * (1 - (1 - e) * (1 - e));
+          const a = clamp01(1 - e);
+          const drop = e * e * 46;
+          if (e < 0.18) dot(ctx, bx, by, 50 * (1 + e * 4), rgba("#FFFFFF", (0.18 - e) * 4));
+          for (let j = 0; j < 30; j++) {
+            const ang = (j / 30) * 2 * PI;
+            const tipX = bx + cos(ang) * rad, tipY = by + sin(ang) * rad + drop;
+            line(ctx, bx + cos(ang) * rad * 0.62, by + sin(ang) * rad * 0.62 + drop * 0.7, tipX, tipY, rgba(j % 2 === 0 ? col : col2, a * 0.55), 2.2);
+            dot(ctx, tipX, tipY, 2.8, rgba(j % 3 === 0 ? "#FFFFFF" : col, a));
+          }
+          for (let j = 0; j < 12; j++) {
+            // inner ring of glitter
+            const ang = (j / 12) * 2 * PI + 0.26;
+            const tw = 0.5 + 0.5 * sin(t * 20 + j);
+            starPath(ctx, bx + cos(ang) * rad * 0.45, by + sin(ang) * rad * 0.45 + drop, 5);
+            ctx.fillStyle = rgba(col2, a * tw);
+            ctx.fill();
+          }
+        }
+      }
+      break;
+    }
+    case "lotus": {
+      fillStyled(ctx, rgrad(ctx, cx, cy, w, ["#4A0036", "#12000E"]), 0.72 * dimA, w, h);
+      const open = clamp01(t / 1.2), ease = 1 - (1 - open) * (1 - open);
+      const c = { x: cx, y: cy + 70 };
+      for (let k = 0; k < 18; k++) {
+        // golden rays turning slowly
+        const ang = (k / 18) * 2 * PI + t * 0.35;
+        line(ctx, c.x, c.y, c.x + cos(ang) * w, c.y + sin(ang) * w, rgba("#FFD54F", 0.16 * ease), 12);
+      }
+      disc(ctx, c.x, c.y, 170 * ease, rgrad(ctx, c.x, c.y, 170, [rgba("#FFE082", 0.7), CLEAR]));
+      const petal = (L: number, pw: number) => {
+        ctx.beginPath();
+        ctx.moveTo(c.x, c.y);
+        ctx.bezierCurveTo(c.x - pw, c.y - L * 0.32, c.x - pw * 0.55, c.y - L * 0.86, c.x, c.y - L);
+        ctx.bezierCurveTo(c.x + pw * 0.55, c.y - L * 0.86, c.x + pw, c.y - L * 0.32, c.x, c.y);
+        ctx.closePath();
+      };
+      ([[9, 170, "#E91E63"], [7, 132, "#FF6FB5"], [5, 96, "#FFC1E0"]] as const).forEach(([n, L0, col], li) => {
+        const L = L0 * (0.25 + 0.75 * ease);
+        const spread = (78 - li * 14) * ease;
+        for (let k = 0; k < n; k++) {
+          const ang = -spread + (2 * spread * k) / (n - 1);
+          rotated(ctx, ang, c.x, c.y, () => {
+            petal(L, L * 0.3);
+            ctx.fillStyle = vgrad(ctx, c.y - L, c.y, ["#FFF8E1", col]);
+            ctx.fill();
+            ctx.strokeStyle = rgba("#FFD54F", 0.85);
+            ctx.lineWidth = 2.2;
+            ctx.stroke();
+          });
+        }
+      });
+      dot(ctx, c.x, c.y, 18 * ease, "#FFE082");
+      dot(ctx, c.x, c.y, 8 * ease, rgba("#FFFFFF", 0.8));
+      for (let i = 0; i < 34; i++) {
+        // golden pollen floating up
+        const x0 = c.x + (r() - 0.5) * w * 0.8, ph = r(), life = 1.4 + r();
+        const tt = ((t + ph * life) % life) / life;
+        starPath(ctx, x0 + sin(tt * 6 + ph * 9) * 12, c.y - tt * h * 0.55, 3 + 4 * (1 - tt));
+        ctx.fillStyle = rgba("#FFE082", (1 - tt) * ease);
+        ctx.fill();
+      }
+      break;
+    }
+    case "angel": {
+      fillStyled(ctx, vgrad(ctx, 0, h, ["#FFFDE7", "#90CAF9"]), 0.5 * dimA, w, h);
+      for (let k = 0; k < 14; k++) {
+        // light from heaven
+        line(ctx, cx, -h * 0.1, cx + (k - 6.5) * w * 0.09, h, rgba("#FFFFFF", 0.22 * dimA), 18);
+      }
+      const open = clamp01(t / 0.9), ease = 1 - (1 - open) * (1 - open) * (1 - open);
+      const drop = (1 - ease) * h * 0.18;
+      const c = { x: cx, y: cy - 30 - drop };
+      const flap = sin(t * 4) * 4;
+      const feather = (L: number, pw: number, bx: number, by: number) => {
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.bezierCurveTo(bx - pw, by - L * 0.3, bx - pw * 0.5, by - L * 0.9, bx, by - L);
+        ctx.bezierCurveTo(bx + pw * 0.5, by - L * 0.9, bx + pw, by - L * 0.3, bx, by);
+        ctx.closePath();
+      };
+      for (const sgn of [-1, 1]) {
+        const bx = c.x + sgn * 16, by = c.y;
+        // long flight feathers, then a shorter row on top
+        for (const [n, len, col] of [[12, 150, "#E3F2FD"], [9, 96, "#FFFFFF"]] as const) {
+          for (let j = 0; j < n; j++) {
+            const theta = (-78 + j * (118 / (n - 1))) * ease + flap; // degrees from horizontal
+            const phi = sgn > 0 ? theta : 180 - theta;
+            const L = (len - Math.abs(j - n * 0.35) * 4) * (0.3 + 0.7 * ease);
+            rotated(ctx, phi + 90, bx, by, () => {
+              feather(L, L * 0.17, bx, by);
+              ctx.fillStyle = vgrad(ctx, by - L, by, ["#FFFFFF", col, "#BBDEFB"]);
+              ctx.fill();
+              ctx.strokeStyle = rgba("#90CAF9", 0.7);
+              ctx.lineWidth = 1.4;
+              ctx.stroke();
+            });
+          }
+        }
+      }
+      // golden halo
+      const hw = Math.max(0.1, 70 * ease), hh = Math.max(0.1, 20 * ease);
+      for (const [col, lw] of [[rgba("#FFD54F", 0.35), 12], ["#FFF59D", 4]] as const) {
+        ctx.strokeStyle = col;
+        ctx.lineWidth = lw;
+        ctx.beginPath();
+        ctx.ellipse(cx, c.y - 120, hw, hh, 0, 0, PI * 2);
+        ctx.stroke();
+      }
+      dot(ctx, c.x, c.y, 14 * ease, rgba("#FFFFFF", 0.9));
+      for (let i = 0; i < 26; i++) {
+        // feathers drifting down
+        const x0 = r() * w, d = r() * 1.2, sp = 0.12 + r() * 0.1, s = 10 + r() * 8;
+        const tt = t - d;
+        if (tt <= 0) continue;
+        const px = x0 + sin(tt * 2 + i) * 26, py = -20 + tt * sp * h;
+        rotated(ctx, sin(tt * 3 + i) * 40, px, py, () => {
+          feather(s * 2, s * 0.4, px, py);
+          ctx.fillStyle = rgba("#FFFFFF", 0.9);
+          ctx.fill();
+        });
+      }
+      break;
+    }
+    case "frost": {
+      fill(ctx, rgba("#00121F", 0.6 * dimA), w, h);
+      const rise = clamp01(t / 1.1);
+      const bx = cx, by = h - (h - cy + 40) * (1 - (1 - rise) * (1 - rise));
+      const flap = sin(t * 6) * 0.35;
+      for (let side = 0; side < 2; side++) {
+        const sgn = side === 0 ? -1 : 1;
+        for (let j = 0; j < 64; j++) {
+          const u = j / 64;
+          const wx = bx + sgn * u * w * 0.44;
+          const wy = by - sin(u * PI) * h * 0.08 - u * h * 0.12 * (1 + flap);
+          const col = u < 0.35 ? "#FFFFFF" : u < 0.7 ? "#80D8FF" : "#2979FF";
+          const sz = 6 + (1 - u) * 6;
+          dot(ctx, wx, wy, sz * 1.9, rgba(col, 0.22));
+          dot(ctx, wx, wy, sz * 0.55, rgba(col, 0.95));
+          if (j % 6 === 0) {
+            // icicle feathers
+            line(ctx, wx, wy, wx + sgn * 5, wy + 30, rgba("#E1F5FE", 0.9), 3);
+            starPath(ctx, wx + sgn * 5, wy + 30, 4);
+            ctx.fillStyle = "#FFFFFF";
+            ctx.fill();
+          }
+        }
+      }
+      dot(ctx, bx, by, 30, rgba("#80D8FF", 0.35));
+      starPath(ctx, bx, by, 16);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fill();
+      for (let i = 0; i < 70; i++) {
+        // snow crystals trailing down
+        const ph = r(), life = 0.9 + r() * 0.7, xo = (r() - 0.5) * 90;
+        const tt = ((t + ph * life) % life) / life;
+        starPath(ctx, bx + xo * tt, by + tt * h * 0.4, 2.5 + (1 - tt) * 4);
+        ctx.fillStyle = rgba(i % 2 === 0 ? "#FFFFFF" : "#80D8FF", 1 - tt);
+        ctx.fill();
+      }
+      break;
+    }
+    case "blackhole": {
+      fill(ctx, rgba("#02000A", 0.84 * dimA), w, h);
+      for (let i = 0; i < 60; i++) {
+        const a = 0.2 + 0.5 * r(), s = 0.5 + r() * 1.2;
+        dot(ctx, r() * w, r() * h, s, rgba("#FFFFFF", a));
+      }
+      const g0 = clamp01(t / 0.8), grow = 1 - (1 - g0) * (1 - g0);
+      const c = { x: cx, y: cy - 30 };
+      disc(ctx, c.x, c.y, 260 * grow, rgrad(ctx, c.x, c.y, 260, [rgba("#7C4DFF", 0.5), CLEAR]));
+      const disk = ["#FFE0B2", "#FFB74D", "#FF6E40", "#B388FF"];
+      for (let i = 0; i < 190; i++) {
+        const r0 = r(), a0 = r() * 2 * PI, col = disk[i % disk.length];
+        const rr = (((r0 - t * 0.22) % 1) + 1) % 1; // drifting inward
+        const rad = (42 + rr * 180) * grow;
+        const ang = a0 + t * (2.2 + (1 - rr) * 5.5);
+        dot(ctx, c.x + cos(ang) * rad, c.y + sin(ang) * rad * 0.36, 1.1 + (1 - rr) * 2.6, rgba(col, (0.2 + 0.8 * (1 - rr)) * grow));
+      }
+      disc(ctx, c.x, c.y, 72 * grow, rgrad(ctx, c.x, c.y, 72 * grow, [CLEAR, rgba("#FF9100", 0.6), CLEAR]));
+      dot(ctx, c.x, c.y, 36 * grow, "#000000");
+      ring(ctx, c.x, c.y, 38 * grow, rgba("#FFD180", 0.95), 3);
+      const ft = t - 1.25;
+      if (ft >= 0 && ft <= 0.7) {
+        // the space-time ripple
+        const a = 1 - ft / 0.7;
+        ring(ctx, c.x, c.y, 40 + ft * 520, rgba("#FFFFFF", a * 0.9), 5 * a + 1);
+        ring(ctx, c.x, c.y, 30 + ft * 420, rgba("#B388FF", a * 0.6), 10 * a + 1);
+      }
+      break;
+    }
+    case "dragon": {
+      fillStyled(ctx, vgrad(ctx, 0, h, ["#140000", "#3D0A00"]), 0.72 * dimA, w, h);
+      const head = clamp01(t / 1.5);
+      const at = (u: number) => ({ x: -0.12 * w + u * 1.2 * w, y: cy - 40 + sin(u * 8.5 - t * 2.6) * h * 0.09 });
+      for (let k = 47; k >= 1; k--) {
+        // the body, tail first
+        const u = head * 1.12 - k * 0.02;
+        if (u < -0.05) continue;
+        const p = at(u);
+        const sz = Math.max(4, 19 - k * 0.3);
+        dot(ctx, p.x, p.y, sz * 1.6, rgba("#FF6F00", 0.25));
+        const g = ctx.createRadialGradient(p.x - sz * 0.3, p.y - sz * 0.35, 0, p.x - sz * 0.3, p.y - sz * 0.35, sz * 1.4);
+        g.addColorStop(0, "#FFE082");
+        g.addColorStop(0.5, "#FF6F00");
+        g.addColorStop(1, "#8E0000");
+        disc(ctx, p.x, p.y, sz, g);
+        if (k % 3 === 0) {
+          // golden back spikes
+          ctx.beginPath();
+          ctx.moveTo(p.x - sz * 0.45, p.y - sz * 0.75);
+          ctx.lineTo(p.x, p.y - sz * 1.75);
+          ctx.lineTo(p.x + sz * 0.45, p.y - sz * 0.75);
+          ctx.closePath();
+          ctx.fillStyle = "#FFC400";
+          ctx.fill();
+        }
+      }
+      const hu = head * 1.12;
+      if (hu > -0.05) {
+        const hp = at(hu), nx = at(hu + 0.01);
+        const ddx = nx.x - hp.x, ddy = nx.y - hp.y;
+        const len = Math.max(0.001, Math.sqrt(ddx * ddx + ddy * ddy));
+        const dir = { x: ddx / len, y: ddy / len }, nrm = { x: -ddy / len, y: ddx / len };
+        const hs = 26;
+        dot(ctx, hp.x, hp.y, hs * 1.8, rgba("#FFC400", 0.3));
+        disc(ctx, hp.x, hp.y, hs, rgrad(ctx, hp.x, hp.y, hs * 1.3, ["#FFF59D", "#FF8F00", "#B71C1C"]));
+        // horns
+        for (const sg of [-1, 1]) {
+          const bx = hp.x - dir.x * hs * 0.4 + nrm.x * sg * hs * 0.6, by = hp.y - dir.y * hs * 0.4 + nrm.y * sg * hs * 0.6;
+          line(ctx, bx, by, bx - dir.x * hs * 1.3 + nrm.x * sg * hs * 0.7, by - dir.y * hs * 1.3 + nrm.y * sg * hs * 0.7, "#FFE082", 5);
+        }
+        // eye
+        const ex = hp.x + dir.x * hs * 0.25 - nrm.x * hs * 0.35, ey = hp.y + dir.y * hs * 0.25 - nrm.y * hs * 0.35;
+        dot(ctx, ex, ey, 5, "#FFFFFF");
+        dot(ctx, ex, ey, 2.4, "#1A0000");
+        // fire breath
+        if (head > 0.3) {
+          const mx = hp.x + dir.x * hs, my = hp.y + dir.y * hs;
+          for (let i = 0; i < 70; i++) {
+            const ph = r(), sp = (r() - 0.5) * 0.7;
+            const d = (t * 1.7 + ph) % 1;
+            const dist = d * 190;
+            const col = d < 0.3 ? "#FFF9C4" : d < 0.65 ? "#FFAB00" : "#DD2C00";
+            dot(ctx, mx + dir.x * dist + nrm.x * sp * dist, my + dir.y * dist + nrm.y * sp * dist, 3 + d * 9, rgba(col, (1 - d) * 0.9));
+          }
+        }
+      }
+      for (let i = 0; i < 40; i++) {
+        // embers in the air
+        const x = r() * w, ph = r(), life = 1.2 + r();
+        const tt = ((t + ph * life) % life) / life;
+        dot(ctx, x, h - tt * h * 0.9, 1.5 + 2 * (1 - tt), rgba("#FF9100", (1 - tt) * 0.8));
+      }
+      break;
+    }
   }
 }
 
@@ -839,15 +1170,31 @@ export function useEntryFxInventory(uid: string | undefined) {
 
 const opId = () => "efx_" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 
+// ✨ ENTRY EFFECTS PAGE (the app's MaEntryEffectsPage) — laid out like 🎨 Style
+// Studio: balance, "My Entry Effects" (owned ones, switch on/off, days left),
+// category chips (All first), then a raised "keycap" card per effect with a
+// mini banner, price, Preview & Buy. Cheapest first.
 export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }) {
+  const classic = useIsClassic();
   const [inv, setInv] = useEntryFxInventory(uid);
-  const [tab, setTab] = useState(ENTRY_FX_CATEGORIES[0]);
+  const [balance, setBalance] = useState<number | null>(null);
+  const [tab, setTab] = useState("All");
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<EntryFx | null>(null);
   const [preview, setPreview] = useState<{ fx: EntryFx; key: number } | null>(null);
   const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const now = serverNow();
+
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "users", uid),
+        (snap) => setBalance(Number(snap.get("balance") || 0)),
+        () => {}
+      ),
+    [uid]
+  );
 
   const use = async (id: string) => {
     setBusy(id);
@@ -878,78 +1225,161 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
     previewTimer.current = setTimeout(() => setPreview(null), 3500);
   };
 
-  const pill = "rounded-full px-3 py-1.5 text-xs font-extrabold";
+  const owned = ENTRY_FX.filter((f) => (inv.owned[f.id] || 0) > now);
+  const shown = ENTRY_FX.filter((f) => tab === "All" || f.category === tab).sort((a, b) => a.price - b.price);
+  const daysLeft = (id: string) => Math.max(0, Math.floor(((inv.owned[id] || 0) - now) / 86_400_000));
+  const rad = classic ? "rounded-[4px]" : "rounded-[14px]";
+  const btn = `${classic ? "rounded-[4px]" : "rounded-full"} px-3 py-1.5 text-xs font-extrabold`;
+
   return (
-    <div className="classic-light rounded-[22px] bg-[#140F24] p-4 text-white shadow-xl">
-      <h2 className="text-[19px] font-extrabold text-[#FFD54F]">✨ Entry Effects</h2>
-      <p className="text-[11px] text-[#B9B2CC]">30 days each · 1,00,000 – 5,00,000 coins · everyone in the room sees it</p>
-
-      <div className="no-scrollbar -mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1">
-        {ENTRY_FX_CATEGORIES.map((c) => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setTab(c)}
-            className="shrink-0 rounded-full px-[11px] py-1.5 text-xs font-bold"
-            style={c === tab ? { background: "#FFD54F", color: "#2A1F00" } : { background: "rgba(255,255,255,.13)", color: "#fff" }}
-          >
-            {c}
-          </button>
-        ))}
+    <div>
+      <div className="flex items-center justify-between px-1 text-sm">
+        <span className="font-semibold text-[#35507E]">Everyone sees it when you enter</span>
+        <span className={`px-[9px] py-1 text-[11px] font-bold ${classic ? "rounded-[4px] bg-[#2E9E6B] text-white" : "rounded-full bg-[#12324F] text-[#6FE0A0]"}`}>
+          💲 {balance === null ? "…" : balance.toLocaleString("en-US")}
+        </span>
       </div>
-      {message && <p className="mt-2 text-xs font-bold text-[#FFD27A]">{message}</p>}
+      {message && <p className={`mt-2 px-1 text-[11px] font-bold ${classic ? "text-[#F07A00]" : "text-[#0B2A5B]"}`}>{message}</p>}
 
-      <div className="mt-2.5 space-y-2.5">
-        {ENTRY_FX.filter((f) => f.category === tab).map((fx) => {
-          const exp = inv.owned[fx.id] || 0;
-          const owned = exp > now;
-          const active = owned && inv.active === fx.id;
-          const daysLeft = owned ? Math.floor((exp - now) / 86_400_000) + 1 : 0;
+      {/* 🏅 my effects */}
+      {owned.length > 0 && (
+        <div className={`mt-2.5 bg-[#FDF6E3] p-2.5 ${rad}`}>
+          <p className="text-[13px] font-bold text-[#7A5B00]">🏅 My Entry Effects</p>
+          <p className="text-[9px] text-[#8A8060]">Only one is on at a time. Turn one on to show it when you enter a room.</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {owned.map((fx) => {
+              const on = inv.active === fx.id;
+              return (
+                <li key={fx.id} className={`flex items-center border bg-white p-2 ${classic ? "rounded-[4px]" : "rounded-xl"}`} style={{ borderColor: rgba(fx.accent, 0.6) }}>
+                  <span
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-lg"
+                    style={{ background: `linear-gradient(135deg, ${fx.banner[0]}, ${fx.banner[1]})` }}
+                  >
+                    {fx.emoji}
+                  </span>
+                  <span className="ml-2 min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-[13px] font-bold text-[#1A1A2E]">{fx.name}</span>
+                      {on && <span className="rounded-md bg-[#2E9E6B] px-[5px] py-px text-[8px] font-black text-white">ON</span>}
+                    </span>
+                    <span className="block text-[9px] text-[#8A8060]">⏱ {daysLeft(fx.id)} days left</span>
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={on}
+                    disabled={busy !== null}
+                    onClick={() => use(on ? "none" : fx.id)}
+                    className={`relative h-7 w-12 shrink-0 rounded-full transition disabled:opacity-50 ${on ? "bg-[#6750A4]" : "bg-[#C5D0E0]"}`}
+                  >
+                    <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${on ? "left-6" : "left-1"}`} />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* categories */}
+      <div className="no-scrollbar -mx-1 mt-2.5 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+        {["All", ...ENTRY_FX_CATEGORIES].map((c) => {
+          const on = c === tab;
           return (
-            <div
-              key={fx.id}
-              className="rounded-2xl p-3"
+            <button
+              key={c}
+              type="button"
+              onClick={() => setTab(c)}
+              className={`shrink-0 px-[11px] py-1.5 text-xs font-bold ${classic ? "rounded-[4px]" : "rounded-full"}`}
               style={{
-                background: `linear-gradient(90deg, ${fx.banner[0]}, ${fx.banner[1]})`,
-                border: `${active ? 2.5 : 1}px solid ${fx.accent}`,
-                boxShadow: active ? `0 0 16px ${rgba(fx.accent, 0.6)}` : "0 2px 6px rgba(0,0,0,.3)",
+                background: on ? (classic ? "#2F6ABD" : "#7B4DE0") : classic ? "#E9EEF4" : "#FFFFFF",
+                color: on ? "#FFFFFF" : classic ? "#16315F" : "#0B2A5B",
               }}
             >
-              <div className="flex items-center">
-                <span className="text-[30px] leading-none">{fx.emoji}</span>
-                <div className="ml-2.5 min-w-0 flex-1">
-                  <p className="text-base font-extrabold text-white">{fx.name}</p>
-                  <p className="text-xs font-bold" style={{ color: fx.accent }}>
-                    {active ? `✓ ON · ${daysLeft} days left` : owned ? `Owned · ${daysLeft} days left` : `🪙 ${fx.price.toLocaleString("en-US")} / 30 days`}
-                  </p>
+              {c}
+            </button>
+          );
+        })}
+      </div>
+      <p className="px-1.5 py-1 text-[11px] font-bold text-[#0B2A5B]">Available Effects • {shown.length} styles</p>
+
+      {/* effect cards — a raised keycap, like Style Studio */}
+      <div className="grid gap-2.5 md:grid-cols-2">
+        {shown.map((fx) => {
+          const exp = inv.owned[fx.id] || 0;
+          const isOwned = exp > now;
+          const on = isOwned && inv.active === fx.id;
+          const canAfford = balance !== null && balance >= fx.price;
+          return (
+            <div key={fx.id} className={`pb-[3px] ${rad}`} style={{ background: rgba(fx.accent, 0.55) }}>
+              <div className={`flex overflow-hidden bg-gradient-to-b from-white to-[#F6F6F8] shadow-[0_2px_4px_rgba(0,0,0,.18)] ${rad}`}>
+                <span className="w-1 shrink-0" style={{ background: fx.accent }} />
+                <div className="min-w-0 flex-1 p-[11px]">
+                  <div className="flex items-center gap-2">
+                    <p className="min-w-0 flex-1 truncate text-[15px] font-bold text-[#1A1A2E]">
+                      {fx.emoji} {fx.name}
+                    </p>
+                    <span className={`shrink-0 border border-[#D4AF37] bg-[#FFF3D6] px-2 py-[3px] text-[11px] font-bold text-[#8A5A00] ${classic ? "rounded-[4px]" : "rounded-xl"}`}>
+                      💲 {fx.price.toLocaleString("en-US")}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-[5px]">
+                    <Chip text="30 days" color={fx.accent} />
+                    <Chip text={fx.category} color="#6B7788" />
+                    {isOwned && <Chip text={`OWNED · ${daysLeft(fx.id)}d`} color="#2E9E6B" />}
+                  </div>
+                  {/* mini banner: what everyone sees when you enter */}
+                  <button
+                    type="button"
+                    onClick={() => showPreview(fx)}
+                    className="mt-[7px] block w-full rounded-xl py-2 text-center"
+                    style={{
+                      background: `linear-gradient(90deg, ${fx.banner[0]}, ${fx.banner[1]})`,
+                      border: `1.5px solid ${fx.accent}`,
+                    }}
+                  >
+                    <span className="block text-[8px] font-black tracking-[1.5px]" style={{ color: fx.accent }}>
+                      ✦ GRAND ENTRY ✦
+                    </span>
+                    <span data-notranslate className="block text-[15px] font-black text-white">
+                      {fx.emoji} {brandMiglife(myName || "you")}
+                    </span>
+                    <span className="block text-[10px] font-bold" style={{ color: fx.ink }}>
+                      {fx.subtitle}
+                    </span>
+                    <span className="block text-[8px] text-white/60">▶ tap to preview</span>
+                  </button>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={() => showPreview(fx)} className={`${btn} bg-[#EEF2F8] text-[#16315F]`}>
+                      ▶ Preview
+                    </button>
+                    {busy === fx.id ? (
+                      <span className="text-xs text-[#8A97A8]">Working…</span>
+                    ) : on ? (
+                      <button type="button" onClick={() => use("none")} className={`${btn} bg-[#2E9E6B] text-white`}>
+                        ✓ On
+                      </button>
+                    ) : isOwned ? (
+                      <button type="button" onClick={() => use(fx.id)} className={`${btn} bg-[#2F6ABD] text-white`}>
+                        Use
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${fx.price.toLocaleString("en-US")} coins for ${fx.name}.`))}
+                        className={`${btn} text-white`}
+                        style={{ background: canAfford ? (classic ? "#F07A00" : "#7B4DE0") : "#B0B8C4" }}
+                      >
+                        {canAfford ? "Buy" : "Need coins"}
+                      </button>
+                    )}
+                    {isOwned && (
+                      <button type="button" onClick={() => setConfirm(fx)} className={`${btn} bg-[#FFF3D6] text-[#8A5A00]`}>
+                        +30 days
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" onClick={() => showPreview(fx)} className={pill} style={{ background: "rgba(255,255,255,.2)" }}>
-                  👁 Preview
-                </button>
-                {busy === fx.id ? (
-                  <span className={pill} style={{ background: "rgba(255,255,255,.2)" }}>
-                    …
-                  </span>
-                ) : active ? (
-                  <button type="button" onClick={() => use("none")} className={pill} style={{ background: "rgba(0,0,0,.33)", color: "#FF8A80" }}>
-                    Turn off
-                  </button>
-                ) : owned ? (
-                  <button type="button" onClick={() => use(fx.id)} className={pill} style={{ background: fx.accent, color: "#1A1200" }}>
-                    Use
-                  </button>
-                ) : (
-                  <button type="button" onClick={() => setConfirm(fx)} className={pill} style={{ background: fx.accent, color: "#1A1200" }}>
-                    Buy
-                  </button>
-                )}
-                {owned && (
-                  <button type="button" onClick={() => setConfirm(fx)} className={pill} style={{ background: "rgba(255,255,255,.2)" }}>
-                    +30 days
-                  </button>
-                )}
               </div>
             </div>
           );
@@ -993,5 +1423,13 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
         </div>
       )}
     </div>
+  );
+}
+
+function Chip({ text, color }: { text: string; color: string }) {
+  return (
+    <span className="rounded-[7px] px-1.5 py-0.5 text-[9px] font-bold" style={{ color, background: rgba(color, 0.12) }}>
+      {text}
+    </span>
   );
 }

@@ -236,6 +236,8 @@ function RoomView({ roomName }: { roomName: string }) {
   const [menuOpen, setMenuOpen] = useState(false);
   // The Participants panel beside the room menu (like the app).
   const [menuPeople, setMenuPeople] = useState(false);
+  // 🛡 the moderation tools live on their own page inside the room menu (like the app)
+  const [modToolsOpen, setModToolsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [kickOpen, setKickOpen] = useState(false);
   const { favorites, toggleFavorite } = useRoomPrefs();
@@ -1609,6 +1611,7 @@ function RoomView({ roomName }: { roomName: string }) {
   const closeMenu = () => {
     setMenuOpen(false);
     setMenuPeople(false);
+    setModToolsOpen(false);
   };
   const prefill = (cmd: string) => {
     closeMenu();
@@ -1632,19 +1635,51 @@ function RoomView({ roomName }: { roomName: string }) {
             ? ["🛡 MOD", "#DFF7EA", "#15803D"]
             : ["👤 MEMBER", "#E3F3FF", "#0369A1"];
   const canModMenu = perms.isAppStaffHere || perms.canModeratePrivate;
-  const modTiles: [string, string, () => void][] = [
-    ...(perms.canKick ? ([["👢", "Kick", () => (closeMenu(), setKickOpen(true))]] as [string, string, () => void][]) : []),
-    ["🔇", "Mute", () => prefill("/mute ")],
-    ["⛔", "Ban", () => prefill("/ban ")],
-    ["🔒", locked ? "Unlock" : "Lock", () => runCommand(locked ? "/unlock" : "/lock")],
-    ["🤫", silenced ? "Unsilence" : "Silence", () => runCommand(silenced ? "/unsilence room" : "/silence room")],
-    ["📌", "Announce", () => prefill("/announcement ")],
-    ...(perms.canBroadcast ? ([["📢", "Broadcast", () => prefill("/broadcast ")]] as [string, string, () => void][]) : []),
-    ...(perms.isUserRoom && perms.canManagePrivate ? ([["🛡", "+ Mod", () => prefill("/mod ")]] as [string, string, () => void][]) : []),
-    ...(perms.isUserRoom && perms.canAssignSuperMod ? ([["⭐", "+ S.Mod", () => prefill("/smod ")]] as [string, string, () => void][]) : []),
-    ...((perms.isUserRoom && perms.canManagePrivate) || perms.isRoomAdmin
-      ? ([["⚙️", "Settings", () => (closeMenu(), setInfoOpen(true))]] as [string, string, () => void][])
-      : []),
+  // 🛡 MODERATION TOOLS page (the app's RoomModerationToolsPage): each tool with
+  // a short line saying what it does; the ones that need a name fill the box.
+  type ModTool = { icon: string; title: string; desc: string; tint: string; act: () => void };
+  const modSections: [string, ModTool[]][] = [
+    [
+      "👤 PEOPLE",
+      [
+        ...(perms.canKick ? [{ icon: "👢", title: "Kick", desc: "Remove someone from this room", tint: "#FFE8DC", act: () => (closeMenu(), setKickOpen(true)) }] : []),
+        { icon: "🔇", title: "Mute", desc: "Stop someone from typing here", tint: "#FFF1D6", act: () => prefill("/mute ") },
+        { icon: "⛔", title: "Ban", desc: "Block someone from this room", tint: "#FFE0E0", act: () => prefill("/ban ") },
+      ],
+    ],
+    [
+      "🏠 ROOM",
+      [
+        {
+          icon: "🔒",
+          title: locked ? "Unlock room" : "Lock room",
+          desc: locked ? "Let everyone enter again" : "Nobody new can enter",
+          tint: "#E3EEFF",
+          act: () => runCommand(locked ? "/unlock" : "/lock"),
+        },
+        {
+          icon: "🤫",
+          title: silenced ? "Unsilence" : "Silence",
+          desc: silenced ? "Everyone can talk again" : "Only staff can talk",
+          tint: "#EDE7FF",
+          act: () => runCommand(silenced ? "/unsilence room" : "/silence room"),
+        },
+        { icon: "📌", title: "Announce", desc: "Pin a message on top of the chat", tint: "#E6F7EE", act: () => prefill("/announcement ") },
+        ...(perms.canBroadcast ? [{ icon: "📢", title: "Broadcast", desc: "Send a highlighted notice once", tint: "#FFF4D6", act: () => prefill("/broadcast ") }] : []),
+      ],
+    ],
+    [
+      "⭐ TEAM",
+      [
+        ...(perms.isUserRoom && perms.canManagePrivate ? [{ icon: "🛡", title: "Add Mod", desc: "Make someone a moderator", tint: "#E3F3FF", act: () => prefill("/mod ") }] : []),
+        ...(perms.isUserRoom && perms.canAssignSuperMod
+          ? [{ icon: "⭐", title: "Add Super Mod", desc: "Make someone a super moderator", tint: "#FFF1CC", act: () => prefill("/smod ") }]
+          : []),
+        ...((perms.isUserRoom && perms.canManagePrivate) || perms.isRoomAdmin
+          ? [{ icon: "⚙️", title: "Room Settings", desc: "Name, rules, welcome message…", tint: "#EFF2F6", act: () => (closeMenu(), setInfoOpen(true)) }]
+          : []),
+      ],
+    ],
   ];
 
   return (
@@ -1961,6 +1996,51 @@ function RoomView({ roomName }: { roomName: string }) {
             className="max-h-[85vh] w-[62%] min-w-[230px] max-w-[300px] overflow-y-auto rounded-[28px] bg-white pb-2.5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            {modToolsOpen && canModMenu ? (
+              <>
+                <div className={`flex items-center gap-2 px-2 py-2.5 text-white ${classic ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" : "bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4]"}`}>
+                  <button
+                    type="button"
+                    onClick={() => setModToolsOpen(false)}
+                    aria-label="Back"
+                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-bold leading-none"
+                  >
+                    ‹
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-black">🛡 Moderation Tools</p>
+                    <p data-notranslate className="truncate text-[10px] text-white/80">
+                      {roomDisplayName(roomName)}
+                    </p>
+                  </div>
+                </div>
+                {modSections.map(([title, tools]) =>
+                  tools.length === 0 ? null : (
+                    <div key={title}>
+                      <p className="px-3.5 pb-[3px] pt-2.5 text-[9.5px] font-black tracking-[0.08em] text-[#7D8AA5]">{title}</p>
+                      {tools.map((tool) => (
+                        <button
+                          key={tool.title}
+                          type="button"
+                          onClick={tool.act}
+                          className="mx-2 my-0.5 flex w-[calc(100%-16px)] items-center rounded-[14px] bg-[#F7F9FC] px-2 py-[7px] text-left"
+                        >
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-base" style={{ background: tool.tint }}>
+                            {tool.icon}
+                          </span>
+                          <span className="ml-[9px] min-w-0 flex-1">
+                            <span className="block truncate text-[13px] font-bold text-[#12233F]">{tool.title}</span>
+                            <span className="block truncate text-[10px] text-[#7D8AA5]">{tool.desc}</span>
+                          </span>
+                          <span className="text-lg text-[#A9B4C2]">›</span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                )}
+              </>
+            ) : (
+            <>
             <div className={`px-3 py-[11px] text-white ${classic ? "bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" : "bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4]"}`}>
               <div className="flex items-center gap-2.5">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-white/55 bg-white/20 text-lg">🏠</span>
@@ -2029,24 +2109,19 @@ function RoomView({ roomName }: { roomName: string }) {
               ))}
             </ul>
 
-            {/* 🛡 Moderation — only for people who may use it */}
+            {/* 🛡 MODERATION — one line that opens the Moderation Tools page */}
             {canModMenu && (
-              <>
-                <p className="px-3.5 pb-1 pt-[9px] text-[9.5px] font-black tracking-[0.08em] text-[#7D8AA5]">🛡 MODERATION</p>
-                <div className="grid grid-cols-3 gap-[5px] px-2.5">
-                  {modTiles.map(([icon, label, act]) => (
-                    <button
-                      key={label}
-                      type="button"
-                      onClick={act}
-                      className="flex flex-col items-center rounded-[11px] border border-[#FFE2CF] bg-[#FFF6F0] py-1.5"
-                    >
-                      <span className="text-[15px] leading-5">{icon}</span>
-                      <span className="max-w-full truncate px-0.5 text-[8.5px] font-extrabold text-[#8A4A1C]">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
+              <div className="mt-1.5 px-2">
+                <button
+                  type="button"
+                  onClick={() => setModToolsOpen(true)}
+                  className="flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">🛡</span>
+                  <span className="flex-1">Moderation Tools</span>
+                  <span className="pr-1 text-sm text-[#6B7A99]">›</span>
+                </button>
+              </div>
             )}
 
             {/* Leave — red, on its own */}
@@ -2057,6 +2132,8 @@ function RoomView({ roomName }: { roomName: string }) {
             >
               🚪 Leave Room
             </button>
+            </>
+            )}
           </div>
 
           {menuPeople && (
