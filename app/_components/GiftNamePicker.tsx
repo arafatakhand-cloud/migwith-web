@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 
-// /gift recipient list, like the app: as soon as "/gift" is typed, everyone in
-// the room is listed under the top bar, one per row with their round photo
+// /gift recipient list: as soon as "/gift" is typed, everyone in the room is
+// listed in a card over the top half of the chat (never more than half, so
+// the chat and the message box stay in view), one compact row each with their round photo (or a colored letter)
 // and ID. Typing part of a name narrows it; tapping a name fills in
 // "/gift <name> ". The first row, "Everyone", starts a Gift Shower.
 // The same list opens for /f, /fr (friend request) and /uf (unfriend).
@@ -19,6 +20,31 @@ function photoOf(d: Record<string, unknown>): string {
   }
   return "";
 }
+
+// Colored letter circles for people without a photo (same color for a name every time).
+const LETTER_BG = [
+  ["#FF8A65", "#F4511E"],
+  ["#4FC3F7", "#0288D1"],
+  ["#81C784", "#388E3C"],
+  ["#BA68C8", "#7B1FA2"],
+  ["#FFD54F", "#F9A825"],
+  ["#F06292", "#C2185B"],
+  ["#4DB6AC", "#00796B"],
+  ["#7986CB", "#303F9F"],
+];
+function letterBg(name: string) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const [a, b] = LETTER_BG[h % LETTER_BG.length];
+  return `linear-gradient(135deg, ${a}, ${b})`;
+}
+
+const TITLES: Record<string, string> = {
+  "/gift": "🎁 Send a gift to…",
+  "/fr": "👋 Send a friend request to…",
+  "/f": "👋 Send a friend request to…",
+  "/uf": "💔 Unfriend…",
+};
 
 export type PickerQuery = { cmd: string; q: string };
 
@@ -76,41 +102,61 @@ export function GiftNamePicker({
   if (list.length === 0) return null;
 
   return (
-    <div className="absolute inset-x-0 top-0 z-30 max-h-[380px] overflow-y-auto bg-white shadow-lg" data-notranslate>
-      {cmd === "/gift" && !queryText && (
-        <button
-          type="button"
-          onClick={() => onPick("/gift all ")}
-          className="flex w-full items-center gap-3 bg-[#FFF1F8] px-3 py-2 text-left"
-        >
-          <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-[#FF2D95] text-lg">🎁</span>
-          <span>
-            <span className="block text-lg leading-6 text-[#C2185B]">Everyone</span>
-            <span className="block text-sm text-[#8A5A75]">Gift Shower: /gift all</span>
-          </span>
-        </button>
-      )}
-      {list.map((name) => {
-        const photo = photos.get(name) || "";
-        return (
+    <div
+      className="absolute inset-x-2 top-2 z-30 flex max-h-[50%] flex-col overflow-hidden rounded-2xl border border-[#D9E4F2] bg-white shadow-[0_10px_30px_-8px_rgba(11,31,58,.35)]"
+      data-notranslate
+    >
+      <div className="flex items-center justify-between border-b border-[#EEF2F7] bg-gradient-to-r from-[#F5F8FD] to-[#FDF3F9] px-3 py-2">
+        <span className="text-[12.5px] font-extrabold text-[#0B1F3A]">{TITLES[cmd] || "Pick a name…"}</span>
+        <span className="rounded-full bg-[#E8EEF8] px-2 py-0.5 text-[10.5px] font-bold text-[#4A5A78]">
+          {list.length} {list.length === 1 ? "person" : "people"}
+        </span>
+      </div>
+      <div className="min-h-0 overflow-y-auto overscroll-contain py-1">
+        {cmd === "/gift" && !queryText && (
           <button
-            key={name}
             type="button"
-            onClick={() => onPick(`${cmd} ${name} `)}
-            className="flex w-full items-center gap-3 px-3 py-[7px] text-left hover:bg-[#F1F5FB]"
+            onClick={() => onPick("/gift all ")}
+            className="mx-1.5 mb-1 flex w-[calc(100%-12px)] items-center gap-2.5 rounded-xl bg-gradient-to-r from-[#FFE3F1] to-[#FFF4E5] px-2.5 py-1.5 text-left active:scale-[.99]"
           >
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="" className="h-[34px] w-[34px] shrink-0 rounded-full border border-[#E0E4EA] object-cover" />
-            ) : (
-              <span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-[#E0E4EA] bg-[#DCE8F7] font-bold text-[#0B1F3A]">
-                {name.slice(0, 1).toUpperCase()}
-              </span>
-            )}
-            <span className="truncate text-lg text-[#0B1F3A]">{name}</span>
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#FF5FA8] to-[#FF2D95] text-lg shadow-sm">
+              🎁
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold leading-5 text-[#C2185B]">Everyone</span>
+              <span className="block text-[11px] text-[#8A5A75]">Gift Shower · /gift all</span>
+            </span>
+            <span className="rounded-full bg-[#FF2D95] px-2.5 py-1 text-[10.5px] font-extrabold text-white">ALL</span>
           </button>
-        );
-      })}
+        )}
+        {list.map((name) => {
+          const photo = photos.get(name) || "";
+          return (
+            <button
+              key={name}
+              type="button"
+              onClick={() => onPick(`${cmd} ${name} `)}
+              className="flex w-full items-center gap-2.5 px-3 py-[5px] text-left hover:bg-[#F3F7FC] active:bg-[#EAF1FB]"
+            >
+              <span className="shrink-0 rounded-full bg-gradient-to-br from-[#FF9D2E] via-[#FF4F9A] to-[#7B4DE0] p-[2px]">
+                {photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photo} alt="" className="h-[30px] w-[30px] rounded-full border-2 border-white object-cover" />
+                ) : (
+                  <span
+                    className="flex h-[30px] w-[30px] items-center justify-center rounded-full border-2 border-white text-[13px] font-extrabold text-white"
+                    style={{ background: letterBg(name) }}
+                  >
+                    {name.slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#0B1F3A]">{name}</span>
+              <span className="text-sm text-[#B4C0D0]">{cmd === "/gift" ? "🎁" : "›"}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
