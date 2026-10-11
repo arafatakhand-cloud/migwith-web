@@ -41,6 +41,7 @@ import {
   roomHref,
   resolveRoomDescription,
   roomDisplayName,
+  LUXURY_BOT_REMOVED_ROOM,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
@@ -120,7 +121,7 @@ import { useSpecialColors } from "../../../lib/specialColor";
 import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
 import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
-import { noteServerTime, serverNow, serverTimeKnown } from "../../../lib/serverTime";
+import { noteServerTime, serverNow } from "../../../lib/serverTime";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
@@ -185,6 +186,13 @@ export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
   const { user, loading } = useCurrentUser();
+  const router = useRouter();
+  // 👻 Luxury Bot Official was removed from the app: an old link goes to the room list.
+  const removed = roomName === LUXURY_BOT_REMOVED_ROOM;
+  useEffect(() => {
+    if (removed) router.replace("/rooms");
+  }, [removed, router]);
+  if (removed) return null;
   // Wait for the account first, so the room's saved session can be read on mount.
   if (loading || !user) return <RoomView key="" roomName={roomName} user={user} loading />;
   return <RoomView key={roomName} roomName={roomName} user={user} loading={false} />;
@@ -510,48 +518,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [user, roomName]);
 
   // Who is in the room.
-  const staleHandled = useRef(new Set<string>());
   useEffect(() => {
     if (!user) return;
     return onSnapshot(
       collection(db, "room_presence", roomName, "users"),
       (snap) => {
-        // Like the app: someone gone 3 h without a heartbeat (and not parked)
-        // is cleared by whoever is watching, and their "has left" is posted
-        // right after (the rules only accept a watcher's line once the doc is
-        // gone). Invisible people were never announced, so no line.
-        // SERVER time, not this computer's clock (like the app): a clock
-        // running hours ahead would think everybody is stale and clear them.
-        // Learned from my own heartbeat's server stamp; until then, no clearing.
+        // BUG FIX (false "has left" while the person was still chatting), like
+        // the app: watchers used to DELETE a spot they thought was 3 h old and
+        // post "has left". The server's detectStaleRoomPresence already does
+        // that every minute with the real server time, so a stale spot is only
+        // hidden from the list here and never deleted.
+        // My own heartbeat's server stamp still teaches the server clock.
         const mine = snap.docs.find((d) => d.id === user.uid);
         if (mine && !mine.metadata.hasPendingWrites) noteServerTime(toMillis(mine.get("lastSeen")));
-        if (!serverTimeKnown()) return void setPresence(presenceList(snap.docs));
-        const now = serverNow();
-        const cutoff = now - ROOM_PRESENCE_STALE_MS;
-        snap.docs.forEach((d) => {
-          if (d.id === user.uid) return;
-          const seen = toMillis(d.get("lastSeen", { serverTimestamps: "estimate" }));
-          const parked = Number(d.get("parkedUntil") || 0) > now;
-          if (!seen || seen >= cutoff || parked || staleHandled.current.has(d.id + seen)) return;
-          staleHandled.current.add(d.id + seen);
-          const name = String(d.get("username") || "").trim();
-          const hidden = String(d.get("presenceStatus") || "").trim().toUpperCase() === "INVISIBLE";
-          const shop = d.get("shopBadges");
-          deleteDoc(d.ref)
-            .then(() => {
-              if (!hidden && name) {
-                postStaleLeaveLineOnce(
-                  roomName,
-                  d.id,
-                  name,
-                  Number(d.get("level") || 1),
-                  Array.isArray(shop) ? shop.map(String) : [],
-                  String(d.get("visitId") || "") || null
-                );
-              }
-            })
-            .catch(() => {});
-        });
         setPresence(presenceList(snap.docs));
       },
       (err) => console.error("presence listener failed", err)

@@ -186,6 +186,7 @@ const HELP =
 
 const pickVoucher = httpsCallable<{ roomId: string; code: string }, { amount?: number }>(functions, "pickVoucher");
 const whoisUser = httpsCallable<{ username: string }, Record<string, unknown>>(functions, "whoisUser");
+const checkUserTag = httpsCallable<{ username: string }, { username?: string; tags?: { kind?: string }[] }>(functions, "checkUserTag");
 
 // One user by name: exact username first, then any upper/lower case
 // (usernameLower) — the app's findUserByName.
@@ -209,6 +210,24 @@ async function sendFriendRequest(ctx: CommandContext, name: string) {
   const target = await findUserByName(name).catch(() => null);
   if (!target) return ctx.note(`🤝 User not found: ${name.trim()}`);
   if (target.username.toLowerCase() === ctx.username.toLowerCase()) return;
+  // BUG FIX (the same person twice in Requests), like the app: /f used to add
+  // a new request every time, even when one was already pending or you were
+  // already friends. Both directions are checked first.
+  try {
+    const col = collection(db, "friend_requests");
+    const [mineSnap, theirsSnap] = await Promise.all([
+      getDocs(query(col, where("fromUsername", "==", ctx.username), where("toUsername", "==", target.username))),
+      getDocs(query(col, where("fromUsername", "==", target.username), where("toUsername", "==", ctx.username))),
+    ]);
+    const mine = mineSnap.docs.map((d) => String(d.get("status") || ""));
+    const theirs = theirsSnap.docs.map((d) => String(d.get("status") || ""));
+    if (mine.includes("accepted") || theirs.includes("accepted")) return ctx.note(`🤝 You and ${target.username} are already friends.`);
+    if (mine.includes("pending")) return ctx.note(`🤝 You already sent ${target.username} a friend request.`);
+    if (theirs.includes("pending"))
+      return ctx.note(`🤝 ${target.username} already sent you a request — accept it in Friends → Requests.`);
+  } catch {
+    // can't check → send it anyway, like the app
+  }
   try {
     await addDoc(collection(db, "friend_requests"), {
       fromUsername: ctx.username,
@@ -363,6 +382,26 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
       if (command === "/uf") unfriend(ctx, who);
       else sendFriendRequest(ctx, who);
     }
+    return true;
+  }
+
+  // 🏷 /tag username — is this user tagged (Merchant or Mentor)? Only you see the answer.
+  if (command === "/tag") {
+    const who = (parts[1] || "").replace(/^@/, "").trim();
+    if (!who) {
+      ctx.note("ℹ Use /tag [username] — e.g. /tag sailor");
+      return true;
+    }
+    checkUserTag({ username: who })
+      .then(({ data }) => {
+        const name = String(data?.username || "").trim() || who;
+        // the merchant's mentor (mentor_indirect) is not a direct tag
+        const tagged = (data?.tags || []).some((t) => t?.kind === "merchant" || t?.kind === "mentor");
+        const text = tagged ? `${name} is already tagged.` : `${name} is not tagged.`;
+        if (ctx.popup) ctx.popup("🏷 Tag Check", text);
+        else ctx.note(`🏷 ${text}`);
+      })
+      .catch((err: any) => ctx.note(`❌ /tag: ${err?.message || "User not found."}`));
     return true;
   }
 

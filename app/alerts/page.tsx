@@ -349,6 +349,101 @@ function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid:
   );
 }
 
+// 🤝 Friend request — accept or reject it right here (like the app). Reads the
+// live request(s) from this person, so one already answered on the Friends
+// page shows its result instead of buttons. Duplicates are all closed.
+function FriendRequestCard({ a, username }: { a: Alert; username: string }) {
+  const requester = a.fromUsername.trim();
+  const [docs, setDocs] = useState<{ id: string; status: string }[] | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(
+    () =>
+      onSnapshot(
+        query(collection(db, "friend_requests"), where("fromUsername", "==", requester), where("toUsername", "==", username)),
+        (snap) => setDocs(snap.docs.map((d) => ({ id: d.id, status: String(d.get("status") || "") }))),
+        () => setDocs([])
+      ),
+    [requester, username]
+  );
+  const statuses = (docs || []).map((d) => d.status);
+  const pending = (docs || []).filter((d) => d.status === "pending");
+  const result =
+    docs === null
+      ? "loading"
+      : statuses.includes("accepted")
+        ? "accepted"
+        : pending.length
+          ? "pending"
+          : statuses.includes("cancelled") && !statuses.includes("rejected")
+            ? "cancelled"
+            : "rejected";
+  const answer = async (accept: boolean) => {
+    if (!pending.length) return;
+    setBusy(true);
+    setError("");
+    try {
+      // only ONE friendship document is left: the first is accepted, the rest closed
+      await Promise.all(
+        pending.map((d, i) =>
+          updateDoc(doc(db, "friend_requests", d.id), {
+            status: accept && i === 0 ? "accepted" : "rejected",
+            updatedAt: serverTimestamp(),
+          })
+        )
+      );
+      updateDoc(doc(db, "alerts", a.id), { read: true }).catch(() => {});
+      if (accept) {
+        addDoc(collection(db, "alerts"), {
+          toUsername: requester,
+          fromUsername: username,
+          message: `${username} accepted your friend request.`,
+          type: "friend_request_accepted",
+          read: false,
+          createdAt: serverTimestamp(),
+        }).catch(() => {});
+      }
+    } catch (e: any) {
+      setError(e?.message || "Could not answer the request.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <FancyCard top="#6FA8FF" bottom="#2F63D6">
+      <div className="flex items-center gap-2.5">
+        <IconBubble s={styleFor("friend_request")} size={40} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-extrabold">Friend request</p>
+          <p className="text-[11px] text-[#D6E6FF]">{fullTime(a.createdAtMs)}</p>
+        </div>
+      </div>
+      <p className="mt-2 text-sm font-semibold">@{requester} sent you a friend request.</p>
+      <div className="mt-2.5">
+        {result === "loading" ? (
+          <p className="text-[13px]">…</p>
+        ) : result === "accepted" ? (
+          <span className="inline-block rounded-full bg-[#2EC27E] px-3.5 py-1.5 text-[13px] font-extrabold">✅ Friends now</span>
+        ) : result === "pending" ? (
+          <div className="flex gap-2">
+            <button type="button" disabled={busy} onClick={() => answer(true)} className="flex-1 rounded-full bg-[#2EC27E] py-2 text-sm font-bold disabled:opacity-60">
+              {busy ? "…" : "ACCEPT"}
+            </button>
+            <button type="button" disabled={busy} onClick={() => answer(false)} className="flex-1 rounded-full bg-[#E5484D] py-2 text-sm font-bold disabled:opacity-60">
+              {busy ? "…" : "REJECT"}
+            </button>
+          </div>
+        ) : result === "cancelled" ? (
+          <span className="inline-block rounded-full bg-white/20 px-3.5 py-1.5 text-[13px] font-extrabold">↩ Cancelled</span>
+        ) : (
+          <span className="inline-block rounded-full bg-[#E5484D] px-3.5 py-1.5 text-[13px] font-extrabold">❌ Rejected</span>
+        )}
+      </div>
+      {error && <p className="mt-1.5 text-xs text-[#FFC2C2]">{error}</p>}
+    </FancyCard>
+  );
+}
+
 export default function AlertsPage() {
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
@@ -503,6 +598,8 @@ export default function AlertsPage() {
                 card = <ColorRequestCard a={a} />;
               } else if ((a.type === "merchant_tag_request" || a.type === "mentor_tag_request") && a.requestId) {
                 card = <TagRequestCard a={a} username={username} uid={user.uid} />;
+              } else if (a.type === "friend_request" && a.fromUsername.trim()) {
+                card = <FriendRequestCard a={a} username={username} />;
               } else if (a.type === "mentor_request" && a.requestId) {
                 card = (
                   <FancyCard top="#2B5FD9" bottom="#1B2A5C">

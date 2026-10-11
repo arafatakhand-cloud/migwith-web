@@ -480,3 +480,8 @@ html.no-boot-splash #boot-splash { display: none; }
   .lp-aurora, .lp-aurora-2, .lp-float, .lp-float-slow, .lp-marquee, .lp-xp, .lp-fall, .lp-shine, .lp-sparkle, .lp-dot { animation: none; }
   .lp-xp { width: 70%; }
 }
+
+/* ⚡ Pill tab strip: something new waiting → a soft red ⇄ green glow (like the app's SmoothAlertBlink) */
+.pill-alert-blink { animation: pill-alert-blink 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
+@keyframes pill-alert-blink { from { color: #FF3B3B; } to { color: #2EE66B; } }
+@media (prefers-reduced-motion: reduce) { .pill-alert-blink { animation: none; color: #FF3B3B; } }

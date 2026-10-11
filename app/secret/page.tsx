@@ -129,7 +129,7 @@ function CricketWinFxCard() {
   };
   const query = q.trim().toLowerCase();
   const seen = new Set<string>();
-  const pool = [...OFFICIAL_COUNTRY_ROOMS, "👻 Luxury Bot Official", ...allRooms, ...(rooms || [])].filter((r) => {
+  const pool = [...OFFICIAL_COUNTRY_ROOMS, ...allRooms, ...(rooms || [])].filter((r) => {
     const k = winFxKey(r);
     if (!k || seen.has(k)) return false;
     seen.add(k);

@@ -6,7 +6,7 @@ import { totalXpForLevel } from "../../lib/level";
 import { chatHref } from "../../lib/privateChat";
 
 // ✨ MODERN Home (the app's ModernHomeTop): gradient hero card (photo with a
-// rainbow ring, name + role, status, level bar with XP, Email / Alerts /
+// rainbow ring, name + role, status, level bar with XP; a stats card: Email / Alerts /
 // Friends / Online), a live sports card, friend search, an "online now" strip
 // and friend cards. Classic keeps its own strip and folder list.
 
@@ -138,25 +138,26 @@ export function ModernHomeTop({
             <span className="block h-full rounded-[5px] bg-gradient-to-r from-[#FFE08A] to-[#FFB547]" style={{ width: `${frac * 100}%` }} />
           </span>
         </Link>
-        {/* stats */}
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {(
-            [
-              ["/mail", `✉️ ${unreadEmails}`, "Email"],
-              ["/alerts", `🔔 ${unreadAlerts}`, "Alerts"],
-              ["/friends", `👥 ${friends.length}`, "Friends"],
-              ["/friends", `🟢 ${online.length}`, "Online"],
-            ] as const
-          ).map(([href, value, label]) => (
-            <Link key={label} href={href} className="rounded-xl border border-white/30 bg-white/[0.16] py-1.5 text-center">
-              <span className="block truncate text-sm font-extrabold">{value}</span>
-              <span className="block text-[10px] text-white/85">{label}</span>
-            </Link>
-          ))}
-        </div>
       </div>
 
-      {/* (Email / Alerts now sit in the hero card's stat row; the Rooms / Games
+      {/* 📊 stats card (Email / Alerts / Friends / Online), its own card under the profile */}
+      <div className="mx-2.5 mb-1.5 grid grid-cols-4 gap-2 rounded-[18px] bg-white p-2.5 shadow-[0_3px_8px_rgba(21,101,216,.22)]">
+        {(
+          [
+            ["/mail", `✉️ ${unreadEmails}`, "Email"],
+            ["/alerts", `🔔 ${unreadAlerts}`, "Alerts"],
+            ["/friends", `👥 ${friends.length}`, "Friends"],
+            ["/friends", `🟢 ${online.length}`, "Online"],
+          ] as const
+        ).map(([href, value, label]) => (
+          <Link key={label} href={href} className="rounded-xl border border-[#D3E2F7] bg-[#EEF4FD] py-2 text-center">
+            <span className="block truncate text-sm font-extrabold text-[#16264A]">{value}</span>
+            <span className="block text-[10px] text-[#5A6E8C]">{label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games
           buttons were removed — the tabs above already open them.) */}
       {/* 📺 live sports card (rotating live / next match) */}
       <HomeLiveSportsCard />

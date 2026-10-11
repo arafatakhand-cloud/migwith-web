@@ -8,8 +8,10 @@ export const OFFICIAL_COUNTRY_ROOMS = [
   "Spain", "Russia", "Brazil",
 ];
 
+// The old Luxury Bot room — removed from the app (no list, no tab, no bot).
+export const LUXURY_BOT_REMOVED_ROOM = "👻 Luxury Bot Official";
+
 export const OFFICIAL_GAME_ROOMS = [
-  "👻 Luxury Bot Official",
   "🃏 LowCard Official",
   "🏏 Cricket Official",
   "🎴 Teen Patti Official",
@@ -161,8 +163,17 @@ export function roomDisplayName(name: string): string {
   return out === "🃏 29 Official" ? TN_ROOM_DISPLAY_NAME : out;
 }
 
+/**
+ * Room name as shown in the room list (like the app's roomListName): the icon
+ * in front of it (🎁 🎰 🎲 🧠 …) is left out. Only the shown text changes.
+ */
+export function roomListName(name: string): string {
+  const shown = roomDisplayName(name);
+  return shown.replace(/^[^\p{L}\p{N}]+/u, "") || shown;
+}
+
 const isOfficialRoomName = (name: string) =>
-  name === "🎰 Luxury Bet" || OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
+  name === "🎰 Luxury Bet" || name === LUXURY_BOT_REMOVED_ROOM || OFFICIAL_GAME_ROOMS.includes(name) || OFFICIAL_COUNTRY_ROOMS.includes(name);
 
 export function officialRoomDefaultDescription(roomName: string): string {
   switch (roomName) {

@@ -67,7 +67,8 @@ async function entryFxFor(name: string, fresh = false): Promise<EntryFx | null> 
   if (!key) return null;
   const now = Date.now();
   let v = lookupCache.get(key);
-  if (!v || fresh || now - v.at >= 120_000) {
+  // 30 s (was 2 min): someone who just bought / switched an effect shows it on their next entry
+  if (!v || fresh || now - v.at >= 30_000) {
     try {
       const snap = await getDoc(doc(db, "entry_fx_public", key));
       v = { at: now, active: String(snap.get("active") || "none"), expiresAt: Number(snap.get("expiresAt") || 0) };
@@ -81,12 +82,20 @@ async function entryFxFor(name: string, fresh = false): Promise<EntryFx | null> 
 }
 
 /** "Bangladesh: name [12] 👑 has entered." → "name" */
-function entryNameOf(m: { text: string; type: string }): string | null {
+function entryNameOf(m: { text: string; type: string }, roomKey = ""): string | null {
   const t = m.text.trim();
   if (m.type !== "room_entry" && !/ has entered\.$/i.test(t)) return null;
-  const i = t.indexOf(":");
-  if (i < 0) return null;
-  const name = t.slice(i + 1).trim().split(" [")[0].split(" has entered")[0].trim();
+  // A room name can itself contain ":" (e.g. "Fun:Zone"), so the exact room
+  // prefix is cut when it's there (like the app).
+  const prefix = `${roomKey}: `;
+  let rest: string;
+  if (roomKey && t.startsWith(prefix)) rest = t.slice(prefix.length);
+  else {
+    const i = t.indexOf(":");
+    if (i < 0) return null;
+    rest = t.slice(i + 1);
+  }
+  const name = rest.trim().split(" [")[0].split(" has entered")[0].trim();
   return name && name.length <= 30 && !name.includes(" ") ? name : null;
 }
 
@@ -115,8 +124,17 @@ export function EntryEffectHost({
   /** My own name: my own effect plays for me when I open the room (see below). */
   myName?: string;
 }) {
-  const [names, setNames] = useNewLineEvents(messages, roomKey, entryNameOf, 4);
-  const [queue, setQueue] = useState<{ fx: EntryFx; name: string }[]>([]);
+  const [names, setNames] = useNewLineEvents(messages, roomKey, (m) => entryNameOf(m, roomKey), 4);
+  // (effect, name, when it was queued) — an entry older than 10 s is dropped
+  // instead of playing late (like the app).
+  const [queue, setQueue] = useState<{ fx: EntryFx; name: string; at: number }[]>([]);
+  const addToQueue = (add: { fx: EntryFx; name: string }[], first = false) =>
+    setQueue((q) => {
+      const now = Date.now();
+      const fresh = q.filter((e) => now - e.at <= 10_000);
+      const items = add.map((e) => ({ ...e, at: now }));
+      return (first ? [...items, ...fresh] : [...fresh, ...items]).slice(0, 4);
+    });
   const mounted = useRef(true);
   useEffect(
     () => () => {
@@ -148,7 +166,7 @@ export function EntryEffectHost({
         timer = null; // ready for my next real entry in this room
         if (gone) return;
         ownRequests.delete(roomKey);
-        if (fx) setQueue((q) => [{ fx, name: me }, ...q].slice(0, 4));
+        if (fx) addToQueue([{ fx, name: me }], true);
       }, 700); // let the room draw first
     };
     check();
@@ -161,9 +179,13 @@ export function EntryEffectHost({
   }, [roomKey, myName]);
   // The first few seconds after opening a room the chat fills in (cache, then
   // the server) — those older lines are not new entries, so they're absorbed.
-  const openedAt = useRef({ room: "", at: 0 });
-  if (openedAt.current.room !== roomKey) openedAt.current = { room: roomKey, at: 0 };
-  if (openedAt.current.at === 0 && messages.length > 0) openedAt.current.at = Date.now();
+  // BUG FIX (first entry in a quiet room never showed its effect), like the
+  // app: if nothing has loaded 4 s after opening, the room counts as loaded,
+  // so the first "has entered" line in an empty room plays.
+  const openedAt = useRef({ room: "", at: 0, mount: 0 });
+  if (openedAt.current.room !== roomKey) openedAt.current = { room: roomKey, at: 0, mount: Date.now() };
+  if (openedAt.current.at === 0 && messages.length > 0)
+    openedAt.current.at = Date.now() - openedAt.current.mount >= 4_000 ? openedAt.current.mount : Date.now();
   // Look up each new name, then queue the ones with a running effect.
   useEffect(() => {
     if (!names.length) return;
@@ -176,7 +198,7 @@ export function EntryEffectHost({
     Promise.all(batch.map(async (n) => ({ fx: await entryFxFor(n), name: n }))).then((found) => {
       if (!mounted.current) return;
       const add = found.filter((f): f is { fx: EntryFx; name: string } => !!f.fx);
-      if (add.length) setQueue((q) => [...q, ...add].slice(0, 4));
+      if (add.length) addToQueue(add);
     });
   }, [names, setNames, myName, roomKey]);
   const current = usePlayQueue(queue, setQueue, 3400);
@@ -237,11 +259,14 @@ export function EntryFxShow({ fx, name, seed }: { fx: EntryFx; name: string; see
           >
             <span className="efx-beat text-[36px] leading-tight">{fx.emoji}</span>
             <span className="flex" aria-label={name}>
-              {Array.from(brandMiglife(name)).map((ch, i) => (
+              {Array.from(brandMiglife(name)).map((ch, i, all) => (
                 <span
                   key={i}
                   aria-hidden
-                  className="efx-wave text-[27px] font-black leading-tight"
+                  // long IDs (up to 27 letters) get smaller letters so the whole name fits
+                  className={`efx-wave font-black leading-tight ${
+                    all.length <= 12 ? "text-[27px]" : all.length <= 16 ? "text-[22px]" : all.length <= 21 ? "text-[18px]" : "text-[15px]"
+                  }`}
                   style={{
                     animationDelay: `${-i * 0.09}s`,
                     backgroundImage: `linear-gradient(#fff, ${fx.accent})`,
@@ -1236,7 +1261,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
 
   const owned = ENTRY_FX.filter((f) => (inv.owned[f.id] || 0) > now);
   const shown = ENTRY_FX.filter((f) => tab === "All" || f.category === tab).sort((a, b) => priceOf(a) - priceOf(b));
-  const daysLeft = (id: string) => Math.max(0, Math.floor(((inv.owned[id] || 0) - now) / 86_400_000));
+  const daysLeft = (id: string) => Math.max(0, Math.ceil(((inv.owned[id] || 0) - now) / 86_400_000));
   const rad = classic ? "rounded-[4px]" : "rounded-[14px]";
   const btn = `${classic ? "rounded-[4px]" : "rounded-full"} px-3 py-1.5 text-xs font-extrabold`;
 
@@ -1389,7 +1414,11 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                       </button>
                     )}
                     {isOwned && (
-                      <button type="button" onClick={() => setConfirm(fx)} className={`${btn} bg-[#FFF3D6] text-[#8A5A00]`}>
+                      <button
+                        type="button"
+                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
+                        className={`${btn} bg-[#FFF3D6] text-[#8A5A00]`}
+                      >
                         +30 days
                       </button>
                     )}

@@ -18,6 +18,20 @@ type Line = { id: string; text: string; type: string };
 export function useNewLineEvents<E>(messages: Line[], roomKey: string, parse: (m: Line) => E | null, max = 3) {
   const seen = useRef<{ room: string; ids: Set<string>; primed: boolean }>({ room: "", ids: new Set(), primed: false });
   const [queue, setQueue] = useState<E[]>([]);
+  const latest = useRef(messages);
+  latest.current = messages;
+
+  // A quiet room: if nothing has loaded 4 s after opening, it counts as
+  // primed, so its first new line plays (like the app).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const st = seen.current;
+      if (st.room !== roomKey || st.primed) return;
+      latest.current.forEach((m) => m.id && st.ids.add(m.id));
+      st.primed = true;
+    }, 4_000);
+    return () => clearTimeout(t);
+  }, [roomKey]);
 
   useEffect(() => {
     if (seen.current.room !== roomKey) {

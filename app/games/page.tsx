@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { roomHref } from "../../lib/rooms";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
-import { LUXURY_ROOM } from "../_components/LuxuryBot";
 import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { LOWCARD_ROOM } from "../_components/LowCard";
@@ -22,7 +21,6 @@ import { ClassicListRow, ClassicTitleBar, useIsClassic } from "../_components/Cl
 // opening its official room, and what's coming soon.
 
 const RUNNING: [string, string, string, string, string][] = [
-  ["💎", "Luxury Bot", "Live betting game", "#D62F72", LUXURY_ROOM],
   ["🎰", "Luxury Bet", "Laila–Majnu · Romeo–Juliet · Shirin–Farhad", "#B8860B", LUXURY_BET_ROOM],
   ["🃏", "LowCard", "Draw the lowest card, survive", "#1D9E75", LOWCARD_ROOM],
   ["🏏", "Cricket", "Bat 6 rounds, top scorer wins", "#3984D9", CRICKET_ROOM],

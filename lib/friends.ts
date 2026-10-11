@@ -60,6 +60,15 @@ export function useFriendRequests(username: string) {
     return () => offs.forEach((off) => off());
   }, [username]);
 
+  // BUG FIX (the same person listed twice in Requests), like the app: a request
+  // sent twice made two documents. The lists show ONE row per person; the full
+  // lists are kept so accept / reject / cancel closes all of that person's
+  // duplicates at once.
+  const oneEach = (list: FriendRequest[], pick: (r: FriendRequest) => string) =>
+    Array.from(new Map(list.map((r) => [key(pick(r)), r] as const).reverse()).values()).reverse();
+  const incomingOne = oneEach(incoming, (r) => r.from);
+  const sentOne = oneEach(sent, (r) => r.to);
+
   const friends = Array.from(
     new Map(
       [...acceptedFromMe.map((r) => r.to), ...acceptedToMe.map((r) => r.from)]
@@ -92,8 +101,8 @@ export function useFriendRequests(username: string) {
     updateDoc(doc(db, "friend_requests", id), { status, updatedAt: serverTimestamp() });
 
   return {
-    incoming,
-    sent,
+    incoming: incomingOne,
+    sent: sentOne,
     friends,
     relationTo,
 
@@ -114,11 +123,22 @@ export function useFriendRequests(username: string) {
 
     async accept(r: FriendRequest) {
       await setStatus(r.id, "accepted");
+      // duplicates from the same person are closed, so only ONE accepted
+      // friendship document is left
+      incoming
+        .filter((d) => d.id !== r.id && key(d.from) === key(r.from))
+        .forEach((d) => setStatus(d.id, "rejected").catch(() => {}));
       alert(r.from, `${username} accepted your friend request.`, "friend_request_accepted");
     },
 
-    decline: (r: FriendRequest) => setStatus(r.id, "rejected"),
-    cancel: (r: FriendRequest) => setStatus(r.id, "cancelled"),
+    async decline(r: FriendRequest) {
+      const same = incoming.filter((d) => key(d.from) === key(r.from));
+      await Promise.all((same.length ? same : [r]).map((d) => setStatus(d.id, "rejected")));
+    },
+    async cancel(r: FriendRequest) {
+      const same = sent.filter((d) => key(d.to) === key(r.to));
+      await Promise.all((same.length ? same : [r]).map((d) => setStatus(d.id, "cancelled")));
+    },
 
     async remove(friend: string) {
       const k = key(friend);

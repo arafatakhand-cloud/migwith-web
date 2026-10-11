@@ -4,26 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { badgeText } from "../../lib/useBadges";
-import { PRESENCE_HEARTBEAT_MS, roomDisplayName, roomHref } from "../../lib/rooms";
+import { PRESENCE_HEARTBEAT_MS, roomHref, roomListName } from "../../lib/rooms";
 import { touchOpenRooms, useOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
+import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "./PillTabs";
 
-// The app's top bar: ☰ menu, 👥 Home and 💬 Rooms tabs, and a blue pill naming
-// the page you are on (Explore, Members, Settings …). Signed out: logo + Login.
-
-function Badge({ n }: { n: number }) {
-  if (!n) return null;
-  return (
-    <span className="absolute -right-1.5 -top-1.5 min-w-[18px] rounded-full bg-rose-500 px-1 text-center text-[10px] font-bold leading-[18px] text-white">
-      {badgeText(n)}
-    </span>
-  );
-}
+// The app's top bar: ☰ menu and the pill tab strip (Lobby, Rooms, the page you
+// are on, the open rooms, an open chat) — only the open tab shows its name.
+// Signed out: logo + Login.
 
 // Page name shown in the pill, by path.
 const PAGE_NAMES: [string, string][] = [
@@ -197,12 +189,6 @@ export function TopBar() {
     };
   }, []);
 
-  // Keep the current room's tab in view.
-  const activeTabRef = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    activeTabRef.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [currentRoom, openRooms.length]);
-
   // Close the menu when the page changes.
   useEffect(() => setOpen(false), [pathname]);
 
@@ -244,25 +230,38 @@ export function TopBar() {
       document.body
     );
 
+  // ⚡ The tabs, in swipe order (the app's buildPillTabs). Room names are shown
+  // without the icon in front of them.
+  const title = currentRoom || chatWith || onHome || onRooms ? null : pageName ?? null;
+  const pillTabs = (roomsLabel: string): PillTabItem[] => [
+    { key: "home", glyph: "friends", label: "Lobby", selected: onHome, href: "/" },
+    { key: "rooms", glyph: "chat", label: roomsLabel, selected: onRooms, href: "/rooms" },
+    ...(title ? [{ key: "page", glyph: "list" as const, label: title, selected: true }] : []),
+    ...openRooms.map((r) => ({
+      key: `r_${r}`,
+      glyph: "list" as const,
+      label: roomListName(r),
+      selected: r === currentRoom,
+      href: roomHref(r),
+      notranslate: true,
+    })),
+    ...(chatWith ? [{ key: `c_${chatWith}`, glyph: "list" as const, label: chatWith, selected: true, notranslate: true }] : []),
+  ];
+  // 🔔 something new (alerts / messages / requests): the ☰ glows red ⇄ green —
+  // it is always on screen, unlike the Lobby tab that slides away.
+  const hasUnread = badges.alerts + badges.messages + badges.requests > 0;
+
   // 📟 CLASSIC style (Settings › Appearance › App style): orange header with the
-  // mig·life logo, a blue strip of flat tabs (the open one is a white "folder"
-  // tab) and an orange line under it.
+  // mig·life logo, then all tabs on the blue band — the open one an orange pill
+  // with its name, the others white icons — and an orange line under it.
   if (classic) {
-    const classicTab = (label: string, selected: boolean, key: string, href?: string, ref?: React.Ref<HTMLSpanElement>, blink = false) => {
-      const cls = `block max-w-[130px] shrink-0 truncate rounded-t-md px-2.5 text-[11.5px] font-bold ${
-        selected ? "bg-white py-[7px] text-[#2F6ABD]" : "bg-[#9AB8E4] py-[5px] text-[#16315F]"
-      }${blink && !selected ? " classic-tab-blink" : ""}`;
-      return href && !selected ? (
-        <Link key={key} href={href} className={cls} data-notranslate={key.startsWith("r:") || key.startsWith("c:") ? true : undefined}>
-          {label}
-        </Link>
-      ) : (
-        <span key={key} ref={ref} className={cls} data-notranslate={key.startsWith("r:") || key.startsWith("c:") ? true : undefined}>
-          {label}
-        </span>
-      );
+    const colors: PillColors = {
+      pillTop: "#FF9D2E",
+      pillBottom: "#F07A00",
+      pillText: "#FFFFFF",
+      idleIcon: "#FFFFFF",
+      idleTile: "#2F6ABD",
     };
-    const title = currentRoom || chatWith || onHome || onRooms ? null : pageName ?? null;
     return (
       <>
         <div
@@ -275,27 +274,19 @@ export function TopBar() {
             aria-label="Menu"
             className="relative flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-white/40 bg-white/20 text-base font-bold text-white lg:hidden"
           >
-            ☰
-            <Badge n={badges.messages + badges.requests} />
+            <span className={hasUnread ? "pill-alert-blink" : undefined}>☰</span>
           </button>
           <Link href="/" className="ml-[9px] flex items-center" data-notranslate>
             <span className="text-[19px] font-black text-white">mig</span>
             <span className="ml-0.5 rounded-full bg-white px-[5px] text-xs font-black text-[#F07A00]">life</span>
           </Link>
-          {/* No 🔔 / বাংলা here, like the app: new alerts make the Contacts tab
-              blink, and the language is in Settings. */}
+          {/* No 🔔 / বাংলা here, like the app: new alerts make the ☰ glow,
+              and the language is in Settings. */}
         </div>
         {/* On Home the profile strip sits here, between the orange header and the blue tabs (the Dashboard fills it). */}
         {onHome && <div id="classic-home-strip" />}
-        <div className="no-scrollbar flex items-end gap-[3px] overflow-x-auto bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1 pt-1">
-          {/* New alerts: the Contacts tab blinks orange (Home shows the alerts) */}
-          {classicTab(badges.alerts > 0 && !onHome ? "Contacts *" : "Contacts", onHome, "home", "/", undefined, badges.alerts > 0)}
-          {classicTab("Rooms", onRooms, "rooms", "/rooms")}
-          {title && classicTab(title, true, "page")}
-          {openRooms.map((r) =>
-            classicTab(roomDisplayName(r), r === currentRoom, `r:${r}`, roomHref(r), r === currentRoom ? activeTabRef : undefined)
-          )}
-          {chatWith && classicTab(chatWith, true, `c:${chatWith}`)}
+        <div className="bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1.5 py-[5px]">
+          <PillTabStrip items={pillTabs("Rooms")} colors={colors} />
         </div>
         <div className="h-[2px] bg-[#F07A00]" />
         {menu}
@@ -303,62 +294,34 @@ export function TopBar() {
     );
   }
 
-  const tab = (active: boolean) =>
-    `relative flex h-9 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition ${
-      active ? "bg-[#2F80ED] text-white shadow-md" : "text-[#0B2A5B] hover:bg-[#E3F0FD]"
-    }`;
-
+  // ✨ MODERN: a blue → violet bar (the Home profile card's colours), a round
+  // ☰ button, and white icons with the open tab as a white pill, its name blue.
+  const colors: PillColors = {
+    pillTop: "#FFFFFF",
+    pillBottom: "#EFF3FF",
+    pillText: "#1565D8",
+    idleIcon: "#FFFFFF",
+    idleTile: "#3B7BF0",
+    activeIcon: "#1565D8",
+  };
   return (
     <>
-      <div className="flex items-center gap-1.5 px-3 py-2 sm:gap-2 sm:px-6 lg:px-4">
+      <div
+        className="flex items-center px-2 py-1.5 sm:px-4"
+        style={{ background: "linear-gradient(90deg, #1565D8, #3B7BF0, #7B5CF0)" }}
+      >
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xl text-[#0B2A5B] hover:bg-[#E3F0FD] lg:hidden"
+          className={`mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/[0.18] lg:hidden ${
+            hasUnread ? "pill-alert-blink" : "text-white"
+          }`}
         >
-          ☰
-          <Badge n={badges.messages + badges.requests} />
+          <PillGlyphIcon glyph="menu" selected={false} tile="#FFFFFF" />
         </button>
-        <Link href="/" aria-label="Home" className={tab(onHome)}>
-          👥
-          <Badge n={badges.messages} />
-        </Link>
-        <Link href="/rooms" aria-label="Rooms" className={tab(onRooms)}>
-          💬
-        </Link>
-        {openRooms.length > 0 && (
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-            {openRooms.map((r) =>
-              r === currentRoom ? (
-                <span
-                  key={r}
-                  ref={activeTabRef}
-                  data-notranslate
-                  className="flex max-w-[9.5rem] shrink-0 items-center gap-1 rounded-xl bg-[#2F80ED] px-2.5 py-1.5 text-xs font-bold text-white shadow-md"
-                >
-                  💬 <span className="truncate">{roomDisplayName(r)}</span>
-                </span>
-              ) : (
-                <Link
-                  key={r}
-                  href={roomHref(r)}
-                  title={r}
-                  aria-label={r}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg text-[#0B2A5B] hover:bg-[#E3F0FD]"
-                >
-                  🗨️
-                </Link>
-              )
-            )}
-          </div>
-        )}
-        {pageName && (
-          <span className="flex min-w-0 shrink items-center gap-1 truncate rounded-xl bg-[#2F80ED] px-3 py-1.5 text-xs font-bold text-white shadow-md">
-            💬 {pageName}
-          </span>
-        )}
-        {/* No 🔔 / বাংলা here, like the app (alerts: on Home; language: Settings). */}
+        <PillTabStrip items={pillTabs("Chat Rooms")} colors={colors} className="flex-1" />
+        {/* No 🔔 / বাংলা here, like the app (alerts: the ☰ glows; language: Settings). */}
       </div>
 
       {/* Side menu — in <body>, so nothing in the header can box it in */}

@@ -24,7 +24,8 @@ import {
   OFFICIAL_GAME_ROOMS,
   ROOM_PRESENCE_STALE_MS,
   roomHref,
-  roomDisplayName,
+  roomListName,
+  LUXURY_BOT_REMOVED_ROOM,
 } from "../../lib/rooms";
 import { useRoomPrefs } from "../../lib/roomPrefs";
 import { PageShell } from "../_components/PageShell";
@@ -67,7 +68,7 @@ export default function RoomsPage() {
   // 🎰 Luxury Bet shows only for the IDs miglife added (or everyone once open).
   const luxuryBetAccess = useLuxuryBetAccess(user?.uid);
   const gameRooms = luxuryBetAccess.canSee
-    ? OFFICIAL_GAME_ROOMS.flatMap((n) => (n === "👻 Luxury Bot Official" ? [n, LUXURY_BET_ROOM] : [n]))
+    ? [LUXURY_BET_ROOM, ...OFFICIAL_GAME_ROOMS]
     : OFFICIAL_GAME_ROOMS;
   const [userRooms, setUserRooms] = useState<UserRoom[]>([]);
   const [search, setSearch] = useState("");
@@ -82,6 +83,8 @@ export default function RoomsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
   const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
+  // Which folders show ALL their rooms (the ⌄ button under the top 5).
+  const [showAll, setShowAll] = useState<Record<string, boolean>>({});
   const classic = useIsClassic();
   const { favorites, recent, toggleFavorite } = useRoomPrefs();
 
@@ -106,6 +109,8 @@ export default function RoomsPage() {
                   ? d.get("capacityEnforced") === true
                   : d.get("capacityByLevel") === true,
             }))
+            // 👻 Luxury Bot Official was removed from the app — never list it.
+            .filter((r) => r.name !== LUXURY_BOT_REMOVED_ROOM)
             .sort((a, b) => a.name.localeCompare(b.name))
         )
       )
@@ -366,7 +371,8 @@ export default function RoomsPage() {
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : key === "fav" || key === "recent" || key === "public");
             const limited = key !== "fav" && !q && allRooms.length > 5;
-            const rooms = limited ? [...allRooms].sort(byLive).slice(0, 5) : allRooms;
+            const expanded = !!showAll[key];
+            const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
             return (
               <div key={key}>
                 <button
@@ -376,7 +382,7 @@ export default function RoomsPage() {
                 >
                   <span className="w-[18px] text-[11px] text-[#2F6ABD]">{isOpen ? "▼" : "►"}</span>
                   <span className="text-sm font-bold">
-                    {title} ({allRooms.length})
+                    {title}
                   </span>
                 </button>
                 {isOpen && (
@@ -399,7 +405,7 @@ export default function RoomsPage() {
                               )}
                             </span>
                             <span data-notranslate className="ml-2 min-w-0 truncate text-[15px]">
-                              {roomDisplayName(name)}
+                              {roomListName(name)}
                             </span>
                             <span className={`shrink-0 whitespace-pre text-sm ${users > 0 ? "font-bold text-[#2E9B3A]" : "text-[#8A97A8]"}`}>
                               {` (${users}/${roomMax(name)})`}
@@ -417,7 +423,18 @@ export default function RoomsPage() {
                       );
                     })}
                     {limited && (
-                      <p className="py-1.5 pl-8 text-[11.5px] text-[#8A97A8]">🔍 Top 5 busiest — search to find any other room</p>
+                      // ▼ small button, centred: opens / closes the rest of the folder
+                      <div className="relative flex items-center justify-center py-1.5">
+                        <span className="absolute left-8 right-8 top-1/2 h-px bg-[#D5DCE6]" />
+                        <button
+                          type="button"
+                          onClick={() => setShowAll((o) => ({ ...o, [key]: !expanded }))}
+                          aria-label={expanded ? "Show fewer rooms" : "Show all rooms"}
+                          className="relative flex h-[22px] w-11 items-center justify-center rounded border border-[#B9C4D2] bg-gradient-to-b from-[#4F86C6] to-[#2F5F9E] text-[10px] text-white"
+                        >
+                          <span className={`transition-transform duration-[250ms] ${expanded ? "rotate-180" : ""}`}>▼</span>
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
@@ -503,7 +520,7 @@ export default function RoomsPage() {
                   style={{ background: `linear-gradient(135deg, ${HOT_GRADS[i % 4][0]}, ${HOT_GRADS[i % 4][1]})` }}
                 >
                   <span data-notranslate className="block truncate text-sm font-extrabold">
-                    {roomDisplayName(name)}
+                    {roomListName(name)}
                   </span>
                   <span className="mt-1 block text-[11.5px] font-semibold text-white/90">● {live(name)} in room</span>
                 </Link>
@@ -515,7 +532,8 @@ export default function RoomsPage() {
         {sections.map(([key, title, allRooms]) => {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game");
           const limited = key !== "fav" && !q && allRooms.length > 5;
-          const rooms = limited ? [...allRooms].sort(byLive).slice(0, 5) : allRooms;
+          const expanded = !!showAll[key];
+          const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
@@ -529,9 +547,6 @@ export default function RoomsPage() {
                   {icon}
                 </span>
                 <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
-                <span className="ml-2 rounded-full px-2 text-[11px] font-extrabold" style={{ color: accent, background: `${accent}24` }}>
-                  {allRooms.length}
-                </span>
                 <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
               </button>
               {isOpen && (
@@ -540,7 +555,7 @@ export default function RoomsPage() {
                   {rooms.map((name, i) => {
                     const users = counts[name] ?? 0;
                     const fav = favorites.includes(name);
-                    const shown = roomDisplayName(name);
+                    const shown = roomListName(name);
                     const letter = (shown.match(/[\p{L}\p{N}]/u)?.[0] || "#").toUpperCase();
                     return (
                       <div key={name}>
@@ -585,7 +600,22 @@ export default function RoomsPage() {
                     );
                   })}
                   {limited ? (
-                    <p className="pb-2.5 pt-0.5 text-center text-[11px] text-[#6B7A99]">🔍 Top 5 busiest · search to find any other room</p>
+                    // ⌄ round arrow button, centred: opens / closes the rest
+                    <div className="relative flex items-center justify-center pb-2.5 pt-1">
+                      <span
+                        className="absolute left-6 right-6 top-1/2 h-px"
+                        style={{ background: `linear-gradient(90deg, transparent, ${accent}40, transparent)` }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowAll((o) => ({ ...o, [key]: !expanded }))}
+                        aria-label={expanded ? "Show fewer rooms" : "Show all rooms"}
+                        className="relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-[20px] font-black leading-none text-white"
+                        style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent})`, boxShadow: `0 2px 6px ${accent}80` }}
+                      >
+                        <span className={`-mt-0.5 transition-transform duration-300 ${expanded ? "-rotate-90" : "rotate-90"}`}>›</span>
+                      </button>
+                    </div>
                   ) : (
                     <div className="h-1.5" />
                   )}

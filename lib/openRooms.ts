@@ -12,7 +12,7 @@ import {
   type DocumentReference,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
+import { LUXURY_BOT_REMOVED_ROOM, leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
 import { serverNow } from "./serverTime";
 
@@ -27,7 +27,8 @@ const key = (uid: string) => `migwith.openRooms.${uid}`;
 export function readOpenRooms(uid: string): string[] {
   try {
     const v = JSON.parse(localStorage.getItem(key(uid)) || "[]");
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    // 👻 Luxury Bot Official was removed: an old saved tab is dropped.
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x !== LUXURY_BOT_REMOVED_ROOM) : [];
   } catch {
     return [];
   }
