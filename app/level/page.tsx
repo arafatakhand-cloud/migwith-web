@@ -20,7 +20,7 @@ const EARN: [string, string][] = [
   ["🚪", "Enter a room • +5 XP (60 sec cooldown per room entry)"],
   ["👥", "Send a friend request • +10 XP (30 sec cooldown)"],
   ["🎁", "Send a gift • +10 XP (30 sec cooldown)"],
-  ["🎮", "Place a successful Luxury Bot bet • +3 XP (15 sec cooldown)"],
+  ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown)"],
 ];
 
 function unlockedGifts(level: number): string[] {
