@@ -122,6 +122,17 @@ import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
 import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow } from "../../../lib/serverTime";
+import {
+  NO_NEW_BELOW,
+  addNewBelow,
+  chatBotAccent,
+  chatBotKey,
+  chatHideBotLine,
+  newBelowLabel,
+  toggleHideBots,
+  useHideBots,
+  type NewBelowStats,
+} from "../../../lib/chatBots";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
@@ -274,6 +285,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
+  // what those lines were: people / bots / a mention of me (the smart ⬇ pill)
+  const [newBelowStats, setNewBelowStats] = useState<NewBelowStats>(NO_NEW_BELOW);
+  // 🤖 "Bot messages: Hide" (room ⋮ menu) — lines that mention you still show
+  const hideBots = useHideBots();
   const lastSeenIdRef = useRef<string | null>(null);
   // Clear Chat for this device (set once the page has rendered; used by /cc).
   const clearChatRef = useRef<(() => void) | null>(null);
@@ -966,6 +981,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
     return shown.filter((m) => {
+      if (m.type !== "room_entry" && m.type !== "room_leave" && chatHideBotLine(hideBots, m.text, roomName, myName)) return false;
       if (tableGame && m.type !== "room_entry" && m.type !== "room_leave" && hideGameTableLine(tableGame, m.text)) return false;
       if (blocked.size && !m.local && m.senderUid !== myUid) {
         const who = (m.sender || (m.text.indexOf(":") > 0 ? m.text.slice(0, m.text.indexOf(":")) : "")).trim().toLowerCase();
@@ -978,7 +994,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion]);
+  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, roomName]);
 
   // ✋ New lines never drag you down while you read older ones: they are
   // counted for the "⬇ new messages" pill instead (your own lines don't count).
@@ -988,13 +1004,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     lastSeenIdRef.current = last;
     if (stickToBottom.current) {
       setNewBelow(0);
+      setNewBelowStats(NO_NEW_BELOW);
       return;
     }
     if (!prev || last === prev) return;
     const i = visible.findIndex((m) => m.id === prev);
-    const added = i >= 0 ? visible.slice(i + 1).filter((m) => !(m.senderUid && m.senderUid === myUid)).length : 0;
-    if (added > 0) setNewBelow((n) => n + added);
-  }, [visible, myUid]);
+    const arrived = i >= 0 ? visible.slice(i + 1).filter((m) => !(m.senderUid && m.senderUid === myUid)) : [];
+    if (arrived.length > 0) {
+      setNewBelow((n) => n + arrived.length);
+      setNewBelowStats((st) => addNewBelow(st, arrived.map((m) => m.text), roomName, myName));
+    }
+  }, [visible, myUid, roomName, myName]);
 
   // Uploaded pictures for the badges in the enter/left lines.
   const badgeImages = useBadgeImages(!!user);
@@ -1027,10 +1047,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const leftAt = new Map<string, number>();
     const enteredAt = new Map<string, number>();
     messages.forEach((m) => {
-      if ((m.type === "room_leave" || m.type === "room_entry") && m.senderUid && m.createdAtMs > 0) {
-        const map = m.type === "room_leave" ? leftAt : enteredAt;
-        map.set(m.senderUid, Math.max(map.get(m.senderUid) || 0, m.createdAtMs));
-      }
+      if (!m.senderUid || m.createdAtMs <= 0) return;
+      // BUG FIX ("lomi has left" but lomi kept chatting), like the app: a
+      // message sent AFTER the "has left" means they are still here.
+      const map = m.type === "room_leave" ? leftAt : enteredAt;
+      map.set(m.senderUid, Math.max(map.get(m.senderUid) || 0, m.createdAtMs));
     });
     const cutoff = serverNow() - ROOM_PRESENCE_STALE_MS;
     return presence
@@ -1711,7 +1732,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               onScroll={(e) => {
                 const el = e.currentTarget;
                 stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-                if (stickToBottom.current) setNewBelow((n) => (n ? 0 : n));
+                if (stickToBottom.current) {
+                  setNewBelow((n) => (n ? 0 : n));
+                  setNewBelowStats((st) => (st.people || st.bots || st.mention ? NO_NEW_BELOW : st));
+                }
                 scrollTopRef.current = el.scrollTop;
                 if (user && isRoomOpen(user.uid, roomName)) {
                   const cur = readRoomSession(user.uid, roomName);
@@ -1756,7 +1780,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 )}
               </div>
               {luxuryBet?.canSee && <LuxuryBetWelcomeLine state={luxuryBet} />}
-              {visible.map((m) => (
+              {visible.map((m, idx) => {
+                // 🤖 one tinted panel with a coloured stripe behind each run of
+                // lines from the same bot (like the app's botGroupBackdrop)
+                const bot = m.type === "room_entry" || m.type === "room_leave" ? null : chatBotKey(m.text, roomName);
+                const botOf = (o: ChatMessage | undefined) =>
+                  o && o.type !== "room_entry" && o.type !== "room_leave" ? chatBotKey(o.text, roomName) : null;
+                const joinAbove = !!bot && botOf(visible[idx - 1]) === bot;
+                const joinBelow = !!bot && botOf(visible[idx + 1]) === bot;
+                const accent = bot ? chatBotAccent(bot) : "";
+                const row = (
                 <MessageRow
                   key={m.id}
                   m={m}
@@ -1783,7 +1816,26 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     inputRef.current?.focus();
                   }}
                 />
-              ))}
+                );
+                if (!bot) return row;
+                return (
+                  <div
+                    key={m.id}
+                    className="-mx-1.5 py-0.5 pl-1.5 pr-1"
+                    style={{
+                      background: `${accent}${classic ? "12" : "14"}`,
+                      boxShadow: `inset 3px 0 0 ${accent}BF`,
+                      borderTopLeftRadius: joinAbove ? 0 : 13,
+                      borderTopRightRadius: joinAbove ? 0 : 13,
+                      borderBottomLeftRadius: joinBelow ? 0 : 13,
+                      borderBottomRightRadius: joinBelow ? 0 : 13,
+                      marginBottom: joinBelow ? 0 : undefined,
+                    }}
+                  >
+                    {row}
+                  </div>
+                );
+              })}
               </div>
               {/* ⬇ NEW MESSAGES: only while you are scrolled up reading older lines */}
               {newBelow > 0 && (
@@ -1794,11 +1846,23 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                       const el = listRef.current;
                       stickToBottom.current = true;
                       setNewBelow(0);
+                      setNewBelowStats(NO_NEW_BELOW);
                       el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
                     }}
-                    className={`pointer-events-auto h-fit -translate-y-11 rounded-full px-3.5 py-1.5 text-[13px] font-bold text-white shadow-lg ${classic ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" : "bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF]"}`}
+                    // ⬇ people's messages and bot lines counted apart ("2 messages · 5 bot");
+                    // gold with an @ when someone mentions you (like the app)
+                    className={`pointer-events-auto flex h-fit -translate-y-11 items-center gap-[7px] rounded-full py-[5px] pl-1.5 pr-3.5 text-[13px] font-bold text-white shadow-lg ${
+                      newBelowStats.mention
+                        ? "bg-gradient-to-r from-[#FFB300] to-[#FF7A00]"
+                        : classic
+                          ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]"
+                          : "bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF]"
+                    }`}
                   >
-                    ⬇ {newBelow} new message{newBelow === 1 ? "" : "s"}
+                    <span className="rounded-full bg-white/[0.22] px-[7px] py-0.5 text-[13px] font-black leading-none">
+                      {newBelowStats.mention ? "@" : "⬇"}
+                    </span>
+                    <span className="whitespace-nowrap">{newBelowLabel(newBelowStats, newBelow)}</span>
                   </button>
                 </div>
               )}
@@ -2103,6 +2167,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   ["🧹", "Clear Chat", () => (closeMenu(), clearChat())],
                   ["📤", "Invite Friend", () => prefill("/invite ")],
                   ["📜", "Command", () => (closeMenu(), setCommandsOpen(true))],
+                  // 🤖 busy game rooms: hide every bot line (lines that mention you still show)
+                  ["🤖", hideBots ? "Bot Messages: Hidden — tap to show" : "Bot Messages: Shown — tap to hide", () => toggleHideBots()],
                 ] as [string, string, () => void][]
               ).map(([icon, label, act]) => (
                 <li key={label}>
