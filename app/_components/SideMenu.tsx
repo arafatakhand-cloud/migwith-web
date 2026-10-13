@@ -101,7 +101,7 @@ export function MenuPanel() {
           <span className="text-[26px] text-white">›</span>
         </Link>
         <div className="flex bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] py-[7px] text-white">
-          <Link href="/leaderboard" className="flex-1 text-center">
+          <Link href="/level" className="flex-1 text-center">
             <span className="block text-sm font-extrabold">{me ? me.xp.toLocaleString() : "…"}</span>
             <span className="block text-[11px] text-white/85">⭐ XP</span>
           </Link>
@@ -181,7 +181,7 @@ export function MenuPanel() {
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        <Link href="/leaderboard" className="rounded-2xl border border-white/25 bg-white/10 py-2 text-center">
+        <Link href="/level" className="rounded-2xl border border-white/25 bg-white/10 py-2 text-center">
           <p className="font-black">{me ? me.xp.toLocaleString() : "…"}</p>
           <p className="text-[11px] text-white/80">XP</p>
         </Link>
