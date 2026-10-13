@@ -12,6 +12,7 @@ import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { setUiStyle, useUiStyle, type UiStyle } from "../../lib/uiStyle";
 import { CHAT_TEXT_MAX, CHAT_TEXT_MIN, setChatTextSize, useChatTextSize } from "../../lib/chatTextSize";
 import { clearRememberedAmounts } from "../../lib/amountMemory";
 import { detachPushForLogout } from "../../lib/push";
@@ -138,8 +139,70 @@ function TextSizeRow() {
   );
 }
 
-const profileImageUrl = (d: Record<string, unknown>) =>
-  ["photoUrl", "profilePic", "avatarUrl", "imageUrl"].map((k) => String(d[k] || "").trim()).find(Boolean) || "";
+// 📱 App mode picker: two little previews of the look, tap one to switch.
+function AppModeCard() {
+  const style = useUiStyle();
+  const tile = (id: UiStyle, label: string, hint: string, preview: React.ReactNode) => {
+    const on = style === id;
+    return (
+      <button
+        type="button"
+        onClick={() => setUiStyle(id)}
+        className={`flex-1 rounded-2xl border-2 p-2 text-left transition ${on ? "border-[#E0A800] bg-[#FFFBEB] shadow-md" : "border-[#E3EAF4] bg-white hover:border-[#C9D6E8]"}`}
+        aria-pressed={on}
+      >
+        <div className="h-[92px] overflow-hidden rounded-xl border border-black/5">{preview}</div>
+        <p className="mt-2 flex items-center gap-1.5 text-[14px] font-extrabold text-[#0B1F3A]">
+          <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white ${on ? "bg-[#E0A800]" : "border border-[#C5D0E0] bg-white"}`}>
+            {on ? "✓" : ""}
+          </span>
+          {label}
+        </p>
+        <p className="pl-[22px] text-[11px] text-[#6B7A99]">{hint}</p>
+      </button>
+    );
+  };
+  return (
+    <section>
+      <p className="mb-1.5 px-2 text-[11px] font-extrabold uppercase tracking-[1.4px] text-[#5B6B8C]">App mode</p>
+      <div className="flex gap-2.5 rounded-3xl bg-white p-2.5 shadow-[0_2px_10px_rgba(16,40,90,0.06)]">
+        {tile(
+          "modern",
+          "Modern",
+          "Cards, gradients, bubbles",
+          <div className="h-full bg-[#EAF4FE]">
+            <div className="h-5 bg-gradient-to-r from-[#2F6FD6] to-[#7C4DFF]" />
+            <div className="space-y-1.5 p-2">
+              <div className="h-5 rounded-lg bg-gradient-to-r from-[#2F6FD6] to-[#174EA6]" />
+              <div className="flex gap-1.5">
+                <div className="h-6 flex-1 rounded-lg bg-white shadow-sm" />
+                <div className="h-6 flex-1 rounded-lg bg-white shadow-sm" />
+              </div>
+              <div className="ml-auto h-3 w-2/3 rounded-full bg-[#2F80ED]" />
+            </div>
+          </div>
+        )}
+        {tile(
+          "classic",
+          "Classic",
+          "Orange bar, simple lists",
+          <div className="h-full bg-white">
+            <div className="h-5 bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
+            <div className="h-2.5 bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" />
+            <div className="space-y-1 p-2">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-1.5 border-b border-[#EEF2F8] pb-1">
+                  <span className="h-3 w-3 rounded-sm bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
+                  <span className="h-1.5 flex-1 rounded-full bg-[#C9D2DE]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -160,7 +223,7 @@ const secondary = "flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-b
 export default function SettingsPage() {
   const classic = useIsClassic();
   const ready = useRequireLogin();
-  const { user, username } = useSession();
+  const { user } = useSession();
   const logout = async () => {
     await detachPushForLogout();
     if (uid) await leaveAllOpenRooms(uid);
@@ -176,7 +239,6 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [lang, setL] = useState<Lang>("en");
-  const [me, setMe] = useState<{ photo: string; level: number }>({ photo: "", level: 1 });
   const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password" | "question" | "help" | "feedback" | "about">("");
 
   useEffect(() => setL(getLang()), []);
@@ -185,7 +247,6 @@ export default function SettingsPage() {
     if (!uid) return;
     getDoc(doc(db, "users", uid))
       .then((snap) => {
-        setMe({ photo: profileImageUrl(snap.data() || {}), level: Number(snap.get("level") || 1) });
         setProfileLock(snap.get("profileLocked") === true);
         setEmailPrivacy(snap.get("emailPrivacy") !== false);
         const b = snap.get("blockedUsers");
@@ -228,25 +289,8 @@ export default function SettingsPage() {
 
         {ready && (
           <div className="mt-4 space-y-5">
-            {/* 👤 who you are, at the top */}
-            <Link
-              href="/profile/me"
-              className="flex items-center gap-3 rounded-3xl bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-4 text-white shadow-md"
-            >
-              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/70 bg-white/15 text-2xl font-black">
-                {me.photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={me.photo} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  (username || "U").slice(0, 1).toUpperCase()
-                )}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span data-notranslate className="block truncate text-lg font-black">{username}</span>
-                <span className="block text-xs text-white/80">Level {me.level} · View & edit your profile</span>
-              </span>
-              <span className="text-2xl text-white/80">›</span>
-            </Link>
+            {/* 📱 App mode: Modern or Classic (saved in this browser, like the app's App style) */}
+            <AppModeCard />
 
             <Group title="Appearance">
               <Row icon="🎨" tint="#E12A6B" title="Theme & style" subtitle="Colours, Classic or Modern look" href="/appearance" />
