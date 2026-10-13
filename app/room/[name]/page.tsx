@@ -2734,7 +2734,7 @@ function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
 // swapped for its uploaded picture when there is one. The "<< … >>" around it
 // stays, like the app.
-function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[] {
+function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number): ReactNode[] {
   const clean = text;
   const out: ReactNode[] = [];
   let k = 0;
@@ -2745,10 +2745,12 @@ function giftLine(text: string, giftIcon: string, giftImage: string): ReactNode[
           out.push(
             <GiftImg key={`g${k++}`} src={giftImage} fallback={giftIcon} className="mx-0.5 inline h-[1.25em] w-[1.25em] rounded-full object-cover align-middle" />
           );
-        if (piece) out.push(piece);
+        if (piece) out.push(...emotesIn(piece));
       });
-    } else out.push(seg);
+    } else out.push(...emotesIn(seg));
   };
+  // miglife emotes (;h1 …) in the gift's message show as pictures, like chat.
+  const emotesIn = (seg: string) => withEmotes(seg, fontPx).map((n, i) => <Fragment key={`e${k++}_${i}`}>{n}</Fragment>);
   let last = 0;
   for (const m of clean.matchAll(/\[[^\]]*\]/g)) {
     const i = m.index ?? 0;
@@ -2953,7 +2955,7 @@ function MessageRow({
           className="w-full whitespace-pre-wrap break-words rounded-[9px] bg-[#FFE6F2] px-[7px] py-[7px] text-justify leading-snug text-[#FF2D95]"
           style={{ fontSize: fontPx }}
         >
-          {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "")}
+          {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
           {stamp}
         </p>
       </div>
