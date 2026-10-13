@@ -12,6 +12,7 @@ import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { useSession } from "./AppSession";
 import { useFounderPerms } from "../../lib/founder";
+import { useSwitchedSession } from "../../lib/switchAccount";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { brandMiglife } from "../../lib/brand";
@@ -28,6 +29,7 @@ export function MenuPanel() {
   const uid = user?.uid;
   const [me, setMe] = useState<Me | null>(null);
   const founder = useFounderPerms();
+  const switched = useSwitchedSession();
   const classic = useIsClassic();
 
   useEffect(() => {
@@ -53,6 +55,8 @@ export function MenuPanel() {
     ["/explore", "◉", "Discover", 0],
     // The founder tools, like the app's "miglife secret" (founders only).
     ...(founder.isAnyFounder ? ([["/secret", "▤", "miglife secret", 0]] as [string, string, string, number][]) : []),
+    // 🔀 miglife's Switch Account (also shown inside an account miglife opened, to switch on / return)
+    ...(founder.isMigwith || switched ? ([["/switch-account", "🔀", "Switch Account", 0]] as [string, string, string, number][]) : []),
     ["/games", "🎮", "Play Zone", 0],
     ["/settings", "⚙", "Settings", 0],
   ];
