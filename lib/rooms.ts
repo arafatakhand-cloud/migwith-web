@@ -220,3 +220,24 @@ export function isAutoRoomDescription(roomName: string, stored: string): boolean
 export function resolveRoomDescription(roomName: string, stored: string): string {
   return isAutoRoomDescription(roomName, stored) ? officialRoomDefaultDescription(roomName) : stored.trim();
 }
+
+/**
+ * This browser's own id in room_presence ("deviceId"), like the app's. One
+ * account is in a room from ONE place only: entering from another phone /
+ * browser closes the room on the old one ("has left"), then "has entered".
+ * Tabs of the same browser share it (they are the same place).
+ */
+export function roomDeviceId(): string {
+  try {
+    const k = localStorage.getItem("migwith.roomDeviceId");
+    if (k) return k;
+    const v = "web_" + crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    localStorage.setItem("migwith.roomDeviceId", v);
+    return v;
+  } catch {
+    return (fallbackDeviceId ||= "web_" + Math.random().toString(36).slice(2, 14));
+  }
+}
+let fallbackDeviceId = "";
+
+export const ROOM_OPENED_ELSEWHERE = "You opened this room on another phone or browser, so it was closed here.";

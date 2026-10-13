@@ -42,6 +42,8 @@ import {
   resolveRoomDescription,
   roomDisplayName,
   LUXURY_BOT_REMOVED_ROOM,
+  ROOM_OPENED_ELSEWHERE,
+  roomDeviceId,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
@@ -627,7 +629,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const quietMe = profile.quiet && invisibleAllowed; // no entered / left lines
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
     const leaveKey = `${uid}|${roomName}`;
+    const deviceId = roomDeviceId();
     let visitId: string | null = null;
+    let unwatchSpot: (() => void) | null = null;
     let left = false;
     let disposed = false; // this effect was cleaned up (a leave may be pending)
     let heartbeat: ReturnType<typeof setInterval> | null = null;
@@ -697,7 +701,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             const parkedUntil = Number(existing.get("parkedUntil") || 0);
             const fresh =
               lastSeen >= serverNow() - ROOM_PRESENCE_STALE_MS || parkedUntil > serverNow();
-            if (fresh) {
+            const otherDevice = String(existing.get("deviceId") || "");
+            // ONE PLACE PER ROOM: I'm still listed here from another phone /
+            // browser (not a /parked spot).
+            if (fresh && otherDevice && otherDevice !== deviceId && !(parkedUntil > serverNow())) {
+              if (resumed || tabSession) {
+                // This tab was the OLD place: the other one took over.
+                left = true;
+                if (!disposed) setBlocked(ROOM_OPENED_ELSEWHERE);
+                return;
+              }
+              // This is the NEW place: the old one gets "has left" first, then
+              // this visit enters with "has entered" (below).
+              const shop = existing.get("shopBadges");
+              staleOld = {
+                name: String(existing.get("username") || "").trim() || profile.username,
+                level: Number(existing.get("level") || 1),
+                badges: Array.isArray(shop) && shop.length ? shop.map(String) : profile.badges,
+                visitId: String(existing.get("visitId") || "") || null,
+                hidden: String(existing.get("presenceStatus") || "").trim().toUpperCase() === "INVISIBLE",
+              };
+            } else if (fresh) {
               alreadyHere = true;
               visitId = String(existing.get("visitId") || "") || null;
               existingMarkerMs = toMillis(existing.get("entryMarker"));
@@ -777,6 +801,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
           lastSeen: serverTimestamp(),
           visitId,
+          deviceId,
           // A new visit gets a server-time mark (the app does the same).
           ...(alreadyHere ? {} : { entryMarker: serverTimestamp() }),
         },
@@ -827,6 +852,21 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // Left while we were still entering: the cleanup already ran, so don't
       // start a heartbeat nothing would ever stop.
       if (left || disposed) return;
+      // Entered from another phone / browser later → close the room here
+      // without touching the spot (it's theirs now) and without a "has left"
+      // (the new place already wrote it).
+      unwatchSpot = onSnapshot(
+        presenceRef,
+        (snap) => {
+          const other = snap.exists() ? String(snap.get("deviceId") || "") : "";
+          if (!other || other === deviceId || left || disposed) return;
+          left = true;
+          if (heartbeat) clearInterval(heartbeat);
+          restorePresenceRef.current = null;
+          setBlocked(ROOM_OPENED_ELSEWHERE);
+        },
+        () => {}
+      );
       let lastBeatOk = Date.now();
       const restoreQuietly = () => {
         if (left || disposed) return;
@@ -840,6 +880,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
           lastSeen: serverTimestamp(),
           visitId: visitId || newVisitId(),
+          deviceId,
         })
           .then(() => {
             lastBeatOk = Date.now();
@@ -882,6 +923,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
             lastSeen: serverTimestamp(),
             visitId,
+            deviceId,
             entryMarker: serverTimestamp(),
           }).catch(() => {});
           claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
@@ -908,6 +950,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     return () => {
       disposed = true;
       restorePresenceRef.current = null;
+      unwatchSpot?.();
       if (heartbeat) clearInterval(heartbeat);
       if (left) return;
       // Still an open tab: moving to another page or room keeps you in here.
