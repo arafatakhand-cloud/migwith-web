@@ -53,7 +53,8 @@ function unlockedGiftsForLevel(level: number): string[] {
 }
 
 /** From this level: room-entry XP once per room per 24 h (the server also gives
- *  +3 XP for a Cricket / LowCard win from this level), like the app. */
+ *  +3 XP for a Cricket / LowCard win and +1 XP for a Luxury Bet win from this
+ *  level, and a Luxury Bet BET gives no XP from this level), like the app. */
 export const XP_RULES_LEVEL = 50;
 const ROOM_ENTER_XP_GAP_MS = 24 * 60 * 60_000;
 
@@ -84,6 +85,8 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
       const cdMs = perRoom ? ROOM_ENTER_XP_GAP_MS : cooldownMs;
       const last = cooldowns[cdKey] ?? 0;
       if (cdMs > 0 && last > 0 && now - last < cdMs) return 0;
+      // 🎰 Level 50+: no XP for a Luxury Bet bet (the server gives +1 XP for a win instead)
+      if (reason === "luxury_bot_bet" && levelNow >= XP_RULES_LEVEL) return 0;
       // old per-room stamps (24 h+) are dropped so the map stays small
       for (const k of Object.keys(cooldowns)) if (k.startsWith("room_enter:") && now - cooldowns[k] > ROOM_ENTER_XP_GAP_MS) delete cooldowns[k];
 

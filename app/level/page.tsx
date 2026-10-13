@@ -21,7 +21,7 @@ const EARN: [string, string][] = [
   ["🚪", "Enter a room • +5 XP (30 min cooldown · Level 50+: once per room every 24 hours)"],
   ["👥", "Friend request accepted • +10 XP to both"],
   ["🎁", "Send a gift • +5 XP · Gift Shower +10 XP (30 sec cooldown)"],
-  ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown)"],
+  ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown) · Level 50+: win a round • +1 XP (no XP for a bet)"],
   ["🏏", "Win a Cricket game • +3 XP (Level 50+)"],
   ["🃏", "Win a LowCard game • +3 XP (Level 50+)"],
 ];
