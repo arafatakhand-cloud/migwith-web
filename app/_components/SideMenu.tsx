@@ -1,5 +1,6 @@
 "use client";
 
+import { openPresencePopup } from "./PresencePopup";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -94,8 +95,21 @@ export function MenuPanel() {
               {username || "User"}
             </span>
             <span className="mt-1 flex items-center gap-[5px] text-[13px] font-semibold text-white/95">
-              <span className="h-2.5 w-2.5 rounded-full border border-white" style={{ background: presenceColor }} />
-              {presenceLabel} · Level {me?.level ?? "…"}
+              {/* tap the status = the Presence Status popup (the rest opens the profile) */}
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  openPresencePopup();
+                }}
+                className="flex items-center gap-[5px] rounded-full px-1 -mx-1 hover:bg-white/15"
+              >
+                <span className="h-2.5 w-2.5 rounded-full border border-white" style={{ background: presenceColor }} />
+                {presenceLabel}
+              </span>
+              · Level {me?.level ?? "…"}
             </span>
           </span>
           <span className="text-[26px] text-white">›</span>
@@ -169,7 +183,10 @@ export function MenuPanel() {
               username.slice(0, 1).toUpperCase()
             )}
           </div>
-          <span
+          <button
+            type="button"
+            onClick={openPresencePopup}
+            aria-label="Presence status"
             className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#174EA6] ${
               me?.online === false ? "bg-white/50" : "bg-emerald-400"
             }`}
@@ -180,7 +197,10 @@ export function MenuPanel() {
             {username}
           </p>
           <p className="text-sm font-bold text-yellow-200">
-            ⭐ Level {me?.level ?? "…"} · {me?.online === false ? "Away" : "Active"}
+            ⭐ Level {me?.level ?? "…"} ·{" "}
+            <button type="button" onClick={openPresencePopup} className="underline-offset-2 hover:underline">
+              {me?.online === false ? "Away" : "Active"}
+            </button>
           </p>
         </div>
       </div>

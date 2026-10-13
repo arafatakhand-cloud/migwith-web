@@ -58,7 +58,7 @@ import {
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
-import { useSenderColors } from "../../../lib/senderColors";
+import { COUNTRY_REP_BADGE, cachedRoleOf, useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
 import { ImageViewerHost, openImageViewer } from "../../_components/ImageViewer";
 import {
@@ -1125,8 +1125,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
     useMemo(
-      () => shown.map((m) => (m.sender ? m.sender : m.text.slice(0, Math.max(0, m.text.indexOf(":")))).trim()),
-      [shown]
+      () => [
+        ...shown.map((m) => (m.sender ? m.sender : m.text.slice(0, Math.max(0, m.text.indexOf(":")))).trim()),
+        // the people in the room too (their 🌍 Country Representative badge in the list)
+        ...presence.map((p) => p.username),
+      ],
+      [shown, presence]
     )
   );
 
@@ -2080,6 +2084,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   >
                     {u.username}
                   </Link>
+                  {cachedRoleOf(u.username) === "country_representative" && <span title="Country Representative">{COUNTRY_REP_BADGE}</span>}
                   {(() => {
                     const k = u.username.toLowerCase();
                     if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <span title="Room owner">👑</span>;
@@ -3081,6 +3086,9 @@ function MessageRow({
                 <RainbowName name={brandMiglife(senderName)} style={special.styleOf(senderName)} />
               ) : (
                 brandMiglife(senderName)
+              )}
+              {!isRoomLine && !m.local && cachedRoleOf(senderName) === "country_representative" && (
+                <span className="ml-0.5" title="Country Representative">{COUNTRY_REP_BADGE}</span>
               )}
               :
             </span>

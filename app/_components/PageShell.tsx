@@ -1,4 +1,5 @@
 import { DesktopSidebar } from "./SideMenu";
+import { PresencePopupHost } from "./PresencePopup";
 import { TopBar } from "./TopBar";
 
 /* Page frame shared by every signed-in page: the app's white top bar over a
@@ -34,6 +35,7 @@ export function PageShell({
             : "bg-sky-app text-white"
       }`}
     >
+      <PresencePopupHost />
       {!noTopBar && (
         <header data-topbar className="sticky top-0 z-30 border-b border-[#BFD7F2] bg-white shadow-sm">
           <TopBar />

@@ -1,5 +1,6 @@
 "use client";
 
+import { openPresencePopup } from "./PresencePopup";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
@@ -277,7 +278,7 @@ export function Dashboard() {
             {roleLabel(me?.role || "")}
           </span>
           {/* presence dot AFTER the role (tap = change presence) */}
-          <Link href="/presence" aria-label="Presence status" className="ml-[7px] h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
+          <button type="button" onClick={openPresencePopup} aria-label="Presence status" className="ml-[7px] h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
         </div>
       </div>
       {/* 🏅 level badge in the top-right corner, the level under it (square box, like the app) */}

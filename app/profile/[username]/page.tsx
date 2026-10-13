@@ -87,7 +87,7 @@ function ageFrom(dob: string): number {
   return years >= 1 && years <= 120 ? years : -1;
 }
 
-function roleInfo(raw: string): { label: string; color: string } | null {
+function roleInfo(raw: string): { label: string; color: string; icon?: string } | null {
   const key = raw.trim().toLowerCase().replace(/[- ]/g, "_");
   if (["owner", "ceo", "executive", "executive_board"].includes(key)) return { label: "Owner", color: "#D4AF37" };
   if (["admin", "administrator", "superadmin"].includes(key)) return { label: "Admin", color: "#CBA400" };
@@ -95,6 +95,7 @@ function roleInfo(raw: string): { label: string; color: string } | null {
   if (key === "mentor") return { label: "Mentor", color: "#E0303F" };
   if (key === "merchant") return { label: "Merchant", color: "#9C27B0" };
   if (key === "elite" || key === "elite_user") return { label: "Elite", color: "#0097A7" };
+  if (["country_representative", "countryrep", "country_rep"].includes(key)) return { label: "Country Representative", color: "#B58A70", icon: "🌍" };
   return null;
 }
 
@@ -542,7 +543,7 @@ export default function ProfilePage() {
               )}
               {shownRole && (
                 <span className="shrink-0 text-[13px] font-bold" style={{ color: shownRole.color }}>
-                  🎖 {shownRole.label}
+                  {shownRole.icon || "🎖"} {shownRole.label}
                 </span>
               )}
             </div>

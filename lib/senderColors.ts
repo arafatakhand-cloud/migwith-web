@@ -23,6 +23,10 @@ export const SHOP_TEXT_COLORS: Record<string, string> = {
 };
 
 const LUCKY_PINK = "#FF4FA3";
+/** 🌍 Country Representative: brown-gold name + a 🌍 badge (like the app). */
+export const COUNTRY_REP_COLOR = "#B58A70";
+export const COUNTRY_REP_BADGE = "🌍";
+const ROLE_ALIASES: Record<string, string> = { countryrep: "country_representative", country_rep: "country_representative" };
 const USER_BLUE = "#3984D9";
 
 function roleColor(role: string): string {
@@ -40,6 +44,8 @@ function roleColor(role: string): string {
     case "elite":
     case "elite_user":
       return "#00E5FF";
+    case "country_representative":
+      return COUNTRY_REP_COLOR;
     default:
       return USER_BLUE;
   }
@@ -85,10 +91,15 @@ function colorFor(name: string, p: Profile | undefined): string {
   if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
   }
-  if (["admin", "administrator", "superadmin", "staff", "mentor", "merchant"].includes(p.role)) {
+  if (["admin", "administrator", "superadmin", "staff", "mentor", "merchant", "country_representative"].includes(p.role)) {
     return roleColor(p.role);
   }
   return p.shopColor || roleColor(p.role);
+}
+
+/** The role looked up for a name (after useSenderColors fetched it), or "". */
+export function cachedRoleOf(name: string): string {
+  return cache.get(name.trim().toLowerCase())?.role || "";
 }
 
 /** lowercase name → CSS colour, for everyone named in `names`. */
@@ -139,10 +150,11 @@ export function useSenderColors(names: string[]): (name: string) => string {
           snap.docs.forEach((d) => {
             const name = String(d.get("username") || "").trim();
             if (!name) return;
-            const role = String(d.get("membershipRole") || d.get("memberType") || d.get("role") || "user")
+            const rawRole = String(d.get("membershipRole") || d.get("memberType") || d.get("role") || "user")
               .trim()
               .toLowerCase()
               .replace(/[- ]/g, "_");
+            const role = ROLE_ALIASES[rawRole] || rawRole;
             let shopColor: string | null = null;
             const activeId = String(d.get("activeColorId") || "");
             const owned = d.get("ownedColors") as Record<string, { active?: boolean; expiresAt?: number }> | undefined;

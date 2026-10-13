@@ -1,5 +1,6 @@
 "use client";
 
+import { openPresencePopup } from "./PresencePopup";
 import Link from "next/link";
 import { HomeLiveSportsCard } from "./LiveSportsWidgets";
 import { totalXpForLevel } from "../../lib/level";
@@ -160,13 +161,14 @@ export function ModernHomeTop({
               <span className="rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
                 {roleLabel}
               </span>
-              <Link
-                href="/presence"
+              <button
+                type="button"
+                onClick={openPresencePopup}
                 className="flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
               >
                 <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
                 {presenceLabel}
-              </Link>
+              </button>
             </div>
           </div>
           {/* 🏅 level badge in a glass hexagon, the level under it */}
