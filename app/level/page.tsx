@@ -22,8 +22,8 @@ const EARN: [string, string][] = [
   ["👥", "Friend request accepted • +10 XP to both"],
   ["🎁", "Send a gift • +5 XP · Gift Shower +10 XP (30 sec cooldown)"],
   ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown)"],
-  ["🏏", "Win a Cricket game • +10 XP (Level 50+)"],
-  ["🃏", "Win a LowCard game • +10 XP (Level 50+)"],
+  ["🏏", "Win a Cricket game • +3 XP (Level 50+)"],
+  ["🃏", "Win a LowCard game • +3 XP (Level 50+)"],
 ];
 
 function unlockedGifts(level: number): string[] {

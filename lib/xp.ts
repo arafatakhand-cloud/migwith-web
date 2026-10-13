@@ -53,7 +53,7 @@ function unlockedGiftsForLevel(level: number): string[] {
 }
 
 /** From this level: room-entry XP once per room per 24 h (the server also gives
- *  +10 XP for a Cricket / LowCard win from this level), like the app. */
+ *  +3 XP for a Cricket / LowCard win from this level), like the app. */
 export const XP_RULES_LEVEL = 50;
 const ROOM_ENTER_XP_GAP_MS = 24 * 60 * 60_000;
 
