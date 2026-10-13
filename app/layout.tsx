@@ -46,7 +46,7 @@ export default function RootLayout({
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var f=localStorage.getItem("migwith.font");if(f&&f!=="modern")document.documentElement.dataset.font=f;var t=localStorage.getItem("migwith.theme");if(t&&t!=="sky_blue")document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
+            __html: `try{localStorage.removeItem("migwith.font");var t=localStorage.getItem("migwith.theme");if(t&&t!=="sky_blue")document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />

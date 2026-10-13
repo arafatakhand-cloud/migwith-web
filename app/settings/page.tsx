@@ -146,7 +146,7 @@ export default function SettingsPage() {
             <AppModeCard />
 
             <Group title="Appearance">
-              <Row icon="🎨" tint="#E12A6B" title="Theme & style" subtitle="Colours, Classic or Modern look" href="/appearance" />
+              <Row icon="🎨" tint="#E12A6B" title="Theme & colours" subtitle="17 colour themes for the whole site" href="/appearance" />
               <Row
                 icon="🌐"
                 tint="#3984D9"

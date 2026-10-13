@@ -4,50 +4,47 @@ import { useEffect, useState } from "react";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
-import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
-// Settings › Appearance, like the app: colour themes (the whole site changes
-// colour; see scripts/gen-themes.mjs) and the four font styles. Kept in this browser.
+// Settings › Appearance: the colour themes as big cards — name, a short line,
+// the colour dots and a little chat preview in that theme. Tapping one changes
+// the whole site at once (see scripts/gen-themes.mjs). Kept in this browser.
+// (App mode — Modern / Classic — is at the top of Settings.)
 
-// [id, name, background, primary, secondary] — the app's LoginThemes colours.
-const APP_THEMES: [string, string, string, string, string][] = [
-  ["sky_blue", "MIG Classic", "#0E3452", "#2F80ED", "#56CCF2"],
-  ["dark_night", "Dark Night", "#060B1A", "#3B82F6", "#7DB4FF"],
-  ["mint", "Mint Green", "#072220", "#14B8A6", "#5EEAD4"],
-  ["lavender", "Lavender", "#14102A", "#8B7CF0", "#F0A6CA"],
-  ["rose_pink", "Rose Pink", "#2A0F1C", "#E0629A", "#F5A3C7"],
-  ["sunset", "Sunset Orange", "#241108", "#F97316", "#FFB347"],
-  ["sunshine", "Sunshine Yellow", "#2A2104", "#F5B800", "#FFD84D"],
-  ["aqua", "Aqua Teal", "#04222A", "#06B6D4", "#67E8F9"],
-  ["cherry", "Cherry Red", "#240709", "#E23A55", "#FF8FA3"],
-];
-const MORE_THEMES: [string, string, string, string, string][] = [
-  ["teal", "Teal / Cyan", "#041B20", "#00BFA6", "#29E6D0"],
-  ["emerald", "Emerald", "#071B13", "#16A34A", "#4ADE80"],
-  ["ruby", "Ruby", "#21080E", "#E11D48", "#FB7185"],
-  ["purple", "Purple", "#120A25", "#8B5CF6", "#C084FC"],
-  ["black_gold", "Black & Gold", "#080808", "#D4AF37", "#FFD86B"],
-  ["dark_luxury", "Dark Luxury", "#090B10", "#B8C6D9", "#E8EEF7"],
-  ["light_clean", "Light / Clean", "#F5F7FA", "#2563EB", "#60A5FA"],
-  ["rose_gold", "Rose Gold", "#1F1216", "#E8A0A0", "#F6C9B8"],
+// [id, name, short line, background, primary, secondary]
+const THEMES: [string, string, string, string, string, string][] = [
+  ["sky_blue", "MIG Classic", "Blue + sky · Default", "#0E3452", "#2F80ED", "#56CCF2"],
+  ["dark_night", "Dark Night", "Midnight + bright blue", "#060B1A", "#3B82F6", "#7DB4FF"],
+  ["mint", "Mint Green", "Deep teal + mint · Fresh", "#072220", "#14B8A6", "#5EEAD4"],
+  ["lavender", "Lavender", "Purple + pink · Soft", "#14102A", "#8B7CF0", "#F0A6CA"],
+  ["rose_pink", "Rose Pink", "Wine + rose · Sweet", "#2A0F1C", "#E0629A", "#F5A3C7"],
+  ["sunset", "Sunset Orange", "Warm orange · Bright", "#241108", "#F97316", "#FFB347"],
+  ["sunshine", "Sunshine Yellow", "Golden yellow · Happy", "#2A2104", "#F5B800", "#FFD84D"],
+  ["aqua", "Aqua Teal", "Cyan + teal · Tropical", "#04222A", "#06B6D4", "#67E8F9"],
+  ["cherry", "Cherry Red", "Red + coral · Bold", "#240709", "#E23A55", "#FF8FA3"],
+  ["teal", "Teal / Cyan", "Ocean teal · Calm", "#041B20", "#00BFA6", "#29E6D0"],
+  ["emerald", "Emerald", "Forest green · Natural", "#071B13", "#16A34A", "#4ADE80"],
+  ["ruby", "Ruby", "Deep red · Elegant", "#21080E", "#E11D48", "#FB7185"],
+  ["purple", "Purple", "Royal violet · Rich", "#120A25", "#8B5CF6", "#C084FC"],
+  ["black_gold", "Black & Gold", "Black + gold · Luxury", "#080808", "#D4AF37", "#FFD86B"],
+  ["dark_luxury", "Dark Luxury", "Graphite + silver · Quiet", "#090B10", "#B8C6D9", "#E8EEF7"],
+  ["light_clean", "Light / Clean", "White + blue · Light", "#F5F7FA", "#2563EB", "#60A5FA"],
+  ["rose_gold", "Rose Gold", "Blush + gold · Warm", "#1F1216", "#E8A0A0", "#F6C9B8"],
 ];
 
-const FONTS: [string, string, string][] = [
-  ["modern", "Modern", "inherit"],
-  ["classic", "Classic Serif", 'Georgia, "Times New Roman", serif'],
-  ["luxury", "Elegant Light", '"Helvetica Neue", Arial, sans-serif'],
-  ["rounded", "Friendly Casual", '"Comic Sans MS", "Chalkboard SE", "Comic Neue", cursive, sans-serif'],
-];
+// a colour mixed toward white (0..1)
+function lighten(hex: string, t: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c: number) => Math.round(c + (255 - c) * t);
+  const r = mix((n >> 16) & 255), g = mix((n >> 8) & 255), b = mix(n & 255);
+  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+}
 
 export default function AppearancePage() {
   const ready = useRequireLogin();
-  const [font, setFont] = useState("modern");
   const [theme, setTheme] = useState("sky_blue");
-  const uiStyle = useUiStyle();
 
   useEffect(() => {
     try {
-      setFont(localStorage.getItem("migwith.font") || "modern");
       setTheme(localStorage.getItem("migwith.theme") || "sky_blue");
     } catch {
       // storage blocked
@@ -65,116 +62,68 @@ export default function AppearancePage() {
     else document.documentElement.dataset.theme = id;
   };
 
-  const ThemeGrid = ({ list }: { list: [string, string, string, string, string][] }) => (
-    <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
-      {list.map(([id, name, bg, primary, secondary]) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => pickTheme(id)}
-          className={`overflow-hidden rounded-2xl border-2 text-left ${theme === id ? "border-[#D4AF37]" : "border-transparent"}`}
-        >
-          <span className="relative block h-14" style={{ background: bg }}>
-            <span className="absolute bottom-2 left-2 right-8 h-3 rounded-full" style={{ background: primary }} />
-            <span className="absolute bottom-2 right-2 h-3 w-4 rounded-full" style={{ background: secondary }} />
-            {theme === id && <span className="absolute right-1.5 top-1 text-sm font-bold text-[#D4AF37]">✓</span>}
-          </span>
-          <span className="block truncate bg-white px-2 py-1 text-[11px] font-semibold text-[#0B2A5B]">{name}</span>
-        </button>
-      ))}
-    </div>
-  );
-
-  const pick = (id: string) => {
-    setFont(id);
-    try {
-      localStorage.setItem("migwith.font", id);
-    } catch {
-      // storage blocked
-    }
-    if (id === "modern") delete document.documentElement.dataset.font;
-    else document.documentElement.dataset.font = id;
-  };
-
   return (
     <PageShell light>
-      <section className="mx-auto max-w-md px-3 pb-8 sm:px-6">
-        <PageTitle title="Appearance" subtitle="Customize the MIGlife visual style" icon="🎨" />
+      <section className="mx-auto max-w-md px-3 pb-8 sm:px-6 lg:max-w-3xl">
+        <PageTitle title="Appearance" subtitle="Choose your colours" icon="🎨" />
         {ready && (
           <>
-            {/* 📟 APP STYLE: today's Modern look, or the old Classic look. */}
-            <p className="text-sm font-bold text-[#0B2A5B]">APP STYLE</p>
-            <p className="mt-0.5 text-xs text-[#5B6B8C]">Modern is today&apos;s miGlife. Classic brings back the old look.</p>
-            <div className="mt-2 grid grid-cols-2 gap-2.5">
-              {(
-                [
-                  ["modern", "✨ Modern"],
-                  ["classic", "📟 Classic"],
-                ] as const
-              ).map(([id, name]) => {
-                const chosen = uiStyle === id;
+            <div className="rounded-2xl bg-white p-3.5 shadow-sm">
+              <p className="font-extrabold text-[#0B2A5B]">Choose your theme</p>
+              <p className="text-xs text-[#5B6B8C]">Changes the colours of the whole site — buttons, bars and accents. Applies instantly.</p>
+            </div>
+            <div className="mt-3 grid gap-3 lg:grid-cols-2">
+              {THEMES.map(([id, name, line, bg, primary, secondary]) => {
+                const on = theme === id;
+                const lightBg = id === "light_clean";
+                const dots = ["#FFFFFF", lighten(secondary, 0.45), secondary, primary, bg];
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => setUiStyle(id)}
-                    className={`rounded-2xl bg-white p-2.5 text-left ${
-                      chosen ? "border-[3px] border-[#2F80ED] shadow-md" : "border border-[#D5DEE9] shadow-sm"
-                    }`}
+                    onClick={() => pickTheme(id)}
+                    aria-pressed={on}
+                    className={`rounded-3xl p-3.5 text-left transition ${on ? "ring-[3px] ring-[#E0A800] shadow-lg" : "ring-1 ring-black/5 shadow-sm hover:shadow-md"}`}
+                    style={{ background: `linear-gradient(160deg, ${bg}, ${lighten(bg, lightBg ? 0 : 0.08)})` }}
                   >
-                    {/* tiny picture of the top of the site in that style */}
-                    {id === "classic" ? (
-                      <span className="block">
-                        <span className="block h-4 rounded-t-md bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
-                        <span className="flex items-end gap-[3px] bg-[#2F6ABD] pl-1 pt-[3px]">
-                          <span className="h-[9px] w-[26px] rounded-t-[3px] bg-white" />
-                          <span className="h-[7px] w-[22px] rounded-t-[3px] bg-[#9AB8E4]" />
-                          <span className="h-[7px] w-[22px] rounded-t-[3px] bg-[#FFD27A]" />
+                    <span className="flex items-start gap-2">
+                      <span className="min-w-0 flex-1">
+                        <span className={`block text-[17px] font-black ${lightBg ? "text-[#0B2A5B]" : "text-white"}`}>{name}</span>
+                        <span className={`block text-xs ${lightBg ? "text-[#5B6B8C]" : "text-white/70"}`}>{line}</span>
+                      </span>
+                      <span
+                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2"
+                        style={{ borderColor: on ? "#E0A800" : lightBg ? "#C5D0E0" : "rgba(255,255,255,.45)", background: on ? "#E0A800" : "transparent" }}
+                      >
+                        {on && <span className="text-xs font-black text-white">✓</span>}
+                      </span>
+                    </span>
+                    <span className="mt-2.5 flex gap-1.5">
+                      {dots.map((c, i) => (
+                        <span key={i} className={`h-6 w-6 rounded-full ring-1 ${lightBg ? "ring-black/15" : "ring-white/30"}`} style={{ background: c }} />
+                      ))}
+                    </span>
+                    {/* a little chat in this theme */}
+                    <span className="mt-3 block rounded-2xl p-2.5" style={{ background: lightBg ? "#E8EEF7" : "rgba(255,255,255,.07)" }}>
+                      <span
+                        className="inline-block rounded-xl rounded-bl-sm px-2.5 py-1 text-[12px] font-semibold"
+                        style={{ background: lightBg ? "#FFFFFF" : "rgba(255,255,255,.14)", color: lightBg ? "#0B2A5B" : "#fff" }}
+                      >
+                        hello! 👋
+                      </span>
+                      <span className="mt-2 flex items-center gap-1.5">
+                        <span className="h-7 flex-1 rounded-full bg-white px-3 text-[11px] leading-7 text-[#9AA8C2]">Type a message…</span>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] text-white" style={{ background: primary }}>
+                          ➤
                         </span>
-                        <span className="block h-[2px] bg-[#F07A00]" />
                       </span>
-                    ) : (
-                      <span className="flex h-[27px] gap-1 rounded-md bg-[#EEF5FE] p-1">
-                        <span className="h-[19px] w-[19px] rounded-[5px] border border-[#C8DEF6] bg-white" />
-                        <span className="h-[19px] w-[19px] rounded-[5px] border border-[#C8DEF6] bg-white" />
-                        <span className="h-[19px] w-[34px] rounded-[5px] bg-gradient-to-b from-[#45B0FF] to-[#0A5BE8]" />
-                      </span>
-                    )}
-                    <span className="mt-2 block text-sm font-bold text-[#0B2A5B]">{chosen ? `${name}  ✓` : name}</span>
+                      <span className="mt-2 block h-2 rounded-full" style={{ background: `linear-gradient(90deg, ${primary}, ${secondary})` }} />
+                    </span>
                   </button>
                 );
               })}
             </div>
-
-            <p className="mt-5 text-sm font-bold text-[#0B2A5B]">APP THEMES</p>
-            <ThemeGrid list={APP_THEMES} />
-            <p className="mt-4 text-sm font-bold text-[#0B2A5B]">MORE THEMES</p>
-            <ThemeGrid list={MORE_THEMES} />
-            <p className="mt-2 text-xs text-[#5B6B8C]">Your choice changes the whole site at once.</p>
-
-            <p className="mt-5 text-sm font-bold text-[#0B2A5B]">FONT</p>
-            <div className="mt-2 space-y-2">
-              {FONTS.map(([id, name, family]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => pick(id)}
-                  className={`flex w-full items-center gap-3 rounded-2xl border bg-white px-4 py-3 text-left ${
-                    font === id ? "border-[#D4AF37] shadow" : "border-[#E0E5EE]"
-                  }`}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-bold text-[#0B2A5B]" style={{ fontFamily: family, fontWeight: id === "luxury" ? 300 : undefined }}>
-                      {name}
-                    </span>
-                    <span className="block text-sm text-[#5B6B8C]" style={{ fontFamily: family, fontWeight: id === "luxury" ? 300 : undefined }}>
-                      Hello · বাংলা · MIG LIFE
-                    </span>
-                  </span>
-                  <span className="text-xl text-[#D4AF37]">{font === id ? "✓" : ""}</span>
-                </button>
-              ))}
-            </div>
+            <p className="mt-3 text-center text-xs text-[#5B6B8C]">Theme applies instantly · saved on this device</p>
           </>
         )}
       </section>
