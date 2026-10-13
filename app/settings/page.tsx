@@ -196,9 +196,9 @@ export default function SettingsPage() {
             </Group>
 
             <Group title="Security">
+              <Row icon="❓" tint="#7B1FB8" title="Security question" subtitle="Needed to change your password or PIN" onClick={() => setDialog("question")} />
               <Row icon="🔐" tint="#D4A017" title="Change password" subtitle="Update your login password" onClick={() => setDialog("gate")} />
               <Row icon="🛡️" tint="#12AFC7" title="Security PIN" subtitle="For coin transfers" href="/security" />
-              <Row icon="❓" tint="#7B1FB8" title="Security question" subtitle="Needed to change your password or PIN" onClick={() => setDialog("question")} />
             </Group>
 
             <Group title="Help">
