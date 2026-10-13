@@ -7,6 +7,7 @@ import { db, functions } from "../../lib/firebase";
 import { LbStyleDialog, lbSkinNow } from "./LuxuryBot";
 import { LB_KINDS, useInventory } from "./StyleShop";
 import { useRememberedAmount } from "../../lib/amountMemory";
+import { awardUserXp } from "../../lib/xp";
 
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
@@ -163,6 +164,8 @@ export function useLuxuryBet(
       .then(({ data }) => {
         if (data?.bets) setMyBets(data.bets);
         setLastBet({ character, amount });
+        // ⭐ +3 XP for a successful bet (15 s cooldown), like the app's LuxuryBetGame.kt
+        awardUserXp(uid, 3, "luxury_bot_bet", 15_000);
       })
       .catch((e: any) => {
         // "Betting too fast" is never shown: nothing was charged for that tap.
