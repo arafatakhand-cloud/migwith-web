@@ -72,7 +72,10 @@ export default function MerchantPage() {
             getDocs(query(collection(db, "mentor_merchants"), where("merchantUsername", "==", username))),
           ]);
           setPending(req.docs[0] || null);
-          const active = merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
+          // Another role (Country Representative, Admin, Staff …) is not a
+          // Merchant any more, even if an old merchant record has time left.
+          const otherRole = roles.some((r) => r && r !== "user" && r !== "merchant");
+          const active = otherRole && !merchantRole ? null : merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
           // A merchant by role still opens the dashboard with the newest record,
           // even if it ran out or is missing its date.
           const latest = [...merch.docs].sort((a, b) => toMs(b.get("expiresAt")) - toMs(a.get("expiresAt")))[0] || null;
