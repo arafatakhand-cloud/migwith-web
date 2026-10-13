@@ -143,8 +143,12 @@ export function MenuPanel() {
         })}
         {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom, no
             colour, no card (a bright red button invites taps), like the app */}
-        <button type="button" onClick={logout} className="mt-[18px] w-full py-1.5 text-center text-xs text-[#9AA5B4]">
-          Log out
+        <button
+          type="button"
+          onClick={logout}
+          className="mx-auto mt-[18px] flex items-center gap-1.5 rounded-[4px] border border-[#C9D2DE] bg-white px-5 py-2 text-[13px] font-semibold text-[#5A6B82] hover:bg-[#F4F6F9]"
+        >
+          ↪ Log out
         </button>
         <p className="mt-1 text-center text-[10px] text-[#8A97A8]">miGlife Web</p>
       </div>
@@ -231,8 +235,12 @@ export function MenuPanel() {
     </ul>
 
     {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom (like the app) */}
-    <button type="button" onClick={logout} className="mt-[18px] w-full py-1.5 text-center text-xs text-[#9AA5B4]">
-      Log out
+    <button
+      type="button"
+      onClick={logout}
+      className="mx-auto mt-[18px] flex items-center gap-1.5 rounded-full border border-[#C9D6E8] bg-white/70 px-5 py-2 text-[13px] font-semibold text-[#5A6B82] hover:bg-white"
+    >
+      ↪ Log out
     </button>
     <p className="mt-1 text-center text-[10px] text-[#35507E]">MIGlife Web</p>
     </>
