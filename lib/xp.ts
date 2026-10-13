@@ -12,8 +12,8 @@ import { badgeForLevel, badgeNameForLevel } from "./rooms";
 
 export type XpReason = "chat_message" | "room_enter" | "friend_request" | "gift" | "luxury_bot_bet";
 
-/** At most this much XP per Bangladesh day from normal activity. */
-const DAILY_XP_CAP = 500;
+/** At most this much XP per Bangladesh day from normal activity (was 500). */
+export const DAILY_XP_CAP = 1500;
 /** firestore.rules need 5 s between two awards; queue them a bit further apart. */
 const XP_MIN_GAP_MS = 5_500;
 const XP_MAX_RETRIES = 2;
@@ -29,7 +29,7 @@ function scheduleXpAward(run: () => void) {
 }
 
 // Bangladesh date — the same "today" the server's daily leaderboards use.
-function todayKey(): string {
+export function todayKey(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Dhaka", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 

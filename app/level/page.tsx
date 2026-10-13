@@ -11,6 +11,7 @@ import { badgeForLevel, badgeNameForLevel } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { DAILY_XP_CAP, todayKey } from "../../lib/xp";
 
 // 🛡️ Level System, like the app's (tap your level on Home): level, XP bar,
 // how XP is earned, unlocked rewards and the last 5 XP events.
@@ -44,6 +45,8 @@ export default function LevelPage() {
   const { user, username } = useSession();
   const [xp, setXp] = useState(0);
   const [lastLevelUp, setLastLevelUp] = useState(1);
+  // 📅 XP earned today (Bangladesh day) — normal activity stops at DAILY_XP_CAP
+  const [todayXp, setTodayXp] = useState(0);
   const [history, setHistory] = useState<History[]>([]);
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export default function LevelPage() {
     const offUser = onSnapshot(doc(db, "users", user.uid), (s) => {
       setXp(Number(s.get("xp") || 0));
       setLastLevelUp(Number(s.get("lastLevelUpLevel") || 1));
+      setTodayXp(s.get("dailyXpDate") === todayKey() ? Number(s.get("dailyXp") || 0) : 0);
     });
     const offHistory = onSnapshot(
       query(collection(db, "users", user.uid, "xp_history"), orderBy("createdAt", "desc"), limit(5)),
@@ -116,6 +120,29 @@ export default function LevelPage() {
                 {xpLabel(current)} / {xpLabel(needed)} XP to Lv.{level + 1}
               </p>
             </div>
+
+            {/* 📅 Today: how much of the daily limit is used — when it's full, say so */}
+            {(() => {
+              const full = todayXp >= DAILY_XP_CAP;
+              return (
+                <div className={`classic-light rounded-[14px] border bg-[#2A365A] p-3.5 text-white ${full ? "border-[#E5484D]" : "border-[#5B6F9D]"}`}>
+                  <div className="flex items-center">
+                    <span className="flex-1 text-[15px] font-bold">📅 Today</span>
+                    <span className={`text-sm font-extrabold ${full ? "text-[#FF6B6B]" : "text-[#FFC04A]"}`}>
+                      {Math.min(todayXp, DAILY_XP_CAP).toLocaleString("en-US")} / {DAILY_XP_CAP.toLocaleString("en-US")} XP
+                    </span>
+                  </div>
+                  <div className="mt-2 h-2 overflow-hidden rounded-lg bg-[#586079]">
+                    <div className={`h-full rounded-lg ${full ? "bg-[#E5484D]" : "bg-[#2EC27E]"}`} style={{ width: `${Math.min(100, (todayXp / DAILY_XP_CAP) * 100)}%` }} />
+                  </div>
+                  <p className={`mt-1.5 text-xs ${full ? "font-semibold text-[#FF6B6B]" : "text-[#B9C5DF]"}`}>
+                    {full
+                      ? "Daily XP limit reached — more tomorrow (resets at 12 AM Bangladesh time)."
+                      : `Chat, rooms, gifts and bets give XP up to ${DAILY_XP_CAP.toLocaleString("en-US")} a day.`}
+                  </p>
+                </div>
+              );
+            })()}
 
             {lastLevelUp > 1 && (
               <p className="rounded-[14px] border border-[#E1A229] bg-[#3D2E1A] p-3.5 text-[15px] font-bold text-[#FFC04A]">
