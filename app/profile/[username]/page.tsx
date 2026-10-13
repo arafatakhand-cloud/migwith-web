@@ -157,6 +157,11 @@ export default function ProfilePage() {
   const params = useParams<{ username: string }>();
   const router = useRouter();
   const { user, username: me, loading } = useCurrentUser();
+  // Signed out (e.g. a profile link opened in another browser): go to Login
+  // instead of "Loading…" forever.
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [loading, user, router]);
   const raw = decodeURIComponent(params.username);
   // "/profile/me" opens your own profile.
   const username = raw === "me" ? me : raw;
