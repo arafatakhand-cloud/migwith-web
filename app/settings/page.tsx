@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, signOut, updatePassword } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { auth, db, functions } from "../../lib/firebase";
@@ -10,10 +10,14 @@ import { getLang, setLang, type Lang } from "../../lib/i18n";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
-import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
-import { ChatTextSizeCard } from "../_components/ChatTextSizeCard";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { CHAT_TEXT_MAX, CHAT_TEXT_MIN, setChatTextSize, useChatTextSize } from "../../lib/chatTextSize";
+import { clearRememberedAmounts } from "../../lib/amountMemory";
+import { detachPushForLogout } from "../../lib/push";
+import { leaveAllOpenRooms } from "../../lib/openRooms";
+import { markOfflineForLogout } from "../../lib/heartbeat";
+
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -53,6 +57,90 @@ function Switch({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
   );
 }
 
+// ⚙ Settings rows: grouped white cards, a coloured icon tile, title + short
+// line, and a switch / value / › on the right.
+function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <p className="mb-1.5 px-2 text-[11px] font-extrabold uppercase tracking-[1.4px] text-[#5B6B8C]">{title}</p>
+      <div className="divide-y divide-[#EEF2F8] overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_rgba(16,40,90,0.06)]">{children}</div>
+    </section>
+  );
+}
+
+function Row({
+  icon,
+  tint,
+  title,
+  subtitle,
+  value,
+  right,
+  href,
+  onClick,
+}: {
+  icon: string;
+  tint: string;
+  title: string;
+  subtitle?: string;
+  value?: string;
+  right?: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+}) {
+  const body = (
+    <>
+      <span
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+        style={{ background: `linear-gradient(145deg, ${tint}26, ${tint}12)`, boxShadow: `inset 0 0 0 1px ${tint}22` }}
+      >
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-bold text-[#0B1F3A]">{title}</span>
+        {subtitle && <span className="block truncate text-xs text-[#6B7A99]">{subtitle}</span>}
+      </span>
+      {right ?? (
+        <span className="flex shrink-0 items-center gap-1.5">
+          {value && <span className="text-[13px] font-semibold text-[#5B6B8C]">{value}</span>}
+          <span className="text-xl leading-none text-[#A9B4C2]">›</span>
+        </span>
+      )}
+    </>
+  );
+  const cls = "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#F6F9FD]";
+  if (href) return <Link href={href} className={cls}>{body}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className={cls}>{body}</button>;
+  return <div className={cls}>{body}</div>;
+}
+
+// 🔠 Room text size inside the Appearance group: A− · size · A+ (saved in this browser).
+function TextSizeRow() {
+  const size = useChatTextSize();
+  const step = (d: number) => setChatTextSize(Math.min(CHAT_TEXT_MAX, Math.max(CHAT_TEXT_MIN, size + d)));
+  return (
+    <Row
+      icon="🔠"
+      tint="#174EA6"
+      title="Room text size"
+      subtitle="How big chat text is in rooms"
+      right={
+        <span className="flex shrink-0 items-center gap-1.5">
+          <button type="button" disabled={size <= CHAT_TEXT_MIN} onClick={() => step(-1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#174EA6]/10 text-xs font-extrabold text-[#174EA6] disabled:opacity-40">
+            A−
+          </button>
+          <span className="w-6 text-center text-sm font-bold text-[#0B1F3A]">{size}</span>
+          <button type="button" disabled={size >= CHAT_TEXT_MAX} onClick={() => step(1)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#174EA6]/10 text-[15px] font-extrabold text-[#174EA6] disabled:opacity-40">
+            A+
+          </button>
+        </span>
+      }
+    />
+  );
+}
+
+const profileImageUrl = (d: Record<string, unknown>) =>
+  ["photoUrl", "profilePic", "avatarUrl", "imageUrl"].map((k) => String(d[k] || "").trim()).find(Boolean) || "";
+
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={onClose}>
@@ -72,7 +160,14 @@ const secondary = "flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-b
 export default function SettingsPage() {
   const classic = useIsClassic();
   const ready = useRequireLogin();
-  const { user } = useSession();
+  const { user, username } = useSession();
+  const logout = async () => {
+    await detachPushForLogout();
+    if (uid) await leaveAllOpenRooms(uid);
+    await markOfflineForLogout(uid);
+    clearRememberedAmounts();
+    await signOut(auth);
+  };
   const uid = user?.uid;
 
   const [profileLock, setProfileLock] = useState(false);
@@ -81,6 +176,7 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [lang, setL] = useState<Lang>("en");
+  const [me, setMe] = useState<{ photo: string; level: number }>({ photo: "", level: 1 });
   const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password" | "question" | "help" | "feedback" | "about">("");
 
   useEffect(() => setL(getLang()), []);
@@ -89,6 +185,7 @@ export default function SettingsPage() {
     if (!uid) return;
     getDoc(doc(db, "users", uid))
       .then((snap) => {
+        setMe({ photo: profileImageUrl(snap.data() || {}), level: Number(snap.get("level") || 1) });
         setProfileLock(snap.get("profileLocked") === true);
         setEmailPrivacy(snap.get("emailPrivacy") !== false);
         const b = snap.get("blockedUsers");
@@ -130,14 +227,49 @@ export default function SettingsPage() {
         {message && <p className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{message}</p>}
 
         {ready && (
-          <>
-            <SectionLabel>Privacy</SectionLabel>
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard
+          <div className="mt-4 space-y-5">
+            {/* 👤 who you are, at the top */}
+            <Link
+              href="/profile/me"
+              className="flex items-center gap-3 rounded-3xl bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-4 text-white shadow-md"
+            >
+              <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-white/70 bg-white/15 text-2xl font-black">
+                {me.photo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={me.photo} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (username || "U").slice(0, 1).toUpperCase()
+                )}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span data-notranslate className="block truncate text-lg font-black">{username}</span>
+                <span className="block text-xs text-white/80">Level {me.level} · View & edit your profile</span>
+              </span>
+              <span className="text-2xl text-white/80">›</span>
+            </Link>
+
+            <Group title="Appearance">
+              <Row icon="🎨" tint="#E12A6B" title="Theme & style" subtitle="Colours, Classic or Modern look" href="/appearance" />
+              <Row
+                icon="🌐"
+                tint="#3984D9"
+                title="Language"
+                subtitle="App language"
+                value={lang === "bn" ? "বাংলা" : "English"}
+                onClick={() => {
+                  setLang(lang === "bn" ? "en" : "bn");
+                  window.location.reload();
+                }}
+              />
+              <TextSizeRow />
+            </Group>
+
+            <Group title="Privacy">
+              <Row
                 icon="🔒"
-                title="Profile Lock"
-                subtitle="Lock your profile from others"
-                color="#7B3FC7"
+                tint="#7B3FC7"
+                title="Profile lock"
+                subtitle="Only friends can see your profile"
                 right={
                   <Switch
                     on={profileLock}
@@ -148,11 +280,11 @@ export default function SettingsPage() {
                   />
                 }
               />
-              <PastelCard
+              <Row
                 icon="✉️"
-                title="Email Privacy"
-                subtitle="Allow other users to email you"
-                color="#3984D9"
+                tint="#2F80ED"
+                title="Mail from others"
+                subtitle="Let other users send you mail"
                 right={
                   <Switch
                     on={emailPrivacy}
@@ -163,43 +295,35 @@ export default function SettingsPage() {
                   />
                 }
               />
-              <PastelCard icon="🚫" title="Blocked Users" subtitle="Manage users you have blocked" color="#E12A2A" onClick={() => setDialog("blocked")} />
-            </div>
+              <Row icon="🚫" tint="#E12A2A" title="Blocked users" subtitle="People you have blocked" value={String(blocked.length)} onClick={() => setDialog("blocked")} />
+            </Group>
 
-            <SectionLabel>Security</SectionLabel>
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="🔐" title="Change Password" subtitle="Update your account password securely" color="#D4AF37" onClick={() => setDialog("gate")} />
-              <PastelCard icon="🛡️" title="Security PIN" subtitle="Set or change your PIN for coin transfers" color="#12AFC7" href="/security" />
-              <PastelCard icon="📧" title="Recovery Email" subtitle="For a forgotten PIN or password" color="#2F80ED" href="/security" />
-              <PastelCard icon="❓" title="Security Question" subtitle="Required before you can change your password or PIN" color="#7B1FB8" onClick={() => setDialog("question")} />
-            </div>
+            <Group title="Security">
+              <Row icon="🔐" tint="#D4A017" title="Change password" subtitle="Update your login password" onClick={() => setDialog("gate")} />
+              <Row icon="🛡️" tint="#12AFC7" title="Security PIN" subtitle="For coin transfers" href="/security" />
+              <Row icon="📧" tint="#2F80ED" title="Recovery email" subtitle="For a forgotten PIN or password" href="/security" />
+              <Row icon="❓" tint="#7B1FB8" title="Security question" subtitle="Needed to change your password or PIN" onClick={() => setDialog("question")} />
+            </Group>
 
-            <SectionLabel>Chat</SectionLabel>
-            <ChatTextSizeCard />
+            <Group title="Help">
+              <Row icon="🛟" tint="#43B65A" title="Help & Support" subtitle="Get help or report an issue" onClick={() => setDialog("help")} />
+              <Row icon="💬" tint="#7B1FB8" title="Feedback & Report" subtitle="Tell us what to improve" onClick={() => setDialog("feedback")} />
+            </Group>
 
-            <SectionLabel>App preferences</SectionLabel>
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="🎨" title="Appearance & Theme" subtitle="Customize the MIGlife visual style" color="#E12A6B" href="/appearance" />
-              <PastelCard
-                icon="🌐"
-                title="Language"
-                subtitle={lang === "bn" ? "বাংলা" : "English"}
-                color="#3984D9"
-                onClick={() => {
-                  setLang(lang === "bn" ? "en" : "bn");
-                  window.location.reload();
-                }}
-              />
-            </div>
+            <Group title="About">
+              <Row icon="📄" tint="#3984D9" title="Privacy Policy" subtitle="What we collect and why" href="/privacy" />
+              <Row icon="ℹ️" tint="#D4AF37" title="About miGlife" subtitle="miGlife Web" onClick={() => setDialog("about")} />
+            </Group>
 
-            <SectionLabel>Support</SectionLabel>
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard icon="❔" title="Help & Support" subtitle="Get help or report an issue" color="#43B65A" onClick={() => setDialog("help")} />
-              <PastelCard icon="💬" title="Feedback & Report" subtitle="Send feedback or report a problem" color="#7B1FB8" onClick={() => setDialog("feedback")} />
-              <PastelCard icon="ℹ️" title="About MIGlife" subtitle="MIGlife Web" color="#D4AF37" onClick={() => setDialog("about")} />
-              <PastelCard icon="📄" title="Privacy Policy" subtitle="What we collect and why" color="#3984D9" href="/privacy" />
-            </div>
-          </>
+            <button
+              type="button"
+              onClick={logout}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#F2B8B5] bg-[#FFF5F4] py-3.5 text-[15px] font-bold text-[#C62828] hover:bg-[#FFECEA]"
+            >
+              ↪ Log out
+            </button>
+            <p className="text-center text-[11px] text-[#8A97A8]">miGlife Web</p>
+          </div>
         )}
       </section>
 
