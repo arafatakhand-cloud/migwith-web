@@ -26,17 +26,27 @@ const setRepCountry = httpsCallable<{ targetUid: string; country: string }, { ok
 const renewMentorship = httpsCallable<{ targetUid: string }, { ok?: boolean; mentorUntil?: number }>(functions, "renewMentorship");
 
 // 🧑‍🏫 Mentorship term line: end date + days left (like the app).
-function MentorTermLine({ untilMs }: { untilMs: number }) {
-  if (untilMs <= 0) return <span className="block text-[11px] text-[#CBD5E8]">⏳ 30-day term starts at the next daily check</span>;
+function MentorTermLine({ untilMs, light = false }: { untilMs: number; light?: boolean }) {
+  if (untilMs <= 0)
+    return <span className={`block text-[11px] ${light ? "text-[#38517F]" : "text-[#CBD5E8]"}`}>⏳ 30-day term starts at the next daily check</span>;
   const daysLeft = Math.ceil((untilMs - Date.now()) / 86_400_000);
   const date = new Date(untilMs).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
-  const color = daysLeft <= 0 ? "#FF6F7D" : daysLeft <= 5 ? "#FFB74D" : "#7CFFB2";
+  const color = daysLeft <= 0 ? (light ? "#D32F2F" : "#FF6F7D") : daysLeft <= 5 ? (light ? "#B86D00" : "#FFB74D") : light ? "#00984A" : "#7CFFB2";
   return (
     <span className="block text-[11px] font-bold" style={{ color }}>
       {daysLeft <= 0 ? `⛔ Expired ${date} · renew now` : `⏳ Renew by ${date} · ${daysLeft} day${daysLeft > 1 ? "s" : ""} left`}
     </span>
   );
 }
+// 🎨 Readable cards (like the app): a DARK role colour (Merchant purple, Mentor
+// red, Executive blue) on the navy card was hard to read → those lists get a
+// light card; bright colours (Admin gold, Staff green, Elite cyan …) keep navy.
+function isDarkAccent(hex: string): boolean {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.45;
+}
+
 const MANAGED = new Set(["executive_board", "admin", "country_representative", "staff", "elite_user", "mentor"]);
 const PROTECTED = new Set(["ceo", "owner", "superadmin"]);
 
@@ -169,6 +179,7 @@ export default function MembersPage() {
       .filter((m) => m.roles.some((r) => selected.roles.includes(r)))
       .sort((a, b) => b.level - a.level);
   }, [selected, members]);
+  const lightCard = !!selected && isDarkAccent(selected.color);
 
   return (
     <PageShell light>
@@ -218,10 +229,20 @@ export default function MembersPage() {
                   <li key={m.uid}>
                     <Link
                       href={`/profile/${encodeURIComponent(m.name)}`}
-                      className="flex items-center gap-3 rounded-2xl border border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656] px-3 py-2.5 shadow-md hover:brightness-110"
+                      className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-md hover:brightness-110 ${
+                        lightCard ? "" : "border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656]"
+                      }`}
+                      style={
+                        lightCard
+                          ? { borderColor: `${selected.color}55`, background: `linear-gradient(90deg, #FFFFFF, #F6F2FB, ${selected.color}1A)` }
+                          : undefined
+                      }
                     >
                       {selected.id === "top" && <span className="w-6 text-center text-sm font-black text-[#D9A400]">{i + 1}</span>}
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 font-black text-white">
+                      <span
+                        className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full font-black ${lightCard ? "" : "bg-white/10 text-white"}`}
+                        style={lightCard ? { background: `${selected.color}1F`, color: selected.color } : undefined}
+                      >
                         {m.photo ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={m.photo} alt="" className="h-full w-full object-cover" />
@@ -230,13 +251,13 @@ export default function MembersPage() {
                         )}
                       </span>
                       <span data-notranslate className="min-w-0 flex-1">
-                        <span className="block truncate font-bold" style={{ color: NAME_COLORS[selected.id] || selected.color }}>
+                        <span className="block truncate font-bold" style={{ color: lightCard ? selected.color : NAME_COLORS[selected.id] || selected.color }}>
                           {m.name}
                         </span>
-                        <span className="block truncate text-xs text-white/70">
+                        <span className={`block truncate text-xs ${lightCard ? "text-[#38517F]" : "text-white/70"}`}>
                           {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
                         </span>
-                        {selected.id === "mentor" && <MentorTermLine untilMs={m.mentorUntilMs} />}
+                        {selected.id === "mentor" && <MentorTermLine untilMs={m.mentorUntilMs} light={lightCard} />}
                       </span>
                       {selected.id === "country_representative" &&
                         (m.repCountry || canManage) &&
@@ -276,7 +297,7 @@ export default function MembersPage() {
                               .catch((err) => setMessage(`Could not renew: ${err?.message || ""}`))
                               .finally(() => setBusy(false));
                           }}
-                          className="px-1 text-xs font-bold text-[#7CFFB2]"
+                          className={`px-1 text-xs font-bold ${lightCard ? "text-[#00984A]" : "text-[#7CFFB2]"}`}
                         >
                           RENEW
                         </button>
@@ -289,12 +310,12 @@ export default function MembersPage() {
                             e.preventDefault();
                             change(m.uid, false);
                           }}
-                          className="px-2 text-xs font-bold text-[#FF6F7D]"
+                          className={`px-2 text-xs font-bold ${lightCard ? "text-[#D32F2F]" : "text-[#FF6F7D]"}`}
                         >
                           REMOVE
                         </button>
                       ) : (
-                        <span className="text-white/50">›</span>
+                        <span className={lightCard ? "text-[#8A97A8]" : "text-white/50"}>›</span>
                       )}
                     </Link>
                   </li>
