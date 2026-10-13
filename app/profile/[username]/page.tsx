@@ -157,11 +157,6 @@ export default function ProfilePage() {
   const params = useParams<{ username: string }>();
   const router = useRouter();
   const { user, username: me, loading } = useCurrentUser();
-  // Signed out (e.g. a profile link opened in another browser): go to Login
-  // instead of "Loading…" forever.
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [loading, user, router]);
   const raw = decodeURIComponent(params.username);
   // "/profile/me" opens your own profile.
   const username = raw === "me" ? me : raw;
@@ -419,6 +414,22 @@ export default function ProfilePage() {
         <div className="mx-auto max-w-md px-6 py-20 text-center">
           <p className="text-[#35507E]">Please log in to see profiles.</p>
           <Link href="/login" className="mt-4 inline-block rounded-xl bg-[#2F80ED] px-6 py-3 font-bold text-white">
+            Login
+          </Link>
+        </div>
+      </PageShell>
+    );
+  }
+
+  // Signed out (e.g. a profile link opened in another browser): say so under
+  // the bar instead of "Loading…" forever.
+  if (!loading && !user) {
+    return (
+      <PageShell light>
+        <div className="flex flex-col items-center px-6 py-20 text-center">
+          <p className="text-base font-bold text-[#0B2A5B]">Please re login</p>
+          <p className="mt-1 text-sm text-[#5B6B8C]">You are logged out on this browser.</p>
+          <Link href="/login" className="mt-4 rounded-xl bg-[#2F80ED] px-6 py-2.5 font-bold text-white">
             Login
           </Link>
         </div>
