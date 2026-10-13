@@ -300,6 +300,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // Clear Chat for this device (set once the page has rendered; used by /cc).
   const clearChatRef = useRef<(() => void) | null>(null);
   const scrollTopRef = useRef(initial?.scrollTop ?? 0);
+  // Highest scroll position while following the newest line (see onScroll).
+  const pinnedTopRef = useRef(0);
 
   // Keep this tab's session up to date while it is open.
   useEffect(() => {
@@ -1821,7 +1823,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               ref={listRef} data-notranslate
               onScroll={(e) => {
                 const el = e.currentTarget;
-                stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                // BUG FIX (chat stopped following during a fast burst of bet
+                // lines and piled up under "⬇ 46 new messages"): this event
+                // also fires for our OWN jump to the bottom, and by then more
+                // lines had already been added, so it looked "scrolled up".
+                // Only a real move UP lets go of the bottom now.
+                const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                if (nearBottom) {
+                  stickToBottom.current = true;
+                  pinnedTopRef.current = el.scrollTop;
+                } else if (stickToBottom.current) {
+                  if (el.scrollTop >= pinnedTopRef.current) pinnedTopRef.current = el.scrollTop;
+                  else if (el.scrollTop < pinnedTopRef.current - 8) stickToBottom.current = false;
+                }
                 if (stickToBottom.current) {
                   setNewBelow((n) => (n ? 0 : n));
                   setNewBelowStats((st) => (st.people || st.bots || st.mention ? NO_NEW_BELOW : st));
