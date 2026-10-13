@@ -2814,6 +2814,50 @@ function MessageRow({
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  const reactions = Object.entries(m.reactions || {});
+  const stopHold = () => {
+    if (hold.current) clearTimeout(hold.current.t);
+    hold.current = null;
+  };
+  // 😂 Long-press (or right-click) opens the reactions picker.
+  const holdFor = (on: boolean) =>
+    on
+      ? {
+          onPointerDown: (e: React.PointerEvent) => {
+            stopHold();
+            hold.current = { t: setTimeout(() => setPicker(true), 450), x: e.clientX, y: e.clientY };
+          },
+          onPointerMove: (e: React.PointerEvent) => {
+            if (hold.current && Math.hypot(e.clientX - hold.current.x, e.clientY - hold.current.y) > 10) stopHold();
+          },
+          onPointerUp: stopHold,
+          onPointerCancel: stopHold,
+          onPointerLeave: stopHold,
+          onContextMenu: (e: React.MouseEvent) => {
+            e.preventDefault();
+            stopHold();
+            setPicker(true);
+          },
+        }
+      : {};
+  const reactionRow = (right: boolean) =>
+    reactions.length > 0 && (
+      <span className={`mb-0.5 flex gap-2 px-1.5 ${right ? "justify-end" : "justify-start"}`}>
+        {reactions.map(([e, uids]) => {
+          const byMe = uids.includes(myUid);
+          return (
+            <span
+              key={e}
+              className={`text-[13px] leading-4 ${byMe ? "font-bold" : ""} ${mine ? "cursor-pointer" : ""}`}
+              style={{ color: byMe ? LINK_BLUE : "#68758D" }}
+              onClick={mine ? () => onShowReactors(e, uids) : undefined}
+            >
+              <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
+            </span>
+          );
+        })}
+      </span>
+    );
 
   // Lucky User announcement (pickBangladeshLuckyUser): a celebration card, like the app.
   if (m.text.startsWith("🍀 Lucky Bot:")) return <LuckyCard text={m.text} time={time} />;
@@ -2882,8 +2926,24 @@ function MessageRow({
   }
 
   if (m.type === "gift") {
+    // 🎁 A gift line can get reactions (like the app) — a Gift Shower can't.
+    const giftReact = !m.local && !!m.id && !m.text.includes("GIFT SHOWER");
     return (
-      <div>
+      <div className="relative" style={{ WebkitTouchCallout: giftReact ? "none" : undefined }} {...holdFor(giftReact)}>
+        {picker && (
+          <ReactionPicker
+            mineSide={false}
+            reactions={m.reactions || {}}
+            myUid={myUid}
+            copyText=""
+            onPick={(e) => {
+              setPicker(false);
+              onReact(e);
+            }}
+            onClose={() => setPicker(false)}
+          />
+        )}
+        {reactionRow(false)}
         {/* ONE text size for every gift line (the chat text size + 1, like the
             app), so a gift shower doesn't look big-small-big. Full width, so
             its edges line up with the other chat lines on both sides.
@@ -2956,30 +3016,7 @@ function MessageRow({
 
   // Reactions work on real chat lines only (not local notices or the room's own lines).
   const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice");
-  const reactions = Object.entries(m.reactions || {});
-  const stopHold = () => {
-    if (hold.current) clearTimeout(hold.current.t);
-    hold.current = null;
-  };
-  const holdHandlers = canReact
-    ? {
-        onPointerDown: (e: React.PointerEvent) => {
-          stopHold();
-          hold.current = { t: setTimeout(() => setPicker(true), 450), x: e.clientX, y: e.clientY };
-        },
-        onPointerMove: (e: React.PointerEvent) => {
-          if (hold.current && Math.hypot(e.clientX - hold.current.x, e.clientY - hold.current.y) > 10) stopHold();
-        },
-        onPointerUp: stopHold,
-        onPointerCancel: stopHold,
-        onPointerLeave: stopHold,
-        onContextMenu: (e: React.MouseEvent) => {
-          e.preventDefault();
-          stopHold();
-          setPicker(true);
-        },
-      }
-    : {};
+  const holdHandlers = holdFor(canReact);
 
   return (
     <SwipeToReply enabled={canReply} fullWidth={(gameRoom || classic) && !rightSide} onReply={() => onReply(senderName, snippet)}>
@@ -3012,23 +3049,7 @@ function MessageRow({
             />
           )}
           {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
-          {reactions.length > 0 && (
-            <span className={`mb-0.5 flex gap-2 px-1.5 ${rightSide ? "justify-end" : "justify-start"}`}>
-              {reactions.map(([e, uids]) => {
-                const byMe = uids.includes(myUid);
-                return (
-                  <span
-                    key={e}
-                    className={`text-[13px] leading-4 ${byMe ? "font-bold" : ""} ${mine ? "cursor-pointer" : ""}`}
-                    style={{ color: byMe ? LINK_BLUE : "#68758D" }}
-                    onClick={mine ? () => onShowReactors(e, uids) : undefined}
-                  >
-                    <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
-                  </span>
-                );
-              })}
-            </span>
-          )}
+          {reactionRow(rightSide)}
           {quote &&
             (() => {
               // The quote shows its author in the SAME colour as their chat name.
