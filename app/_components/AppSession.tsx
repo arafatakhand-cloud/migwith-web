@@ -50,7 +50,7 @@ export function useSession(): Session {
 }
 
 // Pages anyone may open without signing in.
-const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/welcome"];
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/welcome", "/privacy", "/delete-account"];
 function isPublicPath(path: string): boolean {
   return PUBLIC_PATHS.some((p) => path === p || (p !== "/" && path.startsWith(`${p}/`)));
 }

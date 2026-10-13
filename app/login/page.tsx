@@ -1,5 +1,6 @@
 "use client";
 
+import { cancelAccountDeletion } from "../../lib/accountDeletion";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,6 +90,14 @@ export default function LoginPage() {
         isInvisible: hide,
         presenceStatus: hide ? "OFFLINE" : "ONLINE",
       }).catch((err) => console.error("presence on login failed", err));
+
+      // 🗑 Signing in again cancels a pending "Delete my account" (7 days).
+      try {
+        const { data } = await cancelAccountDeletion({});
+        if (data?.cancelled) window.alert("Welcome back! Your account deletion was cancelled.");
+      } catch {
+        // not important for signing in
+      }
 
       requestWelcomeSplash();
       router.push("/");
