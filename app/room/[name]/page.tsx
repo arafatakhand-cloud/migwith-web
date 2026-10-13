@@ -60,6 +60,7 @@ import {
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
 import { useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
+import { ImageViewerHost, openImageViewer } from "../../_components/ImageViewer";
 import {
   GiftPanel,
   loadGiftCatalog,
@@ -1786,6 +1787,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   return (
     <PageShell light bottomNav={false}>
+      <ImageViewerHost />
       <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
       {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} onClose={() => setReactors(null)} />}
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
@@ -3062,10 +3064,17 @@ function MessageRow({
           )}
           {m.type === "image" && m.imageUrl ? (
             <>
-              <a href={m.imageUrl} target="_blank" rel="noreferrer" className={`mt-1 block ${rightSide ? "ml-auto w-fit" : "w-fit"}`}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openImageViewer(m.imageUrl!);
+                }}
+                className={`mt-1 block ${rightSide ? "ml-auto w-fit" : "w-fit"}`}
+              >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
-              </a>
+              </button>
               {stamp}
             </>
           ) : m.type === "voice" && m.audioUrl ? (
