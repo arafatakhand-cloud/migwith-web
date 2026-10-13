@@ -130,7 +130,7 @@ export function EmotePanel({
     // 🕒 Recent is always the first tab (like the app), even before anything was picked.
     { key: "recent", title: "Recent", tabId: null, glyph: "🕒", ids: recent },
     // the app's 120 classic emoticons (":)", ":D", ":@" …), right after Recent
-    { key: "classic120", title: "Classic Emoticons", tabId: CLASSIC_EMOTES[0].id, glyph: null, ids: CLASSIC_EMOTES.map((e) => e.id) },
+    { key: "classic120", title: "miGlife Classic", tabId: CLASSIC_EMOTES[0].id, glyph: null, ids: CLASSIC_EMOTES.map((e) => e.id) },
     { key: GIF_GROUP.key, title: "😆 MIGLIFE Animated", tabId: null, glyph: "😆", ids: GIF_GROUP.ids },
     ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids })),
     ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: ANIM_GLYPHS[i] ?? "✨", ids: g.ids })),
