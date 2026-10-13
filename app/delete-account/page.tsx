@@ -58,9 +58,15 @@ export default function DeleteAccountPage() {
         ]}
       />
 
-      <p>
-        More in our <Link className="font-semibold text-[#2F80ED] underline" href="/privacy">Privacy Policy</Link>.
-      </p>
+      <H2>Before you go</H2>
+      <List
+        items={[
+          <><b>Just need a break?</b> Log out — everything stays as it is for when you come back.</>,
+          <><b>Too many notifications?</b> Turn them off in your phone or browser settings.</>,
+          <><b>Someone bothering you?</b> Block them (Settings → Privacy → Blocked Users) or lock your profile.</>,
+          <><b>Worried about your data?</b> Read our <Link className="font-semibold text-[#2F80ED] underline" href="/privacy">Privacy Policy</Link>.</>,
+        ]}
+      />
     </LegalPage>
   );
 }
