@@ -3087,9 +3087,6 @@ function MessageRow({
               ) : (
                 brandMiglife(senderName)
               )}
-              {!isRoomLine && !m.local && cachedRoleOf(senderName) === "country_representative" && (
-                <span className="ml-0.5" title="Country Representative">{COUNTRY_REP_BADGE}</span>
-              )}
               :
             </span>
           )}
