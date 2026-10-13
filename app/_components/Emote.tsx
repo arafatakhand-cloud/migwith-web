@@ -115,6 +115,13 @@ const ANIM_GLYPHS = ["✨", "🎉", "💖", "🐾", "🍕", "🎈", "🌸"];
 
 type Section = { key: string; title: string; tabId: string | null; glyph: string | null; ids: string[] };
 
+// Name shown when an emote is held (or hovered): "Angry  :@" — the newer packs have no names, so just their code.
+const CLASSIC_NAMES: Record<string, string> = Object.fromEntries(CLASSIC_EMOTES.map((e) => [e.id, e.label]));
+const emoteName = (id: string) => {
+  const code = EMOTE_CODES[id] || "";
+  return CLASSIC_NAMES[id] ? `${CLASSIC_NAMES[id]}  ${code}` : code;
+};
+
 export function EmotePanel({
   onPick,
   onBackspace,
@@ -137,6 +144,25 @@ export function EmotePanel({
   ];
   const [active, setActive] = useState(0);
   const sec = sections[Math.min(active, sections.length - 1)];
+  // hold an emote → its name shows for a moment (like the app)
+  const [hint, setHint] = useState("");
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const held = useRef(false);
+  const showHint = (id: string) => {
+    held.current = true;
+    setHint(emoteName(id));
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    hintTimer.current = setTimeout(() => setHint(""), 1800);
+  };
+  const cancelHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
+  useEffect(() => () => {
+    cancelHold();
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+  }, []);
 
   return (
     <div
@@ -178,7 +204,12 @@ export function EmotePanel({
         )}
       </div>
       <div className="h-px bg-gray-200" />
-      <div className="h-[250px] overflow-y-auto px-1.5 pb-2">
+      <div className="relative h-[250px] overflow-y-auto px-1.5 pb-2">
+        {hint && (
+          <p className="pointer-events-none sticky top-1 z-10 mx-auto w-fit rounded-full bg-[#0B1F3A]/85 px-3 py-1 text-[13px] font-bold text-white shadow">
+            {hint}
+          </p>
+        )}
         <p className="px-1.5 pb-1 pt-2 text-[11px] font-bold tracking-[0.8px] text-gray-500">
           {sec.title.toUpperCase()} · {sec.ids.length}
         </p>
@@ -188,8 +219,22 @@ export function EmotePanel({
             <button
               key={`${sec.key}_${id}`}
               type="button"
-              title={EMOTE_CODES[id]}
+              title={emoteName(id)}
+              onPointerDown={() => {
+                held.current = false;
+                cancelHold();
+                holdTimer.current = setTimeout(() => showHint(id), 450);
+              }}
+              onPointerUp={cancelHold}
+              onPointerLeave={cancelHold}
+              onPointerCancel={cancelHold}
+              onContextMenu={(e) => e.preventDefault()}
               onClick={() => {
+                // a hold only shows the name, it doesn't insert
+                if (held.current) {
+                  held.current = false;
+                  return;
+                }
                 const code = EMOTE_CODES[id];
                 if (!code) return;
                 onPick(code);
