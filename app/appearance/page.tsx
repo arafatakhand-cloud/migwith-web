@@ -12,7 +12,7 @@ import { PageTitle } from "../_components/LightCards";
 
 // [id, name, short line, background, primary, secondary]
 const THEMES: [string, string, string, string, string, string][] = [
-  ["sky_blue", "MIG Classic", "Blue + sky · Default", "#0E3452", "#2F80ED", "#56CCF2"],
+  ["sky_blue", "miGlife Classic", "Blue + sky · Default", "#0E3452", "#2F80ED", "#56CCF2"],
   ["dark_night", "Dark Night", "Midnight + bright blue", "#060B1A", "#3B82F6", "#7DB4FF"],
   ["mint", "Mint Green", "Deep teal + mint · Fresh", "#072220", "#14B8A6", "#5EEAD4"],
   ["lavender", "Lavender", "Purple + pink · Soft", "#14102A", "#8B7CF0", "#F0A6CA"],
