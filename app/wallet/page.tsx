@@ -72,6 +72,31 @@ function startOfToday(): number {
   return d.getTime();
 }
 
+// 🎁 A Gift Shower is ONE line with its total: the server writes all of a
+// shower's gifts in one transaction, so they share the exact same time (and
+// gift). Single gifts each have their own time.
+function giftItems(gifts: { id: string; data: DocumentData }[]): Item[] {
+  const showers = new Map<string, { id: string; time: number; gift: string; total: number; names: string[] }>();
+  for (const g of gifts) {
+    const time = ms(g.data.createdAt);
+    if (time <= 0) continue;
+    const gift = String(g.data.giftName || "Gift");
+    const k = `${time}|${gift.toLowerCase()}`;
+    const cur = showers.get(k) || { id: g.id, time, gift, total: 0, names: [] as string[] };
+    cur.total += Math.abs(num(g.data.cost));
+    cur.names.push(String(g.data.toUsername || "user"));
+    showers.set(k, cur);
+  }
+  return Array.from(showers.values()).map((v) => ({
+    key: `gift_${v.id}`,
+    timeMs: v.time,
+    title: v.names.length > 1 ? `Gift Shower ${v.gift} to ${v.names.length} people` : `Sent ${v.gift} to ${v.names[0]}`,
+    amount: -v.total,
+    icon: "🎁",
+    gift: true,
+  }));
+}
+
 // Luxury Bot pays each winning character separately; shown as one line per round.
 function luxuryPayoutRound(t: DocumentData): number {
   const type = lower(t.type);
@@ -269,34 +294,28 @@ export default function WalletPage() {
         icon: "🏆",
       }));
 
-    // 🎁 A Gift Shower is ONE line with its total: the server writes all of a
-    // shower's gifts in one transaction, so they share the exact same time
-    // (and gift). Single gifts each have their own time.
-    const showers = new Map<string, { id: string; time: number; gift: string; total: number; names: string[] }>();
-    for (const g of gifts) {
-      const time = ms(g.data.createdAt);
-      if (time <= 0) continue;
-      const gift = String(g.data.giftName || "Gift");
-      const k = `${time}|${gift.toLowerCase()}`;
-      const cur = showers.get(k) || { id: g.id, time, gift, total: 0, names: [] as string[] };
-      cur.total += Math.abs(num(g.data.cost));
-      cur.names.push(String(g.data.toUsername || "user"));
-      showers.set(k, cur);
-    }
-    const fromGifts: Item[] = Array.from(showers.values()).map((v) => ({
-      key: `gift_${v.id}`,
-      timeMs: v.time,
-      title:
-        v.names.length > 1
-          ? `Gift Shower ${v.gift} to ${v.names.length} people`
-          : `Sent ${v.gift} to ${v.names[0]}`,
-      amount: -v.total,
-      icon: "🎁",
-      gift: true,
-    }));
+    // 🎁 Gifts ALWAYS show: lots of bets used to push them out of the 30
+    // newest lines. Every gift since the oldest loaded coin line (and all of
+    // today's) is listed among them by time.
+    const oldestTx = txs.length >= 30 ? Math.min(...txs.map((t) => ms(t.data.createdAt)).filter((t) => t > 0)) : 0;
+    const today0 = startOfToday();
+    const fromGifts = giftItems(gifts).filter((g) => g.timeMs >= oldestTx || g.timeMs >= today0);
 
-    return [...fromTx, ...fromRounds, ...fromGifts].sort((a, b) => b.timeMs - a.timeMs).slice(0, 30);
+    return [...fromTx, ...fromRounds, ...fromGifts].sort((a, b) => b.timeMs - a.timeMs);
   }, [txs, gifts]);
+
+  // 🔻 Spent Today → what the coins went on today: gifts and bets (refunds back).
+  const [showSpent, setShowSpent] = useState(false);
+  const spentItems = useMemo(() => {
+    const bets = todayTx
+      .map((t, i) => ({ t, i }))
+      .filter(({ t }) => lower(t.type) === "bet" || lower(t.type).includes("refund"))
+      .map(({ t, i }) => txItem(`today_${i}`, t))
+      .filter((x): x is Item => !!x);
+    const giftsToday = giftItems(todayGifts.map((data, i) => ({ id: `today_${i}`, data })));
+    return [...giftsToday, ...bets].sort((a, b) => b.timeMs - a.timeMs);
+  }, [todayTx, todayGifts]);
+  const spentOnGifts = todayGifts.reduce((s, g) => s + Math.max(0, num(g.cost)), 0);
 
   const grouped = useMemo(() => {
     const out: [string, Item[]][] = [];
@@ -461,7 +480,9 @@ export default function WalletPage() {
               }
             >
               <div className="grid grid-cols-3 gap-1.5">
-                <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spent Today" value={short(spentToday)} />
+                <button type="button" onClick={() => setShowSpent(true)} className="text-left active:scale-[.98]" aria-label="What I spent today">
+                  <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spent Today" value={short(spentToday)} />
+                </button>
                 <StatMiniCard tint="#14A044" top="#F0FBF4" bottom="#D5F5E1" icon="up" label="Earned Today" value={short(earnedToday)} />
                 <StatMiniCard
                   tint="#4A1FD6"
@@ -511,6 +532,31 @@ export default function WalletPage() {
           )}
         </section>
       </div>
+
+      {showSpent && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/35 p-4" onClick={() => setShowSpent(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="flex max-h-[80vh] w-full max-w-[420px] flex-col overflow-hidden rounded-3xl bg-[#EEF5FD] shadow-2xl">
+            <div className="flex items-center gap-2 bg-white px-4 py-3">
+              <span className="flex-1">
+                <span className="block text-[15px] font-extrabold text-[#0E1B3D]">Spent Today</span>
+                <span className="block text-[11px] text-[#5B6B8C]">
+                  {short(spentToday)} coins · 🎁 gifts {short(spentOnGifts)} · 🎮 bets {short(Math.max(0, spentToday - spentOnGifts))}
+                </span>
+              </span>
+              <button type="button" onClick={() => setShowSpent(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F4F9] text-[#5B6B8C]">
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto p-2.5">
+              {spentItems.length === 0 ? (
+                <p className="p-3 text-center text-[13px] text-[#35507E]">Nothing spent today.</p>
+              ) : (
+                spentItems.map((it) => <ActivityCard key={it.key} item={it} />)
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPinPrompt && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setShowPinPrompt(false)}>

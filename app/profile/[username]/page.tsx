@@ -245,7 +245,9 @@ export default function ProfilePage() {
           memberSince: created
             ? new Date(created).toLocaleDateString(undefined, { month: "long", year: "numeric" })
             : "",
-          presence: presenceLabel(String(x.presenceStatus || ""), toMs(x.lastActiveAt)),
+          // your OWN profile: you are here right now, so your chosen status shows
+          // (the last heartbeat can be a little old the moment the page opens)
+          presence: presenceLabel(String(x.presenceStatus || ""), d.id === user?.uid ? Date.now() : toMs(x.lastActiveAt)),
           statusMessage: String(x.statusMessage || "").trim(),
           gifts: Array.isArray(x.unlockedGifts)
             ? x.unlockedGifts.reduce((s: number, g: any) => s + Number(g?.quantity || 0), 0)
