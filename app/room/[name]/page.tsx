@@ -283,6 +283,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
+  // Puts my presence doc back QUIETLY (no "has entered") when it went missing
+  // while I'm still here — e.g. the same account closed this room on another
+  // phone / tab, which deleted the shared spot. Set by the presence effect.
+  const restorePresenceRef = useRef<(() => void) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
@@ -823,13 +827,50 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // Left while we were still entering: the cleanup already ran, so don't
       // start a heartbeat nothing would ever stop.
       if (left || disposed) return;
+      let lastBeatOk = Date.now();
+      const restoreQuietly = () => {
+        if (left || disposed) return;
+        presenceWrite = setDoc(presenceRef, {
+          uid,
+          username: profile.username,
+          activity: "",
+          level: profile.level,
+          levelBadgeIcon: profile.badge,
+          shopBadges: [],
+          presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
+          lastSeen: serverTimestamp(),
+          visitId: visitId || newVisitId(),
+        })
+          .then(() => {
+            lastBeatOk = Date.now();
+          })
+          .catch(() => {});
+      };
+      restorePresenceRef.current = () => {
+        updateDoc(presenceRef, { lastSeen: serverTimestamp() })
+          .then(() => {
+            lastBeatOk = Date.now();
+          })
+          .catch((err) => {
+            if (err?.code === "not-found") restoreQuietly();
+          });
+      };
       heartbeat = setInterval(() => {
         // updateDoc, not a merge: if someone cleared this presence doc (3 h
         // without a heartbeat, e.g. a sleeping laptop), it must not come back
         // as a nameless half doc. Instead this is a new visit, like the app:
         // full presence doc + "has entered".
-        updateDoc(presenceRef, { lastSeen: serverTimestamp() }).catch((err) => {
+        updateDoc(presenceRef, { lastSeen: serverTimestamp() }).then(() => {
+          lastBeatOk = Date.now();
+        }).catch((err) => {
           if (err?.code !== "not-found" || left || disposed) return;
+          // Still beating a moment ago → the spot was removed from elsewhere
+          // (the same account left on another phone / tab), not a 3 h timeout.
+          // I never left, so put it back without a "has entered" line.
+          if (Date.now() - lastBeatOk < PRESENCE_HEARTBEAT_MS * 4) {
+            restoreQuietly();
+            return;
+          }
           visitId = newVisitId();
           presenceWrite = setDoc(presenceRef, {
             uid,
@@ -859,12 +900,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     })();
 
     leaveRef.current = leave;
-    const onPageHide = () => leave();
-    window.addEventListener("pagehide", onPageHide);
+    // Like the app: closing / reloading the browser is NOT leaving (that posted
+    // "has left" while the same account was still chatting elsewhere). You
+    // leave with the room tab's ✕ or Log out; a closed browser's spot goes
+    // stale and the server clears it later.
 
     return () => {
       disposed = true;
-      window.removeEventListener("pagehide", onPageHide);
+      restorePresenceRef.current = null;
       if (heartbeat) clearInterval(heartbeat);
       if (left) return;
       // Still an open tab: moving to another page or room keeps you in here.
@@ -1508,6 +1551,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       setText("");
       setReplyTo(null);
       stickToBottom.current = true;
+      // chatting means I'm here: my spot comes back if it went missing
+      restorePresenceRef.current?.();
     } catch (err) {
       console.error(err);
       note("Message could not be sent. Please try again.");
