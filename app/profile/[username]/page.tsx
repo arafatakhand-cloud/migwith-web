@@ -51,6 +51,7 @@ type Profile = {
   gender: string;
   age: number;
   memberSince: string;
+  joinedAtMs: number;
   /** Online / Away / Busy / Offline, like the app. */
   presence: "Online" | "Away" | "Busy" | "Offline";
   statusMessage: string;
@@ -239,6 +240,7 @@ export default function ProfilePage() {
           relationship: String(x.relationship || "").trim(),
           gender: String(x.gender || "").trim(),
           age: ageFrom(String(x.dateOfBirth || "")),
+          joinedAtMs: created,
           memberSince: created
             ? new Date(created).toLocaleDateString(undefined, { month: "long", year: "numeric" })
             : "",
@@ -449,7 +451,6 @@ export default function ProfilePage() {
     menu.push(["👣 Who viewed me", () => setPeopleList("footprints")]);
     menu.push(["❤️ Who voted for me", () => setPeopleList("votes")]);
   } else {
-    menu.push([hasVoted ? "💔 Remove vote" : "❤️ Vote", toggleVote]);
     menu.push(["✉️ Message", () => router.push(chatHref(username))]);
     menu.push([
       relation === "friend"
@@ -611,8 +612,22 @@ export default function ProfilePage() {
           <div className="grid grid-cols-4 gap-1.5">
             <Tile value={String(badges.count)} label="Badges" icon="🏅" tint="#F08C00" onClick={badges.open} />
             {/* Any old number stored on the profile, plus the real votes. Only the owner sees who. */}
-            <Tile value={String(profile.votes + voters)} label="Votes" icon="❤️" tint="#E53935" onClick={isOwn ? () => setPeopleList("votes") : undefined} />
+            {/* tap: your own → who voted; someone else's → vote / remove your vote (like the app) */}
+            <Tile
+              value={String(profile.votes + voters)}
+              label={!isOwn && hasVoted ? "Voted ✓" : "Votes"}
+              icon="❤️"
+              tint="#E53935"
+              onClick={isOwn ? () => setPeopleList("votes") : busy ? undefined : toggleVote}
+            />
             <Tile value={String(footprints)} label="Views" icon="👀" tint="#43A047" onClick={isOwn ? () => setPeopleList("footprints") : undefined} />
+            {isOwn ? (
+              // 📅 how long you've been here (the app's "Days here" tile)
+              (() => {
+                const days = profile.joinedAtMs > 0 ? Math.max(1, Math.floor((Date.now() - profile.joinedAtMs) / 86_400_000) + 1) : 0;
+                return <Tile value={days > 0 ? String(days) : "—"} label={days === 1 ? "Day here" : "Days here"} icon="📅" tint="#3949AB" />;
+              })()
+            ) : (
             <div className="relative">
               <Tile value="•••" label="More" icon="✨" tint="#546E7A" onClick={() => setMoreOpen((o) => !o)} />
               {moreOpen && (
@@ -637,6 +652,7 @@ export default function ProfilePage() {
                 </>
               )}
             </div>
+            )}
           </div>
           {error && <p className="text-center text-sm text-rose-600">{error}</p>}
         </div>

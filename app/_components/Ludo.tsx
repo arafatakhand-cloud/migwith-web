@@ -9,6 +9,8 @@ import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
 import { readRememberedAmount, rememberAmount } from "../../lib/amountMemory";
+import { useGameAutoFold } from "../../lib/gameBoxFold";
+import { LiveWatch } from "./LiveWatch";
 
 // 🎲 Ludo — dice rolls, moves, cuts, coins and the winner are all decided by
 // the Cloud Functions (startLudo / joinLudo / ludoAction / tickLudo /
@@ -1168,6 +1170,9 @@ export function LudoTable({ state, myUsername = "", roomUsers = [] }: { state: L
   const canRoll = myTurn && !state.awaitingMove && !state.busy;
   const canMove = myTurn && state.awaitingMove && !state.busy;
   const dots = "●".repeat(state.tokenCount);
+  // folded unless I'm playing (the app's GameBoxAutoFold)
+  useGameAutoFold(state.running && mySeat >= 0, setCollapsed);
+  const live = state.running || state.tables.some((t) => t.running);
   const title = !state.running
     ? state.table > 0
       ? `Ludo · Table ${state.table}`
@@ -1217,6 +1222,7 @@ export function LudoTable({ state, myUsername = "", roomUsers = [] }: { state: L
           <button type="button" className={iconBtn} onClick={() => state.setSoundOn(!state.soundOn)} aria-label="Sound">
             {state.soundOn ? "🔊" : "🔇"}
           </button>
+          {collapsed && live && <LiveWatch onWatch={() => setCollapsed(false)} />}
           <button type="button" className="shrink-0 px-1.5 text-lg font-bold" style={{ color: BRASS }} onClick={() => setCollapsed((v) => !v)}>
             {collapsed ? "＋" : "－"}
           </button>
@@ -1224,7 +1230,7 @@ export function LudoTable({ state, myUsername = "", roomUsers = [] }: { state: L
         <div className="h-0.5" style={{ background: `linear-gradient(90deg, transparent, ${BRASS}, #E91E63, ${BRASS}, transparent)` }} />
 
         {!collapsed && <TablesStrip state={state} />}
-        {collapsed && playing && <MiniBar state={state} mySeat={mySeat} myTurn={myTurn} canRoll={canRoll} canMove={canMove} onOpen={() => setCollapsed(false)} />}
+        {collapsed && playing && mySeat >= 0 && <MiniBar state={state} mySeat={mySeat} myTurn={myTurn} canRoll={canRoll} canMove={canMove} onOpen={() => setCollapsed(false)} />}
         {!collapsed &&
           (playing ? (
             <PlayingBody state={state} mySeat={mySeat} myTurn={myTurn} canRoll={canRoll} canMove={canMove} />

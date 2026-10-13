@@ -7,6 +7,8 @@ import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
 import { isClassicNow } from "../../lib/uiStyle";
 import { useRememberedAmount } from "../../lib/amountMemory";
+import { useGameAutoFold } from "../../lib/gameBoxFold";
+import { LiveWatch } from "./LiveWatch";
 
 // 📟 Classic app style: the purple accent becomes blue (team red / blue stay).
 const royaleBtn = () => (isClassicNow() ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-violet-500 to-purple-700");
@@ -231,6 +233,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
   // A new round clears the pick.
   useEffect(() => setSelected(null), [state.round]);
+  // folded unless I have a bet in this round (kept open 90 s after, like the app)
+  useGameAutoFold(state.running && Object.values(state.myBets).some((v) => v > 0), setCollapsed, 90_000);
 
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
   const opt = ROYALE_OPTIONS.find((o) => o.key === selected);
@@ -258,6 +262,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
         >
           📊
         </button>
+        {collapsed && state.running && <LiveWatch onWatch={() => setCollapsed(false)} />}
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}

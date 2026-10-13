@@ -8,16 +8,14 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { isMainFounderName } from "../../lib/founder";
 import {
-  SPECIAL_COLOR_DEFAULT_BDT_RATE,
-  SPECIAL_COLOR_METHODS,
-  SPECIAL_COLOR_TAKA_METHODS,
-  taka,
   SPECIAL_COLOR_SLOTS,
   SPECIAL_COLOR_STYLE_NAMES,
-  SPECIAL_COLOR_USD,
+  VIP_DEFAULT_COIN_PLANS,
   VIP_PLANS,
+  coins,
+  coinsShort,
+  vipCoinPlans,
   vipPlanLabel,
-  vipPriceUsd,
   useSpecialColors,
 } from "../../lib/specialColor";
 import { PageShell } from "../_components/PageShell";
@@ -25,14 +23,15 @@ import { BackButton } from "../_components/BackButton";
 import { RainbowName } from "../_components/RainbowName";
 
 // Explore › 👑 VIP Subscription, like the app's SpecialEditionColourPage:
-// Apply (animation + months) → Payment (method + transaction ID) → Approve
-// (miglife, in the secret page). Everything is written by the
+// Choose (animation + plan) → Apply → Approve (miglife, in the secret page).
+// Paid in 🪙 coins: nothing is cut when applying; when miglife approves, the
+// plan's coins are cut (rejected = nothing). Everything is written by the
 // specialColorApply / founderSpecialColor Cloud Functions.
 
 const applyCall = httpsCallable(functions, "specialColorApply");
-const statusCall = httpsCallable<void, { applyOpen?: boolean; paymentInfo?: string; bdtRate?: number }>(functions, "specialColorStatus");
+const statusCall = httpsCallable<void, { applyOpen?: boolean; coinPlans?: Record<string, number> }>(functions, "specialColorStatus");
 
-type Req = { id: string; months: number; amountUsd: number; method: string; trxId: string; status: string; createdAtMs: number; reason: string };
+type Req = { id: string; months: number; amountCoins: number; legacyUsd: number; status: string; createdAtMs: number; reason: string };
 
 const fmtDate = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
@@ -72,17 +71,13 @@ export default function SpecialColourPage() {
   const { user, username } = useCurrentUser();
   const special = useSpecialColors();
   const uid = user?.uid;
-  const [paymentInfo, setPaymentInfo] = useState("");
   const [applyOpen, setApplyOpen] = useState(false);
-  const [bdtRate, setBdtRate] = useState(SPECIAL_COLOR_DEFAULT_BDT_RATE);
+  const [plans, setPlans] = useState<Record<number, number>>(VIP_DEFAULT_COIN_PLANS);
+  const [balance, setBalance] = useState<number | null>(null);
   const [myUntil, setMyUntil] = useState(0);
   const [requests, setRequests] = useState<Req[]>([]);
   const [months, setMonths] = useState(1);
   const [chosen, setChosen] = useState(0);
-  const [method, setMethod] = useState("");
-  const [trxId, setTrxId] = useState("");
-  const [sender, setSender] = useState("");
-  const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -93,16 +88,15 @@ export default function SpecialColourPage() {
         doc(db, "app_settings", "special_color"),
         (d) => {
           if (!d.exists()) return;
-          setPaymentInfo(String(d.get("paymentInfo") || ""));
           setApplyOpen(d.get("applyOpen") === true);
-          const r = Number(d.get("bdtRate") || 0);
-          if (r > 0) setBdtRate(r);
+          if (d.get("coinPlans")) setPlans(vipCoinPlans(d.get("coinPlans")));
         },
         () => {}
       ),
     ];
     if (uid) {
       offs.push(onSnapshot(doc(db, "special_colors", uid), (d) => setMyUntil(Number(d.get("until") || 0)), () => {}));
+      offs.push(onSnapshot(doc(db, "users", uid), (d) => setBalance(typeof d.get("balance") === "number" ? Number(d.get("balance")) : null), () => {}));
       offs.push(
         onSnapshot(
           query(collection(db, "special_color_requests"), where("uid", "==", uid)),
@@ -112,9 +106,8 @@ export default function SpecialColourPage() {
                 .map((d) => ({
                   id: d.id,
                   months: Number(d.get("months") || 1),
-                  amountUsd: Number(d.get("amountUsd") || 0),
-                  method: String(d.get("method") || ""),
-                  trxId: String(d.get("trxId") || ""),
+                  amountCoins: Number(d.get("amountCoins") || 0),
+                  legacyUsd: Number(d.get("amountUsd") || 0),
                   status: String(d.get("status") || ""),
                   createdAtMs: Number(d.get("createdAtMs") || 0),
                   reason: String(d.get("reason") || ""),
@@ -129,8 +122,7 @@ export default function SpecialColourPage() {
     statusCall()
       .then(({ data }) => {
         if (typeof data?.applyOpen === "boolean") setApplyOpen(data.applyOpen);
-        if (data?.paymentInfo) setPaymentInfo(data.paymentInfo);
-        if (Number(data?.bdtRate) > 0) setBdtRate(Number(data.bdtRate));
+        if (data?.coinPlans) setPlans(vipCoinPlans(data.coinPlans));
       })
       .catch(() => {});
     return () => offs.forEach((f) => f());
@@ -141,27 +133,20 @@ export default function SpecialColourPage() {
   const iAmActive = myUntil > now;
   const active = iAmActive || isMiglife;
   const pending = requests.find((r) => r.status === "pending");
-  const step = pending ? 3 : method ? 2 : 1;
+  const price = plans[months] ?? VIP_DEFAULT_COIN_PLANS[1];
+  const enough = balance !== null && balance >= price;
+  const step = active && !isMiglife && !pending ? 4 : pending ? 3 : chosen > 0 || iAmActive ? 2 : 1;
   const placesLeft = Math.max(0, SPECIAL_COLOR_SLOTS - special.activeCount());
   const taken = special.takenStyles(username);
   const previewStyle = isMiglife ? 0 : iAmActive ? special.styleOf(username) : chosen > 0 ? chosen : 1;
-  const canSend = !busy && !!method && trxId.trim().length >= 4 && !!uid && (iAmActive || (chosen > 0 && placesLeft > 0));
+  const canSend = !busy && !!uid && enough && (iAmActive || (chosen > 0 && placesLeft > 0));
 
   const send = async () => {
     setBusy(true);
     setMsg("");
     try {
-      await applyCall({
-        months,
-        method,
-        trxId: trxId.trim(),
-        sender: sender.trim(),
-        note: note.trim(),
-        style: iAmActive ? special.styleOf(username) : chosen,
-      });
-      setTrxId("");
-      setNote("");
-      setMsg("✅ Sent! miGlife will check your payment and approve it.");
+      await applyCall({ months, style: iAmActive ? special.styleOf(username) : chosen });
+      setMsg(`✅ Sent! When miGlife approves, ${coins(price)} coins are cut and your rainbow name turns on.`);
     } catch (e: any) {
       setMsg(`❌ ${e?.message || "Could not send. Try again."}`);
     } finally {
@@ -196,7 +181,7 @@ export default function SpecialColourPage() {
           </div>
 
           <div className="mt-3.5 flex gap-2.5">
-            <Pill title="💵 Price" value={`from $${SPECIAL_COLOR_USD} / mo`} sub={taka(SPECIAL_COLOR_USD, bdtRate)} />
+            <Pill title="🪙 Price" value={`from ${coinsShort(plans[1] || 0)}`} sub="coins / mo" />
             <Pill title="🎟 Places left" value={`${placesLeft} / ${SPECIAL_COLOR_SLOTS}`} on={placesLeft > 0} />
             <Pill
               title="📅 Your colour"
@@ -216,7 +201,7 @@ export default function SpecialColourPage() {
 
           {/* Steps: Apply → Payment → Approve */}
           <div className="mt-4 flex items-center">
-            {["Apply", "Payment", "Approve"].map((label, i) => (
+            {["Choose", "Apply", "Approve"].map((label, i) => (
               <div key={label} className={`flex items-center ${i < 2 ? "flex-1" : ""}`}>
                 <span
                   className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold ${step > i ? "bg-[#FF4F8B]" : "bg-[#3A2A66]"}`}
@@ -238,7 +223,11 @@ export default function SpecialColourPage() {
               <Card>
                 <p className="text-base font-bold text-[#FFD86B]">⏳ Waiting for approval</p>
                 <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#E8E2FF]">
-                  {`${pending.months} month(s) · $${pending.amountUsd} · ${pending.method} · Trx ${pending.trxId}\nmiGlife will check your payment and turn your rainbow name on. You will get an alert.`}
+                  {`${vipPlanLabel(pending.months)} · ${pending.amountCoins > 0 ? `🪙 ${coins(pending.amountCoins)} coins` : `$${pending.legacyUsd}`}\nWhen miGlife approves, the coins are cut and your rainbow name turns on. If it's rejected, nothing is cut. Keep enough coins until then!${
+                    pending.amountCoins > 0 && balance !== null && balance < pending.amountCoins
+                      ? `\n⚠ You have ${coins(balance)} now — approval needs ${coins(pending.amountCoins)}.`
+                      : ""
+                  }`}
                 </p>
               </Card>
             ) : !applyOpen ? (
@@ -289,7 +278,7 @@ export default function SpecialColourPage() {
                   {/* 2 × 2 so the longer labels fit on small phones */}
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     {VIP_PLANS.map((m) => (
-                      <Chip key={m} label={`${vipPlanLabel(m)} · $${vipPriceUsd(m)}`} on={months === m} onClick={() => setMonths(m)} />
+                      <Chip key={m} label={`${vipPlanLabel(m)} · 🪙 ${coinsShort(plans[m] || 0)}`} on={months === m} onClick={() => setMonths(m)} />
                     ))}
                   </div>
                   {active && (
@@ -299,31 +288,27 @@ export default function SpecialColourPage() {
                   )}
                 </Card>
                 <Card>
-                  <p className="text-[15px] font-bold">② Payment — send ${vipPriceUsd(months)}</p>
-                  {/* How much to send, in each currency */}
+                  <p className="text-[15px] font-bold">② Pay with coins</p>
                   <div className="mt-1.5 rounded-xl border border-[#FF4F8B]/35 bg-gradient-to-r from-[#FF4F8B]/20 to-[#9C5BFF]/20 p-3">
-                    <p className="text-[11px] text-[#B9A8E8]">Amount to send</p>
-                    <p className="flex flex-wrap items-end gap-x-2">
-                      <span className="text-[26px] font-extrabold leading-8">{taka(vipPriceUsd(months), bdtRate)}</span>
-                      <span className="pb-1 text-[11px] text-[#E8E2FF]">bKash · Nagad · Rocket · Bank</span>
+                    <p className="text-[11px] text-[#B9A8E8]">{vipPlanLabel(months)} plan</p>
+                    <p className="text-[26px] font-extrabold leading-8">🪙 {coins(price)}</p>
+                    <p className="mt-1.5 flex text-xs">
+                      <span className="flex-1 text-[#B9A8E8]">Your coins</span>
+                      <b className="text-[13px]">{balance === null ? "…" : coins(balance)}</b>
                     </p>
-                    <p className="text-sm font-bold text-[#FFD86B]">${vipPriceUsd(months)} USD · Binance · PayPal</p>
-                    <p className="text-[11px] text-[#B9A8E8]">
-                      1 USD = ৳{bdtRate} · {vipPlanLabel(months)} plan. Send exactly this amount (your bKash/Nagad fee is extra).
+                    <p className="flex text-xs">
+                      <span className="flex-1 text-[#B9A8E8]">After approval</span>
+                      <b className={`text-[13px] ${enough ? "text-[#3DDC84]" : "text-[#FF8A9A]"}`}>
+                        {balance === null ? "…" : balance >= price ? coins(balance - price) : "—"}
+                      </b>
                     </p>
+                    {balance !== null && !enough && (
+                      <p className="mt-1 text-xs font-semibold text-[#FF8A9A]">⚠ You need {coins(price - balance)} more coins for this plan.</p>
+                    )}
                   </div>
-                  <p className="mt-1.5 whitespace-pre-wrap rounded-[10px] bg-[#FFD86B]/15 p-2.5 text-[13px] text-[#FFE9A8]">
-                    {paymentInfo || "Payment details will be shown here. Ask miGlife how to pay."}
+                  <p className="mt-1.5 text-[11px] text-[#B9A8E8]">
+                    Nothing is cut now. When miGlife approves, {coins(price)} coins are taken from your balance. Rejected = nothing is cut.
                   </p>
-                  <p className="mt-2.5 text-xs text-[#B9A8E8]">How did you pay?</p>
-                  <div className="no-scrollbar mt-1.5 flex gap-2 overflow-x-auto">
-                    {SPECIAL_COLOR_METHODS.map((m) => (
-                      <Chip key={m} label={m} on={method === m} onClick={() => setMethod(m)} />
-                    ))}
-                  </div>
-                  <input className={input} value={trxId} maxLength={80} onChange={(e) => setTrxId(e.target.value)} placeholder="Transaction ID" />
-                  <input className={input} value={sender} maxLength={80} onChange={(e) => setSender(e.target.value)} placeholder="Your number / account (sender)" />
-                  <input className={input} value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Note (optional)" />
                 </Card>
                 <button
                   type="button"
@@ -333,9 +318,11 @@ export default function SpecialColourPage() {
                 >
                   {busy
                     ? "Sending…"
-                    : `③ SEND FOR APPROVAL · ${
-                        SPECIAL_COLOR_TAKA_METHODS.has(method) ? taka(vipPriceUsd(months), bdtRate) : `$${vipPriceUsd(months)}`
-                      }`}
+                    : balance !== null && !enough
+                      ? "Not enough coins"
+                      : !iAmActive && chosen === 0
+                        ? "① Choose an animation first"
+                        : `③ APPLY · 🪙 ${coins(price)}`}
                 </button>
               </>
             )}
@@ -350,7 +337,8 @@ export default function SpecialColourPage() {
                 .slice(0, 10)
                 .map((r) => (
                   <p key={r.id} className="py-[3px] text-xs text-[#E8E2FF]">
-                    {r.status === "approved" ? "✅" : "❌"} {fmtDate(r.createdAtMs)} · {r.months} mo · ${r.amountUsd} · {r.method}
+                    {r.status === "approved" ? "✅" : "❌"} {fmtDate(r.createdAtMs)} · {vipPlanLabel(r.months)} ·{" "}
+                    {r.amountCoins > 0 ? `🪙 ${coins(r.amountCoins)}${r.status === "approved" ? " cut" : " (not cut)"}` : `$${r.legacyUsd}`}
                     {r.status === "rejected" && r.reason ? ` · ${r.reason}` : ""}
                   </p>
                 ))}

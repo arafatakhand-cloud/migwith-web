@@ -141,13 +141,12 @@ export function MenuPanel() {
             </Link>
           );
         })}
-        <div className="mt-2.5 h-px bg-[#DDE3EA]" />
-        <button type="button" onClick={logout} className="flex w-full items-center bg-[#FFF3F3] px-3.5 py-3 text-left">
-          <span className="flex h-[26px] w-[26px] items-center justify-center rounded bg-[#E53935] text-[15px] font-bold text-white">↪</span>
-          <span className="ml-3 text-[15px] font-bold text-[#D32F2F]">Logout</span>
+        {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom, no
+            colour, no card (a bright red button invites taps), like the app */}
+        <button type="button" onClick={logout} className="mt-[18px] w-full py-1.5 text-center text-xs text-[#9AA5B4]">
+          Log out
         </button>
-        <div className="h-px bg-[#DDE3EA]" />
-        <p className="mt-2 text-center text-[10px] text-[#8A97A8]">miGlife Web</p>
+        <p className="mt-1 text-center text-[10px] text-[#8A97A8]">miGlife Web</p>
       </div>
     );
   }
@@ -231,16 +230,11 @@ export function MenuPanel() {
       })}
     </ul>
 
-    <button
-      type="button"
-      onClick={logout}
-      className="mt-3 flex items-center gap-3 rounded-2xl border-2 border-rose-400 bg-rose-50 px-2.5 py-2 text-left text-sm font-bold text-rose-600"
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-100">↪</span>
-      <span className="flex-1">Logout</span>
-      <span>›</span>
+    {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom (like the app) */}
+    <button type="button" onClick={logout} className="mt-[18px] w-full py-1.5 text-center text-xs text-[#9AA5B4]">
+      Log out
     </button>
-    <p className="mt-2 text-center text-[10px] text-[#35507E]">MIGlife Web</p>
+    <p className="mt-1 text-center text-[10px] text-[#35507E]">MIGlife Web</p>
     </>
   );
 }

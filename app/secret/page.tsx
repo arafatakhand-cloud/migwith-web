@@ -15,13 +15,15 @@ import {
   AppDownloadLinkCard,
   FounderSpecialColorCard,
   LevelCurveCard,
-  LuxuryBetAccessCard,
-  LuxuryBetLevelCard,
-  SecurityQuestionResetCard, PrivateEmailsCard } from "./_MainFounderCards";
+  SecurityQuestionResetCard,
+  PrivateEmailsCard,
+  TransferLimitsCard,
+} from "./_MainFounderCards";
+import { LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
-// ID creation" switch, Luxury Bot sequence tiers and FOUNDER CREATE ID.
+// ID creation" switch and FOUNDER CREATE ID.
 
 const setIdCreationStatusFn = httpsCallable<{ enabled: boolean }, unknown>(functions, "setIdCreationStatus");
 const manageFounder = httpsCallable<{ action: string; enabled: boolean }, unknown>(functions, "manageFounder");
@@ -49,16 +51,7 @@ async function setIdCreationStatus(args: { enabled: boolean }) {
     }
   }
 }
-const setLuxuryConfig = httpsCallable<{ tiersEnabled: Record<string, boolean> }, unknown>(functions, "setLuxuryBotSequenceConfig");
 const ceoCreateUserId = httpsCallable<Record<string, string>, { username?: string }>(functions, "ceoCreateUserId");
-
-const TIERS: [string, string][] = [
-  ["single", "Single"],
-  ["easy", "Easy pairs"],
-  ["medium", "Medium pairs"],
-  ["hard", "Hard pairs"],
-  ["trio", "Trio"],
-];
 
 function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -181,7 +174,6 @@ function CricketWinFxCard() {
 export default function SecretPage() {
   const f = useFounderPerms();
   const [idOn, setIdOn] = useState(false);
-  const [tiers, setTiers] = useState<Record<string, boolean>>({ single: true, easy: true, medium: true, hard: true, trio: true });
   const [status, setStatus] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   // 🧰 Which Founder Tool is open (null = the tools list).
@@ -189,19 +181,7 @@ export default function SecretPage() {
 
   useEffect(() => {
     if (!f.isAnyFounder) return;
-    const a = onSnapshot(doc(db, "app_settings", "id_creation"), (s) => setIdOn(s.get("otherUserCreationEnabled") === true), () => {});
-    const b = onSnapshot(
-      doc(db, "app_settings", "luxury_bot_sequences"),
-      (s) => {
-        const t = (s.get("tiersEnabled") || {}) as Record<string, unknown>;
-        setTiers(Object.fromEntries(TIERS.map(([k]) => [k, t[k] !== false])));
-      },
-      () => {}
-    );
-    return () => {
-      a();
-      b();
-    };
+    return onSnapshot(doc(db, "app_settings", "id_creation"), (s) => setIdOn(s.get("otherUserCreationEnabled") === true), () => {});
   }, [f.isAnyFounder]);
 
   // 🧰 FOUNDER TOOLS — every tool in one tidy, grouped list (like the app).
@@ -233,6 +213,7 @@ export default function SecretPage() {
         "💰 Coins & Shop",
         [
           { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
+          { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
@@ -242,8 +223,9 @@ export default function SecretPage() {
       [
         "🎮 Games",
         [
-          { icon: "🎰", label: "Luxury Bet", hint: "Access · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
-          { icon: "🎲", label: "Luxury Bot Tiers", hint: "Turn result tiers on / off", tint: "#5E35B1", key: "luxury_tiers", ok: f.can("luxury_tiers") },
+          { icon: "🎰", label: "Luxury Bet", hint: "Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
+          { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
+          // (🎲 Luxury Bot Tiers removed — Luxury Bot Official is gone; Luxury Bet replaced it)
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
         ],
       ],
@@ -338,34 +320,6 @@ export default function SecretPage() {
         </div>
       )}
 
-      {f.can("luxury_tiers") && tool === "luxury_tiers" && (
-        <div className="space-y-2 rounded-[18px] border border-[#E0A82E] bg-white p-4">
-          <p className="text-[17px] font-bold">🎛️ Luxury Bot Sequence Tiers</p>
-          <p className="text-xs text-gray-500">
-            Turn any result tier off to remove it from the round pool. Takes effect on the next round — no redeploy needed. Which pairs count as
-            easy/medium is set via /luxconfig in chat.
-          </p>
-          {TIERS.map(([k, label]) => (
-            <div key={k} className="flex items-center">
-              <span className="flex-1">{label}</span>
-              <Switch
-                on={tiers[k]}
-                onChange={(v) => {
-                  const prev = tiers[k];
-                  setTiers((t) => ({ ...t, [k]: v }));
-                  setLuxuryConfig({ tiersEnabled: { [k]: v } })
-                    .then(() => setStatus(`Luxury Bot's "${k}" tier is now ${v ? "ON" : "OFF"}.`))
-                    .catch((e) => {
-                      setTiers((t) => ({ ...t, [k]: prev }));
-                      setStatus(e?.message || "Setting save failed.");
-                    });
-                }}
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
       {f.isMigwith && tool === "create_id" && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-[#11101A] p-4">
           <p className="text-lg font-extrabold text-[#FFD35A]">👑 FOUNDER CREATE ID</p>
@@ -384,12 +338,9 @@ export default function SecretPage() {
       {f.isMigwith && tool === "cricket_winfx" && <CricketWinFxCard />}
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
-      {f.isMigwith && tool === "luxury_bet" && (
-        <>
-          <LuxuryBetAccessCard />
-          <LuxuryBetLevelCard />
-        </>
-      )}
+      {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
+      {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
+      {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}
 
       {status && <p className="text-xs font-bold text-[#B3261E]">{status}</p>}
 

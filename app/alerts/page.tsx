@@ -47,6 +47,10 @@ type Alert = {
   price: number;
   durationDays: number;
   createdAtMs: number;
+  /** 🎁 gift alerts: the gift's own icon + name; a Gift Shower one is not shown */
+  giftIcon: string;
+  giftName: string;
+  shower: boolean;
 };
 
 function toAlert(d: { id: string; get: (f: string) => any }): Alert {
@@ -65,6 +69,9 @@ function toAlert(d: { id: string; get: (f: string) => any }): Alert {
     price: Number(d.get("price") || 0),
     durationDays: Number(d.get("durationDays") || 0),
     createdAtMs: d.get("createdAt")?.toMillis?.() ?? 0,
+    giftIcon: String(d.get("giftIcon") || "").trim(),
+    giftName: String(d.get("giftName") || "").trim(),
+    shower: d.get("shower") === true,
   };
 }
 
@@ -86,7 +93,18 @@ function styleFor(type: string): Style {
       return { icon: "💼", title: "Trail earnings", top: "#3DDC97", bottom: "#16955E", group: "coins" };
     case "luxury_bet_refund":
     case "lowcard_entry_refund":
+    case "refund":
       return { icon: "↩️", title: "Refund", top: "#3FD0D4", bottom: "#12848C", group: "coins" };
+    case "mentor_recharge":
+      return { icon: "💼", title: "Mentor recharge", top: "#FFC94A", bottom: "#E08A00", group: "coins" };
+    case "coin_adjustment":
+      return { icon: "💰", title: "Coins removed", top: "#FF8A80", bottom: "#C62828", group: "coins" };
+    case "role_change":
+      return { icon: "🎖️", title: "New role", top: "#7C8CFF", bottom: "#3949AB", group: "all" };
+    case "entry_effect":
+      return { icon: "✨", title: "Entry Effect", top: "#FF9E6B", bottom: "#E0457B", group: "all" };
+    case "special_color":
+      return { icon: "🌈", title: "VIP color", top: "#B57BFF", bottom: "#7443D1", group: "requests" };
     case "friend_request":
       return { icon: "🤝", title: "Friend request", top: "#6FA8FF", bottom: "#2F63D6", group: "social" };
     case "friend_request_accepted":
@@ -185,7 +203,12 @@ function FancyCard({ top, bottom, children }: { top: string; bottom: string; chi
 }
 
 function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string }) {
-  const s = styleFor(a.type);
+  const base = styleFor(a.type);
+  // a gift alert shows the gift's own icon and name (like the app)
+  const s =
+    a.type === "gift" && a.giftIcon && Array.from(a.giftIcon).length <= 8
+      ? { ...base, icon: a.giftIcon, title: a.giftName ? `Gift · ${a.giftName}` : base.title }
+      : base;
   const body = (
     <div
       className="relative my-[3px] overflow-hidden rounded-[18px] border bg-white"
@@ -515,7 +538,8 @@ export default function AlertsPage() {
     );
   }
 
-  const list = alerts || [];
+  // 🎁 Gift Shower alerts are not shown (one shower filled everyone's Alerts)
+  const list = (alerts || []).filter((a) => !(a.type === "gift" && a.shower));
   const shown = filter === "all" ? list : list.filter((a) => styleFor(a.type).group === filter);
   const newCount = initialUnread?.size ?? list.filter((a) => !a.read).length;
 

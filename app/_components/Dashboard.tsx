@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -95,17 +94,8 @@ export function Dashboard() {
     });
   }, [user]);
 
-  // 📟 Classic Home: the profile strip sits in the top bar, between the orange
-  // header and the blue tabs (TopBar leaves a slot for it).
-  const [stripSlot, setStripSlot] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!classic) return setStripSlot(null);
-    const find = () => setStripSlot(document.getElementById("classic-home-strip"));
-    find();
-    const t = setTimeout(find, 300);
-    return () => clearTimeout(t);
-  }, [classic, user]);
-
+  // 📟 Classic Home: the profile strip is drawn by the Lobby page itself (it
+  // used to sit in the top bar between the orange header and the blue tabs).
   // Photo, level, country and online state of my friends ("in" takes 30 at a time).
   const friendsKey = fr.friends.join("|");
   useEffect(() => {
@@ -170,24 +160,32 @@ export function Dashboard() {
     }
   };
 
+  const unreadOf = (name: string) =>
+    Object.entries(badges.unreadBy || {}).reduce((n, [k, v]) => (k.toLowerCase() === name.toLowerCase() ? n + v : n), 0);
   // 📟 Classic style: a small presence icon + "name - status" on one line.
   const ClassicFriendRow = ({ f }: { f: Friend }) => (
     <div className="flex items-center bg-white py-[9px] pl-3 pr-2.5 hover:bg-[#F4F9FF]">
+      {/* new messages from this friend: the icon glows red ⇄ green with ✉ (like the app) */}
       <Link
         href={`/profile/${encodeURIComponent(f.name)}`}
         aria-label={f.name}
-        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white bg-gradient-to-b text-xs font-bold text-white ${
-          f.online ? "from-[#7EE06A] to-[#34A82A]" : "from-[#D3D8DF] to-[#9AA3AE]"
+        className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-white bg-gradient-to-b font-bold text-white ${
+          unreadOf(f.name) > 0 ? "friend-unread-blink text-[10px]" : f.online ? "from-[#7EE06A] to-[#34A82A] text-xs" : "from-[#D3D8DF] to-[#9AA3AE] text-xs"
         }`}
       >
-        ☺
+        {unreadOf(f.name) > 0 ? "✉" : "☺"}
       </Link>
       <Link href={chatHref(f.name)} data-notranslate className="ml-[9px] flex min-w-0 flex-1 items-center text-[15px]">
         <span className={`max-w-[190px] shrink-0 truncate font-bold ${f.online ? "text-[#16315F]" : "text-[#6B7788]"}`}>{f.name}</span>
-        <span className={`min-w-0 flex-1 truncate text-sm text-[#6B7788] ${f.status ? "italic" : ""}`}>
-          {" - "}
-          {f.status || [f.gender, `Level: ${f.level}`, f.country].filter(Boolean).join(", ")}
-        </span>
+        <span className="shrink-0 whitespace-pre text-sm text-[#6B7788]">{" - "}</span>
+        {f.status ? (
+          // a status message travels right → left (the app's MaMarqueeStatusText)
+          <span className="relative min-w-0 flex-1 overflow-hidden whitespace-nowrap text-sm italic text-[#6B7788]">
+            <span className="status-marquee inline-block">{f.status}</span>
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-sm text-[#6B7788]">{[f.gender, `Level: ${f.level}`, f.country].filter(Boolean).join(", ")}</span>
+        )}
       </Link>
     </div>
   );
@@ -272,13 +270,14 @@ export function Dashboard() {
       </Link>
       <div className="ml-2.5 min-w-0 flex-1">
         <div className="flex items-center">
-          <Link href="/presence" aria-label="Presence status" className="h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
-          <Link href="/profile/me" data-notranslate className="ml-1.5 min-w-0 truncate text-base font-bold">
+          <Link href="/profile/me" data-notranslate className="min-w-0 truncate text-base font-bold">
             {username || "User"}
           </Link>
           <span className="ml-1.5 shrink-0 rounded-[3px] border border-[#2F6ABD]/60 px-1 text-[10px] font-bold text-[#2F6ABD]">
             {roleLabel(me?.role || "")}
           </span>
+          {/* presence dot AFTER the role (tap = change presence) */}
+          <Link href="/presence" aria-label="Presence status" className="ml-[7px] h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
         </div>
       </div>
       {/* 🏅 level badge in the top-right corner, the level under it (square box, like the app) */}
@@ -348,7 +347,7 @@ export function Dashboard() {
     <div className="mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
       <div className="min-w-0 flex-1 lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-md">
       {classic ? (
-        stripSlot ? createPortal(classicStrip, stripSlot) : classicStrip
+        classicStrip
       ) : (
         <ModernHomeTop
           username={username}

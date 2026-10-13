@@ -40,6 +40,7 @@ import {
   checkTagFree,
 } from "../_components/ProgramShared";
 import { isMainFounderName } from "../../lib/founder";
+import { useTransferLimits } from "../../lib/transferLimits";
 
 // Explore › Merchant Program › Mentor Dashboard, same documents and rules as
 // the app's MentorDashboardPage / MentorReportPage / MentorEarningsPage:
@@ -51,7 +52,7 @@ import { isMainFounderName } from "../../lib/founder";
 
 const approveMerchantRole = httpsCallable<
   { requestId: string; mentorUsername: string; merchantUsername: string; operationId: string },
-  { ok: boolean }
+  { ok: boolean; paid?: number }
 >(functions, "approveMerchantRole");
 
 const MAX_MERCHANTS = 15;
@@ -168,6 +169,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
     }
   };
 
+  const acceptCoins = useTransferLimits().merchantAcceptCoins;
   const approve = (req: DocumentSnapshot) =>
     withBusy(req.id, async () => {
       const from = String(req.get("fromUsername") || "");
@@ -176,8 +178,10 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
       // 🔒 approveMerchantRole (server) does everything: marks the request
       // approved, gives the merchant role, and writes the mentor ↔ merchant
       // link + the 30-day tag. Phones can't write those any more.
-      await approveMerchantRole({ requestId: req.id, mentorUsername: me, merchantUsername: from, operationId: crypto.randomUUID() });
-      setMsg(`✅ @${from} is now your merchant (30 days).`);
+      // 💸 accepting sends the new merchant coins from the mentor (miGlife sets how many)
+      const { data } = await approveMerchantRole({ requestId: req.id, mentorUsername: me, merchantUsername: from, operationId: crypto.randomUUID() });
+      const paid = Number(data?.paid || 0);
+      setMsg(`✅ @${from} is now your merchant (30 days)${paid > 0 ? ` · ${paid.toLocaleString("en-US")} coins sent` : ""}.`);
     });
 
   const reject = (req: DocumentSnapshot) => withBusy(req.id, () => updateDoc(req.ref, { status: "rejected" }));
@@ -228,7 +232,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                       ✕ Reject
                     </button>
                     <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="flex-1 rounded-xl bg-[#69E1F2] py-2 text-sm font-black text-[#0B1F3A] disabled:opacity-40">
-                      {busy.has(r.id) ? "…" : "✓ Approve"}
+                      {busy.has(r.id) ? "…" : acceptCoins > 0 ? `✓ Approve · ${acceptCoins % 1000 === 0 ? `${acceptCoins / 1000}K` : acceptCoins}` : "✓ Approve"}
                     </button>
                   </div>
                 </div>

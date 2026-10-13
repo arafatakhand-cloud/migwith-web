@@ -6,6 +6,9 @@ import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { useCurrentUser } from "../../lib/useCurrentUser";
+import { isMainFounderName } from "../../lib/founder";
+import { SecretLockGate } from "./_SecretLock";
 
 // Frame for the founder pages: back arrow + title, and "FOUNDER ONLY" for everyone else.
 export function FounderShell({
@@ -25,6 +28,9 @@ export function FounderShell({
   const ready = useRequireLogin();
   const router = useRouter();
   const classic = useIsClassic();
+  // 🔒 miGlife: the secret opens only with the Secret PIN (the server checks it too)
+  const { username } = useCurrentUser();
+  const miglife = isMainFounderName(username);
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl space-y-2.5 p-4 pb-10 text-[#0B1F3A]">
@@ -46,6 +52,8 @@ export function FounderShell({
             <p className="mt-3 text-[22px] font-extrabold">FOUNDER ONLY</p>
             <p className="mt-2 text-gray-500">This page is available only to the FOUNDER.</p>
           </div>
+        ) : miglife ? (
+          <SecretLockGate onBack={() => router.back()}>{children}</SecretLockGate>
         ) : (
           children
         )}

@@ -20,10 +20,11 @@ import {
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
+import { transferCapFor, useTransferLimits } from "../../lib/transferLimits";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { latestGifts } from "../../lib/giftActivity";
-import { isMainFounderName } from "../../lib/founder";
+import { isMainFounderName, useFounderPerms } from "../../lib/founder";
 import { useIsClassic } from "../../lib/uiStyle";
 
 // My Account / wallet, same data as the app's account page: users/{uid}.balance,
@@ -51,8 +52,6 @@ const transferCoins = httpsCallable<{ toUid: string; amount: number; operationId
   "transferCoins"
 );
 
-const MERCHANT_CAP = 1_500_000;
-const NORMAL_CAP = 400_000;
 
 type Item = { key: string; timeMs: number; title: string; amount: number; icon: string; gift?: boolean };
 
@@ -152,7 +151,9 @@ export default function WalletPage() {
   const [success, setSuccess] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);
-  const isFounderName = isMainFounderName(username);
+  const founderPerms = useFounderPerms();
+  // ⚙ Admin coin adjustment: miGlife, or a founder with the Coin Control permission
+  const isFounderName = isMainFounderName(username) || founderPerms.can("coin_control");
   // Mentor / merchant: tag the receiver too (5,000+ coins), like the app.
   const [tagAvailable, setTagAvailable] = useState<boolean | null>(null);
   const [tagChecked, setTagChecked] = useState(true);
@@ -238,7 +239,9 @@ export default function WalletPage() {
     return { earnedToday: earned, spentToday: Math.max(0, bets + giftSpent - refunded), transferredToday: out };
   }, [todayTx, todayGifts]);
 
-  const cap = role === "mentor" || isMainFounderName(username) ? null : role === "merchant" ? MERCHANT_CAP : NORMAL_CAP;
+  // 🎚 daily cap from miGlife secret → Transfer Limits (null = unlimited), the same rule as the server
+  const limits = useTransferLimits(!!user);
+  const cap = transferCapFor(limits, isMainFounderName(username) || ["superadmin", "ceo", "owner", "founder"].includes(role), role);
 
   const items = useMemo(() => {
     const fromTx = txs
@@ -868,7 +871,7 @@ function AdjustDialog({ onClose, onDone }: { onClose: () => void; onDone: (messa
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !busy && onClose()}>
       <div className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-black">Admin Coin Adjustment</h2>
-        <p className="text-xs text-gray-500">Admin/Staff only. Positive = add, negative = deduct.</p>
+        <p className="text-xs text-gray-500">miGlife / Coin Control permission only. Positive = add, negative = deduct.</p>
         <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Target username" className={field} />
         <input
           value={amount}

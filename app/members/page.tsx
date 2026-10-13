@@ -10,6 +10,8 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
 import { isMainFounderName } from "../../lib/founder";
+import { CountryPickerDialog } from "../_components/CountryPicker";
+import { countryFlag, countryInfoFor, countryWithFlag } from "../../lib/countries";
 
 // Explore › Members, same categories and role checks as the app (MainActivity.kt).
 // The founder (migwith) adds / removes Management members and Mentors here,
@@ -19,6 +21,7 @@ const changeManagementRole = httpsCallable<{ targetUid: string; role: string; op
   functions,
   "changeManagementRole"
 );
+const setRepCountry = httpsCallable<{ targetUid: string; country: string }, { ok?: boolean }>(functions, "setRepCountry");
 // Founder: renew a mentor's 30-day term (+30 days from the current end).
 const renewMentorship = httpsCallable<{ targetUid: string }, { ok?: boolean; mentorUntil?: number }>(functions, "renewMentorship");
 
@@ -64,7 +67,7 @@ const NAME_COLORS: Record<string, string> = {
   top: "#FFD54F",
 };
 
-type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number };
+type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number; repCountry: string };
 
 const norm = (v: string) => v.trim().toLowerCase().replace(/[-\s]/g, "_");
 
@@ -80,6 +83,7 @@ function toMember(uid: string, d: DocumentData): Member {
     level: Number(d.level || 1),
     country: String(d.country || ""),
     roles,
+    repCountry: String(d.repCountry || "").trim(),
     mentorUntilMs:
       d.mentorUntil && typeof d.mentorUntil.toMillis === "function" ? d.mentorUntil.toMillis() : Number(d.mentorUntil || 0) || 0,
   };
@@ -95,6 +99,8 @@ export default function MembersPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [reload, setReload] = useState(0);
+  // 🌍 miGlife picks which country a Country Representative represents
+  const [countryPickFor, setCountryPickFor] = useState<Member | null>(null);
 
   useEffect(() => {
     if (!ready) return;
@@ -214,6 +220,28 @@ export default function MembersPage() {
                         </span>
                         {selected.id === "mentor" && <MentorTermLine untilMs={m.mentorUntilMs} />}
                       </span>
+                      {selected.id === "country_representative" &&
+                        (m.repCountry || canManage) &&
+                        (() => {
+                          const info = countryInfoFor(m.repCountry);
+                          const accent = NAME_COLORS[selected.id] || selected.color;
+                          return (
+                            <button
+                              type="button"
+                              disabled={!canManage || busy}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setCountryPickFor(m);
+                              }}
+                              className="flex max-w-[150px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-[7px] text-[13px] font-bold disabled:cursor-default"
+                              style={{ background: `${accent}24`, borderColor: `${accent}8C`, color: m.repCountry ? "#fff" : "#CBD5E8" }}
+                            >
+                              <span className="text-lg leading-none">{info ? countryFlag(info.iso) : "🌍"}</span>
+                              <span className="truncate">{info?.name || m.repCountry || "Set country"}</span>
+                              {canManage && <span style={{ color: accent }}>▾</span>}
+                            </button>
+                          );
+                        })()}
                       {canManage && selected.id === "mentor" && (
                         <button
                           type="button"
@@ -284,6 +312,24 @@ export default function MembersPage() {
           </>
         )}
       </section>
+      {countryPickFor && (
+        <CountryPickerDialog
+          selected={countryPickFor.repCountry}
+          onClose={() => setCountryPickFor(null)}
+          onPick={(picked) => {
+            const rep = countryPickFor;
+            setCountryPickFor(null);
+            setBusy(true);
+            setRepCountry({ targetUid: rep.uid, country: picked })
+              .then(() => {
+                setMessage(`Country set: ${rep.name} → ${countryWithFlag(picked)}`);
+                setReload((n) => n + 1);
+              })
+              .catch((e) => setMessage(`Could not set country: ${e?.message || ""}`))
+              .finally(() => setBusy(false));
+          }}
+        />
+      )}
     </PageShell>
   );
 }

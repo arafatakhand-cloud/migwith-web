@@ -9,6 +9,8 @@ export function useBadges(username: string) {
   const unread = useUnreadBySender(username);
   return {
     messages: Object.values(unread).reduce((a, b) => a + b, 0),
+    /** Unread private messages per friend (name as sent → count). */
+    unreadBy: unread,
     requests: useFriendRequests(username).incoming.length,
     alerts: useUnreadAlerts(username),
     emails: useUnreadEmails(username),

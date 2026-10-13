@@ -48,6 +48,20 @@ function devRow(m: any): DevRow {
 const Vpn = () => <span className="rounded-md bg-[#6A1B9A] px-1.5 py-0.5 text-[11px] font-bold text-white">🛡️ VPN</span>;
 const Banned = () => <span className="text-xs font-bold text-[#D32F2F]">BANNED</span>;
 
+type GroupIp = { ip?: string; place?: string; isp?: string; at?: number | null };
+type Group = {
+  kind: "device" | "ip";
+  key: string;
+  keys?: string[];
+  label: string;
+  ip?: string;
+  accounts: { uid: string; name: string; suspended: boolean; normalIp?: GroupIp | null; vpnIp?: GroupIp | null; ipCount?: number }[];
+  lastSeenAt?: number | null;
+  banned?: boolean;
+  samePhone?: boolean;
+  shared?: boolean;
+};
+
 export default function IpMonitorPage() {
   const f = useFounderPerms();
   const [tab, setTab] = useState(0);
@@ -62,6 +76,13 @@ export default function IpMonitorPage() {
   const [ipUsersText, setIpUsersText] = useState("");
   const [banIp, setBanIp] = useState<{ ip: string; reason: string; all: boolean } | null>(null);
   const [banDev, setBanDev] = useState<{ dev: DevRow; reason: string; all: boolean } | null>(null);
+  // 👥 Same Device (tab 4) / Same IP (tab 5): phones / IPs used by 2+ accounts
+  const [sameDevice, setSameDevice] = useState<Group[] | null>(null);
+  const [sameIp, setSameIp] = useState<Group[] | null>(null);
+  const [groupQuery, setGroupQuery] = useState("");
+  const [groupMin, setGroupMin] = useState(2);
+  const [groupOpen, setGroupOpen] = useState<string | null>(null);
+  const [groupBan, setGroupBan] = useState<{ g: Group; reason: string; all: boolean } | null>(null);
 
   const task = async (fn: () => Promise<void>) => {
     if (busy) return;
@@ -91,12 +112,19 @@ export default function IpMonitorPage() {
   const fetchRecent = async () => setRecent(((await ipAdmin({ action: "recent" })).data.items || []).map(ipRow));
   const fetchBans = async () => setBans((await ipAdmin({ action: "bans" })).data.items || []);
   const fetchDeviceBans = async () => setDeviceBans((await ipAdmin({ action: "deviceBans" })).data.items || []);
+  const fetchGroups = async (kind: "device" | "ip") => {
+    const list = ((await ipAdmin({ action: "groups", kind })).data.groups || []) as Group[];
+    if (kind === "ip") setSameIp(list);
+    else setSameDevice(list);
+  };
 
   useEffect(() => {
     if (!f.can("ip_monitor")) return;
     if (tab === 1) task(fetchRecent);
     if (tab === 2) task(fetchBans);
     if (tab === 3) task(fetchDeviceBans);
+    if (tab === 4 && sameDevice === null) task(() => fetchGroups("device"));
+    if (tab === 5 && sameIp === null) task(() => fetchGroups("ip"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, f.loaded]);
 
@@ -187,13 +215,22 @@ export default function IpMonitorPage() {
 
   return (
     <FounderShell title="🌐 IP Monitor" allowed={f.can("ip_monitor")} loaded={f.loaded}>
-      <div className="grid grid-cols-4 gap-1.5">
-        {["User", "Recent", "IP Bans", "Devices"].map((label, i) => (
+      <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+        {(
+          [
+            [0, "User"],
+            [4, "📱 Same Device"],
+            [5, "🌐 Same IP"],
+            [1, "Recent"],
+            [2, "IP Bans"],
+            [3, "Devices"],
+          ] as [number, string][]
+        ).map(([i, label]) => (
           <button
             key={label}
             type="button"
             onClick={() => setTab(i)}
-            className={`rounded-xl py-2.5 text-sm font-semibold ${tab === i ? "bg-[#0B1F3A] text-white" : "bg-[#F1F5FB]"}`}
+            className={`min-w-[76px] shrink-0 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-sm font-semibold ${tab === i ? "bg-[#0B1F3A] text-white" : "bg-[#F1F5FB]"}`}
           >
             {label}
           </button>
@@ -360,6 +397,227 @@ export default function IpMonitorPage() {
         </>
       )}
 
+      {(tab === 4 || tab === 5) &&
+        (() => {
+          const isIp = tab === 5;
+          const list = (isIp ? sameIp : sameDevice) || [];
+          const q = groupQuery.trim().toLowerCase();
+          const shown = list.filter(
+            (g) =>
+              g.accounts.length >= groupMin &&
+              (!q || g.label.toLowerCase().includes(q) || g.accounts.some((a) => a.name.toLowerCase().includes(q)))
+          );
+          return (
+            <>
+              <div className={`${card} space-y-2`}>
+                <p className="text-sm font-bold">
+                  {isIp ? "🌐 Same IP — accounts that signed in from one IP" : "📱 Same Device — accounts opened on one phone"}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {isIp
+                    ? "Weaker sign: mobile data & Wi-Fi IPs are shared by many people. 📱 Same phone too = strong."
+                    : "Strong sign — works through VPN, new SIM or other Wi-Fi. Tap a card for each account's normal IP & VPN IP."}
+                </p>
+                <input value={groupQuery} onChange={(e) => setGroupQuery(e.target.value.slice(0, 40))} placeholder={isIp ? "Search name or IP" : "Search name or phone"} className={input} />
+                <div className="flex items-center gap-1.5">
+                  {[2, 3, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setGroupMin(n)}
+                      className={`rounded-full px-3 py-[7px] text-xs font-semibold ${groupMin === n ? "bg-[#0B1F3A] text-white" : "bg-[#F1F5FB]"}`}
+                    >
+                      {n}+ accounts
+                    </button>
+                  ))}
+                  <button type="button" onClick={() => task(() => fetchGroups(isIp ? "ip" : "device"))} className="ml-auto px-2 text-lg text-[#2F80ED]">
+                    ↻
+                  </button>
+                </div>
+                <p className="text-xs font-semibold">
+                  {shown.length} group(s) · {shown.reduce((n, g) => n + g.accounts.length, 0)} accounts
+                </p>
+              </div>
+              {shown.length === 0 && !busy && (
+                <p className="text-sm text-gray-500">{list.length === 0 ? `No shared ${isIp ? "IPs" : "phones"} found 🎉` : "Nothing matches."}</p>
+              )}
+              {shown.map((g) => {
+                const strong = !isIp || g.samePhone;
+                const open = groupOpen === g.key;
+                const accent = g.banned ? "#9E9E9E" : strong ? "#E65100" : g.shared ? "#607D8B" : "#1565C0";
+                const vpnUsers = g.accounts.filter((a) => a.vpnIp).length;
+                const susp = g.accounts.filter((a) => a.suspended).length;
+                const tag = (t: string, c: string) => (
+                  <span key={t} className="shrink-0 rounded-full px-2 py-[3px] text-[11px] font-bold" style={{ color: c, background: `${c}1F` }}>
+                    {t}
+                  </span>
+                );
+                const ipLine = (icon: string, label: string, m: GroupIp | null | undefined, color: string) => (
+                  <div className="flex items-start text-xs">
+                    <span className="w-[22px] text-[13px]">{icon}</span>
+                    {!m?.ip ? (
+                      <span className="text-gray-500">{label}: —</span>
+                    ) : (
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[13px] font-semibold" style={{ color }}>
+                          {label}: {m.ip}
+                        </span>
+                        <span className="block text-[11px] text-gray-500">
+                          {[m.place, m.isp].filter(Boolean).join(" · ")}
+                          {m.place || m.isp ? "  •  " : ""}
+                          {timeText(m.at ?? null)}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+                );
+                return (
+                  <div key={g.key} className="space-y-1.5 rounded-2xl border-[1.5px] bg-white p-3" style={{ borderColor: `${accent}${open ? "E6" : "66"}` }}>
+                    <button type="button" onClick={() => setGroupOpen(open ? null : g.key)} className="flex w-full items-center text-left">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-xl text-xl" style={{ background: `${accent}24` }}>
+                        {isIp ? "🌐" : "📱"}
+                      </span>
+                      <span className="ml-2.5 min-w-0 flex-1">
+                        <span className="block truncate text-[15px] font-bold">{g.label}</span>
+                        <span className="block text-[11px] text-gray-500">🕒 {timeText(g.lastSeenAt ?? null)}</span>
+                      </span>
+                      <span className="rounded-full px-2.5 py-1 text-[13px] font-black text-white" style={{ background: accent }}>
+                        👥 {g.accounts.length}
+                      </span>
+                    </button>
+                    <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+                      {g.banned && tag("⛔ BANNED", "#D32F2F")}
+                      {!isIp && tag("🔒 Strong · same phone", "#E65100")}
+                      {isIp && g.samePhone && tag("📱 Same phone too", "#E65100")}
+                      {isIp && g.shared && tag("📶 Shared network?", "#607D8B")}
+                      {isIp && !g.shared && !g.samePhone && tag("Same IP only", "#1565C0")}
+                      {!isIp && vpnUsers > 0 && tag(`🛡️ VPN · ${vpnUsers}`, "#6A1B9A")}
+                      {susp > 0 && tag(`🚫 ${susp} suspended`, "#D32F2F")}
+                    </div>
+                    <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
+                      {g.accounts.map((a) => (
+                        <button
+                          key={a.uid}
+                          type="button"
+                          onClick={() => {
+                            setTab(0);
+                            setSearchName(a.name);
+                            task(() => fetchUser(a.name));
+                          }}
+                          className={`shrink-0 rounded-full bg-[#F1F5FB] px-2.5 py-1.5 text-[13px] font-semibold ${a.suspended ? "text-[#D32F2F]" : ""}`}
+                        >
+                          {a.suspended ? "🚫 " : ""}
+                          {a.name}
+                        </button>
+                      ))}
+                    </div>
+                    {!isIp &&
+                      (!open ? (
+                        <button type="button" onClick={() => setGroupOpen(g.key)} className="text-xs font-semibold" style={{ color: accent }}>
+                          ▼ Normal IP & VPN IP of each account
+                        </button>
+                      ) : (
+                        <div className="space-y-2">
+                          {g.accounts.map((a) => (
+                            <div key={a.uid} className="space-y-1 rounded-xl bg-[#0B1F3A0A] p-2.5">
+                              <div className="flex items-center">
+                                <span className="flex-1 text-sm font-bold">{a.name}</span>
+                                {a.suspended && <span className="text-[10px] font-black text-[#D32F2F]">SUSPENDED</span>}
+                              </div>
+                              {ipLine("🌐", "Normal IP", a.normalIp, "#0B1F3A")}
+                              {ipLine("🛡️", "VPN IP", a.vpnIp, "#6A1B9A")}
+                              {(a.ipCount || 0) > 2 && <p className="text-[11px] text-gray-500">…and {(a.ipCount || 0) - 2} more IPs — tap the name for all</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    <div className="flex gap-3 text-sm font-semibold">
+                      {isIp ? (
+                        g.banned ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              task(async () => {
+                                await ipAdmin({ action: "unban", ip: g.ip });
+                                await fetchGroups("ip");
+                                setStatus(`✅ ${g.ip} unbanned`);
+                              })
+                            }
+                            className="text-[#2E7D32]"
+                          >
+                            ✅ Unban IP
+                          </button>
+                        ) : (
+                          <button type="button" onClick={() => setBanIp({ ip: g.ip || "", reason: "", all: false })} className="text-[#D32F2F]">
+                            ⛔ Ban IP
+                          </button>
+                        )
+                      ) : g.banned ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            task(async () => {
+                              await ipAdmin({ action: "unbanDevice", key: g.key });
+                              await fetchGroups("device");
+                              setStatus("✅ Device unbanned");
+                            })
+                          }
+                          className="text-[#2E7D32]"
+                        >
+                          ✅ Unban phone
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => setGroupBan({ g, reason: "", all: false })} className="text-[#D32F2F]">
+                          ⛔ Ban this phone
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          );
+        })()}
+
+      {groupBan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setGroupBan(null)}>
+          <div className="w-full max-w-md space-y-2.5 rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-bold">Ban this phone?</p>
+            <p className="whitespace-pre-line text-[13px]">
+              📱 {groupBan.g.label}
+              {"\n"}Accounts: {groupBan.g.accounts.map((a) => a.name).join(", ")}
+              {"\n"}No account can be used on this phone any more — with any IP, VPN or new ID.
+            </p>
+            <input value={groupBan.reason} onChange={(e) => setGroupBan({ ...groupBan, reason: e.target.value.slice(0, 200) })} placeholder="Reason (user will see it)" className={input} />
+            <label className="flex items-center gap-2 text-[13px]">
+              <input type="checkbox" checked={groupBan.all} onChange={(e) => setGroupBan({ ...groupBan, all: e.target.checked })} />
+              Also suspend all {groupBan.g.accounts.length} accounts
+            </label>
+            <div className="flex justify-end gap-3 font-bold">
+              <button type="button" onClick={() => setGroupBan(null)} className="text-[#2F80ED]">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const { g, reason, all } = groupBan;
+                  setGroupBan(null);
+                  task(async () => {
+                    const keys = g.keys || [g.key];
+                    const { data } = await ipAdmin({ action: "banDevice", key: keys[0] || "", keys, reason, suspendAccounts: all });
+                    await fetchGroups("device");
+                    setStatus("✅ Phone banned" + (all ? ` • ${Number(data.suspendedCount || 0)} account(s) suspended` : ""));
+                  });
+                }}
+                className="text-[#D32F2F]"
+              >
+                Ban
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {banDev && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setBanDev(null)}>
           <div className="w-full max-w-md space-y-2.5 rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
@@ -422,6 +680,7 @@ export default function IpMonitorPage() {
                     const { data } = await ipAdmin({ action: "ban", ip, reason, suspendAccounts: all });
                     if (user?.name) await fetchUser(user.name);
                     if (tab === 2) await fetchBans();
+                    if (tab === 5) await fetchGroups("ip");
                     setStatus(`✅ ${ip} banned` + (all ? ` • ${Number(data.suspendedCount || 0)} account(s) suspended` : ""));
                   });
                 }}

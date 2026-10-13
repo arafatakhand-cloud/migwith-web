@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { PRESENCE_HEARTBEAT_MS, roomHref, roomListName } from "../../lib/rooms";
 import { touchOpenRooms, useOpenRooms } from "../../lib/openRooms";
+import { useGlowingRoomTabs } from "../../lib/roomTabGlow";
 import { useSession } from "./AppSession";
 import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
@@ -50,6 +51,8 @@ export function TopBar() {
   // Rooms you are in: one tab each, like the app.
   const openRooms = useOpenRooms(uid);
   const currentRoom = pathname.startsWith("/room/") ? decodeURIComponent(pathname.slice("/room/".length)) : null;
+  // 🔦 open room tabs with something new in them glow red ⇄ green
+  const glowingRooms = useGlowingRoomTabs(uid, openRooms, currentRoom);
 
   // Keep the rooms you are in but not looking at fresh (the open room page does its own).
   useEffect(() => {
@@ -243,6 +246,7 @@ export function TopBar() {
       label: roomListName(r),
       selected: r === currentRoom,
       href: roomHref(r),
+      alert: glowingRooms.has(r),
       notranslate: true,
     })),
     ...(chatWith ? [{ key: `c_${chatWith}`, glyph: "list" as const, label: chatWith, selected: true, notranslate: true }] : []),
@@ -251,44 +255,34 @@ export function TopBar() {
   // it is always on screen, unlike the Lobby tab that slides away.
   const hasUnread = badges.alerts + badges.messages + badges.requests > 0;
 
-  // 📟 CLASSIC style (Settings › Appearance › App style): orange header with the
-  // mig·life logo, then all tabs on the blue band — the open one an orange pill
-  // with its name, the others white icons — and an orange line under it.
+  // 📟 CLASSIC style (Settings › Appearance › App style): ONE orange header
+  // with ☰ and the tab bar right inside it — the open tab a white pill with an
+  // orange name, the others white icons straight on the orange (like the app).
   if (classic) {
     const colors: PillColors = {
-      pillTop: "#FF9D2E",
-      pillBottom: "#F07A00",
-      pillText: "#FFFFFF",
+      pillTop: "#FFFFFF",
+      pillBottom: "#FFF3E3",
+      pillText: "#E06C00",
       idleIcon: "#FFFFFF",
-      idleTile: "#2F6ABD",
+      idleTile: "#F07A00",
+      activeIcon: "#E06C00",
     };
     return (
       <>
         <div
-          className="flex h-[42px] items-center border-b border-[#C45F00] bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-2"
+          className="flex h-[58px] items-center border-b border-[#C45F00] bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] pl-2 pr-1"
           style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.35)" }}
         >
           <button
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Menu"
-            className="relative flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[7px] border border-white/40 bg-white/20 text-base font-bold text-white lg:hidden"
+            className="relative mr-2 flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] border border-white/40 bg-white/20 text-[19px] font-bold text-white lg:hidden"
           >
             <span className={hasUnread ? "pill-alert-blink" : undefined}>☰</span>
           </button>
-          <Link href="/" className="ml-[9px] flex items-center" data-notranslate>
-            <span className="text-[19px] font-black text-white">mig</span>
-            <span className="ml-0.5 rounded-full bg-white px-[5px] text-xs font-black text-[#F07A00]">life</span>
-          </Link>
-          {/* No 🔔 / বাংলা here, like the app: new alerts make the ☰ glow,
-              and the language is in Settings. */}
+          <PillTabStrip items={pillTabs("Rooms")} colors={colors} className="flex-1" />
         </div>
-        {/* On Home the profile strip sits here, between the orange header and the blue tabs (the Dashboard fills it). */}
-        {onHome && <div id="classic-home-strip" />}
-        <div className="bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-1.5 py-[5px]">
-          <PillTabStrip items={pillTabs("Rooms")} colors={colors} />
-        </div>
-        <div className="h-[2px] bg-[#F07A00]" />
         {menu}
       </>
     );

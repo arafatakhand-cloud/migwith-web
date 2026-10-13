@@ -21,7 +21,6 @@ export const FOUNDER_PERMS: [string, string][] = [
   ["ip_monitor", "IP Monitor / IP Ban"],
   ["coin_control", "Coin Control"],
   ["id_creation", "ID Creation"],
-  ["luxury_tiers", "Luxury Tiers"],
   ["create_id", "Create ID"],
   ["switch_account", "Switch Account"],
   ["whois_full", "Whois (full)"],

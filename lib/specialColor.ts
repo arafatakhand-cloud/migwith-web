@@ -5,24 +5,36 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { isMainFounderName } from "./founder";
 
-// 👑 VIP SUBSCRIPTION — miglife's moving rainbow name (1 mo $49 · 3 mo $139 ·
-// 6 mo $249 · 1 year $399), like the app's SpecialColor.kt. Apply → Payment → Approve (Cloud Functions
-// specialColorApply / founderSpecialColor).
+// 👑 VIP SUBSCRIPTION — miglife's moving rainbow name, paid in 🪙 COINS (like
+// the app's SpecialColor.kt). Choose → Apply → Approve (Cloud Functions
+// specialColorApply / founderSpecialColor): nothing is cut when applying; when
+// miglife approves, the plan's coins are cut. Rejected = nothing is cut.
 // special_colors/{uid} = { username, usernameLower, until (ms), style 1-5 }.
 
-export const SPECIAL_COLOR_USD = 49; // 1 month
-/** 👑 VIP Subscription plans: months → USD (same as VIP_PLAN_USD in index.js). */
-export const VIP_PLAN_USD: Record<number, number> = { 1: 49, 3: 139, 6: 249, 12: 399 };
 export const VIP_PLANS = [1, 3, 6, 12];
-export const vipPriceUsd = (months: number) => VIP_PLAN_USD[months] ?? months * SPECIAL_COLOR_USD;
+/** Coin price per plan until miglife sets app_settings/special_color.coinPlans. */
+export const VIP_DEFAULT_COIN_PLANS: Record<number, number> = { 1: 500_000, 3: 1_400_000, 6: 2_500_000, 12: 4_500_000 };
+/** The saved plan prices (months → coins), defaults for any missing one. */
+export function vipCoinPlans(raw: unknown): Record<number, number> {
+  const m = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
+  const out: Record<number, number> = {};
+  for (const k of VIP_PLANS) {
+    const v = Math.floor(Number(m[k] ?? m[String(k)]));
+    out[k] = v > 0 ? v : VIP_DEFAULT_COIN_PLANS[k];
+  }
+  return out;
+}
 export const vipPlanLabel = (months: number) => (months === 12 ? "1 year" : `${months} month${months > 1 ? "s" : ""}`);
 export const SPECIAL_COLOR_SLOTS = 5;
-export const SPECIAL_COLOR_METHODS = ["bKash", "Nagad", "Rocket", "Binance", "PayPal", "Bank", "Other"];
-/** Taka per dollar until miglife sets app_settings/special_color.bdtRate. */
-export const SPECIAL_COLOR_DEFAULT_BDT_RATE = 123;
-/** These are paid in taka; Binance / PayPal / Other in dollars. */
-export const SPECIAL_COLOR_TAKA_METHODS = new Set(["bKash", "Nagad", "Rocket", "Bank"]);
-export const taka = (usd: number, rate: number) => "৳" + Math.round(usd * rate).toLocaleString("en-US");
+export const coins = (n: number) => Math.floor(n).toLocaleString("en-US");
+/** 1,400,000 → "14L", 25,000,000 → "2.5Cr" (like the app) */
+export function coinsShort(n: number): string {
+  const f = (v: number, u: string) => `${v.toFixed(1).replace(/\.0$/, "")}${u}`;
+  if (n >= 10_000_000) return f(n / 10_000_000, "Cr");
+  if (n >= 100_000) return f(n / 100_000, "L");
+  if (n >= 1_000) return f(n / 1_000, "K");
+  return String(n);
+}
 /** The 5 animations (style 1-5); miglife keeps the original rainbow (style 0). */
 export const SPECIAL_COLOR_STYLE_NAMES = [
   "Original Rainbow",

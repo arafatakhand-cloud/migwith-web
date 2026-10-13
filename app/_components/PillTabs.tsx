@@ -39,8 +39,10 @@ export type PillColors = {
 };
 
 const GLIDE_MS = 300;
-const REST_MS = 400;
-const OPEN_MS = 260;
+const REST_MS = 160; // rests on the icon after the page stops (like the app)
+const OPEN_MS = 250; // old name closes + new name opens
+// soft in-out for the name opening (the app's PillOpenEase: (1 - cos πt) / 2)
+const OPEN_EASE = "cubic-bezier(0.37, 0, 0.63, 1)";
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const BUBBLE_CYAN = "#7FDBFF";
 const BUBBLE_BLUE = "#1E8FFF";
@@ -293,7 +295,7 @@ export function PillTabStrip({ items, colors, className = "" }: { items: PillTab
             style={{
               maxWidth: expanded ? 146 : 0,
               opacity: expanded ? 1 : 0,
-              transition: expanded ? `max-width ${OPEN_MS}ms ${EASE}, opacity ${OPEN_MS}ms ${EASE}` : "none",
+              transition: expanded ? `max-width ${OPEN_MS}ms ${OPEN_EASE}, opacity ${OPEN_MS}ms ${OPEN_EASE}` : "none",
             }}
           >
             <span

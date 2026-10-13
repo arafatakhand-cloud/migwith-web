@@ -8,6 +8,8 @@ import { gameInvitedMe, setTpHideGameMessages, setViewedTable } from "../../lib/
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
 import { useRememberedAmount } from "../../lib/amountMemory";
+import { useGameAutoFold } from "../../lib/gameBoxFold";
+import { LiveWatch } from "./LiveWatch";
 
 // 🎴 Teen Patti — dealing, betting, coins and winners are decided by the Cloud
 // Functions (startTeenPatti / joinTeenPatti / teenPattiAction / tickTeenPatti).
@@ -735,6 +737,9 @@ export function TeenPattiTable({
 
   const meIdx = state.players.findIndex((p) => p.uid === uid);
   const me = state.players[meIdx];
+  // folded unless I'm playing (the app's GameBoxAutoFold)
+  useGameAutoFold(state.running && meIdx >= 0, setCollapsed);
+  const live = state.running || state.tables.some((t) => t.running);
   const myTurn = state.phase === "PLAYING" && meIdx >= 0 && state.turnIndex === meIdx;
   const active = state.players.filter((p) => !p.packed);
 
@@ -814,6 +819,7 @@ export function TeenPattiTable({
               </>
             )}
           </span>
+          {collapsed && live && <LiveWatch onWatch={() => setCollapsed(false)} />}
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}

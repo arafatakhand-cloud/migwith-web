@@ -1,5 +1,6 @@
 import { collection, doc, runTransaction, serverTimestamp, addDoc } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { levelFromXp } from "./level";
 import { badgeForLevel, badgeNameForLevel } from "./rooms";
 
@@ -59,7 +60,9 @@ export function awardUserXp(uid: string | null | undefined, amount: number, reas
 async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs: number, tries: number) {
   const userRef = doc(db, "users", uid);
   try {
+    let leveledUp = false;
     const given = await runTransaction(db, async (tx) => {
+      leveledUp = false;
       const snap = await tx.get(userRef);
       if (!snap.exists()) return 0;
       const d = snap.data();
@@ -108,12 +111,16 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
         lastXpAt: serverTimestamp(),
       };
       if (newLevel > oldLevel) {
+        leveledUp = true;
         update.lastLevelUpLevel = newLevel;
         update.lastLevelUpAt = serverTimestamp();
       }
       tx.set(userRef, update, { merge: true });
       return give;
     });
+    // ⭐ a new level → the server sends a "Level up!" alert (once per level;
+    // it reads the level from the user doc, never from here)
+    if (given > 0 && leveledUp) httpsCallable(functions, "notifyLevelUp")().catch(() => {});
     if (given > 0) {
       // A separate write, so a history problem never undoes the XP.
       addDoc(collection(db, "users", uid, "xp_history"), { amount: given, reason, createdAt: serverTimestamp() }).catch(() => {});

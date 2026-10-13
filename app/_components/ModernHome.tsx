@@ -35,6 +35,60 @@ function Avatar({ name, photo, size, ring }: { name: string; photo: string; size
   );
 }
 
+/** One stats tile (the app's HomeStatTile). */
+function StatTile({
+  href,
+  icon,
+  value,
+  label,
+  accent,
+  accent2,
+  highlight = false,
+  live = false,
+}: {
+  href: string;
+  icon: string;
+  value: number;
+  label: string;
+  accent: string;
+  accent2: string;
+  highlight?: boolean;
+  live?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex min-w-0 flex-1 flex-col items-center rounded-[15px] pb-2 pt-[9px] transition-transform active:scale-[0.93]"
+      style={{
+        background: `linear-gradient(${accent}1A, ${accent2}0A)`,
+        border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,
+        ...(highlight
+          ? {
+              backgroundImage: `linear-gradient(#fff, #fff), linear-gradient(${accent}1A, ${accent2}0A), linear-gradient(135deg, ${accent}, ${accent2})`,
+              backgroundOrigin: "border-box",
+              backgroundClip: "padding-box, padding-box, border-box",
+              boxShadow: `0 4px 12px ${accent}55`,
+            }
+          : {}),
+      }}
+    >
+      <span className="relative flex h-[30px] w-[30px] items-center justify-center">
+        {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
+        <span className="relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-sm" style={{ background: `linear-gradient(135deg, ${accent}, ${accent2})` }}>
+          {icon}
+        </span>
+        {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
+      </span>
+      <span className="mt-[5px] text-[17px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
+        {value > 999 ? "999+" : value}
+      </span>
+      <span className={`max-w-full truncate px-0.5 text-[10px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 export function ModernHomeTop({
   username,
   photo,
@@ -74,87 +128,105 @@ export function ModernHomeTop({
   const next = totalXpForLevel(level + 1);
   const frac = next > start ? Math.min(1, Math.max(0, (xp - start) / (next - start))) : 0;
   const dot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[presence] || "#9AA3AE";
+  const presenceLabel = { ONLINE: "Online", BUSY: "Busy", AWAY: "Away", INVISIBLE: "Invisible" }[presence] || "Offline";
   return (
     <div className="bg-[#EEF4FD] pb-1.5">
-      {/* hero card */}
+      {/* ✨ AURORA hero card (the app's AuroraProfileCard): soft coloured lights
+          drift behind the card, the photo's rainbow ring turns, the status sits
+          in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
       <div
-        className="m-2.5 rounded-[22px] p-3.5 text-white shadow-[0_8px_20px_rgba(21,101,216,.35)]"
-        style={{ background: "linear-gradient(135deg, #1565D8, #3B7BF0, #7B5CF0)" }}
+        className="aurora-card relative m-2.5 overflow-hidden rounded-[26px] p-4 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
+        style={{ background: "linear-gradient(135deg, #1B3FAE, #2A4FD0, #4B3FC8)" }}
       >
-        <div className="flex items-center">
-          <Link href="/profile/me" className="relative h-16 w-16 shrink-0">
+        <span aria-hidden className="aurora-light aurora-a" />
+        <span aria-hidden className="aurora-light aurora-b" />
+        <span aria-hidden className="aurora-light aurora-c" />
+        <div className="relative flex items-center">
+          <Link href="/profile/me" className="relative h-[70px] w-[70px] shrink-0">
             <span
-              className="block h-full w-full rounded-full p-[3px]"
+              aria-hidden
+              className="aurora-ring absolute inset-0 rounded-full"
               style={{ background: "conic-gradient(#FFD36B, #FF6FA5, #8B5CFF, #3FC1E8, #FFD36B)" }}
-            >
-              <Avatar name={username || "U"} photo={photo} size={58} ring="#FFFFFF" />
+            />
+            <span className="absolute inset-[3px]">
+              <Avatar name={username || "U"} photo={photo} size={64} ring="#FFFFFF" />
             </span>
           </Link>
-          <Link
-            href="/presence"
-            aria-label="Presence status"
-            className="-ml-4 mt-12 h-4 w-4 shrink-0 rounded-full border-[2.5px] border-white"
-            style={{ background: dot }}
-          />
           <div className="ml-3 min-w-0 flex-1">
-            <div className="flex items-center">
-              <Link href="/profile/me" data-notranslate className="min-w-0 truncate text-[19px] font-extrabold">
-                {username || "User"}
-              </Link>
-              <span className="ml-1.5 shrink-0 rounded-[10px] border border-white/50 bg-white/[0.22] px-[7px] text-[9.5px] font-extrabold uppercase">
+            <Link href="/profile/me" data-notranslate className="block truncate text-xl font-black">
+              {username || "User"}
+            </Link>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <span className="rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
                 {roleLabel}
               </span>
+              <Link
+                href="/presence"
+                className="flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
+              >
+                <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
+                {presenceLabel}
+              </Link>
             </div>
           </div>
-          {/* 🏅 level badge in the top-right corner, the level under it (like the app) */}
-          <Link
-            href="/level"
-            className="ml-2 flex shrink-0 flex-col items-center self-start px-0.5"
-          >
-            <span className="flex h-[50px] w-[50px] items-center justify-center">
+          {/* 🏅 level badge in a glass hexagon, the level under it */}
+          <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-start">
+            <span
+              className="flex h-[68px] w-[62px] items-center justify-center"
+              style={{
+                clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
+                background: "linear-gradient(rgba(255,255,255,.36), rgba(255,255,255,.08))",
+              }}
+            >
               {levelBadgeUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={levelBadgeUrl} alt="" className="h-full w-full object-contain" />
+                <img src={levelBadgeUrl} alt="" className="h-[52px] w-[52px] object-contain" />
               ) : (
-                <span className="text-4xl leading-tight">{levelIcon}</span>
+                <span className="text-[40px] leading-none">{levelIcon}</span>
               )}
             </span>
-            <span className="whitespace-nowrap text-[11px] font-extrabold">Level {level}</span>
+            <span className="mt-1 whitespace-nowrap text-[11.5px] font-extrabold">Level {level}</span>
           </Link>
         </div>
-        {/* status, under the photo row, full width */}
-        <button type="button" onClick={onStatus} data-notranslate className="mt-2 block w-full truncate text-left text-[13px] text-white/90">
-          💬 {status || "What are you thinking?"}
+        {/* status bubble */}
+        <button
+          type="button"
+          onClick={onStatus}
+          data-notranslate
+          className="relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+        >
+          <span className="line-clamp-2 min-w-0 flex-1">💬 {status || "What are you thinking?"}</span>
+          <span className="pl-1.5 text-xs text-white/70">✎</span>
         </button>
-        {/* level bar */}
-        <Link href="/level" className="mt-3 block">
-          <span className="flex items-center text-[11.5px] font-bold">
-            <span className="text-white/85">XP</span>
-            <span className="ml-auto text-[11px] text-white/90">
-              {xp.toLocaleString("en-US")} / {next.toLocaleString("en-US")} XP
+        {/* XP bar: how much is left to the next level, with a shine */}
+        <Link href="/level" className="relative mt-3 block">
+          <span className="flex items-center text-[11px]">
+            <span className="font-bold text-white/95">
+              ⚡ {Math.max(0, next - xp).toLocaleString("en-US")} XP to Level {level + 1}
+            </span>
+            <span className="ml-auto font-semibold text-white/90">
+              {xp.toLocaleString("en-US")} / {next.toLocaleString("en-US")}
             </span>
           </span>
-          <span className="mt-[5px] block h-[7px] overflow-hidden rounded-[5px] bg-white/25">
-            <span className="block h-full rounded-[5px] bg-gradient-to-r from-[#FFE08A] to-[#FFB547]" style={{ width: `${frac * 100}%` }} />
+          <span className="mt-[5px] block h-[9px] overflow-hidden rounded-md bg-white/[0.22]">
+            <span
+              className="xp-fill relative block h-full overflow-hidden rounded-md bg-gradient-to-r from-[#FFE08A] to-[#FFB547]"
+              style={{ width: `${frac * 100}%` }}
+            >
+              <span aria-hidden className="xp-shine absolute inset-y-0 w-[35%]" />
+            </span>
           </span>
         </Link>
       </div>
 
-      {/* 📊 stats card (Email / Alerts / Friends / Online), its own card under the profile */}
-      <div className="mx-2.5 mb-1.5 grid grid-cols-4 gap-2 rounded-[18px] bg-white p-2.5 shadow-[0_3px_8px_rgba(21,101,216,.22)]">
-        {(
-          [
-            ["/mail", `✉️ ${unreadEmails}`, "Email"],
-            ["/alerts", `🔔 ${unreadAlerts}`, "Alerts"],
-            ["/friends", `👥 ${friends.length}`, "Friends"],
-            ["/friends", `🟢 ${online.length}`, "Online"],
-          ] as const
-        ).map(([href, value, label]) => (
-          <Link key={label} href={href} className="rounded-xl border border-[#D3E2F7] bg-[#EEF4FD] py-2 text-center">
-            <span className="block truncate text-sm font-extrabold text-[#16264A]">{value}</span>
-            <span className="block text-[10px] text-[#5A6E8C]">{label}</span>
-          </Link>
-        ))}
+      {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
+          its tile up with a glowing border and a pulsing dot; Online pulses
+          while friends are online (the app's HomeStatTile). */}
+      <div className="mx-2.5 mb-1.5 flex gap-[7px] rounded-[20px] bg-white p-2 shadow-[0_4px_10px_rgba(21,101,216,.22)]">
+        <StatTile href="/mail" icon="✉️" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
+        <StatTile href="/alerts" icon="🔔" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
+        <StatTile href="/friends" icon="👥" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
+        <StatTile href="/friends" icon="🟢" value={online.length} label="Online" accent="#16A34A" accent2="#14B8A6" live={online.length > 0} />
       </div>
 
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games

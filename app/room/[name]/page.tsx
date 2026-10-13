@@ -122,6 +122,7 @@ import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
 import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow } from "../../../lib/serverTime";
+import { hideRoomTranslation, languageName, requestRoomTranslation, useRoomTranslation } from "../../../lib/roomTranslate";
 import {
   NO_NEW_BELOW,
   addNewBelow,
@@ -134,7 +135,7 @@ import {
   type NewBelowStats,
 } from "../../../lib/chatBots";
 import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
-import { EntryEffectHost, requestOwnEntryFx } from "../../_components/EntryEffects";
+import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
@@ -664,7 +665,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         const saved = savedEntry(uid, roomName);
         // ✨ a real entry while invisible: nobody else sees it, but my own entry
         // effect still plays for me (like the app). Not on a tab switch.
-        if (!isRoomOpen(uid, roomName) && !resumed) requestOwnEntryFx(roomName);
+        if (!isRoomOpen(uid, roomName) && !resumed) claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
         const at = saved && isRoomOpen(uid, roomName) ? saved.at : Date.now() - 30_000;
         saveEntry(uid, roomName, { visitId: "invisible", at });
         setSinceMs(at);
@@ -807,7 +808,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // invisible, and also when I was still listed in it from another phone or
       // a visit that never pressed Back — that used to hide it). Not on a tab
       // switch / coming back to an open tab.
-      if (!resumed && !tabSession && !left) requestOwnEntryFx(roomName);
+      if (!resumed && !tabSession && !left) claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
       if (!alreadyHere && !left) awardUserXp(uid, 5, "room_enter", 30 * 60_000); // like the app
       if (!alreadyHere && !left && !quietMe) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
@@ -842,7 +843,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             visitId,
             entryMarker: serverTimestamp(),
           }).catch(() => {});
-          requestOwnEntryFx(roomName);
+          claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
           if (!quietMe) {
             addDoc(collection(db, "room_messages", roomName, "messages"), {
               text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
@@ -1024,9 +1025,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // Game rooms read as a plain running log: every line on the left.
   const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].includes(roomName);
   // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
+  // (a room with a game bot on DOES get entry effects now — except while that
+  // bot's game is running, like the app)
   const entryFxGameRoom =
     gameRoom ||
-    !!roomActiveBot ||
     [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].some((g) =>
       roomName.startsWith(`${g} #`)
     );
@@ -1874,7 +1876,22 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             <RoomHeartsHost messages={messages} roomKey={roomName} />
             {/* ✨ Entry Effects play only in CHAT rooms — never in game rooms (official
                 game rooms, their extra "#2" tables, or any room with a game bot on). */}
-            {!entryFxGameRoom && <EntryEffectHost messages={messages} roomKey={roomName} myName={profile?.username || ""} />}
+            {!entryFxGameRoom && (
+              <EntryEffectHost
+                messages={messages}
+                roomKey={roomName}
+                myName={profile?.username || ""}
+                blocked={
+                  roomActiveBot === "lowcard"
+                    ? lowCard?.running === true
+                    : roomActiveBot === "cricket"
+                      ? cricket?.running === true
+                      : roomActiveBot === "trivia"
+                        ? trivia?.running === true
+                        : false
+                }
+              />
+            )}
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
@@ -2688,6 +2705,8 @@ function MessageRow({
   const special = useSpecialColors();
   // 😂 Long-press (or right-click) a chat message: reactions + Copy.
   const [picker, setPicker] = useState(false);
+  // 🌐 this message's translation (long-press → Translate)
+  const translation = useRoomTranslation(m.id);
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
@@ -2819,6 +2838,8 @@ function MessageRow({
   const rightSide = mine && !classic;
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
+  // the text to translate: without a "↩ quote" line in front
+  const plainBody = body.startsWith("↩ ") && body.includes("\n") ? body.slice(body.indexOf("\n") + 1) : body;
   const canReply = !mine && !gameRoom && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
@@ -2871,6 +2892,14 @@ function MessageRow({
               reactions={m.reactions || {}}
               myUid={myUid}
               copyText={m.type === "image" || m.type === "voice" ? "" : body}
+              onTranslate={
+                m.id && !m.local && m.type !== "image" && m.type !== "voice" && /\p{L}/u.test(plainBody)
+                  ? () => {
+                      setPicker(false);
+                      requestRoomTranslation(m.id, plainBody);
+                    }
+                  : undefined
+              }
               onPick={(e) => {
                 setPicker(false);
                 onReact(e);
@@ -2961,6 +2990,22 @@ function MessageRow({
                 ))}
               </span>
               {stamp}
+              {/* 🌐 translation under the message (tap to hide) */}
+              {translation && (
+                <span
+                  className="mt-0.5 block cursor-pointer text-left italic"
+                  style={{ fontSize: Math.max(11, fontPx - 1), color: translation.kind === "failed" ? "#D9534F" : translation.kind === "done" ? "#2F5FA8" : "#6B7788" }}
+                  onClick={() => translation.kind !== "loading" && translation.kind !== "downloading" && hideRoomTranslation(m.id)}
+                >
+                  {translation.kind === "loading"
+                    ? "🌐 Translating…"
+                    : translation.kind === "downloading"
+                      ? "🌐 Downloading language (first time only)…"
+                      : translation.kind === "done"
+                        ? `🌐 ${translation.text}${translation.from ? `  · ${languageName(translation.from)}` : ""}`
+                        : `🌐 ${translation.reason}`}
+                </span>
+              )}
               {ytLink && <YouTubePreviewCard videoId={ytLink.id} onPlay={() => onLink(ytLink.url)} />}
             </>
           )}
@@ -2985,6 +3030,7 @@ function ReactionPicker({
   reactions,
   myUid,
   copyText,
+  onTranslate,
   onPick,
   onClose,
 }: {
@@ -2992,6 +3038,8 @@ function ReactionPicker({
   reactions: Record<string, string[]>;
   myUid: string;
   copyText: string;
+  /** "🌐 Translate" (only for a message with words in it) */
+  onTranslate?: () => void;
   onPick: (emoji: string) => void;
   onClose: () => void;
 }) {
@@ -3045,6 +3093,16 @@ function ReactionPicker({
           >
             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">📋</span>
             Copy
+          </button>
+        )}
+        {onTranslate && (
+          <button
+            type="button"
+            onClick={onTranslate}
+            className="flex items-center gap-2 rounded-[18px] border border-[#2F80ED]/20 bg-white px-4 py-2 text-sm font-bold text-[#0B1F3A] shadow-lg"
+          >
+            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">🌐</span>
+            Translate
           </button>
         )}
       </div>

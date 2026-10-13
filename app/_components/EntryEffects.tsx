@@ -104,9 +104,33 @@ function entryNameOf(m: { text: string; type: string }, roomKey = ""): string | 
 // switch, a reload of a room I never left, or coming back to the tab), and the
 // room's EntryEffectHost plays it.
 const ownRequests = new Map<string, number>(); // room → when I really entered
-// room → when my own effect last played (so my own line isn't played twice)
-const ownPlayed = new Map<string, number>();
-const OWN_GAP_MS = 10 * 60_000;
+
+// ⏱ One person's effect plays at most once every 5 minutes in a room (the
+// app's EntryFxGate) — for everyone watching and for my own entry.
+export const ENTRY_FX_GAP_MS = 5 * 60_000;
+const shownHere = new Map<string, number>(); // room|name → when it last played on this screen
+function viewerMayShow(roomKey: string, name: string): boolean {
+  const key = `${roomKey}|${name.trim().toLowerCase()}`;
+  const now = Date.now();
+  if (now - (shownHere.get(key) || 0) < ENTRY_FX_GAP_MS) return false;
+  shownHere.set(key, now);
+  if (shownHere.size > 500) for (const [k, t] of shownHere) if (now - t > ENTRY_FX_GAP_MS) shownHere.delete(k);
+  return true;
+}
+/** My own entry: true (and remembered in this browser) when my effect last
+ *  played in this room 5+ minutes ago. */
+export function claimOwnEntryFx(roomKey: string): boolean {
+  const key = `migwith.entryFxOwn.${roomKey}`;
+  const now = Date.now();
+  try {
+    const last = Number(localStorage.getItem(key) || 0);
+    if (last > 0 && last <= now && now - last < ENTRY_FX_GAP_MS) return false;
+    localStorage.setItem(key, String(now));
+  } catch {
+    // storage blocked: play it
+  }
+  return true;
+}
 const OWN_EVENT = "migwith-own-entry-fx";
 export function requestOwnEntryFx(roomKey: string) {
   ownRequests.set(roomKey, Date.now());
@@ -118,22 +142,31 @@ export function EntryEffectHost({
   messages,
   roomKey,
   myName = "",
+  blocked = false,
 }: {
   messages: { id: string; text: string; type: string }[];
   roomKey: string;
   /** My own name: my own effect plays for me when I open the room (see below). */
   myName?: string;
+  /** A game is running in this room right now → no effects. */
+  blocked?: boolean;
 }) {
   const [names, setNames] = useNewLineEvents(messages, roomKey, (m) => entryNameOf(m, roomKey), 4);
   // (effect, name, when it was queued) — an entry older than 10 s is dropped
   // instead of playing late (like the app).
   const [queue, setQueue] = useState<{ fx: EntryFx; name: string; at: number }[]>([]);
+  const blockedRef = useRef(blocked);
+  blockedRef.current = blocked;
+  // a game started / the page went to the background: nothing waits to play late
+  useEffect(() => {
+    if (blocked) setQueue([]);
+  }, [blocked]);
   const addToQueue = (add: { fx: EntryFx; name: string }[], first = false) =>
     setQueue((q) => {
       const now = Date.now();
-      const fresh = q.filter((e) => now - e.at <= 10_000);
+      const fresh = q.filter((e) => now - e.at <= 8_000);
       const items = add.map((e) => ({ ...e, at: now }));
-      return (first ? [...items, ...fresh] : [...fresh, ...items]).slice(0, 4);
+      return (first ? [...items, ...fresh] : [...fresh, ...items]).slice(0, 3);
     });
   const mounted = useRef(true);
   useEffect(
@@ -153,12 +186,10 @@ export function EntryEffectHost({
     const check = () => {
       const at = ownRequests.get(roomKey);
       if (at === undefined || timer) return;
-      if (Date.now() - at > 60_000) {
+      if (Date.now() - at > 15_000) {
         ownRequests.delete(roomKey); // stale request
         return;
       }
-      // marked now, so my "has entered" line arriving meanwhile isn't played as well
-      ownPlayed.set(roomKey, Date.now());
       // The request is removed only once the effect is queued: if this effect is
       // restarted meanwhile (my name loading in …), the next run still finds it.
       timer = setTimeout(async () => {
@@ -166,7 +197,7 @@ export function EntryEffectHost({
         timer = null; // ready for my next real entry in this room
         if (gone) return;
         ownRequests.delete(roomKey);
-        if (fx) addToQueue([{ fx, name: me }], true);
+        if (fx && !blockedRef.current && document.visibilityState === "visible") addToQueue([{ fx, name: me }], true);
       }, 700); // let the room draw first
     };
     check();
@@ -189,15 +220,16 @@ export function EntryEffectHost({
   // Look up each new name, then queue the ones with a running effect.
   useEffect(() => {
     if (!names.length) return;
-    // my own entry is played by the effect above (not twice)
+    // my own entry is played by the effect above (never from my own line)
     const me = myName.trim().toLowerCase();
-    const batch = names.filter((n) => !(me && n.toLowerCase() === me && Date.now() - (ownPlayed.get(roomKey) ?? 0) < OWN_GAP_MS));
+    const batch = names.filter((n) => !(me && n.toLowerCase() === me));
     setNames(() => []);
     if (Date.now() - openedAt.current.at < 4_000) return;
-    if (!batch.length) return;
+    if (!batch.length || blockedRef.current || document.visibilityState !== "visible") return;
     Promise.all(batch.map(async (n) => ({ fx: await entryFxFor(n), name: n }))).then((found) => {
-      if (!mounted.current) return;
-      const add = found.filter((f): f is { fx: EntryFx; name: string } => !!f.fx);
+      if (!mounted.current || blockedRef.current || document.visibilityState !== "visible") return;
+      // the 5-minute rule: one person's effect at most once every 5 minutes here
+      const add = found.filter((f): f is { fx: EntryFx; name: string } => !!f.fx && viewerMayShow(roomKey, f.name));
       if (add.length) addToQueue(add);
     });
   }, [names, setNames, myName, roomKey]);

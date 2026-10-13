@@ -10,6 +10,8 @@ import { BotFace } from "./BotFace";
 import { StyleShopDialog, useInventory, type Inventory, type ShopItem } from "./StyleShop";
 import { isClassicNow } from "../../lib/uiStyle";
 import { useRememberedAmount } from "../../lib/amountMemory";
+import { useGameAutoFold } from "../../lib/gameBoxFold";
+import { LiveWatch } from "./LiveWatch";
 
 // 🃏 29 (Twenty-Nine) — server-driven (tnStart / tnJoin / tnAction / tnTick).
 // 4 seats, teams A (seats 1+3) vs B (seats 2+4); empty seats get bots. Your own
@@ -527,11 +529,10 @@ export function TwentyNineTable({ state, roomUsers = [] }: { state: TnState; roo
   const [collapsed, setCollapsed] = useState(!state.running);
   const [styles, setStyles] = useState(false);
   const [inviteSeat, setInviteSeat] = useState<number | null>(null);
-  // Open by itself when a match starts.
-  useEffect(() => {
-    if (state.running) setCollapsed(false);
-  }, [state.running]);
   const mySeat = state.mySeat;
+  // folded unless I'm seated (the app's GameBoxAutoFold — no auto-open for watchers)
+  useGameAutoFold(state.running && mySeat >= 0, setCollapsed);
+  const live = state.running || state.tables.some((t) => t.running);
   const playing = state.running && state.phase !== "JOINING";
   const felt = boardNow(state.inv.active.board).felt;
   const phaseLabel: Record<string, string> = {
@@ -579,6 +580,7 @@ export function TwentyNineTable({ state, roomUsers = [] }: { state: TnState; roo
           <button type="button" onClick={() => setStyles(true)} className="shrink-0 px-[5px] text-base" aria-label="Styles">
             🎨
           </button>
+          {collapsed && live && <LiveWatch onWatch={() => setCollapsed(false)} />}
           <button
             type="button"
             onClick={() => setCollapsed((v) => !v)}

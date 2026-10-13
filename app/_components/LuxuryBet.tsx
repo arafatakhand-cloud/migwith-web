@@ -40,36 +40,11 @@ function totalLabel(total: number): string {
   return `${(total / 1000).toFixed(1)}k`;
 }
 
-// ---------------------------------------------------------------------------
-// Who can see the room (testing phase): app_settings/luxury_bet_access =
-// { uids: [...], names: {uid: name}, open: bool }. Written only by
-// founderLuxuryBetAccess (miglife).
-// ---------------------------------------------------------------------------
-export type LuxuryBetAccess = { open: boolean; uids: string[]; names: Record<string, string>; canSee: boolean };
-
+// 🔓 Luxury Bet is open for everyone now — no test list any more (the app's
+// LuxuryBetAccess.canSee() is always true and the server no longer checks it).
+export type LuxuryBetAccess = { canSee: boolean };
 export function useLuxuryBetAccess(uid: string | undefined): LuxuryBetAccess {
-  const [data, setData] = useState<{ open: boolean; uids: string[]; names: Record<string, string> }>({
-    open: false,
-    uids: [],
-    names: {},
-  });
-  useEffect(() => {
-    if (!uid) return;
-    return onSnapshot(
-      doc(db, "app_settings", "luxury_bet_access"),
-      (snap) => {
-        const uids = snap.get("uids");
-        const names = snap.get("names");
-        setData({
-          open: snap.get("open") === true,
-          uids: Array.isArray(uids) ? uids.filter((x): x is string => typeof x === "string") : [],
-          names: names && typeof names === "object" ? Object.fromEntries(Object.entries(names).map(([k, v]) => [k, String(v ?? "")])) : {},
-        });
-      },
-      () => {}
-    );
-  }, [uid]);
-  return { ...data, canSee: !!uid && (data.open || data.uids.includes(uid)) };
+  return { canSee: !!uid };
 }
 
 function characterFor(input: string): string | null {
