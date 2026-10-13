@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useBadges } from "../../lib/useBadges";
@@ -31,6 +32,14 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   useSpecialColorListener(uid);
   // Online for friends on every page (lastActiveAt every 30 s), like the app.
   useOnlineHeartbeat(uid);
+  // 🔐 Signed out (e.g. coming back to a tab after the login ran out): straight
+  // to the login page instead of a page that keeps showing "Loading…".
+  const pathname = usePathname() || "/";
+  const router = useRouter();
+  const signedOut = !current.loading && !current.user;
+  useEffect(() => {
+    if (signedOut && !isPublicPath(pathname)) router.replace("/login");
+  }, [signedOut, pathname, router]);
   return <SessionContext.Provider value={{ ...current, badges }}>{children}</SessionContext.Provider>;
 }
 
@@ -38,4 +47,10 @@ export function useSession(): Session {
   const s = useContext(SessionContext);
   if (!s) throw new Error("useSession must be used inside <AppSession>");
   return s;
+}
+
+// Pages anyone may open without signing in.
+const PUBLIC_PATHS = ["/", "/login", "/register", "/forgot-password", "/welcome"];
+function isPublicPath(path: string): boolean {
+  return PUBLIC_PATHS.some((p) => path === p || (p !== "/" && path.startsWith(`${p}/`)));
 }
