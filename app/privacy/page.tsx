@@ -68,9 +68,9 @@ export default function PrivacyPage() {
 
       <H2>6. How long we keep it, and deleting your account</H2>
       <p>
-        We keep your data while your account exists. You can delete your account at any time in the app or on the web
-        (Settings → Account → Delete my account). It is deleted after 7 days — logging in again within those 7 days cancels
-        it. Your profile, photos, friends, mail, alerts, tags, coin history, IP records and login are deleted; your old chat
+        We keep your data while your account exists. You can ask us to delete your account at any time by email
+        (support@miglife.app, subject “Delete my account”, with your MIG ID). It is deleted 7 days later — logging in again
+        within those 7 days cancels it. Your profile, photos, friends, mail, alerts, tags, coin history, IP records and login are deleted; your old chat
         messages stay, shown as “Deleted user”. Records that belong to other people (for example a gift they received from
         you) stay in their history without your name.{" "}
         <Link className="font-semibold text-[#2F80ED] underline" href="/delete-account">How to delete your account</Link>.

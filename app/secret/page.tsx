@@ -20,6 +20,7 @@ import {
   TransferLimitsCard,
 } from "./_MainFounderCards";
 import { LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
+import { AccountDeleteCard } from "./_AccountDeleteCard";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
@@ -233,6 +234,7 @@ export default function SecretPage() {
         "⚠ Danger zone",
         [
           { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.isMigwith },
+          { icon: "🗑", label: "Delete Account", hint: "For a “Delete my account” email · deleted after 7 days", tint: "#E53935", key: "delete_account", ok: f.isMigwith },
         ],
       ],
     ] as [string, Tool[]][]
@@ -341,6 +343,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
       {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
       {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}
+      {f.isMigwith && tool === "delete_account" && <AccountDeleteCard />}
 
       {status && <p className="text-xs font-bold text-[#B3261E]">{status}</p>}
 

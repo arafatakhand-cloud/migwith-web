@@ -1,41 +1,44 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { H2, LegalPage, List } from "../_components/LegalPage";
-import { DeletionNotice } from "./DeletionNotice";
 
 export const metadata: Metadata = {
   title: "Delete your account — miGlife",
-  description: "How to delete your miGlife account and what is deleted.",
+  description: "How to request deletion of your miGlife account and what is deleted.",
 };
+
+const SUBJECT = "Delete my account";
+const BODY = "Hello miGlife team,\n\nPlease delete my miGlife account and all my personal data.\n\nMIG ID: [your MIG ID]\n\nThank you.";
+const MAILTO = `mailto:support@miglife.app?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(BODY)}`;
 
 export default function DeleteAccountPage() {
   return (
     <LegalPage title="Delete your miGlife account">
-      <DeletionNotice />
-      <p>You can delete your miGlife account yourself, at any time — in the app or on the web.</p>
+      <p>This page explains how to permanently delete your miGlife account and the personal data that comes with it.</p>
 
-      <H2>How to delete</H2>
+      <H2>How to request deletion</H2>
+      <ol className="list-decimal space-y-2 pl-5">
+        <li>
+          Send an email to{" "}
+          <a className="font-semibold text-[#2F80ED] underline" href={MAILTO}>support@miglife.app</a> with the subject{" "}
+          <b>“Delete my account”</b>. If you added a recovery email to your account, send it from that address.
+        </li>
+        <li>Write your <b>MIG ID</b> (username) in the email, so we can find your account.</li>
+        <li>We reply to confirm, and your account is deleted <b>7 days</b> later.</li>
+      </ol>
+      <a href={MAILTO} className="inline-block rounded-xl bg-[#E5541A] px-5 py-3 font-bold text-white shadow-sm">
+        ✉️ Send deletion request
+      </a>
+      <pre className="whitespace-pre-wrap rounded-2xl bg-[#0B2A5B] p-4 text-[13px] leading-5 text-[#DCE8FA]">
+        {`Subject: ${SUBJECT}\n\n${BODY}`}
+      </pre>
+
+      <H2>Good to know</H2>
       <List
         items={[
-          <><b>In the app:</b> Settings → Account → <b>Delete my account</b>, then type DELETE to confirm.</>,
-          <>
-            <b>On the web:</b> <Link className="font-semibold text-[#2F80ED] underline" href="/login">log in</Link> at web.miglife.app → Settings →
-            Account → <b>Delete my account</b>.
-          </>,
-          <>
-            <b>Can&apos;t log in?</b> Email{" "}
-            <a className="font-semibold text-[#2F80ED] underline" href="mailto:support@miglife.app?subject=Delete%20my%20account">support@miglife.app</a>{" "}
-            from your recovery email with the subject “Delete my account” and your MIG ID.
-          </>,
-        ]}
-      />
-
-      <H2>What happens</H2>
-      <List
-        items={[
-          "You are logged out everywhere.",
-          "Your account is deleted after 7 days. Changed your mind? Just log in again within those 7 days — the deletion is cancelled.",
+          "Changed your mind? Just log in again within those 7 days — the deletion is cancelled.",
           "An account that still has coins can't be deleted: spend or transfer the coins first.",
+          "You are logged out everywhere once the deletion is scheduled.",
         ]}
       />
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { EmailAuthProvider, reauthenticateWithCredential, signOut, updatePassword } from "firebase/auth";
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { collection, doc, getDoc, getDocs, limit, query, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { auth, db, functions } from "../../lib/firebase";
@@ -14,10 +14,6 @@ import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
 import { ChatTextSizeCard } from "../_components/ChatTextSizeCard";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
-import { requestAccountDeletion } from "../../lib/accountDeletion";
-import { detachPushForLogout } from "../../lib/push";
-import { leaveAllOpenRooms } from "../../lib/openRooms";
-import { markOfflineForLogout } from "../../lib/heartbeat";
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -85,7 +81,7 @@ export default function SettingsPage() {
   const [loaded, setLoaded] = useState(false);
   const [message, setMessage] = useState("");
   const [lang, setL] = useState<Lang>("en");
-  const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password" | "question" | "help" | "feedback" | "about" | "delete">("");
+  const [dialog, setDialog] = useState<"" | "blocked" | "gate" | "password" | "question" | "help" | "feedback" | "about">("");
 
   useEffect(() => setL(getLang()), []);
 
@@ -203,17 +199,6 @@ export default function SettingsPage() {
               <PastelCard icon="ℹ️" title="About MIGlife" subtitle="MIGlife Web" color="#D4AF37" onClick={() => setDialog("about")} />
               <PastelCard icon="📄" title="Privacy Policy" subtitle="What we collect and why" color="#3984D9" href="/privacy" />
             </div>
-
-            <SectionLabel>Account</SectionLabel>
-            <div className="grid gap-2.5 md:grid-cols-2">
-              <PastelCard
-                icon="🗑️"
-                title="Delete my account"
-                subtitle="Your account and data are deleted after 7 days"
-                color="#E12A2A"
-                onClick={() => setDialog("delete")}
-              />
-            </div>
           </>
         )}
       </section>
@@ -254,7 +239,6 @@ export default function SettingsPage() {
           </div>
         </Modal>
       )}
-      {dialog === "delete" && <DeleteAccountDialog onClose={() => setDialog("")} />}
       {dialog === "password" && (
         <PasswordDialog
           onClose={() => setDialog("")}
@@ -435,65 +419,6 @@ function SecurityGate({ onClose, onVerified }: { onClose: () => void; onVerified
             {busy ? "Checking…" : "Verify"}
           </button>
         )}
-      </div>
-    </Modal>
-  );
-}
-
-// 🗑 Delete my account: the server deletes it after 7 days (signing in again
-// cancels it). Not possible while the account still has coins.
-function DeleteAccountDialog({ onClose }: { onClose: () => void }) {
-  const [typed, setTyped] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const go = async () => {
-    setBusy(true);
-    setError("");
-    try {
-      const { data } = await requestAccountDeletion({ confirm: "DELETE" });
-      const uid = auth.currentUser?.uid;
-      await detachPushForLogout().catch(() => {});
-      if (uid) await leaveAllOpenRooms(uid).catch(() => {});
-      await markOfflineForLogout(uid).catch(() => {});
-      await signOut(auth);
-      window.location.href = `/delete-account?scheduled=${data?.scheduledAt || ""}`;
-    } catch (e: any) {
-      setError(e?.message || "Could not delete the account.");
-      setBusy(false);
-    }
-  };
-  return (
-    <Modal title="Delete my account" onClose={onClose}>
-      <div className="space-y-2 text-sm leading-5 text-[#5B6B8C]">
-        <p>
-          Your account will be <b className="text-[#C62828]">permanently deleted after 7 days</b>: your profile, photos, friends,
-          mail, alerts, tags, coin history and login.
-        </p>
-        <p>Your old chat messages stay, shown as “Deleted user”.</p>
-        <p>
-          Changed your mind? Just <b>log in again</b> within 7 days and the deletion is cancelled.
-        </p>
-        <p className="text-xs">You can&apos;t delete an account that still has coins — spend or transfer them first.</p>
-      </div>
-      <input
-        value={typed}
-        onChange={(e) => setTyped(e.target.value.toUpperCase())}
-        placeholder="Type DELETE to confirm"
-        className={input}
-      />
-      {error && <p className="text-xs text-[#C62828]">{error}</p>}
-      <div className="flex gap-2">
-        <button type="button" className={secondary} onClick={onClose} disabled={busy}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="flex-1 rounded-xl bg-[#E53935] py-3 text-sm font-black text-white disabled:opacity-50"
-          disabled={typed !== "DELETE" || busy}
-          onClick={go}
-        >
-          {busy ? "Deleting…" : "Delete my account"}
-        </button>
       </div>
     </Modal>
   );
