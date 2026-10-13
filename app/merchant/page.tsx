@@ -63,7 +63,11 @@ export default function MerchantPage() {
         const mentor = role === "mentor" || isMainFounderName(username);
         setIsMentor(mentor);
         // A role can be saved in role, membershipRole or memberType (older tools).
-        const roles = ["role", "membershipRole", "memberType"].map((f) => String(me.get(f) || "").trim().toLowerCase());
+        const roles = [
+          ...["role", "membershipRole", "memberType"].map((f) => String(me.get(f) || "").trim().toLowerCase()),
+          // a Merchant who also has another role keeps "merchant" in the roles list
+          ...(Array.isArray(me.get("roles")) ? me.get("roles").map((r: unknown) => String(r).trim().toLowerCase()) : []),
+        ];
         const merchantRole = !mentor && roles.includes("merchant");
         setIsMerchantRole(merchantRole);
         if (!mentor) {
@@ -72,10 +76,8 @@ export default function MerchantPage() {
             getDocs(query(collection(db, "mentor_merchants"), where("merchantUsername", "==", username))),
           ]);
           setPending(req.docs[0] || null);
-          // Another role (Country Representative, Admin, Staff …) is not a
-          // Merchant any more, even if an old merchant record has time left.
-          const otherRole = roles.some((r) => r && r !== "user" && r !== "merchant");
-          const active = otherRole && !merchantRole ? null : merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
+          // A running record = a Merchant, whatever other role they also have.
+          const active = merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
           // A merchant by role still opens the dashboard with the newest record,
           // even if it ran out or is missing its date.
           const latest = [...merch.docs].sort((a, b) => toMs(b.get("expiresAt")) - toMs(a.get("expiresAt")))[0] || null;

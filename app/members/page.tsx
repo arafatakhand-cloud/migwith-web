@@ -104,8 +104,26 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (!ready) return;
-    getDocs(query(collection(db, "users"), limit(500)))
-      .then((snap) => setMembers(snap.docs.map((d) => toMember(d.id, d.data())).filter((m) => m.name)))
+    Promise.all([
+      getDocs(query(collection(db, "users"), limit(500))),
+      // 🏪 a Merchant with another role too (Country Representative …) is still
+      // listed under Merchant while their Merchant Program record runs
+      getDocs(collection(db, "mentor_merchants")).catch(() => null),
+    ])
+      .then(([snap, links]) => {
+        const now = Date.now();
+        const activeMerchants = new Set(
+          (links?.docs || [])
+            .filter((l) => (l.get("expiresAt")?.toMillis?.() || 0) > now)
+            .map((l) => String(l.get("merchantUsername") || "").trim().toLowerCase())
+        );
+        setMembers(
+          snap.docs
+            .map((d) => toMember(d.id, d.data()))
+            .filter((m) => m.name)
+            .map((m) => (activeMerchants.has(m.name.toLowerCase()) && !m.roles.includes("merchant") ? { ...m, roles: [...m.roles, "merchant"] } : m))
+        );
+      })
       .catch(() => setMembers([]));
   }, [ready, reload]);
 
