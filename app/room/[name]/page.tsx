@@ -809,7 +809,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // a visit that never pressed Back — that used to hide it). Not on a tab
       // switch / coming back to an open tab.
       if (!resumed && !tabSession && !left) claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
-      if (!alreadyHere && !left) awardUserXp(uid, 5, "room_enter", 30 * 60_000); // like the app
+      if (!alreadyHere && !left) awardUserXp(uid, 5, "room_enter", 30 * 60_000, roomName); // like the app (Level 50+: once per room per 24 h)
       if (!alreadyHere && !left && !quietMe) {
         addDoc(collection(db, "room_messages", roomName, "messages"), {
           text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),

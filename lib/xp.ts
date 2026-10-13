@@ -52,12 +52,18 @@ function unlockedGiftsForLevel(level: number): string[] {
   return out;
 }
 
-export function awardUserXp(uid: string | null | undefined, amount: number, reason: XpReason, cooldownMs = 0) {
+/** From this level: room-entry XP once per room per 24 h (the server also gives
+ *  +10 XP for a Cricket / LowCard win from this level), like the app. */
+export const XP_RULES_LEVEL = 50;
+const ROOM_ENTER_XP_GAP_MS = 24 * 60 * 60_000;
+
+/** roomKey (room_enter): from Level 50 the entry XP comes once per room per 24 h. */
+export function awardUserXp(uid: string | null | undefined, amount: number, reason: XpReason, cooldownMs = 0, roomKey?: string) {
   if (!uid || amount <= 0) return;
-  scheduleXpAward(() => void attempt(uid, Math.min(10, Math.trunc(amount)), reason, cooldownMs, 0));
+  scheduleXpAward(() => void attempt(uid, Math.min(10, Math.trunc(amount)), reason, cooldownMs, 0, roomKey));
 }
 
-async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs: number, tries: number) {
+async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs: number, tries: number, roomKey?: string) {
   const userRef = doc(db, "users", uid);
   try {
     let leveledUp = false;
@@ -71,8 +77,15 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
       const cooldowns: Record<string, number> = {};
       const rawCd = d.xpCooldowns;
       if (rawCd && typeof rawCd === "object") for (const [k, v] of Object.entries(rawCd)) cooldowns[k] = num(v);
-      const last = cooldowns[reason] ?? 0;
-      if (cooldownMs > 0 && last > 0 && now - last < cooldownMs) return 0;
+      // Level 50+: room-entry XP once per room per 24 h (own cooldown per room)
+      const levelNow = typeof d.level === "number" ? Math.trunc(d.level) : num(d.level) || 1;
+      const perRoom = !!roomKey && levelNow >= XP_RULES_LEVEL;
+      const cdKey = perRoom ? `room_enter:${roomKey!.trim().toLowerCase().slice(0, 60)}` : reason;
+      const cdMs = perRoom ? ROOM_ENTER_XP_GAP_MS : cooldownMs;
+      const last = cooldowns[cdKey] ?? 0;
+      if (cdMs > 0 && last > 0 && now - last < cdMs) return 0;
+      // old per-room stamps (24 h+) are dropped so the map stays small
+      for (const k of Object.keys(cooldowns)) if (k.startsWith("room_enter:") && now - cooldowns[k] > ROOM_ENTER_XP_GAP_MS) delete cooldowns[k];
 
       // xp saved as text on some old accounts counts as 0, like the rules
       const oldXp = typeof d.xp === "number" ? Math.trunc(d.xp) : 0;
@@ -94,7 +107,7 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
       const recent = [...prev, { reason, amount: give, timeMillis: now }]
         .sort((a, b) => num(b.timeMillis) - num(a.timeMillis))
         .slice(0, 5);
-      cooldowns[reason] = now;
+      cooldowns[cdKey] = now;
 
       const update: Record<string, unknown> = {
         xp: newXp,
@@ -130,7 +143,7 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
     // device): try again a little later instead of losing the XP.
     const code = (err as { code?: string })?.code;
     if (code === "permission-denied" && tries < XP_MAX_RETRIES) {
-      scheduleXpAward(() => void attempt(uid, amount, reason, cooldownMs, tries + 1));
+      scheduleXpAward(() => void attempt(uid, amount, reason, cooldownMs, tries + 1, roomKey));
     } else if (code !== "permission-denied") {
       console.warn("XP award failed", err);
     }

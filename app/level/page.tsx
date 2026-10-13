@@ -18,10 +18,12 @@ import { DAILY_XP_CAP, todayKey } from "../../lib/xp";
 
 const EARN: [string, string][] = [
   ["💬", "Send a normal chat message • +2 XP (15 sec cooldown)"],
-  ["🚪", "Enter a room • +5 XP (60 sec cooldown per room entry)"],
-  ["👥", "Send a friend request • +10 XP (30 sec cooldown)"],
-  ["🎁", "Send a gift • +10 XP (30 sec cooldown)"],
+  ["🚪", "Enter a room • +5 XP (30 min cooldown · Level 50+: once per room every 24 hours)"],
+  ["👥", "Friend request accepted • +10 XP to both"],
+  ["🎁", "Send a gift • +5 XP · Gift Shower +10 XP (30 sec cooldown)"],
   ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown)"],
+  ["🏏", "Win a Cricket game • +10 XP (Level 50+)"],
+  ["🃏", "Win a LowCard game • +10 XP (Level 50+)"],
 ];
 
 function unlockedGifts(level: number): string[] {
