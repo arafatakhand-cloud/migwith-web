@@ -27,13 +27,13 @@ export function MigLoginLogo() {
   return (
     <div className="flex items-center gap-3" aria-label="miGlife">
       <div className="relative h-[86px] w-[92px] shrink-0">
-        <svg viewBox="0 0 100 96" width={70} height={67} className="absolute left-0 top-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
+        <svg viewBox="0 0 100 96" width={70} height={67} className="mig-bubble absolute left-0 top-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
           <defs>
             <linearGradient id="mlBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4FB3FF" /><stop offset="1" stopColor="#1C5FC0" /></linearGradient>
           </defs>
           <path d={BUBBLE_PATH} fill="url(#mlBlue)" stroke="white" strokeWidth={4} strokeLinejoin="round" />
         </svg>
-        <svg viewBox="0 0 100 96" width={56} height={54} className="absolute bottom-0 right-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
+        <svg viewBox="0 0 100 96" width={56} height={54} style={{ animationDelay: "1.2s" }} className="mig-bubble absolute bottom-0 right-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
           <defs>
             <linearGradient id="mlOrange" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFB45C" /><stop offset="1" stopColor="#E8561C" /></linearGradient>
           </defs>
@@ -43,10 +43,18 @@ export function MigLoginLogo() {
         </svg>
       </div>
       <div className="leading-none">
-        <div className="text-[44px] font-black tracking-tight text-white drop-shadow">
-          miG<span className="text-[#FFD36B]">life</span>
+        {/* letters pop in one by one; a golden shine keeps sweeping over "life" */}
+        <div className="ml-word text-[44px] font-black tracking-tight drop-shadow">
+          {"miG".split("").map((c, i) => (
+            <span key={i} className="ml-pop text-white" style={{ animationDelay: `${i * 70}ms` }}>{c}</span>
+          ))}
+          {"life".split("").map((c, i) => (
+            <span key={i} className="ml-pop" style={{ animationDelay: `${(i + 3) * 70}ms` }}>
+              <span className="ml-life">{c}</span>
+            </span>
+          ))}
         </div>
-        <div className="mt-1 text-[13px] font-bold tracking-[0.2em] text-white/85">CHAT · FRIENDS · FUN</div>
+        <div className="ml-tag mt-1 whitespace-nowrap text-[13px] font-bold tracking-[0.2em] text-white/85">CHAT · FRIENDS · FUN</div>
       </div>
     </div>
   );
