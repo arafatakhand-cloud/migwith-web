@@ -579,6 +579,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           return;
         }
         setMuted(snap.get("muted") === true);
+        // 👢🚫 Kicked or banned: really leave right away — take my spot out of
+        // the room and close its tab. Before, the spot stayed (and the heartbeat
+        // put it back when the moderator removed it), so the person never left.
+        if (snap.get("banned") === true || snap.get("kicked") === true) {
+          removeOpenRoom(user.uid, roomName);
+          leaveRef.current?.();
+        }
         if (snap.get("banned") === true) {
           setBlocked("You are banned from this room.");
         } else if (snap.get("kicked") === true) {
