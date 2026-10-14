@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "firebase/auth";
-import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { awardUserXp } from "../../../lib/xp";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -201,6 +201,35 @@ function saveEntry(uid: string, room: string, mark: EntryMark) {
 // that room's own saved session instead of the previous room's state.
 // 👢 A kicked person can't come back into the room for this long (same in the app; the rules enforce it).
 const KICK_MINUTES = 30;
+
+// 👢👋🚫🔓🔇🔊 kick / bump / ban / unban / mute lines (like the app)
+const MODERATION_LINE_PREFIXES = ["👢 ", "👋 ", "🚫 ", "🔓 ", "🔇 ", "🔊 "];
+function isModerationLine(text: string) {
+  return MODERATION_LINE_PREFIXES.some((p) => text.startsWith(p));
+}
+
+/** Shrinks its line's text (down to 4 px smaller) until it fits on ONE line,
+ *  instead of breaking in two on a phone. Lines are counted from the text's
+ *  own boxes, so the time stamp and padding don't matter. */
+function FitOneLine({ base, children }: { base: number; children: (px: number) => ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState({ base, px: base });
+  // a new text size in Settings starts the fitting again
+  if (fit.base !== base) setFit({ base, px: base });
+  const px = fit.base === base ? fit.px : base;
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || px <= base - 4) return;
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    // a new line starts where a text box sits clearly lower than the first one
+    // (the small time stamp / emoji on the same line sit only a little lower)
+    const tops = Array.from(range.getClientRects()).filter((r) => r.width > 0).map((r) => r.top);
+    const first = Math.min(...tops);
+    if (tops.some((t) => t - first > px * 0.9)) setFit((f) => ({ base: f.base, px: f.px - 0.5 }));
+  });
+  return <div ref={ref}>{children(px)}</div>;
+}
 
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
@@ -1931,7 +1960,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 const joinAbove = !!bot && botOf(visible[idx - 1]) === bot;
                 const joinBelow = !!bot && botOf(visible[idx + 1]) === bot;
                 const accent = bot ? chatBotAccent(bot) : "";
-                const row = (
+                const rowAt = (px: number) => (
                 <MessageRow
                   key={m.id}
                   m={m}
@@ -1941,7 +1970,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   gameRoom={gameRoom}
                   colorOf={colorOf}
                   badgeImages={badgeImages}
-                  fontPx={fontPx}
+                  fontPx={px}
                   gift={giftByName.get(m.giftName.toLowerCase()) || null}
                   onMention={(name) => {
                     // Tap a name: add "@name" to the message box, like the app.
@@ -1958,6 +1987,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     inputRef.current?.focus();
                   }}
                 />
+                );
+                // 👢👋🚫 kick / bump / ban lines shrink a little to fit on one line
+                const row = isModerationLine(m.text) ? (
+                  <FitOneLine key={m.id} base={fontPx}>
+                    {rowAt}
+                  </FitOneLine>
+                ) : (
+                  rowAt(fontPx)
                 );
                 if (!bot) return row;
                 return (

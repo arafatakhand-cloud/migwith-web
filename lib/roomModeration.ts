@@ -259,8 +259,8 @@ export async function kickUser(ctx: ModContext, name: string) {
     removePresence(ctx.roomName, row.username).catch(() => {});
     ctx.post(
       ctx.perms.isUserRoom
-        ? `👢 ${row.username} was kicked from the room by ${ctx.modName} for 30 minutes.`
-        : `👢 ${row.username} was kicked from the room for 30 minutes.`
+        ? `👢 ${row.username} kicked by ${ctx.modName} (30 min).`
+        : `👢 ${row.username} kicked (30 min).`
     );
   } catch (e) {
     fail(ctx, "Kick")(e);
@@ -281,7 +281,7 @@ export async function bumpUser(ctx: ModContext, name: string) {
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
-    ctx.post(`👋 ${row.username} was bumped from the room by ${ctx.modName}.`);
+    ctx.post(`👋 ${row.username} bumped by ${ctx.modName}.`);
   } catch (e) {
     fail(ctx, "Bump")(e);
   }
@@ -302,9 +302,9 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
     const by = ctx.perms.isUserRoom ? ctx.modName : "administrator";
     if (ban) {
       removePresence(ctx.roomName, target.username).catch(() => {});
-      ctx.postModeration(`🚫 ${target.username} has been banned from this room by ${by}.`, "red");
+      ctx.postModeration(`🚫 ${target.username} banned by ${by}.`, "red");
     } else {
-      ctx.postModeration(`🔓 ${target.username} has been unbanned from this room by ${by}.`, "green");
+      ctx.postModeration(`🔓 ${target.username} unbanned by ${by}.`, "green");
     }
   } catch (e) {
     fail(ctx, "Moderation")(e);
