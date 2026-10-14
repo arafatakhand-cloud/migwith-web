@@ -191,6 +191,7 @@ export const BN: Record<string, string> = {
   "Room owner": "রুমের মালিক",
   Moderate: "মডারেট",
   "👢 Kick": "👢 কিক",
+  "👋 Bump": "👋 বাম্প",
   "🚫 Ban": "🚫 ব্যান",
   "🔇 Mute": "🔇 মিউট",
   "🔊 Unmute": "🔊 আনমিউট",

@@ -253,7 +253,7 @@ export async function kickUser(ctx: ModContext, name: string) {
     await setDoc(
       targetDoc(ctx.roomName, row.username),
       // 👢 kickedAt: they can't come back in for 30 minutes (the rules check it)
-      { uid: row.uid, username: row.username, kicked: true, kickedAt: serverTimestamp(), updatedBy: ctx.modName, updatedAt: serverTimestamp() },
+      { uid: row.uid, username: row.username, kicked: true, bumped: false, kickedAt: serverTimestamp(), updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
@@ -264,6 +264,26 @@ export async function kickUser(ctx: ModContext, name: string) {
     );
   } catch (e) {
     fail(ctx, "Kick")(e);
+  }
+}
+
+// 👋 /bump: out of the room like a kick, but they may come straight back in
+// (no kickedAt, so no 30-minute wait). Same people as /kick can do it.
+export async function bumpUser(ctx: ModContext, name: string) {
+  if (!ctx.perms.canKick) return ctx.note(`${ctx.roomName}: You cannot bump in this room.`);
+  if (await isProtected(ctx, name)) return ctx.note(`${ctx.roomName}: You cannot bump ${name.trim()}.`);
+  const row = ctx.people.find((p) => key(p.username) === key(name));
+  if (!row) return ctx.note(`${ctx.roomName}: ${name.trim()} is not in this room.`);
+  try {
+    await setDoc(
+      targetDoc(ctx.roomName, row.username),
+      { uid: row.uid, username: row.username, kicked: true, bumped: true, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    removePresence(ctx.roomName, row.username).catch(() => {});
+    ctx.post(`👋 ${row.username} was bumped from the room by ${ctx.modName}.`);
+  } catch (e) {
+    fail(ctx, "Bump")(e);
   }
 }
 
@@ -279,7 +299,7 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
       { uid: target.uid, username: target.username, banned: ban, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    const by = ctx.perms.isUserRoom ? ctx.modName : "a room administrator";
+    const by = ctx.perms.isUserRoom ? ctx.modName : "administrator";
     if (ban) {
       removePresence(ctx.roomName, target.username).catch(() => {});
       ctx.postModeration(`🚫 ${target.username} has been banned from this room by ${by}.`, "red");
@@ -459,7 +479,7 @@ async function setAnnouncement(ctx: ModContext, message: string, minutes?: numbe
 function modHelp(ctx: ModContext): string[] {
   const p = ctx.perms;
   const lines: string[] = [];
-  if (p.canKick) lines.push("/kick name");
+  if (p.canKick) lines.push("/kick name", "/bump name");
   if (p.canBan) lines.push("/ban name" + (p.canUnban ? "   /unban name" : ""));
   if (p.canRoomWide) lines.push("/lock   /unlock   /silence room   /unsilence room");
   if (p.canMute) lines.push("/mute name   /unmute name");
@@ -485,6 +505,9 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
     case "/k":
     case "/kick":
       needName(() => kickUser(ctx, arg));
+      return true;
+    case "/bump":
+      needName(() => bumpUser(ctx, arg));
       return true;
     case "/b":
     case "/ban":

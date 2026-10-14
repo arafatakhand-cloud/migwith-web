@@ -103,6 +103,7 @@ import {
   banUser,
   handleModCommand,
   kickUser,
+  bumpUser,
   muteUser,
   normRole,
   roomInfoFrom,
@@ -254,6 +255,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [blocked, setBlocked] = useState("");
   // 👢 minutes left before a kicked person may come back in (30 min after the kick)
   const [kickMinutesLeft, setKickMinutesLeft] = useState(KICK_MINUTES);
+  // 👋 /bump: out of the room, but may come straight back in
+  const [bumped, setBumped] = useState(false);
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -601,10 +604,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           setBlocked("You are banned from this room.");
         } else if (kickedNow) {
           setKickMinutesLeft(kickLeftMs > 0 ? Math.max(1, Math.ceil(kickLeftMs / 60_000)) : KICK_MINUTES);
+          setBumped(snap.get("bumped") === true && snap.get("kicked") === true && kickLeftMs <= 0);
           setBlocked("You were kicked from this room.");
           // The kicked person clears their own flag (kickedAt stays and keeps
           // them out for the 30 minutes).
-          if (snap.get("kicked") === true) updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
+          if (snap.get("kicked") === true)
+            updateDoc(userRef, { kicked: false, bumped: false, updatedAt: serverTimestamp() }).catch(() => {});
         }
         // Set together with "blocked", so a banned person never gets as far as entering.
         setMyModLoaded(true);
@@ -1685,11 +1690,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     return (
       <PageShell light>
         <SimpleDialog
-          title={banned ? "🚫 Room Access Denied" : "👢 Removed from Room"}
+          title={banned ? "🚫 Room Access Denied" : bumped ? "👋 Bumped from Room" : "👢 Removed from Room"}
           text={
             banned
               ? "🚫 You are banned from this room. Please contact the room Admin."
-              : `👢 You have been kicked from this room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
+              : bumped
+                ? "👋 You were bumped from this room. You can come back in right away."
+                : `👢 You have been kicked from this room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
           }
           onClose={() => router.push("/rooms")}
         />
@@ -2133,6 +2140,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                           {(
                             [
                               perms.canKick && ["👢 Kick", (c: ModContext) => kickUser(c, u.username)],
+                              perms.canKick && ["👋 Bump", (c: ModContext) => bumpUser(c, u.username)],
                               perms.canBan && ["🚫 Ban", (c: ModContext) => banUser(c, u.username, true)],
                               perms.canMute && ["🔇 Mute", (c: ModContext) => muteUser(c, u.username, true)],
                               perms.canMute && ["🔊 Unmute", (c: ModContext) => muteUser(c, u.username, false)],
