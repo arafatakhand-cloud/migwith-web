@@ -21,16 +21,33 @@ export function requestWelcomeSplash() {
   window.dispatchEvent(new Event(EVENT));
 }
 
-/** The "miG" bubble with the orange "life" ball (login page + splash). */
+/** miGlife's logo: a blue and an orange chat bubble side by side with the
+ *  "miGlife" word and "CHAT · FRIENDS · FUN" (login page + splash). Same in the app. */
 export function MigLoginLogo() {
   return (
-    <div className="relative">
-      <div className="flex h-28 w-52 items-center justify-center pr-5 rounded-[56px] bg-gradient-to-b from-[#4FA8E8] to-[#1F74C4] shadow-[inset_0_-6px_12px_rgba(0,0,0,0.18),0_10px_24px_rgba(0,0,0,0.25)]">
-        <span className="text-6xl font-black tracking-tight text-white drop-shadow">miG</span>
+    <div className="flex items-center gap-3" aria-label="miGlife">
+      <div className="relative h-[86px] w-[92px] shrink-0">
+        <svg viewBox="0 0 100 96" width={70} height={67} className="absolute left-0 top-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
+          <defs>
+            <linearGradient id="mlBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4FB3FF" /><stop offset="1" stopColor="#1C5FC0" /></linearGradient>
+          </defs>
+          <path d={BUBBLE_PATH} fill="url(#mlBlue)" stroke="white" strokeWidth={4} strokeLinejoin="round" />
+        </svg>
+        <svg viewBox="0 0 100 96" width={56} height={54} className="absolute bottom-0 right-0 drop-shadow-[0_6px_10px_rgba(0,40,90,.3)]">
+          <defs>
+            <linearGradient id="mlOrange" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FFB45C" /><stop offset="1" stopColor="#E8561C" /></linearGradient>
+          </defs>
+          <g transform="translate(100 0) scale(-1 1)">
+            <path d={BUBBLE_PATH} fill="url(#mlOrange)" stroke="white" strokeWidth={4} strokeLinejoin="round" />
+          </g>
+        </svg>
       </div>
-      <span className="absolute -right-6 -top-4 flex h-[72px] w-[72px] items-center justify-center rounded-full border-2 border-[#8A3A0E] bg-gradient-to-b from-[#F58A3A] to-[#D6521A] text-xl font-bold text-white shadow-lg">
-        life
-      </span>
+      <div className="leading-none">
+        <div className="text-[44px] font-black tracking-tight text-white drop-shadow">
+          miG<span className="text-[#FFD36B]">life</span>
+        </div>
+        <div className="mt-1 text-[13px] font-bold tracking-[0.2em] text-white/85">CHAT · FRIENDS · FUN</div>
+      </div>
     </div>
   );
 }
