@@ -198,6 +198,9 @@ function saveEntry(uid: string, room: string, mark: EntryMark) {
 
 // One RoomView per room (keyed by name), so switching room tabs starts from
 // that room's own saved session instead of the previous room's state.
+// 👢 A kicked person can't come back into the room for this long (same in the app; the rules enforce it).
+const KICK_MINUTES = 30;
+
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
@@ -249,6 +252,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [uploading, setUploading] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
   const [blocked, setBlocked] = useState("");
+  // 👢 minutes left before a kicked person may come back in (30 min after the kick)
+  const [kickMinutesLeft, setKickMinutesLeft] = useState(KICK_MINUTES);
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -579,19 +584,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           return;
         }
         setMuted(snap.get("muted") === true);
+        // 👢 Kicked less than 30 minutes ago (kickedAt) — even after the "kicked"
+        // flag was cleared — can't come back in yet.
+        const kickedAt = snap.get("kickedAt", { serverTimestamps: "estimate" });
+        const kickedAtMs = kickedAt && typeof kickedAt.toMillis === "function" ? kickedAt.toMillis() : 0;
+        const kickLeftMs = kickedAtMs ? kickedAtMs + KICK_MINUTES * 60_000 - Date.now() : 0;
+        const kickedNow = snap.get("kicked") === true || kickLeftMs > 0;
         // 👢🚫 Kicked or banned: really leave right away — take my spot out of
         // the room and close its tab. Before, the spot stayed (and the heartbeat
         // put it back when the moderator removed it), so the person never left.
-        if (snap.get("banned") === true || snap.get("kicked") === true) {
+        if (snap.get("banned") === true || kickedNow) {
           removeOpenRoom(user.uid, roomName);
           leaveRef.current?.();
         }
         if (snap.get("banned") === true) {
           setBlocked("You are banned from this room.");
-        } else if (snap.get("kicked") === true) {
+        } else if (kickedNow) {
+          setKickMinutesLeft(kickLeftMs > 0 ? Math.max(1, Math.ceil(kickLeftMs / 60_000)) : KICK_MINUTES);
           setBlocked("You were kicked from this room.");
-          // The kicked person clears their own flag so they can come back later.
-          updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
+          // The kicked person clears their own flag (kickedAt stays and keeps
+          // them out for the 30 minutes).
+          if (snap.get("kicked") === true) updateDoc(userRef, { kicked: false, updatedAt: serverTimestamp() }).catch(() => {});
         }
         // Set together with "blocked", so a banned person never gets as far as entering.
         setMyModLoaded(true);
@@ -1211,7 +1224,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     return {
       roomName,
       username: profile.username,
-      modName: perms.isHiddenFounder ? "Admin" : profile.username,
+      modName: perms.isHiddenFounder || isMainFounderName(profile.username) ? "administrator" : profile.username,
       room: roomInfo,
       perms,
       people: roomUsers.map((u) => ({ uid: u.uid, username: u.username })),
@@ -1673,7 +1686,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       <PageShell light>
         <SimpleDialog
           title={banned ? "🚫 Room Access Denied" : "👢 Removed from Room"}
-          text={banned ? "🚫 You are banned from this room. Please contact the room Admin." : "👢 You have been kicked from this room."}
+          text={
+            banned
+              ? "🚫 You are banned from this room. Please contact the room Admin."
+              : `👢 You have been kicked from this room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
+          }
           onClose={() => router.push("/rooms")}
         />
       </PageShell>
@@ -2387,7 +2404,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           info={roomInfo}
           perms={perms}
           roomMembers={roomUsers.map((u) => u.username)}
-          modName={perms.isHiddenFounder ? "Admin" : profile.username}
+          modName={perms.isHiddenFounder || isMainFounderName(profile.username) ? "administrator" : profile.username}
           onClose={() => setInfoOpen(false)}
           onNote={note}
           onSetEntryLevel={(lvl) => {

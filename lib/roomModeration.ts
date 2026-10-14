@@ -252,14 +252,15 @@ export async function kickUser(ctx: ModContext, name: string) {
   try {
     await setDoc(
       targetDoc(ctx.roomName, row.username),
-      { uid: row.uid, username: row.username, kicked: true, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
+      // 👢 kickedAt: they can't come back in for 30 minutes (the rules check it)
+      { uid: row.uid, username: row.username, kicked: true, kickedAt: serverTimestamp(), updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
     ctx.post(
       ctx.perms.isUserRoom
-        ? `👢 ${row.username} was kicked from the room by ${ctx.modName}.`
-        : `👢 ${row.username} was kicked from the room.`
+        ? `👢 ${row.username} was kicked from the room by ${ctx.modName} for 30 minutes.`
+        : `👢 ${row.username} was kicked from the room for 30 minutes.`
     );
   } catch (e) {
     fail(ctx, "Kick")(e);
