@@ -1526,16 +1526,18 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (/^\/unpark$/i.test(clean) || (/^\/park\b/i.test(clean) && ["cancel", "off", "stop", "end"].includes(parkArg))) {
       setText("");
       httpsCallable<{ roomId: string }, { wasParked?: boolean; refund?: number; refundHours?: number }>(functions, "unparkRoomPresence")({ roomId: roomName })
+        // a popup, like the app (not a line in the chat)
         .then(({ data }) =>
-          note(
-            !data?.wasParked
-              ? `🅿️ You are not parked in ${roomName}.`
+          setPopup({
+            title: "🅿️ Park",
+            text: !data?.wasParked
+              ? `You are not parked in ${roomName}.`
               : (data.refund ?? 0) > 0
-                ? `🅿️ Park cancelled in ${roomName} — ${data.refundHours ?? 0}h unused, ${data.refund} coins refunded.`
-                : `🅿️ Park cancelled in ${roomName} (less than 1 hour was left, nothing to refund).`
-          )
+                ? `Park cancelled in ${roomName}.\n${data.refundHours ?? 0}h unused — ${data.refund} coins refunded.`
+                : `Park cancelled in ${roomName}.\nLess than 1 hour was left, nothing to refund.`,
+          })
         )
-        .catch((e: any) => note(`Could not cancel park: ${e?.message || "Please try again."}`));
+        .catch((e: any) => setPopup({ title: "🅿️ Park", text: `Could not cancel park: ${e?.message || "Please try again."}` }));
       return;
     }
 
@@ -1543,10 +1545,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (/^\/park\b/i.test(clean)) {
       setText("");
       const hours = Number(clean.split(/\s+/)[1]);
-      if (!Number.isInteger(hours) || hours < 1 || hours > 24) return note("Usage: /park <hours> (1-24) · /park cancel");
+      if (!Number.isInteger(hours) || hours < 1 || hours > 24)
+        return setPopup({ title: "🅿️ Park", text: "Usage: /park <hours> — a whole number from 1 to 24.\n/park cancel ends it early." });
+      // a popup, like the app (not a line in the chat)
       httpsCallable<{ roomId: string; hours: number }, { cost?: number }>(functions, "parkRoomPresence")({ roomId: roomName, hours })
-        .then(({ data }) => note(`🅿️ Parked in ${roomName} for ${hours}h (${data?.cost ?? hours * 50} coins).`))
-        .catch((e: any) => note(`Could not park: ${e?.message || "Please try again."}`));
+        .then(({ data }) =>
+          setPopup({
+            title: "🅿️ Parked",
+            text: `You are parked in ${roomName} for ${hours}h (${data?.cost ?? hours * 50} coins).\nYour name stays in the room even when you leave.`,
+          })
+        )
+        .catch((e: any) => setPopup({ title: "🅿️ Park", text: `Could not park: ${e?.message || "Please try again."}` }));
       return;
     }
 
