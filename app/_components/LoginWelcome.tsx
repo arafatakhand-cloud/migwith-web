@@ -36,14 +36,14 @@ export function MigLoginLogo() {
 }
 
 // 💬 miGlife's own picture: a row of colourful chat bubbles (chat, smile, friends,
-// music, love), drawn with plain shapes — no outside artwork. Same in the app.
+// gift, love), drawn with plain shapes — no outside artwork. Same in the app.
 // Each bubble is ONE shape with its tail built in (white outline + a glossy
 // shine), in one lively row, and they float gently.
 const BUBBLES: { emoji: string; from: string; to: string; tail: "left" | "right"; size: number; lift: number }[] = [
   { emoji: "💬", from: "#6CC4FF", to: "#1F6FD0", tail: "left", size: 64, lift: 10 },
   { emoji: "😄", from: "#FFC266", to: "#EE6A1A", tail: "right", size: 76, lift: 0 },
   { emoji: "👥", from: "#8BE89A", to: "#1F9A55", tail: "left", size: 70, lift: 16 },
-  { emoji: "🎵", from: "#C3A8FF", to: "#6638E0", tail: "right", size: 76, lift: 2 },
+  { emoji: "💝", from: "#C3A8FF", to: "#6638E0", tail: "right", size: 76, lift: 2 },
   { emoji: "❤️", from: "#FFA3C7", to: "#E23D7C", tail: "left", size: 64, lift: 12 },
 ];
 // bubble with a tail at the bottom-left (100 × 96 box); flipped for the right
