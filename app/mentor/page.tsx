@@ -281,7 +281,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                       <p data-notranslate className="truncate font-bold">@{name}</p>
                       <p className="text-xs text-[#B9C4DD]">
                         {status === "active" ? "Tagged" : status}
-                        {left !== null && ` · ${left}d left`} · 3% trail
+                        {left !== null && ` · ${left}d left`} · 3% bonus
                       </p>
                     </div>
                     <button

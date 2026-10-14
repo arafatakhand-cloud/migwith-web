@@ -127,7 +127,7 @@ function txItem(id: string, t: DocumentData): Item | null {
   else if (type === "payout" || type === "bot_payout" || type === "winning_payout") title = "Daily Luxury Bot winning payout";
   else if (type.includes("spin") || type.includes("daily_reward") || type === "reward")
     title = reason || `Daily spin reward: ${short(Math.abs(raw))} coins`;
-  else if (type.includes("commission") || type.includes("trail")) title = reason || "Trail settlement";
+  else if (type.includes("commission") || type.includes("trail")) title = reason || "Team bonus";
   else if (type === "transfer_out") title = `Transfer to ${t.toUsername || "another user"}`;
   else if (type === "transfer_in") title = `Coins received from ${t.fromUsername || "another user"}`;
   else if (type === "admin_adjustment") title = raw >= 0 ? "Coins added by admin" : "Coins deducted by admin";

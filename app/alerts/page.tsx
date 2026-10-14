@@ -90,13 +90,13 @@ function styleFor(type: string): Style {
       return { icon: "🎉", title: "Welcome bonus", top: "#FFC94A", bottom: "#E08A00", group: "coins" };
     case "trail_settlement":
     case "mentor_earning":
-      return { icon: "💼", title: "Trail earnings", top: "#3DDC97", bottom: "#16955E", group: "coins" };
+      return { icon: "💼", title: "Team bonus", top: "#3DDC97", bottom: "#16955E", group: "coins" };
     case "luxury_bet_refund":
     case "lowcard_entry_refund":
     case "refund":
       return { icon: "↩️", title: "Refund", top: "#3FD0D4", bottom: "#12848C", group: "coins" };
     case "mentor_recharge":
-      return { icon: "💼", title: "Mentor recharge", top: "#FFC94A", bottom: "#E08A00", group: "coins" };
+      return { icon: "💼", title: "Coins from Mentor", top: "#FFC94A", bottom: "#E08A00", group: "coins" };
     case "coin_adjustment":
       return { icon: "💰", title: "Coins removed", top: "#FF8A80", bottom: "#C62828", group: "coins" };
     case "role_change":
@@ -349,7 +349,7 @@ function TagRequestCard({ a, username, uid }: { a: Alert; username: string; uid:
       <p className="text-sm font-bold">{merchant ? "🏪 Merchant Tag Request" : "💼 Tag Request"}</p>
       <p className="mt-1 text-[13px]">@{a.fromUsername} wants to tag you.</p>
       <p className="text-xs font-bold text-[#FFC04A]">
-        Tag amount: {a.amount} coins{merchant ? ` · Merchant trail: ${a.rate}%` : ""}
+        Tag amount: {a.amount} coins{merchant ? ` · Merchant bonus: ${a.rate}%` : ""}
       </p>
       <div className="mt-2">
         {done === "approved" ? (

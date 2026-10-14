@@ -218,7 +218,7 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
             + TAG USER
           </button>
         </div>
-        <p className="mt-1 text-[11px] text-[#69E1F2]">5000 Coins tag payment · 2.5% trail on normal-user spend</p>
+        <p className="mt-1 text-[11px] text-[#69E1F2]">5000-coin tag · 2.5% bonus on tagged users' coin use</p>
         {tagged.length === 0 ? (
           <p className="mt-2 text-xs text-[#8FA0C9]">No tagged users yet.</p>
         ) : (
@@ -232,7 +232,7 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
                   <Avatar name={name} size="h-8 w-8" />
                   <div className="min-w-0 flex-1">
                     <p data-notranslate className="truncate text-xs font-bold">@{name}</p>
-                    <p className="text-[10px] text-[#69E1F2]">2.5% trail{d !== null && ` · ${d}d left`}</p>
+                    <p className="text-[10px] text-[#69E1F2]">2.5% bonus{d !== null && ` · ${d}d left`}</p>
                   </div>
                   <button type="button" disabled={busy.has(t.id)} onClick={() => remove(t)} className="px-1 text-[10px] font-bold text-rose-400 disabled:opacity-40">
                     REMOVE
@@ -245,7 +245,7 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
       </div>
 
       <div className="rounded-3xl border border-[#69E1F2] bg-[#0B1F3A] p-4 text-white shadow">
-        <p className="font-bold">📈 Trail Earnings</p>
+        <p className="font-bold">📈 Team Bonus</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {[
             ["Today", today, "#69E1F2"],
@@ -280,14 +280,14 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
       )}
 
       <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
-        <p className="font-bold">💡 How Merchant Tag Earnings Work</p>
+        <p className="font-bold">💡 How the Merchant Tag Bonus Works</p>
         <ul className="mt-2 space-y-1 text-xs leading-5 text-[#B9C4DD]">
           {[
             "Give a normal user a 5000-coin tag offer; the user must approve it",
             "Once approved, the user is automatically listed in your Tagged Users list",
-            "Earn 2.5% trail whenever your tagged normal user spends coins",
-            "Pending earnings settle automatically every night at 12:00 AM (Bangladesh time)",
-            "The 5000-coin tag payment must be completed server-side by the tag workflow",
+            "Get a 2.5% coin bonus when your tagged users use coins",
+            "Pending bonus is added automatically every night at 12:00 AM (Bangladesh time)",
+            "The 5000-coin tag is handled by the server",
           ].map((l) => (
             <li key={l}>• {l}</li>
           ))}
@@ -342,7 +342,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
         amount: tagAmount,
         rate: RATE,
         type: "merchant_tag_request",
-        message: `@${me} wants to tag you. Tag amount: ${tagAmount} coins · Merchant trail: 2.5%`,
+        message: `@${me} wants to tag you. Tag amount: ${tagAmount} coins · Merchant bonus: 2.5%`,
         read: false,
         createdAt: serverTimestamp(),
       });
@@ -361,7 +361,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
       <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <h2 className="text-lg font-black">🏪 Tag Normal User</h2>
         <p className="text-xs text-[#5B6B8C]">Tag amount — minimum 5000 Coins, no maximum</p>
-        <p className="text-xs font-bold text-[#0E8FA5]">Merchant trail: 2.5% of tagged user&apos;s coin spend</p>
+        <p className="text-xs font-bold text-[#0E8FA5]">Merchant bonus: 2.5% of tagged users&apos; coin use</p>
         <input value={amt} onChange={(e) => setAmt(e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder="Amount (min 5000)" className={field} />
         <input value={target} onChange={(e) => setTarget(e.target.value)} placeholder="Username" className={field} />
         {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -419,10 +419,10 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
         <>
           {error && <p className="text-xs text-rose-600">⚠ Could not load: {error}</p>}
           <div className="rounded-3xl bg-gradient-to-br from-[#0B6E6E] to-[#0A4F6B] p-4 text-white shadow-lg">
-            <p className="text-xs font-bold text-[#B9D0D5]">TOTAL TRAIL · {label}</p>
+            <p className="text-xs font-bold text-[#B9D0D5]">TOTAL BONUS · {label}</p>
             <p className="text-2xl font-black text-[#FFC04A]">🪙 {amount(total)}</p>
-            <p className="text-[11px] font-bold text-[#B9D0D5]">2.5% Merchant Trail</p>
-            {total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No trail recorded on this date</p>}
+            <p className="text-[11px] font-bold text-[#B9D0D5]">2.5% Merchant Bonus</p>
+            {total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No bonus on this date</p>}
           </div>
           <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
             <div className="flex items-center gap-2">
@@ -450,7 +450,7 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
                   </li>
                 ))}
                 <li className="flex justify-between pt-2 text-sm font-bold">
-                  <span>Total trail</span>
+                  <span>Total bonus</span>
                   <span className="text-[#FFC04A]">🪙{amount(total)}</span>
                 </li>
               </ul>

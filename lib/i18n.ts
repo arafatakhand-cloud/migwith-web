@@ -501,7 +501,7 @@ export const BN: Record<string, string> = {
   "Get tagged-trail earnings when your tagged users spend coins. Requires approval from a mentor.": "আপনার ট্যাগ করা ইউজাররা কয়েন খরচ করলে আপনি আয় পাবেন। একজন মেন্টরের অনুমোদন লাগবে।",
   "Back": "ফিরে যান",
   "Your Mentor": "আপনার মেন্টর",
-  "📈 Trail Earnings": "📈 ট্রেইল আয়",
+  "📈 Team Bonus": "📈 ট্রেইল আয়",
   "Last 7 days": "গত ৭ দিন",
   "Pending": "বাকি",
   "Use MIGlife like an app on iPhone": "iPhone-এ MIGlife অ্যাপের মতো ব্যবহার করুন",

@@ -176,7 +176,7 @@ export function ProgramBar<P extends string>({
               }`}
               style={panel === p ? { borderColor: accent, background: `linear-gradient(90deg, #0B1F3A, ${accent}99)` } : undefined}
             >
-              {p}
+              {p === "EARNING" ? "BONUS" : p}
             </button>
           ))}
         </div>
@@ -304,7 +304,7 @@ export function EarningPanel({
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E2CCF7] text-2xl text-[#7B1FB8]">▣</span>
           <div>
-            <p className="text-xs text-[#6A4A8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Earnings</p>
+            <p className="text-xs text-[#6A4A8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
             <p className="text-2xl font-black text-[#4A148C]">{amount(view.total)}</p>
           </div>
         </div>
@@ -324,7 +324,7 @@ export function EarningPanel({
 
       <div className="rounded-2xl bg-white p-4 shadow-sm">
         <div className="flex items-center">
-          <p className="flex-1 text-xs font-semibold text-[#6B7A90]">Earning</p>
+          <p className="flex-1 text-xs font-semibold text-[#6B7A90]">Bonus</p>
           <div className="relative">
             <button type="button" onClick={() => setMenu((v) => !v)} className="rounded-full border border-[#C9A7EE] bg-[#F3E8FF] px-3 py-1 text-sm font-bold text-[#7B2FD0]">
               {PERIODS.find((p) => p[0] === period)![1]} {menu ? "▲" : "▼"}
