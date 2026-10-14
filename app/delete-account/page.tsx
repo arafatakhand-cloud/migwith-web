@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { H2, LegalPage, List } from "../_components/LegalPage";
+import { SelfDeleteButton } from "./_SelfDelete";
 
 export const metadata: Metadata = {
   title: "Delete your account — miGlife",
@@ -18,10 +19,11 @@ export default function DeleteAccountPage() {
 
       <H2>Delete it yourself (fastest)</H2>
       <ol className="list-decimal space-y-2 pl-5">
-        <li>Open the miGlife app, or log in at <Link className="font-semibold text-[#2F80ED] underline" href="/login">web.miglife.app</Link>.</li>
-        <li>Go to <b>Settings → Account → Delete account</b>.</li>
+        <li>Log in to miGlife (in the app: <b>Settings → Account → Delete account</b> brings you here).</li>
+        <li>Tap <b>🗑 Delete my account</b> below.</li>
         <li>Type <b>DELETE</b> and confirm. Your account is deleted <b>7 days</b> later.</li>
       </ol>
+      <SelfDeleteButton />
 
       <H2>Or ask us by email</H2>
       <p>Can&apos;t log in any more? Send us an email instead:</p>
