@@ -58,7 +58,8 @@ import {
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
-import { COUNTRY_REP_BADGE, cachedRoleOf, useSenderColors } from "../../../lib/senderColors";
+import { COUNTRY_REP_BADGE, cachedRoleOf, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
+import { SupporterBadge } from "../../_components/SupporterBadge";
 import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
 import { ImageViewerHost, openImageViewer } from "../../_components/ImageViewer";
@@ -2170,6 +2171,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   </Link>
                   {cachedRoleOf(u.username) === "country_representative" && <span title="Country Representative">{COUNTRY_REP_BADGE}</span>}
                   {(() => {
+                    const team = supporterTeamOf(u.username);
+                    return team ? <SupporterBadge team={team} size={9} /> : null;
+                  })()}
+                  {(() => {
                     const k = u.username.toLowerCase();
                     if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <span title="Room owner">👑</span>;
                     if (roomInfo.superMods.includes(k)) return <span title="Super Mod">🌟</span>;
@@ -3186,6 +3191,11 @@ function MessageRow({
               ) : (
                 brandMiglife(senderName)
               )}
+              {/* ⚽ Supporter Colours: the team badge next to the name */}
+              {!isRoomLine && (() => {
+                const team = supporterTeamOf(senderName);
+                return team ? <span className="ml-1"><SupporterBadge team={team} size={Math.max(8, fontPx * 0.6)} /></span> : null;
+              })()}
               :
             </span>
           )}

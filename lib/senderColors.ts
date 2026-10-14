@@ -5,11 +5,13 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "./firebase";
 import { isMainFounderName } from "./founder";
+import { activeSupporterTeam, type SupporterTeam } from "./supporterTeams";
 
 // Name colours in room chat, the app's roomRoleColor + Color Shop rule:
 // Lucky User pink while it lasts; Admin / Staff / Mentor / Merchant always
 // their role colour; everyone else (migwith and founders included) the
-// colour of their active Color Shop colour, else normal blue.
+// colour of their active Color Shop colour, else their ⚽ Supporter Colours
+// team colour, else normal blue.
 
 export const SHOP_TEXT_COLORS: Record<string, string> = {
   king: "#12AFC7",
@@ -51,7 +53,7 @@ function roleColor(role: string): string {
   }
 }
 
-type Profile = { role: string; shopColor: string | null; luckyUntil: number };
+type Profile = { role: string; shopColor: string | null; luckyUntil: number; supporter?: string; supporterUntil?: number };
 
 // Shared by every room, so switching rooms shows the right colours at once.
 const cache = new Map<string, Profile>();
@@ -68,7 +70,7 @@ const savedAt = new Map<string, number>();
     const now = Date.now();
     for (const [k, v] of Object.entries(saved)) {
       if (!v || now - (v.at || 0) >= STORE_MAX_AGE) continue;
-      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil });
+      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil, supporter: v.supporter, supporterUntil: v.supporterUntil });
       savedAt.set(k, v.at);
     }
   } catch {}
@@ -94,7 +96,17 @@ function colorFor(name: string, p: Profile | undefined): string {
   if (["admin", "administrator", "superadmin", "staff", "mentor", "merchant", "country_representative"].includes(p.role)) {
     return roleColor(p.role);
   }
-  return p.shopColor || roleColor(p.role);
+  return p.shopColor || supporterOf(p)?.text || roleColor(p.role);
+}
+
+function supporterOf(p: Profile | undefined): SupporterTeam | null {
+  return p ? activeSupporterTeam(p.supporter, p.supporterUntil) : null;
+}
+
+/** ⚽ The football team this name supports right now (after useSenderColors
+ *  fetched it), for the little badge next to the name; null if none. */
+export function supporterTeamOf(name: string): SupporterTeam | null {
+  return supporterOf(cache.get(name.trim().toLowerCase()));
 }
 
 /** The role looked up for a name (after useSenderColors fetched it), or "". */
@@ -160,7 +172,13 @@ export function useSenderColors(names: string[]): (name: string) => string {
             const owned = d.get("ownedColors") as Record<string, { active?: boolean; expiresAt?: number }> | undefined;
             const entry = activeId ? owned?.[activeId] : undefined;
             if (entry?.active === true && Number(entry.expiresAt || 0) > now) shopColor = SHOP_TEXT_COLORS[activeId] || null;
-            cache.set(name.toLowerCase(), { role, shopColor, luckyUntil: Number(d.get("luckyUntil") || 0) });
+            cache.set(name.toLowerCase(), {
+              role,
+              shopColor,
+              luckyUntil: Number(d.get("luckyUntil") || 0),
+              supporter: String(d.get("supporterTeam") || ""),
+              supporterUntil: Number(d.get("supporterUntil") || 0),
+            });
             savedAt.set(name.toLowerCase(), now);
             fresh.add(name.toLowerCase());
           });
