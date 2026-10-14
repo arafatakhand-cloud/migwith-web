@@ -107,6 +107,8 @@ function luxuryPayoutRound(t: DocumentData): number {
 }
 
 // Same titles and signs as the app's ledger.
+const SPENT_STORED_POSITIVE = ["bet", "transfer_out", "park", "vip_subscription", "admin_deduct"];
+
 function txItem(id: string, t: DocumentData): Item | null {
   const time = ms(t.createdAt);
   if (!time) return null;
@@ -136,7 +138,9 @@ function txItem(id: string, t: DocumentData): Item | null {
   else title = reason || (type ? type.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "Coin activity");
 
   const amount =
-    (type === "bet" || type === "transfer_out") && raw > 0 ? -raw : type === "transfer_in" && raw < 0 ? -raw : raw;
+    // money going OUT that the server stores as a positive number: shown as minus
+    // (🅿️ /park, 👑 VIP, coins taken by an admin, bets, transfers out)
+    SPENT_STORED_POSITIVE.includes(type) && raw > 0 ? -raw : type === "transfer_in" && raw < 0 ? -raw : raw;
   const icon =
     type === "bet"
       ? "🎉"
