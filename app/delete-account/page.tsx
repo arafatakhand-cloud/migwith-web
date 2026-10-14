@@ -16,7 +16,15 @@ export default function DeleteAccountPage() {
     <LegalPage title="Delete your miGlife account">
       <p>This page explains how to permanently delete your miGlife account and the personal data that comes with it.</p>
 
-      <H2>How to request deletion</H2>
+      <H2>Delete it yourself (fastest)</H2>
+      <ol className="list-decimal space-y-2 pl-5">
+        <li>Open the miGlife app, or log in at <Link className="font-semibold text-[#2F80ED] underline" href="/login">web.miglife.app</Link>.</li>
+        <li>Go to <b>Settings → Account → Delete account</b>.</li>
+        <li>Type <b>DELETE</b> and confirm. Your account is deleted <b>7 days</b> later.</li>
+      </ol>
+
+      <H2>Or ask us by email</H2>
+      <p>Can&apos;t log in any more? Send us an email instead:</p>
       <ol className="list-decimal space-y-2 pl-5">
         <li>
           Send an email to{" "}
@@ -37,7 +45,7 @@ export default function DeleteAccountPage() {
       <List
         items={[
           "Changed your mind? Just log in again within those 7 days — the deletion is cancelled.",
-          "An account that still has coins can't be deleted: spend or transfer the coins first.",
+          "Coins left on the account are lost — they can't be moved or brought back after the deletion.",
           "You are logged out everywhere once the deletion is scheduled.",
         ]}
       />
@@ -56,8 +64,11 @@ export default function DeleteAccountPage() {
       <H2>What stays</H2>
       <List
         items={[
-          "Messages you posted in chat rooms and private chats stay for the other people, shown as “Deleted user” (no name, no photo).",
+          "Messages you posted in chat rooms and private chats — with the photos, voice messages and files in them — stay for the other people, shown as “Deleted user” (no name, no photo).",
+          "Mail you sent stays in the other person's mailbox, shown as from “Deleted user”.",
           "Records that belong to other people — for example a gift or coins they received from you — stay in their history without your name.",
+          "Reports you sent or that were made about you, and ban records (IP address or device bans), are kept as long as needed to keep miGlife safe.",
+          "A short note that the account was deleted (its account number and the date), so a deletion is not done twice.",
         ]}
       />
 

@@ -68,11 +68,16 @@ export default function PrivacyPage() {
 
       <H2>6. How long we keep it, and deleting your account</H2>
       <p>
-        We keep your data while your account exists. You can ask us to delete your account at any time by email
-        (support@miglife.app, subject “Delete my account”, with your MIG ID). It is deleted 7 days later — logging in again
-        within those 7 days cancels it. Your profile, photos, friends, mail, alerts, tags, coin history, IP records and login are deleted; your old chat
-        messages stay, shown as “Deleted user”. Records that belong to other people (for example a gift they received from
-        you) stay in their history without your name.{" "}
+        We keep your data while your account exists. You can delete your account at any time in the app or on the website
+        (Settings → Account → Delete account), or ask us by email (support@miglife.app, subject “Delete my account”, with your
+        MIG ID). It is deleted 7 days later — logging in again within those 7 days cancels it. Your profile, photos, friends,
+        your mailbox, alerts, tags, coins, coin and XP history, IP records and login are deleted.
+      </p>
+      <p>
+        <b>What we keep after deletion:</b> chat room and private messages you sent (with their photos, voice messages and
+        files) and mail you sent stay for the other people, shown as “Deleted user”; records that belong to other people (for
+        example a gift they received from you) stay without your name; reports and ban records (IP address or device bans)
+        are kept as long as needed to keep miGlife safe; and a short note that the account was deleted.{" "}
         <Link className="font-semibold text-[#2F80ED] underline" href="/delete-account">How to delete your account</Link>.
       </p>
 
@@ -82,12 +87,12 @@ export default function PrivacyPage() {
           "Edit or remove your profile details and photos at any time.",
           "Lock your profile, turn off email from other users, and block people (Settings → Privacy).",
           "Turn off notifications in your phone or browser settings.",
-          "Delete your account (see above).",
+          "Delete your account: Settings → Account → Delete account (see above).",
         ]}
       />
 
       <H2>8. Children</H2>
-      <p>miGlife is not meant for children under 13. If you believe a child under 13 has an account, contact us and we will delete it.</p>
+      <p>miGlife is only for people 18 and older. If you believe someone under 18 has an account, report them in the app or contact us and we will delete it.</p>
 
       <H2>9. Changes</H2>
       <p>If this policy changes, we will update this page and the date at the top.</p>
