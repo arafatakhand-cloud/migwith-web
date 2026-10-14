@@ -21,7 +21,6 @@ import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "
 // Page name shown in the pill, by path.
 const PAGE_NAMES: [string, string][] = [
   ["/explore", "Discover"],
-  ["/live-scores", "Live Scores"],
   ["/members", "Community"],
   ["/gifts", "Gift Gallery"],
   ["/gift-contest", "Gift Contest"],

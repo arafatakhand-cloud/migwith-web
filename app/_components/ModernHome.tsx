@@ -2,7 +2,6 @@
 
 import { openPresencePopup } from "./PresencePopup";
 import Link from "next/link";
-import { HomeLiveSportsCard } from "./LiveSportsWidgets";
 import { totalXpForLevel } from "../../lib/level";
 import { chatHref } from "../../lib/privateChat";
 
@@ -233,8 +232,6 @@ export function ModernHomeTop({
 
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games
           buttons were removed — the tabs above already open them.) */}
-      {/* 📺 live sports card (rotating live / next match) */}
-      <HomeLiveSportsCard />
 
       {/* search */}
       <div className="mx-2.5 my-2.5 rounded-[14px] bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,.1)]">

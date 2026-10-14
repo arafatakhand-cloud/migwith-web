@@ -15,7 +15,6 @@ import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
-import { ClassicHomeLiveRow } from "./LiveSportsWidgets";
 import { totalXpForLevel } from "../../lib/level";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
@@ -413,8 +412,6 @@ export function Dashboard() {
           </svg>
           <span className="font-semibold">Email ({badges.emails})</span>
         </Link>
-        {/* 📺 Live Scores (n) with the live / next match under it */}
-        <ClassicHomeLiveRow />
         <Link href="/messages" className="flex items-center gap-3 border-b border-[#E3ECF7] px-4 py-3 text-[#0B2A5B] hover:bg-[#F4F9FF]">
           <span className="text-lg text-[#174EA6]">💬</span>
           <span className="font-semibold">Messages ({badges.messages})</span>
