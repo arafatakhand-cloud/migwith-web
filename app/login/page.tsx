@@ -186,9 +186,9 @@ export default function LoginPage() {
           type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full rounded-md border border-[#8A3A0E] bg-gradient-to-b from-[#E0762A] to-[#B8410F] py-3.5 text-2xl font-medium text-white/95 shadow-lg transition hover:brightness-110 disabled:opacity-60"
+          className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#F58A3A] to-[#D6521A] py-3.5 text-xl font-extrabold tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
         >
-          {loading ? "…" : "Go!"}
+          {loading ? "…" : "Log in"}
         </button>
 
         <div className="mt-6 flex w-full items-center justify-between gap-3 text-base text-white/90">

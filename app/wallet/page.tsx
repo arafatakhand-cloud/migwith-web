@@ -729,7 +729,7 @@ function BalanceHeroCard({ balance, menu, children }: { balance: number | null; 
           <div className="flex items-center">
             <CoinLogo size={30} />
             <span className="ml-2 flex-1 text-[28px] font-black leading-tight tracking-[-0.5px]">
-              <span className="text-[#0A1E63]">mig</span>
+              <span className="text-[#0A1E63]">miG</span>
               <span className="text-[#1565E8]">life</span>
             </span>
             {menu}

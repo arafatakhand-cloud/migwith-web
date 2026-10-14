@@ -455,6 +455,7 @@ export const BN: Record<string, string> = {
   "Tagged": "ট্যাগড",
   "Join the Fun!": "মজায় যোগ দিন!",
   "Go!": "চলো!",
+  "Log in": "লগ ইন",
   "MIG ID": "MIG ID",
   "Coins · Transfers": "কয়েন · ট্রান্সফার",
   "Private chats": "প্রাইভেট চ্যাট",

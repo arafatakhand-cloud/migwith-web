@@ -386,6 +386,9 @@ html.kb-lock main[data-shell] {
 @keyframes wf-shine { from { background-position: 100% 0; } to { background-position: 0 0; } }
 .wf-twinkle { animation: wf-twinkle 1.8s ease-in-out infinite; }
 @keyframes wf-twinkle { 0%, 100% { opacity: .15; } 50% { opacity: .9; } }
+.mig-bubble { animation: mig-bubble 2.8s ease-in-out infinite; }
+@keyframes mig-bubble { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-5px) rotate(-2deg); } }
+@media (prefers-reduced-motion: reduce) { .mig-bubble { animation: none; } }
 .wf-mascots { animation: wf-mascots .7s cubic-bezier(.3,1.5,.5,1) .48s both; }
 @keyframes wf-mascots { from { transform: translateY(160px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
