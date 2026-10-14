@@ -9,7 +9,7 @@ import { useSession } from "../_components/AppSession";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, SectionLabel } from "../_components/LightCards";
-import { SupporterBadge } from "../_components/SupporterBadge";
+import { SupporterBadge, SupporterJersey } from "../_components/SupporterBadge";
 import { isMainFounderName } from "../../lib/founder";
 import {
   SUPPORTER_DAYS,
@@ -129,7 +129,7 @@ export default function SupporterColoursPage() {
         {/* my team */}
         <div
           className="mt-3 rounded-2xl p-[1.5px]"
-          style={{ background: current ? `linear-gradient(135deg, ${current.c1}, ${current.c2})` : "#D5E3F5" }}
+          style={{ background: current ? `linear-gradient(135deg, ${current.text}, ${current.c2 === "#FFFFFF" ? current.text : current.c2})` : "#D5E3F5" }}
         >
           <div className="rounded-[15px] bg-white p-3.5">
             <p className="text-[11px] font-bold tracking-widest text-[#8A97B0]">MY TEAM</p>
@@ -192,9 +192,9 @@ export default function SupporterColoursPage() {
                     disabled={busy}
                     onClick={() => setConfirm(t)}
                     className="flex items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition hover:shadow-md disabled:opacity-60"
-                    style={{ borderLeft: `5px solid ${t.c1}` }}
+                    style={{ borderLeft: `5px solid ${t.text}` }}
                   >
-                    <SupporterBadge team={t} size={12} />
+                    <SupporterJersey team={t} size={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-extrabold" style={{ color: t.text }}>
                         {t.name}
@@ -221,7 +221,7 @@ export default function SupporterColoursPage() {
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={() => setConfirm(null)}>
           <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
-              <SupporterBadge team={confirm} size={14} />
+              <SupporterJersey team={confirm} size={44} />
               <p className="text-lg font-extrabold" style={{ color: confirm.text }}>
                 {confirm.name}
               </p>
