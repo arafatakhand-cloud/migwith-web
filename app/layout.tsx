@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./themes.css";
 import { AppSession } from "./_components/AppSession";
+import { ReportDialogHost } from "./_components/ReportDialog";
 import { Translator } from "./_components/Translator";
 import { BrandName } from "./_components/BrandName";
 import { RainbowFavicon } from "./_components/RainbowFavicon";
@@ -59,6 +60,8 @@ export default function RootLayout({
         />
         <BootSplash />
         <AppSession>{children}</AppSession>
+        {/* 🚩 the Report dialog, opened from profiles, room lines and private chats */}
+        <ReportDialogHost />
         <Translator />
         <BrandName />
         <RainbowFavicon />

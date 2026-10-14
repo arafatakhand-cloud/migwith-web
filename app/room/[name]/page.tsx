@@ -59,6 +59,7 @@ import {
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
 import { COUNTRY_REP_BADGE, cachedRoleOf, useSenderColors } from "../../../lib/senderColors";
+import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
 import { ImageViewerHost, openImageViewer } from "../../_components/ImageViewer";
 import {
@@ -3048,6 +3049,20 @@ function MessageRow({
                     }
                   : undefined
               }
+              onReport={
+                !mine && m.id && !m.local && m.senderUid && m.sender
+                  ? () => {
+                      setPicker(false);
+                      openReport({
+                        kind: "room_message",
+                        targetUsername: m.sender,
+                        roomId: roomName,
+                        messageId: m.id,
+                        preview: m.type === "image" ? "📷 Photo" : m.type === "voice" ? "🎤 Voice" : plainBody.slice(0, 200),
+                      });
+                    }
+                  : undefined
+              }
               onPick={(e) => {
                 setPicker(false);
                 onReact(e);
@@ -3170,6 +3185,7 @@ function ReactionPicker({
   myUid,
   copyText,
   onTranslate,
+  onReport,
   onPick,
   onClose,
 }: {
@@ -3179,6 +3195,8 @@ function ReactionPicker({
   copyText: string;
   /** "🌐 Translate" (only for a message with words in it) */
   onTranslate?: () => void;
+  /** "🚩 Report" (someone else's message) */
+  onReport?: () => void;
   onPick: (emoji: string) => void;
   onClose: () => void;
 }) {
@@ -3242,6 +3260,16 @@ function ReactionPicker({
           >
             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">🌐</span>
             Translate
+          </button>
+        )}
+        {onReport && (
+          <button
+            type="button"
+            onClick={onReport}
+            className="flex items-center gap-2 rounded-[18px] border border-[#D93025]/20 bg-white px-4 py-2 text-sm font-bold text-[#B3261E] shadow-lg"
+          >
+            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#D93025]/10 text-[13px]">🚩</span>
+            Report
           </button>
         )}
       </div>

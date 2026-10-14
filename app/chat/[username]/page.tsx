@@ -33,6 +33,7 @@ import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { GiftImg } from "../../_components/GiftImg";
+import { openReport } from "../../_components/ReportDialog";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -97,6 +98,8 @@ export default function PrivateChatPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [clearedAt, setClearedAt] = useState(0);
   const [viewImage, setViewImage] = useState<string | null>(null);
+  // 🚫 I blocked this person (users/{me}.blockedUsers): their messages are hidden and I can't write to them.
+  const [blockedList, setBlockedList] = useState<string[]>([]);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -180,6 +183,26 @@ export default function PrivateChatPage() {
     });
   }, [messages, friend]);
 
+  useEffect(() => {
+    if (!user) return;
+    return onSnapshot(doc(db, "users", user.uid), (s) => {
+      const b = s.get("blockedUsers");
+      setBlockedList(Array.isArray(b) ? b.map(String) : []);
+    });
+  }, [user]);
+  const blocked = blockedList.some((b) => b.trim().toLowerCase() === friend.toLowerCase());
+  const setBlock = async (on: boolean) => {
+    if (!user) return;
+    const next = on
+      ? Array.from(new Set([...blockedList, friend]))
+      : blockedList.filter((b) => b.trim().toLowerCase() !== friend.toLowerCase());
+    try {
+      await updateDoc(doc(db, "users", user.uid), { blockedUsers: next });
+    } catch (e: any) {
+      setError(e?.message || "Could not save.");
+    }
+  };
+
   // Friend's "Online / Last seen" (users.lastActiveAt).
   useEffect(() => {
     if (!user || !friend) return;
@@ -205,7 +228,9 @@ export default function PrivateChatPage() {
     return () => clearInterval(t);
   }, []);
 
-  const visible = messages.filter((m) => (m.createdAtMs || Number.MAX_SAFE_INTEGER) > clearedAt);
+  const visible = messages.filter(
+    (m) => (m.createdAtMs || Number.MAX_SAFE_INTEGER) > clearedAt && !(blocked && m.from.toLowerCase() === friend.toLowerCase())
+  );
 
   useEffect(() => {
     const el = listRef.current;
@@ -218,6 +243,7 @@ export default function PrivateChatPage() {
     const clean = text.trim();
     if (!clean || !user || !username) return;
     if (self) return setError("You cannot message yourself.");
+    if (blocked) return setError(`You blocked ${friend}. Unblock to send a message.`);
     // "/gift GiftName [-m message]" — the gift panel does the sending.
     if (/^\/gift\b/i.test(clean)) {
       setText("");
@@ -334,6 +360,8 @@ export default function PrivateChatPage() {
     ["👤", "View Profile", () => router.push(`/profile/${encodeURIComponent(friend)}`)],
     ["💰", "Send Credit", () => router.push(`/wallet?to=${encodeURIComponent(friend)}`)],
     ["🚪", "Close Chat", () => router.push("/messages")],
+    blocked ? ["✓", `Unblock ${friend}`, () => setBlock(false)] : ["🚫", `Block ${friend}`, () => setBlock(true)],
+    ["🚩", `Report ${friend}`, () => openReport({ kind: "user", targetUsername: friend })],
   ];
 
   return (
@@ -410,6 +438,23 @@ export default function PrivateChatPage() {
                     >
                       Reply
                     </button>
+                    {!mine && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPickerFor(null);
+                          openReport({
+                            kind: "private_message",
+                            targetUsername: friend,
+                            messageId: m.id,
+                            preview: m.type === "image" ? "📷 Photo" : m.type === "file" ? "📎 File" : body.slice(0, 200),
+                          });
+                        }}
+                        className="text-[13px] font-bold text-[#FF8A80]"
+                      >
+                        🚩 Report
+                      </button>
+                    )}
                   </div>
                 )}
                 <div
@@ -522,6 +567,15 @@ export default function PrivateChatPage() {
         </div>
 
         {error && <p className="px-3.5 py-1 text-xs text-[#B3261E]">{error}</p>}
+
+        {blocked && (
+          <div className="flex items-center gap-2 bg-[#FFF4F3] px-3.5 py-2 text-[13px] text-[#8A1C14]">
+            <span className="flex-1">🚫 You blocked {friend}. Their messages are hidden.</span>
+            <button type="button" onClick={() => setBlock(false)} className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#174EA6] shadow-sm">
+              Unblock
+            </button>
+          </div>
+        )}
 
         {reply && (
           <div className="flex items-center bg-white px-3.5 py-2">

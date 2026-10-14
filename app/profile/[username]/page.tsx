@@ -25,6 +25,7 @@ import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
 import { latestGifts } from "../../../lib/giftActivity";
+import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
@@ -482,6 +483,7 @@ export default function ProfilePage() {
       friendAction,
     ]);
     menu.push([isBlocked ? `✓ Unblock ${username}` : `🚫 Block ${username}`, () => toggleMine("blockedUsers", !isBlocked), isBlocked ? "" : "text-rose-600"]);
+    menu.push([`🚩 Report ${username}`, () => openReport({ kind: "user", targetUsername: username }), "text-rose-600"]);
   }
 
   return (

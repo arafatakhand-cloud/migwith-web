@@ -21,6 +21,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
         <div className="legal mt-5 space-y-4 text-[15px] leading-6 text-[#2A3B5C]">{children}</div>
       </article>
       <footer className="mx-auto mt-4 flex max-w-3xl flex-wrap gap-x-4 gap-y-1 text-xs text-[#5B6B8C]">
+        <Link href="/terms" className="underline">Terms &amp; Community Rules</Link>
         <Link href="/privacy" className="underline">Privacy Policy</Link>
         <Link href="/delete-account" className="underline">Delete your account</Link>
         <a href="mailto:support@miglife.app" className="underline">support@miglife.app</a>

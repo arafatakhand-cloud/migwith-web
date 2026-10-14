@@ -149,7 +149,7 @@ export default function RegisterPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return setError("Please enter a valid email.");
     if (!GENDERS.includes(gender)) return setError("Please select Male, Female or Other.");
     if (!country) return setError("Please select your country.");
-    if (!terms) return setError("You must agree to the Terms & Privacy.");
+    if (!terms) return setError("You must be 18 or older and agree to the Terms & Privacy.");
     send();
   };
 
@@ -476,7 +476,17 @@ export default function RegisterPage() {
                 disabled={off}
                 className="h-5 w-5 shrink-0 accent-[#FFC84A]"
               />
-              I agree to the Terms of Service &amp; Privacy Policy.
+              <span>
+                I am 18 or older and agree to the{" "}
+                <a href="/terms" target="_blank" rel="noreferrer" className="font-bold text-[#FFC84A] underline" onClick={(e) => e.stopPropagation()}>
+                  Terms &amp; Community Rules
+                </a>{" "}
+                and{" "}
+                <a href="/privacy" target="_blank" rel="noreferrer" className="font-bold text-[#FFC84A] underline" onClick={(e) => e.stopPropagation()}>
+                  Privacy Policy
+                </a>
+                .
+              </span>
             </label>
           </>
         )}

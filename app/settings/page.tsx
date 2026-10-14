@@ -207,6 +207,7 @@ export default function SettingsPage() {
             </Group>
 
             <Group title="About">
+              <Row icon="📜" tint="#7B3FC7" title="Terms & Community Rules" subtitle="What is allowed, reporting and blocking" href="/terms" />
               <Row icon="📄" tint="#3984D9" title="Privacy Policy" subtitle="What we collect and why" href="/privacy" />
               <Row icon="ℹ️" tint="#D4AF37" title="About miGlife" subtitle="miGlife Web" onClick={() => setDialog("about")} />
             </Group>
