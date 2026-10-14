@@ -209,24 +209,29 @@ function isModerationLine(text: string) {
 }
 
 /** Shrinks its line's text (down to 4 px smaller) until it fits on ONE line,
- *  instead of breaking in two on a phone. Lines are counted from the text's
- *  own boxes, so the time stamp and padding don't matter. */
+ *  instead of breaking in two on a phone. If even 4 px smaller is still more
+ *  than one line (a long Gift Shower), it goes back to the normal size.
+ *  Lines are counted from the text's own boxes, so the time stamp and padding
+ *  don't matter. */
 function FitOneLine({ base, children }: { base: number; children: (px: number) => ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ base, px: base });
+  const [fit, setFit] = useState({ base, px: base, done: false });
   // a new text size in Settings starts the fitting again
-  if (fit.base !== base) setFit({ base, px: base });
+  if (fit.base !== base) setFit({ base, px: base, done: false });
   const px = fit.base === base ? fit.px : base;
   useLayoutEffect(() => {
     const el = ref.current;
-    if (!el || px <= base - 4) return;
+    if (!el || fit.done) return;
     const range = document.createRange();
     range.selectNodeContents(el);
     // a new line starts where a text box sits clearly lower than the first one
     // (the small time stamp / emoji on the same line sit only a little lower)
     const tops = Array.from(range.getClientRects()).filter((r) => r.width > 0).map((r) => r.top);
     const first = Math.min(...tops);
-    if (tops.some((t) => t - first > px * 0.9)) setFit((f) => ({ base: f.base, px: f.px - 0.5 }));
+    const wraps = tops.some((t) => t - first > px * 0.9);
+    if (!wraps) setFit((f) => (f.done ? f : { ...f, done: true }));
+    else if (px > base - 4) setFit((f) => ({ ...f, px: f.px - 0.5 }));
+    else setFit((f) => ({ ...f, px: f.base, done: true })); // too long anyway: normal size
   });
   return <div ref={ref}>{children(px)}</div>;
 }
@@ -1988,8 +1993,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   }}
                 />
                 );
-                // 👢👋🚫 kick / bump / ban lines shrink a little to fit on one line
-                const row = isModerationLine(m.text) ? (
+                // 👢👋🚫 kick / bump / ban lines and 🎁 gift / Gift Shower lines shrink a
+                // little to fit on one line (when a little is enough)
+                const row = isModerationLine(m.text) || m.type === "gift" ? (
                   <FitOneLine key={m.id} base={fontPx}>
                     {rowAt}
                   </FitOneLine>
