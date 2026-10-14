@@ -21,7 +21,7 @@ export default function ExplorePage() {
             <PastelCard icon="💎" title="Luxury Festival" subtitle="Live festival · Top Players by Spend" color="#D9A400" note="Coming soon" />
             <PastelCard icon="🎁" title="Gift Contest" subtitle="Live contest · Top Gifters" color="#E5484D" href="/gift-contest" />
             <PastelCard icon="🍀" title="Lucky User" subtitle="Every 3 hours · Most active chatter wins" color="#1E8C4E" href="/lucky" />
-            <PastelCard icon="👑" title="VIP Subscription" subtitle="Rainbow name · picture & voice share · from $49/month" color="#B04BD6" href="/special-colour" />
+            <PastelCard icon="👑" title="VIP Subscription" subtitle="Rainbow name · picture & voice share · paid with coins" color="#B04BD6" href="/special-colour" />
             <PastelCard icon="🎨" title="Style Studio" subtitle="Premium username colors" color="#12AFC7" href="/style-studio" />
             <PastelCard icon="✨" title="Entry Effects" subtitle="Everyone sees it when you enter a room · 30 days" color="#FF6F00" href="/entry-effects" />
             <PastelCard icon="🏪" title="miGlife Partner" subtitle="Become or manage a Merchant" color="#7B3FC7" href="/merchant" />

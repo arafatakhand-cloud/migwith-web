@@ -54,6 +54,10 @@ export default function GameListPage() {
             <h1 className="text-xl font-bold text-[#12335E]">🎮 Play Zone</h1>
           </div>
         )}
+        {/* 🎲 Google Play: games use virtual coins only — say so where the games are. */}
+        <p className="mx-3 mt-2 rounded-xl bg-[#FFF8E1] px-3 py-2 text-[12px] leading-4 text-[#7A5A00]">
+          🪙 For fun only — games use free virtual coins. No real money, no cash prizes, and coins can&apos;t be sold or cashed out.
+        </p>
         {/* 📟 Classic: plain list lines. */}
         {ready && classic && (
           <div>
