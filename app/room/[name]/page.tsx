@@ -1870,10 +1870,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       <ImageViewerHost />
       <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
       {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} onClose={() => setReactors(null)} />}
-      <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col px-2 pt-2 sm:px-6 sm:py-3">
+      {/* 📱 On a phone the room fills the screen edge to edge, like the app
+          (no frame or margins); on a bigger screen it sits in a framed card. */}
+      <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col sm:px-6 sm:py-3">
         <div className="flex min-h-0 flex-1 gap-3">
           {/* Messages */}
-          <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-t-2xl border border-b-0 border-[#CFE3F5] sm:rounded-b-2xl sm:border-b ${classic ? "bg-white" : "bg-[#E8F4FC]"}`}>
+          <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden border-[#CFE3F5] sm:rounded-2xl sm:border ${classic ? "bg-white" : "bg-[#E8F4FC]"}`}>
             {/* The chat area: the /gift and @ name lists sit over it (never over the message box). */}
             <div className="relative flex min-h-0 flex-1 flex-col">
             {giftQuery !== null ? (
