@@ -66,3 +66,12 @@ export function activeSupporterTeam(teamId: unknown, until: unknown): SupporterT
 export function supporterTeamById(id: string): SupporterTeam | null {
   return BY_ID.get(id) || null;
 }
+
+/** ⚽ The price and days miglife set (app_settings/shop_overrides.supporter),
+ *  else the built-in 50,000 coins / 30 days. Live while the page is open. */
+export function parseSupporterTerms(raw: unknown): { price: number; days: number } {
+  const o = (raw && typeof raw === "object" ? raw : {}) as { price?: unknown; days?: unknown };
+  const price = typeof o.price === "number" && Number.isInteger(o.price) && o.price >= 1000 ? o.price : SUPPORTER_PRICE;
+  const days = typeof o.days === "number" && Number.isInteger(o.days) && o.days >= 1 && o.days <= 365 ? o.days : SUPPORTER_DAYS;
+  return { price, days };
+}
