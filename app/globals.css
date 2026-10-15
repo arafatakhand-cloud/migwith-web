@@ -509,7 +509,6 @@ html.no-boot-splash #boot-splash { display: none; }
 @keyframes aurora-drift { from { transform: translate(0, 0); } to { transform: translate(8%, 10%); } }
 .aurora-ring { animation: aurora-spin 4s linear infinite; }
 @keyframes aurora-spin { to { transform: rotate(360deg); } }
-.xp-fill { transition: width 1.1s cubic-bezier(.4,0,.2,1); }
 .xp-shine { background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent); animation: xp-shine 2.4s linear .6s infinite; }
 @keyframes xp-shine { from { left: -60%; } to { left: 160%; } }
 .stat-pulse { animation: stat-pulse 1.1s cubic-bezier(.4,0,.2,1) infinite; }

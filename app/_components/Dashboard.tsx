@@ -64,16 +64,29 @@ function Avatar({ name, photo, size = "h-11 w-11" }: { name: string; photo: stri
   );
 }
 
+// Last profile / friends seen on Home: switching Lobby ⇄ Chat Rooms shows them
+// at once instead of loading again from empty (the XP bar grew from 0 each time).
+let lastMe: { uid: string; me: Me } | null = null;
+let lastInfo: { uid: string; info: Record<string, Friend> } | null = null;
+
 export function Dashboard() {
   const { user, username, badges } = useSession();
-  const [me, setMe] = useState<Me | null>(null);
+  const [me, setMeState] = useState<Me | null>(() => (lastMe && lastMe.uid === user?.uid ? lastMe.me : null));
+  const setMe = (m: Me) => {
+    if (user) lastMe = { uid: user.uid, me: m };
+    setMeState(m);
+  };
   const [editing, setEditing] = useState(false);
   const [statusDraft, setStatusDraft] = useState("");
   const [openOnline, setOpenOnline] = useState(true);
   const [openOffline, setOpenOffline] = useState(true);
   const classic = useIsClassic();
   const [friendSearch, setFriendSearch] = useState("");
-  const [info, setInfo] = useState<Record<string, Friend>>({});
+  const [info, setInfoState] = useState<Record<string, Friend>>(() => (lastInfo && lastInfo.uid === user?.uid ? lastInfo.info : {}));
+  const setInfo = (i: Record<string, Friend>) => {
+    if (user) lastInfo = { uid: user.uid, info: i };
+    setInfoState(i);
+  };
 
   const fr = useFriendRequests(username);
 
