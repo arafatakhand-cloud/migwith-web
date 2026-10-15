@@ -3003,11 +3003,12 @@ function MessageRow({
     );
   }
 
-  // /hug, /roll, 8ball …: centered, one red colour, bold.
+  // /hug, /roll, 8ball …: centered, one red colour, bold — shown with its
+  // "**" stars, exactly like the app ("**friend bows down to everyone! 🙇**").
   if (m.type === "social") {
     return (
-      <p className="px-2 text-center text-[14px] font-bold leading-snug" style={{ color: APP_RED }}>
-        {brandMiglife(m.text.replace(/\*\*/g, ""))}
+      <p className="px-2 text-center font-bold leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
+        {brandMiglife(m.text)}
         {stamp}
       </p>
     );
