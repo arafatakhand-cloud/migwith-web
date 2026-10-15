@@ -883,7 +883,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           tabSession?.sinceMs ??
           (saved && (saved.visitId === visitId || (existingMarkerMs > 0 && Math.abs(existingMarkerMs - saved.at) < 1000))
             ? saved.at // the same visit: its visitId, or its own entry marker (a heartbeat may rewrite the id)
-            : existingMarkerMs || Date.now() - 30_000);
+            : saved
+              ? existingMarkerMs || Date.now() - 30_000
+              : Date.now() - 30_000); // nothing saved here (e.g. after logout): only what is said from now on
         saveEntry(uid, roomName, { visitId: visitId!, at });
         if (!disposed) setSinceMs(at);
       } else {

@@ -137,6 +137,17 @@ export async function leaveAllOpenRooms(uid: string) {
   const rooms = readOpenRooms(uid);
   rooms.forEach((r) => dropRoomSession(uid, r));
   write(uid, []);
+  // Logged out = every visit is over: forget where each room's chat began, so
+  // logging in again starts the chat fresh (nothing said while logged out).
+  try {
+    const prefix = `migwith.roomEntry.${uid}.`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(prefix)) localStorage.removeItem(k);
+    }
+  } catch {
+    // storage blocked
+  }
   await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
 }
 
