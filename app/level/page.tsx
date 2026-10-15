@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
@@ -12,9 +12,20 @@ import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 import { DAILY_XP_CAP, todayKey } from "../../lib/xp";
+import { isMainFounderName } from "../../lib/founder";
 
 // 🛡️ Level System, like the app's (tap your level on Home): level, XP bar,
-// and unlocked rewards. How much XP each thing gives is not shown (not needed).
+// unlocked rewards; how XP is earned and the last 5 XP events only for miglife.
+
+const EARN: [string, string][] = [
+  ["💬", "Send a normal chat message • +2 XP (15 sec cooldown)"],
+  ["🚪", "Enter a room • +5 XP (30 min cooldown · Level 50+: once per room every 24 hours)"],
+  ["👥", "Friend request accepted • +10 XP to both"],
+  ["🎁", "Send a gift • +5 XP · Gift Shower +10 XP (30 sec cooldown)"],
+  ["🎮", "Place a bet in Luxury Bet • +3 XP (15 sec cooldown) · Level 50+: win a round • +1 XP (no XP for a bet)"],
+  ["🏏", "Win a Cricket game • +3 XP (Level 50+)"],
+  ["🃏", "Win a LowCard game • +3 XP (Level 50+)"],
+];
 
 function unlockedGifts(level: number): string[] {
   const out: string[] = [];
@@ -28,6 +39,8 @@ function unlockedGifts(level: number): string[] {
 
 const xpLabel = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
 
+type History = { id: string; amount: number; reason: string; ms: number };
+
 export default function LevelPage() {
   const ready = useRequireLogin();
   const router = useRouter();
@@ -37,6 +50,10 @@ export default function LevelPage() {
   const [lastLevelUp, setLastLevelUp] = useState(1);
   // 📅 XP earned today (Bangladesh day) — normal activity stops at DAILY_XP_CAP
   const [todayXp, setTodayXp] = useState(0);
+  const [history, setHistory] = useState<History[]>([]);
+
+  // How much XP each thing gives is shown to miglife only.
+  const showXpDetails = isMainFounderName(username);
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -45,8 +62,25 @@ export default function LevelPage() {
       setLastLevelUp(Number(s.get("lastLevelUpLevel") || 1));
       setTodayXp(s.get("dailyXpDate") === todayKey() ? Number(s.get("dailyXp") || 0) : 0);
     });
-    return offUser;
-  }, [ready, user]);
+    if (!showXpDetails) return offUser;
+    const offHistory = onSnapshot(
+      query(collection(db, "users", user.uid, "xp_history"), orderBy("createdAt", "desc"), limit(5)),
+      (snap) =>
+        setHistory(
+          snap.docs.map((d) => ({
+            id: d.id,
+            amount: Number(d.get("amount") || 0),
+            reason: String(d.get("reason") || "Activity"),
+            ms: d.get("createdAt")?.toMillis?.() ?? 0,
+          }))
+        ),
+      () => {}
+    );
+    return () => {
+      offUser();
+      offHistory();
+    };
+  }, [ready, user, showXpDetails]);
 
   const level = levelFromXp(xp);
   const start = totalXpForLevel(level);
@@ -123,6 +157,20 @@ export default function LevelPage() {
               </p>
             )}
 
+            {showXpDetails && (
+              <>
+                    <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">How you earn XP</h2>
+                    <div className="space-y-1.5">
+                      {EARN.map(([icon, label]) => (
+                        <div key={label} className="classic-light flex items-center gap-3 rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-white">
+                          <span className="text-[22px]">{icon}</span>
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+              </>
+            )}
+
             <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">Unlocked Rewards</h2>
             {gifts.length === 0 ? (
               <p className="rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-[#B9C5DF]">Reach Level 2 to unlock your first gift.</p>
@@ -136,6 +184,32 @@ export default function LevelPage() {
               </div>
             )}
 
+            {showXpDetails && (
+              <>
+                    <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">Recent XP Activity</h2>
+                    {history.length === 0 ? (
+                      <p className="text-[13px] text-[#35507E]">No XP activity yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {history.map((h) => (
+                          <div key={h.id} className="flex items-center gap-3 rounded-[18px] border border-[#D7DCE6] bg-[#F7F7F7] px-3.5 py-3">
+                            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FFE36A] text-[22px]">⭐</span>
+                            <div>
+                              <p className="text-[17px] font-bold text-[#13203B]">+{h.amount} XP</p>
+                              <p className="text-[13px] text-[#8A8F9A]">{h.reason}</p>
+                              <p className="text-[11px] font-medium text-[#6D7890]">
+                                🕒{" "}
+                                {h.ms
+                                  ? `${new Date(h.ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • ${new Date(h.ms).toLocaleDateString(undefined, { day: "2-digit", month: "short" })}`
+                                  : "Time pending"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+              </>
+            )}
           </>
         )}
       </section>
