@@ -95,7 +95,9 @@ async function attempt(uid: string, amount: number, reason: XpReason, cooldownMs
 
       const today = todayKey();
       const dailySoFar = d.dailyXpDate === today ? num(d.dailyXp) : 0;
-      const give = Math.min(amount, DAILY_XP_CAP - dailySoFar);
+      // 🎁 Level 50+: a gift or Gift Shower gives 3 XP (like the app)
+      const want = reason === "gift" && levelNow >= XP_RULES_LEVEL ? Math.min(amount, 3) : amount;
+      const give = Math.min(want, DAILY_XP_CAP - dailySoFar);
       if (give <= 0) return 0;
 
       const newXp = oldXp + give;
