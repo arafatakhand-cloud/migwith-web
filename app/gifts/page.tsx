@@ -83,7 +83,9 @@ export default function GiftShopsPage() {
     );
   }, [ready]);
 
-  const shown = (gifts || []).filter((g) => !isAdmin || !search.trim() || g.name.toLowerCase().includes(search.trim().toLowerCase()));
+  // 🔍 everyone can search the gifts by name
+  const q = search.trim().toLowerCase();
+  const shown = (gifts || []).filter((g) => !q || g.name.toLowerCase().includes(q));
 
   const save = async (id: string, isNew: boolean, data: Record<string, unknown>) => {
     try {
@@ -132,26 +134,24 @@ export default function GiftShopsPage() {
         )}
 
         {isAdmin && (
-          <>
-            <p className="mt-2.5 rounded-2xl border border-[#D4AF37]/65 bg-[#FFF6D8] p-3.5 text-xs text-[#0B1F3A]">
-              Admin mode: Add, edit or delete gifts. Normal users can only browse the catalog.
-            </p>
-            <label className="mt-3 flex items-center gap-2 rounded-[14px] border border-[#D4DDEB] bg-white px-3 py-2.5">
-              <span>🔍</span>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search gifts by name…"
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-              {search && (
-                <button type="button" onClick={() => setSearch("")} className="px-1 text-[#68758D]">
-                  ✕
-                </button>
-              )}
-            </label>
-          </>
+          <p className="mt-2.5 rounded-2xl border border-[#D4AF37]/65 bg-[#FFF6D8] p-3.5 text-xs text-[#0B1F3A]">
+            Admin mode: Add, edit or delete gifts. Normal users can only browse the catalog.
+          </p>
         )}
+        <label className="mt-3 flex items-center gap-2 rounded-[14px] border border-[#D4DDEB] bg-white px-3 py-2.5">
+          <span>🔍</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search gifts by name…"
+            className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          />
+          {search && (
+            <button type="button" onClick={() => setSearch("")} className="px-1 text-[#68758D]">
+              ✕
+            </button>
+          )}
+        </label>
 
         {error && <p className="mt-2.5 rounded-[14px] bg-[#FFE8E8] p-3 text-xs text-[#9E2B2B]">{error}</p>}
 
