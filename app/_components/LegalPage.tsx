@@ -24,6 +24,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
         <Link href="/terms" className="underline">Terms &amp; Community Rules</Link>
         <Link href="/privacy" className="underline">Privacy Policy</Link>
         <Link href="/delete-account" className="underline">Delete your account</Link>
+        <Link href="/child-safety" className="underline">Child safety</Link>
         <a href="mailto:support@miglife.app" className="underline">support@miglife.app</a>
       </footer>
     </main>
