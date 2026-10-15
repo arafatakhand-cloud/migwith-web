@@ -73,7 +73,7 @@ export default function AnnouncementsPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
-        <PageTitle title="Announcements" subtitle="MIGlife News & Updates" icon="📢" />
+        <PageTitle title="Announcements" subtitle="MIGlife News & Updates" icon="📢" backHref="/explore" />
         {isAdmin && (
           <button
             type="button"

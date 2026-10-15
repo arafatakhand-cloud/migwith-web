@@ -8,10 +8,12 @@ import { useIsClassic } from "../../lib/uiStyle";
 
 // Pieces shared by the app-style light pages (Explore, Members, Gift Shops).
 
-export function PageTitle({ title, subtitle, icon }: { title: string; subtitle?: string; icon?: string }) {
+export function PageTitle({ title, subtitle, icon, backHref }: { title: string; subtitle?: string; icon?: string; backHref?: string }) {
   const router = useRouter();
   const classic = useIsClassic();
-  const back = () => (window.history.length > 1 ? router.back() : router.push("/"));
+  // backHref: always go to that page (like the app's fixed back), so two pages
+  // can't send you back and forth through the browser history.
+  const back = () => (backHref ? router.push(backHref) : window.history.length > 1 ? router.back() : router.push("/"));
   if (classic)
     return (
       <div className="-mx-3 mb-2 sm:-mx-6">

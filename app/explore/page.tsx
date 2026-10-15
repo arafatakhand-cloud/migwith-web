@@ -10,7 +10,7 @@ export default function ExplorePage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 sm:px-6">
-        <PageTitle title="Discover" subtitle="Discover · Community" />
+        <PageTitle title="Discover" subtitle="Discover · Community" backHref="/" />
         {ready && (
           <div className="grid gap-2.5 md:grid-cols-2">
             <PastelCard icon="📢" title="Announcements" subtitle="MIGlife News & Updates" color="#3984D9" href="/announcements" />
