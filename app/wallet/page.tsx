@@ -61,7 +61,8 @@ const lower = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
 function short(value: number): string {
   const a = Math.abs(value);
-  if (a >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
+  // 2 decimals for millions (19.58M), so a 25K gift changes the number
+  if (a >= 1_000_000) return `${(Math.trunc(value / 10_000) / 100).toFixed(2)}M`;
   if (a >= 1_000) return `${(value / 1_000).toFixed(1)}K`;
   return String(value);
 }
@@ -126,6 +127,7 @@ function txItem(id: string, t: DocumentData): Item | null {
   else if (type === "bet")
     title = `Luxury Bot${r} — bid ${character ? character + " " : ""}${short(Math.abs(raw))} coins`;
   else if (type === "payout" && source === "lowcard") title = "LowCard winning payout";
+  else if (source === "lucky_user") title = "🍀 Lucky User reward";
   else if (type === "payout" || type === "bot_payout" || type === "winning_payout") title = "Daily Luxury Bot winning payout";
   else if (type.includes("spin") || type.includes("daily_reward") || type === "reward")
     title = reason || `Daily spin reward: ${short(Math.abs(raw))} coins`;
@@ -230,7 +232,8 @@ export default function WalletPage() {
       ),
       onSnapshot(
         query(collection(db, "gift_activity"), where("fromUsername", "==", username), where("createdAt", ">=", midnight)),
-        (s) => setTodayGifts(s.docs.map((d) => d.data())),
+        // the doc id rides along, so today's gifts also join the activity list
+        (s) => setTodayGifts(s.docs.map((d) => ({ ...d.data(), __id: d.id }))),
         (e) => console.error("today gifts", e)
       ),
     ];
@@ -303,10 +306,14 @@ export default function WalletPage() {
     // today's) is listed among them by time.
     const oldestTx = txs.length >= 30 ? Math.min(...txs.map((t) => ms(t.data.createdAt)).filter((t) => t > 0)) : 0;
     const today0 = startOfToday();
-    const fromGifts = giftItems(gifts).filter((g) => g.timeMs >= oldestTx || g.timeMs >= today0);
+    // Today's gifts come live from their own listener, so a gift just sent is
+    // always listed (the older-gifts read can miss the newest ones).
+    const allGifts = new Map(gifts.map((g) => [g.id, g]));
+    for (const g of todayGifts) if (g.__id) allGifts.set(String(g.__id), { id: String(g.__id), data: g });
+    const fromGifts = giftItems(Array.from(allGifts.values())).filter((g) => g.timeMs >= oldestTx || g.timeMs >= today0);
 
     return [...fromTx, ...fromRounds, ...fromGifts].sort((a, b) => b.timeMs - a.timeMs);
-  }, [txs, gifts]);
+  }, [txs, gifts, todayGifts]);
 
   // 🔻 Spent Today → what the coins went on today: gifts and bets (refunds back).
   const [showSpent, setShowSpent] = useState(false);
