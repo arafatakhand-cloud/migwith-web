@@ -987,7 +987,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           if (heartbeat) clearInterval(heartbeat);
           restorePresenceRef.current = null;
           setAutoLeft(true);
-          note(`⏰ You have been auto left from ${roomName} due to inactivity, kick or ban.`);
+          note(`⏰ You have been auto left from ${roomName} room due to inactivity, kick or ban.`);
         });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
@@ -2256,7 +2256,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {showNotInRoom && (
         <SimpleDialog
           title="You are not in this room"
-          text={`You are not in ${roomName} any more (inactivity, kick or ban). Tap OK, then open the room again to come back in.`}
+          text={`You are not in ${roomName} room any more (inactivity, kick or ban). Tap OK, then open the room again to come back in.`}
           onClose={() => {
             setShowNotInRoom(false);
             leaveRoom(); // close this room's tab; opening it again is a fresh entry
