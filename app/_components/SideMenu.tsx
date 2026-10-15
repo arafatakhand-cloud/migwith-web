@@ -68,9 +68,10 @@ export function MenuPanel() {
     clearRememberedAmounts(); // logout resets the chosen game amounts
     await signOut(auth);
   };
+  // Millions with 2 decimals (19.58M): with one, a 25K gift didn't change the number.
   const coinsText = me
     ? me.coins >= 1_000_000
-      ? `${(me.coins / 1_000_000).toFixed(1)}M`
+      ? `${(Math.floor(me.coins / 10_000) / 100).toFixed(2)}M`
       : me.coins >= 1000
         ? `${(me.coins / 1000).toFixed(1)}K`
         : String(me.coins)
@@ -217,7 +218,7 @@ export function MenuPanel() {
           <p className="font-black text-cyan-200">
             {me
               ? me.coins >= 1_000_000
-                ? `${(me.coins / 1_000_000).toFixed(1)}M`
+                ? `${(Math.floor(me.coins / 10_000) / 100).toFixed(2)}M`
                 : me.coins >= 1000
                   ? `${(me.coins / 1000).toFixed(1)}K`
                   : me.coins
