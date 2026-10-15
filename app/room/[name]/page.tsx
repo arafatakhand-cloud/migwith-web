@@ -292,6 +292,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [kickMinutesLeft, setKickMinutesLeft] = useState(KICK_MINUTES);
   // 👋 /bump: out of the room, but may come straight back in
   const [bumped, setBumped] = useState(false);
+  // ⏰ My spot here was cleared (away too long, kicked or banned) → I'm not in
+  // the room any more: no quiet "has entered" again, sending shows a popup.
+  const [autoLeft, setAutoLeft] = useState(false);
+  const [showNotInRoom, setShowNotInRoom] = useState(false);
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -976,30 +980,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             restoreQuietly();
             return;
           }
-          visitId = newVisitId();
-          presenceWrite = setDoc(presenceRef, {
-            uid,
-            username: profile.username,
-            activity: "",
-            level: profile.level,
-            levelBadgeIcon: profile.badge,
-            shopBadges: [],
-            presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
-            lastSeen: serverTimestamp(),
-            visitId,
-            deviceId,
-            entryMarker: serverTimestamp(),
-          }).catch(() => {});
-          claimOwnEntryFx(roomName) && requestOwnEntryFx(roomName);
-          if (!quietMe) {
-            addDoc(collection(db, "room_messages", roomName, "messages"), {
-              text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
-              sender: profile.username,
-              senderUid: uid,
-              type: "room_entry",
-              createdAt: serverTimestamp(),
-            }).catch(() => {});
-          }
+          // Away too long (sleeping laptop, closed lid…), or taken out of the
+          // room: I'm not in it any more. Like the app — no coming back in by
+          // itself with a new "has entered"; to come back, open the room again.
+          left = true;
+          if (heartbeat) clearInterval(heartbeat);
+          restorePresenceRef.current = null;
+          setAutoLeft(true);
+          note(`⏰ You have been auto left from ${roomName} due to inactivity, kick or ban.`);
         });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
@@ -1328,6 +1316,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const send = async () => {
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
+    if (autoLeft) {
+      setShowNotInRoom(true);
+      return;
+    }
 
     // Moderator commands come before mute / silence, as in the app.
     const ctx = clean.startsWith("/") ? modCtx() : null;
@@ -2261,6 +2253,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
       {/* ⋮ Room menu */}
       {popup && <SimpleDialog title={popup.title} text={popup.text} onClose={() => setPopup(null)} />}
+      {showNotInRoom && (
+        <SimpleDialog
+          title="You are not in this room"
+          text={`You are not in ${roomName} any more (inactivity, kick or ban). Tap OK, then open the room again to come back in.`}
+          onClose={() => {
+            setShowNotInRoom(false);
+            leaveRoom(); // close this room's tab; opening it again is a fresh entry
+          }}
+        />
+      )}
       {balanceCard && <BalanceCard text={balanceCard.text} sub={balanceCard.sub} onClose={() => setBalanceCard(null)} />}
       {roundResult && <RoundResultCard round={roundResult.round} won={roundResult.won} bet={roundResult.bet} onClose={() => setRoundResult(null)} />}
       {pendingPhoto && (
