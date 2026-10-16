@@ -2468,6 +2468,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {/* ℹ️ Room Info — a full page with ✎ edit, like the app */}
       {infoOpen && profile && (
         <RoomInfoPage
+          canTransferOwner={isMainFounderName(profile.username)}
           roomName={roomName}
           shownRoomName={roomDisplayName(roomName)}
           ownerName={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}

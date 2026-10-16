@@ -3,7 +3,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { collection, doc, getDocs, query, serverTimestamp, setDoc, where } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "../../lib/firebase";
 import type { RoomInfo } from "../../lib/roomModeration";
 
 // ℹ️ Room Info (the app's PrivateRoomInfoScreen): everyone can read it and open
@@ -144,6 +145,7 @@ export function RoomInfoPage({
   onClose,
   onNote,
   onSetEntryLevel,
+  canTransferOwner = false,
 }: {
   roomName: string;
   shownRoomName: string;
@@ -158,6 +160,8 @@ export function RoomInfoPage({
   onNote: (text: string) => void;
   /** Staff of a public room may change only its entry level (posts the room line). */
   onSetEntryLevel: (level: number) => void;
+  /** 👑 miglife only: give this room to another MIG ID (server: founderTransferRoomOwner). */
+  canTransferOwner?: boolean;
 }) {
   const capacityEditable = !info.capacityEnforced;
   const showSuperMods = perms.isUserRoom;
@@ -194,7 +198,8 @@ export function RoomInfoPage({
 
   const [superOpen, setSuperOpen] = useState(false);
   const [modsOpen, setModsOpen] = useState(false);
-  const [dialog, setDialog] = useState<"" | "capacity" | "description" | "lock" | "addmod" | "addsuper">("");
+  const [dialog, setDialog] = useState<"" | "capacity" | "description" | "lock" | "addmod" | "addsuper" | "owner">("");
+  const [transferring, setTransferring] = useState(false);
   const [dialogText, setDialogText] = useState("");
   const [toast, setToast] = useState("");
   const say = (t: string) => {
@@ -402,7 +407,15 @@ export function RoomInfoPage({
         ) : (
           <>
             <Card>
-              <Line icon="👑" label="Owner" sub={ownerName || "-"} trailing={<span className="text-lg text-[#B5C2D3]">✓</span>} />
+              <Line
+                icon="👑"
+                label="Owner"
+                sub={ownerName || "-"}
+                onClick={canTransferOwner ? () => (setDialogText(""), setDialog("owner")) : undefined}
+                trailing={
+                  canTransferOwner ? <span className="text-[17px] text-[#15589B]">✎</span> : <span className="text-lg text-[#B5C2D3]">✓</span>
+                }
+              />
               <Line
                 icon="👥"
                 label="Capacity"
@@ -487,6 +500,49 @@ export function RoomInfoPage({
                 }}
               >
                 OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {dialog === "owner" && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 p-6" onClick={() => !transferring && setDialog("")}>
+          <div className="w-full max-w-sm rounded-3xl bg-white p-5 text-[#1b1b1f] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-bold">👑 Transfer ownership</p>
+            <p className="mt-1 text-[13px] text-[#5B6B8C]">
+              Write the MIG ID of the new owner of {shownRoomName}. The room moves to them at once (now: {ownerName || "-"}).
+            </p>
+            <input
+              value={dialogText}
+              placeholder="MIG ID"
+              onChange={(e) => setDialogText(e.target.value.trim().slice(0, 40))}
+              className="mt-3 w-full rounded-xl border border-[#D4DDEB] px-3 py-2.5 text-base outline-none focus:border-[#2F80ED]"
+            />
+            <div className="mt-4 flex justify-end gap-5 text-sm font-bold text-[#2F80ED]">
+              <button type="button" disabled={transferring} onClick={() => setDialog("")}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={transferring || !dialogText.trim()}
+                className="disabled:opacity-40"
+                onClick={async () => {
+                  setTransferring(true);
+                  try {
+                    const { data } = await httpsCallable<{ roomName: string; newOwner: string }, { ownerName?: string }>(
+                      functions,
+                      "founderTransferRoomOwner"
+                    )({ roomName, newOwner: dialogText.replace(/^@/, "").trim() });
+                    say(`👑 ${data?.ownerName || dialogText} is now the owner of ${shownRoomName}`);
+                    setDialog("");
+                  } catch (e: any) {
+                    say(e?.message || "Could not change the owner.");
+                  } finally {
+                    setTransferring(false);
+                  }
+                }}
+              >
+                {transferring ? "…" : "Transfer"}
               </button>
             </div>
           </div>
