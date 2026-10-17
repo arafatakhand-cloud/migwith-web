@@ -152,9 +152,8 @@ export function ChatBar({
     {/* The app's bar: a dark navy pill (round at all four corners) a little
         in from the sides, 32 px round buttons 5 px apart, and a 39 px white
         message pill. The phone's safe area goes under it, not inside it. */}
-    {/* 📱 phone: a full-width dark bar with rounded top corners, like the app;
-        bigger screens: the floating rounded bar. */}
-    <div className="keep-round flex items-end gap-[5px] rounded-t-[26px] bg-[#0B1F3A] px-2 pb-2 pt-2 sm:mx-1 sm:my-1 sm:gap-2 sm:rounded-[26px] sm:px-3 sm:py-1.5">
+    {/* Round at all four corners, a little in from the sides, like the app. */}
+    <div className="keep-round mx-1.5 mb-1 flex items-end gap-[5px] rounded-[26px] bg-[#0B1F3A] px-2 py-1.5 shadow-[0_4px_14px_rgba(11,31,58,.25)] sm:mx-1 sm:my-1 sm:gap-2 sm:px-3 sm:py-1.5">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative mb-[4px] shrink-0">
         <button

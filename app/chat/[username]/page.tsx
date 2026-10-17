@@ -640,7 +640,7 @@ export default function PrivateChatPage() {
 
         {/* Input bar: ⋮ menu, a rounded message box (photo, text, emoji) and
             🎤 voice, which turns into ➤ send as soon as something is typed. */}
-        <div className="pb-safe relative flex items-end gap-1.5 rounded-t-3xl bg-white px-2 py-2 shadow-[0_-4px_14px_rgba(0,0,0,.08)]">
+        <div className="keep-round relative mx-2 mb-2 flex items-end gap-1.5 rounded-[28px] bg-white px-2 py-2 shadow-[0_4px_16px_rgba(11,42,91,.14)]">
           <div className="relative">
             <button
               type="button"
@@ -731,6 +731,7 @@ export default function PrivateChatPage() {
             <VoiceRecorder size="lg" disabled={self || blocked || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
           )}
         </div>
+        <div className="pb-safe" />
         <div ref={setEmoteSlot} />
       </div>
 
