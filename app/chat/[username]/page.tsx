@@ -253,6 +253,11 @@ export default function PrivateChatPage() {
   useLayoutEffect(() => {
     const el = inputRef.current;
     if (!el) return;
+    // Empty: one line, whatever the hint text does in a narrow box.
+    if (!text) {
+      el.style.height = "";
+      return;
+    }
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 88)}px`;
   }, [text]);
