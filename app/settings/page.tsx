@@ -204,6 +204,13 @@ export default function SettingsPage() {
             <Group title="Help">
               <Row icon="🛟" tint="#43B65A" title="Help & Support" subtitle="Get help or report an issue" onClick={() => setDialog("help")} />
               <Row icon="💬" tint="#7B1FB8" title="Feedback & Report" subtitle="Tell us what to improve" onClick={() => setDialog("feedback")} />
+              <Row
+                icon="👥"
+                tint="#1877F2"
+                title="Join our Facebook Group"
+                subtitle="miGlife Official Community"
+                onClick={() => window.open("https://www.facebook.com/share/g/1BRd2amXTK/", "_blank", "noopener,noreferrer")}
+              />
             </Group>
 
             <Group title="About">
