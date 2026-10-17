@@ -728,7 +728,7 @@ export default function PrivateChatPage() {
               <SendGlyph />
             </button>
           ) : (
-            <VoiceRecorder large disabled={self || blocked || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
+            <VoiceRecorder size="lg" disabled={self || blocked || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
           )}
         </div>
         <div ref={setEmoteSlot} />

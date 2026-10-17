@@ -26,11 +26,11 @@ export function VoiceRecorder({
   onSend,
   onError,
   onActive,
-  large,
+  size,
 }: {
   disabled: boolean;
-  /** Bigger buttons and bar, for the private chat's input row. */
-  large?: boolean;
+  /** Bigger buttons and bar: "md" for the room bar, "lg" for private chat. */
+  size?: "md" | "lg";
   /** True while recording or while a clip waits, so the parent hides the text box. */
   onActive?: (active: boolean) => void;
   onSend: (audio: Blob, seconds: number) => Promise<void>;
@@ -156,8 +156,13 @@ export function VoiceRecorder({
     }
   };
 
-  const btn = large ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full" : BAR_BTN;
-  const barH = large ? "h-11" : "h-9";
+  const btn =
+    size === "lg"
+      ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full"
+      : size === "md"
+        ? "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full"
+        : BAR_BTN;
+  const barH = size === "lg" ? "h-11" : size === "md" ? "h-[40px]" : "h-9";
 
   const mic = (
     <button

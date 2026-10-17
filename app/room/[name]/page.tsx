@@ -2127,17 +2127,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 title: perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room",
               }}
               voice={
-                <>
                 <VoiceRecorder
+                  size="md"
                   disabled={!profile || !perms.canShareMedia}
                   onSend={sendVoice}
                   onError={(m) => note(`${roomName}: ${m}`)}
                   onActive={setVoiceActive}
                 />
-                {/* ▶ after 🎤, like the app (hidden while recording) */}
-                {luxuryBet && !voiceActive && <LuxuryBetStartButton state={luxuryBet} />}
-                </>
               }
+              // ▶ next to ⋮, like the app (hidden while recording)
+              extra={luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
               voiceActive={voiceActive}
               reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
             />

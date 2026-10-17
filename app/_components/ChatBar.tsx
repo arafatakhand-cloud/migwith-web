@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
 import { withEmotes } from "./Emote";
 import { useIsClassic } from "../../lib/uiStyle";
@@ -79,6 +79,7 @@ export function ChatBar({
   photo,
   voice,
   voiceActive,
+  extra,
   reply,
 }: {
   text: string;
@@ -97,6 +98,8 @@ export function ChatBar({
   /** The <VoiceRecorder>; while it records it takes over the row. */
   voice: React.ReactNode;
   voiceActive: boolean;
+  /** Extra round buttons after ⋮ (Luxury Bet's ▶), hidden while recording. */
+  extra?: React.ReactNode;
   /** Replying to someone (swipe right on their message): shown above the bar. */
   reply?: { sender: string; snippet: string; color?: string; onCancel: () => void } | null;
 }) {
@@ -109,6 +112,13 @@ export function ChatBar({
     onSend();
   };
   const moreRef = useRef<HTMLDivElement>(null);
+  // The message box grows with the text, up to 4 lines.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
+  }, [text, voiceActive, inputRef]);
   // 😊 emotes open here, under the bar (like the app's emoji box)
   const [emoteSlot, setEmoteSlot] = useState<HTMLDivElement | null>(null);
 
@@ -144,9 +154,9 @@ export function ChatBar({
         message pill. The phone's safe area goes under it, not inside it. */}
     {/* 📱 phone: a full-width dark bar with rounded top corners, like the app;
         bigger screens: the floating rounded bar. */}
-    <div className="keep-round flex items-center gap-[5px] rounded-t-[26px] bg-[#0B1F3A] px-2 pb-2 pt-2 sm:mx-1 sm:my-1 sm:gap-2 sm:rounded-[26px] sm:px-3 sm:py-1.5">
+    <div className="keep-round flex items-end gap-[5px] rounded-t-[26px] bg-[#0B1F3A] px-2 pb-2 pt-2 sm:mx-1 sm:my-1 sm:gap-2 sm:rounded-[26px] sm:px-3 sm:py-1.5">
       {/* ⋮ more */}
-      <div ref={moreRef} className="relative shrink-0">
+      <div ref={moreRef} className="relative mb-[4px] shrink-0">
         <button
           type="button"
           onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
@@ -175,84 +185,94 @@ export function ChatBar({
         )}
       </div>
 
-      {/* 🖼️ photo */}
-      <label
-        title={photo.title}
-        className={`${BAR_BTN} cursor-pointer text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
-        style={classic ? CLASSIC_BTN_BG : PHOTO_BG}
-      >
-        {photo.uploading ? "⏳" : <PhotoGlyph />}
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => {
-            photo.onFile(e.target.files?.[0]);
-            e.target.value = "";
-          }}
-        />
-      </label>
+      {!voiceActive && extra}
 
-      {/* 🎤 voice */}
-      {voice}
-
+      {/* While recording (or a clip waits) the recorder takes over the row. It
+          always stays in the same slot below, so it keeps its state. */}
       {!voiceActive && (
-        <>
-          {/* White pill with 🙂 inside — round in Classic too, like the app */}
-          <div className="keep-round flex h-[39px] min-w-0 flex-1 items-center rounded-full border border-[#1E4FA8] bg-white pl-4 pr-1">
-            {/* A one-line textarea, not an input: Chrome and Safari show no
-                password / card / address AutoFill bar above the keyboard for it. */}
-            <textarea
-              ref={inputRef}
-              rows={1}
-              wrap="off"
-              value={text}
-              onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
-              autoComplete="off"
-              autoCorrect="on"
-              name="migwith-chat-message"
-              enterKeyHint="send"
-              data-1p-ignore
-              data-lpignore="true"
-              data-form-type="other"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (canSend) send();
-                }
-              }}
-              maxLength={maxLength}
-              disabled={disabled}
-              placeholder={placeholder}
-              className="h-5 min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
-            />
-            <EmojiPicker
-              inputRef={inputRef}
-              value={text}
-              onChange={(v) => setText(v.slice(0, maxLength))}
-              disabled={disabled}
-              inline
-              dockTo={emoteSlot}
-            />
-          </div>
-
-          {/* ➤ send */}
-          <button
-            type="button"
-            // Like the app: tapping ➤ never takes the focus off the message box,
-            // so the keyboard stays open for the next line.
-            onPointerDown={(e) => e.preventDefault()}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={send}
-            disabled={!canSend}
-            aria-label="Send"
-            className={`${BAR_BTN} relative overflow-hidden ${canSend ? "chat-send-shine" : ""}`}
-            style={classic ? CLASSIC_BTN_BG : SEND_BG}
+          /* The message box: a soft blue → purple → sky edge, 🖼️ photo inside
+              on the left, 🙂 on the right; it grows to 4 lines. Round in
+              Classic too, like the app. */
+          <div
+            className="keep-round min-w-0 flex-1 rounded-[21px] p-[1.5px]"
+            style={{ background: classic ? "linear-gradient(90deg, #FF9D2E, #F07A00)" : "linear-gradient(90deg, #5B8DEF, #8B6CF0, #3FB6F2)" }}
           >
-            <SendGlyph key={fly} fly={fly > 0} />
-          </button>
-        </>
+            <div className="keep-round flex min-h-[37px] items-end gap-1 rounded-[19.5px] bg-white py-[3px] pl-[3px] pr-1">
+              <label
+                title={photo.title}
+                className={`flex h-[31px] w-[31px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
+                style={classic ? CLASSIC_BTN_BG : PHOTO_BG}
+              >
+                {photo.uploading ? "⏳" : <PhotoGlyph />}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    photo.onFile(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {/* A textarea, not an input: Chrome and Safari show no password /
+                  card / address AutoFill bar above the keyboard for it. Enter sends. */}
+              <textarea
+                ref={inputRef}
+                rows={1}
+                value={text}
+                onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
+                autoComplete="off"
+                autoCorrect="on"
+                name="migwith-chat-message"
+                enterKeyHint="send"
+                data-1p-ignore
+                data-lpignore="true"
+                data-form-type="other"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (canSend) send();
+                  }
+                }}
+                maxLength={maxLength}
+                disabled={disabled}
+                placeholder={placeholder}
+                className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
+              />
+              <span className="flex h-[31px] shrink-0 items-center">
+                <EmojiPicker
+                  inputRef={inputRef}
+                  value={text}
+                  onChange={(v) => setText(v.slice(0, maxLength))}
+                  disabled={disabled}
+                  inline
+                  dockTo={emoteSlot}
+                />
+              </span>
+            </div>
+          </div>
       )}
+
+          {text.trim() && !voiceActive ? (
+            // ➤ send
+            <button
+              type="button"
+              // Like the app: tapping ➤ never takes the focus off the message box,
+              // so the keyboard stays open for the next line.
+              onPointerDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={send}
+              disabled={!canSend}
+              aria-label="Send"
+              className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-50 ${canSend ? "chat-send-shine" : ""}`}
+              style={classic ? CLASSIC_BTN_BG : SEND_BG}
+            >
+              <SendGlyph key={fly} fly={fly > 0} />
+            </button>
+          ) : (
+            // 🎤 when the box is empty
+            voice
+          )}
     </div>
     <div className="pb-safe" />
     <div ref={setEmoteSlot} />
