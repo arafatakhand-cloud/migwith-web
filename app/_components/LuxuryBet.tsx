@@ -100,6 +100,21 @@ export function useLuxuryBet(
     });
   }, [enabled, uid]);
 
+  // ⚡ Keep the server functions awake so ▶ / bets / the result never wait for
+  // a cold start: between rounds the ▶ one, during a round the bet + result
+  // ones ({ warm: true } does nothing else on the server).
+  useEffect(() => {
+    if (!enabled || !uid) return;
+    const warm = (c: typeof startCall) => c({ warm: true }).catch(() => {});
+    if (running) {
+      warm(betCall as typeof startCall);
+      warm(tickCall);
+    } else {
+      warm(startCall);
+      warm(betCall as typeof startCall);
+    }
+  }, [enabled, uid, running]);
+
   // My own bets this round (lb_bets/{round}_{uid}); a new round starts clean.
   useEffect(() => {
     setMyBets({});
@@ -240,7 +255,9 @@ export function LuxuryBetStartButton({ state }: { state: LuxuryBetState }) {
       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
       style={{ background: state.running ? "#0B2A5B" : "#D4AE3A", boxShadow: "0 2px 6px rgba(212,174,58,.4)" }}
     >
-      {state.starting ? (
+      {/* "…" only until the round is really on (the live game doc can say so
+          before the server's answer arrives) */}
+      {state.starting && !state.running ? (
         "…"
       ) : state.running ? (
         "⏳"
