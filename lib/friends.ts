@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   addDoc,
   collection,
@@ -41,9 +41,15 @@ export function useFriendRequests(username: string) {
   const [sent, setSent] = useState<FriendRequest[]>([]);
   const [acceptedFromMe, setAcceptedFromMe] = useState<FriendRequest[]>([]);
   const [acceptedToMe, setAcceptedToMe] = useState<FriendRequest[]>([]);
+  // BUG FIX (Friends count climbing 2 → 5 on Lobby), like the app: the two
+  // "accepted" listeners answer one after the other. The friends list is
+  // shown only once both are in; until then the list remembered on this
+  // device from last time.
+  const [loadedFor, setLoadedFor] = useState<{ user: string; from: boolean; to: boolean }>({ user: "", from: false, to: false });
 
   useEffect(() => {
     if (!username) return;
+    setLoadedFor({ user: username, from: false, to: false });
     const col = collection(db, "friend_requests");
     const listen = (field: string, status: string, set: (r: FriendRequest[]) => void) =>
       onSnapshot(
@@ -54,8 +60,14 @@ export function useFriendRequests(username: string) {
     const offs = [
       listen("toUsername", "pending", setIncoming),
       listen("fromUsername", "pending", setSent),
-      listen("fromUsername", "accepted", setAcceptedFromMe),
-      listen("toUsername", "accepted", setAcceptedToMe),
+      listen("fromUsername", "accepted", (rows) => {
+        setAcceptedFromMe(rows);
+        setLoadedFor((l) => (l.user === username ? { ...l, from: true } : l));
+      }),
+      listen("toUsername", "accepted", (rows) => {
+        setAcceptedToMe(rows);
+        setLoadedFor((l) => (l.user === username ? { ...l, to: true } : l));
+      }),
     ];
     return () => offs.forEach((off) => off());
   }, [username]);
@@ -69,13 +81,34 @@ export function useFriendRequests(username: string) {
   const incomingOne = oneEach(incoming, (r) => r.from);
   const sentOne = oneEach(sent, (r) => r.to);
 
-  const friends = Array.from(
+  const liveFriends = Array.from(
     new Map(
       [...acceptedFromMe.map((r) => r.to), ...acceptedToMe.map((r) => r.from)]
         .filter(Boolean)
         .map((n) => [key(n), n])
     ).values()
   ).sort((a, b) => key(a).localeCompare(key(b)));
+  const friendsLoaded = loadedFor.user === username && loadedFor.from && loadedFor.to;
+  const cacheKey = `migwith.friends.${key(username)}`;
+  const cachedFriends = useMemo(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem(cacheKey) || "[]");
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  }, [cacheKey]);
+  const friends = friendsLoaded ? liveFriends : cachedFriends;
+  const liveKey = liveFriends.join("\n");
+  useEffect(() => {
+    if (!friendsLoaded || !username) return;
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(liveFriends));
+    } catch {
+      // storage blocked
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendsLoaded, liveKey, cacheKey]);
 
   const relationTo = (other: string): Relation => {
     const k = key(other);
