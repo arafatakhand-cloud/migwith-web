@@ -1023,10 +1023,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // Same display rules as the app (RoomPage.kt): your own entered/left lines
   // are hidden from you, and one person's "has entered" (or "has left") never
   // shows twice in a row — a second copy can come from an older app version or
-  // a second device, and entered/left always alternate per person.
+  // a second device. A copy is one that comes within 10 minutes of the first:
+  // a later "has left" is a new departure (the person was put back quietly in
+  // between) and shows, like the app.
   const myUid = user?.uid;
   const shown = useMemo(() => {
-    const last = new Map<string, string>();
+    const last = new Map<string, { type: string; at: number }>();
     return [...messages.filter((m) => sinceMs !== null && m.createdAtMs > sinceMs), ...localNotes]
       .sort((a, b) => a.createdAtMs - b.createdAtMs)
       .filter((m) => {
@@ -1034,8 +1036,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (myUid && m.senderUid === myUid) return false;
         const who = m.sender.trim().toLowerCase() || m.senderUid;
         if (!who) return true;
-        const keep = last.get(who) !== m.type;
-        last.set(who, m.type);
+        const prev = last.get(who);
+        const keep = !prev || prev.type !== m.type || m.createdAtMs - prev.at > 10 * 60_000;
+        last.set(who, { type: m.type, at: m.createdAtMs });
         return keep;
       });
   }, [messages, localNotes, myUid, sinceMs]);
