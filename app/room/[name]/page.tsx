@@ -3015,7 +3015,8 @@ function MessageRow({
           className="max-w-[336px] whitespace-pre-wrap rounded-[9px] border px-[7px] py-[7px] text-[14px] leading-snug"
           style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: INK }}
         >
-          {withMentions(brandMiglife(m.text))}
+          {/* emotes (";m3", ":)") as pictures, like chat lines */}
+          {withEmotes(brandMiglife(m.text), fontPx, (t, k) => withMentions(t, `b${k}`))}
           {stamp}
         </p>
       </div>
