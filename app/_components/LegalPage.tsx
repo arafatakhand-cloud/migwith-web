@@ -1,11 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LegalBack } from "./LegalBack";
 
 // Plain public page (Privacy Policy, Delete account): readable without signing in.
 export function LegalPage({ title, updated, children }: { title: string; updated?: string; children: ReactNode }) {
   return (
     <main className="min-h-dvh bg-gradient-to-b from-[#EEF5FD] to-[#DCEBFA] px-4 pb-12 text-[#0B2A5B]">
       <header className="mx-auto flex max-w-3xl items-center gap-2 py-4">
+        <LegalBack />
         <Link href="/welcome" className="flex items-center gap-1" data-notranslate>
           <span className="text-xl font-black tracking-tight">miG</span>
           <span className="rounded-full bg-gradient-to-b from-[#FF9A4D] to-[#E5541A] px-1.5 py-px text-[11px] font-black text-white">life</span>
