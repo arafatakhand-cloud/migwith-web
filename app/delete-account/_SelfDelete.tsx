@@ -12,7 +12,7 @@ import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 
-// 🗑 On /delete-account (Settings → Account → Delete account opens it): logged
+// 🗑 On /delete-account (Settings → Delete account (under Log out) opens it): logged
 // in → a "Delete my account" button right here; logged out → Login first.
 export function SelfDeleteButton() {
   const { user, loading } = useSession() as ReturnType<typeof useSession> & { loading?: boolean };

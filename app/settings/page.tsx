@@ -212,11 +212,6 @@ export default function SettingsPage() {
               <Row icon="ℹ️" tint="#D4AF37" title="About miGlife" subtitle="miGlife Web" onClick={() => setDialog("about")} />
             </Group>
 
-            {/* 🗑 Google Play: deleting the account must be possible inside the app */}
-            <Group title="Account">
-              <Row icon="🗑" tint="#D93025" title="Delete account" subtitle="Permanently delete your MIG ID (7 days to change your mind)" href="/delete-account" />
-            </Group>
-
             <button
               type="button"
               onClick={logout}
@@ -224,6 +219,11 @@ export default function SettingsPage() {
             >
               ↪ Log out
             </button>
+            {/* 🗑 Google Play: deleting the account must be possible inside the app.
+                A small grey link under Log out — easy to find, not in the way. */}
+            <Link href="/delete-account" className="block text-center text-xs text-[#8A97A8] underline">
+              Delete account
+            </Link>
             <p className="text-center text-[11px] text-[#8A97A8]">miGlife Web</p>
           </div>
         )}

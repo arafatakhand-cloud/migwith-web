@@ -19,7 +19,7 @@ export default function DeleteAccountPage() {
 
       <H2>Delete it yourself (fastest)</H2>
       <ol className="list-decimal space-y-2 pl-5">
-        <li>Log in to miGlife (in the app: <b>Settings → Account → Delete account</b> brings you here).</li>
+        <li>Log in to miGlife (in the app: <b>Settings → Delete account (under Log out)</b> brings you here).</li>
         <li>Tap <b>🗑 Delete my account</b> below.</li>
         <li>Type <b>DELETE</b> and confirm. Your account is deleted <b>7 days</b> later.</li>
       </ol>

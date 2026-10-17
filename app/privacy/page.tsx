@@ -69,7 +69,7 @@ export default function PrivacyPage() {
       <H2>6. How long we keep it, and deleting your account</H2>
       <p>
         We keep your data while your account exists. You can delete your account at any time in the app or on the website
-        (Settings → Account → Delete account), or ask us by email (support@miglife.app, subject “Delete my account”, with your
+        (Settings → Delete account (under Log out)), or ask us by email (support@miglife.app, subject “Delete my account”, with your
         MIG ID). It is deleted 7 days later — logging in again within those 7 days cancels it. Your profile, photos, friends,
         your mailbox, alerts, tags, coins, coin and XP history, IP records and login are deleted.
       </p>
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
           "Edit or remove your profile details and photos at any time.",
           "Lock your profile, turn off email from other users, and block people (Settings → Privacy).",
           "Turn off notifications in your phone or browser settings.",
-          "Delete your account: Settings → Account → Delete account (see above).",
+          "Delete your account: Settings → Delete account (under Log out) (see above).",
         ]}
       />
 
