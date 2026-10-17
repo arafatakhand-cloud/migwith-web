@@ -10,7 +10,7 @@ import { activeSupporterTeam, type SupporterTeam } from "./supporterTeams";
 // Name colours in room chat, the app's roomRoleColor + Color Shop rule:
 // Lucky User pink while it lasts; Admin / Staff / Mentor / Merchant always
 // their role colour; everyone else (migwith and founders included) the
-// colour of their active Color Shop colour, else their ⚽ Supporter Colours
+// colour of their active Color Shop colour
 // team colour, else normal blue.
 
 export const SHOP_TEXT_COLORS: Record<string, string> = {
@@ -96,7 +96,9 @@ function colorFor(name: string, p: Profile | undefined): string {
   if (["admin", "administrator", "superadmin", "staff", "mentor", "merchant", "country_representative"].includes(p.role)) {
     return roleColor(p.role);
   }
-  return p.shopColor || supporterOf(p)?.text || roleColor(p.role);
+  // ⚽ Supporter Colours no longer colour the name in chat — the team shows
+  // as a badge on "has entered / has left", the people list and the profile.
+  return p.shopColor || roleColor(p.role);
 }
 
 function supporterOf(p: Profile | undefined): SupporterTeam | null {

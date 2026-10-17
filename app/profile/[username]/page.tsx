@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SupporterJersey } from "../../_components/SupporterBadge";
+import { activeSupporterTeam, type SupporterTeam } from "../../../lib/supporterTeams";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -41,6 +43,8 @@ import { useIsClassic } from "../../../lib/uiStyle";
 
 type Profile = {
   uid: string;
+  /** ⚽ Supporter Colours team, while it lasts */
+  supporter: SupporterTeam | null;
   fullName: string;
   photoUrl: string;
   coverPhotoUrl: string;
@@ -232,6 +236,7 @@ export default function ProfilePage() {
         const created = toMs(x.createdAt);
         setProfile({
           uid: d.id,
+          supporter: activeSupporterTeam(x.supporterTeam, x.supporterUntil),
           fullName: String(x.fullName || "").trim(),
           photoUrl: profileImageUrl(x),
           coverPhotoUrl: String(x.coverPhotoUrl || "").trim(),
@@ -564,6 +569,18 @@ export default function ProfilePage() {
             <p className="mt-1">
               miGlife Level {profile.level} <span className="text-base">{badgeForLevel(profile.level)}</span>
             </p>
+            {profile.supporter && (
+              // ⚽ Supporter Colours: the team as a badge
+              <p className="mt-1.5">
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border px-2 py-[3px] text-[12px] font-bold"
+                  style={{ borderColor: `${profile.supporter.text}55`, background: `${profile.supporter.text}12`, color: profile.supporter.text }}
+                >
+                  <SupporterJersey team={profile.supporter} size={18} />
+                  {profile.supporter.name} supporter
+                </span>
+              </p>
+            )}
             {facts.length > 0 && <p className="mt-1 truncate">{facts.join(", ")}</p>}
             {profile.relationship && <p className="mt-0.5 truncate text-sm">💍 {profile.relationship}</p>}
             {profile.memberSince && <p className="mt-0.5 truncate text-sm">🗓 Member since {profile.memberSince}</p>}

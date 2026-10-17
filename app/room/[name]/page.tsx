@@ -2968,6 +2968,10 @@ function MessageRow({
   // "Bangladesh: imran [25] has entered." — on the left, room name in orange, the rest black.
   if (m.type === "room_entry" || m.type === "room_leave") {
     const colon = m.text.indexOf(": ");
+    const body = brandMiglife(colon > 0 ? m.text.slice(colon + 2) : m.text);
+    // ⚽ Supporter Colours: the team badge goes just before "has entered / has left".
+    const team = m.sender ? supporterTeamOf(m.sender) : null;
+    const cut = team ? body.search(/ has (entered|left)/) : -1;
     return (
       <p className="px-1 text-left text-[13px] leading-snug">
         {colon > 0 && (
@@ -2975,7 +2979,15 @@ function MessageRow({
             {m.text.slice(0, colon + 1)}{" "}
           </span>
         )}
-        <span className="text-black">{withBadgeImages(brandMiglife(colon > 0 ? m.text.slice(colon + 2) : m.text), badgeImages)}</span>
+        {team && cut > 0 ? (
+          <span className="text-black">
+            {withBadgeImages(body.slice(0, cut), badgeImages)}{" "}
+            <SupporterBadge team={team} size={9} />
+            {withBadgeImages(body.slice(cut), badgeImages)}
+          </span>
+        ) : (
+          <span className="text-black">{withBadgeImages(body, badgeImages)}</span>
+        )}
         {stamp}
       </p>
     );
@@ -3198,11 +3210,6 @@ function MessageRow({
               ) : (
                 brandMiglife(senderName)
               )}
-              {/* ⚽ Supporter Colours: the team badge next to the name */}
-              {!isRoomLine && (() => {
-                const team = supporterTeamOf(senderName);
-                return team ? <span className="ml-1"><SupporterBadge team={team} size={Math.max(8, fontPx * 0.6)} /></span> : null;
-              })()}
               :
             </span>
           )}
