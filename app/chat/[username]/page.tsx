@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -34,10 +34,13 @@ import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { GiftImg } from "../../_components/GiftImg";
 import { openReport } from "../../_components/ReportDialog";
+import { VoiceRecorder } from "../../_components/VoiceRecorder";
+import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
-// Send File / Send Gift / Clear Chat / View Profile / Send Credit / Close Chat.
+// Send File / Send Gift / Clear Chat / View Profile / Send Credit / Block /
+// Report / Close Chat, and 🎤 voice messages.
 
 type PrivateMessage = {
   id: string;
@@ -50,6 +53,8 @@ type PrivateMessage = {
   fileUrl: string;
   fileName: string;
   fileSize: number;
+  audioUrl: string;
+  durationSec: number;
   read: boolean;
   reactions: Record<string, string[]>;
   createdAtMs: number;
@@ -96,6 +101,7 @@ export default function PrivateChatPage() {
   const [reply, setReply] = useState<{ label: string; snippet: string } | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
   const [clearedAt, setClearedAt] = useState(0);
   const [viewImage, setViewImage] = useState<string | null>(null);
   // 🚫 I blocked this person (users/{me}.blockedUsers): their messages are hidden and I can't write to them.
@@ -144,6 +150,8 @@ export default function PrivateChatPage() {
           fileUrl: String(d.get("fileUrl") || ""),
           fileName: String(d.get("fileName") || ""),
           fileSize: Number(d.get("fileSize") ?? -1),
+          audioUrl: String(d.get("audioUrl") || ""),
+          durationSec: Number(d.get("durationSec") || 0),
           read: d.get("read") === true,
           reactions: Object.fromEntries(
             Object.entries((d.get("reactions") || {}) as Record<string, unknown>)
@@ -232,10 +240,22 @@ export default function PrivateChatPage() {
     (m) => (m.createdAtMs || Number.MAX_SAFE_INTEGER) > clearedAt && !(blocked && m.from.toLowerCase() === friend.toLowerCase())
   );
 
-  useEffect(() => {
+  // Keeps the newest message in view: after every new message, and again
+  // when a photo inside the list finishes loading and makes it taller.
+  const scrollToBottom = () => {
     const el = listRef.current;
     if (el && stickToBottom.current) el.scrollTop = el.scrollHeight;
-  }, [visible.length]);
+  };
+  const lastId = visible[visible.length - 1]?.id || "";
+  useLayoutEffect(scrollToBottom, [visible.length, lastId]);
+
+  // The message box grows with the text, up to 4 lines.
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 88)}px`;
+  }, [text]);
 
   const base = () => ({ chatId, fromUsername: username, fromUid: user?.uid || "", toUsername: friend, read: false, createdAt: serverTimestamp() });
 
@@ -310,6 +330,26 @@ export default function PrivateChatPage() {
     }
   };
 
+  // 🎤 Voice: stored next to Send File's files (private_files/), message
+  // shape { messageType: "voice", audioUrl, durationSec }, like the app.
+  const sendVoice = async (audio: Blob, seconds: number) => {
+    if (!user || !username || self) return;
+    if (blocked) throw new Error(`You blocked ${friend}. Unblock to send a message.`);
+    const type = audio.type || "audio/webm";
+    const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+    const r = storageRef(storage, `private_files/${storageSafeSegment(chatId)}/voice_${crypto.randomUUID()}.${ext}`);
+    await uploadBytes(r, audio, { contentType: type });
+    const url = await getDownloadURL(r);
+    stickToBottom.current = true;
+    await addDoc(collection(db, "private_messages"), {
+      ...base(),
+      text: "🎤 Voice message",
+      messageType: "voice",
+      audioUrl: url,
+      durationSec: seconds,
+    });
+  };
+
   // One reaction per person per message: the same emoji again clears it,
   // another one moves it.
   const react = (m: PrivateMessage, emoji: string) => {
@@ -359,9 +399,9 @@ export default function PrivateChatPage() {
     ["🧹", "Clear Chat", clearChat],
     ["👤", "View Profile", () => router.push(`/profile/${encodeURIComponent(friend)}`)],
     ["💰", "Send Credit", () => router.push(`/wallet?to=${encodeURIComponent(friend)}`)],
-    ["🚪", "Close Chat", () => router.push("/messages")],
     blocked ? ["✓", `Unblock ${friend}`, () => setBlock(false)] : ["🚫", `Block ${friend}`, () => setBlock(true)],
     ["🚩", `Report ${friend}`, () => openReport({ kind: "user", targetUsername: friend })],
+    ["🚪", "Close Chat", () => router.push("/messages")],
   ];
 
   return (
@@ -388,6 +428,7 @@ export default function PrivateChatPage() {
         <div
           ref={listRef}
           data-notranslate
+          onLoadCapture={scrollToBottom}
           onScroll={(e) => {
             const el = e.currentTarget;
             stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
@@ -506,6 +547,14 @@ export default function PrivateChatPage() {
                       }}
                       className="max-h-64 max-w-full rounded-xl"
                     />
+                  ) : m.type === "voice" && m.audioUrl ? (
+                    <div className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
+                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${mineRight ? "bg-white/20" : "bg-[#1F63C4]/10"}`}>
+                        🎤
+                      </span>
+                      <audio controls preload="metadata" src={m.audioUrl} className="h-9 w-[200px] max-w-full" />
+                      {m.durationSec > 0 && <span className={`text-[11px] font-bold ${sub}`}>{m.durationSec}s</span>}
+                    </div>
                   ) : m.type === "file" ? (
                     <a
                       href={m.fileUrl || undefined}
@@ -589,10 +638,16 @@ export default function PrivateChatPage() {
           </div>
         )}
 
-        {/* Input bar, like the app's */}
-        <div className="pb-safe relative flex items-center gap-1 rounded-t-3xl bg-white px-1.5 py-2 shadow-[0_-4px_14px_rgba(0,0,0,.08)]">
+        {/* Input bar: ⋮ menu, a rounded message box (photo, text, emoji) and
+            🎤 voice, which turns into ➤ send as soon as something is typed. */}
+        <div className="pb-safe relative flex items-end gap-1.5 rounded-t-3xl bg-white px-2 py-2 shadow-[0_-4px_14px_rgba(0,0,0,.08)]">
           <div className="relative">
-            <button type="button" onClick={() => setMenuOpen((v) => !v)} className="px-2.5 text-[22px] font-bold text-[#35507E]" aria-label="Menu">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex h-11 w-9 items-center justify-center rounded-full text-[22px] font-bold text-[#35507E] hover:bg-[#EEF4FB]"
+              aria-label="Menu"
+            >
               ⋮
             </button>
             {menuOpen && (
@@ -619,51 +674,62 @@ export default function PrivateChatPage() {
               </>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => photoRef.current?.click()}
-            disabled={uploading || self}
-            className="flex h-[34px] w-[34px] items-center justify-center text-[21px] disabled:opacity-40"
-            aria-label="Send a photo"
-          >
-            {uploading ? "⏳" : "🖼️"}
-          </button>
           <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => (sendPhoto(e.target.files?.[0]), (e.target.value = ""))} />
           <input ref={fileRef} type="file" hidden onChange={(e) => (sendFile(e.target.files?.[0]), (e.target.value = ""))} />
-          <div className="flex h-[46px] min-w-0 flex-1 items-center rounded-full border border-[#D6E0EC] bg-[#EEF2F7] pl-4 pr-1.5">
-            {/* One-line textarea: no AutoFill bar above the keyboard (see ChatBar). */}
-            <textarea
-              ref={inputRef}
-              rows={1}
-              wrap="off"
-              value={text}
-              onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000))}
-              autoComplete="off"
-              autoCorrect="on"
-              name="migwith-chat-message"
-              enterKeyHint="send"
-              data-1p-ignore
-              data-lpignore="true"
-              data-form-type="other"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  send();
-                }
-              }}
-              placeholder="Write a message"
-              className="h-[22px] min-w-0 flex-1 resize-none overflow-hidden whitespace-pre bg-transparent p-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[#7D8DA6]"
-            />
-            <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
-          </div>
-          <button
-            type="button"
-            onClick={send}
-            className="ml-1 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-[#12335E] text-xl font-bold text-white shadow-md"
-            aria-label="Send"
-          >
-            ➤
-          </button>
+          {!voiceActive && (
+            <div className="min-w-0 flex-1 rounded-[24px] bg-gradient-to-r from-[#5B8DEF] via-[#8B6CF0] to-[#3FB6F2] p-[1.5px] shadow-[0_2px_10px_rgba(91,141,239,.18)]">
+              <div className="flex min-h-[41px] items-end gap-1 rounded-[22.5px] bg-[#F7FAFF] py-[3px] pl-1 pr-1.5">
+                <button
+                  type="button"
+                  onClick={() => photoRef.current?.click()}
+                  disabled={uploading || self}
+                  className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #EC4677, #C13A93, #9B3DAB)" }}
+                  aria-label="Send a photo"
+                >
+                  {uploading ? "⏳" : <PhotoGlyph />}
+                </button>
+                {/* Wraps onto up to 4 lines; Enter still sends (no AutoFill bar, see ChatBar). */}
+                <textarea
+                  ref={inputRef}
+                  rows={1}
+                  value={text}
+                  onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000))}
+                  autoComplete="off"
+                  autoCorrect="on"
+                  name="migwith-chat-message"
+                  enterKeyHint="send"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-form-type="other"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      send();
+                    }
+                  }}
+                  placeholder="Message…"
+                  className="my-[6.5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[#8A9BB5]"
+                />
+                <span className="flex h-[35px] shrink-0 items-center">
+                  <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
+                </span>
+              </div>
+            </div>
+          )}
+          {text.trim() ? (
+            <button
+              type="button"
+              onClick={send}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white active:scale-95"
+              style={SEND_BG}
+              aria-label="Send"
+            >
+              <SendGlyph />
+            </button>
+          ) : (
+            <VoiceRecorder large disabled={self || blocked || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
+          )}
         </div>
         <div ref={setEmoteSlot} />
       </div>

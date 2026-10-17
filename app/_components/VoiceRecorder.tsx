@@ -26,11 +26,14 @@ export function VoiceRecorder({
   onSend,
   onError,
   onActive,
+  large,
 }: {
   disabled: boolean;
+  /** Bigger buttons and bar, for the private chat's input row. */
+  large?: boolean;
   /** True while recording or while a clip waits, so the parent hides the text box. */
   onActive?: (active: boolean) => void;
-  onSend: (audio: Blob) => Promise<void>;
+  onSend: (audio: Blob, seconds: number) => Promise<void>;
   onError: (message: string) => void;
 }) {
   // Like the app: TAP 🎤 to start recording (no popup), tap ■ to stop. The
@@ -145,7 +148,7 @@ export function VoiceRecorder({
     if (!blob) return;
     setState("sending");
     try {
-      await onSend(blob);
+      await onSend(blob, seconds);
       reset();
     } catch (err: any) {
       onError(err?.message || "Voice message could not be sent.");
@@ -153,13 +156,16 @@ export function VoiceRecorder({
     }
   };
 
+  const btn = large ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full" : BAR_BTN;
+  const barH = large ? "h-11" : "h-9";
+
   const mic = (
     <button
       type="button"
       onClick={onTap}
       disabled={disabled && state !== "recording"}
       title={state === "recording" ? "Stop recording" : "Record a voice message"}
-      className={`${BAR_BTN} select-none disabled:opacity-40 ${state === "recording" ? "chat-mic-rec border-2" : ""}`}
+      className={`${btn} select-none disabled:opacity-40 ${state === "recording" ? "chat-mic-rec border-2" : ""}`}
       style={state === "recording" ? MIC_REC_BG : MIC_BG}
     >
       {state === "recording" ? <span className="block h-[11px] w-[11px] rounded-[2.5px] bg-white" /> : <MicGlyph />}
@@ -172,7 +178,7 @@ export function VoiceRecorder({
     <>
       {mic}
       {state === "recording" ? (
-        <div className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full border-[1.5px] border-red-300 bg-white px-3">
+        <div className={`flex ${barH} min-w-0 flex-1 items-center gap-2 rounded-full border-[1.5px] border-red-300 bg-white px-3`}>
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
           <span className={`text-sm font-bold ${seconds >= MAX_VOICE_MS / 1000 - 10 ? "text-amber-600" : "text-[#0B2A5B]"}`}>
             {clock(seconds)} / {clock(MAX_VOICE_MS / 1000)}
@@ -182,7 +188,7 @@ export function VoiceRecorder({
       ) : (
         <>
           {/* The finished clip waits right in the chat box. */}
-          <div className="flex h-9 min-w-0 flex-1 items-center rounded-full border border-[#E2B93B]/45 bg-gradient-to-r from-[#0B2A5B] to-[#1E6FD9] pl-1 pr-3">
+          <div className={`flex ${barH} min-w-0 flex-1 items-center rounded-full border border-[#E2B93B]/45 bg-gradient-to-r from-[#0B2A5B] to-[#1E6FD9] pl-1 pr-3`}>
             <button
               type="button"
               onClick={reset}
@@ -205,7 +211,7 @@ export function VoiceRecorder({
             onClick={send}
             disabled={state === "sending"}
             aria-label="Send voice message"
-            className={`${BAR_BTN} disabled:opacity-50`}
+            className={`${btn} disabled:opacity-50`}
             style={SEND_VOICE_BG}
           >
             {state === "sending" ? "⏳" : <SendGlyph />}
