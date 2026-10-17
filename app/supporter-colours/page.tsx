@@ -92,7 +92,7 @@ export default function SupporterColoursPage() {
       const { data } = await buyCall({ team: t.id, operationId: opId() });
       setMessage(`⚽ You now support ${t.name}${data?.until ? ` — until ${fmtDate(data.until)}` : ""}.`);
     } catch (e: any) {
-      setMessage(e?.message || "Could not buy Supporter Colours.");
+      setMessage(e?.message || "Could not buy the Supporters Badge.");
     } finally {
       setBusy(false);
     }
@@ -103,7 +103,7 @@ export default function SupporterColoursPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6 lg:max-w-4xl">
-        <PageTitle title="Supporter Colours" subtitle="Your football team's colour & badge" icon="⚽" />
+        <PageTitle title="Supporters Badge" subtitle="Your football team's badge" icon="⚽" />
         <div className="flex items-center justify-between px-1 text-sm">
           <span className="flex items-center gap-1.5 font-semibold text-[#35507E]">
             🪙 {terms.price.toLocaleString()} coins · {terms.days} days
@@ -199,7 +199,7 @@ export default function SupporterColoursPage() {
                       <span className="block truncate font-extrabold" style={{ color: t.text }}>
                         {t.name}
                       </span>
-                      <span className="text-[11px] text-[#8A97B0]">{isMine ? `✅ Your team · tap to add ${terms.days} days` : "Name colour + badge"}</span>
+                      <span className="text-[11px] text-[#8A97B0]">{isMine ? `✅ Your team · tap to add ${terms.days} days` : "Supporters badge"}</span>
                     </span>
                     <span className="shrink-0 rounded-full border border-[#F5D77A] bg-[#FFF8E1] px-2 py-0.5 text-[11px] font-bold text-[#8A5A00]">
                       🪙 {short(terms.price)}
@@ -213,7 +213,7 @@ export default function SupporterColoursPage() {
 
         <p className="mt-6 px-1 text-center text-[11px] leading-5 text-[#8A97B0]">
           Fan colours only. miGlife is not connected with any football club or league; team names belong to their owners.
-          A Style Studio / VIP colour shows first while it is on — your badge still shows.
+          Your badge shows when you enter or leave a room, in the room's people list and on your profile.
         </p>
       </section>
 
@@ -231,7 +231,7 @@ export default function SupporterColoursPage() {
                 ? `Add ${terms.days} more days`
                 : current
                   ? `Switch from ${current.name} — your days left move to ${confirm.name}, plus ${terms.days} days`
-                  : `Your name in ${confirm.name} colour with the ${confirm.short} badge for ${terms.days} days`}{" "}
+                  : `The ${confirm.name} (${confirm.short}) supporters badge for ${terms.days} days`}{" "}
               for <b>{terms.price.toLocaleString()} coins</b>.
             </p>
             {!canAfford && <p className="mt-2 text-sm font-semibold text-[#D9534F]">Not enough coins.</p>}
@@ -254,7 +254,7 @@ export default function SupporterColoursPage() {
       {editing && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={() => setEditing(false)}>
           <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <p className="text-lg font-extrabold">✏️ Supporter Colours price</p>
+            <p className="text-lg font-extrabold">✏️ Supporters Badge price</p>
             <p className="mt-1 text-xs text-[#5B6B8C]">The same for every team. New buys use it at once.</p>
             <label className="mt-3 block text-xs font-bold text-[#35507E]">
               Price (coins)
