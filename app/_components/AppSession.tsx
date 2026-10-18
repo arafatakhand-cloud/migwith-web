@@ -33,7 +33,7 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   useSpecialColorListener(uid);
   // Online for friends on every page (lastActiveAt every 30 s), like the app.
   useOnlineHeartbeat(uid);
-  // 🔐 Minimised for 30 min → logged out (rooms left, tabs closed); signed out
+  // 🔐 Minimised for 120 min → logged out (rooms left, tabs closed); signed out
   // any other way → that ID's room tabs closed too.
   useAutoLogout(uid);
   // 🔐 Signed out (e.g. coming back to a tab after the login ran out): straight

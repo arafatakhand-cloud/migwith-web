@@ -17,7 +17,7 @@ import { clearRememberedAmounts } from "./amountMemory";
 //    logging in again never shows rooms you are no longer in.
 
 /** How long the web may stay minimised before it logs out by itself. */
-export const BACKGROUND_LOGOUT_MS = 30 * 60 * 1000;
+export const BACKGROUND_LOGOUT_MS = 120 * 60 * 1000;
 
 const HIDDEN_AT = "migwith.hiddenAt";
 const LAST_UID = "migwith.lastUid";
