@@ -67,29 +67,58 @@ function keepCopy(el: HTMLElement, path: string) {
 }
 
 // ---- the tabs beside the page (built ahead, shown while a finger drags) ----
+// Each one is a frame fixed to the screen under the top bar (like a page of
+// the app's pager): it always shows that tab from its top, however far this
+// page is scrolled, and it stays on screen while the real page opens under
+// it, then fades — so nothing jumps.
 type Side = 1 | -1;
-const beside = new Map<Side, { host: HTMLElement; path: string; hasCopy: boolean }>();
+type Beside = { host: HTMLElement; path: string; hasCopy: boolean };
+const beside = new Map<Side, Beside>();
 let shown: Side | 0 = 0;
 
-function buildHost(body: HTMLElement, path: string, side: Side) {
-  const parent = body.parentElement;
-  if (!parent) return null;
+const barBottom = () => {
+  const bar = document.querySelector<HTMLElement>("header[data-topbar]");
+  return bar ? Math.max(0, Math.round(bar.getBoundingClientRect().bottom)) : 0;
+};
+
+function place(host: HTMLElement, body: HTMLElement) {
+  const top = barBottom();
+  host.style.top = `${top}px`;
+  host.style.height = `${Math.max(0, window.innerHeight - top)}px`;
+  // Same left edge and width as the page (its frame does not move with a drag).
+  const inner = host.firstElementChild as HTMLElement | null;
+  const frame = body.parentElement;
+  if (inner && frame) {
+    inner.style.marginLeft = `${Math.round(frame.getBoundingClientRect().left + body.offsetLeft)}px`;
+    inner.style.width = `${Math.round(body.offsetWidth)}px`;
+  }
+}
+
+function buildHost(body: HTMLElement, path: string, side: Side): Beside | null {
+  const main = body.closest("main");
   const host = document.createElement("div");
   host.setAttribute("aria-hidden", "true");
   host.inert = true;
+  const bg = main ? getComputedStyle(main) : null;
   Object.assign(host.style, {
-    position: "absolute",
-    top: "0px",
-    left: `${body.offsetLeft}px`,
-    width: `${body.offsetWidth}px`,
-    minHeight: `${body.offsetHeight}px`,
+    position: "fixed",
+    left: "0px",
+    width: "100%",
+    overflow: "hidden",
+    zIndex: "25",
     pointerEvents: "none",
     visibility: "hidden",
-    transform: `translateX(${side * 100}%)`,
+    contain: "layout paint style",
+    backgroundColor: bg?.backgroundColor || "#fff",
+    backgroundImage: bg?.backgroundImage || "none",
+    transform: `translate3d(${side * 100}%,0,0)`,
   });
+  const inner = document.createElement("div");
   const copy = copies.get(key(path));
-  if (copy) host.appendChild(copy.box.cloneNode(true));
-  parent.appendChild(host);
+  if (copy) inner.appendChild(copy.box.cloneNode(true));
+  host.appendChild(inner);
+  document.body.appendChild(host);
+  place(host, body);
   host.querySelectorAll<HTMLElement>("[data-snap-scroll]").forEach((n) => {
     n.scrollTop = Number(n.dataset.snapScroll) || 0;
   });
@@ -98,16 +127,10 @@ function buildHost(body: HTMLElement, path: string, side: Side) {
   return entry;
 }
 
-function dropBeside() {
-  beside.forEach((b) => b.host.remove());
-  beside.clear();
-  shown = 0;
-}
-
 /** Build the tabs on both sides ahead of time, while the phone is idle. */
 export function prepareBeside(left?: string, right?: string) {
   idle(() => {
-    if (swipeState.dragging) return;
+    if (swipeState.dragging || shown) return;
     const body = document.querySelector<HTMLElement>(SWIPE_BODY);
     if (!body) return;
     ([
@@ -128,7 +151,7 @@ export function removePeek() {
   beside.forEach((b, side) => {
     b.host.style.transition = "none";
     b.host.style.visibility = "hidden";
-    b.host.style.transform = `translateX(${side * 100}%)`;
+    b.host.style.transform = `translate3d(${side * 100}%,0,0)`;
     b.host.style.willChange = "";
   });
   shown = 0;
@@ -144,6 +167,7 @@ export function showPeek(body: HTMLElement, path: string, side: Side) {
     entry = buildHost(body, path, side) || undefined;
   }
   if (!entry) return;
+  place(entry.host, body);
   entry.host.style.visibility = "visible";
   entry.host.style.willChange = "transform";
   shown = side;
@@ -187,6 +211,33 @@ export function slideBack(body: HTMLElement, ms: number) {
   }, ms + 20);
 }
 
+/** The real page has opened under the copy: drop the others now, and let the
+ *  copy stay a moment (the page settles: its list scrolls, its data shows),
+ *  then fade it away. */
+function handOver() {
+  const keep = shown ? beside.get(shown) : undefined;
+  beside.forEach((b) => b !== keep && b.host.remove());
+  beside.clear();
+  shown = 0;
+  if (!keep) return false;
+  if (!keep.hasCopy) {
+    keep.host.remove();
+    return false;
+  }
+  const host = keep.host;
+  let f = requestAnimationFrame(() => {
+    f = requestAnimationFrame(() => {
+      window.setTimeout(() => {
+        host.style.transition = "opacity 120ms linear";
+        host.style.opacity = "0";
+        window.setTimeout(() => host.remove(), 140);
+      }, 140);
+    });
+  });
+  void f;
+  return true;
+}
+
 export function SwipeBody({ children }: { children: React.ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
@@ -199,9 +250,7 @@ export function SwipeBody({ children }: { children: React.ReactNode }) {
     // A new page: the tabs beside the old one go (they were in its frame).
     // Opened by a swipe with a copy beside it: the copy is exactly here, so
     // the real page just takes its place.
-    const fromCopy = shown !== 0 && !!beside.get(shown)?.hasCopy;
-    dropBeside();
-    if (fromCopy) swipeEnter.dir = 0;
+    if (handOver()) swipeEnter.dir = 0;
 
     // A fresh copy of this page now and then, while idle.
     const snap = () => idle(() => !swipeState.dragging && el.isConnected && keepCopy(el, pathRef.current));
