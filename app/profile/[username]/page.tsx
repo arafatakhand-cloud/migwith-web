@@ -546,12 +546,13 @@ export default function ProfilePage() {
             </div>
           )}
           {/* ROUND photo (like the rest of the app). With a cover photo it sits
-              half on the cover's bottom edge, Facebook-style. */}
+              half on the cover's bottom edge, Facebook-style — except on a
+              Supporters Badge profile, where it sits fully on the team colours. */}
           {/* 📟 Classic: a square photo with a plain grey frame. */}
           <div
             className={`relative z-10 h-[112px] w-[112px] shrink-0 ${
               classic ? "rounded bg-gradient-to-b from-[#C9CED6] to-[#9AA3AE] p-[3px] shadow" : "mig-frame rounded-full"
-            } ${profile.coverPhotoUrl ? "-mt-[60px]" : ""}`}
+            } ${profile.coverPhotoUrl && !team ? "-mt-[60px]" : ""}`}
           >
             <div className={`h-full overflow-hidden bg-[#E8EEF5] ${classic ? "rounded-sm border-[1.5px] border-white/95" : "rounded-full"}`}>
               {profile.photoUrl ? (
@@ -579,7 +580,10 @@ export default function ProfilePage() {
                 </span>
               )}
               {shownRole && (
-                <span className="shrink-0 text-[13px] font-bold" style={{ color: shownRole.color }}>
+                <span
+                  className={`shrink-0 text-[13px] font-bold ${team ? "rounded-full bg-white/90 px-2 py-0.5 shadow-sm" : ""}`}
+                  style={{ color: shownRole.color }}
+                >
                   {shownRole.icon || "🎖"} {shownRole.label}
                 </span>
               )}
