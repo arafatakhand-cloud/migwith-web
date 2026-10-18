@@ -105,13 +105,16 @@ export function useLuxuryBet(
   // ones ({ warm: true } does nothing else on the server).
   useEffect(() => {
     if (!enabled || !uid) return;
-    const warm = (c: typeof startCall) => c({ warm: true }).catch(() => {});
+    const warm = (c: typeof startCall) => c({ warm: true }).catch(() => null);
     if (running) {
       warm(betCall as typeof startCall);
       warm(tickCall);
     } else {
-      warm(startCall);
-      warm(betCall as typeof startCall);
+      // The ▶ one only when the server already knows "warm" (the bet one answers
+      // { warm: true }): an older server would START a round on that call.
+      warm(betCall as typeof startCall).then((r) => {
+        if ((r?.data as { warm?: boolean } | undefined)?.warm === true) warm(startCall);
+      });
     }
   }, [enabled, uid, running]);
 
