@@ -1,23 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
-import { detachPushForLogout } from "./push";
-import { forgetOpenRooms, leaveAllOpenRooms } from "./openRooms";
-import { markOfflineForLogout } from "./heartbeat";
-import { clearRememberedAmounts } from "./amountMemory";
+import { autoLeaveOpenRooms, forgetOpenRooms } from "./openRooms";
 
-// 🔐 Logging out the right way, whatever ends the session:
-//  • web minimised (tab / browser in the background) for BACKGROUND_LOGOUT_MS
-//    or more → a full logout when it comes back: left every room ("has left"),
-//    offline for friends, room tabs closed — like pressing Logout;
+// ⏰ Never logged out by the web itself. Instead:
+//  • minimised (tab / browser in the background) for BACKGROUND_LEAVE_MS or
+//    more → when it comes back, out of every open room ("has left"); the tabs
+//    stay, and typing in one says "You have been auto left …" — close the tab
+//    (✕) and open the room again to come back in;
 //  • the browser itself dropped the login (cleared data, an in-app browser
-//    that forgets, …) → the room tabs of that ID are closed here too, so
-//    logging in again never shows rooms you are no longer in.
+//    that forgets, …) → that ID's room tabs are closed, so logging in again
+//    never shows rooms you are no longer in.
 
-/** How long the web may stay minimised before it logs out by itself. */
-export const BACKGROUND_LOGOUT_MS = 120 * 60 * 1000;
+/** How long the web may stay minimised before it leaves its rooms. */
+export const BACKGROUND_LEAVE_MS = 120 * 60 * 1000;
 
 const HIDDEN_AT = "migwith.hiddenAt";
 const LAST_UID = "migwith.lastUid";
@@ -38,17 +36,7 @@ const write = (k: string, v: string | null) => {
   }
 };
 
-/** The same steps as the Logout button. */
-export async function fullLogout(uid: string | undefined) {
-  await detachPushForLogout();
-  if (uid) await leaveAllOpenRooms(uid);
-  await markOfflineForLogout(uid);
-  clearRememberedAmounts();
-  write(LAST_UID, null);
-  await signOut(auth);
-}
-
-export function useAutoLogout(uid: string | undefined) {
+export function useAutoLeave(uid: string | undefined) {
   // Remember who is signed in; signed out without the Logout button → close
   // that ID's room tabs (its room spots go stale on the server by themselves).
   useEffect(() => {
@@ -65,7 +53,6 @@ export function useAutoLogout(uid: string | undefined) {
 
   useEffect(() => {
     if (!uid) return;
-    let busy = false;
     const check = () => {
       if (document.visibilityState === "hidden") {
         // Several tabs of the web: the first one hidden keeps the time.
@@ -74,12 +61,7 @@ export function useAutoLogout(uid: string | undefined) {
       }
       const at = Number(read(HIDDEN_AT)) || 0;
       write(HIDDEN_AT, null);
-      if (!busy && at && Date.now() - at >= BACKGROUND_LOGOUT_MS) {
-        busy = true;
-        fullLogout(uid).finally(() => {
-          busy = false;
-        });
-      }
+      if (at && Date.now() - at >= BACKGROUND_LEAVE_MS) void autoLeaveOpenRooms(uid);
     };
     // The page closing (the phone shuts the minimised web) counts as hidden.
     const onHide = () => {
