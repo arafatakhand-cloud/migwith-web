@@ -1012,7 +1012,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           if (heartbeat) clearInterval(heartbeat);
           restorePresenceRef.current = null;
           setAutoLeft(true);
-          note(`${roomName} : You have been auto left due to inactivity, kick or ban by other!`);
+          note(`⏰ ${roomName} : You've been out of this room for a while (away too long, kicked or banned).`);
         });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
@@ -1345,10 +1345,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
     if (autoLeft) {
-      // Like the classic chat apps: two lines, nothing sent.
-      note(`${roomName} : You have been auto left due to inactivity, kick or ban by other!`);
-      note(`${roomName} : You are not in ${roomName} chat room`);
-      note(`${roomName} : Close this room tab (✕) and open the room again to come back in.`);
+      // Nothing sent: the room says why and how to come back in.
+      note(`⏰ ${roomName} : You've been out of this room for a while (away too long, kicked or banned).`);
+      note(`🚪 ${roomName} : Your message wasn't sent. Close this tab (✕) and open ${roomName} again to rejoin.`);
       return;
     }
 
