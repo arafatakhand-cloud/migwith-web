@@ -1,6 +1,7 @@
 import { DesktopSidebar } from "./SideMenu";
 import { PresencePopupHost } from "./PresencePopup";
 import { TopBar } from "./TopBar";
+import { SwipeBody } from "./SwipeBody";
 
 /* Page frame shared by every signed-in page: the app's white top bar over a
    sky background (and on laptops the menu as a left sidebar).
@@ -45,7 +46,7 @@ export function PageShell({
       {/* Laptop: the menu stays open on the left and the page fills the rest. */}
       <div className="relative z-10 lg:flex">
         <DesktopSidebar />
-        <div className="min-w-0 flex-1">{children}</div>
+        <SwipeBody>{children}</SwipeBody>
       </div>
     </main>
   );

@@ -12,6 +12,7 @@ import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
+import { SWIPE_BODY, clearSwipeStyle, swipeEnter } from "./SwipeBody";
 import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "./PillTabs";
 
 // The app's top bar: ☰ menu and the pill tab strip (Lobby, Rooms, the page you
@@ -81,9 +82,26 @@ export function TopBar() {
   const here = currentRoom ? roomHref(currentRoom) : pathname;
   const orderRef = useRef({ order, here });
   orderRef.current = { order, here };
+  // The tabs next to this one load ahead, so a swipe opens them at once.
+  const orderKey = order.join("|");
+  useEffect(() => {
+    const i = order.indexOf(here);
+    if (i < 0) return;
+    [order[i - 1], order[i + 1]].forEach((p) => p && router.prefetch(p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderKey, here, router]);
   useEffect(() => {
     if (!uid) return;
-    let start: { x: number; y: number; t: number; reply: boolean } | null = null;
+    // The page follows the finger (like the app's pager); let go past a quarter
+    // of the screen (or flick) and it slides out while the next tab slides in.
+    let start: { x: number; y: number; t: number; reply: boolean; mode: "" | "drag" | "scroll" } | null = null;
+    const body = () => document.querySelector<HTMLElement>(SWIPE_BODY);
+    const neighbour = (dx: number) => {
+      const { order, here } = orderRef.current;
+      const i = order.indexOf(here);
+      if (i < 0) return undefined;
+      return order[dx < 0 ? i + 1 : i - 1];
+    };
     const onStart = (e: TouchEvent) => {
       const el = e.target as Element | null;
       // Leave sideways scrollers, text boxes and game tables alone.
@@ -105,30 +123,85 @@ export function TopBar() {
         t: Date.now(),
         // On a full-width line only the message itself replies; empty space slides rooms.
         reply: !!replyLine && isOnSwipeContent(replyLine, x, e.touches[0].clientY),
+        mode: "",
       };
+    };
+    const onMove = (e: TouchEvent) => {
+      if (!start || start.mode === "scroll" || orderRef.current.order.indexOf(orderRef.current.here) < 0) return;
+      const dx = e.touches[0].clientX - start.x;
+      const dy = e.touches[0].clientY - start.y;
+      if (!start.mode) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        // On a message the right drag is swipe-to-reply: the page stays put.
+        start.mode = Math.abs(dx) > Math.abs(dy) * 1.5 && !(start.reply && dx > 0) ? "drag" : "scroll";
+        if (start.mode === "scroll") return;
+      }
+      const el = body();
+      if (!el) return;
+      if (e.cancelable) e.preventDefault();
+      // No tab that way: it only gives a little, like the end of the app's pager.
+      const shift = neighbour(dx) ? dx : dx * 0.2;
+      el.style.transition = "none";
+      el.style.transform = `translateX(${shift}px)`;
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
       const dx = e.changedTouches[0].clientX - start.x;
       const dy = e.changedTouches[0].clientY - start.y;
       const quick = Date.now() - start.t < 700;
-      const onMessage = start.reply;
-      const start0 = start.t;
+      const { reply: onMessage, t: start0, mode } = start;
       start = null;
+      const el = body();
+      const next = neighbour(dx);
+      if (mode === "drag") {
+        const go = !!next && (Math.abs(dx) > window.innerWidth * 0.25 || (quick && Math.abs(dx) > 60));
+        if (!el) {
+          if (go && next) router.push(next);
+          return;
+        }
+        if (go && next) {
+          el.style.transition = "transform 170ms ease-out";
+          el.style.transform = `translateX(${dx < 0 ? -100 : 100}%)`;
+          swipeEnter.dir = dx < 0 ? 1 : -1;
+          swipeEnter.at = Date.now();
+          window.setTimeout(() => {
+            router.push(next);
+            // Same page kept (nothing new mounted)? Put it back.
+            window.setTimeout(() => {
+              if (el.isConnected && swipeEnter.dir) {
+                swipeEnter.dir = 0;
+                clearSwipeStyle(el);
+              }
+            }, 1500);
+          }, 160);
+        } else {
+          el.style.transition = "transform 200ms ease-out";
+          el.style.transform = "translateX(0)";
+          window.setTimeout(() => clearSwipeStyle(el), 220);
+        }
+        return;
+      }
       // A right drag the message took for reply isn't a room slide; a quick flick it left alone is.
       if (onMessage && dx > 0 && swipeReplyClaim.at >= start0) return;
       if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
-      const { order, here } = orderRef.current;
-      const i = order.indexOf(here);
-      if (i < 0) return; // only on the tab pages
-      const next = order[dx < 0 ? i + 1 : i - 1];
       if (next) router.push(next);
     };
+    // The phone took the touch (a call, the system bar …): page back in place.
+    const onCancel = () => {
+      const wasDrag = start?.mode === "drag";
+      start = null;
+      const el = body();
+      if (wasDrag && el) clearSwipeStyle(el);
+    };
     window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: false });
     window.addEventListener("touchend", onEnd, { passive: true });
+    window.addEventListener("touchcancel", onCancel, { passive: true });
     return () => {
       window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
+      window.removeEventListener("touchcancel", onCancel);
     };
   }, [uid, router]);
 
