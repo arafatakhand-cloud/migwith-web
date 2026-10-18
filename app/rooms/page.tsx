@@ -62,6 +62,21 @@ function capacityForLevel(level: number): number {
   return 25;
 }
 
+// ⚡ What this list last showed, kept while the tab is open: swiping back to
+// Rooms shows it at once (no "0/50" while it counts again), and re-reads only
+// after ROOMS_FRESH_MS or a ↻.
+const ROOMS_FRESH_MS = 30_000;
+const roomsMemory: {
+  uid: string;
+  userRooms: UserRoom[];
+  listAt: number;
+  level: number;
+  counts: Record<string, number>;
+  maxes: Record<string, number>;
+  countKey: string;
+  countAt: number;
+} = { uid: "", userRooms: [], listAt: 0, level: 0, counts: {}, maxes: {}, countKey: "", countAt: 0 };
+
 export default function RoomsPage() {
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
@@ -70,16 +85,16 @@ export default function RoomsPage() {
   const gameRooms = luxuryBetAccess.canSee
     ? [LUXURY_BET_ROOM, ...OFFICIAL_GAME_ROOMS]
     : OFFICIAL_GAME_ROOMS;
-  const [userRooms, setUserRooms] = useState<UserRoom[]>([]);
+  const [userRooms, setUserRooms] = useState<UserRoom[]>(roomsMemory.userRooms);
   const [search, setSearch] = useState("");
-  const [level, setLevel] = useState(0);
+  const [level, setLevel] = useState(roomsMemory.level);
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [maxes, setMaxes] = useState<Record<string, number>>({});
+  const [counts, setCounts] = useState<Record<string, number>>(roomsMemory.counts);
+  const [maxes, setMaxes] = useState<Record<string, number>>(roomsMemory.maxes);
   const [refreshKey, setRefreshKey] = useState(0);
   const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
   const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
@@ -94,10 +109,11 @@ export default function RoomsPage() {
 
   useEffect(() => {
     if (!user) return;
+    // ⚡ Just read (a swipe back here): keep what is shown, no new reads.
+    if (roomsMemory.uid === user.uid && Date.now() - roomsMemory.listAt < ROOMS_FRESH_MS) return;
     getDocs(query(collection(db, "rooms"), where("category", "==", "user")))
-      .then((snap) =>
-        setUserRooms(
-          snap.docs
+      .then((snap) => {
+        const list = snap.docs
             .map((d) => ({
               name: String(d.get("name") || d.id),
               description: String(d.get("description") || ""),
@@ -111,12 +127,17 @@ export default function RoomsPage() {
             }))
             // 👻 Luxury Bot Official was removed from the app — never list it.
             .filter((r) => r.name !== LUXURY_BOT_REMOVED_ROOM)
-            .sort((a, b) => a.name.localeCompare(b.name))
-        )
-      )
+            .sort((a, b) => a.name.localeCompare(b.name));
+        Object.assign(roomsMemory, { uid: user.uid, userRooms: list, listAt: Date.now() });
+        setUserRooms(list);
+      })
       .catch((err) => console.error(err));
     getDoc(doc(db, "users", user.uid))
-      .then((snap) => setLevel(Number(snap.get("level") || 1)))
+      .then((snap) => {
+        const lv = Number(snap.get("level") || 1);
+        roomsMemory.level = lv;
+        setLevel(lv);
+      })
       .catch(() => {});
   }, [user]);
 
@@ -124,6 +145,11 @@ export default function RoomsPage() {
   const userRoomNames = userRooms.map((r) => r.name).join("|");
   useEffect(() => {
     if (!user) return;
+    // ⚡ Counted a moment ago (a swipe back here) and not ↻: show those numbers.
+    const countKey = `${user.uid}|${userRoomNames}|${refreshKey}`;
+    if (roomsMemory.countKey === countKey && Date.now() - roomsMemory.countAt < ROOMS_FRESH_MS) return;
+    roomsMemory.countKey = countKey;
+    roomsMemory.countAt = Date.now();
     const names = Array.from(new Set([...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM, ...userRooms.map((r) => r.name)]));
     const cutoff = Timestamp.fromMillis(Date.now() - ROOM_PRESENCE_STALE_MS);
     names.forEach((name) => {
@@ -136,6 +162,7 @@ export default function RoomsPage() {
       ])
         .then(([c, parked]) => {
           const extra = parked ? parked.docs.filter((d) => toMillisSafe(d.get("lastSeen", { serverTimestamps: "estimate" })) < cutoff.toMillis()).length : 0;
+          roomsMemory.counts = { ...roomsMemory.counts, [name]: c.data().count + extra };
           setCounts((prev) => ({ ...prev, [name]: c.data().count + extra }));
         })
         .catch(() => {});
@@ -147,6 +174,7 @@ export default function RoomsPage() {
           const max = Number(d.get("maxUsers") || 0);
           if (max > 0) m[String(d.get("name") || d.id)] = max;
         });
+        roomsMemory.maxes = m;
         setMaxes(m);
       })
       .catch(() => {});
