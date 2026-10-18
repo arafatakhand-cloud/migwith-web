@@ -94,7 +94,13 @@ const TRIGGER_RE: RegExp = (() => {
     .sort((a, b) => b.length - a.length)
     .map((t) => {
       if ((t.codePointAt(0) || 0) >= 0x2600) return `(?<!\\u200D)${escapeRe(t)}(?![\\u{1F3FB}-\\u{1F3FF}\\u200D])`;
-      const head = isAlnum(t[0]) || (t.length > 1 && (t[0] === ":" || t[0] === "<") && /[0-9]/.test(t[1])) ? "(?<![A-Za-z0-9])" : "";
+      // "8-*", "8-)", "8-|" right after a word ("kaka8-*") still count — only not
+      // after another digit ("18-)").
+      const head = /[0-9]/.test(t[0]) && t.length > 1 && !isAlnum(t[1])
+        ? "(?<![0-9])"
+        : isAlnum(t[0]) || (t.length > 1 && (t[0] === ":" || t[0] === "<") && /[0-9]/.test(t[1]))
+          ? "(?<![A-Za-z0-9])"
+          : "";
       const end = t[t.length - 1];
       const tail = isAlnum(end) || end === "@" || end === "$" ? "(?![A-Za-z0-9_])" : "";
       return `${head}${escapeRe(t)}${tail}`;
