@@ -270,6 +270,38 @@ async function unfriend(ctx: CommandContext, name: string) {
 
 const pickRandom = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
+// 🎤 /sing — a random short song line (miGlife's own words, not real lyrics),
+// the same list as the app's RoomPage.kt.
+const SONGS: [string, string][] = [
+  ["pop", "Turn the night up, let the city glow, we're dancing slow wherever the lights go"],
+  ["pop", "Got a heart like a radio, playing your name on every station I know"],
+  ["rock", "Thunder in my chest, I'm running with the storm, I was never meant to stay inside the norm"],
+  ["rock", "Break the walls down, shout it to the sky, we were born to live loud and we were born to fly"],
+  ["love", "Every message from you lights my screen like a sunrise in between"],
+  ["love", "You're the song stuck in my head, every word you ever said"],
+  ["love", "Hold my hand through the rain and the rush, the world goes quiet when you're near enough"],
+  ["happy", "Wake up, shake up, the day is brand new, there's a smile out here waiting for you"],
+  ["happy", "Clap your hands, stamp your feet, life is sweeter with a beat"],
+  ["sad", "Empty chair beside the window, cold tea on the table, I'd call you if I was able"],
+  ["sad", "Stars keep shining though the night feels long, I'll keep humming till I find my song"],
+  ["rap", "Mic in my hand and the room on mute, every word I spit is a golden route"],
+  ["rap", "Started from the lobby now we're running the room, coins in the pocket and the vibes in bloom"],
+  ["folk", "Down by the river where the old boats sleep, I left a promise that I mean to keep"],
+  ["folk", "Green fields calling, mango trees sway, the road back home is a song all the way"],
+  ["party", "Hands up high if you're feeling alright, we're gonna chat till the morning light"],
+  ["party", "DJ, play it louder, let the whole room shake, this is the party that the stars can't fake"],
+  ["dream", "Paper planes and big ideas, flying past my doubts and fears"],
+  ["dream", "One more step and one more try, I'm painting my name across the sky"],
+  ["friendship", "Friends like you are hard to find, you're the good news on my mind"],
+];
+
+/** "life is singing a pop song "…"" (or "… for sabuj: "…"") */
+export function singLine(username: string, target: string): string {
+  const [genre, line] = pickRandom(SONGS);
+  const forWho = target && target !== "everyone" ? ` for ${target}` : "";
+  return `${username} is singing a ${genre} song${forWho}, "${line}" 🎤`;
+}
+
 /**
  * Handles a "/" command. Returns true when the text was a known command (so it
  * is not posted as a normal chat line).
@@ -318,6 +350,12 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
       statusUpdatedAt: serverTimestamp(),
     }).catch(() => {});
     ctx.post(`**${SOCIAL[command](u, target)}**`, "social");
+    return true;
+  }
+
+  // 🎤 a random song line (with a name: sung for them)
+  if (command === "/sing") {
+    ctx.post(`**${singLine(u, target)}**`, "social");
     return true;
   }
 
