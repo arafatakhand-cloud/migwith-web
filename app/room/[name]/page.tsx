@@ -1347,7 +1347,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (autoLeft) {
       // Nothing sent: the room says why and how to come back in.
       note(`⏰ ${roomName} : You've been out of this room for a while (away too long, kicked or banned).`);
-      note(`🚪 ${roomName} : Your message wasn't sent. Close this tab (✕) and open ${roomName} again to rejoin.`);
+      note(`🚪 ${roomName} : Your message wasn't sent. Close this tab (✕) and open ${roomName} room again to rejoin.`);
       return;
     }
 
