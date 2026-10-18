@@ -12,7 +12,7 @@ import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
-import { SWIPE_BODY, clearSwipeStyle, swipeEnter } from "./SwipeBody";
+import { SWIPE_BODY, clearSwipeStyle, dragTo, peekHasCopy, removePeek, showPeek, slideAway, slideBack, swipeEnter } from "./SwipeBody";
 import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "./PillTabs";
 
 // The app's top bar: ☰ menu and the pill tab strip (Lobby, Rooms, the page you
@@ -139,10 +139,12 @@ export function TopBar() {
       const el = body();
       if (!el) return;
       if (e.cancelable) e.preventDefault();
-      // No tab that way: it only gives a little, like the end of the app's pager.
-      const shift = neighbour(dx) ? dx : dx * 0.2;
-      el.style.transition = "none";
-      el.style.transform = `translateX(${shift}px)`;
+      // The tab that way right beside the page (like the app's pager); no tab
+      // that way: the page only gives a little, like the end of the pager.
+      const next = neighbour(dx);
+      if (next) showPeek(el, next, dx < 0 ? 1 : -1);
+      else removePeek();
+      dragTo(el, next ? dx : dx * 0.2);
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
@@ -160,24 +162,27 @@ export function TopBar() {
           return;
         }
         if (go && next) {
-          el.style.transition = "transform 170ms ease-out";
-          el.style.transform = `translateX(${dx < 0 ? -100 : 100}%)`;
-          swipeEnter.dir = dx < 0 ? 1 : -1;
-          swipeEnter.at = Date.now();
+          const side = dx < 0 ? 1 : -1;
+          const withCopy = peekHasCopy();
+          slideAway(el, side, 200);
+          // No copy of that tab yet: it slides in by itself once it opens.
+          if (!withCopy) {
+            swipeEnter.dir = side;
+            swipeEnter.at = Date.now();
+          }
           window.setTimeout(() => {
             router.push(next);
-            // Same page kept (nothing new mounted)? Put it back.
+            // Same page kept (nothing new opened)? Put it back.
             window.setTimeout(() => {
-              if (el.isConnected && swipeEnter.dir) {
+              if (el.isConnected) {
                 swipeEnter.dir = 0;
+                removePeek();
                 clearSwipeStyle(el);
               }
             }, 1500);
-          }, 160);
+          }, withCopy ? 190 : 160);
         } else {
-          el.style.transition = "transform 200ms ease-out";
-          el.style.transform = "translateX(0)";
-          window.setTimeout(() => clearSwipeStyle(el), 220);
+          slideBack(el, 200);
         }
         return;
       }
@@ -191,7 +196,7 @@ export function TopBar() {
       const wasDrag = start?.mode === "drag";
       start = null;
       const el = body();
-      if (wasDrag && el) clearSwipeStyle(el);
+      if (wasDrag && el) slideBack(el, 150);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchmove", onMove, { passive: false });
