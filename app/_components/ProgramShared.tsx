@@ -123,10 +123,14 @@ export async function checkTagFree(tagged: string, me: string): Promise<string |
 }
 
 /** Date bar used by the Report tabs. */
-export function DateBar({ day, setDay }: { day: string; setDay: (d: string) => void }) {
+export function DateBar({ day, setDay, gold = false }: { day: string; setDay: (d: string) => void; gold?: boolean }) {
   return (
     <div className="flex items-center gap-2">
-      <label className="flex flex-1 items-center gap-2 rounded-2xl border-[1.5px] border-[#FFC04A] bg-[#0B1F3A] px-3 py-2 text-sm font-bold text-white shadow">
+      <label
+        className={`flex flex-1 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold text-white shadow ${
+          gold ? "border border-[#C99A06]/50 bg-[#1A2338]" : "border-[1.5px] border-[#FFC04A] bg-[#0B1F3A]"
+        }`}
+      >
         📅
         <input
           type="date"
@@ -136,7 +140,7 @@ export function DateBar({ day, setDay }: { day: string; setDay: (d: string) => v
           className="min-w-0 flex-1 bg-transparent text-white outline-none [color-scheme:dark]"
         />
       </label>
-      <button type="button" onClick={() => setDay(todayStr())} className="px-2 text-sm font-bold text-[#0B6FA6]">
+      <button type="button" onClick={() => setDay(todayStr())} className={`px-2 text-sm font-bold ${gold ? "text-[#F7D774]" : "text-[#0B6FA6]"}`}>
         Today
       </button>
     </div>
@@ -151,6 +155,7 @@ export function ProgramBar<P extends string>({
   setPanel,
   onRefresh,
   accent,
+  gold = false,
 }: {
   backHref?: string;
   panels: readonly P[];
@@ -158,9 +163,11 @@ export function ProgramBar<P extends string>({
   setPanel: (p: P) => void;
   onRefresh: () => void;
   accent: string;
+  /** 💼 the Mentor Dashboard's dark-gold look */
+  gold?: boolean;
 }) {
   return (
-    <div className="bg-[#0B1F3A]">
+    <div className={gold ? "bg-[#0E1525]" : "bg-[#0B1F3A]"}>
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-2 py-2">
         {backHref && (
           <BackButton variant="dark" href={backHref} />
@@ -171,10 +178,12 @@ export function ProgramBar<P extends string>({
               key={p}
               type="button"
               onClick={() => setPanel(p)}
-              className={`min-w-0 flex-1 truncate rounded-full py-2 text-[11px] font-black tracking-wide ${
-                panel === p ? "border text-white" : "bg-white text-[#0B1F3A]"
+              className={`min-w-0 flex-1 truncate py-2 text-[11px] font-black tracking-wider ${
+                gold
+                  ? `rounded-xl ${panel === p ? "bg-gradient-to-b from-[#F7D774] to-[#C99A06] text-[#1A1200]" : "bg-[#1A2338] text-[#8FA0C9]"}`
+                  : `rounded-full ${panel === p ? "border text-white" : "bg-white text-[#0B1F3A]"}`
               }`}
-              style={panel === p ? { borderColor: accent, background: `linear-gradient(90deg, #0B1F3A, ${accent}99)` } : undefined}
+              style={!gold && panel === p ? { borderColor: accent, background: `linear-gradient(90deg, #0B1F3A, ${accent}99)` } : undefined}
             >
               {p === "EARNING" ? "BONUS" : p}
             </button>
@@ -208,11 +217,14 @@ export function EarningPanel({
   me,
   uid,
   refresh,
+  gold = false,
 }: {
   kind: "mentor" | "merchant";
   me: string;
   uid: string;
   refresh: number;
+  /** 💼 the Mentor Dashboard's dark-gold look */
+  gold?: boolean;
 }) {
   const [d, setD] = useState<Record<string, any> | null>(null);
   const [balance, setBalance] = useState(0);
@@ -298,39 +310,94 @@ export function EarningPanel({
     };
   }, [d, live]);
 
+  // Colours: the light purple look (merchants) or dark gold (mentors).
+  const c = gold
+    ? {
+        card: "rounded-2xl bg-[#1A2338] p-4",
+        ink: "text-white",
+        sub: "text-[#8FA0C9]",
+        chip: "border border-[#C99A06]/50 bg-[#C99A06]/15 text-[#F7D774]",
+        menu: "bg-[#1A2338] text-white",
+        menuHover: "hover:bg-[#232F4A]",
+        menuOn: "font-bold text-[#F7D774]",
+        plus: "bg-[#C99A06]/20 text-[#F7D774]",
+        line: "divide-[#26304A]",
+        icon: "text-[#F7D774]",
+        up: "text-[#4ADE80]",
+        settled: "bg-[#4ADE80]/15 text-[#4ADE80]",
+        pending: "bg-[#FFB300]/15 text-[#FFB300]",
+      }
+    : {
+        card: "rounded-2xl bg-white p-4 shadow-sm",
+        ink: "text-[#0E1B3D]",
+        sub: "text-[#6B7A90]",
+        chip: "border border-[#C9A7EE] bg-[#F3E8FF] text-[#7B2FD0]",
+        menu: "bg-white",
+        menuHover: "hover:bg-[#F3E8FF]",
+        menuOn: "font-bold text-[#7B2FD0]",
+        plus: "bg-[#F3E8FF] text-[#7B2FD0]",
+        line: "divide-[#EEF2F8]",
+        icon: "text-[#1597B8]",
+        up: "text-[#14A044]",
+        settled: "bg-[#DDF3E4] text-[#14A044]",
+        pending: "bg-[#FFF1D6] text-[#C98A0C]",
+      };
+
   return (
     <div className="space-y-3 px-3 py-3">
-      <div className="rounded-3xl bg-gradient-to-br from-[#F3E8FF] to-[#EDE3FA] p-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E2CCF7] text-2xl text-[#7B1FB8]">▣</span>
-          <div>
-            <p className="text-xs text-[#6A4A8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
-            <p className="text-2xl font-black text-[#4A148C]">{amount(view.total)}</p>
+      {gold ? (
+        <div className="rounded-[20px] border border-[#C99A06]/40 bg-gradient-to-br from-[#1C2640] to-[#121A2E] p-4 shadow-lg">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-[#8FA0C9]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
+            <span className="rounded-full bg-[#C99A06]/20 px-2 py-0.5 text-[10px] font-bold text-[#F7D774]">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
+          </div>
+          <p className="mt-1 bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[30px] font-black leading-tight text-transparent">{amount(view.total)}</p>
+          <div className="mt-3 flex justify-between text-center">
+            {[
+              ["Pending", view.pending, "#FFB300"],
+              ["Settled", view.settled, "#4ADE80"],
+              ["Balance", balance, "#7CC4FF"],
+            ].map(([l, v, col]) => (
+              <div key={l as string}>
+                <p className="text-[11px] text-[#8FA0C9]">{l}</p>
+                <p className="text-sm font-black" style={{ color: col as string }}>{amount(v as number)}</p>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          {[
-            ["Pending", view.pending, "#C98A0C"],
-            ["Settled", view.settled, "#14A044"],
-            ["Balance", balance, "#0E1B3D"],
-          ].map(([l, v, c]) => (
-            <div key={l as string} className="rounded-2xl bg-[#E9DDF7] py-2">
-              <p className="text-[10px] text-[#6A4A8C]">{l}</p>
-              <p className="text-sm font-bold" style={{ color: c as string }}>{amount(v as number)}</p>
+      ) : (
+        <div className="rounded-3xl bg-gradient-to-br from-[#F3E8FF] to-[#EDE3FA] p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E2CCF7] text-2xl text-[#7B1FB8]">▣</span>
+            <div>
+              <p className="text-xs text-[#6A4A8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
+              <p className="text-2xl font-black text-[#4A148C]">{amount(view.total)}</p>
             </div>
-          ))}
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            {[
+              ["Pending", view.pending, "#C98A0C"],
+              ["Settled", view.settled, "#14A044"],
+              ["Balance", balance, "#0E1B3D"],
+            ].map(([l, v, col]) => (
+              <div key={l as string} className="rounded-2xl bg-[#E9DDF7] py-2">
+                <p className="text-[10px] text-[#6A4A8C]">{l}</p>
+                <p className="text-sm font-bold" style={{ color: col as string }}>{amount(v as number)}</p>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className={c.card}>
         <div className="flex items-center">
-          <p className="flex-1 text-xs font-semibold text-[#6B7A90]">Bonus</p>
+          <p className={`flex-1 text-xs font-semibold ${c.sub}`}>Bonus</p>
           <div className="relative">
-            <button type="button" onClick={() => setMenu((v) => !v)} className="rounded-full border border-[#C9A7EE] bg-[#F3E8FF] px-3 py-1 text-sm font-bold text-[#7B2FD0]">
+            <button type="button" onClick={() => setMenu((v) => !v)} className={`rounded-full px-3 py-1 text-sm font-bold ${c.chip}`}>
               {PERIODS.find((p) => p[0] === period)![1]} {menu ? "▲" : "▼"}
             </button>
             {menu && (
-              <div className="absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl bg-white text-sm shadow-xl">
+              <div className={`absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl text-sm shadow-xl ${c.menu}`}>
                 {PERIODS.map(([k, l]) => (
                   <button
                     key={k}
@@ -339,7 +406,7 @@ export function EarningPanel({
                       setPeriod(k);
                       setMenu(false);
                     }}
-                    className={`flex w-full justify-between px-3 py-2 text-left hover:bg-[#F3E8FF] ${k === period ? "font-bold text-[#7B2FD0]" : "text-[#0E1B3D]"}`}
+                    className={`flex w-full justify-between px-3 py-2 text-left ${c.menuHover} ${k === period ? c.menuOn : c.ink}`}
                   >
                     {l} {k === period && "✓"}
                   </button>
@@ -348,46 +415,46 @@ export function EarningPanel({
             )}
           </div>
         </div>
-        <p className="mt-1 text-2xl font-black text-[#0E1B3D]">🪙 {amount(view.periods[period])}</p>
+        <p className={`mt-1 text-2xl font-black ${gold ? "text-[#F7D774]" : c.ink}`}>🪙 {amount(view.periods[period])}</p>
       </div>
 
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className={c.card}>
         <button type="button" onClick={() => setViaOpen((v) => !v)} className="flex w-full items-center gap-2 text-left">
-          <span className="text-[#1597B8]">◐</span>
-          <span className="flex-1 font-bold text-[#0E1B3D]">Via</span>
-          <span className="text-[10px] text-[#6B7A90]">(last 30 days)</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F3E8FF] text-sm font-bold text-[#7B2FD0]">{viaOpen ? "−" : "+"}</span>
+          <span className={c.icon}>◐</span>
+          <span className={`flex-1 font-bold ${c.ink}`}>Via</span>
+          <span className={`text-[10px] ${c.sub}`}>(last 30 days)</span>
+          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-sm font-bold ${c.plus}`}>{viaOpen ? "−" : "+"}</span>
         </button>
         {viaOpen &&
           (view.bySource.length === 0 ? (
-            <p className="mt-2 text-xs text-[#6B7A90]">No source data yet</p>
+            <p className={`mt-2 text-xs ${c.sub}`}>No source data yet</p>
           ) : (
             <ul className="mt-2 space-y-1.5">
               {view.bySource.map((s, i) => (
                 <li key={i} className="flex items-center justify-between text-sm">
                   <span>
-                    <span className="font-bold text-[#0E1B3D]">{String(s.name ?? s.source ?? "")}</span>
-                    <span className="block text-[10px] text-[#6B7A90]">
+                    <span className={`font-bold ${c.ink}`}>{String(s.name ?? s.source ?? "")}</span>
+                    <span className={`block text-[10px] ${c.sub}`}>
                       {num(s.percent)}% · {num(s.transactions)} transactions
                     </span>
                   </span>
-                  <span className="font-bold text-[#14A044]">+{amount(num(s.amount))}</span>
+                  <span className={`font-bold ${c.up}`}>+{amount(num(s.amount))}</span>
                 </li>
               ))}
             </ul>
           ))}
       </div>
 
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
+      <div className={c.card}>
         <div className="flex items-center gap-2">
-          <span className="text-[#1597B8]">↺</span>
-          <span className="flex-1 font-bold text-[#0E1B3D]">Recent Activity</span>
-          <span className="text-[10px] text-[#6B7A90]">last 30</span>
+          <span className={c.icon}>↺</span>
+          <span className={`flex-1 font-bold ${c.ink}`}>Recent Activity</span>
+          <span className={`text-[10px] ${c.sub}`}>last 30</span>
         </div>
         {view.recent.length === 0 ? (
-          <p className="mt-2 text-xs text-[#6B7A90]">No recent activity</p>
+          <p className={`mt-2 text-xs ${c.sub}`}>No recent activity</p>
         ) : (
-          <ul className="mt-1 divide-y divide-[#EEF2F8]">
+          <ul className={`mt-1 divide-y ${c.line}`}>
             {view.recent.map((r, i) => {
               const name = String(r.username ?? r.taggedUsername ?? "");
               const status = String(r.status ?? "pending");
@@ -395,18 +462,18 @@ export function EarningPanel({
                 <li key={i} className="flex items-center gap-3 py-2.5">
                   <Avatar name={name || "?"} />
                   <div className="min-w-0 flex-1">
-                    <p data-notranslate className="truncate text-xs font-bold text-[#0E1B3D]">
+                    <p data-notranslate className={`truncate text-xs font-bold ${c.ink}`}>
                       @{name} · {String(r.source ?? (kind === "mentor" ? "Mentor Tag" : "Merchant Tag"))}
                       {num(r.roundNumber) > 0 ? ` · Round ${num(r.roundNumber)}` : ""}
                     </p>
-                    <p className="text-[10px] text-[#6B7A90]">
+                    <p className={`text-[10px] ${c.sub}`}>
                       {amount(num(r.spent ?? r.spend))} spent · {amount(num(r.rate ?? 3))}% rate
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#14A044]">+{amount(num(r.amount ?? r.earning))}</p>
-                    <p className="text-[9px] text-[#6B7A90]">
-                      <span className={`mr-1 rounded-full px-1.5 py-0.5 ${status === "settled" ? "bg-[#DDF3E4] text-[#14A044]" : "bg-[#FFF1D6] text-[#C98A0C]"}`}>{status}</span>
+                    <p className={`text-sm font-bold ${c.up}`}>+{amount(num(r.amount ?? r.earning))}</p>
+                    <p className={`text-[9px] ${c.sub}`}>
+                      <span className={`mr-1 rounded-full px-1.5 py-0.5 ${status === "settled" ? c.settled : c.pending}`}>{status}</span>
                       {String(r.timeLabel ?? "")}
                     </p>
                   </div>

@@ -85,19 +85,21 @@ export default function MentorDashboardPage() {
         setPanel={setPanel}
         onRefresh={() => setRefresh((n) => n + 1)}
         accent="#D4AF37"
+        gold
       />
 
-      <section className="mx-auto max-w-4xl pb-10">
+      {/* 💼 dark gold, like a premium wallet */}
+      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#0E1525] pb-10 text-white">
         {!ready || allowed === null ? (
-          <p className="py-16 text-center text-sm text-[#5B6B8C]">Loading…</p>
+          <p className="py-16 text-center text-sm text-[#8FA0C9]">Loading…</p>
         ) : !allowed ? (
-          <p className="px-4 py-16 text-center text-sm text-[#5B6B8C]">The Mentor Dashboard is for mentors only.</p>
+          <p className="px-4 py-16 text-center text-sm text-[#8FA0C9]">The Mentor Dashboard is for mentors only.</p>
         ) : panel === "DASHBOARD" ? (
           <Dashboard me={username} refresh={refresh} />
         ) : panel === "REPORT" ? (
           <Report me={username} refresh={refresh} />
         ) : (
-          <EarningPanel kind="mentor" me={username} uid={user!.uid} refresh={refresh} />
+          <EarningPanel kind="mentor" me={username} uid={user!.uid} refresh={refresh} gold />
         )}
       </section>
     </PageShell>
@@ -188,50 +190,53 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
   return (
     <>
-      <div className="flex justify-around bg-[#0B1F3A] text-sm font-semibold">
+      <div className="flex gap-2 px-3 pt-3 text-[12px] font-bold">
         {(
           [
-            ["REQUESTS", `Requests${requests.length ? ` (${requests.length})` : ""}`],
-            ["MERCHANTS", "Merchants"],
-            ["TAGGED", "Tagged"],
+            ["REQUESTS", "Requests", requests.length, true],
+            ["MERCHANTS", "Merchants", merchants.length, false],
+            ["TAGGED", "Tagged", tagged.length, false],
           ] as const
-        ).map(([id, label]) => (
+        ).map(([id, label, n, alert]) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`px-3 pb-2 pt-1 ${tab === id ? "border-b-2 border-[#69E1F2] text-white" : "text-[#8FA0C9]"}`}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-full py-1.5 ${tab === id ? "bg-white text-[#0E1525]" : "bg-[#1A2338] text-[#B9C4DD]"}`}
           >
             {label}
+            {n > 0 && (
+              <span className={`rounded-full px-1.5 text-[10px] ${alert ? "bg-[#E5484D] text-white" : tab === id ? "bg-[#0E1525] text-[#F7D774]" : "bg-[#C99A06]/25 text-[#F7D774]"}`}>{n}</span>
+            )}
           </button>
         ))}
       </div>
-      {msg && <p className="mx-3 mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
+      {msg && <p className="mx-3 mt-3 rounded-xl border border-[#C99A06]/40 bg-[#1A2338] px-4 py-2 text-sm font-semibold text-[#F7D774]">{msg}</p>}
 
       <div className="space-y-2 px-3 py-3">
         {tab === "REQUESTS" &&
           (requests.length === 0 ? (
-            <p className="text-sm text-[#5A6B8C]">No pending requests.</p>
+            <p className="py-6 text-center text-sm text-[#8FA0C9]">No pending requests.</p>
           ) : (
             requests.map((r) => {
               const from = String(r.get("fromUsername") || "");
               const note = String(r.get("note") || "");
               const country = String(r.get("country") || "");
               return (
-                <div key={r.id} className="rounded-2xl bg-[#0B1F3A] p-4 text-white shadow">
+                <div key={r.id} className="rounded-2xl bg-[#1A2338] p-4 text-white">
                   <div className="flex items-center gap-3">
-                    <Avatar name={from} />
+                    <Avatar name={from} size="h-10 w-10" />
                     <div className="min-w-0">
                       <p data-notranslate className="font-bold">@{from}</p>
-                      <p className="text-xs text-[#8FA0C9]">Lv {Number(r.get("level") || 0)}{country && ` · ${country}`}</p>
+                      <p className="text-xs text-[#8FA0C9]">Level {Number(r.get("level") || 0)}{country && ` · ${country}`} · wants to be your merchant</p>
                     </div>
                   </div>
                   {note && <p data-notranslate className="mt-2 text-xs text-[#8FA0C9]">&ldquo;{note}&rdquo;</p>}
                   <div className="mt-3 flex gap-2.5">
-                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="flex-1 rounded-xl border border-rose-400 py-2 text-sm font-bold text-rose-300 disabled:opacity-40">
+                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="flex-1 rounded-xl border border-[#E5484D]/60 py-2 text-sm font-bold text-[#FF8A8A] disabled:opacity-40">
                       ✕ Reject
                     </button>
-                    <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="flex-1 rounded-xl bg-[#69E1F2] py-2 text-sm font-black text-[#0B1F3A] disabled:opacity-40">
+                    <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] py-2 text-sm font-black text-white disabled:opacity-40">
                       {busy.has(r.id) ? "…" : acceptCoins > 0 ? `✓ Approve · ${acceptCoins % 1000 === 0 ? `${acceptCoins / 1000}K` : acceptCoins}` : "✓ Approve"}
                     </button>
                   </div>
@@ -242,19 +247,21 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
         {tab === "MERCHANTS" &&
           (merchants.length === 0 ? (
-            <p className="text-sm text-[#5A6B8C]">No merchants yet.</p>
+            <p className="py-6 text-center text-sm text-[#8FA0C9]">No merchants yet.</p>
           ) : (
             merchants.map((m) => {
               const name = String(m.get("merchantUsername") || "");
               const left = daysLeft(m.get("expiresAt"));
               return (
-                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-[#0B1F3A] px-3 py-2.5 text-white shadow">
-                  <Avatar name={name} size="h-8 w-8" />
+                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-[#1A2338] px-3 py-2.5 text-white">
+                  <Avatar name={name} size="h-9 w-9" />
                   <div className="min-w-0 flex-1">
                     <p data-notranslate className="truncate font-bold">@{name}</p>
-                    <p className="text-xs text-[#B9C4DD]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
+                    <p className="text-xs text-[#8FA0C9]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
                   </div>
-                  {left !== null && <span className="rounded-full bg-[#69E1F2] px-2.5 py-0.5 text-[11px] font-bold text-[#0B1F3A]">{left}d left</span>}
+                  {left !== null && (
+                    <span className="rounded-full bg-gradient-to-b from-[#F7D774] to-[#C99A06] px-2.5 py-0.5 text-[11px] font-black text-[#1A1200]">{left}d left</span>
+                  )}
                 </div>
               );
             })
@@ -262,40 +269,54 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
         {tab === "TAGGED" && (
           <>
-            <div className="flex justify-end">
-              <button type="button" onClick={() => setTagOpen(true)} className="rounded-xl bg-[#7B1FB8] px-4 py-2 text-xs font-black text-white shadow">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold tracking-wider text-[#8FA0C9]">TAGGED · 3% BONUS</p>
+              <button
+                type="button"
+                onClick={() => setTagOpen(true)}
+                className="rounded-xl bg-gradient-to-b from-[#F7D774] to-[#C99A06] px-4 py-2 text-xs font-black text-[#1A1200] shadow"
+              >
                 + TAG USER
               </button>
             </div>
             {tagged.length === 0 ? (
-              <p className="text-sm text-[#5A6B8C]">No tagged users yet.</p>
+              <p className="py-6 text-center text-sm text-[#8FA0C9]">No tagged users yet.</p>
             ) : (
-              tagged.map((t) => {
-                const name = String(t.get("taggedUsername") || "");
-                const status = String(t.get("status") || "active");
-                const left = daysLeft(t.get("expiresAt"));
-                return (
-                  <div key={t.id} className="flex items-center gap-3 rounded-2xl bg-[#0B1F3A] px-3 py-2.5 text-white shadow">
-                    <Avatar name={name} size="h-8 w-8" />
-                    <div className="min-w-0 flex-1">
-                      <p data-notranslate className="truncate font-bold">@{name}</p>
-                      <p className="text-xs text-[#B9C4DD]">
-                        {status === "active" ? "Tagged" : status}
-                        {left !== null && ` · ${left}d left`} · 3% bonus
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {tagged.map((t) => {
+                  const name = String(t.get("taggedUsername") || "");
+                  const status = String(t.get("status") || "active");
+                  const left = daysLeft(t.get("expiresAt"));
+                  // the gold ring: how much of the 30-day tag is left
+                  const part = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
+                  return (
+                    <div key={t.id} className="relative rounded-2xl bg-[#1A2338] p-3 text-center">
+                      <button
+                        type="button"
+                        aria-label={`Remove ${name}`}
+                        disabled={busy.has(t.id)}
+                        onClick={() => confirm(`Remove @${name} from your tagged users?`) && withBusy(t.id, () => deleteDoc(t.ref))}
+                        className="absolute right-2 top-2 text-sm text-[#FF8A8A] disabled:opacity-40"
+                      >
+                        🗑
+                      </button>
+                      <div className="relative mx-auto h-14 w-14">
+                        <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
+                          <circle cx="18" cy="18" r="16" fill="none" stroke="#2A3550" strokeWidth="3" />
+                          <circle cx="18" cy="18" r="16" fill="none" stroke="#F7D774" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${part} 100`} pathLength={100} />
+                        </svg>
+                        <span className="absolute inset-[7px] flex">
+                          <Avatar name={name} size="h-full w-full" />
+                        </span>
+                      </div>
+                      <p data-notranslate className="mt-1 truncate text-[13px] font-bold">@{name}</p>
+                      <p className="text-[10px] text-[#8FA0C9]">
+                        {status === "active" ? (left !== null ? `${left} days left` : "Tagged") : status}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      aria-label={`Remove ${name}`}
-                      disabled={busy.has(t.id)}
-                      onClick={() => confirm(`Remove @${name} from your tagged users?`) && withBusy(t.id, () => deleteDoc(t.ref))}
-                      className="px-2 text-lg text-rose-400 disabled:opacity-40"
-                    >
-                      🗑
-                    </button>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </>
         )}
@@ -481,76 +502,77 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
 
   return (
     <div className="space-y-3 px-3 py-3">
-      <DateBar day={day} setDay={setDay} />
+      <DateBar day={day} setDay={setDay} gold />
 
       {!data ? (
-        <p className="pt-4 text-sm text-[#5A6B8C]">Loading…</p>
+        <p className="pt-4 text-sm text-[#8FA0C9]">Loading…</p>
       ) : (
         <>
-          {error && <p className="text-xs text-rose-600">⚠ Could not load: {error}</p>}
-          <div className="rounded-3xl border-[1.6px] border-[#FFC04A] bg-[#0B1F3A] p-4 text-white shadow-lg">
+          {error && <p className="text-xs text-[#FF8A8A]">⚠ Could not load: {error}</p>}
+          <div className="rounded-[20px] border border-[#C99A06]/40 bg-gradient-to-br from-[#1C2640] to-[#121A2E] p-4 shadow-lg">
             <p className="text-xs text-[#8FA0C9]">Earned on {label}</p>
-            <p className="text-3xl font-black text-[#FFC04A]">🪙 {amount(mentorTotal + merchantTotal)}</p>
+            <p className="bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[30px] font-black leading-tight text-transparent">
+              {amount(mentorTotal + merchantTotal)}
+            </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#B9C4DD]">My Tags · 3%</p>
-                <p className="font-black text-[#FFC04A]">🪙 {amount(mentorTotal)}</p>
+                <p className="text-[10px] text-[#8FA0C9]">★ My Tags · 3%</p>
+                <p className="font-black text-[#F7D774]">🪙 {amount(mentorTotal)}</p>
               </div>
               <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#B9C4DD]">Via My Merchants · 0.5%</p>
-                <p className="font-black text-[#69A9F0]">🪙 {amount(merchantTotal)}</p>
+                <p className="text-[10px] text-[#8FA0C9]">◆ Via My Merchants · 0.5%</p>
+                <p className="font-black text-[#7CC4FF]">🪙 {amount(merchantTotal)}</p>
               </div>
             </div>
           </div>
-          <TagSection title="Mentor Tag" icon="★" rate="3%" rows={data.direct} total={mentorTotal} accent="#F2A516" ink="#B36B00" tint="#FFF6DF" empty="No mentor tagged users yet" />
-          <TagSection title="Merchant Tag" icon="◆" rate="0.5%" rows={data.merchant} total={merchantTotal} accent="#3984D9" ink="#1F5FB3" tint="#E8F2FF" empty="No merchant tagged users yet" />
+          <TagSection title="Mentor Tag" icon="★" rate="3%" rows={data.direct} total={mentorTotal} accent="#F7D774" empty="No mentor tagged users yet" />
+          <TagSection title="Merchant Tag" icon="◆" rate="0.5%" rows={data.merchant} total={merchantTotal} accent="#7CC4FF" empty="No merchant tagged users yet" />
         </>
       )}
     </div>
   );
 }
 
-function TagSection(p: { title: string; icon: string; rate: string; rows: Row[]; total: number; accent: string; ink: string; tint: string; empty: string }) {
+function TagSection(p: { title: string; icon: string; rate: string; rows: Row[]; total: number; accent: string; empty: string }) {
   return (
-    <div className="overflow-hidden rounded-3xl bg-white shadow-md" style={{ background: `linear-gradient(${p.tint}, #fff 120px)` }}>
-      <div className="h-1" style={{ background: `linear-gradient(90deg, ${p.accent}, ${p.accent}55)` }} />
+    <div className="overflow-hidden rounded-2xl bg-[#1A2338]">
       <div className="flex items-center gap-3 px-4 py-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-white" style={{ backgroundColor: p.accent }}>
+        <span className="flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-[#1A1200]" style={{ backgroundColor: p.accent }}>
           {p.icon}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-black text-[#0E1B3D]">
+          <p className="font-black text-white">
             {p.title}{" "}
-            <span className="rounded-full px-1.5 text-[10px] font-bold text-white" style={{ backgroundColor: p.accent }}>
+            <span className="rounded-full px-1.5 text-[10px] font-bold text-[#1A1200]" style={{ backgroundColor: p.accent }}>
               {p.rate}
             </span>
           </p>
-          <p className="text-[11px] text-[#6B7A90]">
+          <p className="text-[11px] text-[#8FA0C9]">
             {p.rows.length} user{p.rows.length === 1 ? "" : "s"} · {p.rate} of their spend
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-[#6B7A90]">Earned</p>
-          <p className="font-black" style={{ color: p.ink }}>🪙 {amount(p.total)}</p>
+          <p className="text-[10px] text-[#8FA0C9]">Earned</p>
+          <p className="font-black" style={{ color: p.accent }}>🪙 {amount(p.total)}</p>
         </div>
       </div>
-      <div className="mx-4 h-px" style={{ backgroundColor: `${p.accent}38` }} />
+      <div className="mx-4 h-px bg-[#26304A]" />
       {p.rows.length === 0 ? (
-        <p className="py-5 text-center text-xs text-[#6B7A90]">
+        <p className="py-5 text-center text-xs text-[#8FA0C9]">
           <span className="block text-xl">👥</span>
           {p.empty}
         </p>
       ) : (
-        <ul className="px-3 py-2">
+        <ul className="divide-y divide-[#26304A] px-3 py-1">
           {p.rows.map((r, i) => (
-            <li key={r.username} className="flex items-center gap-2 py-1.5">
-              <span className="w-5 text-center text-xs font-bold text-[#6B7A90]">{i + 1}</span>
-              <Avatar name={r.username} size="h-7 w-7" />
+            <li key={r.username} className="flex items-center gap-2 py-2">
+              <span className="w-5 text-center text-xs font-bold text-[#8FA0C9]">{i + 1}</span>
+              <Avatar name={r.username} size="h-8 w-8" />
               <span className="min-w-0 flex-1">
-                <span data-notranslate className="block truncate text-sm font-bold text-[#12335E]">@{r.username}</span>
-                <span className="block text-[11px] text-[#5A6B8C]">{amount(r.spend)} spent</span>
+                <span data-notranslate className="block truncate text-sm font-bold text-white">@{r.username}</span>
+                <span className="block text-[11px] text-[#8FA0C9]">🪙 {amount(r.spend)} spent</span>
               </span>
-              <span className="text-sm font-bold" style={{ color: p.ink }}>+{amount(r.earning)}</span>
+              <span className={`text-sm font-black ${r.earning > 0 ? "text-[#4ADE80]" : "text-[#5B6782]"}`}>+{amount(r.earning)}</span>
             </li>
           ))}
         </ul>
@@ -558,4 +580,3 @@ function TagSection(p: { title: string; icon: string; rate: string; rows: Row[];
     </div>
   );
 }
-
