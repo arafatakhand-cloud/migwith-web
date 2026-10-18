@@ -237,6 +237,16 @@ function FitOneLine({ base, children }: { base: number; children: (px: number) =
   return <div ref={ref}>{children(px)}</div>;
 }
 
+// A name colour readable on a white card: very light ones (admin yellow, staff
+// neon green, cyan…) get a little darker; the rest stay as they are.
+function inkOnWhite(c: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(c);
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.6 ? `color-mix(in srgb, ${c} 65%, black)` : c;
+}
+
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
@@ -2434,16 +2444,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
           {menuPeople && (
             <div
-              className="max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-gradient-to-b from-[#0B2A5B] to-[#15589B] pb-2 shadow-2xl"
+              className="max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-white pb-2 shadow-2xl ring-1 ring-black/5"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="px-3.5 pb-3 pt-3.5 text-[13px] font-bold text-white">👥 Participants ({roomUsers.length})</p>
+              <p className="px-3.5 pb-3 pt-3.5 text-[13px] font-bold text-[#0B1F3A]">👥 Participants ({roomUsers.length})</p>
               <ul data-notranslate className="space-y-[5px] px-2">
                 {roomUsers.map((u) => (
                   <li key={u.uid}>
                     <Link
                       href={`/profile/${encodeURIComponent(u.username)}`}
-                      className="flex items-center gap-[7px] rounded-[14px] bg-white/10 px-2 py-[7px]"
+                      className="flex items-center gap-[7px] rounded-[14px] bg-[#F1F4F8] px-2 py-[7px]"
                     >
                       <span className="relative shrink-0">
                         <span
@@ -2452,9 +2462,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                         >
                           {u.username.charAt(0).toUpperCase() || "U"}
                         </span>
-                        <span className="absolute -bottom-px -right-px h-[9px] w-[9px] rounded-full border-[1.5px] border-[#10306E] bg-[#4ADE80]" />
+                        <span className="absolute -bottom-px -right-px h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#4ADE80]" />
                       </span>
-                      <span className="truncate text-[13px] font-bold" style={{ color: colorOf(u.username) }}>
+                      <span className="truncate text-[13px] font-bold" style={{ color: inkOnWhite(colorOf(u.username)) }}>
                         {u.username}
                       </span>
                       {roomInfo.ownerUid && u.uid === roomInfo.ownerUid && <span className="text-[13px] font-bold text-[#FFC83D]">★</span>}
