@@ -665,6 +665,40 @@ export default function ProfilePage() {
                   >
                     {hasVoted ? "❤️" : "🤍"}
                   </button>
+                  {/* ••• Add Friend / Block / Report (was the "More" tile) */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setMoreOpen((o) => !o)}
+                      aria-label="More"
+                      className={`flex h-[38px] w-[38px] items-center justify-center rounded-lg text-[17px] font-bold ${
+                        classic ? "bg-[#F4F6F9] text-[#16315F]" : "bg-[#6A6A6A] text-white"
+                      }`}
+                    >
+                      •••
+                    </button>
+                    {moreOpen && (
+                      <>
+                        <button type="button" aria-label="Close" className="fixed inset-0 z-30 cursor-default" onClick={() => setMoreOpen(false)} />
+                        <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10">
+                          {menu.map(([label, act, cls]) => (
+                            <button
+                              key={label}
+                              type="button"
+                              disabled={!!busy}
+                              onClick={() => {
+                                setMoreOpen(false);
+                                act();
+                              }}
+                              className={`block w-full px-4 py-2.5 text-left text-[15px] hover:bg-[#F1F5FB] disabled:opacity-50 ${cls || "text-[#0B1F3A]"}`}
+                            >
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -691,38 +725,11 @@ export default function ProfilePage() {
               onClick={isOwn ? () => setPeopleList("votes") : busy ? undefined : toggleVote}
             />
             <Tile value={String(footprints)} label="Views" icon="👀" tint="#43A047" onClick={isOwn ? () => setPeopleList("footprints") : undefined} />
-            {isOwn ? (
-              // 📅 how long you've been here (the app's "Days here" tile)
-              (() => {
-                const days = profile.joinedAtMs > 0 ? Math.max(1, Math.floor((Date.now() - profile.joinedAtMs) / 86_400_000) + 1) : 0;
-                return <Tile value={days > 0 ? String(days) : "—"} label={days === 1 ? "Day here" : "Days here"} icon="📅" tint="#3949AB" />;
-              })()
-            ) : (
-            <div className="relative">
-              <Tile value="•••" label="More" icon="✨" tint="#546E7A" onClick={() => setMoreOpen((o) => !o)} />
-              {moreOpen && (
-                <>
-                  <button type="button" aria-label="Close" className="fixed inset-0 z-30 cursor-default" onClick={() => setMoreOpen(false)} />
-                  <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10">
-                    {menu.map(([label, act, cls]) => (
-                      <button
-                        key={label}
-                        type="button"
-                        disabled={!!busy}
-                        onClick={() => {
-                          setMoreOpen(false);
-                          act();
-                        }}
-                        className={`block w-full px-4 py-2.5 text-left text-[15px] hover:bg-[#F1F5FB] disabled:opacity-50 ${cls || "text-[#0B1F3A]"}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            )}
+            {/* 📅 how long this ID has been here (the app's "Days here" tile) */}
+            {(() => {
+              const days = profile.joinedAtMs > 0 ? Math.max(1, Math.floor((Date.now() - profile.joinedAtMs) / 86_400_000) + 1) : 0;
+              return <Tile value={days > 0 ? String(days) : "—"} label={days === 1 ? "Day here" : "Days here"} icon="📅" tint="#3949AB" />;
+            })()}
           </div>
           {error && <p className="text-center text-sm text-rose-600">{error}</p>}
         </div>
