@@ -124,30 +124,24 @@ const PRESENCE_DOT: Record<Profile["presence"], [string, string]> = {
 
 // One rounded "bubble" tile in its own colour (the app's migTile): big round
 // corners, glossy dome, a shine dot and an icon on top.
-function Tile({ value, label, tint: tintIn, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
-  // 📟 Classic: every tile the same blue, square, no gloss.
-  const classic = useIsClassic();
-  const tint = classic ? "#2F6ABD" : tintIn;
+function Tile({ value, label, tint, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
+  // Same Modern bubble tiles in Classic too (own colours, gloss, white text).
   const style = {
     background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
     borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
-    boxShadow: classic ? "0 1px 2px rgba(0,0,0,.3)" : `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
+    boxShadow: `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
   };
   const inner = (
     <>
-      {!classic && (
-        <>
-          <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
-          <span className="pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
-          <span className="pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
-        </>
-      )}
+      <span className="pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
+      <span className="pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
+      <span className="pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
       <span className="relative block text-[15px] leading-[17px]">{icon}</span>
-      <span className={`relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)] ${classic ? "text-[#16315F]" : ""}`}>{value}</span>
-      <span className={`relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)] ${classic ? "text-[#16315F]" : ""}`}>{label}</span>
+      <span className="relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
+      <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
     </>
   );
-  const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "rounded-[22px]"}`;
+  const cls = "relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden rounded-[22px] border text-white";
   return onClick ? (
     <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
       {inner}
