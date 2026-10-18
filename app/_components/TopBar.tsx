@@ -12,7 +12,19 @@ import { HeaderAuth } from "./AuthControls";
 import { MenuPanel } from "./SideMenu";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isOnSwipeContent, swipeReplyClaim } from "./SwipeToReply";
-import { SWIPE_BODY, clearSwipeStyle, dragTo, peekHasCopy, removePeek, showPeek, slideAway, slideBack, swipeEnter } from "./SwipeBody";
+import {
+  SWIPE_BODY,
+  clearSwipeStyle,
+  dragTo,
+  peekHasCopy,
+  prepareBeside,
+  removePeek,
+  showPeek,
+  slideAway,
+  slideBack,
+  swipeEnter,
+  swipeState,
+} from "./SwipeBody";
 import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "./PillTabs";
 
 // The app's top bar: ☰ menu and the pill tab strip (Lobby, Rooms, the page you
@@ -88,19 +100,50 @@ export function TopBar() {
     const i = order.indexOf(here);
     if (i < 0) return;
     [order[i - 1], order[i + 1]].forEach((p) => p && router.prefetch(p));
+    // …and the tabs beside this one are made ready while the phone is idle.
+    const t = window.setTimeout(() => prepareBeside(order[i - 1], order[i + 1]), 900);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderKey, here, router]);
   useEffect(() => {
     if (!uid) return;
     // The page follows the finger (like the app's pager); let go past a quarter
-    // of the screen (or flick) and it slides out while the next tab slides in.
-    let start: { x: number; y: number; t: number; reply: boolean; mode: "" | "drag" | "scroll" } | null = null;
+    // of the screen, or flick, and it slides out while the next tab slides in.
+    // Up / down stays the browser's own (touch-action: pan-y in globals.css),
+    // so listening here never holds a scroll back.
+    type Start = {
+      x: number;
+      y: number;
+      t: number;
+      reply: boolean;
+      mode: "" | "drag" | "scroll";
+      // the last finger positions, for how fast it was moving when let go
+      lastX: number;
+      lastT: number;
+      prevX: number;
+      prevT: number;
+    };
+    let start: Start | null = null;
+    let frame = 0;
+    let pendingDx = 0;
     const body = () => document.querySelector<HTMLElement>(SWIPE_BODY);
     const neighbour = (dx: number) => {
       const { order, here } = orderRef.current;
       const i = order.indexOf(here);
       if (i < 0) return undefined;
       return order[dx < 0 ? i + 1 : i - 1];
+    };
+    const paint = () => {
+      frame = 0;
+      const el = body();
+      if (!el || !start || start.mode !== "drag") return;
+      const dx = pendingDx;
+      // The tab that way right beside the page; no tab that way: the page
+      // only gives a little, like the end of the app's pager.
+      const next = neighbour(dx);
+      if (next) showPeek(el, next, dx < 0 ? 1 : -1);
+      else removePeek();
+      dragTo(el, next ? dx : dx * 0.2);
     };
     const onStart = (e: TouchEvent) => {
       const el = e.target as Element | null;
@@ -117,6 +160,7 @@ export function TopBar() {
       }
       // A right-swipe on someone's message is swipe-to-reply (the room page handles it).
       const replyLine = el?.closest("[data-swipe-reply]");
+      const now = performance.now();
       start = {
         x,
         y: e.touches[0].clientY,
@@ -124,39 +168,58 @@ export function TopBar() {
         // On a full-width line only the message itself replies; empty space slides rooms.
         reply: !!replyLine && isOnSwipeContent(replyLine, x, e.touches[0].clientY),
         mode: "",
+        lastX: x,
+        lastT: now,
+        prevX: x,
+        prevT: now,
       };
     };
     const onMove = (e: TouchEvent) => {
       if (!start || start.mode === "scroll" || orderRef.current.order.indexOf(orderRef.current.here) < 0) return;
-      const dx = e.touches[0].clientX - start.x;
+      const cx = e.touches[0].clientX;
+      const dx = cx - start.x;
       const dy = e.touches[0].clientY - start.y;
+      const now = performance.now();
+      start.prevX = start.lastX;
+      start.prevT = start.lastT;
+      start.lastX = cx;
+      start.lastT = now;
       if (!start.mode) {
-        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
         // On a message the right drag is swipe-to-reply: the page stays put.
-        start.mode = Math.abs(dx) > Math.abs(dy) * 1.5 && !(start.reply && dx > 0) ? "drag" : "scroll";
+        start.mode = Math.abs(dx) > Math.abs(dy) * 1.3 && !(start.reply && dx > 0) ? "drag" : "scroll";
         if (start.mode === "scroll") return;
+        swipeState.dragging = true;
+        const el = body();
+        if (el) el.style.willChange = "transform";
+        // From where the finger is now: no jump at the start.
+        start.x = cx - Math.sign(dx) * 1;
       }
-      const el = body();
-      if (!el) return;
-      if (e.cancelable) e.preventDefault();
-      // The tab that way right beside the page (like the app's pager); no tab
-      // that way: the page only gives a little, like the end of the pager.
-      const next = neighbour(dx);
-      if (next) showPeek(el, next, dx < 0 ? 1 : -1);
-      else removePeek();
-      dragTo(el, next ? dx : dx * 0.2);
+      // One move per screen frame, however many touches the phone sends.
+      pendingDx = cx - start.x;
+      if (!frame) frame = requestAnimationFrame(paint);
     };
     const onEnd = (e: TouchEvent) => {
       if (!start) return;
-      const dx = e.changedTouches[0].clientX - start.x;
-      const dy = e.changedTouches[0].clientY - start.y;
-      const quick = Date.now() - start.t < 700;
-      const { reply: onMessage, t: start0, mode } = start;
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+      const s = start;
       start = null;
+      swipeState.dragging = false;
+      const dx = e.changedTouches[0].clientX - s.x;
+      const dy = e.changedTouches[0].clientY - s.y;
+      const quick = Date.now() - s.t < 700;
       const el = body();
       const next = neighbour(dx);
-      if (mode === "drag") {
-        const go = !!next && (Math.abs(dx) > window.innerWidth * 0.25 || (quick && Math.abs(dx) > 60));
+      if (s.mode === "drag") {
+        // px per ms over the last bit of the drag
+        const dt = Math.max(1, s.lastT - s.prevT);
+        const v = performance.now() - s.lastT > 90 ? 0 : (s.lastX - s.prevX) / dt;
+        const width = window.innerWidth;
+        const flick = Math.abs(v) > 0.35 && Math.sign(v) === Math.sign(dx) && Math.abs(dx) > 24;
+        const go = !!next && (Math.abs(dx) > width * 0.25 || flick);
         if (!el) {
           if (go && next) router.push(next);
           return;
@@ -164,7 +227,10 @@ export function TopBar() {
         if (go && next) {
           const side = dx < 0 ? 1 : -1;
           const withCopy = peekHasCopy();
-          slideAway(el, side, 200);
+          // A faster flick finishes faster, like the app.
+          const left = width - Math.abs(dx);
+          const ms = Math.round(Math.min(260, Math.max(130, left / Math.max(Math.abs(v), 1.6))));
+          slideAway(el, side, ms);
           // No copy of that tab yet: it slides in by itself once it opens.
           if (!withCopy) {
             swipeEnter.dir = side;
@@ -180,14 +246,14 @@ export function TopBar() {
                 clearSwipeStyle(el);
               }
             }, 1500);
-          }, withCopy ? 190 : 160);
+          }, withCopy ? ms - 10 : Math.min(ms, 160));
         } else {
           slideBack(el, 200);
         }
         return;
       }
       // A right drag the message took for reply isn't a room slide; a quick flick it left alone is.
-      if (onMessage && dx > 0 && swipeReplyClaim.at >= start0) return;
+      if (s.reply && dx > 0 && swipeReplyClaim.at >= s.t) return;
       if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.8) return;
       if (next) router.push(next);
     };
@@ -195,14 +261,20 @@ export function TopBar() {
     const onCancel = () => {
       const wasDrag = start?.mode === "drag";
       start = null;
+      swipeState.dragging = false;
+      if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
       const el = body();
       if (wasDrag && el) slideBack(el, 150);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
-    window.addEventListener("touchmove", onMove, { passive: false });
+    window.addEventListener("touchmove", onMove, { passive: true });
     window.addEventListener("touchend", onEnd, { passive: true });
     window.addEventListener("touchcancel", onCancel, { passive: true });
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);

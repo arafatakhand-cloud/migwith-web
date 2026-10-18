@@ -523,3 +523,21 @@ html.no-boot-splash #boot-splash { display: none; }
 .status-marquee { padding-left: 100%; animation: status-marquee 9s linear infinite; }
 @keyframes status-marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 @media (prefers-reduced-motion: reduce) { .friend-unread-blink { animation: none; background: #FF3B3B; } .status-marquee { animation: none; padding-left: 0; } }
+
+/* 👉 Swiping between tabs: sideways drags are the page's own (they move the
+   tabs, like the app's pager); up / down and pinch stay the browser's, so a
+   scroll never waits for the page. Sideways scrollers and text boxes keep
+   their own touch. */
+[data-swipe-body],
+[data-swipe-body] * {
+  touch-action: pan-y pinch-zoom;
+}
+[data-swipe-body] .overflow-x-auto,
+[data-swipe-body] .overflow-x-auto *,
+[data-swipe-body] [data-noswipe],
+[data-swipe-body] [data-noswipe] *,
+[data-swipe-body] input,
+[data-swipe-body] textarea,
+[data-swipe-body] select {
+  touch-action: auto;
+}
