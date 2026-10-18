@@ -132,10 +132,10 @@ export async function leaveRoomInBackground(uid: string, name: string) {
   }).catch(() => {});
 }
 
-/** Logout: leave every open room and forget the tabs. */
-export async function leaveAllOpenRooms(uid: string) {
-  const rooms = readOpenRooms(uid);
-  rooms.forEach((r) => dropRoomSession(uid, r));
+/** Signed out: forget this ID's room tabs and where each room's chat began
+ *  (in this browser only). */
+export function forgetOpenRooms(uid: string) {
+  readOpenRooms(uid).forEach((r) => dropRoomSession(uid, r));
   write(uid, []);
   // Logged out = every visit is over: forget where each room's chat began, so
   // logging in again starts the chat fresh (nothing said while logged out).
@@ -148,6 +148,12 @@ export async function leaveAllOpenRooms(uid: string) {
   } catch {
     // storage blocked
   }
+}
+
+/** Logout: leave every open room and forget the tabs. */
+export async function leaveAllOpenRooms(uid: string) {
+  const rooms = readOpenRooms(uid);
+  forgetOpenRooms(uid);
   await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
 }
 
