@@ -49,7 +49,68 @@ export function addOpenRoom(uid: string, name: string) {
   write(uid, [...cur, name].slice(-MAX_OPEN));
 }
 
+// ⏰ Auto left (the web was minimised for too long): the tab stays, but I'm no
+// longer in that room — typing there only says so; close the tab (✕) and open
+// the room again to come back in.
+const AUTO_LEFT_EVENT = "migwith-auto-left";
+const autoLeftKey = (uid: string, name: string) => `migwith.autoLeft.${uid}.${name}`;
+
+export function isAutoLeft(uid: string, name: string): boolean {
+  try {
+    return localStorage.getItem(autoLeftKey(uid, name)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setAutoLeftFlag(uid: string, name: string, on: boolean) {
+  try {
+    if (on) localStorage.setItem(autoLeftKey(uid, name), "1");
+    else localStorage.removeItem(autoLeftKey(uid, name));
+  } catch {
+    // storage blocked
+  }
+  window.dispatchEvent(new Event(AUTO_LEFT_EVENT));
+}
+
+/** Calls back when a room of this browser was auto left. */
+export function onAutoLeft(cb: () => void): () => void {
+  window.addEventListener(AUTO_LEFT_EVENT, cb);
+  return () => window.removeEventListener(AUTO_LEFT_EVENT, cb);
+}
+
+/** Back after a long time away: out of every open room ("has left"), tabs kept. */
+export async function autoLeaveOpenRooms(uid: string) {
+  const rooms = readOpenRooms(uid).filter((r) => !isAutoLeft(uid, r));
+  // Flag first, so an open room page stops its heartbeat before its spot goes.
+  rooms.forEach((r) => setAutoLeftFlag(uid, r, true));
+  await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
+}
+
+/** Opening an auto-left room from a room list is coming back in: a fresh
+ *  entry ("has entered") instead of the old tab. Call from a list page. */
+export function useComeBackInFromLists(uid: string | undefined) {
+  useEffect(() => {
+    if (!uid) return;
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.('a[href^="/room/"]');
+      // the list itself, not the room tabs in the top bar (those keep the old tab)
+      if (!a || !a.closest("[data-swipe-body]")) return;
+      let name = "";
+      try {
+        name = decodeURIComponent((a.getAttribute("href") || "").slice("/room/".length).split(/[?#]/)[0]);
+      } catch {
+        return;
+      }
+      if (name && isAutoLeft(uid, name)) removeOpenRoom(uid, name);
+    };
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [uid]);
+}
+
 export function removeOpenRoom(uid: string, name: string) {
+  setAutoLeftFlag(uid, name, false);
   dropRoomSession(uid, name);
   write(
     uid,
@@ -135,7 +196,10 @@ export async function leaveRoomInBackground(uid: string, name: string) {
 /** Signed out: forget this ID's room tabs and where each room's chat began
  *  (in this browser only). */
 export function forgetOpenRooms(uid: string) {
-  readOpenRooms(uid).forEach((r) => dropRoomSession(uid, r));
+  readOpenRooms(uid).forEach((r) => {
+    dropRoomSession(uid, r);
+    setAutoLeftFlag(uid, r, false);
+  });
   write(uid, []);
   // Logged out = every visit is over: forget where each room's chat began, so
   // logging in again starts the chat fresh (nothing said while logged out).

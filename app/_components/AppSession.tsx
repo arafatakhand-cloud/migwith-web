@@ -8,7 +8,7 @@ import { useBadges } from "../../lib/useBadges";
 import { useAchievementSync } from "./Achievements";
 import { useSpecialColorListener } from "../../lib/specialColor";
 import { useOnlineHeartbeat } from "../../lib/heartbeat";
-import { useAutoLogout } from "../../lib/autoLogout";
+import { useAutoLeave } from "../../lib/autoLeave";
 
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
@@ -33,9 +33,9 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   useSpecialColorListener(uid);
   // Online for friends on every page (lastActiveAt every 30 s), like the app.
   useOnlineHeartbeat(uid);
-  // 🔐 Minimised for 120 min → logged out (rooms left, tabs closed); signed out
-  // any other way → that ID's room tabs closed too.
-  useAutoLogout(uid);
+  // ⏰ Minimised for 120 min → out of the open rooms (tabs kept, never logged
+  // out); signed out any other way → that ID's room tabs closed.
+  useAutoLeave(uid);
   // 🔐 Signed out (e.g. coming back to a tab after the login ran out): straight
   // to the login page instead of a page that keeps showing "Loading…".
   const pathname = usePathname() || "/";

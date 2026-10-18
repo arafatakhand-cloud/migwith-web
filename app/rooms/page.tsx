@@ -18,6 +18,7 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { useComeBackInFromLists } from "../../lib/openRooms";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import {
   OFFICIAL_COUNTRY_ROOMS,
@@ -80,6 +81,8 @@ const roomsMemory: {
 export default function RoomsPage() {
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
+  // ⏰ tapping a room you were auto left from = coming back in
+  useComeBackInFromLists(user?.uid);
   // 🎰 Luxury Bet shows only for the IDs miglife added (or everyone once open).
   const luxuryBetAccess = useLuxuryBetAccess(user?.uid);
   const gameRooms = luxuryBetAccess.canSee

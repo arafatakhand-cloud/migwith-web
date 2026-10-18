@@ -52,7 +52,9 @@ import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import {
   addOpenRoom,
   deletePresenceUnlessParked,
+  isAutoLeft,
   isRoomOpen,
+  onAutoLeft,
   postStaleLeaveLineOnce,
   readOpenRooms,
   removeOpenRoom,
@@ -304,8 +306,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [bumped, setBumped] = useState(false);
   // ⏰ My spot here was cleared (away too long, kicked or banned) → I'm not in
   // the room any more: no quiet "has entered" again, sending shows a popup.
-  const [autoLeft, setAutoLeft] = useState(false);
-  const [showNotInRoom, setShowNotInRoom] = useState(false);
+  const [autoLeft, setAutoLeft] = useState(() => !!user && isAutoLeft(user.uid, roomName));
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -361,6 +362,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const scrollTopRef = useRef(initial?.scrollTop ?? 0);
   // Highest scroll position while following the newest line (see onScroll).
   const pinnedTopRef = useRef(0);
+
+  // ⏰ Auto left while this room is open on screen (back after a long time away).
+  useEffect(() => {
+    if (!user) return;
+    return onAutoLeft(() => {
+      if (isAutoLeft(user.uid, roomName)) setAutoLeft(true);
+    });
+  }, [user, roomName]);
 
   // Keep this tab's session up to date while it is open.
   useEffect(() => {
@@ -685,6 +694,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   useEffect(() => {
     // Also wait for the founder record: a hidden founder may enter invisibly.
     if (!user || !profile || blocked || !roomLoaded || !modLoaded || !myModLoaded || !founder.loaded) return;
+    // ⏰ Auto left (minimised too long): not in the room — no entering again by
+    // itself; close the tab (✕) and open the room again to come back in.
+    if (autoLeft || isAutoLeft(user.uid, roomName)) return;
     // Checked here too: the effect that sets "blocked" runs in the same commit,
     // too late to stop this one from posting "has entered".
     const info = roomInfoRef.current;
@@ -985,6 +997,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           lastBeatOk = Date.now();
         }).catch((err) => {
           if (err?.code !== "not-found" || left || disposed) return;
+          if (isAutoLeft(uid, roomName)) return; // left on purpose (minimised too long)
           // Still beating a moment ago → the spot was removed from elsewhere
           // (the same account left on another phone / tab), not a 3 h timeout.
           // I never left, so put it back without a "has entered" line.
@@ -999,7 +1012,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           if (heartbeat) clearInterval(heartbeat);
           restorePresenceRef.current = null;
           setAutoLeft(true);
-          note(`⏰ You have been auto left from ${roomName} room due to inactivity, kick or ban.`);
+          note(`${roomName} : You have been auto left due to inactivity, kick or ban by other!`);
         });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
@@ -1027,7 +1040,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         }, 1500)
       );
     };
-  }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded, founder.loaded]);
+  }, [user, profile, roomName, blocked, roomLoaded, modLoaded, myModLoaded, founder.loaded, autoLeft]);
 
   // Merge server messages with this device's own notices, oldest first.
   // Same display rules as the app (RoomPage.kt): your own entered/left lines
@@ -1332,7 +1345,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const clean = text.trim();
     if (!clean || !user || !profile || sending) return;
     if (autoLeft) {
-      setShowNotInRoom(true);
+      // Like the classic chat apps: two lines, nothing sent.
+      note(`${roomName} : You have been auto left due to inactivity, kick or ban by other!`);
+      note(`${roomName} : You are not in ${roomName} chat room`);
+      note(`${roomName} : Close this room tab (✕) and open the room again to come back in.`);
       return;
     }
 
@@ -2268,16 +2284,6 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
       {/* ⋮ Room menu */}
       {popup && <SimpleDialog title={popup.title} text={popup.text} onClose={() => setPopup(null)} />}
-      {showNotInRoom && (
-        <SimpleDialog
-          title="You are not in this room"
-          text={`You are not in ${roomName} room any more (inactivity, kick or ban). Tap OK, then open the room again to come back in.`}
-          onClose={() => {
-            setShowNotInRoom(false);
-            leaveRoom(); // close this room's tab; opening it again is a fresh entry
-          }}
-        />
-      )}
       {balanceCard && <BalanceCard text={balanceCard.text} sub={balanceCard.sub} onClose={() => setBalanceCard(null)} />}
       {roundResult && <RoundResultCard round={roundResult.round} won={roundResult.won} bet={roundResult.bet} onClose={() => setRoundResult(null)} />}
       {pendingPhoto && (
