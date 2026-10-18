@@ -714,7 +714,7 @@ export default function PrivateChatPage() {
                     }
                   }}
                   placeholder="Message…"
-                  className="my-[6.5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[#8A9BB5]"
+                  className="my-[6.5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[13px] placeholder:text-[#8A9BB5]"
                 />
                 <span className="flex h-[35px] shrink-0 items-center">
                   <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />

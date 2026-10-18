@@ -241,7 +241,7 @@ export function ChatBar({
                 maxLength={maxLength}
                 disabled={disabled}
                 placeholder={placeholder}
-                className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[#7A8599]/80"
+                className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
               />
               <span className="flex h-[31px] shrink-0 items-center">
                 <EmojiPicker
