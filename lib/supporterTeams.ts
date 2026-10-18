@@ -75,12 +75,25 @@ export function supporterTeamById(id: string): SupporterTeam | null {
 
 /** ⚽ The price and days miglife set (app_settings/shop_overrides.supporter),
  *  else the built-in 50,000 coins / 30 days. Live while the page is open. */
-export function parseSupporterTerms(raw: unknown): { price: number; days: number } {
-  const o = (raw && typeof raw === "object" ? raw : {}) as { price?: unknown; days?: unknown };
-  const price = typeof o.price === "number" && Number.isInteger(o.price) && o.price >= 1000 ? o.price : SUPPORTER_PRICE;
+export type SupporterTerms = { price: number; days: number; prices: Record<string, number> };
+
+const validPrice = (p: unknown): p is number => typeof p === "number" && Number.isInteger(p) && p >= 1000 && p <= 100_000_000;
+
+/** app_settings/shop_overrides.supporter: price = the default for every team,
+ *  prices.{team} = a team's own price (wins over the default). */
+export function parseSupporterTerms(raw: unknown): SupporterTerms {
+  const o = (raw && typeof raw === "object" ? raw : {}) as { price?: unknown; days?: unknown; prices?: unknown };
+  const price = validPrice(o.price) ? o.price : SUPPORTER_PRICE;
   const days = typeof o.days === "number" && Number.isInteger(o.days) && o.days >= 1 && o.days <= 365 ? o.days : SUPPORTER_DAYS;
-  return { price, days };
+  const prices: Record<string, number> = {};
+  if (o.prices && typeof o.prices === "object") {
+    for (const [team, p] of Object.entries(o.prices as Record<string, unknown>)) if (validPrice(p)) prices[team] = p;
+  }
+  return { price, days, prices };
 }
+
+/** What one team costs: its own price, else the default. */
+export const supporterPriceOf = (terms: SupporterTerms, team: string): number => terms.prices[team] ?? terms.price;
 
 /** ⚽ Profile background: the team's two colours (a white kit colour is
  *  swapped for the team's text colour, so white writing stays readable). */

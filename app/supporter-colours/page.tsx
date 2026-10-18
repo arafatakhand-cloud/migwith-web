@@ -18,16 +18,22 @@ import {
   SUPPORTER_TEAMS,
   activeSupporterTeam,
   parseSupporterTerms,
+  supporterPriceOf,
   type SupporterTeam,
+  type SupporterTerms,
 } from "../../lib/supporterTeams";
 
 // Discover › ⚽ Supporter Colours (like the app's SupporterColoursPage): pick a
 // football team — your name shows in its colour with a small team badge in
 // rooms, for the price and days miglife sets (✏️ — built-in 50,000 coins / 30
-// days). Coins only move on the server (buySupporterColour). Fan colours only.
+// days; ✏️ on a team gives it its own price). Coins only move on the server
+// (buySupporterColour). Fan colours only.
 
 const buyCall = httpsCallable<{ team: string; operationId: string }, { until?: number }>(functions, "buySupporterColour");
-const setPriceCall = httpsCallable<{ price: number; days: number }, { ok?: boolean }>(functions, "founderSetSupporterPrice");
+const setPriceCall = httpsCallable<{ price?: number; days?: number; team?: string; reset?: boolean }, { ok?: boolean }>(
+  functions,
+  "founderSetSupporterPrice"
+);
 
 const short = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
 const fmtDate = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
@@ -45,9 +51,11 @@ export default function SupporterColoursPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   // the price and days miglife set (✏️), live
-  const [terms, setTerms] = useState({ price: SUPPORTER_PRICE, days: SUPPORTER_DAYS });
+  const [terms, setTerms] = useState<SupporterTerms>({ price: SUPPORTER_PRICE, days: SUPPORTER_DAYS, prices: {} });
   const isFounder = isMainFounderName(username);
   const [editing, setEditing] = useState(false);
+  // ✏️ on a team: that team's own price (null = the default for every team)
+  const [editTeam, setEditTeam] = useState<SupporterTeam | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editDays, setEditDays] = useState("");
 
@@ -60,16 +68,28 @@ export default function SupporterColoursPage() {
     );
   }, [uid]);
 
-  const savePrice = async () => {
+  const savePrice = async (reset = false) => {
     const price = Number(editPrice.replace(/[, ]/g, ""));
     const days = Number(editDays);
+    const team = editTeam;
     setEditing(false);
     try {
-      await setPriceCall({ price, days });
-      setMessage(`✅ Price set: ${price.toLocaleString()} coins · ${days} days`);
+      if (team) {
+        await setPriceCall(reset ? { team: team.id, reset: true } : { team: team.id, price });
+        setMessage(reset ? `✅ ${team.name}: back to the default price` : `✅ ${team.name}: ${price.toLocaleString()} coins`);
+      } else {
+        await setPriceCall({ price, days });
+        setMessage(`✅ Default price set: ${price.toLocaleString()} coins · ${days} days`);
+      }
     } catch (e: any) {
       setMessage(e?.message || "Could not set the price.");
     }
+  };
+  const openEdit = (team: SupporterTeam | null) => {
+    setEditTeam(team);
+    setEditPrice(String(team ? supporterPriceOf(terms, team.id) : terms.price));
+    setEditDays(String(terms.days));
+    setEditing(true);
   };
 
   useEffect(() => {
@@ -82,7 +102,6 @@ export default function SupporterColoursPage() {
 
   const current = activeSupporterTeam(mine.team, mine.until);
   const daysLeft = current ? Math.ceil((mine.until - Date.now()) / 86_400_000) : 0;
-  const canAfford = balance !== null && balance >= terms.price;
 
   const buy = async (t: SupporterTeam) => {
     setConfirm(null);
@@ -106,18 +125,10 @@ export default function SupporterColoursPage() {
         <PageTitle title="Supporters Badge" subtitle="Your football team's badge" icon="⚽" />
         <div className="flex items-center justify-between px-1 text-sm">
           <span className="flex items-center gap-1.5 font-semibold text-[#35507E]">
-            🪙 {terms.price.toLocaleString()} coins · {terms.days} days
+            🪙 {Object.keys(terms.prices).length ? "From " : ""}
+            {Math.min(...SUPPORTER_TEAMS.map((t) => supporterPriceOf(terms, t.id))).toLocaleString()} coins · {terms.days} days
             {isFounder && (
-              <button
-                type="button"
-                aria-label="Set price"
-                onClick={() => {
-                  setEditPrice(String(terms.price));
-                  setEditDays(String(terms.days));
-                  setEditing(true);
-                }}
-                className="rounded-lg px-1 text-[15px]"
-              >
+              <button type="button" aria-label="Set the default price" onClick={() => openEdit(null)} className="rounded-lg px-1 text-[15px]">
                 ✏️
               </button>
             )}
@@ -186,14 +197,14 @@ export default function SupporterColoursPage() {
               {SUPPORTER_TEAMS.filter((t) => t.league === l.id).map((t) => {
                 const isMine = current?.id === t.id;
                 return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => setConfirm(t)}
-                    className="flex items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition hover:shadow-md disabled:opacity-60"
-                    style={{ borderLeft: `5px solid ${t.text}` }}
-                  >
+                  <div key={t.id} className="relative">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirm(t)}
+                      className={`flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition hover:shadow-md disabled:opacity-60 ${isFounder ? "pr-10" : ""}`}
+                      style={{ borderLeft: `5px solid ${t.text}` }}
+                    >
                     <SupporterJersey team={t} size={40} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-extrabold" style={{ color: t.text }}>
@@ -202,9 +213,21 @@ export default function SupporterColoursPage() {
                       <span className="text-[11px] text-[#8A97B0]">{isMine ? `✅ Your team · tap to add ${terms.days} days` : "Supporters badge"}</span>
                     </span>
                     <span className="shrink-0 rounded-full border border-[#F5D77A] bg-[#FFF8E1] px-2 py-0.5 text-[11px] font-bold text-[#8A5A00]">
-                      🪙 {short(terms.price)}
+                      🪙 {short(supporterPriceOf(terms, t.id))}
                     </span>
-                  </button>
+                    </button>
+                    {/* ✏️ this team's own price (miglife) */}
+                    {isFounder && (
+                      <button
+                        type="button"
+                        aria-label={`Set the ${t.name} price`}
+                        onClick={() => openEdit(t)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-1 text-[15px]"
+                      >
+                        ✏️
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -217,7 +240,10 @@ export default function SupporterColoursPage() {
         </p>
       </section>
 
-      {confirm && (
+      {confirm && (() => {
+        const price = supporterPriceOf(terms, confirm.id);
+        const canAfford = balance !== null && balance >= price;
+        return (
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={() => setConfirm(null)}>
           <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center gap-2">
@@ -232,7 +258,7 @@ export default function SupporterColoursPage() {
                 : current
                   ? `Switch from ${current.name} — your days left move to ${confirm.name}, plus ${terms.days} days`
                   : `The ${confirm.name} (${confirm.short}) supporters badge for ${terms.days} days`}{" "}
-              for <b>{terms.price.toLocaleString()} coins</b>.
+              for <b>{price.toLocaleString()} coins</b>.
             </p>
             {!canAfford && <p className="mt-2 text-sm font-semibold text-[#D9534F]">Not enough coins.</p>}
             <div className="mt-4 flex justify-end gap-2">
@@ -250,12 +276,17 @@ export default function SupporterColoursPage() {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
       {editing && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={() => setEditing(false)}>
           <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <p className="text-lg font-extrabold">✏️ Supporters Badge price</p>
-            <p className="mt-1 text-xs text-[#5B6B8C]">The same for every team. New buys use it at once.</p>
+            <p className="text-lg font-extrabold">✏️ {editTeam ? `${editTeam.name} price` : "Supporters Badge price"}</p>
+            <p className="mt-1 text-xs text-[#5B6B8C]">
+              {editTeam
+                ? `Only for ${editTeam.name}. Default for other teams: ${terms.price.toLocaleString()} coins. New buys use it at once.`
+                : "The default for every team without its own price (✏️ on a team). New buys use it at once."}
+            </p>
             <label className="mt-3 block text-xs font-bold text-[#35507E]">
               Price (coins)
               <input
@@ -265,6 +296,7 @@ export default function SupporterColoursPage() {
                 className="mt-1 w-full rounded-xl border border-[#D5E3F5] px-3 py-2 text-base font-semibold outline-none focus:border-[#2F6ABD]"
               />
             </label>
+            {!editTeam && (
             <label className="mt-3 block text-xs font-bold text-[#35507E]">
               Days
               <input
@@ -274,11 +306,17 @@ export default function SupporterColoursPage() {
                 className="mt-1 w-full rounded-xl border border-[#D5E3F5] px-3 py-2 text-base font-semibold outline-none focus:border-[#2F6ABD]"
               />
             </label>
+            )}
             <div className="mt-4 flex justify-end gap-2">
+              {editTeam && terms.prices[editTeam.id] !== undefined && (
+                <button type="button" onClick={() => savePrice(true)} className="mr-auto px-1 py-2 text-sm font-bold text-[#D9534F]">
+                  Use default
+                </button>
+              )}
               <button type="button" onClick={() => setEditing(false)} className="rounded-full border border-[#D5E3F5] px-5 py-2 text-sm font-bold text-[#5B6B8C]">
                 Cancel
               </button>
-              <button type="button" onClick={savePrice} className="rounded-full bg-[#2F6ABD] px-5 py-2 text-sm font-bold text-white">
+              <button type="button" onClick={() => savePrice()} className="rounded-full bg-[#2F6ABD] px-5 py-2 text-sm font-bold text-white">
                 Save
               </button>
             </div>
