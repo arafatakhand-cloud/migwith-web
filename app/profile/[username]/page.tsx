@@ -511,7 +511,8 @@ export default function ProfilePage() {
         </div>
 
         {/* Cover photo (only when the person has one), in the same frame as the photo */}
-        {profile.coverPhotoUrl && (
+        {/* 📟 Classic: no cover photo */}
+        {profile.coverPhotoUrl && !classic && (
           <div className="bg-white px-2.5 pt-2.5">
             <div className="mig-frame aspect-[3.2] rounded-2xl">
               <div className="h-full overflow-hidden rounded-[13px] bg-gradient-to-b from-[#174EA6] to-[#0F2C55]">
@@ -552,7 +553,7 @@ export default function ProfilePage() {
           <div
             className={`relative z-10 h-[112px] w-[112px] shrink-0 ${
               classic ? "rounded bg-gradient-to-b from-[#C9CED6] to-[#9AA3AE] p-[3px] shadow" : "mig-frame rounded-full"
-            } ${profile.coverPhotoUrl && !team ? "-mt-[60px]" : ""}`}
+            } ${profile.coverPhotoUrl && !team && !classic ? "-mt-[60px]" : ""}`}
           >
             <div className={`h-full overflow-hidden bg-[#E8EEF5] ${classic ? "rounded-sm border-[1.5px] border-white/95" : "rounded-full"}`}>
               {profile.photoUrl ? (
