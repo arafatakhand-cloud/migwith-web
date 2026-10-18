@@ -438,7 +438,7 @@ export default function PrivateChatPage() {
             const el = e.currentTarget;
             stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
           }}
-          className="min-h-0 flex-1 space-y-2 overflow-y-auto px-3.5 py-3"
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-x-none px-3.5 py-3"
         >
           {visible.length === 0 && <p className="pt-10 text-center text-[15px] text-[#35507E]">Say hi to {friend} 👋</p>}
           {visible.map((m) => {
