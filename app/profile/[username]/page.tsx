@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SupporterJersey } from "../../_components/SupporterBadge";
-import { activeSupporterTeam, type SupporterTeam } from "../../../lib/supporterTeams";
+import { activeSupporterTeam, supporterBackground, type SupporterTeam } from "../../../lib/supporterTeams";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -468,6 +468,8 @@ export default function ProfilePage() {
   const facts = [profile.gender, profile.age > 0 ? String(profile.age) : ""].filter(Boolean);
   const bubble = profile.statusMessage || profile.bio;
   const dot = PRESENCE_DOT[profile.presence];
+  // ⚽ Supporters Badge team (colours the top of the profile)
+  const team = profile.supporter;
   const goBack = () => (window.history.length > 1 ? router.back() : router.push("/"));
 
   const menu: [string, () => void, string?][] = [["🏅 Achievements", badges.open]];
@@ -522,7 +524,27 @@ export default function ProfilePage() {
 
         {/* Photo (left, 108 × 140) + details (right). With a cover, the photo's
             frame starts right on the cover's bottom border, joined to it. */}
-        <div className="flex gap-3 bg-white p-2.5">
+        {/* ⚽ Supporters Badge: this block takes the team's colours, with the
+            jersey and the team's letters ("FCB") big and faint behind it. */}
+        <div
+          className={`relative flex gap-3 p-2.5 ${team ? "" : "bg-white"}`}
+          style={team ? { background: supporterBackground(team) } : undefined}
+        >
+          {team && (
+            // clipped on its own layer: the photo may still reach up onto a cover
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              <span className="pointer-events-none absolute -right-6 -top-4 rotate-12 opacity-[0.18]" aria-hidden>
+                <SupporterJersey team={team} size={170} />
+              </span>
+              <span
+                className="pointer-events-none absolute -right-3 top-1/2 -translate-y-1/2 select-none text-[110px] font-black italic leading-none tracking-tighter text-white/15"
+                aria-hidden
+                data-notranslate
+              >
+                {team.mark}
+              </span>
+            </div>
+          )}
           {/* ROUND photo (like the rest of the app). With a cover photo it sits
               half on the cover's bottom edge, Facebook-style. */}
           {/* 📟 Classic: a square photo with a plain grey frame. */}
@@ -542,13 +564,19 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          <div className="min-w-0 flex-1 text-[15px] text-[#333]">
+          <div className={`relative min-w-0 flex-1 text-[15px] ${team ? "text-white" : "text-[#333]"}`}>
             <div className="flex items-center gap-1.5">
               {special.has(username) ? (
                 // 🌈 Special Edition Colour / miglife
                 <RainbowName name={username} style={special.styleOf(username)} className="truncate text-xl" />
               ) : (
-                <span data-notranslate className="truncate text-xl font-bold text-[#3AA0E0]">{username}</span>
+                <span
+                  data-notranslate
+                  className={`truncate text-xl font-bold ${team ? "text-white" : "text-[#3AA0E0]"}`}
+                  style={team ? { textShadow: "0 1px 3px rgba(0,0,0,.35)" } : undefined}
+                >
+                  {username}
+                </span>
               )}
               {shownRole && (
                 <span className="shrink-0 text-[13px] font-bold" style={{ color: shownRole.color }}>
@@ -557,7 +585,7 @@ export default function ProfilePage() {
               )}
             </div>
             {profile.fullName && !sameName(profile.fullName, username) && (
-              <p data-notranslate className="truncate text-base text-[#6E6E6E]">{profile.fullName}</p>
+              <p data-notranslate className={`truncate text-base ${team ? "text-white/80" : "text-[#6E6E6E]"}`}>{profile.fullName}</p>
             )}
             <p className="mt-1 flex items-center gap-1.5">
               <span
@@ -573,8 +601,8 @@ export default function ProfilePage() {
               // ⚽ Supporter Colours: the team as a badge
               <p className="mt-1.5">
                 <span
-                  className="inline-flex items-center gap-1.5 rounded-full border px-2 py-[3px] text-[12px] font-bold"
-                  style={{ borderColor: `${profile.supporter.text}55`, background: `${profile.supporter.text}12`, color: profile.supporter.text }}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2 py-[3px] text-[12px] font-extrabold shadow-sm"
+                  style={{ color: profile.supporter.text }}
                 >
                   <SupporterJersey team={profile.supporter} size={18} />
                   {profile.supporter.name} supporter
