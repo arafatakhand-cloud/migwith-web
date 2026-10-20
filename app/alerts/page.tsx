@@ -374,12 +374,66 @@ function RenewalCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string })
         </div>
       )}
       <p className="relative mt-3 whitespace-pre-wrap break-words rounded-2xl bg-white/15 px-3 py-2 text-[13px] leading-[18px]">{a.text}</p>
+      {merchantTerm && !amMentor && !renewed && a.mentorUsername && <RenewRequestButton me={me} mentor={a.mentorUsername} />}
       {action && (
-        <Link href={action.href} className="relative mt-3 block rounded-full bg-white py-2 text-center text-[13px] font-extrabold text-[#C2410C] shadow">
+        <Link
+          href={action.href}
+          className={`relative mt-2.5 block rounded-full py-2 text-center text-[13px] font-extrabold shadow ${
+            merchantTerm && !amMentor ? "border border-white/60 bg-white/10 text-white" : "bg-white text-[#C2410C]"
+          }`}
+        >
           {action.label}
         </Link>
       )}
     </div>
+  );
+}
+
+// 🔄 Merchant → "Renew": sends a renewal request to the mentor (a
+// mentor_requests entry they approve in Mentor Dashboard › Requests, plus an
+// alert so they see it). Shows "sent" while one is still waiting.
+function RenewRequestButton({ me, mentor }: { me: string; mentor: string }) {
+  const [state, setState] = useState<"checking" | "ready" | "sending" | "sent">("checking");
+  const [error, setError] = useState("");
+  useEffect(() => {
+    getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", me), where("toMentor", "==", mentor), where("status", "==", "pending"), limit(1)))
+      .then((s) => setState(s.empty ? "ready" : "sent"))
+      .catch(() => setState("ready"));
+  }, [me, mentor]);
+  const send = async () => {
+    setState("sending");
+    setError("");
+    try {
+      const ref = await addDoc(collection(db, "mentor_requests"), { fromUsername: me, toMentor: mentor, note: "Renewal", status: "pending", createdAt: serverTimestamp() });
+      await addDoc(collection(db, "alerts"), {
+        toUsername: mentor,
+        fromUsername: me,
+        requestId: ref.id,
+        type: "mentor_request",
+        message: `🔄 @${me} asks you to renew their Merchant term.`,
+        read: false,
+        createdAt: serverTimestamp(),
+      }).catch(() => {});
+      setState("sent");
+    } catch (e: any) {
+      setError(e?.message || "Could not send the request.");
+      setState("ready");
+    }
+  };
+  return (
+    <>
+      <button
+        type="button"
+        disabled={state !== "ready"}
+        onClick={send}
+        className={`relative mt-3 flex w-full items-center justify-center gap-1.5 rounded-full py-2.5 text-[14px] font-black shadow-lg transition ${
+          state === "sent" ? "bg-white/25 text-white" : "bg-white text-[#C2410C] active:scale-[.98]"
+        }`}
+      >
+        {state === "checking" ? "…" : state === "sending" ? "Sending…" : state === "sent" ? `✅ Renewal request sent to ${mentor}` : `🔄 Renew — send request to ${mentor}`}
+      </button>
+      {error && <p className="relative mt-1.5 text-xs font-bold text-white">{error}</p>}
+    </>
   );
 }
 
