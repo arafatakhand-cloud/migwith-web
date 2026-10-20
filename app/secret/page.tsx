@@ -54,6 +54,7 @@ async function setIdCreationStatus(args: { enabled: boolean }) {
   }
 }
 const ceoCreateUserId = httpsCallable<Record<string, string>, { username?: string }>(functions, "ceoCreateUserId");
+const ceoQuickCreateId = httpsCallable<{ migId: string }, { username?: string }>(functions, "ceoQuickCreateId");
 
 function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -199,6 +200,7 @@ export default function SecretPage() {
           { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.isMigwith },
           { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
           { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
+          { icon: "⚡", label: "Quick Create ID", hint: "Type only the ID name → Create", tint: "#F59E0B", key: "quick_id", ok: f.isMigwith },
           { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },
           { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.isMigwith },
         ],
@@ -336,6 +338,7 @@ export default function SecretPage() {
       )}
 
       {/* miglife only, like the app: new level curve, Security Question Reset, 🎰 Luxury Bet. */}
+      {f.isMigwith && tool === "quick_id" && <QuickCreateIdCard />}
       {f.isMigwith && tool === "achievements" && <FounderAchievementsCard />}
       {f.isMigwith && tool === "vip" && <FounderSpecialColorCard />}
       {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
@@ -360,6 +363,70 @@ export default function SecretPage() {
         />
       )}
     </FounderShell>
+  );
+}
+
+// ⚡ Quick Create: miglife types only the MIG ID. The email and password are set
+// on the server (functions/.env QUICK_ID_EMAIL / QUICK_ID_PASSWORD) — never here.
+function QuickCreateIdCard() {
+  const [migId, setMigId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [made, setMade] = useState<string[]>([]);
+  const create = async () => {
+    const id = migId.trim();
+    setError("");
+    if (!/^(?=.*[A-Za-z])[A-Za-z0-9._-]{1,27}$/.test(id))
+      return setError("1-27 characters, at least 1 English letter. Allowed: A-Z a-z 0-9 . _ -");
+    setBusy(true);
+    try {
+      const { data } = await ceoQuickCreateId({ migId: id });
+      setMade((m) => [data?.username || id, ...m]);
+      setMigId("");
+    } catch (e: any) {
+      setError(e?.message || "Could not create the ID.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="space-y-3 rounded-[22px] border border-[#F59E0B] bg-white p-4 shadow-md">
+      <div>
+        <p className="text-lg font-extrabold">⚡ Quick Create ID</p>
+        <p className="text-xs text-[#5B6B8C]">Type the ID name and tap Create — the email &amp; password are filled in by the server.</p>
+      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          void create();
+        }}
+        className="flex gap-2"
+      >
+        <input
+          value={migId}
+          onChange={(e) => setMigId(e.target.value.replace(/\s/g, ""))}
+          placeholder="ID name"
+          autoCapitalize="none"
+          autoCorrect="off"
+          disabled={busy}
+          className="min-w-0 flex-1 rounded-xl border border-[#E3EAF5] bg-[#F7FAFE] px-3.5 py-2.5 text-[15px] font-semibold outline-none focus:border-[#F59E0B]"
+        />
+        <button type="submit" disabled={busy || !migId.trim()} className="shrink-0 rounded-xl bg-gradient-to-r from-[#F59E0B] to-[#D97706] px-5 font-extrabold text-white disabled:opacity-50">
+          {busy ? "…" : "Create"}
+        </button>
+      </form>
+      {error && <p className="text-xs font-bold text-[#B3261E]">{error}</p>}
+      {made.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-bold uppercase tracking-[1px] text-[#5B6B8C]">Created now</p>
+          {made.map((n) => (
+            <p key={n} className="flex items-center gap-2 rounded-xl bg-[#E8F7EE] px-3 py-2 text-sm font-bold text-[#0A7A3A]">
+              ✅ <span data-notranslate>{n}</span>
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
