@@ -89,15 +89,17 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
         panel={panel}
         setPanel={setPanel}
         onRefresh={() => setRefresh((n) => n + 1)}
-        accent="#D77BFF"
+        accent="#1E63D6"
+        gold
       />
-      <section className="mx-auto max-w-4xl pb-10">
+      {/* light, in the chosen colour theme like the rest of the app */}
+      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#EEF3FB] pb-10 text-[#0B2A5B]">
         {panel === "DASHBOARD" ? (
           <Dashboard me={me} merchantDoc={merchantDoc} refresh={refresh} />
         ) : panel === "REPORT" ? (
           <Report me={me} refresh={refresh} />
         ) : (
-          <EarningPanel kind="merchant" me={me} uid={uid} refresh={refresh} />
+          <EarningPanel kind="merchant" me={me} uid={uid} refresh={refresh} gold />
         )}
       </section>
     </PageShell>
@@ -193,48 +195,48 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
     <div className="space-y-3 px-3 py-3">
       {msg && <p className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
 
-      <div className="rounded-3xl bg-gradient-to-br from-[#7B1FB8] to-[#4A1480] p-4 text-white shadow-lg">
+      <div className="rounded-3xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#9C4DD8] text-xl">🧳</span>
+          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 text-xl">🧳</span>
           <div>
             <p className="font-bold">Active Merchant 🎁</p>
-            <p className="text-xs text-[#E8D5F5]">{amount(stored.allTime)} coins earned all-time</p>
+            <p className="text-xs text-white/80">{amount(stored.allTime)} coins earned all-time</p>
           </div>
         </div>
         {left !== null && (
-          <p className="mt-3 inline-block rounded-xl bg-[#5A1690] px-3 py-2 text-xs font-bold text-[#69E1F2]">⏱ {left} days remaining</p>
+          <p className="mt-3 inline-block rounded-xl bg-white/20 px-3 py-2 text-xs font-bold text-white">⏱ {left} days remaining</p>
         )}
       </div>
 
-      <div className="rounded-3xl border border-[#69E1F2] bg-[#0B1F3A] p-4 text-white shadow">
+      <div className="rounded-3xl border border-[#D5E3F5] bg-white p-4 text-[#0B2A5B] shadow-sm">
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">
             <p className="font-bold">🏪 Tagged Normal Users</p>
-            <p className="text-[11px] text-[#8FA0C9]">
+            <p className="text-[11px] text-[#5B6B8C]">
               {tagged.length} active tagged user{tagged.length === 1 ? "" : "s"}
             </p>
           </div>
-          <button type="button" onClick={() => setTagOpen(true)} className="rounded-xl bg-[#7B1FB8] px-3 py-2 text-[11px] font-black">
+          <button type="button" onClick={() => setTagOpen(true)} className="rounded-xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] px-3 py-2 text-[11px] font-black text-white shadow">
             + TAG USER
           </button>
         </div>
-        <p className="mt-1 text-[11px] text-[#69E1F2]">5000-coin tag · 2.5% bonus on tagged users' coin use</p>
+        <p className="mt-1 text-[11px] text-[#1E63D6]">5000-coin tag · 2.5% bonus on tagged users' coin use</p>
         {tagged.length === 0 ? (
-          <p className="mt-2 text-xs text-[#8FA0C9]">No tagged users yet.</p>
+          <p className="mt-2 text-xs text-[#5B6B8C]">No tagged users yet.</p>
         ) : (
           <ul className="mt-2 space-y-1.5">
             {tagged.map((t, i) => {
               const name = String(t.get("taggedUsername") || "");
               const d = daysLeft(t.get("expiresAt"));
               return (
-                <li key={t.id} className="flex items-center gap-2 rounded-xl bg-white/5 px-2 py-2">
-                  <span className="w-5 text-[10px] text-[#8FA0C9]">{i + 1}.</span>
+                <li key={t.id} className="flex items-center gap-2 rounded-xl bg-[#EAF1FC] px-2 py-2">
+                  <span className="w-5 text-[10px] text-[#5B6B8C]">{i + 1}.</span>
                   <Avatar name={name} size="h-8 w-8" />
                   <div className="min-w-0 flex-1">
                     <p data-notranslate className="truncate text-xs font-bold">@{name}</p>
-                    <p className="text-[10px] text-[#69E1F2]">2.5% bonus{d !== null && ` · ${d}d left`}</p>
+                    <p className="text-[10px] text-[#1E63D6]">2.5% bonus{d !== null && ` · ${d}d left`}</p>
                   </div>
-                  <button type="button" disabled={busy.has(t.id)} onClick={() => remove(t)} className="px-1 text-[10px] font-bold text-rose-400 disabled:opacity-40">
+                  <button type="button" disabled={busy.has(t.id)} onClick={() => remove(t)} className="px-1 text-[10px] font-bold text-rose-600 disabled:opacity-40">
                     REMOVE
                   </button>
                 </li>
@@ -244,44 +246,44 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
         )}
       </div>
 
-      <div className="rounded-3xl border border-[#69E1F2] bg-[#0B1F3A] p-4 text-white shadow">
+      <div className="rounded-3xl border border-[#D5E3F5] bg-white p-4 text-[#0B2A5B] shadow-sm">
         <p className="font-bold">📈 Team Bonus</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {[
-            ["Today", today, "#69E1F2"],
-            ["Last 7 days", live?.last7 ?? stored.last7, "#32A852"],
+            ["Today", today, "text-[#1E63D6]"],
+            ["Last 7 days", live?.last7 ?? stored.last7, "text-[#16A34A]"],
             // what's earned today and not settled yet IS the pending amount
-            ["Pending", live ? Math.max(live.today, stored.pending) : stored.pending, "#E9A625"],
+            ["Pending", live ? Math.max(live.today, stored.pending) : stored.pending, "text-[#C98A0C]"],
           ].map(([l, v, c]) => (
             <div key={l as string}>
-              <p className="text-[11px] text-[#8FA0C9]">{l}</p>
-              <p className="text-sm font-bold" style={{ color: c as string }}>{amount(v as number)}</p>
+              <p className="text-[11px] text-[#5B6B8C]">{l}</p>
+              <p className={`text-sm font-bold ${c}`}>{amount(v as number)}</p>
             </div>
           ))}
         </div>
-        <p className="mt-2 rounded-xl bg-[#0E1B36] px-3 py-2 text-[10px] text-[#8FA0C9]">🕐 Auto-credited daily at 12:00 AM Bangladesh time</p>
+        <p className="mt-2 rounded-xl bg-[#EAF1FC] px-3 py-2 text-[10px] text-[#5B6B8C]">🕐 Auto-credited daily at 12:00 AM Bangladesh time</p>
       </div>
 
-      <div className="flex items-center gap-3 rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
+      <div className="flex items-center gap-3 rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
         <Avatar name={mentor || "?"} />
         <div>
-          <p className="text-[11px] text-[#8FA0C9]">Your Mentor</p>
-          <p data-notranslate className="font-bold text-[#D4AF37]">{mentor ? `@${mentor}` : "Not linked yet"}</p>
-          {approvedMs > 0 && <p className="text-[10px] text-[#8FA0C9]">Approved {new Date(approvedMs).toISOString().slice(0, 10)}</p>}
+          <p className="text-[11px] text-[#5B6B8C]">Your Mentor</p>
+          <p data-notranslate className="font-bold text-[#1E63D6]">{mentor ? `@${mentor}` : "Not linked yet"}</p>
+          {approvedMs > 0 && <p className="text-[10px] text-[#5B6B8C]">Approved {new Date(approvedMs).toISOString().slice(0, 10)}</p>}
         </div>
       </div>
 
       {renewalPending ? (
-        <p className="rounded-2xl border border-[#E9A625] bg-[#2A2410] px-4 py-3 text-xs font-bold text-[#E9A625]">⏳ Renewal request pending mentor approval</p>
+        <p className="rounded-2xl border border-[#F2C94C] bg-[#FFF6DD] px-4 py-3 text-xs font-bold text-[#B7791F]">⏳ Renewal request pending mentor approval</p>
       ) : (
-        <button type="button" onClick={renew} disabled={renewing || !mentor} className="w-full rounded-2xl bg-[#E9A625] py-3 text-sm font-black text-[#0B1F3A] shadow disabled:opacity-50">
+        <button type="button" onClick={renew} disabled={renewing || !mentor} className="w-full rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-sm font-black text-white shadow disabled:opacity-50">
           {renewing ? "Requesting…" : "Request Renewal"}
         </button>
       )}
 
-      <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
+      <div className="rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
         <p className="font-bold">💡 How the Merchant Tag Bonus Works</p>
-        <ul className="mt-2 space-y-1 text-xs leading-5 text-[#B9C4DD]">
+        <ul className="mt-2 space-y-1 text-xs leading-5 text-[#5B6B8C]">
           {[
             "Give a normal user a 5000-coin tag offer; the user must approve it",
             "Once approved, the user is automatically listed in your Tagged Users list",
@@ -369,7 +371,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
           <button type="button" onClick={onClose} disabled={busy} className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]">
             Cancel
           </button>
-          <button type="button" onClick={send} disabled={busy || !target.trim()} className="flex-1 rounded-xl bg-[#7B1FB8] py-3 text-sm font-black text-white disabled:opacity-50">
+          <button type="button" onClick={send} disabled={busy || !target.trim()} className="flex-1 rounded-xl bg-[#1E63D6] py-3 text-sm font-black text-white disabled:opacity-50">
             {busy ? "Sending…" : "Send request"}
           </button>
         </div>
@@ -427,20 +429,20 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
 
   return (
     <div className="space-y-3 px-3 py-3">
-      <DateBar day={day} setDay={setDay} />
+      <DateBar day={day} setDay={setDay} gold />
       <>
           {error && <p className="text-xs text-rose-600">⚠ Could not load: {error}</p>}
-          <div className="rounded-3xl bg-gradient-to-br from-[#0B6E6E] to-[#0A4F6B] p-4 text-white shadow-lg">
-            <p className="text-xs font-bold text-[#B9D0D5]">TOTAL BONUS · {label}</p>
-            <p className="text-2xl font-black text-[#FFC04A]">🪙 {amount(total)}</p>
-            <p className="text-[11px] font-bold text-[#B9D0D5]">2.5% Merchant Bonus</p>
+          <div className="rounded-3xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
+            <p className="text-xs font-bold text-white/80">TOTAL BONUS · {label}</p>
+            <p className="text-2xl font-black text-white">🪙 {amount(total)}</p>
+            <p className="text-[11px] font-bold text-white/80">2.5% Merchant Bonus</p>
             {rows !== null && total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No bonus on this date</p>}
           </div>
-          <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
+          <div className="rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="text-[#168BE9]">♟</span>
+              <span className="text-[#1E63D6]">♟</span>
               <p className="flex-1 font-bold">From my tagged users</p>
-              <p className="text-xs font-bold text-[#8A99BD]">
+              <p className="text-xs font-bold text-[#5B6B8C]">
                 {active} active / {(rows || []).length}
               </p>
             </div>
@@ -448,25 +450,25 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
               // still filling in: a quiet blank
               <div className="h-12" />
             ) : rows.length === 0 ? (
-              <p className="mt-2 text-xs text-[#8FA0C9]">No tagged users</p>
+              <p className="mt-2 text-xs text-[#5B6B8C]">No tagged users</p>
             ) : (
-              <ul className="mt-2 divide-y divide-white/10">
+              <ul className="mt-2 divide-y divide-[#E3ECF7]">
                 {rows.map((r) => (
                   <li key={r.username} className="flex items-center gap-3 py-2">
                     <Avatar name={r.username} size="h-8 w-8" />
                     <div className="min-w-0 flex-1">
                       <p data-notranslate className="truncate text-sm font-bold">@{r.username}</p>
-                      <p className="text-xs text-[#8797BD]">spend 🪙{amount(r.spend)}</p>
+                      <p className="text-xs text-[#5B6B8C]">spend 🪙{amount(r.spend)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] font-bold text-[#08C7B0]">2.5%</p>
-                      <p className="text-sm font-bold text-[#FFC04A]">🪙{amount(r.earning)}</p>
+                      <p className="text-[11px] font-bold text-[#1E63D6]">2.5%</p>
+                      <p className="text-sm font-bold text-[#16A34A]">🪙{amount(r.earning)}</p>
                     </div>
                   </li>
                 ))}
                 <li className="flex justify-between pt-2 text-sm font-bold">
                   <span>Total bonus</span>
-                  <span className="text-[#FFC04A]">🪙{amount(total)}</span>
+                  <span className="text-[#16A34A]">🪙{amount(total)}</span>
                 </li>
               </ul>
             )}
