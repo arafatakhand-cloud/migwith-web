@@ -126,21 +126,26 @@ export default function LoginPage() {
         {/* the app's five chat bubbles */}
         <LoginBubbles />
 
-        <div className="mt-5 w-full space-y-3">
-          <input
-            id="identifier"
-            type="text"
-            value={loginId}
-            onChange={(e) => setLoginId(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleLogin();
-            }}
-            placeholder="Username"
-            autoComplete="username"
-            aria-label="Username"
-            className="w-full rounded-md border border-[#9FB3C8] bg-gradient-to-b from-[#F4F4F4] to-[#DADADA] px-4 py-3 text-lg text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#F58A3A]"
-          />
-          <div className="relative">
+        {/* clean white fields with an icon, like a modern login form */}
+        <div className="mt-6 w-full space-y-3.5">
+          <label className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+            <PersonIcon />
+            <input
+              id="identifier"
+              type="text"
+              value={loginId}
+              onChange={(e) => setLoginId(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLogin();
+              }}
+              placeholder="Username"
+              autoComplete="username"
+              aria-label="Username"
+              className="min-w-0 flex-1 bg-transparent py-3.5 text-lg text-[#17375A] outline-none placeholder:text-[#9FB3C8]"
+            />
+          </label>
+          <label className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+            <LockIcon />
             <input
               id="password"
               type={showPassword ? "text" : "password"}
@@ -152,45 +157,43 @@ export default function LoginPage() {
               placeholder="Password"
               autoComplete="current-password"
               aria-label="Password"
-              className="w-full rounded-md border border-[#9FB3C8] bg-gradient-to-b from-[#F4F4F4] to-[#DADADA] py-3 pl-4 pr-14 text-lg text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#F58A3A]"
+              className="min-w-0 flex-1 bg-transparent py-3.5 text-lg text-[#17375A] outline-none placeholder:text-[#9FB3C8]"
             />
-            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1.5">
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#6B7280] text-base"
-              >
-                {showPassword ? "🙈" : "👁"}
-              </button>
-            </div>
-          </div>
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              className="shrink-0 p-1 text-[#9FB3C8]"
+            >
+              <EyeIcon open={showPassword} />
+            </button>
+          </label>
+        </div>
+
+        <div className="mt-5 flex w-full items-center">
+          <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember Me" />
         </div>
 
         {error && (
-          <div className="mt-4 w-full rounded-md border border-red-300/40 bg-red-500/20 px-4 py-2.5 text-sm text-red-100">{error}</div>
+          <div className="mt-4 w-full rounded-xl border border-red-300/40 bg-red-500/20 px-4 py-2.5 text-sm text-red-100">{error}</div>
         )}
 
         <button
           type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full rounded-2xl bg-gradient-to-r from-[#F58A3A] to-[#D6521A] py-3.5 text-xl font-extrabold tracking-wide text-white shadow-lg transition hover:brightness-110 disabled:opacity-60"
+          className="mt-6 w-full rounded-2xl bg-[#17375A] py-3.5 text-xl font-bold text-white shadow-[0_6px_14px_rgba(23,55,90,.35)] transition active:scale-[.98] disabled:opacity-60"
         >
-          {loading ? "…" : "Log in"}
+          {loading ? "…" : "Login"}
         </button>
-
-        <div className="mt-6 flex w-full items-center justify-between gap-3 text-base text-white/90">
-          <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember me" />
-          {/* Forgot Password where "Log in as Invisible" used to be */}
-          <Link href="/forgot-password" className="text-[15px] text-white underline underline-offset-4">
-            Forgot Password?
-          </Link>
-        </div>
-
-        {/* like the app: one big "Create Account" link (Forgot Password is the ? by the password) */}
-        <Link href="/register" className="mt-auto pt-14 text-[22px] tracking-wide text-white underline underline-offset-[6px]">
+        <Link
+          href="/register"
+          className="mt-3.5 block w-full rounded-2xl border border-white bg-white py-3.5 text-center text-xl font-bold text-[#111827] shadow-[0_4px_10px_rgba(0,0,0,.12)] transition active:scale-[.98]"
+        >
           Create Account
+        </Link>
+        <Link href="/forgot-password" className="mt-5 text-[17px] text-white/90 underline underline-offset-4">
+          Forgot Password?
         </Link>
         {/* ✨ / 📟 The site opens in whichever style is ticked here (same switch as Settings › Appearance). */}
         <LoginStyleChoice />
@@ -227,15 +230,45 @@ function LoginStyleChoice() {
   );
 }
 
-/** A grey square tick box with its label, like the app's login page. */
+/** A rounded tick box with its label. */
 function AppCheck({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-3 text-left text-[15px] text-white">
-      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-xl font-bold text-[#2B2B2B]">
+    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-3 text-left text-base text-white">
+      <span
+        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 text-sm font-black ${
+          checked ? "border-white bg-white text-[#17375A]" : "border-white/80"
+        }`}
+      >
         {checked ? "✓" : ""}
       </span>
       {label}
     </button>
+  );
+}
+
+const ICON = "h-6 w-6 shrink-0 text-[#9FB3C8]";
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={ICON} aria-hidden>
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1Z" />
+    </svg>
+  );
+}
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={ICON} aria-hidden>
+      <rect x="5" y="10" width="14" height="11" rx="3" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2" />
+    </svg>
+  );
+}
+function EyeIcon({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className="h-6 w-6" aria-hidden>
+      <path d="M12 5c-5 0-9 4.5-10 7 1 2.5 5 7 10 7s9-4.5 10-7c-1-2.5-5-7-10-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.2a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6Z" />
+      {open && <path d="M3 3l18 18" stroke="currentColor" strokeWidth="2" />}
+    </svg>
   );
 }
 
