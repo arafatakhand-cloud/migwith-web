@@ -1980,7 +1980,18 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {announcement && (
                   <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
                     <span className="text-lg leading-none">📢</span>
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[15px] leading-[21px] text-[#8A5A00]">{announcement}</p>
+                    {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[15px] leading-[21px] text-[#8A5A00] [overflow-wrap:anywhere]">
+                      {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
+                        /^https?:\/\//.test(part) ? (
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#EF9F27] underline-offset-2">
+                            {part}
+                          </a>
+                        ) : (
+                          part
+                        )
+                      )}
+                    </p>
                   </div>
                 )}
                 {gameStatusLine && !statusBotInFeed && (
