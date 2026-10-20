@@ -12,9 +12,9 @@ import { PageTitle, SectionLabel } from "../_components/LightCards";
 import { RefreshButton } from "../_components/RefreshButton";
 
 // 💎 Discover › Luxury Festival: everyone sees the festival time and the top 25
-// Luxury Bet players (getLuxuryFestival — names only; each player sees just
-// their own spend, like Rankings). miglife also sets the start and end (Asia/
-// Dhaka time) in app_settings/luxury_festival_admin and sees every spend. A NEW
+// Luxury Bet players with how much each has spent (getLuxuryFestival). miglife
+// also sets the start and end (Asia/Dhaka time) in
+// app_settings/luxury_festival_admin and sees the bet counts. A NEW
 // start gives a new festivalId → starts from zero; changing only the end keeps
 // the running totals.
 
