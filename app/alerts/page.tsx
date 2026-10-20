@@ -124,6 +124,8 @@ function styleFor(type: string): Style {
       return { icon: "🎨", title: "Style Studio", top: "#2EC5D6", bottom: "#0E7C9A", group: "requests" };
     case "mentor_renewal":
       return { icon: "⏳", title: "Mentorship renewal", top: "#FFB74D", bottom: "#E65100", group: "requests" };
+    case "merchant_renewal":
+      return { icon: "⏳", title: "Merchant renewal", top: "#FFB74D", bottom: "#E65100", group: "requests" };
     case "merchant_tag_request":
     case "mentor_tag_request":
     case "mentor_request":
