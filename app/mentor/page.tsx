@@ -32,6 +32,7 @@ import {
   dayRange,
   daysLeft,
   EarningPanel,
+  GradientTabs,
   lc,
   ProgramBar,
   spendBetween,
@@ -204,33 +205,28 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
   return (
     <>
-      <div className="flex gap-2 px-3 pt-3 text-[12px] font-bold">
-        {(
-          [
-            ["REQUESTS", "Requests", requests.length, true],
-            ["MERCHANTS", "Merchants", merchants.length, false],
-            ["TAGGED", "Tagged", tagged.length, false],
-          ] as const
-        ).map(([id, label, n, alert]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setTab(id)}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-full py-1.5 ${tab === id ? "bg-[#1E63D6] text-white shadow" : "bg-white text-[#5B6B8C] shadow-sm"}`}
-          >
-            {label}
-            {n > 0 && (
-              <span className={`rounded-full px-1.5 text-[10px] ${alert ? "bg-[#E5484D] text-white" : tab === id ? "bg-white text-[#1E63D6]" : "bg-[#1E63D6]/10 text-[#1E63D6]"}`}>{n}</span>
-            )}
-          </button>
-        ))}
+      <div className="flex px-3 pt-3">
+        <GradientTabs
+          small
+          tabs={[
+            { id: "REQUESTS", label: "Requests", badge: requests.length, alert: true },
+            { id: "MERCHANTS", label: "Merchants", badge: merchants.length },
+            { id: "TAGGED", label: "Tagged", badge: tagged.length },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
       </div>
       {msg && <p className="mx-3 mt-3 rounded-xl border border-[#D5E3F5] bg-white shadow-sm px-4 py-2 text-sm font-semibold text-[#1E63D6]">{msg}</p>}
 
       <div className="space-y-2 px-3 py-3">
         {tab === "REQUESTS" &&
           (requests.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#5B6B8C]">No pending requests.</p>
+            <div className="mt-2 flex flex-col items-center rounded-[22px] border border-dashed border-[#C9DAF2] bg-white/70 px-6 py-10 text-center">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-[38px] shadow-inner">📭</span>
+              <p className="mt-3 text-[15px] font-extrabold text-[#0B2A5B]">No pending requests</p>
+              <p className="mt-1 text-xs text-[#5B6B8C]">New merchant requests will show up here.</p>
+            </div>
           ) : (
             requests.map((r) => {
               const from = String(r.get("fromUsername") || "");

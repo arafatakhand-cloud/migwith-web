@@ -305,6 +305,53 @@ function DatePickerSheet({ day, onPick, onClose }: { day: string; onPick: (d: st
   );
 }
 
+/** 💫 Tabs with a gradient bubble that slides to the tab you pick. */
+export function GradientTabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  small = false,
+}: {
+  tabs: readonly { id: T; label: string; badge?: number; alert?: boolean }[];
+  value: T;
+  onChange: (id: T) => void;
+  small?: boolean;
+}) {
+  const i = Math.max(0, tabs.findIndex((t) => t.id === value));
+  return (
+    <div className={`relative flex min-w-0 flex-1 rounded-2xl bg-white p-1 shadow-[0_2px_10px_rgba(30,99,214,.12)] ${small ? "text-[12px]" : "text-[11px]"}`}>
+      <span
+        className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-r from-[#5A8FD6] via-[#1E63D6] to-[#8B5CFF] shadow-[0_4px_12px_rgba(30,99,214,.45)] transition-all duration-300 ease-out"
+        style={{ left: `calc(${(i * 100) / tabs.length}% + 4px)`, width: `calc(${100 / tabs.length}% - 8px)` }}
+      />
+      {tabs.map((t) => {
+        const on = t.id === value;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => onChange(t.id)}
+            className={`relative z-10 flex min-w-0 flex-1 items-center justify-center gap-1 truncate py-2 font-black tracking-wide transition-colors duration-300 ${
+              on ? "text-white" : "text-[#5B6B8C]"
+            }`}
+          >
+            {t.label}
+            {!!t.badge && t.badge > 0 && (
+              <span
+                className={`rounded-full px-1.5 text-[10px] font-extrabold ${
+                  t.alert ? "bg-[#E5484D] text-white" : on ? "bg-white/25 text-white" : "bg-[#1E63D6]/10 text-[#1E63D6]"
+                }`}
+              >
+                {t.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Navy bar: back, DASHBOARD / REPORT / EARNING, refresh. */
 export function ProgramBar<P extends string>({
   backHref,
@@ -333,6 +380,9 @@ export function ProgramBar<P extends string>({
         {(backHref || onBack) && (
           <BackButton variant={gold ? "light" : "dark"} href={onBack ? undefined : backHref} onClick={onBack} />
         )}
+        {gold ? (
+          <GradientTabs tabs={panels.map((p) => ({ id: p, label: p === "EARNING" ? "BONUS" : p }))} value={panel} onChange={setPanel} />
+        ) : (
         <div className="flex min-w-0 flex-1 gap-1.5">
           {panels.map((p) => (
             <button
@@ -350,6 +400,7 @@ export function ProgramBar<P extends string>({
             </button>
           ))}
         </div>
+        )}
         <RefreshButton
           onClick={onRefresh}
           glyph="⟳"
@@ -531,25 +582,27 @@ export function EarningPanel({
   return (
     <div className="space-y-3 px-3 py-3">
       {gold ? (
-        <div className="rounded-[20px] border border-[#D5E3F5] bg-gradient-to-br from-white to-[#EAF1FC] p-4 shadow-lg">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-[#5B6B8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
-            <span className="rounded-full bg-[#1E63D6]/10 px-2 py-0.5 text-[10px] font-bold text-[#1E63D6]">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
+        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#5A8FD6] via-[#2F6ABD] to-[#8B5CFF] p-4 text-white shadow-[0_10px_24px_rgba(47,106,189,.35)]">
+          <span className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/10" />
+          <span className="pointer-events-none absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-white/[0.07]" />
+          <div className="relative flex items-center justify-between">
+            <p className="text-xs font-semibold text-white/85">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
+            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
           </div>
-          <div className="mt-1 flex items-center gap-3">
-            <p className="min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-[#1E63D6]">
+          <div className="relative mt-1 flex items-center gap-3">
+            <p className="min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-white drop-shadow-sm">
               {amount(view.total)}
             </p>
             <SettledRing settled={view.settled} pending={view.pending} />
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="relative mt-3 grid grid-cols-3 gap-2 text-center">
             {[
-              ["Pending", view.pending, "text-[#C98A0C]"],
-              ["Settled", view.settled, "text-[#16A34A]"],
-              ["Balance", balance, "text-[#1E63D6]"],
+              ["Pending", view.pending, "text-[#FFD66B]"],
+              ["Settled", view.settled, "text-[#8FF0B4]"],
+              ["Balance", balance, "text-white"],
             ].map(([l, v, col]) => (
-              <div key={l as string} className="rounded-xl bg-[#EAF1FC] py-1.5">
-                <p className="text-[10px] text-[#5B6B8C]">
+              <div key={l as string} className="rounded-xl bg-white/15 py-1.5 backdrop-blur-sm">
+                <p className="text-[10px] text-white/80">
                   <span className={col as string}>●</span> {l}
                 </p>
                 <p className={`truncate px-1 text-[13px] font-black ${col}`}>{amount(v as number)}</p>
@@ -582,7 +635,6 @@ export function EarningPanel({
       )}
 
       {gold && <WeekChart days={live?.days} today={view.periods.today} last7={view.periods.last7Days} last30={view.periods.last30Days} />}
-      {gold && <TopSources people={live?.people} />}
 
       {!gold && <div className={c.card}>
         <div className="flex items-center">
@@ -758,30 +810,3 @@ function short(n: number) {
   return amount(n);
 }
 
-/** Who brought the most bonus over the last 7 days. */
-function TopSources({ people }: { people?: { username: string; earning: number }[] }) {
-  if (!people || people.length === 0) return null;
-  const top = people.slice(0, 5);
-  const max = top[0].earning || 1;
-  const bars = ["bg-[#1E63D6]", "bg-[#8B5CFF]", "bg-[#16A34A]", "bg-[#C98A0C]", "bg-[#E5484D]"];
-  return (
-    <div className="rounded-2xl bg-white shadow-sm p-4">
-      <p className="text-sm font-bold text-[#0B2A5B]">🏆 Top sources · 7 days</p>
-      <ul className="mt-2 space-y-2.5">
-        {top.map((p, i) => (
-          <li key={p.username} className="flex items-center gap-2.5">
-            <span className={`w-4 text-center text-sm font-black ${i === 0 ? "text-[#1E63D6]" : "text-[#5B6B8C]"}`}>{i + 1}</span>
-            <Avatar name={p.username} size="h-8 w-8" />
-            <div className="min-w-0 flex-1">
-              <p data-notranslate className="truncate text-sm font-bold text-[#0B2A5B]">@{p.username}</p>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E3ECF7]">
-                <div className={`h-full rounded-full ${bars[i]}`} style={{ width: `${Math.max(4, (p.earning / max) * 100)}%` }} />
-              </div>
-            </div>
-            <span className="text-sm font-black text-[#16A34A]">+{amount(p.earning)}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
