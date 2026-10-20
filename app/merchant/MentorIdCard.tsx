@@ -7,7 +7,8 @@ import { db } from "../../lib/firebase";
 
 // 💼 miGlife Partner for a mentor: a "Mentor Card" (like an ID card) with
 // the real numbers — merchants, tagged users and the total mentor bonus —
-// and the door to the Mentor Dashboard. Dark gold, like the dashboard.
+// and the door to the Mentor Dashboard. Light, in the chosen colour theme,
+// like the dashboard.
 
 const CSS = `
 @keyframes mcFlip{from{opacity:0;transform:perspective(800px) rotateY(-70deg)}to{opacity:1;transform:none}}
@@ -74,18 +75,18 @@ export function MentorIdCard({ me, uid }: { me: string; uid: string }) {
   return (
     <div className="rounded-[26px] bg-white p-1 shadow-xl" style={{ animation: "mcFlip .8s cubic-bezier(.2,.8,.2,1) both" }}>
       <style>{CSS}</style>
-      <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#0E1525] to-[#1C2640] p-4 text-white">
+      <div className="relative overflow-hidden rounded-[22px] border border-[#D5E3F5] bg-gradient-to-br from-[#EAF1FC] to-white p-4 text-[#0B2A5B]">
         <span
-          className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/10"
+          className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-white/70"
           style={{ animation: "mcShine 2.6s ease-in-out .9s infinite" }}
         />
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold tracking-[0.25em] text-[#F7D774]">miGlife · MENTOR CARD</p>
+          <p className="text-[11px] font-bold tracking-[0.25em] text-[#1E63D6]">miGlife · MENTOR CARD</p>
           <span className="text-xl">💼</span>
         </div>
         <div className="mt-4 flex items-center gap-3 text-left">
           <span
-            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#F7D774] bg-[#E0A100] text-2xl font-black"
+            className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-2 border-[#1E63D6] bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] text-2xl font-black text-white"
             style={{ animation: "mcPop .7s cubic-bezier(.2,.8,.2,1) .4s both" }}
           >
             {photo ? (
@@ -97,17 +98,17 @@ export function MentorIdCard({ me, uid }: { me: string; uid: string }) {
           </span>
           <div className="min-w-0" style={{ animation: "mcUp .6s cubic-bezier(.2,.8,.2,1) .5s both" }}>
             <p data-notranslate className="truncate text-xl font-black">@{me}</p>
-            {since && <p className="text-xs text-[#8FA0C9]">Mentor since {since}</p>}
-            <p className="mt-1 inline-block rounded-full bg-[#F7D774]/20 px-2 py-0.5 text-[10px] font-bold text-[#F7D774]">★ Verified Mentor</p>
+            {since && <p className="text-xs text-[#5B6B8C]">Mentor since {since}</p>}
+            <p className="mt-1 inline-block rounded-full bg-[#1E63D6]/10 px-2 py-0.5 text-[10px] font-bold text-[#1E63D6]">★ Verified Mentor</p>
           </div>
         </div>
-        <div className="mt-4 flex justify-between border-t border-white/10 pt-3 text-center text-[11px]">
+        <div className="mt-4 flex justify-between border-t border-[#D5E3F5] pt-3 text-center text-[11px]">
           {stats.map(([label, n, fmt]) => (
             <div key={label} className="flex-1">
-              <p className="text-base font-black text-[#F7D774]">
+              <p className="text-base font-black text-[#1E63D6]">
                 <CountUp to={n} fmt={fmt} />
               </p>
-              <p className="text-[#8FA0C9]">{label}</p>
+              <p className="text-[#5B6B8C]">{label}</p>
             </div>
           ))}
         </div>
@@ -116,7 +117,7 @@ export function MentorIdCard({ me, uid }: { me: string; uid: string }) {
         <p className="text-sm text-[#5B6B8C]">Approve requests and manage your merchants.</p>
         <Link
           href="/mentor"
-          className="mt-3 block rounded-2xl bg-[#0E1525] py-3 text-base font-black text-[#F7D774] transition active:scale-[.97]"
+          className="mt-3 block rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-base font-black text-white shadow transition active:scale-[.97]"
         >
           Open Mentor Dashboard
         </Link>
