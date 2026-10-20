@@ -24,6 +24,7 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
+import { chatHref } from "../../lib/privateChat";
 import { PageShell } from "../_components/PageShell";
 import { PushToggle } from "../_components/PushToggle";
 import { BackButton } from "../_components/BackButton";
@@ -50,6 +51,8 @@ type Alert = {
   /** 🎁 gift alerts: the gift's own icon + name; a Gift Shower one is not shown */
   giftIcon: string;
   giftName: string;
+  /** 💬 the message the sender wrote with the gift ("" when none) */
+  giftMessage: string;
   shower: boolean;
 };
 
@@ -71,6 +74,7 @@ function toAlert(d: { id: string; get: (f: string) => any }): Alert {
     createdAtMs: d.get("createdAt")?.toMillis?.() ?? 0,
     giftIcon: String(d.get("giftIcon") || "").trim(),
     giftName: String(d.get("giftName") || "").trim(),
+    giftMessage: String(d.get("giftMessage") || "").trim(),
     shower: d.get("shower") === true,
   };
 }
@@ -238,7 +242,59 @@ function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string 
   return href ? <Link href={href}>{body}</Link> : body;
 }
 
-const approveColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "approveColorPurchase");
+// 🎁 A gift you got: a pink card with the gift big, the sender's message in a
+// chat bubble, the room it was sent in, and 💝 Say thanks (opens a private
+// chat with the sender).
+function GiftAlertCard({ a, isNew }: { a: Alert; isNew: boolean }) {
+  const icon = a.giftIcon && Array.from(a.giftIcon).length <= 8 ? a.giftIcon : "🎁";
+  return (
+    <div
+      className="relative my-1 overflow-hidden rounded-[22px] p-3.5 text-white"
+      style={{
+        background: "linear-gradient(135deg, #FF6FA8, #B0245A)",
+        boxShadow: isNew ? "0 8px 18px #D6336C66" : "0 4px 10px #D6336C40",
+      }}
+    >
+      <span className="pointer-events-none absolute -right-10 -top-10 h-[130px] w-[130px] rounded-full bg-white/[0.13]" />
+      <div className="relative flex items-center gap-3">
+        <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-white text-[34px] shadow-[0_4px_10px_rgba(0,0,0,.2)]">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[15px] font-extrabold">{a.fromUsername}</p>
+          <p className="text-[13px] text-white/90">
+            sent you <b>{a.giftName || "a gift"}</b>
+          </p>
+        </div>
+        <span className="flex items-center gap-1.5 self-start text-[11px] text-white/85">
+          {shortTime(a.createdAtMs)}
+          {isNew && <span className="h-2 w-2 rounded-full bg-white" />}
+        </span>
+      </div>
+      {a.giftMessage && (
+        <p className="relative mt-3 whitespace-pre-wrap break-words rounded-[4px_16px_16px_16px] bg-white px-3 py-2.5 text-sm italic leading-5 text-[#0B1F3A]">
+          <span className="mr-1.5 not-italic">💬</span>
+          {a.giftMessage}
+        </p>
+      )}
+      <div className="relative mt-3 flex items-center gap-2">
+        {a.roomName && (
+          <Link href={roomHref(a.roomName)} className="min-w-0 truncate rounded-full bg-white/[0.18] px-2.5 py-1 text-xs font-bold">
+            🏠 {a.roomName} room
+          </Link>
+        )}
+        <Link
+          href={chatHref(a.fromUsername)}
+          className="ml-auto shrink-0 rounded-full bg-white px-3.5 py-2 text-[13px] font-extrabold text-[#B0245A]"
+        >
+          💝 Say thanks
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+const approveColorPurchase =httpsCallable<{ requestId: string }, { status?: string }>(functions, "approveColorPurchase");
 const rejectColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "rejectColorPurchase");
 const approveTagRequest = httpsCallable<{ kind: string; requestId: string }, { ok?: boolean; result?: string }>(functions, "approveTagRequest");
 
@@ -622,6 +678,8 @@ export default function AlertsPage() {
                 card = <ColorRequestCard a={a} />;
               } else if ((a.type === "merchant_tag_request" || a.type === "mentor_tag_request") && a.requestId) {
                 card = <TagRequestCard a={a} username={username} uid={user.uid} />;
+              } else if (a.type === "gift" && a.fromUsername.trim()) {
+                card = <GiftAlertCard a={a} isNew={isNew} />;
               } else if (a.type === "friend_request" && a.fromUsername.trim()) {
                 card = <FriendRequestCard a={a} username={username} />;
               } else if (a.type === "mentor_request" && a.requestId) {
