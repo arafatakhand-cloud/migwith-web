@@ -55,11 +55,14 @@ export default function ExplorePage() {
   const classic = useIsClassic();
   const [tab, setTab] = useState<Tab | "all">("all");
   const items = ITEMS;
-  const SECTIONS: [Tab, string][] = [
-    ["events", "🎉 EVENTS"],
+  // 📢 Announcements first, then Shop, Events and Community.
+  const SECTIONS: [Tab | "news", string][] = [
+    ["news", "📢 ANNOUNCEMENTS"],
     ["shop", "🛍 SHOP"],
+    ["events", "🎉 EVENTS"],
     ["community", "👥 COMMUNITY"],
   ];
+  const inSection = (i: Item, id: Tab | "news") => (id === "news" ? i.title === "Announcements" : i.tab === id && i.title !== "Announcements");
   if (classic) {
     return (
       <PageShell light>
@@ -108,14 +111,14 @@ export default function ExplorePage() {
                   </button>
                 ))}
               </div>
-              {SECTIONS.filter(([id]) => tab === "all" || tab === id).map(([id, label]) => (
+              {SECTIONS.filter(([id]) => tab === "all" || tab === id || (id === "news" && tab === "community")).map(([id, label]) => (
                 <div key={id}>
                   <p className="mb-2 ml-1 mt-5 text-[11px] font-black tracking-[1.3px]" style={{ color: "#8FA0C9" }}>
                     {label}
                   </p>
                   <div className="space-y-2">
                     {items
-                      .filter((i) => i.tab === id)
+                      .filter((i) => inSection(i, id))
                       .map((i) => {
                         const [g1, g2] = GRAD[i.title] || ["#5A8FD6", "#8B5CFF"];
                         const row = (
