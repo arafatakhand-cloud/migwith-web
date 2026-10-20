@@ -6537,6 +6537,7 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .border-\[\#1B8F7A\],html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#1B8F7A\].classic-light{border-color:#e1e5ea}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#4A1B0C\],html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#4A1B0C\].classic-light{background-color:#eef0f3}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .border-\[\#EF9F27\],html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#EF9F27\].classic-light{border-color:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .decoration-\[\#EF9F27\],html[data-ui="classic"]:not([data-theme="dark_night"]) .decoration-\[\#EF9F27\].classic-light{text-decoration-color:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#833AB4\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#833AB4\].classic-light{--tw-gradient-from:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#833AB4\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#833AB4\].classic-light{--tw-gradient-to:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#7D8AA5\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#7D8AA5\].classic-light{color:#6B7788}

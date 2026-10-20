@@ -1959,12 +1959,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-x-none px-3 py-3"
             >
               <div ref={contentRef} className="space-y-1">
-              {/* Room cards, like the app: manager, welcome text, who is here */}
+              {/* Room cards, like the app: manager, welcome text, who is here —
+                  the app's own sizes (15 / 15 / 16, announcement 17) */}
               <div className="space-y-1.5 pb-1">
                 <p className={`${infoBox} px-3.5 py-2.5 text-[15px]`}>
                   👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                 </p>
-                <p className={`whitespace-pre-wrap ${infoBox} px-3.5 py-2.5 text-[15px]`}>
+                <p className={`whitespace-pre-wrap ${infoBox} px-3.5 py-2.5 text-[15px] leading-[22px]`}>
                   {roomDescription}
                 </p>
                 {locked && (
@@ -1972,15 +1973,26 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     🔒 This room is locked. Only admins/mods can enter until it&apos;s unlocked.
                   </p>
                 )}
-                <div className={`${infoBox} px-3.5 py-2.5 text-[15px]`}>
+                <div className={`${infoBox} px-3.5 py-2.5 text-[16px] leading-[21px]`}>
                   <p>👫 Currently in this room:</p>
                   {roomUsers.length > 0 && <p className={`mt-1 ${classic ? "text-[#16315F]" : "text-black"}`}>{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
                 </div>
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
                   <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
-                    <span className="text-lg leading-none">📢</span>
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[15px] leading-[21px] text-[#8A5A00]">{announcement}</p>
+                    <span className="text-[20px] leading-none">📢</span>
+                    {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#8A5A00] [overflow-wrap:anywhere]">
+                      {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
+                        /^https?:\/\//.test(part) ? (
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#EF9F27] underline-offset-2">
+                            {part}
+                          </a>
+                        ) : (
+                          part
+                        )
+                      )}
+                    </p>
                   </div>
                 )}
                 {gameStatusLine && !statusBotInFeed && (
