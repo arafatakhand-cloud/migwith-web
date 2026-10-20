@@ -128,7 +128,7 @@ export function DateBar({ day, setDay, gold = false }: { day: string; setDay: (d
     <div className="flex items-center gap-2">
       <label
         className={`flex flex-1 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold text-white shadow ${
-          gold ? "border border-[#C99A06]/50 bg-[#1A2338]" : "border-[1.5px] border-[#FFC04A] bg-[#0B1F3A]"
+          gold ? "border border-[#D5E3F5] bg-white !text-[#0B2A5B]" : "border-[1.5px] border-[#FFC04A] bg-[#0B1F3A]"
         }`}
       >
         📅
@@ -137,10 +137,10 @@ export function DateBar({ day, setDay, gold = false }: { day: string; setDay: (d
           value={day}
           max={todayStr()}
           onChange={(e) => e.target.value && setDay(e.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-white outline-none [color-scheme:dark]"
+          className={`min-w-0 flex-1 bg-transparent outline-none ${gold ? "text-[#0B2A5B] [color-scheme:light]" : "text-white [color-scheme:dark]"}`}
         />
       </label>
-      <button type="button" onClick={() => setDay(todayStr())} className={`px-2 text-sm font-bold ${gold ? "text-[#F7D774]" : "text-[#0B6FA6]"}`}>
+      <button type="button" onClick={() => setDay(todayStr())} className={`px-2 text-sm font-bold ${gold ? "text-[#1E63D6]" : "text-[#0B6FA6]"}`}>
         Today
       </button>
     </div>
@@ -167,10 +167,10 @@ export function ProgramBar<P extends string>({
   gold?: boolean;
 }) {
   return (
-    <div className={gold ? "bg-[#0E1525]" : "bg-[#0B1F3A]"}>
+    <div className={gold ? "bg-[#EEF3FB]" : "bg-[#0B1F3A]"}>
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-2 py-2">
         {backHref && (
-          <BackButton variant="dark" href={backHref} />
+          <BackButton variant={gold ? "light" : "dark"} href={backHref} />
         )}
         <div className="flex min-w-0 flex-1 gap-1.5">
           {panels.map((p) => (
@@ -180,7 +180,7 @@ export function ProgramBar<P extends string>({
               onClick={() => setPanel(p)}
               className={`min-w-0 flex-1 truncate py-2 text-[11px] font-black tracking-wider ${
                 gold
-                  ? `rounded-xl ${panel === p ? "bg-gradient-to-b from-[#F7D774] to-[#C99A06] text-[#1A1200]" : "bg-[#1A2338] text-[#8FA0C9]"}`
+                  ? `rounded-xl ${panel === p ? "bg-[#1E63D6] text-white shadow" : "bg-white text-[#5B6B8C] shadow-sm"}`
                   : `rounded-full ${panel === p ? "border text-white" : "bg-white text-[#0B1F3A]"}`
               }`}
               style={!gold && panel === p ? { borderColor: accent, background: `linear-gradient(90deg, #0B1F3A, ${accent}99)` } : undefined}
@@ -193,8 +193,8 @@ export function ProgramBar<P extends string>({
           type="button"
           onClick={onRefresh}
           aria-label="Refresh"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg font-bold"
-          style={{ borderColor: accent, color: accent }}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg font-bold ${gold ? "border-[#1E63D6] bg-white text-[#1E63D6]" : ""}`}
+          style={gold ? undefined : { borderColor: accent, color: accent }}
         >
           ⟳
         </button>
@@ -337,19 +337,19 @@ export function EarningPanel({
   // Colours: the light purple look (merchants) or dark gold (mentors).
   const c = gold
     ? {
-        card: "rounded-2xl bg-[#1A2338] p-4",
-        ink: "text-white",
-        sub: "text-[#8FA0C9]",
-        chip: "border border-[#C99A06]/50 bg-[#C99A06]/15 text-[#F7D774]",
-        menu: "bg-[#1A2338] text-white",
-        menuHover: "hover:bg-[#232F4A]",
-        menuOn: "font-bold text-[#F7D774]",
-        plus: "bg-[#C99A06]/20 text-[#F7D774]",
-        line: "divide-[#26304A]",
-        icon: "text-[#F7D774]",
-        up: "text-[#4ADE80]",
-        settled: "bg-[#4ADE80]/15 text-[#4ADE80]",
-        pending: "bg-[#FFB300]/15 text-[#FFB300]",
+        card: "rounded-2xl bg-white p-4 shadow-sm",
+        ink: "text-[#0B2A5B]",
+        sub: "text-[#5B6B8C]",
+        chip: "border border-[#D5E3F5] bg-[#1E63D6]/10 text-[#1E63D6]",
+        menu: "bg-white text-[#0B2A5B]",
+        menuHover: "hover:bg-[#E3ECF7]",
+        menuOn: "font-bold text-[#1E63D6]",
+        plus: "bg-[#1E63D6]/10 text-[#1E63D6]",
+        line: "divide-[#E3ECF7]",
+        icon: "text-[#1E63D6]",
+        up: "text-[#16A34A]",
+        settled: "bg-[#16A34A]/10 text-[#16A34A]",
+        pending: "bg-[#C98A0C]/10 text-[#C98A0C]",
       }
     : {
         card: "rounded-2xl bg-white p-4 shadow-sm",
@@ -370,28 +370,28 @@ export function EarningPanel({
   return (
     <div className="space-y-3 px-3 py-3">
       {gold ? (
-        <div className="rounded-[20px] border border-[#C99A06]/40 bg-gradient-to-br from-[#1C2640] to-[#121A2E] p-4 shadow-lg">
+        <div className="rounded-[20px] border border-[#D5E3F5] bg-gradient-to-br from-white to-[#EAF1FC] p-4 shadow-lg">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-[#8FA0C9]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
-            <span className="rounded-full bg-[#C99A06]/20 px-2 py-0.5 text-[10px] font-bold text-[#F7D774]">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
+            <p className="text-xs text-[#5B6B8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
+            <span className="rounded-full bg-[#1E63D6]/10 px-2 py-0.5 text-[10px] font-bold text-[#1E63D6]">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
           </div>
           <div className="mt-1 flex items-center gap-3">
-            <p className="min-w-0 flex-1 truncate bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[28px] font-black leading-tight text-transparent">
+            <p className="min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-[#1E63D6]">
               {amount(view.total)}
             </p>
             <SettledRing settled={view.settled} pending={view.pending} />
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             {[
-              ["Pending", view.pending, "#FFB300"],
-              ["Settled", view.settled, "#4ADE80"],
-              ["Balance", balance, "#7CC4FF"],
+              ["Pending", view.pending, "text-[#C98A0C]"],
+              ["Settled", view.settled, "text-[#16A34A]"],
+              ["Balance", balance, "text-[#1E63D6]"],
             ].map(([l, v, col]) => (
-              <div key={l as string} className="rounded-xl bg-white/5 py-1.5">
-                <p className="text-[10px] text-[#8FA0C9]">
-                  <span style={{ color: col as string }}>●</span> {l}
+              <div key={l as string} className="rounded-xl bg-[#EAF1FC] py-1.5">
+                <p className="text-[10px] text-[#5B6B8C]">
+                  <span className={col as string}>●</span> {l}
                 </p>
-                <p className="truncate px-1 text-[13px] font-black" style={{ color: col as string }}>{amount(v as number)}</p>
+                <p className={`truncate px-1 text-[13px] font-black ${col}`}>{amount(v as number)}</p>
               </div>
             ))}
           </div>
@@ -484,7 +484,7 @@ export function EarningPanel({
           <span className={c.icon}>↺</span>
           <span className={`flex-1 font-bold ${c.ink}`}>Recent Activity</span>
           {gold && view.recent.length > 3 ? (
-            <button type="button" onClick={() => setAllRecent((v) => !v)} className="rounded-full bg-[#C99A06]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#F7D774]">
+            <button type="button" onClick={() => setAllRecent((v) => !v)} className="rounded-full bg-[#1E63D6]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#1E63D6]">
               {allRecent ? "Less ▴" : `See all ${view.recent.length} ›`}
             </button>
           ) : (
@@ -536,12 +536,12 @@ function SettledRing({ settled, pending }: { settled: number; pending: number })
   return (
     <span
       className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
-      style={{ background: all > 0 ? `conic-gradient(#4ADE80 0 ${pct}%, #FFB300 0)` : "#232F4A" }}
+      style={{ background: all > 0 ? `conic-gradient(#16A34A 0 ${pct}%, #F2B544 0)` : "#E3ECF7" }}
       title="Settled"
     >
-      <span className="flex h-11 w-11 flex-col items-center justify-center rounded-full bg-[#161F33] leading-none">
-        <span className="text-[12px] font-black text-[#4ADE80]">{all > 0 ? `${pct}%` : "—"}</span>
-        <span className="mt-0.5 text-[7px] text-[#8FA0C9]">settled</span>
+      <span className="flex h-11 w-11 flex-col items-center justify-center rounded-full bg-white leading-none">
+        <span className="text-[12px] font-black text-[#16A34A]">{all > 0 ? `${pct}%` : "—"}</span>
+        <span className="mt-0.5 text-[7px] text-[#5B6B8C]">settled</span>
       </span>
     </span>
   );
@@ -556,36 +556,34 @@ function WeekChart({ days, today, last7, last30 }: { days?: { day: string; total
   const label = (day: string, i: number) =>
     i === 6 ? "Today" : day ? new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }) : "";
   return (
-    <div className="rounded-2xl bg-[#1A2338] p-4">
+    <div className="rounded-2xl bg-white shadow-sm p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-bold text-white">Last 7 days</p>
-        <p className="text-sm font-black text-[#F7D774]">🪙 {amount(last7)}</p>
+        <p className="text-sm font-bold text-[#0B2A5B]">Last 7 days</p>
+        <p className="text-sm font-black text-[#1E63D6]">🪙 {amount(last7)}</p>
       </div>
       <div className="mt-3 flex h-28 items-end gap-2">
         {week.map((d, i) => {
           const top = d.total > 0 && d.total === best;
           return (
             <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
-              {d.total > 0 && <span className="max-w-full truncate text-[8px] font-bold text-[#F7D774]">{short(d.total)}</span>}
+              {d.total > 0 && <span className="max-w-full truncate text-[8px] font-bold text-[#1E63D6]">{short(d.total)}</span>}
               <span
-                className="w-full rounded-md transition-[height] duration-500"
-                style={{
-                  height: `${Math.max(4, (d.total / max) * 78)}px`,
-                  background: d.total > 0 ? "linear-gradient(#F7D774, #C99A06)" : "#232F4A",
-                  boxShadow: top ? "0 0 12px #F7D77466" : undefined,
-                }}
+                className={`w-full rounded-md transition-[height] duration-500 ${
+                  d.total > 0 ? "bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" : "bg-[#E3ECF7]"
+                } ${top ? "shadow-md" : ""}`}
+                style={{ height: `${Math.max(4, (d.total / max) * 78)}px` }}
               />
-              <span className={`text-[10px] ${i === 6 || top ? "font-bold text-[#F7D774]" : "text-[#8FA0C9]"}`}>{label(d.day, i)}</span>
+              <span className={`text-[10px] ${i === 6 || top ? "font-bold text-[#1E63D6]" : "text-[#5B6B8C]"}`}>{label(d.day, i)}</span>
             </div>
           );
         })}
       </div>
-      <div className="mt-3 flex justify-between border-t border-[#26304A] pt-2 text-[11px] text-[#8FA0C9]">
+      <div className="mt-3 flex justify-between border-t border-[#E3ECF7] pt-2 text-[11px] text-[#5B6B8C]">
         <span>
-          Today <b className="text-[#F7D774]">{amount(today)}</b>
+          Today <b className="text-[#1E63D6]">{amount(today)}</b>
         </span>
         <span>
-          30 days <b className="text-[#F7D774]">{amount(last30)}</b>
+          30 days <b className="text-[#1E63D6]">{amount(last30)}</b>
         </span>
       </div>
     </div>
@@ -604,22 +602,22 @@ function TopSources({ people }: { people?: { username: string; earning: number }
   if (!people || people.length === 0) return null;
   const top = people.slice(0, 5);
   const max = top[0].earning || 1;
-  const bars = ["#F7D774", "#7CC4FF", "#4ADE80", "#C4A1FF", "#FF9F7C"];
+  const bars = ["bg-[#1E63D6]", "bg-[#8B5CFF]", "bg-[#16A34A]", "bg-[#C98A0C]", "bg-[#E5484D]"];
   return (
-    <div className="rounded-2xl bg-[#1A2338] p-4">
-      <p className="text-sm font-bold text-white">🏆 Top sources · 7 days</p>
+    <div className="rounded-2xl bg-white shadow-sm p-4">
+      <p className="text-sm font-bold text-[#0B2A5B]">🏆 Top sources · 7 days</p>
       <ul className="mt-2 space-y-2.5">
         {top.map((p, i) => (
           <li key={p.username} className="flex items-center gap-2.5">
-            <span className={`w-4 text-center text-sm font-black ${i === 0 ? "text-[#F7D774]" : "text-[#8FA0C9]"}`}>{i + 1}</span>
+            <span className={`w-4 text-center text-sm font-black ${i === 0 ? "text-[#1E63D6]" : "text-[#5B6B8C]"}`}>{i + 1}</span>
             <Avatar name={p.username} size="h-8 w-8" />
             <div className="min-w-0 flex-1">
-              <p data-notranslate className="truncate text-sm font-bold text-white">@{p.username}</p>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#232F4A]">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(4, (p.earning / max) * 100)}%`, backgroundColor: bars[i] }} />
+              <p data-notranslate className="truncate text-sm font-bold text-[#0B2A5B]">@{p.username}</p>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E3ECF7]">
+                <div className={`h-full rounded-full ${bars[i]}`} style={{ width: `${Math.max(4, (p.earning / max) * 100)}%` }} />
               </div>
             </div>
-            <span className="text-sm font-black text-[#4ADE80]">+{amount(p.earning)}</span>
+            <span className="text-sm font-black text-[#16A34A]">+{amount(p.earning)}</span>
           </li>
         ))}
       </ul>

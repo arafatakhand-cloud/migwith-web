@@ -91,16 +91,16 @@ export default function MentorDashboardPage() {
         panel={panel}
         setPanel={setPanel}
         onRefresh={() => setRefresh((n) => n + 1)}
-        accent="#D4AF37"
+        accent="#1E63D6"
         gold
       />
 
-      {/* 💼 dark gold, like a premium wallet */}
-      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#0E1525] pb-10 text-white">
+      {/* light, in the chosen colour theme like the rest of the app */}
+      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#EEF3FB] pb-10 text-[#0B2A5B]">
         {!ready || allowed === null ? (
           null
         ) : !allowed ? (
-          <p className="px-4 py-16 text-center text-sm text-[#8FA0C9]">The Mentor Dashboard is for mentors only.</p>
+          <p className="px-4 py-16 text-center text-sm text-[#5B6B8C]">The Mentor Dashboard is for mentors only.</p>
         ) : panel === "DASHBOARD" ? (
           <Dashboard me={username} refresh={refresh} />
         ) : panel === "REPORT" ? (
@@ -209,38 +209,38 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`flex flex-1 items-center justify-center gap-1 rounded-full py-1.5 ${tab === id ? "bg-white text-[#0E1525]" : "bg-[#1A2338] text-[#B9C4DD]"}`}
+            className={`flex flex-1 items-center justify-center gap-1 rounded-full py-1.5 ${tab === id ? "bg-[#1E63D6] text-white shadow" : "bg-white text-[#5B6B8C] shadow-sm"}`}
           >
             {label}
             {n > 0 && (
-              <span className={`rounded-full px-1.5 text-[10px] ${alert ? "bg-[#E5484D] text-white" : tab === id ? "bg-[#0E1525] text-[#F7D774]" : "bg-[#C99A06]/25 text-[#F7D774]"}`}>{n}</span>
+              <span className={`rounded-full px-1.5 text-[10px] ${alert ? "bg-[#E5484D] text-white" : tab === id ? "bg-white text-[#1E63D6]" : "bg-[#1E63D6]/10 text-[#1E63D6]"}`}>{n}</span>
             )}
           </button>
         ))}
       </div>
-      {msg && <p className="mx-3 mt-3 rounded-xl border border-[#C99A06]/40 bg-[#1A2338] px-4 py-2 text-sm font-semibold text-[#F7D774]">{msg}</p>}
+      {msg && <p className="mx-3 mt-3 rounded-xl border border-[#D5E3F5] bg-white shadow-sm px-4 py-2 text-sm font-semibold text-[#1E63D6]">{msg}</p>}
 
       <div className="space-y-2 px-3 py-3">
         {tab === "REQUESTS" &&
           (requests.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#8FA0C9]">No pending requests.</p>
+            <p className="py-6 text-center text-sm text-[#5B6B8C]">No pending requests.</p>
           ) : (
             requests.map((r) => {
               const from = String(r.get("fromUsername") || "");
               const note = String(r.get("note") || "");
               const country = String(r.get("country") || "");
               return (
-                <div key={r.id} className="rounded-2xl bg-[#1A2338] p-4 text-white">
+                <div key={r.id} className="rounded-2xl bg-white shadow-sm p-4 text-[#0B2A5B]">
                   <div className="flex items-center gap-3">
                     <Avatar name={from} size="h-10 w-10" />
                     <div className="min-w-0">
                       <p data-notranslate className="font-bold">@{from}</p>
-                      <p className="text-xs text-[#8FA0C9]">Level {Number(r.get("level") || 0)}{country && ` · ${country}`} · wants to be your merchant</p>
+                      <p className="text-xs text-[#5B6B8C]">Level {Number(r.get("level") || 0)}{country && ` · ${country}`} · wants to be your merchant</p>
                     </div>
                   </div>
-                  {note && <p data-notranslate className="mt-2 text-xs text-[#8FA0C9]">&ldquo;{note}&rdquo;</p>}
+                  {note && <p data-notranslate className="mt-2 text-xs text-[#5B6B8C]">&ldquo;{note}&rdquo;</p>}
                   <div className="mt-3 flex gap-2.5">
-                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="flex-1 rounded-xl border border-[#E5484D]/60 py-2 text-sm font-bold text-[#FF8A8A] disabled:opacity-40">
+                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="flex-1 rounded-xl border border-[#E5484D]/60 py-2 text-sm font-bold text-[#E5484D] disabled:opacity-40">
                       ✕ Reject
                     </button>
                     <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] py-2 text-sm font-black text-white disabled:opacity-40">
@@ -254,20 +254,20 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
         {tab === "MERCHANTS" &&
           (merchants.length === 0 ? (
-            <p className="py-6 text-center text-sm text-[#8FA0C9]">No merchants yet.</p>
+            <p className="py-6 text-center text-sm text-[#5B6B8C]">No merchants yet.</p>
           ) : (
             merchants.map((m) => {
               const name = String(m.get("merchantUsername") || "");
               const left = daysLeft(m.get("expiresAt"));
               return (
-                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-[#1A2338] px-3 py-2.5 text-white">
+                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-white shadow-sm px-3 py-2.5 text-[#0B2A5B]">
                   <Avatar name={name} size="h-9 w-9" />
                   <div className="min-w-0 flex-1">
                     <p data-notranslate className="truncate font-bold">@{name}</p>
-                    <p className="text-xs text-[#8FA0C9]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
+                    <p className="text-xs text-[#5B6B8C]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
                   </div>
                   {left !== null && (
-                    <span className="rounded-full bg-gradient-to-b from-[#F7D774] to-[#C99A06] px-2.5 py-0.5 text-[11px] font-black text-[#1A1200]">{left}d left</span>
+                    <span className="rounded-full bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-2.5 py-0.5 text-[11px] font-black text-white">{left}d left</span>
                   )}
                 </div>
               );
@@ -277,47 +277,47 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
         {tab === "TAGGED" && (
           <>
             <div className="flex items-center justify-between">
-              <p className="text-xs font-bold tracking-wider text-[#8FA0C9]">TAGGED · 3% BONUS</p>
+              <p className="text-xs font-bold tracking-wider text-[#5B6B8C]">TAGGED · 3% BONUS</p>
               <button
                 type="button"
                 onClick={() => setTagOpen(true)}
-                className="rounded-xl bg-gradient-to-b from-[#F7D774] to-[#C99A06] px-4 py-2 text-xs font-black text-[#1A1200] shadow"
+                className="rounded-xl bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-4 py-2 text-xs font-black text-white shadow"
               >
                 + TAG USER
               </button>
             </div>
             {tagged.length === 0 ? (
-              <p className="py-6 text-center text-sm text-[#8FA0C9]">No tagged users yet.</p>
+              <p className="py-6 text-center text-sm text-[#5B6B8C]">No tagged users yet.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {tagged.map((t) => {
                   const name = String(t.get("taggedUsername") || "");
                   const status = String(t.get("status") || "active");
                   const left = daysLeft(t.get("expiresAt"));
-                  // the gold ring: how much of the 30-day tag is left
+                  // the ring: how much of the 30-day tag is left
                   const part = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
                   return (
-                    <div key={t.id} className="relative rounded-2xl bg-[#1A2338] p-3 text-center">
+                    <div key={t.id} className="relative rounded-2xl bg-white shadow-sm p-3 text-center">
                       <button
                         type="button"
                         aria-label={`Remove ${name}`}
                         disabled={busy.has(t.id)}
                         onClick={() => confirm(`Remove @${name} from your tagged users?`) && withBusy(t.id, () => deleteDoc(t.ref))}
-                        className="absolute right-2 top-2 text-sm text-[#FF8A8A] disabled:opacity-40"
+                        className="absolute right-2 top-2 text-sm text-[#E5484D] disabled:opacity-40"
                       >
                         🗑
                       </button>
                       <div className="relative mx-auto h-14 w-14">
                         <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
-                          <circle cx="18" cy="18" r="16" fill="none" stroke="#2A3550" strokeWidth="3" />
-                          <circle cx="18" cy="18" r="16" fill="none" stroke="#F7D774" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${part} 100`} pathLength={100} />
+                          <circle cx="18" cy="18" r="16" fill="none" className="stroke-[#E3ECF7]" strokeWidth="3" />
+                          <circle cx="18" cy="18" r="16" fill="none" className="stroke-[#1E63D6]" strokeWidth="3" strokeLinecap="round" strokeDasharray={`${part} 100`} pathLength={100} />
                         </svg>
                         <span className="absolute inset-[7px] flex">
                           <Avatar name={name} size="h-full w-full" />
                         </span>
                       </div>
                       <p data-notranslate className="mt-1 truncate text-[13px] font-bold">@{name}</p>
-                      <p className="text-[10px] text-[#8FA0C9]">
+                      <p className="text-[10px] text-[#5B6B8C]">
                         {status === "active" ? (left !== null ? `${left} days left` : "Tagged") : status}
                       </p>
                     </div>
@@ -520,10 +520,10 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
   return (
     <div className="space-y-3 px-3 py-3">
       <DateBar day={day} setDay={setDay} gold />
-      {error && <p className="text-xs text-[#FF8A8A]">⚠ Could not load: {error}</p>}
+      {error && <p className="text-xs text-[#E5484D]">⚠ Could not load: {error}</p>}
 
       <div className="flex gap-2">
-        <div className="min-w-0 flex-[1.3] rounded-[20px] bg-gradient-to-br from-[#F7D774] to-[#C99A06] p-4 text-[#1A1200] shadow-[0_6px_20px_rgba(201,154,6,0.25)]">
+        <div className="min-w-0 flex-[1.3] rounded-[20px] bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
           <p className="text-[11px] font-bold">Earned · {label}</p>
           <p className="truncate text-[28px] font-black leading-tight">{amount(total)}</p>
           <p className="text-[11px] font-bold">
@@ -531,19 +531,19 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
           </p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex-1 rounded-2xl bg-[#1A2338] px-3 py-2">
-            <p className="text-[10px] text-[#8FA0C9]">★ My Tags · 3%</p>
-            <p className="truncate font-black text-[#F7D774]">{amount(mentorTotal)}</p>
+          <div className="flex-1 rounded-2xl bg-white shadow-sm px-3 py-2">
+            <p className="text-[10px] text-[#5B6B8C]">★ My Tags · 3%</p>
+            <p className="truncate font-black text-[#1E63D6]">{amount(mentorTotal)}</p>
           </div>
-          <div className="flex-1 rounded-2xl bg-[#1A2338] px-3 py-2">
-            <p className="text-[10px] text-[#8FA0C9]">◆ Merchants · 0.5%</p>
-            <p className="truncate font-black text-[#7CC4FF]">{amount(merchantTotal)}</p>
+          <div className="flex-1 rounded-2xl bg-white shadow-sm px-3 py-2">
+            <p className="text-[10px] text-[#5B6B8C]">◆ Merchants · 0.5%</p>
+            <p className="truncate font-black text-[#8B5CFF]">{amount(merchantTotal)}</p>
           </div>
         </div>
       </div>
 
-      <TagGrid title="Mentor Tag" icon="★" rows={shown.direct} total={mentorTotal} accent="#F7D774" ready={!!data} empty="No mentor tagged users yet" />
-      <TagGrid title="Merchant Tag" icon="◆" rows={shown.merchant} total={merchantTotal} accent="#7CC4FF" ready={!!data} empty="No merchant tagged users yet" />
+      <TagGrid title="Mentor Tag" icon="★" rows={shown.direct} total={mentorTotal} tone="main" ready={!!data} empty="No mentor tagged users yet" />
+      <TagGrid title="Merchant Tag" icon="◆" rows={shown.merchant} total={merchantTotal} tone="second" ready={!!data} empty="No merchant tagged users yet" />
     </div>
   );
 }
@@ -569,29 +569,32 @@ async function loadReport(me: string, day: string) {
 
 /** A card per tagged user: the ones who spent that day glow (most first),
  *  the rest are dimmed. */
-function TagGrid(p: { title: string; icon: string; rows: Row[]; total: number; accent: string; ready: boolean; empty: string }) {
+function TagGrid(p: { title: string; icon: string; rows: Row[]; total: number; tone: "main" | "second"; ready: boolean; empty: string }) {
+  // theme colours (classes, so the colour theme recolours them)
+  const ink = p.tone === "main" ? "text-[#1E63D6]" : "text-[#8B5CFF]";
+  const ring = p.tone === "main" ? "border-[#1E63D6]" : "border-[#8B5CFF]";
   const rows = [...p.rows].sort((a, b) => b.earning - a.earning || b.spend - a.spend || a.username.localeCompare(b.username));
   const active = rows.filter((r) => r.spend > 0).length;
   return (
     <div>
       <div className="flex items-center justify-between px-1 pb-2 pt-1">
-        <p className="text-sm font-black text-white">
-          <span style={{ color: p.accent }}>{p.icon}</span> {p.title} · {p.rows.length}
+        <p className="text-sm font-black text-[#0B2A5B]">
+          <span className={ink}>{p.icon}</span> {p.title} · {p.rows.length}
         </p>
-        <p className="text-[11px] text-[#8FA0C9]">
+        <p className="text-[11px] text-[#5B6B8C]">
           {p.rows.length > 0 && `${active} active · `}
-          <b style={{ color: p.accent }}>🪙 {amount(p.total)}</b>
+          <b className={ink}>🪙 {amount(p.total)}</b>
         </p>
       </div>
       {rows.length === 0 ? (
         p.ready ? (
-          <p className="rounded-2xl bg-[#1A2338] py-5 text-center text-xs text-[#8FA0C9]">
+          <p className="rounded-2xl bg-white shadow-sm py-5 text-center text-xs text-[#5B6B8C]">
             <span className="block text-xl">👥</span>
             {p.empty}
           </p>
         ) : (
           // still filling in: a quiet blank, not "nobody yet"
-          <div className="h-24 rounded-2xl bg-[#1A2338]/60" />
+          <div className="h-24 rounded-2xl bg-white/70" />
         )
       ) : (
         <ul className="grid grid-cols-3 gap-2">
@@ -600,13 +603,12 @@ function TagGrid(p: { title: string; icon: string; rows: Row[]; total: number; a
             return (
               <li
                 key={r.username}
-                className={`flex min-w-0 flex-col items-center rounded-2xl bg-[#1A2338] px-1.5 py-2.5 text-center ${on ? "border" : "opacity-50"}`}
-                style={on ? { borderColor: p.accent, boxShadow: `0 0 12px ${p.accent}33` } : undefined}
+                className={`flex min-w-0 flex-col items-center rounded-2xl bg-white shadow-sm px-1.5 py-2.5 text-center ${on ? `border-[1.5px] shadow-md ${ring}` : "opacity-50"}`}
               >
                 <Avatar name={r.username} size="h-9 w-9" />
-                <span data-notranslate className="mt-1 w-full truncate text-[13px] font-bold text-white">@{r.username}</span>
-                <span className="w-full truncate text-[10px] text-[#8FA0C9]">{amount(r.spend)} spent</span>
-                <span className={`mt-0.5 w-full truncate text-[15px] font-black ${on ? "text-[#4ADE80]" : "text-[#5B6782]"}`}>+{amount(r.earning)}</span>
+                <span data-notranslate className="mt-1 w-full truncate text-[13px] font-bold text-[#0B2A5B]">@{r.username}</span>
+                <span className="w-full truncate text-[10px] text-[#5B6B8C]">{amount(r.spend)} spent</span>
+                <span className={`mt-0.5 w-full truncate text-[15px] font-black ${on ? "text-[#16A34A]" : "text-[#A3AFC2]"}`}>+{amount(r.earning)}</span>
               </li>
             );
           })}
