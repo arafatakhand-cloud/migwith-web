@@ -6,9 +6,11 @@ import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard } from "../_components/LightCards";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useIsClassic } from "../../lib/uiStyle";
+import { useCurrentUser } from "../../lib/useCurrentUser";
+import { isMainFounderName } from "../../lib/founder";
 
 // Discover: tabs (All / Events / Shop / Community) over one clean white list.
-// Luxury Festival is still "coming soon" in the app too.
+// 💎 Luxury Festival opens only for miglife (its Luxury Bet ranking); everyone else sees "Soon".
 type Item = { icon: string; title: string; subtitle: string; color: string; tint: string; href?: string; note?: string; tab: Tab };
 type Tab = "events" | "shop" | "community";
 const ITEMS: Item[] = [
@@ -35,8 +37,12 @@ const TABS: [Tab | "all", string][] = [
 export default function ExplorePage() {
   const ready = useRequireLogin();
   const classic = useIsClassic();
+  const { username } = useCurrentUser();
   const [tab, setTab] = useState<Tab | "all">("all");
-  const shown = tab === "all" ? ITEMS : ITEMS.filter((i) => i.tab === tab);
+  const items = isMainFounderName(username)
+    ? ITEMS.map((i) => (i.title === "Luxury Festival" ? { ...i, href: "/luxury-festival", note: undefined } : i))
+    : ITEMS;
+  const shown = tab === "all" ? items : items.filter((i) => i.tab === tab);
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
@@ -44,7 +50,7 @@ export default function ExplorePage() {
         {ready &&
           (classic ? (
             <div className="grid gap-2.5">
-              {ITEMS.map((i) => (
+              {items.map((i) => (
                 <PastelCard key={i.title} icon={i.icon} title={i.title} subtitle={i.subtitle} color={i.color} href={i.href} note={i.note} />
               ))}
             </div>
