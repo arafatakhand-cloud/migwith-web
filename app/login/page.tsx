@@ -158,7 +158,7 @@ export default function LoginPage() {
               placeholder="Password"
               autoComplete="current-password"
               aria-label="Password"
-              className="w-full rounded-md border border-[#9FB3C8] bg-gradient-to-b from-[#F4F4F4] to-[#DADADA] py-3 pl-4 pr-24 text-lg text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#F58A3A]"
+              className="w-full rounded-md border border-[#9FB3C8] bg-gradient-to-b from-[#F4F4F4] to-[#DADADA] py-3 pl-4 pr-14 text-lg text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#F58A3A]"
             />
             <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1.5">
               <button
@@ -169,14 +169,6 @@ export default function LoginPage() {
               >
                 {showPassword ? "🙈" : "👁"}
               </button>
-              <Link
-                href="/forgot-password"
-                aria-label="Forgot Password?"
-                title="Forgot Password?"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#2F80ED] text-lg font-black text-white"
-              >
-                ?
-              </Link>
             </div>
           </div>
         </div>
@@ -198,6 +190,11 @@ export default function LoginPage() {
           <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember me" />
           <AppCheck checked={invisible} onChange={setInvisible} label="Log in as Invisible" />
         </div>
+
+        {/* Forgot Password right under the tick boxes (no ? in the password box) */}
+        <Link href="/forgot-password" className="mt-6 text-[17px] text-white underline underline-offset-4">
+          Forgot Password?
+        </Link>
 
         {/* like the app: one big "Create Account" link (Forgot Password is the ? by the password) */}
         <Link href="/register" className="mt-auto pt-14 text-[22px] tracking-wide text-white underline underline-offset-[6px]">
