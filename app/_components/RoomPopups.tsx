@@ -5,12 +5,30 @@
 // gold-framed balance card, the Luxury Bot round result card and the "Send
 // this photo?" confirmation.
 
+import { useEffect } from "react";
+
 const GOLD_FRAME = "linear-gradient(135deg, #F2C94C, #FFE29A, #F2C94C)";
 
+/** Esc or Enter closes the popup (and that Enter does not also send a chat line). */
+function useCloseKeys(onClose: () => void) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" && e.key !== "Enter") return;
+      e.preventDefault();
+      e.stopPropagation();
+      onClose();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onClose]);
+}
+
 export function SimpleDialog({ title, text, onClose, okLabel = "OK" }: { title: string; text: string; onClose: () => void; okLabel?: string }) {
+  useCloseKeys(onClose);
+  // a tap or click anywhere (the card too) closes it
   return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[85] flex cursor-pointer items-center justify-center bg-black/45 px-6" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-[24px] bg-white p-5 text-[#14213D] shadow-2xl">
         <p className="text-lg font-extrabold">{title}</p>
         <p className="mt-2 whitespace-pre-line text-sm leading-6 text-[#3D4A60]">{text}</p>
         <div className="mt-4 flex justify-end">
@@ -25,6 +43,7 @@ export function SimpleDialog({ title, text, onClose, okLabel = "OK" }: { title: 
 
 /** Tap-anywhere-to-close card with a gold frame (balance, round result). */
 function GoldCard({ children, onClose, bg }: { children: React.ReactNode; onClose: () => void; bg: string }) {
+  useCloseKeys(onClose);
   return (
     <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="rounded-[22px] p-[1.2px]" style={{ background: GOLD_FRAME }}>
