@@ -479,21 +479,25 @@ async function trailForDay(me: string, day: string): Promise<{ direct: Row[]; me
 function Report({ me, refresh }: { me: string; refresh: number }) {
   const [day, setDay] = useState(todayStr);
   const [data, setData] = useState(() => reportMemory.get(`${me}|${todayStr()}`) || null);
+  const [before, setBefore] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     setData(reportMemory.get(`${me}|${day}`) || null);
     setError("");
+    const prev = dayBefore(day);
+    const kept = reportMemory.get(`${me}|${prev}`);
+    setBefore(kept ? sumAll(kept) : null);
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Loading took too long. Tap ⟳ to try again.")), 40_000));
-    const load = trailReport("mentor", day, async () => {
-      const r = await trailForDay(me, day);
-      return { direct: r.direct, merchantSourced: r.merchant, total: 0 };
-    }).then((r) => ({ direct: r.direct || [], merchant: r.merchantSourced || [] }));
-    Promise.race([load, timeout])
+    Promise.race([loadReport(me, day), timeout])
       .then((r) => {
-        reportMemory.set(`${me}|${day}`, r);
-        if (!cancelled) setData(r);
+        if (cancelled) return;
+        setData(r);
+        // The day before, for "▲ 18% vs yesterday" (quietly, after).
+        loadReport(me, prev)
+          .then((y) => !cancelled && setBefore(sumAll(y)))
+          .catch(() => {});
       })
       .catch((e) => {
         if (cancelled) return;
@@ -505,89 +509,107 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
     };
   }, [me, day, refresh]);
 
-  const sum = (rows: Row[]) => rows.reduce((a, r) => a + r.earning, 0);
-  // First time for this day: shown at once with zeros, the rows fill in.
+  // First time for this day: shown at once with zeros, the cards fill in.
   const shown = data || { direct: [], merchant: [] };
   const mentorTotal = sum(shown.direct);
   const merchantTotal = sum(shown.merchant);
-  const label = new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
+  const total = mentorTotal + merchantTotal;
+  const label = new Date(`${day}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const change = data && before !== null ? (before > 0 ? Math.round(((total - before) / before) * 100) : total > 0 ? 100 : 0) : null;
 
   return (
     <div className="space-y-3 px-3 py-3">
       <DateBar day={day} setDay={setDay} gold />
+      {error && <p className="text-xs text-[#FF8A8A]">⚠ Could not load: {error}</p>}
 
-      <>
-          {error && <p className="text-xs text-[#FF8A8A]">⚠ Could not load: {error}</p>}
-          <div className="rounded-[20px] border border-[#C99A06]/40 bg-gradient-to-br from-[#1C2640] to-[#121A2E] p-4 shadow-lg">
-            <p className="text-xs text-[#8FA0C9]">Earned on {label}</p>
-            <p className="bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[30px] font-black leading-tight text-transparent">
-              {amount(mentorTotal + merchantTotal)}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#8FA0C9]">★ My Tags · 3%</p>
-                <p className="font-black text-[#F7D774]">🪙 {amount(mentorTotal)}</p>
-              </div>
-              <div className="rounded-xl bg-white/5 px-3 py-2">
-                <p className="text-[10px] text-[#8FA0C9]">◆ Via My Merchants · 0.5%</p>
-                <p className="font-black text-[#7CC4FF]">🪙 {amount(merchantTotal)}</p>
-              </div>
-            </div>
+      <div className="flex gap-2">
+        <div className="min-w-0 flex-[1.3] rounded-[20px] bg-gradient-to-br from-[#F7D774] to-[#C99A06] p-4 text-[#1A1200] shadow-[0_6px_20px_rgba(201,154,6,0.25)]">
+          <p className="text-[11px] font-bold">Earned · {label}</p>
+          <p className="truncate text-[28px] font-black leading-tight">{amount(total)}</p>
+          <p className="text-[11px] font-bold">
+            {change === null ? "\u00a0" : change === 0 ? "= same as the day before" : `${change > 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the day before`}
+          </p>
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex-1 rounded-2xl bg-[#1A2338] px-3 py-2">
+            <p className="text-[10px] text-[#8FA0C9]">★ My Tags · 3%</p>
+            <p className="truncate font-black text-[#F7D774]">{amount(mentorTotal)}</p>
           </div>
-          <TagSection title="Mentor Tag" icon="★" rate="3%" rows={shown.direct} total={mentorTotal} accent="#F7D774" empty={data ? "No mentor tagged users yet" : ""} />
-          <TagSection title="Merchant Tag" icon="◆" rate="0.5%" rows={shown.merchant} total={merchantTotal} accent="#7CC4FF" empty={data ? "No merchant tagged users yet" : ""} />
-        </>
+          <div className="flex-1 rounded-2xl bg-[#1A2338] px-3 py-2">
+            <p className="text-[10px] text-[#8FA0C9]">◆ Merchants · 0.5%</p>
+            <p className="truncate font-black text-[#7CC4FF]">{amount(merchantTotal)}</p>
+          </div>
+        </div>
+      </div>
+
+      <TagGrid title="Mentor Tag" icon="★" rows={shown.direct} total={mentorTotal} accent="#F7D774" ready={!!data} empty="No mentor tagged users yet" />
+      <TagGrid title="Merchant Tag" icon="◆" rows={shown.merchant} total={merchantTotal} accent="#7CC4FF" ready={!!data} empty="No merchant tagged users yet" />
     </div>
   );
 }
 
-function TagSection(p: { title: string; icon: string; rate: string; rows: Row[]; total: number; accent: string; empty: string }) {
+const sum = (rows: Row[]) => rows.reduce((a, r) => a + r.earning, 0);
+const sumAll = (r: { direct: Row[]; merchant: Row[] }) => sum(r.direct) + sum(r.merchant);
+const dayBefore = (day: string) => {
+  const [y, m, d] = day.split("-").map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d - 1));
+  return t.toISOString().slice(0, 10);
+};
+
+/** One day's report (kept in memory for the next visit). */
+async function loadReport(me: string, day: string) {
+  const r = await trailReport("mentor", day, async () => {
+    const t = await trailForDay(me, day);
+    return { direct: t.direct, merchantSourced: t.merchant, total: 0 };
+  });
+  const out = { direct: r.direct || [], merchant: r.merchantSourced || [] };
+  reportMemory.set(`${me}|${day}`, out);
+  return out;
+}
+
+/** A card per tagged user: the ones who spent that day glow (most first),
+ *  the rest are dimmed. */
+function TagGrid(p: { title: string; icon: string; rows: Row[]; total: number; accent: string; ready: boolean; empty: string }) {
+  const rows = [...p.rows].sort((a, b) => b.earning - a.earning || b.spend - a.spend || a.username.localeCompare(b.username));
+  const active = rows.filter((r) => r.spend > 0).length;
   return (
-    <div className="overflow-hidden rounded-2xl bg-[#1A2338]">
-      <div className="flex items-center gap-3 px-4 py-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full text-lg font-bold text-[#1A1200]" style={{ backgroundColor: p.accent }}>
-          {p.icon}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="font-black text-white">
-            {p.title}{" "}
-            <span className="rounded-full px-1.5 text-[10px] font-bold text-[#1A1200]" style={{ backgroundColor: p.accent }}>
-              {p.rate}
-            </span>
-          </p>
-          <p className="text-[11px] text-[#8FA0C9]">
-            {p.rows.length} user{p.rows.length === 1 ? "" : "s"} · {p.rate} of their spend
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-[10px] text-[#8FA0C9]">Earned</p>
-          <p className="font-black" style={{ color: p.accent }}>🪙 {amount(p.total)}</p>
-        </div>
+    <div>
+      <div className="flex items-center justify-between px-1 pb-2 pt-1">
+        <p className="text-sm font-black text-white">
+          <span style={{ color: p.accent }}>{p.icon}</span> {p.title} · {p.rows.length}
+        </p>
+        <p className="text-[11px] text-[#8FA0C9]">
+          {p.rows.length > 0 && `${active} active · `}
+          <b style={{ color: p.accent }}>🪙 {amount(p.total)}</b>
+        </p>
       </div>
-      <div className="mx-4 h-px bg-[#26304A]" />
-      {p.rows.length === 0 ? (
-        // still filling in: a quiet blank, not "nobody yet"
-        p.empty ? (
-          <p className="py-5 text-center text-xs text-[#8FA0C9]">
+      {rows.length === 0 ? (
+        p.ready ? (
+          <p className="rounded-2xl bg-[#1A2338] py-5 text-center text-xs text-[#8FA0C9]">
             <span className="block text-xl">👥</span>
             {p.empty}
           </p>
         ) : (
-          <div className="h-16" />
+          // still filling in: a quiet blank, not "nobody yet"
+          <div className="h-24 rounded-2xl bg-[#1A2338]/60" />
         )
       ) : (
-        <ul className="divide-y divide-[#26304A] px-3 py-1">
-          {p.rows.map((r, i) => (
-            <li key={r.username} className="flex items-center gap-2 py-2">
-              <span className="w-5 text-center text-xs font-bold text-[#8FA0C9]">{i + 1}</span>
-              <Avatar name={r.username} size="h-8 w-8" />
-              <span className="min-w-0 flex-1">
-                <span data-notranslate className="block truncate text-sm font-bold text-white">@{r.username}</span>
-                <span className="block text-[11px] text-[#8FA0C9]">🪙 {amount(r.spend)} spent</span>
-              </span>
-              <span className={`text-sm font-black ${r.earning > 0 ? "text-[#4ADE80]" : "text-[#5B6782]"}`}>+{amount(r.earning)}</span>
-            </li>
-          ))}
+        <ul className="grid grid-cols-3 gap-2">
+          {rows.map((r) => {
+            const on = r.spend > 0;
+            return (
+              <li
+                key={r.username}
+                className={`flex min-w-0 flex-col items-center rounded-2xl bg-[#1A2338] px-1.5 py-2.5 text-center ${on ? "border" : "opacity-50"}`}
+                style={on ? { borderColor: p.accent, boxShadow: `0 0 12px ${p.accent}33` } : undefined}
+              >
+                <Avatar name={r.username} size="h-9 w-9" />
+                <span data-notranslate className="mt-1 w-full truncate text-[13px] font-bold text-white">@{r.username}</span>
+                <span className="w-full truncate text-[10px] text-[#8FA0C9]">{amount(r.spend)} spent</span>
+                <span className={`mt-0.5 w-full truncate text-[15px] font-black ${on ? "text-[#4ADE80]" : "text-[#5B6782]"}`}>+{amount(r.earning)}</span>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -234,7 +234,15 @@ export function EarningPanel({
   // Live, from the same calculation the Report tab uses (getTrailReport), so
   // Today / Last 7 days / Pending always match Report. Trail is settled at
   // 12:00 AM Bangladesh time, so what's earned today IS the pending amount.
-  const [live, setLive] = useState<{ today: number; last7: number | null; activity: Record<string, any>[] } | null>(null);
+  const [live, setLive] = useState<{
+    today: number;
+    last7: number | null;
+    activity: Record<string, any>[];
+    /** 💼 gold look: each of the last 7 days (0 = today) and who brought it */
+    days?: { day: string; total: number }[];
+    people?: { username: string; earning: number }[];
+  } | null>(null);
+  const [allRecent, setAllRecent] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -260,9 +268,25 @@ export function EarningPanel({
           ? [...fromRows(today.direct, "Mentor Tag · Today"), ...fromRows(today.merchantSourced, "Merchant Tag · Today")]
           : fromRows(today.rows, "Today");
       setLive({ today: Number(today.total || 0), last7: null, activity });
-      const others = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => getTrailReport({ beneficiaryType: kind, date: day(n) }).then((r) => Number(r.data.total || 0))))
+      const others = await Promise.all([1, 2, 3, 4, 5, 6].map((n) => getTrailReport({ beneficiaryType: kind, date: day(n) }).then((r) => r.data)))
         .catch(() => null);
-      if (alive && others) setLive((l) => l && { ...l, last7: Number(today.total || 0) + others.reduce((a, b) => a + b, 0) });
+      if (!alive || !others) return;
+      const week = [today, ...others];
+      // Who brought the most over these 7 days (Mentor Tag + via merchants).
+      const people = new Map<string, number>();
+      week.forEach((r) =>
+        [...(r.direct || []), ...(r.merchantSourced || []), ...(r.rows || [])].forEach((x) => {
+          if (x.username && x.earning > 0) people.set(x.username, (people.get(x.username) || 0) + x.earning);
+        })
+      );
+      setLive((l) =>
+        l && {
+          ...l,
+          last7: week.reduce((a, r) => a + Number(r.total || 0), 0),
+          days: week.map((r, n) => ({ day: day(n), total: Number(r.total || 0) })),
+          people: [...people].map(([username, earning]) => ({ username, earning })).sort((a, b) => b.earning - a.earning),
+        }
+      );
     })();
     return () => {
       alive = false;
@@ -351,16 +375,23 @@ export function EarningPanel({
             <p className="text-xs text-[#8FA0C9]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
             <span className="rounded-full bg-[#C99A06]/20 px-2 py-0.5 text-[10px] font-bold text-[#F7D774]">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
           </div>
-          <p className="mt-1 bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[30px] font-black leading-tight text-transparent">{amount(view.total)}</p>
-          <div className="mt-3 flex justify-between text-center">
+          <div className="mt-1 flex items-center gap-3">
+            <p className="min-w-0 flex-1 truncate bg-gradient-to-r from-[#F7D774] to-[#FFB300] bg-clip-text text-[28px] font-black leading-tight text-transparent">
+              {amount(view.total)}
+            </p>
+            <SettledRing settled={view.settled} pending={view.pending} />
+          </div>
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
             {[
               ["Pending", view.pending, "#FFB300"],
               ["Settled", view.settled, "#4ADE80"],
               ["Balance", balance, "#7CC4FF"],
             ].map(([l, v, col]) => (
-              <div key={l as string}>
-                <p className="text-[11px] text-[#8FA0C9]">{l}</p>
-                <p className="text-sm font-black" style={{ color: col as string }}>{amount(v as number)}</p>
+              <div key={l as string} className="rounded-xl bg-white/5 py-1.5">
+                <p className="text-[10px] text-[#8FA0C9]">
+                  <span style={{ color: col as string }}>●</span> {l}
+                </p>
+                <p className="truncate px-1 text-[13px] font-black" style={{ color: col as string }}>{amount(v as number)}</p>
               </div>
             ))}
           </div>
@@ -389,7 +420,10 @@ export function EarningPanel({
         </div>
       )}
 
-      <div className={c.card}>
+      {gold && <WeekChart days={live?.days} today={view.periods.today} last7={view.periods.last7Days} last30={view.periods.last30Days} />}
+      {gold && <TopSources people={live?.people} />}
+
+      {!gold && <div className={c.card}>
         <div className="flex items-center">
           <p className={`flex-1 text-xs font-semibold ${c.sub}`}>Bonus</p>
           <div className="relative">
@@ -416,7 +450,7 @@ export function EarningPanel({
           </div>
         </div>
         <p className={`mt-1 text-2xl font-black ${gold ? "text-[#F7D774]" : c.ink}`}>🪙 {amount(view.periods[period])}</p>
-      </div>
+      </div>}
 
       <div className={c.card}>
         <button type="button" onClick={() => setViaOpen((v) => !v)} className="flex w-full items-center gap-2 text-left">
@@ -449,13 +483,19 @@ export function EarningPanel({
         <div className="flex items-center gap-2">
           <span className={c.icon}>↺</span>
           <span className={`flex-1 font-bold ${c.ink}`}>Recent Activity</span>
-          <span className={`text-[10px] ${c.sub}`}>last 30</span>
+          {gold && view.recent.length > 3 ? (
+            <button type="button" onClick={() => setAllRecent((v) => !v)} className="rounded-full bg-[#C99A06]/20 px-2.5 py-0.5 text-[11px] font-bold text-[#F7D774]">
+              {allRecent ? "Less ▴" : `See all ${view.recent.length} ›`}
+            </button>
+          ) : (
+            <span className={`text-[10px] ${c.sub}`}>last 30</span>
+          )}
         </div>
         {view.recent.length === 0 ? (
           <p className={`mt-2 text-xs ${c.sub}`}>No recent activity</p>
         ) : (
           <ul className={`mt-1 divide-y ${c.line}`}>
-            {view.recent.map((r, i) => {
+            {(gold && !allRecent ? view.recent.slice(0, 3) : view.recent).map((r, i) => {
               const name = String(r.username ?? r.taggedUsername ?? "");
               const status = String(r.status ?? "pending");
               return (
@@ -483,6 +523,106 @@ export function EarningPanel({
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+/* 💼 gold Bonus pieces ------------------------------------------------------ */
+
+/** How much of the bonus is settled (paid) — a small ring. */
+function SettledRing({ settled, pending }: { settled: number; pending: number }) {
+  const all = settled + pending;
+  const pct = all > 0 ? Math.round((settled / all) * 100) : 0;
+  return (
+    <span
+      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full"
+      style={{ background: all > 0 ? `conic-gradient(#4ADE80 0 ${pct}%, #FFB300 0)` : "#232F4A" }}
+      title="Settled"
+    >
+      <span className="flex h-11 w-11 flex-col items-center justify-center rounded-full bg-[#161F33] leading-none">
+        <span className="text-[12px] font-black text-[#4ADE80]">{all > 0 ? `${pct}%` : "—"}</span>
+        <span className="mt-0.5 text-[7px] text-[#8FA0C9]">settled</span>
+      </span>
+    </span>
+  );
+}
+
+/** Bars for the last 7 days (today on the right). */
+function WeekChart({ days, today, last7, last30 }: { days?: { day: string; total: number }[]; today: number; last7: number; last30: number }) {
+  // Shown at once (empty bars), the days fill in when they arrive.
+  const week = days ? [...days].reverse() : Array.from({ length: 7 }, (_, i) => ({ day: "", total: i === 6 ? today : 0 }));
+  const max = Math.max(1, ...week.map((d) => d.total));
+  const best = Math.max(...week.map((d) => d.total));
+  const label = (day: string, i: number) =>
+    i === 6 ? "Today" : day ? new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }) : "";
+  return (
+    <div className="rounded-2xl bg-[#1A2338] p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-bold text-white">Last 7 days</p>
+        <p className="text-sm font-black text-[#F7D774]">🪙 {amount(last7)}</p>
+      </div>
+      <div className="mt-3 flex h-28 items-end gap-2">
+        {week.map((d, i) => {
+          const top = d.total > 0 && d.total === best;
+          return (
+            <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+              {d.total > 0 && <span className="max-w-full truncate text-[8px] font-bold text-[#F7D774]">{short(d.total)}</span>}
+              <span
+                className="w-full rounded-md transition-[height] duration-500"
+                style={{
+                  height: `${Math.max(4, (d.total / max) * 78)}px`,
+                  background: d.total > 0 ? "linear-gradient(#F7D774, #C99A06)" : "#232F4A",
+                  boxShadow: top ? "0 0 12px #F7D77466" : undefined,
+                }}
+              />
+              <span className={`text-[10px] ${i === 6 || top ? "font-bold text-[#F7D774]" : "text-[#8FA0C9]"}`}>{label(d.day, i)}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex justify-between border-t border-[#26304A] pt-2 text-[11px] text-[#8FA0C9]">
+        <span>
+          Today <b className="text-[#F7D774]">{amount(today)}</b>
+        </span>
+        <span>
+          30 days <b className="text-[#F7D774]">{amount(last30)}</b>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** 1,234,567 → 1.2M (for the small labels on the bars). */
+function short(n: number) {
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K`;
+  return amount(n);
+}
+
+/** Who brought the most bonus over the last 7 days. */
+function TopSources({ people }: { people?: { username: string; earning: number }[] }) {
+  if (!people || people.length === 0) return null;
+  const top = people.slice(0, 5);
+  const max = top[0].earning || 1;
+  const bars = ["#F7D774", "#7CC4FF", "#4ADE80", "#C4A1FF", "#FF9F7C"];
+  return (
+    <div className="rounded-2xl bg-[#1A2338] p-4">
+      <p className="text-sm font-bold text-white">🏆 Top sources · 7 days</p>
+      <ul className="mt-2 space-y-2.5">
+        {top.map((p, i) => (
+          <li key={p.username} className="flex items-center gap-2.5">
+            <span className={`w-4 text-center text-sm font-black ${i === 0 ? "text-[#F7D774]" : "text-[#8FA0C9]"}`}>{i + 1}</span>
+            <Avatar name={p.username} size="h-8 w-8" />
+            <div className="min-w-0 flex-1">
+              <p data-notranslate className="truncate text-sm font-bold text-white">@{p.username}</p>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#232F4A]">
+                <div className="h-full rounded-full" style={{ width: `${Math.max(4, (p.earning / max) * 100)}%`, backgroundColor: bars[i] }} />
+              </div>
+            </div>
+            <span className="text-sm font-black text-[#4ADE80]">+{amount(p.earning)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
