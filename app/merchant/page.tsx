@@ -182,118 +182,95 @@ export default function MerchantPage() {
       </div>
     );
   } else if (step === "PICK") {
-    const grad = "linear-gradient(90deg, #4F7CFF, #9C5BFF)";
     body = (
       <div>
-        {/* Hero card */}
-        <div
-          className="relative overflow-hidden rounded-3xl p-[18px] text-white shadow-[0_8px_22px_rgba(156,91,255,.45)]"
-          style={{ background: "linear-gradient(135deg, #2B4FD8, #6A3DE8, #B04BD6)" }}
-        >
-          <span className="absolute -right-12 -top-16 h-36 w-36 rounded-full bg-white/[0.08]" />
-          <span className="absolute -bottom-10 -left-2 h-20 w-20 rounded-full bg-white/[0.06]" />
-          <div className="relative flex items-center gap-3.5">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.8px] border-[#FFD86B] bg-white/20 text-[28px]">💼</span>
-            <div>
-              <p className="text-lg font-extrabold">Start your Merchant journey</p>
-              <p className="mt-1 text-[12.5px] leading-[17px] text-white/90">Pick a mentor and send your request. They&apos;ll review and approve it.</p>
-            </div>
-          </div>
+        {/* 🧳 a short line instead of the big banner */}
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-2xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
+            🧳
+          </span>
+          <p className="text-[13px] leading-[18px] text-[#5B6B8C]">Pick a mentor and send your request. They&apos;ll review and approve it.</p>
         </div>
 
-        <div className="mt-5 flex items-center">
-          <span className="h-[15px] w-1 rounded-sm" style={{ background: "linear-gradient(#4F7CFF, #9C5BFF)" }} />
-          <span className="ml-2 flex-1 text-xs font-extrabold tracking-[1.5px] text-[#5B6B8C]">AVAILABLE MENTORS</span>
-          {mentors && mentors.length > 0 && (
-            <span className="rounded-full px-2.5 py-0.5 text-[11px] font-bold text-white" style={{ background: grad }}>
-              {mentors.length}
-            </span>
-          )}
-        </div>
-
-        <div className="mt-2">
+        <div className="mt-3 space-y-2.5">
           {mentors === null ? null : mentors.length === 0 ? (
-            <div className="flex flex-col items-center rounded-[20px] border border-[#E1EAF6] bg-white py-6">
+            <div className="flex flex-col items-center rounded-[20px] bg-white py-6 shadow-sm">
               <span className="text-3xl">🔍</span>
               <p className="mt-1.5 text-[13px] text-[#5B6B8C]">No mentors available right now.</p>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {mentors.map((m) => {
-                const sel = selected === m.username;
-                const info = m.country ? countryInfoFor(m.country) : undefined;
-                const flag = info ? countryFlag(info.iso) : "📍";
-                return (
-                  <li key={m.username}>
+            mentors.map((m) => {
+              const sel = selected === m.username;
+              const info = m.country ? countryInfoFor(m.country) : undefined;
+              const flag = info ? countryFlag(info.iso) : "📍";
+              return (
+                <div
+                  key={m.username}
+                  className={`rounded-[20px] bg-white p-3 transition ${
+                    sel ? "shadow-[0_0_0_2px_#16A34A,0_6px_14px_rgba(22,163,74,.2)]" : "shadow-[0_2px_8px_rgba(30,99,214,.08)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] text-xl font-black text-white">
+                      {m.username.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span data-notranslate className="block truncate text-base font-black text-[#0B2A5B]">
+                        @{m.username}
+                      </span>
+                      {m.country && (
+                        <span className="block truncate text-xs text-[#5B6B8C]">
+                          {flag} {m.country}
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 rounded-full bg-[#FFF6DD] px-2.5 py-0.5 text-[11px] font-black text-[#B7791F]">Lv {m.level}</span>
+                  </div>
+                  <div className="mt-2.5 flex gap-2">
+                    <div className="flex-1 rounded-xl bg-[#EAF1FC] py-1.5 text-center">
+                      <p className="text-base font-black leading-tight text-[#1E63D6]">{m.merchants}</p>
+                      <p className="text-[10px] text-[#5B6B8C]">Merchants</p>
+                    </div>
+                    <div className="flex-1 rounded-xl bg-[#EAF1FC] py-1.5 text-center">
+                      <p className="text-base font-black leading-tight text-[#C98A0C]">{m.pending}</p>
+                      <p className="text-[10px] text-[#5B6B8C]">Pending</p>
+                    </div>
                     <button
                       type="button"
-                      onClick={() => setSelected(m.username)}
-                      className="flex w-full items-center rounded-[20px] p-3.5 text-left transition"
-                      style={{
-                        background: sel ? "linear-gradient(135deg, #F2ECFF, #E7F0FF) padding-box, linear-gradient(90deg, #4F7CFF, #9C5BFF) border-box" : "#FFFFFF",
-                        border: sel ? "2px solid transparent" : "1px solid #E1EAF6",
-                        boxShadow: sel ? "0 6px 16px rgba(156,91,255,.35)" : "0 2px 6px rgba(156,194,236,.45)",
-                      }}
+                      onClick={() => setSelected(sel ? "" : m.username)}
+                      className={`flex-[1.3] rounded-xl text-sm font-black text-white transition active:scale-95 ${sel ? "bg-[#16A34A]" : "bg-[#1E63D6]"}`}
                     >
-                      <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full p-[2.5px]" style={{ background: "linear-gradient(135deg, #FFD86B, #9C5BFF)" }}>
-                        <span className="flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#3B8BE8] to-[#2A64A8] text-[21px] font-extrabold text-white">
-                          {m.username.slice(0, 1).toUpperCase()}
-                        </span>
-                      </span>
-                      <span className="ml-3 min-w-0 flex-1">
-                        <span data-notranslate className="block truncate text-base font-extrabold text-[#22304D]">
-                          @{m.username}
-                        </span>
-                        <span className="mt-0.5 block truncate text-xs text-[#5B6B8C]">
-                          ⭐ Lv {m.level}
-                          {m.country && `  ·  ${flag} ${m.country}`}
-                        </span>
-                        <span className="mt-[7px] flex gap-1.5">
-                          <span className="rounded-full border border-[#2E9E6B]/30 bg-[#2E9E6B]/10 px-[9px] py-[3px] text-[11px] font-bold text-[#1F7A50]">👥 {m.merchants} Subs</span>
-                          <span className="rounded-full border border-[#E08A00]/30 bg-[#E08A00]/10 px-[9px] py-[3px] text-[11px] font-bold text-[#A86500]">⏳ {m.pending} Pending</span>
-                        </span>
-                      </span>
-                      <span
-                        className="ml-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[15px] font-bold text-white"
-                        style={sel ? { background: grad } : { border: "1.5px solid #C9D6EA" }}
-                      >
-                        {sel ? "✓" : ""}
-                      </span>
+                      {sel ? "✓ Chosen" : "Choose"}
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
 
-        <p className="mb-1.5 ml-1 mt-5 text-xs font-extrabold tracking-[1.5px] text-[#5B6B8C]">MESSAGE</p>
-        <div className="flex rounded-[18px] border border-[#DCE6F4] bg-white px-3 py-2.5 shadow-[0_2px_6px_rgba(156,194,236,.45)] focus-within:border-[#9C5BFF]">
-          <span className="mr-2 text-lg">✍️</span>
+        {/* message + send in one bar */}
+        <div className="mt-3 flex items-end gap-2 rounded-[24px] bg-white p-1.5 pl-3.5 shadow-[0_2px_8px_rgba(30,99,214,.1)] focus-within:shadow-[0_0_0_2px_#1E63D6]">
+          <span className="pb-2 text-lg">✍️</span>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, 500))}
-            rows={4}
-            placeholder="Add a message for your mentor (optional)"
-            className="min-w-0 flex-1 resize-none bg-transparent text-[15px] text-[#22304D] outline-none placeholder:text-[#8A9BBC]"
+            rows={1}
+            placeholder={selected ? `Message for @${selected} (optional)` : "Message (optional)"}
+            className="max-h-28 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC]"
           />
+          <button
+            type="button"
+            onClick={send}
+            disabled={!selected || busy}
+            className="h-10 shrink-0 rounded-full bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] px-4 text-sm font-black text-white shadow disabled:from-[#C7D0DD] disabled:to-[#C7D0DD] disabled:shadow-none"
+          >
+            {busy ? "…" : "Send 🚀"}
+          </button>
         </div>
-        <p className="mr-1 mt-1 text-right text-[11px] text-[#8A9BBC]">{note.length}/500</p>
+        <p className="mr-2 mt-1 text-right text-[11px] text-[#8A9BBC]">{selected ? `To @${selected}` : "Choose a mentor first"} · {note.length}/500</p>
 
-        <button
-          type="button"
-          onClick={send}
-          disabled={!selected || busy}
-          className="mt-3 h-[54px] w-full truncate rounded-[18px] px-3 text-[15px] font-extrabold"
-          style={
-            selected || busy
-              ? { background: "linear-gradient(90deg, #4F7CFF, #9C5BFF, #D45BC9)", color: "#FFFFFF", boxShadow: "0 8px 20px rgba(156,91,255,.45)" }
-              : { background: "#D5DEEB", color: "#5B6B8C" }
-          }
-        >
-          {busy ? "Sending…" : selected ? `🚀  Send Request to @${selected}` : "Select a mentor first"}
-        </button>
-        <button type="button" onClick={() => setStep("INTRO")} className="mt-2 w-full py-2 text-sm font-bold text-[#5B6B8C]">
+        <button type="button" onClick={() => setStep("INTRO")} className="mt-1 w-full py-2 text-sm font-bold text-[#5B6B8C]">
           Back
         </button>
       </div>
