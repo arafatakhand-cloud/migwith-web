@@ -278,7 +278,9 @@ export function ChatBar({
             voice
           )}
     </div>
-    <div className="pb-safe" />
+    {/* only the phone's real safe area (iPhone home bar) — no extra strip
+        between the bar and the keyboard / Android buttons */}
+    <div style={{ height: "env(safe-area-inset-bottom)" }} />
     <div ref={setEmoteSlot} />
     </div>
   );
