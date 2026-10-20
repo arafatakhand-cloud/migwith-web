@@ -10,15 +10,14 @@ import {
   setPersistence,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
 import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
-import { canBeInvisible } from "../../lib/invisible";
 import { migAliasEmail } from "../../lib/migAlias";
 import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
-const INVISIBLE_KEY = "migwith.loginInvisible";
+const OFFLINE_KEY = "migwith.loginOffline";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -27,9 +26,15 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  // "Log in as Invisible" is no longer on the login page: always a normal login
-  // (people who may be invisible can still turn it on inside the app).
-  const [invisible, setInvisible] = useState(false);
+  // "Login as Offline": signed in, but everyone sees you as Offline (anyone may)
+  const [offline, setOffline] = useState(false);
+  useEffect(() => {
+    try {
+      setOffline(localStorage.getItem(OFFLINE_KEY) === "1");
+    } catch {
+      // storage blocked
+    }
+  }, []);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -63,26 +68,16 @@ export default function LoginPage() {
         password
       );
 
-      // Same as the app: every login writes isInvisible (checked or not) and
-      // presenceStatus ONLINE, or OFFLINE when logging in as Invisible.
-      // 🫥 Only the Founder, official Admins and Staff may log in invisible.
-      let hide = invisible;
-      if (hide) {
-        const me = await getDoc(doc(db, "users", cred.user.uid)).catch(() => null);
-        hide = await canBeInvisible(cred.user.uid, me?.get("username"), me?.get("role"));
-        if (!hide) {
-          setInvisible(false);
-          window.alert("Invisible is only for Founder, Admin & Staff.");
-        }
-      }
+      // Same as the app: every login writes the presence — ONLINE, or OFFLINE
+      // when "Login as Offline" is ticked (anyone may be shown as Offline).
       try {
-        localStorage.setItem(INVISIBLE_KEY, hide ? "1" : "0");
+        localStorage.setItem(OFFLINE_KEY, offline ? "1" : "0");
       } catch {
         // storage blocked
       }
       await updateDoc(doc(db, "users", cred.user.uid), {
-        isInvisible: hide,
-        presenceStatus: hide ? "OFFLINE" : "ONLINE",
+        isInvisible: false,
+        presenceStatus: offline ? "OFFLINE" : "ONLINE",
       }).catch((err) => console.error("presence on login failed", err));
 
       // 🗑 Signing in again cancels a pending "Delete my account" (7 days).
@@ -170,8 +165,9 @@ export default function LoginPage() {
           </label>
         </div>
 
-        <div className="mt-5 flex w-full items-center">
+        <div className="mt-5 flex w-full items-center justify-between gap-3">
           <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember Me" />
+          <AppCheck checked={offline} onChange={setOffline} label="Login as Offline" />
         </div>
 
         {error && (
