@@ -68,6 +68,18 @@ export default function LoginPage() {
         password
       );
 
+      // 🔑 Offer to save the ID + password in the browser's own password manager
+      // (Google Password Manager on Chrome) — next time it fills them in. The
+      // site itself never stores the password.
+      try {
+        const PC = (window as unknown as { PasswordCredential?: new (d: { id: string; password: string; name?: string }) => Credential }).PasswordCredential;
+        if (PC && navigator.credentials?.store) {
+          await navigator.credentials.store(new PC({ id: cleanId, password, name: cleanId }));
+        }
+      } catch {
+        // not supported here — the browser may still offer to save on its own
+      }
+
       // Same as the app: every login writes the presence — ONLINE, or OFFLINE
       // when "Login as Offline" is ticked (anyone may be shown as Offline).
       try {
@@ -122,7 +134,14 @@ export default function LoginPage() {
         <LoginBubbles />
 
         {/* clean white fields with an icon, like a modern login form */}
-        <div className="mt-6 w-full space-y-3.5">
+        {/* a real form, so the browser recognises the ID + password and offers to save / fill them */}
+        <form
+          className="mt-6 w-full space-y-3.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleLogin();
+          }}
+        >
           <label className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
             <PersonIcon />
             <input
@@ -130,9 +149,6 @@ export default function LoginPage() {
               type="text"
               value={loginId}
               onChange={(e) => setLoginId(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLogin();
-              }}
               placeholder="Username"
               autoComplete="username"
               aria-label="Username"
@@ -146,9 +162,6 @@ export default function LoginPage() {
               type={showPassword ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLogin();
-              }}
               placeholder="Password"
               autoComplete="current-password"
               aria-label="Password"
@@ -163,7 +176,8 @@ export default function LoginPage() {
               <EyeIcon open={showPassword} />
             </button>
           </label>
-        </div>
+          <button type="submit" hidden aria-hidden tabIndex={-1} />
+        </form>
 
         <div className="mt-5 flex w-full items-center justify-between gap-3">
           <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember Me" />
