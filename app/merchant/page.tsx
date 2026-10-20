@@ -276,15 +276,53 @@ export default function MerchantPage() {
       </div>
     );
   } else {
+    // 🧭 the Merchant journey: 4 coloured steps on a path, an example and the start button
+    const steps: [string, string, string, string][] = [
+      ["1", "Pick a mentor", "Choose who will approve you", "from-[#5A8FD6] to-[#1E63D6]"],
+      ["2", "Send your request", "Add a short message (optional)", "from-[#8B7CF0] to-[#6A5BEA]"],
+      ["3", "Get approved", "You're a Merchant for 30 days", "from-[#C77BE6] to-[#B04BD6]"],
+      ["4", "Tag users & earn", "5,000-coin tag · 2.5% on their spending · paid every night", "from-[#3CC774] to-[#16A34A]"],
+    ];
     body = (
-      <div className="rounded-[20px] border-[1.5px] border-[#F2B531]/70 bg-[#FFFBF0] p-6 text-center shadow-lg">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl text-3xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
-          🧳
+      <div>
+        <div className="flex items-center gap-3 rounded-[20px] bg-white p-3.5 shadow-[0_2px_10px_rgba(30,99,214,.08)]">
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
+            🧳
+          </span>
+          <div>
+            <p className="text-lg font-black text-[#0B2A5B]">Your Merchant journey</p>
+            <p className="text-xs text-[#5B6B8C]">4 steps · mentor approval required</p>
+          </div>
         </div>
-        <p className="mt-3 text-xl font-bold text-[#2B3552]">Join as a Merchant</p>
-        <p className="mt-1 text-sm text-[#5A6B8C]">Earn tagged-user rewards when they spend coins. Mentor approval required.</p>
-        <button type="button" onClick={() => setStep("PICK")} className="mt-4 w-full rounded-xl bg-[#F2A81D] py-2.5 text-sm font-black text-[#2B1A00]">
-          Join as a Merchant
+
+        <ol className="mt-4 pl-1">
+          {steps.map(([n, title, sub, grad], i) => (
+            <li key={n} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${grad} text-sm font-black text-white shadow-md`}>{n}</span>
+                {i < steps.length - 1 && <span className={`my-1 w-[3px] flex-1 rounded-full bg-gradient-to-b ${grad} opacity-60`} style={{ minHeight: 34 }} />}
+              </div>
+              <div className="pb-4 pt-1.5">
+                <p className="text-[15px] font-black text-[#0B2A5B]">{title}</p>
+                <p className="text-xs text-[#5B6B8C]">{sub}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+
+        <div className="flex items-center gap-3 rounded-[18px] border border-[#CDEFD8] bg-gradient-to-br from-[#E3F7EA] to-white px-3.5 py-3">
+          <span className="text-2xl">💚</span>
+          <p className="text-[13px] text-[#0B2A5B]">
+            <b>Example:</b> your users spend 🪙100,000 → you get <b className="text-[#16A34A]">🪙2,500</b>
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setStep("PICK")}
+          className="mt-4 w-full rounded-2xl bg-gradient-to-r from-[#1E63D6] via-[#6A5BEA] to-[#B04BD6] py-3.5 text-[15px] font-black text-white shadow-[0_8px_18px_rgba(106,91,234,.35)] transition active:scale-[.98]"
+        >
+          Start step 1 →
         </button>
       </div>
     );
