@@ -35,6 +35,7 @@ import {
   GradientTabs,
   lc,
   ProgramBar,
+  WavePage,
   spendBetween,
   todayStr,
   trailReport,
@@ -95,6 +96,7 @@ export default function MentorDashboardPage() {
 
   return (
     <PageShell light>
+      <WavePage>
       <ProgramBar
         // ← goes back where you came from (miGlife Partner) instead of opening
         // it again on top — that made the two pages send you to each other.
@@ -105,10 +107,11 @@ export default function MentorDashboardPage() {
         onRefresh={() => setRefresh((n) => n + 1)}
         accent="#1E63D6"
         gold
+        hello={{ name: username, line: "Here's your mentor overview today" }}
       />
 
-      {/* light, in the chosen colour theme like the rest of the app */}
-      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#EEF3FB] pb-10 text-[#0B2A5B]">
+      {/* 🌊 on the wave background (WavePage) — the cards float on colour */}
+      <section className="mx-auto max-w-4xl pb-10 text-[#0B2A5B]">
         {!ready ? null : panel === "DASHBOARD" ? (
           <Dashboard me={username} refresh={refresh} />
         ) : panel === "REPORT" ? (
@@ -117,6 +120,7 @@ export default function MentorDashboardPage() {
           <EarningPanel kind="mentor" me={username} uid={user!.uid} refresh={refresh} onRefresh={() => setRefresh((n) => n + 1)} gold />
         )}
       </section>
+      </WavePage>
     </PageShell>
   );
 }

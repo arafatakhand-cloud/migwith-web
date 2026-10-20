@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, Timestamp, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -305,6 +305,24 @@ function DatePickerSheet({ day, onPick, onClose }: { day: string; onPick: (d: st
   );
 }
 
+/** 🌊 Mentor / Merchant page background: a curved blue → purple wave on top
+ *  (with "👋 Hi, name") and a soft blue → lilac → pink page under it with
+ *  blurred colour glows, so the white cards float on colour. */
+export function WavePage({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative isolate min-h-[calc(100dvh-64px)] overflow-hidden bg-gradient-to-b from-[#E4EEFD] via-[#EEE8FF] to-[#FFE8F2]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[250px] overflow-hidden rounded-b-[50%_22%] bg-gradient-to-br from-[#2F6ABD] via-[#5A8FD6] to-[#8B5CFF]">
+        <span className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/15" />
+        <span className="absolute bottom-6 left-[-30px] h-28 w-28 rounded-full bg-white/10" />
+      </div>
+      <span className="pointer-events-none absolute -left-24 top-[420px] -z-10 h-72 w-72 rounded-full bg-[#7FB2FF]/40 blur-3xl" />
+      <span className="pointer-events-none absolute -right-24 top-[720px] -z-10 h-72 w-72 rounded-full bg-[#B79CFF]/40 blur-3xl" />
+      <span className="pointer-events-none absolute -left-10 top-[1050px] -z-10 h-64 w-64 rounded-full bg-[#FFB3CF]/40 blur-3xl" />
+      {children}
+    </div>
+  );
+}
+
 /** 💫 Tabs with a gradient bubble that slides to the tab you pick. */
 export function GradientTabs<T extends string>({
   tabs,
@@ -362,6 +380,7 @@ export function ProgramBar<P extends string>({
   onRefresh,
   accent,
   gold = false,
+  hello,
 }: {
   backHref?: string;
   /** used instead of backHref when given */
@@ -373,9 +392,17 @@ export function ProgramBar<P extends string>({
   accent: string;
   /** 💼 the Mentor Dashboard's dark-gold look */
   gold?: boolean;
+  /** 👋 greeting on the wave (gold look): name + one line */
+  hello?: { name: string; line: string };
 }) {
   return (
-    <div className={gold ? "bg-[#EEF3FB]" : "bg-[#0B1F3A]"}>
+    <div className={gold ? "bg-transparent" : "bg-[#0B1F3A]"}>
+      {gold && hello && hello.name && (
+        <div className="mx-auto max-w-4xl px-4 pb-1 pt-3 text-white">
+          <p className="text-lg font-extrabold drop-shadow-sm">👋 Hi, {hello.name}</p>
+          <p className="text-xs text-white/85">{hello.line}</p>
+        </div>
+      )}
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-2 py-2">
         {(backHref || onBack) && (
           <BackButton variant={gold ? "light" : "dark"} href={onBack ? undefined : backHref} onClick={onBack} />

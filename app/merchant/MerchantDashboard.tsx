@@ -29,6 +29,7 @@ import {
   EarningPanel,
   lc,
   ProgramBar,
+  WavePage,
   spendBetween,
   todayStr,
   toMs,
@@ -83,6 +84,7 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
   const [refresh, setRefresh] = useState(0);
   return (
     <PageShell light>
+      <WavePage>
       <ProgramBar
         backHref="/explore"
         panels={["DASHBOARD", "REPORT", "EARNING"] as const}
@@ -91,9 +93,10 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
         onRefresh={() => setRefresh((n) => n + 1)}
         accent="#1E63D6"
         gold
+        hello={{ name: me, line: "Here's your merchant overview today" }}
       />
-      {/* light, in the chosen colour theme like the rest of the app */}
-      <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#EEF3FB] pb-10 text-[#0B2A5B]">
+      {/* 🌊 on the wave background (WavePage) — the cards float on colour */}
+      <section className="mx-auto max-w-4xl pb-10 text-[#0B2A5B]">
         {panel === "DASHBOARD" ? (
           <Dashboard me={me} merchantDoc={merchantDoc} refresh={refresh} />
         ) : panel === "REPORT" ? (
@@ -102,6 +105,7 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
           <EarningPanel kind="merchant" me={me} uid={uid} refresh={refresh} onRefresh={() => setRefresh((n) => n + 1)} gold />
         )}
       </section>
+      </WavePage>
     </PageShell>
   );
 }
