@@ -480,7 +480,7 @@ export default function RoomsPage() {
 
   // ✨ MODERN Chat Rooms list (the app's ModernRoomsList): the same folders as
   // Classic (Favorites, Recent, My Rooms, Game, Public, Private — 5 busiest
-  // each, Search finds the rest), drawn as a "🔥 Hot now" strip, then each
+  // each, Search finds the rest, and 🔥 Hot now at the bottom), each
   // folder as a rounded card with an icon tile, a count chip and a turning
   // arrow, and every room a row with a colour avatar, live dot and "4/30" pill.
   const sections: [string, string, string[]][] = [
@@ -492,6 +492,7 @@ export default function RoomsPage() {
     ["private", "Private Rooms", privateSection],
   ];
   const LOOK: Record<string, [string, string]> = {
+    hot: ["🔥", "#FF6B3D"],
     fav: ["⭐", "#F5A623"],
     recent: ["🕘", "#3B7BF0"],
     mine: ["🏠", "#22A06B"],
@@ -499,16 +500,13 @@ export default function RoomsPage() {
     public: ["🌍", "#1FA2B8"],
     private: ["🔐", "#E5484D"],
   };
-  const HOT_GRADS = [
-    ["#FF8A5B", "#FF4F8B"],
-    ["#6FB0FF", "#3B7BF0"],
-    ["#34C77B", "#1FA2B8"],
-    ["#B08CFF", "#7B5CF0"],
-  ];
   const hot = Array.from(new Set(sections.flatMap(([, , names]) => names)))
     .filter((n) => live(n) > 0)
     .sort(byLive)
     .slice(0, 8);
+  // 🔥 Hot now is a normal folder like the others, at the bottom (no coloured
+  // strip on top any more); only shown while rooms have people.
+  const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "Hot now", hot]] : sections;
   return (
     <PageShell light>
       <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl space-y-2.5 bg-gradient-to-b from-[#EAF4FE] to-[#EFEAFB] px-3 pb-6 pt-2.5 lg:max-w-4xl">
@@ -538,30 +536,8 @@ export default function RoomsPage() {
           </button>
         </div>
 
-        {/* 🔥 hot now */}
-        {hot.length > 0 && !q && (
-          <div>
-            <p className="pb-1.5 pl-1 text-sm font-extrabold text-[#0B2A5B]">🔥 Hot now</p>
-            <div className="no-scrollbar -mx-3 flex gap-2 overflow-x-auto px-3">
-              {hot.map((name, i) => (
-                <Link
-                  key={name}
-                  href={roomHref(name)}
-                  className="w-32 shrink-0 rounded-[18px] p-3 text-white shadow-[0_3px_8px_rgba(0,0,0,.18)]"
-                  style={{ background: `linear-gradient(135deg, ${HOT_GRADS[i % 4][0]}, ${HOT_GRADS[i % 4][1]})` }}
-                >
-                  <span data-notranslate className="block truncate text-sm font-extrabold">
-                    {roomListName(name)}
-                  </span>
-                  <span className="mt-1 block text-[11.5px] font-semibold text-white/90">● {live(name)} in room</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {sections.map(([key, title, allRooms]) => {
-          const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game");
+        {shownSections.map(([key, title, allRooms]) => {
+          const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
           const limited = key !== "fav" && !q && allRooms.length > 5;
           const expanded = !!showAll[key];
           const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
