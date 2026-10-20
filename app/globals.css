@@ -541,3 +541,7 @@ html.no-boot-splash #boot-splash { display: none; }
 [data-swipe-body] select {
   touch-action: auto;
 }
+
+/* ↻ refresh buttons: the arrow turns once on every tap */
+@keyframes refresh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.refresh-spin { animation: refresh-spin 0.7s ease-in-out; }

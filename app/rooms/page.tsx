@@ -33,6 +33,7 @@ import { PageShell } from "../_components/PageShell";
 import { isMainFounderName } from "../../lib/founder";
 import { LUXURY_BET_ROOM, useLuxuryBetAccess } from "../_components/LuxuryBet";
 import { useIsClassic } from "../../lib/uiStyle";
+import { RefreshButton } from "../_components/RefreshButton";
 
 /** A Firestore Timestamp (or anything else) as milliseconds; 0 when missing. */
 function toMillisSafe(v: unknown): number {
@@ -390,14 +391,10 @@ export default function RoomsPage() {
             >
               + Create
             </button>
-            <button
-              type="button"
+            <RefreshButton
               onClick={() => setRefreshKey((k) => k + 1)}
-              title="Refresh"
               className="h-9 w-9 shrink-0 rounded border border-[#B9C4D2] bg-white text-base font-bold text-[#4A5F7E]"
-            >
-              ↻
-            </button>
+            />
           </div>
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : key === "fav" || key === "recent" || key === "public");
@@ -526,14 +523,10 @@ export default function RoomsPage() {
           >
             +
           </button>
-          <button
-            type="button"
+          <RefreshButton
             onClick={() => setRefreshKey((k) => k + 1)}
-            title="Refresh"
             className="ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[17px] font-bold text-[#6B7A99]"
-          >
-            ↻
-          </button>
+          />
         </div>
 
         {shownSections.map(([key, title, allRooms]) => {
