@@ -3,13 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import { PageShell } from "../_components/PageShell";
+import { BackButton } from "../_components/BackButton";
 import { PageTitle, PastelCard } from "../_components/LightCards";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useIsClassic } from "../../lib/uiStyle";
 
-// Discover: tabs (All / Events / Shop / Community) over one clean white list.
+// Discover (modern): 🌙 a night page — tabs, then EVENTS / SHOP / COMMUNITY,
+// every feature its own gradient card. Classic keeps the pastel cards.
 // 💎 Luxury Festival: everyone sees the Luxury Bet top 25; miglife also sets its time.
 type Item = { icon: string; title: string; subtitle: string; color: string; tint: string; href?: string; note?: string; tab: Tab };
+// 🌙 each row's own gradient on the night page
+const GRAD: Record<string, [string, string]> = {
+  "Announcements": ["#7FB2FF", "#2F6ABD"],
+  "Gift Gallery": ["#FF8A9A", "#E5484D"],
+  "Community": ["#B79CFF", "#5B2A86"],
+  "Rankings": ["#FFD66B", "#D97706"],
+  "Luxury Festival": ["#FFB347", "#E0457B"],
+  "Gift Contest": ["#FF6FA8", "#8B5CFF"],
+  "Lucky User": ["#5EE08A", "#12845A"],
+  "VIP Subscription": ["#D9A0FF", "#7443D1"],
+  "Style Studio": ["#7FE3F2", "#0E7C9A"],
+  "Supporters Badge": ["#8FE3A8", "#1B9E4B"],
+  "Entry Effects": ["#FFB27F", "#FF6F00"],
+  "miGlife Partner": ["#9FB4FF", "#3F55C7"],
+};
+const LIVE = new Set(["Luxury Festival", "Gift Contest", "Lucky User"]);
 type Tab = "events" | "shop" | "community";
 const ITEMS: Item[] = [
   { icon: "📢", title: "Announcements", subtitle: "miGlife news & updates", color: "#3984D9", tint: "#FFF3D6", href: "/announcements", tab: "community" },
@@ -37,65 +55,105 @@ export default function ExplorePage() {
   const classic = useIsClassic();
   const [tab, setTab] = useState<Tab | "all">("all");
   const items = ITEMS;
-  const shown = tab === "all" ? items : items.filter((i) => i.tab === tab);
-  return (
-    <PageShell light>
-      <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
-        <PageTitle title="Discover" subtitle="Discover · Community" backHref="/" />
-        {ready &&
-          (classic ? (
+  const SECTIONS: [Tab, string][] = [
+    ["events", "🎉 EVENTS"],
+    ["shop", "🛍 SHOP"],
+    ["community", "👥 COMMUNITY"],
+  ];
+  if (classic) {
+    return (
+      <PageShell light>
+        <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6">
+          <PageTitle title="Discover" subtitle="Discover · Community" backHref="/" />
+          {ready && (
             <div className="grid gap-2.5">
               {items.map((i) => (
                 <PastelCard key={i.title} icon={i.icon} title={i.title} subtitle={i.subtitle} color={i.color} href={i.href} note={i.note} />
               ))}
             </div>
-          ) : (
+          )}
+        </section>
+      </PageShell>
+    );
+  }
+  return (
+    <PageShell light>
+      <div className="relative isolate min-h-[calc(100dvh-64px)] overflow-hidden text-white" style={{ background: "linear-gradient(180deg,#0F1630,#171338 60%,#1F1238)" }}>
+        <span className="pointer-events-none absolute -right-20 -top-20 -z-10 h-64 w-64 rounded-full blur-3xl" style={{ background: "#5A8FD655" }} />
+        <span className="pointer-events-none absolute -left-24 top-80 -z-10 h-72 w-72 rounded-full blur-3xl" style={{ background: "#8B5CFF40" }} />
+        <section className="mx-auto max-w-2xl px-3 pb-10 pt-3 sm:px-6">
+          <div className="flex items-center gap-3">
+            <BackButton variant="dark" href="/" />
+            <div>
+              <h1 className="text-[22px] font-black">🧭 Discover</h1>
+              <p className="text-xs" style={{ color: "#8FA0C9" }}>Events · Shop · Community</p>
+            </div>
+          </div>
+          {ready && (
             <>
-              <div className="mb-3 flex gap-1.5 overflow-x-auto pb-0.5">
+              <div className="no-scrollbar mt-4 flex gap-1.5 overflow-x-auto pb-0.5">
                 {TABS.map(([id, label]) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => setTab(id)}
-                    className={`shrink-0 rounded-full px-4 py-1.5 text-[13px] font-bold transition ${
-                      tab === id ? "bg-[#1E63D6] text-white shadow" : "bg-white text-[#5B6B8C] shadow-sm"
-                    }`}
+                    className="shrink-0 rounded-full px-4 py-1.5 text-[13px] font-bold transition"
+                    style={
+                      tab === id
+                        ? { background: "linear-gradient(90deg,#5A8FD6,#8B5CFF)", color: "#fff", boxShadow: "0 4px 12px #5A8FD655" }
+                        : { background: "#ffffff14", color: "#B9C4DD", border: "1px solid #ffffff1f" }
+                    }
                   >
                     {label}
                   </button>
                 ))}
               </div>
-              <ul className="overflow-hidden rounded-[22px] bg-white px-3 shadow-[0_2px_10px_rgba(30,99,214,.08)]">
-                {shown.map((i, n) => {
-                  const row = (
-                    <span className={`flex items-center gap-3 py-3 ${n < shown.length - 1 ? "border-b border-[#E3ECF7]" : ""}`}>
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl" style={{ backgroundColor: i.tint }}>
-                        {i.icon}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-black text-[#0B2A5B]">{i.title}</span>
-                        <span className="block truncate text-xs text-[#5B6B8C]">{i.subtitle}</span>
-                      </span>
-                      {i.note && <span className="shrink-0 rounded-full bg-[#EAF1FC] px-2 py-0.5 text-[10px] font-bold text-[#5B6B8C]">{i.note}</span>}
-                      <span className="shrink-0 text-xl leading-none text-[#A3AFC2]">›</span>
-                    </span>
-                  );
-                  return (
-                    <li key={i.title}>
-                      {i.href ? (
-                        <Link href={i.href} className="block active:opacity-70">
-                          {row}
-                        </Link>
-                      ) : (
-                        <div className="opacity-70">{row}</div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              {SECTIONS.filter(([id]) => tab === "all" || tab === id).map(([id, label]) => (
+                <div key={id}>
+                  <p className="mb-2 ml-1 mt-5 text-[11px] font-black tracking-[1.3px]" style={{ color: "#8FA0C9" }}>
+                    {label}
+                  </p>
+                  <div className="space-y-2.5">
+                    {items
+                      .filter((i) => i.tab === id)
+                      .map((i) => {
+                        const [g1, g2] = GRAD[i.title] || ["#5A8FD6", "#8B5CFF"];
+                        const row = (
+                          <span
+                            className="relative flex items-center gap-3 overflow-hidden rounded-[20px] px-3.5 py-3 transition active:scale-[.98]"
+                            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 8px 18px ${g2}40` }}
+                          >
+                            <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15" />
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-white/20 text-[25px]">{i.icon}</span>
+                            <span className="relative min-w-0 flex-1">
+                              <span className="block truncate text-[15.5px] font-black drop-shadow-sm">{i.title}</span>
+                              <span className="block truncate text-[11.5px] text-white/85">{i.subtitle}</span>
+                            </span>
+                            {i.note ? (
+                              <span className="relative shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-black">{i.note}</span>
+                            ) : (
+                              LIVE.has(i.title) && <span className="relative shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-black" style={{ color: g2 }}>● LIVE</span>
+                            )}
+                            <span className="relative shrink-0 text-[22px] leading-none text-white/80">›</span>
+                          </span>
+                        );
+                        return i.href ? (
+                          <Link key={i.title} href={i.href} className="block">
+                            {row}
+                          </Link>
+                        ) : (
+                          <div key={i.title} className="opacity-70">
+                            {row}
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
             </>
-          ))}
-      </section>
+          )}
+        </section>
+      </div>
     </PageShell>
   );
 }
