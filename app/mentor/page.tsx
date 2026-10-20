@@ -85,6 +85,13 @@ export default function MentorDashboardPage() {
       .catch(() => setAllowed(allowedMemory.get(user.uid) ?? false));
   }, [user, username]);
 
+  // 🔒 not a mentor (and not miGlife): the dashboard is never shown — straight
+  // to miGlife Partner, where they can join as a merchant.
+  useEffect(() => {
+    if (allowed === false) router.replace("/merchant");
+  }, [allowed, router]);
+  if (allowed !== true) return <PageShell light>{null}</PageShell>;
+
   return (
     <PageShell light>
       <ProgramBar
@@ -101,11 +108,7 @@ export default function MentorDashboardPage() {
 
       {/* light, in the chosen colour theme like the rest of the app */}
       <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#EEF3FB] pb-10 text-[#0B2A5B]">
-        {!ready || allowed === null ? (
-          null
-        ) : !allowed ? (
-          <p className="px-4 py-16 text-center text-sm text-[#5B6B8C]">The Mentor Dashboard is for mentors only.</p>
-        ) : panel === "DASHBOARD" ? (
+        {!ready ? null : panel === "DASHBOARD" ? (
           <Dashboard me={username} refresh={refresh} />
         ) : panel === "REPORT" ? (
           <Report me={username} refresh={refresh} />
