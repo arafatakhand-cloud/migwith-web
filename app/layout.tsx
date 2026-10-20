@@ -44,6 +44,17 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased">
+        {/* 📱 Every phone shows the page the same: it is laid out 412px wide (a
+            normal phone) and the phone scales that to its own screen, so a small
+            or a big phone shows the same lines, the same wrapping, the same sizes —
+            like the app. Tablets / computers (and a phone turned sideways) keep
+            their own width. (Next.js adds its own viewport tag again after the
+            page starts, so every viewport tag is kept in step.) */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var W=412;function want(){var w=Math.min(screen.width,screen.height),land=screen.width>screen.height,rest=", viewport-fit=cover, interactive-widget=resizes-content";return w<600&&!land?"width="+W+rest:"width=device-width, initial-scale=1"+rest}function fit(){try{var c=want();document.querySelectorAll('meta[name="viewport"]').forEach(function(m){if(m.getAttribute("content")!==c)m.setAttribute("content",c)})}catch(e){}}fit();try{new MutationObserver(fit).observe(document.head,{childList:true,subtree:true,attributes:true,attributeFilter:["content"]})}catch(e){}addEventListener("orientationchange",function(){setTimeout(fit,50)})})()`,
+          }}
+        />
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
