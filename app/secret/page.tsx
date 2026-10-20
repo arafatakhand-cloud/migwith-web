@@ -6,7 +6,8 @@ import { collection, doc, getDocs, onSnapshot, serverTimestamp, setDoc } from "f
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useFounderPerms } from "../../lib/founder";
-import { ALL_COUNTRIES, countryFlag } from "../../lib/countries";
+import { countryWithFlag } from "../../lib/countries";
+import { CountryPickerDialog } from "../_components/CountryPicker";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
 import { winFxKey } from "../../lib/cricketWinFx";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -370,6 +371,7 @@ function CreateIdDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: 
   const [show, setShow] = useState(false);
   const [gender, setGender] = useState("");
   const [country, setCountry] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -427,14 +429,21 @@ function CreateIdDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: 
             <option key={g}>{g}</option>
           ))}
         </select>
-        <select value={country} onChange={(e) => setCountry(e.target.value)} disabled={busy} className={input}>
-          <option value="">Select country</option>
-          {ALL_COUNTRIES.map((c) => (
-            <option key={c.iso} value={c.name}>
-              {countryFlag(c.iso)}  {c.name}
-            </option>
-          ))}
-        </select>
+        {/* 🌍 the searchable country picker (type "phi", "uae", "usa" …) */}
+        <button type="button" disabled={busy} onClick={() => setCountryOpen(true)} className={`${input} flex items-center justify-between text-left`}>
+          <span className={country ? "" : "text-gray-400"}>{country ? countryWithFlag(country) : "Select country"}</span>
+          <span className="text-gray-400">▾</span>
+        </button>
+        {countryOpen && (
+          <CountryPickerDialog
+            selected={country}
+            onPick={(name) => {
+              setCountry(name);
+              setCountryOpen(false);
+            }}
+            onClose={() => setCountryOpen(false)}
+          />
+        )}
         {error && <p className="text-xs font-bold text-[#B3261E]">{error}</p>}
         <div className="flex justify-end gap-3 pt-1">
           <button type="button" disabled={busy} onClick={onClose} className="font-bold text-[#2F80ED]">

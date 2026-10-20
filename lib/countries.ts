@@ -72,3 +72,43 @@ export function countryWithFlag(name: string): string {
   const c = countryInfoFor(name);
   return c ? `${countryFlag(c.iso)}  ${c.name}` : name;
 }
+
+// Other names people type for a country ("uae", "usa", "uk", "ksa", "dubai" …).
+const ALIASES: Record<string, string[]> = {
+  "United Arab Emirates": ["uae", "emirates", "dubai", "abu dhabi"],
+  "United States": ["usa", "us", "america", "united states of america"],
+  "United Kingdom": ["uk", "england", "britain", "great britain", "london", "scotland", "wales"],
+  "Saudi Arabia": ["ksa", "saudi", "riyadh", "makkah", "mecca"],
+  Bangladesh: ["bd", "bangla", "dhaka"],
+  "South Korea": ["korea", "seoul"],
+  "North Korea": ["dprk"],
+  Russia: ["russian federation"],
+  Netherlands: ["holland"],
+  Myanmar: ["burma"],
+  Czechia: ["czech republic", "czech"],
+  Turkey: ["turkiye", "türkiye"],
+  "Côte d'Ivoire": ["ivory coast", "cote d'ivoire"],
+  Philippines: ["pinoy", "manila"],
+};
+
+/** 🔍 Smart search: name starts with it first, then a word in the name starts
+ *  with it, then anything that contains it — ISO codes ("bd") and common other
+ *  names ("uae", "usa", "uk", "dubai") work too. */
+export function searchCountries(query: string): CountryInfo[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return ALL_COUNTRIES;
+  const score = (c: CountryInfo): number => {
+    const n = c.name.toLowerCase();
+    const aliases = ALIASES[c.name] || [];
+    if (n === q || c.iso.toLowerCase() === q || aliases.includes(q)) return 0;
+    if (n.startsWith(q)) return 1;
+    if (aliases.some((a) => a.startsWith(q))) return 2;
+    if (n.split(/[\s-]+/).some((w) => w.startsWith(q))) return 3;
+    if (n.includes(q)) return 4;
+    return 99;
+  };
+  return ALL_COUNTRIES.map((c) => [c, score(c)] as const)
+    .filter(([, s]) => s < 99)
+    .sort((a, b) => a[1] - b[1] || a[0].name.localeCompare(b[0].name))
+    .map(([c]) => c);
+}
