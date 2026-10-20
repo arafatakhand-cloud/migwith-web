@@ -316,7 +316,7 @@ export default function MerchantPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
-        <PageTitle title={step === "PICK" && !pending ? "Choose Your Mentor" : "miGlife Partner"} subtitle="Become or manage a Merchant" icon="🏪" />
+        <PageTitle title={step === "PICK" && !pending ? "Choose Your Mentor" : "miGlife Partner"} subtitle="Become or manage a Merchant" icon="🏪" backHref="/explore" />
         {error && <p className="mb-3 rounded-xl bg-white px-4 py-2 text-sm text-rose-600 shadow-sm">{error}</p>}
         {body}
       </section>

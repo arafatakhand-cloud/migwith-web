@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   addDoc,
   collection,
@@ -68,6 +69,7 @@ export default function MentorDashboardPage() {
   const [allowed, setAllowed] = useState<boolean | null>(() => (user ? allowedMemory.get(user.uid) ?? null : null));
   const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");
   const [refresh, setRefresh] = useState(0);
+  const router = useRouter();
 
   // Mentors (and migwith) only — same check as the app's Merchant Program page.
   useEffect(() => {
@@ -86,7 +88,9 @@ export default function MentorDashboardPage() {
   return (
     <PageShell light>
       <ProgramBar
-        backHref="/merchant"
+        // ← goes back where you came from (miGlife Partner) instead of opening
+        // it again on top — that made the two pages send you to each other.
+        onBack={() => (window.history.length > 1 ? router.back() : router.push("/merchant"))}
         panels={["DASHBOARD", "REPORT", "EARNING"] as const}
         panel={panel}
         setPanel={setPanel}

@@ -150,6 +150,7 @@ export function DateBar({ day, setDay, gold = false }: { day: string; setDay: (d
 /** Navy bar: back, DASHBOARD / REPORT / EARNING, refresh. */
 export function ProgramBar<P extends string>({
   backHref,
+  onBack,
   panels,
   panel,
   setPanel,
@@ -158,6 +159,8 @@ export function ProgramBar<P extends string>({
   gold = false,
 }: {
   backHref?: string;
+  /** used instead of backHref when given */
+  onBack?: () => void;
   panels: readonly P[];
   panel: P;
   setPanel: (p: P) => void;
@@ -169,8 +172,8 @@ export function ProgramBar<P extends string>({
   return (
     <div className={gold ? "bg-[#EEF3FB]" : "bg-[#0B1F3A]"}>
       <div className="mx-auto flex max-w-4xl items-center gap-2 px-2 py-2">
-        {backHref && (
-          <BackButton variant={gold ? "light" : "dark"} href={backHref} />
+        {(backHref || onBack) && (
+          <BackButton variant={gold ? "light" : "dark"} href={onBack ? undefined : backHref} onClick={onBack} />
         )}
         <div className="flex min-w-0 flex-1 gap-1.5">
           {panels.map((p) => (
