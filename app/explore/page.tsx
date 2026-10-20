@@ -113,28 +113,39 @@ export default function ExplorePage() {
                   <p className="mb-2 ml-1 mt-5 text-[11px] font-black tracking-[1.3px]" style={{ color: "#8FA0C9" }}>
                     {label}
                   </p>
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {items
                       .filter((i) => i.tab === id)
                       .map((i) => {
                         const [g1, g2] = GRAD[i.title] || ["#5A8FD6", "#8B5CFF"];
                         const row = (
                           <span
-                            className="relative flex items-center gap-3 overflow-hidden rounded-[20px] px-3.5 py-3 transition active:scale-[.98]"
-                            style={{ background: `linear-gradient(90deg, ${g1}, ${g2})`, boxShadow: `0 8px 18px ${g2}40` }}
+                            className="relative flex items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-2.5 transition active:scale-[.98]"
+                            style={{ background: "rgba(255,255,255,.05)", borderColor: "rgba(255,255,255,.08)" }}
                           >
-                            <span className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/15" />
-                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-white/20 text-[25px]">{i.icon}</span>
-                            <span className="relative min-w-0 flex-1">
-                              <span className="block truncate text-[15.5px] font-black drop-shadow-sm">{i.title}</span>
-                              <span className="block truncate text-[11.5px] text-white/85">{i.subtitle}</span>
+                            {/* a thin colour line on the left, the colour only on the icon */}
+                            <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-r-full" style={{ background: `linear-gradient(${g1}, ${g2})` }} />
+                            <span
+                              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-[22px]"
+                              style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, boxShadow: `0 4px 12px ${g2}55` }}
+                            >
+                              {i.icon}
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-[15px] font-extrabold text-white">{i.title}</span>
+                              <span className="block truncate text-[11.5px]" style={{ color: "#8FA0C9" }}>{i.subtitle}</span>
                             </span>
                             {i.note ? (
-                              <span className="relative shrink-0 rounded-full bg-white/25 px-2 py-0.5 text-[10px] font-black">{i.note}</span>
+                              <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold" style={{ background: "rgba(255,255,255,.08)", color: "#B9C4DD" }}>{i.note}</span>
                             ) : (
-                              LIVE.has(i.title) && <span className="relative shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-black" style={{ color: g2 }}>● LIVE</span>
+                              LIVE.has(i.title) && (
+                                <span className="flex shrink-0 items-center gap-1 text-[10px] font-bold" style={{ color: "#5EE08A" }}>
+                                  <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: "#5EE08A" }} />
+                                  LIVE
+                                </span>
+                              )
                             )}
-                            <span className="relative shrink-0 text-[22px] leading-none text-white/80">›</span>
+                            <span className="shrink-0 text-xl leading-none" style={{ color: "#5B6B8C" }}>›</span>
                           </span>
                         );
                         return i.href ? (
