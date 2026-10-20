@@ -54,6 +54,13 @@ type Alert = {
   /** 💬 the message the sender wrote with the gift ("" when none) */
   giftMessage: string;
   shower: boolean;
+  /** ⏳ renewal alerts: whose term, when it ends, and one key per term */
+  role: string;
+  untilMs: number;
+  renewKey: string;
+  renewed: boolean;
+  mentorUsername: string;
+  merchantUsername: string;
 };
 
 function toAlert(d: { id: string; get: (f: string) => any }): Alert {
@@ -76,6 +83,12 @@ function toAlert(d: { id: string; get: (f: string) => any }): Alert {
     giftName: String(d.get("giftName") || "").trim(),
     giftMessage: String(d.get("giftMessage") || "").trim(),
     shower: d.get("shower") === true,
+    role: String(d.get("role") || ""),
+    untilMs: Number(d.get("untilMs") || 0),
+    renewKey: String(d.get("renewKey") || ""),
+    renewed: d.get("renewed") === true,
+    mentorUsername: String(d.get("mentorUsername") || ""),
+    merchantUsername: String(d.get("merchantUsername") || ""),
   };
 }
 
@@ -296,7 +309,81 @@ function GiftAlertCard({ a, isNew }: { a: Alert; isNew: boolean }) {
   );
 }
 
-const approveColorPurchase =httpsCallable<{ requestId: string }, { status?: string }>(functions, "approveColorPurchase");
+// ⏳ Mentorship / Merchant renewal: a countdown card — a ring with the days
+// left (of the last 5), the end date, a 5-step bar, and one tap to act:
+// a mentor opens the Mentor Dashboard (or messages miglife for their own
+// Mentorship), a merchant messages their mentor. Green once renewed.
+function RenewalCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string }) {
+  const merchantTerm = a.type === "merchant_renewal";
+  const fromText = Number(a.text.match(/ends in (\d+) day/)?.[1] || 0);
+  const until = a.untilMs;
+  const days = until ? Math.ceil((until - Date.now()) / 86_400_000) : a.text.startsWith("⛔") ? 0 : fromText;
+  const renewed = a.renewed || a.text.startsWith("✅");
+  const ended = !renewed && days <= 0;
+  const amMentor = a.role ? a.role === "mentor" : me.toLowerCase() === a.mentorUsername.toLowerCase();
+  const grad = renewed ? "from-[#34C77B] to-[#12845A]" : ended ? "from-[#FF6B6B] to-[#C62828]" : days <= 2 ? "from-[#FF8A5B] to-[#E0457B]" : "from-[#FFB74D] to-[#E65100]";
+  const title = merchantTerm ? "Merchant renewal" : "Mentorship renewal";
+  const date = until ? new Date(until).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", year: "numeric" }) : "";
+  const shownDays = Math.max(0, Math.min(5, days));
+  const action = renewed
+    ? null
+    : amMentor
+      ? merchantTerm
+        ? { href: "/mentor", label: "💼 Renew in Mentor Dashboard" }
+        : { href: chatHref("miglife"), label: "💬 Ask miglife to renew" }
+      : a.mentorUsername
+        ? { href: chatHref(a.mentorUsername), label: `💬 Message ${a.mentorUsername}` }
+        : null;
+  return (
+    <div className={`relative my-1.5 overflow-hidden rounded-[22px] bg-gradient-to-br ${grad} p-4 text-white ${isNew ? "shadow-[0_10px_22px_rgba(230,81,0,.35)]" : "shadow-md"}`}>
+      <span className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/10" />
+      <div className="relative flex items-center gap-3.5">
+        {/* ring: days left of the last 5 */}
+        <span
+          className="flex h-[66px] w-[66px] shrink-0 items-center justify-center rounded-full"
+          style={{ background: renewed ? "rgba(255,255,255,.95)" : `conic-gradient(#fff 0 ${shownDays * 20}%, rgba(255,255,255,.25) 0)` }}
+        >
+          <span className="flex h-[54px] w-[54px] flex-col items-center justify-center rounded-full bg-black/15 leading-none">
+            {renewed ? (
+              <span className="text-[26px]">✅</span>
+            ) : (
+              <>
+                <span className="text-[22px] font-black">{ended ? "!" : days}</span>
+                <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide">{ended ? "ended" : days === 1 ? "day" : "days"}</span>
+              </>
+            )}
+          </span>
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-extrabold uppercase tracking-[1px] text-white/85">⏳ {title}</span>
+            <span className="ml-auto text-[11px] text-white/80">{shortTime(a.createdAtMs)}</span>
+            {isNew && <span className="h-2 w-2 rounded-full bg-white" />}
+          </div>
+          <p className="mt-0.5 text-[15px] font-extrabold leading-5">
+            {renewed ? "Renewed — all good! 🎉" : ended ? "Term has ended" : days === 1 ? "Ends tomorrow" : `Ends in ${days} days`}
+          </p>
+          {date && <p className="text-[12px] text-white/85">{renewed ? "Runs until" : "Last day"}: {date}</p>}
+        </div>
+      </div>
+      {!renewed && (
+        <div className="relative mt-3 flex gap-1">
+          {[5, 4, 3, 2, 1].map((n) => (
+            <span key={n} className={`h-1.5 flex-1 rounded-full ${days >= n ? "bg-white" : "bg-white/25"}`} />
+          ))}
+        </div>
+      )}
+      <p className="relative mt-3 whitespace-pre-wrap break-words rounded-2xl bg-white/15 px-3 py-2 text-[13px] leading-[18px]">{a.text}</p>
+      {action && (
+        <Link href={action.href} className="relative mt-3 block rounded-full bg-white py-2 text-center text-[13px] font-extrabold text-[#C2410C] shadow">
+          {action.label}
+        </Link>
+      )}
+    </div>
+  );
+}
+
+const approveColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "approveColorPurchase");
 const rejectColorPurchase = httpsCallable<{ requestId: string }, { status?: string }>(functions, "rejectColorPurchase");
 const approveTagRequest = httpsCallable<{ kind: string; requestId: string }, { ok?: boolean; result?: string }>(functions, "approveTagRequest");
 
@@ -597,7 +684,16 @@ export default function AlertsPage() {
   }
 
   // 🎁 Gift Shower alerts are not shown (one shower filled everyone's Alerts)
-  const list = (alerts || []).filter((a) => !(a.type === "gift" && a.shower));
+  // ⏳ one card per renewal term: only the newest alert of each renewKey stays
+  const seenRenew = new Set<string>();
+  const list = (alerts || []).filter((a) => {
+    if (a.type === "gift" && a.shower) return false;
+    if (a.renewKey) {
+      if (seenRenew.has(a.renewKey)) return false;
+      seenRenew.add(a.renewKey);
+    }
+    return true;
+  });
   const shown = filter === "all" ? list : list.filter((a) => styleFor(a.type).group === filter);
   const newCount = initialUnread?.size ?? list.filter((a) => !a.read).length;
 
@@ -680,6 +776,8 @@ export default function AlertsPage() {
                 card = <ColorRequestCard a={a} />;
               } else if ((a.type === "merchant_tag_request" || a.type === "mentor_tag_request") && a.requestId) {
                 card = <TagRequestCard a={a} username={username} uid={user.uid} />;
+              } else if (a.type === "mentor_renewal" || a.type === "merchant_renewal") {
+                card = <RenewalCard a={a} isNew={isNew} me={username} />;
               } else if (a.type === "gift" && a.fromUsername.trim()) {
                 card = <GiftAlertCard a={a} isNew={isNew} />;
               } else if (a.type === "friend_request" && a.fromUsername.trim()) {

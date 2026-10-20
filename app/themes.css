@@ -6223,6 +6223,7 @@ html[data-theme="dark_night"] .border-\[\#F6D1D1\]{border-color:#331919}
 html[data-theme="dark_night"] .bg-\[\#FFF3F3\]{background-color:#231111}
 html[data-theme="dark_night"] .text-\[\#B71C1C\]{color:#eb7a7a}
 html[data-theme="dark_night"] .text-\[\#B0245A\]{color:#e580a7}
+html[data-theme="dark_night"] .text-\[\#C2410C\]{color:#f6966f}
 html[data-theme="dark_night"] .text-\[\#32A852\]{color:#89dca0}
 html[data-theme="dark_night"] .text-\[\#55658F\]{color:#aeb7cf}
 html[data-theme="dark_night"] .bg-\[\#D5DCEB\]{background-color:#1a2336}
@@ -6715,6 +6716,11 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#33
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#9AA3B2\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#9AA3B2\].classic-light{color:#6B7788}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#B71C1C\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#B71C1C\].classic-light{color:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#B0245A\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#B0245A\].classic-light{color:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#12845A\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#12845A\].classic-light{--tw-gradient-to:#e4e8ec}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#FF6B6B\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#FF6B6B\].classic-light{--tw-gradient-from:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#C62828\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#C62828\].classic-light{--tw-gradient-to:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#E0457B\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#E0457B\].classic-light{--tw-gradient-to:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#FFB74D\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#FFB74D\].classic-light{--tw-gradient-from:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#FFC04A\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#FFC04A\].classic-light{color:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .via-\[\#0B1F3A\],html[data-ui="classic"]:not([data-theme="dark_night"]) .via-\[\#0B1F3A\].classic-light{--tw-gradient-via:#f0f2f5}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#5B2A86\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#5B2A86\].classic-light{--tw-gradient-to:#e1e4ea}
