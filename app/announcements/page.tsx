@@ -24,6 +24,57 @@ import { isMainFounderName } from "../../lib/founder";
 
 type Item = { id: string; message: string; createdAtMs: number };
 
+// A short card: the first line as the title, 2 lines of preview, and a tap
+// opens the whole announcement (tap again to close). New ones (3 days) get a NEW tag.
+function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: boolean; onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  const lines = a.message.trim().split("\n");
+  const title = lines[0].trim();
+  const rest = lines.slice(1).join("\n").trim();
+  const isNew = a.createdAtMs > 0 && Date.now() - a.createdAtMs < 3 * 86_400_000;
+  const when =
+    a.createdAtMs > 0
+      ? `${new Date(a.createdAtMs).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} · ${new Date(a.createdAtMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+      : "";
+  return (
+    <div
+      className={`relative overflow-hidden rounded-[20px] border bg-white shadow-sm transition ${open ? "border-[#BFD5F5] shadow-md" : "border-[#E3ECF7]"}`}
+    >
+      <span className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#5A8FD6] to-[#8B5CFF]" />
+      <button type="button" onClick={() => setOpen((v) => !v)} className="block w-full py-3 pl-5 pr-4 text-left">
+        <div className="flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-xl">📢</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              {isNew && <span className="rounded-full bg-[#FF5E8A] px-1.5 py-px text-[9px] font-black tracking-wide text-white">NEW</span>}
+              <span className="truncate text-[11px] font-semibold text-[#8A97B2]">{when}</span>
+            </div>
+            <p className={`mt-0.5 break-words text-[15px] font-extrabold leading-5 text-[#0B2A5B] ${open ? "" : "line-clamp-2"}`}>{title}</p>
+            {rest && (
+              <p className={`mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-5 text-[#3D4F72] ${open ? "" : "line-clamp-2"}`}>{rest}</p>
+            )}
+            {(rest || title.length > 60) && (
+              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#EEF3FB] px-2.5 py-1 text-[11px] font-bold text-[#1E63D6]">
+                {open ? "Show less ▴" : "Read more ▾"}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+      {isAdmin && open && (
+        <div className="flex justify-end gap-2 border-t border-[#EEF3FB] px-4 py-2 text-xs font-bold">
+          <button type="button" onClick={onEdit} className="rounded-full bg-[#FFF4DC] px-3 py-1 text-[#B7791F]">
+            ✏️ EDIT
+          </button>
+          <button type="button" onClick={onDelete} className="rounded-full bg-[#FFE8E8] px-3 py-1 text-[#C62828]">
+            🗑 DELETE
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AnnouncementsPage() {
   const ready = useRequireLogin();
   const { username } = useSession();
@@ -89,27 +140,15 @@ export default function AnnouncementsPage() {
         ) : items.length === 0 ? (
           <p className="text-[13px] text-[#5A6B8C]">No announcements yet.</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {items.map((a) => (
-              <div key={a.id} className="rounded-xl bg-[#0B1F3A] p-2.5 text-white">
-                <p className="whitespace-pre-wrap break-words text-[13px] leading-[17px]">{a.message}</p>
-                {a.createdAtMs > 0 && (
-                  <p className="mt-1 text-[10px] text-[#B9C4DD]">
-                    {new Date(a.createdAtMs).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })} ·{" "}
-                    {new Date(a.createdAtMs).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
-                  </p>
-                )}
-                {isAdmin && (
-                  <div className="mt-1.5 flex gap-2 text-xs">
-                    <button type="button" onClick={() => setEditor({ id: a.id, text: a.message })} className="px-2.5 py-1 text-[#F2B53A]">
-                      EDIT
-                    </button>
-                    <button type="button" onClick={() => remove(a.id)} className="px-2.5 py-1 text-[#FF9696]">
-                      DELETE
-                    </button>
-                  </div>
-                )}
-              </div>
+              <AnnouncementCard
+                key={a.id}
+                a={a}
+                isAdmin={isAdmin}
+                onEdit={() => setEditor({ id: a.id, text: a.message })}
+                onDelete={() => remove(a.id)}
+              />
             ))}
           </div>
         )}
