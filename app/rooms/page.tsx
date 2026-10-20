@@ -537,18 +537,26 @@ export default function RoomsPage() {
           const [icon, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
-              <button
-                type="button"
-                onClick={() => setModernOpen((o) => ({ ...o, [key]: !isOpen }))}
-                className="flex w-full items-center px-3 py-2.5 text-left"
-                style={{ background: `linear-gradient(90deg, ${accent}1A, transparent)` }}
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
-                  {icon}
-                </span>
-                <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
-                <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
-              </button>
+              <div className="flex items-center pr-3" style={{ background: `linear-gradient(90deg, ${accent}1A, transparent)` }}>
+                <button
+                  type="button"
+                  onClick={() => setModernOpen((o) => ({ ...o, [key]: !isOpen }))}
+                  className="flex min-w-0 flex-1 items-center py-2.5 pl-3 text-left"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
+                    {icon}
+                  </span>
+                  <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
+                  <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
+                </button>
+                {/* 🔥 Hot now: its own ↻, the live numbers count again */}
+                {key === "hot" && (
+                  <RefreshButton
+                    onClick={() => setRefreshKey((k) => k + 1)}
+                    className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-bold text-[#FF6B3D] shadow-sm"
+                  />
+                )}
+              </div>
               {isOpen && (
                 <>
                   {rooms.length === 0 && <p className="pb-3 pl-[54px] pt-1 text-[12.5px] text-[#6B7A99]">No rooms here yet</p>}
