@@ -378,24 +378,39 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
   );
 }
 
+// Kept while the app is open: the last numbers show at once (no "Loading…"),
+// fresh ones replace them quietly.
+const reportMemory = new Map<string, { rows: Row[]; manual: number | null }>();
+
 function Report({ me, refresh }: { me: string; refresh: number }) {
   const [day, setDay] = useState(todayStr);
-  const [rows, setRows] = useState<Row[] | null>(null);
-  const [manualTotal, setManualTotal] = useState<number | null>(null);
+  const [rows, setRows] = useState<Row[] | null>(() => reportMemory.get(`${me}|${todayStr()}`)?.rows || null);
+  const [manualTotal, setManualTotal] = useState<number | null>(() => reportMemory.get(`${me}|${todayStr()}`)?.manual ?? null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    setRows(null);
+    const key = `${me}|${day}`;
+    const kept = reportMemory.get(key);
+    setRows(kept?.rows || null);
     setError("");
-    setManualTotal(null);
+    setManualTotal(kept?.manual ?? null);
     // A report migwith entered by hand for this day overrides the total (as in the app).
     getDoc(doc(db, "merchant_reports", me, "days", day))
-      .then((s) => !cancelled && typeof s.get("totalTrail") === "number" && setManualTotal(Number(s.get("totalTrail"))))
+      .then((s) => {
+        const manual = typeof s.get("totalTrail") === "number" ? Number(s.get("totalTrail")) : null;
+        const k = reportMemory.get(key);
+        if (k) k.manual = manual;
+        else reportMemory.set(key, { rows: [], manual });
+        if (!cancelled) setManualTotal(manual);
+      })
       .catch(() => {});
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Loading took too long. Tap ⟳ to try again.")), 40_000));
     Promise.race([merchantTrailForDay(me, day), timeout])
-      .then((r) => !cancelled && setRows(r))
+      .then((r) => {
+        reportMemory.set(key, { rows: r, manual: reportMemory.get(key)?.manual ?? null });
+        if (!cancelled) setRows(r);
+      })
       .catch((e) => {
         if (cancelled) return;
         setError(e?.message || String(e));
@@ -413,26 +428,26 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
   return (
     <div className="space-y-3 px-3 py-3">
       <DateBar day={day} setDay={setDay} />
-      {rows === null ? (
-        <p className="pt-4 text-sm text-[#5A6B8C]">Loading…</p>
-      ) : (
-        <>
+      <>
           {error && <p className="text-xs text-rose-600">⚠ Could not load: {error}</p>}
           <div className="rounded-3xl bg-gradient-to-br from-[#0B6E6E] to-[#0A4F6B] p-4 text-white shadow-lg">
             <p className="text-xs font-bold text-[#B9D0D5]">TOTAL BONUS · {label}</p>
             <p className="text-2xl font-black text-[#FFC04A]">🪙 {amount(total)}</p>
             <p className="text-[11px] font-bold text-[#B9D0D5]">2.5% Merchant Bonus</p>
-            {total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No bonus on this date</p>}
+            {rows !== null && total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No bonus on this date</p>}
           </div>
           <div className="rounded-3xl bg-[#0B1F3A] p-4 text-white shadow">
             <div className="flex items-center gap-2">
               <span className="text-[#168BE9]">♟</span>
               <p className="flex-1 font-bold">From my tagged users</p>
               <p className="text-xs font-bold text-[#8A99BD]">
-                {active} active / {rows.length}
+                {active} active / {(rows || []).length}
               </p>
             </div>
-            {rows.length === 0 ? (
+            {rows === null ? (
+              // still filling in: a quiet blank
+              <div className="h-12" />
+            ) : rows.length === 0 ? (
               <p className="mt-2 text-xs text-[#8FA0C9]">No tagged users</p>
             ) : (
               <ul className="mt-2 divide-y divide-white/10">
@@ -457,7 +472,6 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
             )}
           </div>
         </>
-      )}
     </div>
   );
 }

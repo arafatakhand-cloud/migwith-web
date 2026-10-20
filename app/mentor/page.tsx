@@ -57,10 +57,15 @@ const approveMerchantRole = httpsCallable<
 
 const MAX_MERCHANTS = 15;
 
+// Kept while the app is open: coming back (or switching tabs) shows the last
+// numbers at once and fresh ones replace them quietly — never a "Loading…".
+const allowedMemory = new Map<string, boolean>();
+const reportMemory = new Map<string, { direct: Row[]; merchant: Row[] }>();
+
 export default function MentorDashboardPage() {
   const ready = useRequireLogin();
   const { user, username } = useSession();
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  const [allowed, setAllowed] = useState<boolean | null>(() => (user ? allowedMemory.get(user.uid) ?? null : null));
   const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");
   const [refresh, setRefresh] = useState(0);
 
@@ -71,9 +76,11 @@ export default function MentorDashboardPage() {
       .then((s) => {
         const role = lc(String(s.get("role") || ""));
         const roles = ((s.get("roles") as unknown[]) || []).map((r) => lc(String(r)));
-        setAllowed(role === "mentor" || roles.includes("mentor") || isMainFounderName(username));
+        const ok = role === "mentor" || roles.includes("mentor") || isMainFounderName(username);
+        allowedMemory.set(user.uid, ok);
+        setAllowed(ok);
       })
-      .catch(() => setAllowed(false));
+      .catch(() => setAllowed(allowedMemory.get(user.uid) ?? false));
   }, [user, username]);
 
   return (
@@ -91,7 +98,7 @@ export default function MentorDashboardPage() {
       {/* 💼 dark gold, like a premium wallet */}
       <section className="mx-auto min-h-[calc(100dvh-110px)] max-w-4xl bg-[#0E1525] pb-10 text-white">
         {!ready || allowed === null ? (
-          <p className="py-16 text-center text-sm text-[#8FA0C9]">Loading…</p>
+          null
         ) : !allowed ? (
           <p className="px-4 py-16 text-center text-sm text-[#8FA0C9]">The Mentor Dashboard is for mentors only.</p>
         ) : panel === "DASHBOARD" ? (
@@ -471,12 +478,12 @@ async function trailForDay(me: string, day: string): Promise<{ direct: Row[]; me
 
 function Report({ me, refresh }: { me: string; refresh: number }) {
   const [day, setDay] = useState(todayStr);
-  const [data, setData] = useState<{ direct: Row[]; merchant: Row[] } | null>(null);
+  const [data, setData] = useState(() => reportMemory.get(`${me}|${todayStr()}`) || null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
-    setData(null);
+    setData(reportMemory.get(`${me}|${day}`) || null);
     setError("");
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Loading took too long. Tap ⟳ to try again.")), 40_000));
     const load = trailReport("mentor", day, async () => {
@@ -484,7 +491,10 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
       return { direct: r.direct, merchantSourced: r.merchant, total: 0 };
     }).then((r) => ({ direct: r.direct || [], merchant: r.merchantSourced || [] }));
     Promise.race([load, timeout])
-      .then((r) => !cancelled && setData(r))
+      .then((r) => {
+        reportMemory.set(`${me}|${day}`, r);
+        if (!cancelled) setData(r);
+      })
       .catch((e) => {
         if (cancelled) return;
         setError(e?.message || String(e));
@@ -496,18 +506,17 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
   }, [me, day, refresh]);
 
   const sum = (rows: Row[]) => rows.reduce((a, r) => a + r.earning, 0);
-  const mentorTotal = data ? sum(data.direct) : 0;
-  const merchantTotal = data ? sum(data.merchant) : 0;
+  // First time for this day: shown at once with zeros, the rows fill in.
+  const shown = data || { direct: [], merchant: [] };
+  const mentorTotal = sum(shown.direct);
+  const merchantTotal = sum(shown.merchant);
   const label = new Date(`${day}T00:00:00`).toLocaleDateString(undefined, { day: "2-digit", month: "short", year: "numeric" });
 
   return (
     <div className="space-y-3 px-3 py-3">
       <DateBar day={day} setDay={setDay} gold />
 
-      {!data ? (
-        <p className="pt-4 text-sm text-[#8FA0C9]">Loading…</p>
-      ) : (
-        <>
+      <>
           {error && <p className="text-xs text-[#FF8A8A]">⚠ Could not load: {error}</p>}
           <div className="rounded-[20px] border border-[#C99A06]/40 bg-gradient-to-br from-[#1C2640] to-[#121A2E] p-4 shadow-lg">
             <p className="text-xs text-[#8FA0C9]">Earned on {label}</p>
@@ -525,10 +534,9 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
               </div>
             </div>
           </div>
-          <TagSection title="Mentor Tag" icon="★" rate="3%" rows={data.direct} total={mentorTotal} accent="#F7D774" empty="No mentor tagged users yet" />
-          <TagSection title="Merchant Tag" icon="◆" rate="0.5%" rows={data.merchant} total={merchantTotal} accent="#7CC4FF" empty="No merchant tagged users yet" />
+          <TagSection title="Mentor Tag" icon="★" rate="3%" rows={shown.direct} total={mentorTotal} accent="#F7D774" empty={data ? "No mentor tagged users yet" : ""} />
+          <TagSection title="Merchant Tag" icon="◆" rate="0.5%" rows={shown.merchant} total={merchantTotal} accent="#7CC4FF" empty={data ? "No merchant tagged users yet" : ""} />
         </>
-      )}
     </div>
   );
 }
@@ -558,10 +566,15 @@ function TagSection(p: { title: string; icon: string; rate: string; rows: Row[];
       </div>
       <div className="mx-4 h-px bg-[#26304A]" />
       {p.rows.length === 0 ? (
-        <p className="py-5 text-center text-xs text-[#8FA0C9]">
-          <span className="block text-xl">👥</span>
-          {p.empty}
-        </p>
+        // still filling in: a quiet blank, not "nobody yet"
+        p.empty ? (
+          <p className="py-5 text-center text-xs text-[#8FA0C9]">
+            <span className="block text-xl">👥</span>
+            {p.empty}
+          </p>
+        ) : (
+          <div className="h-16" />
+        )
       ) : (
         <ul className="divide-y divide-[#26304A] px-3 py-1">
           {p.rows.map((r, i) => (
