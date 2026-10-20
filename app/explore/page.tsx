@@ -6,11 +6,9 @@ import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard } from "../_components/LightCards";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useIsClassic } from "../../lib/uiStyle";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { isMainFounderName } from "../../lib/founder";
 
 // Discover: tabs (All / Events / Shop / Community) over one clean white list.
-// 💎 Luxury Festival opens only for miglife (its Luxury Bet ranking); everyone else sees "Soon".
+// 💎 Luxury Festival: everyone sees the Luxury Bet top 25; miglife also sets its time.
 type Item = { icon: string; title: string; subtitle: string; color: string; tint: string; href?: string; note?: string; tab: Tab };
 type Tab = "events" | "shop" | "community";
 const ITEMS: Item[] = [
@@ -18,7 +16,7 @@ const ITEMS: Item[] = [
   { icon: "🎁", title: "Gift Gallery", subtitle: "Send gifts to your friends", color: "#E5484D", tint: "#FFE6F2", href: "/gifts", tab: "shop" },
   { icon: "👥", title: "Community", subtitle: "Staff, Mentors & Merchants", color: "#7B3FC7", tint: "#EDE6FF", href: "/members", tab: "community" },
   { icon: "🏆", title: "Rankings", subtitle: "Top game winners across rooms", color: "#D9A400", tint: "#FFF6DD", href: "/leaderboard", tab: "events" },
-  { icon: "💎", title: "Luxury Festival", subtitle: "Live festival · top players by spend", color: "#D9A400", tint: "#E3F2FF", note: "Soon", tab: "events" },
+  { icon: "💎", title: "Luxury Festival", subtitle: "Live festival · top players by spend", color: "#D9A400", tint: "#E3F2FF", href: "/luxury-festival", tab: "events" },
   { icon: "🎁", title: "Gift Contest", subtitle: "Live contest · top gifters", color: "#E5484D", tint: "#FFE6F2", href: "/gift-contest", tab: "events" },
   { icon: "🍀", title: "Lucky User", subtitle: "Every 3 hours · most active chatter wins", color: "#1E8C4E", tint: "#E3F7EA", href: "/lucky", tab: "events" },
   { icon: "👑", title: "VIP Subscription", subtitle: "Rainbow name · picture & voice share", color: "#B04BD6", tint: "#FFF1C9", href: "/special-colour", tab: "shop" },
@@ -37,11 +35,8 @@ const TABS: [Tab | "all", string][] = [
 export default function ExplorePage() {
   const ready = useRequireLogin();
   const classic = useIsClassic();
-  const { username } = useCurrentUser();
   const [tab, setTab] = useState<Tab | "all">("all");
-  const items = isMainFounderName(username)
-    ? ITEMS.map((i) => (i.title === "Luxury Festival" ? { ...i, href: "/luxury-festival", note: undefined } : i))
-    : ITEMS;
+  const items = ITEMS;
   const shown = tab === "all" ? items : items.filter((i) => i.tab === tab);
   return (
     <PageShell light>
