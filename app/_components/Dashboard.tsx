@@ -409,9 +409,10 @@ export function Dashboard() {
         </div>
       )}
 
-      <InstallHint />
+      {classic && <InstallHint />}
 
-      {/* Rows */}
+      {/* Rows — Classic only: Modern ends with the friend cards, like the app's Lobby */}
+      {classic && (
       <div className="bg-white shadow-sm">
         {/* Classic keeps the Email / Messages / migAlerts rows and the Online / Offline folders;
             Modern shows them in the new top part instead (like the app). */}
@@ -459,6 +460,7 @@ export function Dashboard() {
         {/* Android app download, right under Invite Friends */}
         <AndroidDownloadRow />
       </div>
+      )}
       </div>
 
       {/* Laptop: quick links beside the list */}

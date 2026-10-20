@@ -58,7 +58,7 @@ function StatTile({
   return (
     <Link
       href={href}
-      className="flex min-w-0 flex-1 flex-col items-center rounded-[15px] pb-2 pt-[9px] transition-transform active:scale-[0.93]"
+      className="flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93]"
       style={{
         background: `linear-gradient(${accent}1A, ${accent2}0A)`,
         border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,
@@ -79,10 +79,10 @@ function StatTile({
         </span>
         {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
       </span>
-      <span className="mt-[5px] text-[17px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
+      <span className="mt-1.5 text-[19px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
         {value > 999 ? "999+" : value}
       </span>
-      <span className={`max-w-full truncate px-0.5 text-[10px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
+      <span className={`mt-0.5 max-w-full truncate px-0.5 text-[11.5px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
         {label}
       </span>
     </Link>
@@ -136,7 +136,7 @@ export function ModernHomeTop({
           in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
       <div
         className="aurora-card relative m-2.5 overflow-hidden rounded-[26px] p-4 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
-        style={{ background: "linear-gradient(135deg, #1B3FAE, #2A4FD0, #4B3FC8)" }}
+        style={{ background: "linear-gradient(135deg, #2F72DB, #4F55E3 55%, #8A4FD3)" }}
       >
         <span aria-hidden className="aurora-light aurora-a" />
         <span aria-hidden className="aurora-light aurora-b" />
@@ -196,12 +196,12 @@ export function ModernHomeTop({
           data-notranslate
           className="relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
-          <span className="line-clamp-2 min-w-0 flex-1">💬 {status || "What are you thinking?"}</span>
+          <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
         </button>
         {/* XP bar: how much is left to the next level, with a shine */}
         <Link href="/level" className="relative mt-3 block">
-          <span className="flex items-center text-[11px]">
+          <span className="flex items-center text-[12px]">
             <span className="font-bold text-white/95">
               ⚡ {Math.max(0, next - xp).toLocaleString("en-US")} XP to Level {level + 1}
             </span>
@@ -223,7 +223,7 @@ export function ModernHomeTop({
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
           its tile up with a glowing border and a pulsing dot; Online pulses
           while friends are online (the app's HomeStatTile). */}
-      <div className="mx-2.5 mb-1.5 flex gap-[7px] rounded-[20px] bg-white p-2 shadow-[0_4px_10px_rgba(21,101,216,.22)]">
+      <div className="mx-2.5 mb-1.5 flex gap-2 rounded-[22px] bg-white p-2.5 shadow-[0_4px_12px_rgba(21,101,216,.18)]">
         <StatTile href="/mail" icon="✉️" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
         <StatTile href="/alerts" icon="🔔" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
         <StatTile href="/friends" icon="👥" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
@@ -234,12 +234,12 @@ export function ModernHomeTop({
           buttons were removed — the tabs above already open them.) */}
 
       {/* search */}
-      <div className="mx-2.5 my-2.5 rounded-[14px] bg-white px-3 py-2.5 shadow-[0_1px_3px_rgba(0,0,0,.1)]">
+      <div className="mx-2.5 my-3 rounded-[18px] bg-white px-3.5 py-3 shadow-[0_3px_8px_rgba(0,0,0,.12)]">
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
           placeholder="🔍 Search friends"
-          className="w-full bg-transparent text-[13px] text-[#16264A] outline-none placeholder:text-[#8A97A8]"
+          className="w-full bg-transparent text-[15px] text-[#16264A] outline-none placeholder:text-[#8A97A8]"
         />
       </div>
 
@@ -267,16 +267,16 @@ export function ModernHomeTop({
       )}
       <div data-notranslate>
         {friends.map((f) => (
-          <div key={f.name} className="mx-2.5 my-1 flex items-center rounded-2xl bg-white px-[11px] py-[9px] shadow-[0_2px_6px_rgba(0,0,0,.08)]">
+          <div key={f.name} className="mx-2.5 my-1.5 flex items-center rounded-[18px] bg-white px-3 py-2.5 shadow-[0_3px_8px_rgba(0,0,0,.1)]">
             <Link href={`/profile/${encodeURIComponent(f.name)}`} className="relative shrink-0">
-              <Avatar name={f.name} photo={f.photo} size={42} />
+              <Avatar name={f.name} photo={f.photo} size={44} />
               <span
                 className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${f.online ? "bg-[#3CC24A]" : "bg-[#C9D2DE]"}`}
               />
             </Link>
             <Link href={chatHref(f.name)} className="ml-2.5 min-w-0 flex-1">
-              <span className="block truncate text-[14.5px] font-bold text-[#16264A]">{f.name}</span>
-              <span className={`block truncate text-xs text-[#6B7A90] ${f.status ? "italic" : ""}`}>
+              <span className="block truncate text-[15.5px] font-bold text-[#16264A]">{f.name}</span>
+              <span className={`mt-0.5 block truncate text-[13px] text-[#6B7A90] ${f.status ? "italic" : ""}`}>
                 {f.status || [f.online ? null : "Offline", `Level ${f.level}`, f.country || null].filter(Boolean).join(" · ")}
               </span>
             </Link>
