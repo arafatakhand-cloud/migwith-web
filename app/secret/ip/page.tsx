@@ -5,6 +5,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "../../../lib/firebase";
 import { timeText, useFounderPerms } from "../../../lib/founder";
 import { FounderShell, card, input } from "../_Shell";
+import { RefreshButton } from "../../_components/RefreshButton";
 
 // 🌐 IP Monitor (founder tool), like the app: a user's IPs and phones,
 // recent sign-ins, IP bans and device bans — all through ipAdmin.
@@ -307,9 +308,7 @@ export default function IpMonitorPage() {
 
       {tab === 1 && (
         <>
-          <button type="button" onClick={() => task(fetchRecent)} className="text-sm font-bold text-[#2F80ED]">
-            ↻ Refresh
-          </button>
+          <RefreshButton onClick={() => task(fetchRecent)} label="Refresh" className="text-sm font-bold text-[#2F80ED]" />
           {recent.length === 0 && !busy && <p className="text-gray-500">No sign-ins recorded yet.</p>}
           {recent.map((r, i) => (
             <IpCard
@@ -367,9 +366,7 @@ export default function IpMonitorPage() {
 
       {tab === 3 && (
         <>
-          <button type="button" onClick={() => task(fetchDeviceBans)} className="text-sm font-bold text-[#2F80ED]">
-            ↻ Refresh
-          </button>
+          <RefreshButton onClick={() => task(fetchDeviceBans)} label="Refresh" className="text-sm font-bold text-[#2F80ED]" />
           {deviceBans.length === 0 && !busy && <p className="text-gray-500">No banned devices.</p>}
           {deviceBans.map((b) => (
             <div key={str(b.key)} className={`${card} flex items-center`}>
@@ -430,9 +427,7 @@ export default function IpMonitorPage() {
                       {n}+ accounts
                     </button>
                   ))}
-                  <button type="button" onClick={() => task(() => fetchGroups(isIp ? "ip" : "device"))} className="ml-auto px-2 text-lg text-[#2F80ED]">
-                    ↻
-                  </button>
+                  <RefreshButton onClick={() => task(() => fetchGroups(isIp ? "ip" : "device"))} className="ml-auto px-2 text-lg text-[#2F80ED]" />
                 </div>
                 <p className="text-xs font-semibold">
                   {shown.length} group(s) · {shown.reduce((n, g) => n + g.accounts.length, 0)} accounts

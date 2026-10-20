@@ -6,6 +6,7 @@ import { collection, doc, getDocs, onSnapshot, query, Timestamp, where } from "f
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { BackButton } from "./BackButton";
+import { RefreshButton } from "./RefreshButton";
 
 // Shared by the Mentor Dashboard (/mentor) and the Merchant Dashboard
 // (/merchant): helpers, the spend rule, the navy tab bar and the EARNING tab.
@@ -349,15 +350,12 @@ export function ProgramBar<P extends string>({
             </button>
           ))}
         </div>
-        <button
-          type="button"
+        <RefreshButton
           onClick={onRefresh}
-          aria-label="Refresh"
+          glyph="⟳"
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-lg font-bold ${gold ? "border-[#1E63D6] bg-white text-[#1E63D6]" : ""}`}
           style={gold ? undefined : { borderColor: accent, color: accent }}
-        >
-          ⟳
-        </button>
+        />
       </div>
     </div>
   );
@@ -377,12 +375,15 @@ export function EarningPanel({
   me,
   uid,
   refresh,
+  onRefresh,
   gold = false,
 }: {
   kind: "mentor" | "merchant";
   me: string;
   uid: string;
   refresh: number;
+  /** ↺ next to Recent Activity reloads the panel too */
+  onRefresh?: () => void;
   /** 💼 the Mentor Dashboard's dark-gold look */
   gold?: boolean;
 }) {
@@ -641,7 +642,7 @@ export function EarningPanel({
 
       <div className={c.card}>
         <div className="flex items-center gap-2">
-          <span className={c.icon}>↺</span>
+          {onRefresh ? <RefreshButton onClick={onRefresh} glyph="↺" className={c.icon} /> : <span className={c.icon}>↺</span>}
           <span className={`flex-1 font-bold ${c.ink}`}>Recent Activity</span>
           {gold && view.recent.length > 3 ? (
             <button type="button" onClick={() => setAllRecent((v) => !v)} className="rounded-full bg-[#1E63D6]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#1E63D6]">

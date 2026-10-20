@@ -5,6 +5,7 @@ import { httpsCallable } from "firebase/functions";
 import { functions } from "../../../lib/firebase";
 import { useFounderPerms } from "../../../lib/founder";
 import { FounderShell, card, input } from "../_Shell";
+import { RefreshButton } from "../../_components/RefreshButton";
 
 // 💰 Coin Control (founder tool), like the app: look up a MIG ID's coins and
 // last transactions, and remove coins (the server does it, "Minus" to confirm).
@@ -98,9 +99,7 @@ export default function CoinControlPage() {
             </p>
             <p className="text-xs text-gray-500">Coins</p>
             <p className="text-[28px] font-extrabold text-[#1565C0]">{found.balance.toLocaleString()}</p>
-            <button type="button" disabled={busy} onClick={() => lookup(found.name)} className="mt-1 text-sm font-bold text-[#2F80ED]">
-              ↻ Refresh
-            </button>
+            <RefreshButton disabled={busy} onClick={() => lookup(found.name)} label="Refresh" className="mt-1 text-sm font-bold text-[#2F80ED]" />
           </div>
 
           {found.recent.length > 0 && (

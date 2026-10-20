@@ -11,6 +11,7 @@ import { PageShell } from "../_components/PageShell";
 import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
+import { RefreshButton } from "../_components/RefreshButton";
 
 // Same boards as the app's Leader Board. Game boards come from the
 // getLeaderboard function (ranked by spend, but only win counts are sent);
@@ -181,9 +182,7 @@ export default function LeaderboardPage() {
               subtitle={picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
               onBack={() => (picked ? setPicked(false) : router.back())}
             >
-              <button type="button" onClick={() => setRefresh((n) => n + 1)} title="Refresh" className="rounded px-2 text-xl font-bold text-white">
-                ↻
-              </button>
+              <RefreshButton onClick={() => setRefresh((n) => n + 1)} className="rounded px-2 text-xl font-bold text-white" />
             </ClassicTitleBar>
           </div>
         ) : (
@@ -193,14 +192,10 @@ export default function LeaderboardPage() {
             <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Rankings"}</h1>
             {picked && <p className="text-xs text-[#6B7A99]">{timed ? `${period} ranking` : "All time"}</p>}
           </div>
-          <button
-            type="button"
+          <RefreshButton
             onClick={() => setRefresh((n) => n + 1)}
-            title="Refresh"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg text-[#2F80ED] shadow-sm"
-          >
-            ↻
-          </button>
+          />
         </div>
         )}
 

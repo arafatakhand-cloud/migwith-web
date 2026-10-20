@@ -113,7 +113,7 @@ export default function MentorDashboardPage() {
         ) : panel === "REPORT" ? (
           <Report me={username} refresh={refresh} />
         ) : (
-          <EarningPanel kind="mentor" me={username} uid={user!.uid} refresh={refresh} gold />
+          <EarningPanel kind="mentor" me={username} uid={user!.uid} refresh={refresh} onRefresh={() => setRefresh((n) => n + 1)} gold />
         )}
       </section>
     </PageShell>

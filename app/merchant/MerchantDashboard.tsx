@@ -99,7 +99,7 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
         ) : panel === "REPORT" ? (
           <Report me={me} refresh={refresh} />
         ) : (
-          <EarningPanel kind="merchant" me={me} uid={uid} refresh={refresh} gold />
+          <EarningPanel kind="merchant" me={me} uid={uid} refresh={refresh} onRefresh={() => setRefresh((n) => n + 1)} gold />
         )}
       </section>
     </PageShell>

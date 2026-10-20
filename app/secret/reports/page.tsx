@@ -8,6 +8,7 @@ import { useFounderPerms } from "../../../lib/founder";
 import { REPORT_REASONS } from "../../_components/ReportDialog";
 import { ImageViewerHost, openImageViewer } from "../../_components/ImageViewer";
 import { FounderShell, card, input } from "../_Shell";
+import { RefreshButton } from "../../_components/RefreshButton";
 
 // 🚩 Reports — what users reported (profiles, room lines, private messages).
 // miglife, or a founder given the "Reports" tool. Handle each one: open the
@@ -93,9 +94,7 @@ export default function ReportsPage() {
             {t === "open" ? "Open" : "Handled"}
           </button>
         ))}
-        <button type="button" onClick={load} className="rounded-xl bg-white px-3 text-sm font-bold text-[#35507E] shadow-sm" aria-label="Refresh">
-          ↻
-        </button>
+        <RefreshButton onClick={load} className="rounded-xl bg-white px-3 text-sm font-bold text-[#35507E] shadow-sm" />
       </div>
       <p className="text-xs text-[#5B6B8C]">Check each report within 24 hours. Act in the room or on the profile (mute, kick, ban, delete), then mark it handled.</p>
       {msg && <p className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
