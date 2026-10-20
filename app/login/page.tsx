@@ -27,15 +27,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  // "Log in as Invisible", remembered like the app's checkbox.
+  // "Log in as Invisible" is no longer on the login page: always a normal login
+  // (people who may be invisible can still turn it on inside the app).
   const [invisible, setInvisible] = useState(false);
-  useEffect(() => {
-    try {
-      setInvisible(localStorage.getItem(INVISIBLE_KEY) === "1");
-    } catch {
-      // storage blocked
-    }
-  }, []);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -188,13 +182,11 @@ export default function LoginPage() {
 
         <div className="mt-6 flex w-full items-center justify-between gap-3 text-base text-white/90">
           <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember me" />
-          <AppCheck checked={invisible} onChange={setInvisible} label="Log in as Invisible" />
+          {/* Forgot Password where "Log in as Invisible" used to be */}
+          <Link href="/forgot-password" className="text-[15px] text-white underline underline-offset-4">
+            Forgot Password?
+          </Link>
         </div>
-
-        {/* Forgot Password right under the tick boxes (no ? in the password box) */}
-        <Link href="/forgot-password" className="mt-6 text-[17px] text-white underline underline-offset-4">
-          Forgot Password?
-        </Link>
 
         {/* like the app: one big "Create Account" link (Forgot Password is the ? by the password) */}
         <Link href="/register" className="mt-auto pt-14 text-[22px] tracking-wide text-white underline underline-offset-[6px]">
