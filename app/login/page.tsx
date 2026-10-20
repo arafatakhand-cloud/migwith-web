@@ -127,9 +127,12 @@ export default function LoginPage() {
           <MigLoginLogo />
         </Link>
 
-        <p className="mt-8 text-xl text-white/95">Join the Fun!</p>
+        <p className="mt-8 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
 
-        <div className="mt-8 w-full space-y-3">
+        {/* the app's five chat bubbles */}
+        <LoginBubbles />
+
+        <div className="mt-5 w-full space-y-3">
           <input
             id="identifier"
             type="text"
@@ -138,9 +141,9 @@ export default function LoginPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") handleLogin();
             }}
-            placeholder="MIG ID"
+            placeholder="Username"
             autoComplete="username"
-            aria-label="MIG ID"
+            aria-label="Username"
             className="w-full rounded-md border border-[#9FB3C8] bg-gradient-to-b from-[#F4F4F4] to-[#DADADA] px-4 py-3 text-lg text-[#1F2937] outline-none placeholder:text-[#6B7280] focus:border-[#F58A3A]"
           />
           <div className="relative">
@@ -192,34 +195,13 @@ export default function LoginPage() {
         </button>
 
         <div className="mt-6 flex w-full items-center justify-between gap-3 text-base text-white/90">
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-7 w-7 rounded accent-[#E0762A]"
-            />
-            Remember me
-          </label>
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={invisible}
-              onChange={(e) => setInvisible(e.target.checked)}
-              className="h-7 w-7 rounded accent-[#E0762A]"
-            />
-            Log in as Invisible
-          </label>
+          <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember me" />
+          <AppCheck checked={invisible} onChange={setInvisible} label="Log in as Invisible" />
         </div>
 
-        <p className="mt-auto pt-12 text-center text-sm text-white/80">
-          New to MIGlife?{" "}
-          <Link href="/register" className="font-bold text-white underline underline-offset-4">
-            Create ID
-          </Link>
-        </p>
-        <Link href="/forgot-password" className="mt-3 text-base text-white underline underline-offset-4">
-          Forgot Password?
+        {/* like the app: one big "Create Account" link (Forgot Password is the ? by the password) */}
+        <Link href="/register" className="mt-auto pt-14 text-[22px] tracking-wide text-white underline underline-offset-[6px]">
+          Create Account
         </Link>
         {/* ✨ / 📟 The site opens in whichever style is ticked here (same switch as Settings › Appearance). */}
         <LoginStyleChoice />
@@ -251,6 +233,49 @@ function LoginStyleChoice() {
           </span>
           <span className={`whitespace-nowrap ${style === id ? "font-bold" : ""}`}>{label}</span>
         </button>
+      ))}
+    </div>
+  );
+}
+
+/** A grey square tick box with its label, like the app's login page. */
+function AppCheck({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-3 text-left text-[15px] text-white">
+      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-xl font-bold text-[#2B2B2B]">
+        {checked ? "✓" : ""}
+      </span>
+      {label}
+    </button>
+  );
+}
+
+/** The app's five glossy chat bubbles (chat, smile, friends, gift, love). */
+function LoginBubbles() {
+  const bubbles: [string, string, string, number][] = [
+    ["💬", "#5AB2FF", "#2F80ED", 0],
+    ["😄", "#FFB15C", "#F07A1A", 1],
+    ["👥", "#5FD47A", "#22A447", 2],
+    ["💝", "#B98BFF", "#7B4BE0", 1],
+    ["❤️", "#FF8DB8", "#E8457E", 0],
+  ];
+  return (
+    <div className="mt-6 flex w-full items-end justify-center gap-2.5">
+      {bubbles.map(([e, a, b, lift], i) => (
+        <span key={i} className="relative" style={{ marginBottom: lift * 5 }}>
+          <span
+            className="relative z-10 flex h-[46px] w-[52px] items-center justify-center rounded-[14px] border-[2.5px] border-white text-[22px] shadow-[0_4px_8px_rgba(0,0,0,.18)]"
+            style={{ background: `linear-gradient(180deg, ${a}, ${b})` }}
+          >
+            <span className="absolute left-1.5 right-1.5 top-1 h-2.5 rounded-full bg-white/35" />
+            <span className="relative">{e}</span>
+          </span>
+          {/* the bubble's little tail */}
+          <span
+            className={`absolute -bottom-[7px] h-3.5 w-3.5 rotate-45 border-b-[2.5px] border-r-[2.5px] border-white ${i % 2 ? "right-3" : "left-3"}`}
+            style={{ background: b }}
+          />
+        </span>
       ))}
     </div>
   );
