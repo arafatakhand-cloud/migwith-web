@@ -124,25 +124,182 @@ export async function checkTagFree(tagged: string, me: string): Promise<string |
 
 /** Date bar used by the Report tabs. */
 export function DateBar({ day, setDay, gold = false }: { day: string; setDay: (d: string) => void; gold?: boolean }) {
+  const [open, setOpen] = useState(false);
+  if (gold) {
+    // 📅 our own calendar in the theme colours (not the phone's plain one)
+    const label = new Date(`${day}T12:00:00Z`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+    return (
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex flex-1 items-center gap-2 rounded-2xl border border-[#D5E3F5] bg-white px-3 py-2.5 text-left text-sm font-bold text-[#0B2A5B] shadow-sm"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] text-xs text-white">📅</span>
+          <span className="flex-1">{label}</span>
+          <span className="text-[#1E63D6]">▾</span>
+        </button>
+        <button type="button" onClick={() => setDay(todayStr())} className="px-2 text-sm font-bold text-[#1E63D6]">
+          Today
+        </button>
+        {open && (
+          <DatePickerSheet
+            day={day}
+            onPick={(d) => {
+              setDay(d);
+              setOpen(false);
+            }}
+            onClose={() => setOpen(false)}
+          />
+        )}
+      </div>
+    );
+  }
   return (
     <div className="flex items-center gap-2">
-      <label
-        className={`flex flex-1 items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold text-white shadow ${
-          gold ? "border border-[#D5E3F5] bg-white !text-[#0B2A5B]" : "border-[1.5px] border-[#FFC04A] bg-[#0B1F3A]"
-        }`}
-      >
+      <label className="flex flex-1 items-center gap-2 rounded-2xl border-[1.5px] border-[#FFC04A] bg-[#0B1F3A] px-3 py-2 text-sm font-bold text-white shadow">
         📅
         <input
           type="date"
           value={day}
           max={todayStr()}
           onChange={(e) => e.target.value && setDay(e.target.value)}
-          className={`min-w-0 flex-1 bg-transparent outline-none ${gold ? "text-[#0B2A5B] [color-scheme:light]" : "text-white [color-scheme:dark]"}`}
+          className="min-w-0 flex-1 bg-transparent text-white outline-none [color-scheme:dark]"
         />
       </label>
-      <button type="button" onClick={() => setDay(todayStr())} className={`px-2 text-sm font-bold ${gold ? "text-[#1E63D6]" : "text-[#0B6FA6]"}`}>
+      <button type="button" onClick={() => setDay(todayStr())} className="px-2 text-sm font-bold text-[#0B6FA6]">
         Today
       </button>
+    </div>
+  );
+}
+
+const dayKey = (y: number, m: number, d: number) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+const daysBackStr = (n: number) => new Date(Date.now() - n * DAY).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
+
+/** The calendar: big picked date on the theme colour, quick picks, month
+ *  arrows, no days after today (Bangladesh time). */
+function DatePickerSheet({ day, onPick, onClose }: { day: string; onPick: (d: string) => void; onClose: () => void }) {
+  const today = todayStr();
+  const [picked, setPicked] = useState(day || today);
+  const [ym, setYm] = useState(() => {
+    const [y, m] = (day || today).split("-").map(Number);
+    return { y, m: m - 1 };
+  });
+  const [ty, tm] = today.split("-").map(Number);
+  const atLast = ym.y > ty || (ym.y === ty && ym.m >= tm - 1);
+  const pickedDate = new Date(`${picked}T12:00:00Z`);
+  const head = pickedDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  const monthName = new Date(Date.UTC(ym.y, ym.m, 1, 12)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  const lead = new Date(Date.UTC(ym.y, ym.m, 1)).getUTCDay();
+  const count = new Date(Date.UTC(ym.y, ym.m + 1, 0)).getUTCDate();
+  const cells = [...Array(lead).fill(0), ...Array.from({ length: count }, (_, i) => i + 1)];
+  const showMonthOf = (k: string) => {
+    const [y, m] = k.split("-").map(Number);
+    setYm({ y, m: m - 1 });
+  };
+  const move = (by: number) => setYm(({ y, m }) => (m + by < 0 ? { y: y - 1, m: 11 } : m + by > 11 ? { y: y + 1, m: 0 } : { y, m: m + by }));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
+      <div className="w-full max-w-[360px] overflow-hidden rounded-[28px] bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] px-6 py-5 text-white">
+          <p className="text-[11px] font-bold tracking-[0.2em] text-white/85">📅 SELECT DATE</p>
+          <p className="mt-1.5 text-[30px] font-black leading-tight">{head}</p>
+          <p className="text-sm font-semibold text-white/80">{pickedDate.getUTCFullYear()}</p>
+        </div>
+        <div className="px-4 pb-4 pt-3">
+          <div className="flex gap-2">
+            {(
+              [
+                ["Today", 0],
+                ["Yesterday", 1],
+                ["7 days ago", 7],
+              ] as const
+            ).map(([l, n]) => {
+              const k = daysBackStr(n);
+              const on = picked === k;
+              return (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => {
+                    setPicked(k);
+                    showMonthOf(k);
+                  }}
+                  className={`flex-1 rounded-full py-2 text-xs font-bold ${on ? "bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] text-white" : "bg-[#EAF1FC] text-[#1E63D6]"}`}
+                >
+                  {l}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3.5 flex items-center">
+            <p className="flex-1 text-base font-black text-[#0B2A5B]">{monthName}</p>
+            {[
+              ["‹", -1, true],
+              ["›", 1, !atLast],
+            ].map(([a, by, en]) => (
+              <button
+                key={a as string}
+                type="button"
+                disabled={!en}
+                onClick={() => move(by as number)}
+                className="ml-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF1FC] text-xl font-bold text-[#1E63D6] disabled:text-[#A3AFC2]"
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2.5 grid grid-cols-7 text-center text-xs font-bold text-[#5B6B8C]">
+            {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+              <span key={i} className={i === 5 ? "text-[#1E63D6]" : ""}>
+                {d}
+              </span>
+            ))}
+          </div>
+          <div className="mt-1.5 grid grid-cols-7 gap-y-0.5">
+            {cells.map((d, i) => {
+              if (!d) return <span key={i} />;
+              const k = dayKey(ym.y, ym.m, d);
+              const isPicked = k === picked;
+              const isToday = k === today;
+              const future = k > today;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={future}
+                  onClick={() => setPicked(k)}
+                  className={`mx-auto flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition ${
+                    isPicked
+                      ? "bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] font-black text-white shadow-md"
+                      : future
+                        ? "text-[#C7D0DD]"
+                        : isToday
+                          ? "border-[1.5px] border-[#1E63D6] font-black text-[#1E63D6]"
+                          : "font-medium text-[#0B2A5B] active:bg-[#EAF1FC]"
+                  }`}
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 flex gap-2.5">
+            <button type="button" onClick={onClose} className="flex-1 rounded-2xl bg-[#EAF1FC] py-3 text-[15px] font-bold text-[#5B6B8C]">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => onPick(picked)}
+              className="flex-[1.4] rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-[15px] font-black text-white shadow-md"
+            >
+              Show this day
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
