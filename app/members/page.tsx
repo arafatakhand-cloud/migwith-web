@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, limit, query, where, type DocumentData } from "firebase/firestore";
+import { collection, doc, getDocs, limit, onSnapshot, query, serverTimestamp, setDoc, where, type DocumentData } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
@@ -17,13 +17,79 @@ import { countryFlag, countryInfoFor, countryWithFlag } from "../../lib/countrie
 // The founder (migwith) adds / removes Management members and Mentors here,
 // through the changeManagementRole function like the app.
 
-const changeManagementRole = httpsCallable<{ targetUid: string; role: string; operationId: string }, unknown>(
+type Coins = { amount?: number; ok?: boolean; already?: boolean; error?: string } | null;
+const changeManagementRole = httpsCallable<{ targetUid: string; role: string; operationId: string }, { coins?: Coins }>(
   functions,
   "changeManagementRole"
 );
 const setRepCountry = httpsCallable<{ targetUid: string; country: string }, { ok?: boolean }>(functions, "setRepCountry");
 // Founder: renew a mentor's 30-day term (+30 days from the current end).
-const renewMentorship = httpsCallable<{ targetUid: string }, { ok?: boolean; mentorUntil?: number }>(functions, "renewMentorship");
+const renewMentorship = httpsCallable<{ targetUid: string }, { ok?: boolean; mentorUntil?: number; coins?: Coins }>(functions, "renewMentorship");
+// " · 💰 5,000 coins sent" after an Add / Renew (or why not).
+const coinsNote = (c?: Coins) =>
+  !c || !c.amount ? "" : c.ok ? ` · 💰 ${c.amount.toLocaleString()} coins sent` : c.error === "low-balance" ? " · ⚠️ coins NOT sent (your balance is too low)" : c.already ? "" : " · ⚠️ coins NOT sent";
+
+// 💰 miglife: how many coins a Mentor gets when added / renewed (paid from
+// miglife's balance by the server). app_settings/mentor_coin_grant.
+function MentorCoinsSetting() {
+  const [add, setAdd] = useState("");
+  const [renew, setRenew] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "mentor_coin_grant"),
+        (s) => {
+          setAdd(Number(s.get("addAmount")) > 0 ? String(s.get("addAmount")) : "");
+          setRenew(Number(s.get("renewAmount")) > 0 ? String(s.get("renewAmount")) : "");
+        },
+        () => {}
+      ),
+    []
+  );
+  const save = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      await setDoc(doc(db, "app_settings", "mentor_coin_grant"), {
+        addAmount: Math.floor(Number(add) || 0),
+        renewAmount: Math.floor(Number(renew) || 0),
+        updatedAt: serverTimestamp(),
+      });
+      setMsg("✅ Saved");
+    } catch (e: any) {
+      setMsg(e?.message || "Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  };
+  const box = (label: string, v: string, set: (x: string) => void) => (
+    <label className="flex min-w-0 flex-1 items-center gap-1.5 rounded-xl border border-[#FFD54F66] bg-black/15 px-2.5 py-2">
+      <span className="shrink-0 text-[11px] font-bold text-[#FFD54F]">{label}</span>
+      <input
+        inputMode="numeric"
+        value={v}
+        placeholder="0"
+        onChange={(e) => set(e.target.value.replace(/[^\d]/g, "").slice(0, 9))}
+        className="min-w-0 flex-1 bg-transparent text-[15px] font-bold text-white outline-none placeholder:text-white/40"
+      />
+    </label>
+  );
+  return (
+    <div className="mt-2.5 border-t border-white/15 pt-2.5">
+      <p className="text-[12px] font-bold text-[#FFD54F]">💰 COINS TO THE MENTOR (from your balance)</p>
+      <div className="mt-1.5 flex gap-1.5">
+        {box("Add", add, setAdd)}
+        {box("Renew", renew, setRenew)}
+        <button type="button" disabled={saving} onClick={save} className="shrink-0 rounded-full bg-[#FFD54F] px-4 text-sm font-extrabold text-black disabled:opacity-50">
+          {saving ? "…" : "SAVE"}
+        </button>
+      </div>
+      <p className="mt-1 text-[11px] text-white/60">{msg || "Sent automatically on ADD / RENEW. 0 = no coins."}</p>
+    </div>
+  );
+}
 
 // 🧑‍🏫 Mentorship term line: end date + days left (like the app).
 function MentorTermLine({ untilMs, light = false }: { untilMs: number; light?: boolean }) {
@@ -159,8 +225,8 @@ export default function MembersPage() {
       if (!m) throw new Error("User not found. Enter Username, MIG ID or UID.");
       if (m.uid === user?.uid) throw new Error("You cannot change your own management role.");
       if (m.roles.some((r) => PROTECTED.has(r))) throw new Error("FOUNDER account cannot be changed here.");
-      await changeManagementRole({ targetUid: m.uid, role: add ? selected.id : "user", operationId: crypto.randomUUID() });
-      setMessage(`${selected.title} ${add ? "added" : "removed"}: ${m.name}`);
+      const res = await changeManagementRole({ targetUid: m.uid, role: add ? selected.id : "user", operationId: crypto.randomUUID() });
+      setMessage(`${selected.title} ${add ? "added" : "removed"}: ${m.name}${coinsNote(res.data?.coins)}`);
       setTarget("");
       setReload((n) => n + 1);
     } catch (e: any) {
@@ -217,6 +283,7 @@ export default function MembersPage() {
                     {message}
                   </p>
                 )}
+                {selected.id === "mentor" && <MentorCoinsSetting />}
               </div>
             )}
             {members === null ? (
@@ -290,8 +357,8 @@ export default function MembersPage() {
                             if (busy) return;
                             setBusy(true);
                             renewMentorship({ targetUid: m.uid })
-                              .then(() => {
-                                setMessage(`Mentorship renewed: ${m.name} (+30 days)`);
+                              .then((res) => {
+                                setMessage(`Mentorship renewed: ${m.name} (+30 days)${coinsNote(res.data?.coins)}`);
                                 setReload((n) => n + 1);
                               })
                               .catch((err) => setMessage(`Could not renew: ${err?.message || ""}`))

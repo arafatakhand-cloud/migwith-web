@@ -102,6 +102,8 @@ function styleFor(type: string): Style {
       return { icon: "🎁", title: "Gift contest win", top: "#FF6FA8", bottom: "#D6336C", group: "gifts" };
     case "game_reward":
       return { icon: "🏆", title: "Daily reward", top: "#FFD36E", bottom: "#C98A00", group: "coins" };
+    case "mentor_coin_grant":
+      return { icon: "💰", title: "Mentor coins", top: "#3DDC97", bottom: "#16955E", group: "coins" };
     case "game_reward_summary":
       return { icon: "🏆", title: "Daily rewards paid", top: "#B07CFF", bottom: "#5B2BA8", group: "coins" };
     case "coin_transfer":
