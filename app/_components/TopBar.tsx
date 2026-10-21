@@ -143,7 +143,8 @@ export function TopBar() {
       const next = neighbour(dx);
       if (next) showPeek(el, next, dx < 0 ? 1 : -1);
       else removePeek();
-      dragTo(el, next ? dx : dx * 0.2);
+      // no tab that way: a soft rubber band, more give at first, less further out
+      dragTo(el, next ? dx : Math.sign(dx) * 60 * (1 - Math.exp(-Math.abs(dx) / 180)));
     };
     const onStart = (e: TouchEvent) => {
       const el = e.target as Element | null;
@@ -229,7 +230,7 @@ export function TopBar() {
           const withCopy = peekHasCopy();
           // A faster flick finishes faster, like the app.
           const left = width - Math.abs(dx);
-          const ms = Math.round(Math.min(260, Math.max(130, left / Math.max(Math.abs(v), 1.6))));
+          const ms = Math.round(Math.min(340, Math.max(210, left / Math.max(Math.abs(v), 1.2))));
           slideAway(el, side, ms);
           // No copy of that tab yet: it slides in by itself once it opens.
           if (!withCopy) {
@@ -246,9 +247,9 @@ export function TopBar() {
                 clearSwipeStyle(el);
               }
             }, 1500);
-          }, withCopy ? ms - 10 : Math.min(ms, 160));
+          }, withCopy ? ms - 10 : Math.min(ms, 180));
         } else {
-          slideBack(el, 200);
+          slideBack(el, 260);
         }
         return;
       }
@@ -267,7 +268,7 @@ export function TopBar() {
         frame = 0;
       }
       const el = body();
-      if (wasDrag && el) slideBack(el, 150);
+      if (wasDrag && el) slideBack(el, 220);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchmove", onMove, { passive: true });

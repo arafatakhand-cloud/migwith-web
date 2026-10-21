@@ -20,7 +20,8 @@ export const SWIPE_BODY = "[data-swipe-body]";
 /** A finger is dragging a page: no idle copying meanwhile. */
 export const swipeState = { dragging: false };
 
-const EASE = "cubic-bezier(.2,.8,.2,1)";
+// Like the app pager's settle: quick to start, long soft stop.
+const EASE = "cubic-bezier(.22,.9,.3,1)";
 
 const key = (path: string) => {
   try {
@@ -228,10 +229,10 @@ function handOver() {
   let f = requestAnimationFrame(() => {
     f = requestAnimationFrame(() => {
       window.setTimeout(() => {
-        host.style.transition = "opacity 120ms linear";
+        host.style.transition = "opacity 90ms ease-out";
         host.style.opacity = "0";
-        window.setTimeout(() => host.remove(), 140);
-      }, 140);
+        window.setTimeout(() => host.remove(), 110);
+      }, 180);
     });
   });
   void f;
@@ -272,7 +273,7 @@ export function SwipeBody({ children }: { children: React.ReactNode }) {
     el.style.transform = `translate3d(${dir * 100}%,0,0)`;
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
-        el.style.transition = `transform 220ms ${EASE}`;
+        el.style.transition = `transform 280ms ${EASE}`;
         el.style.transform = "translate3d(0,0,0)";
       });
     });
