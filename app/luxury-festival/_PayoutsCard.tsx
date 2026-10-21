@@ -10,8 +10,8 @@ import { db, functions } from "../../lib/firebase";
 // luxuryFestivalDailyCommission):
 //   • prize for #1 … #25 + a commission % on each one's Total Spent,
 //     10 minutes after the festival ends
-//   • an extra daily commission % for 2 months after it, every night 12:00,
-//     on what each of them spent in Luxury Bet that day
+//   • an extra daily commission %, every night 12:00 for the days miglife
+//     picks (From … To), on what each of them spent in Luxury Bet that day
 //   • an ON / OFF switch for all of it
 // …and Reset: the 1-25 ranking starts again from zero.
 
@@ -23,6 +23,8 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
   const [prizes, setPrizes] = useState<string[]>(() => Array(25).fill(""));
   const [endPct, setEndPct] = useState("");
   const [dailyPct, setDailyPct] = useState("");
+  const [dailyFrom, setDailyFrom] = useState("");
+  const [dailyTo, setDailyTo] = useState("");
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [confirmReset, setConfirmReset] = useState(false);
@@ -37,6 +39,8 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
           setPrizes(Array.from({ length: 25 }, (_, i) => (Number(list[i]) > 0 ? String(Number(list[i])) : "")));
           setEndPct(Number(s.get("endPct")) > 0 ? String(s.get("endPct")) : "");
           setDailyPct(Number(s.get("dailyPct")) > 0 ? String(s.get("dailyPct")) : "");
+          setDailyFrom(String(s.get("dailyFrom") || ""));
+          setDailyTo(String(s.get("dailyTo") || ""));
           setOn(s.get("payoutsOn") === true);
         },
         () => {}
@@ -46,8 +50,9 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
 
   const pct = (v: string) => Math.min(100, Math.max(0, Number(v) || 0));
   const save = async (nextOn = on) => {
-    setSaving(true);
     setMsg("");
+    if (dailyFrom && dailyTo && dailyTo < dailyFrom) return setMsg("The daily commission's To date must be after From.");
+    setSaving(true);
     try {
       await setDoc(
         doc(db, "app_settings", "luxury_festival_admin"),
@@ -56,6 +61,8 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
           prizes: prizes.map((v) => Math.max(0, Math.floor(Number(v) || 0))),
           endPct: pct(endPct),
           dailyPct: pct(dailyPct),
+          dailyFrom,
+          dailyTo,
           payoutsUpdatedAt: serverTimestamp(),
         },
         { merge: true }
@@ -132,7 +139,7 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
       {(
         [
           ["💰 Commission on Total Spent (%)", "10 minutes after the festival ends", endPct, setEndPct],
-          ["📅 Extra daily commission (%)", "Every night 12:00 for 2 months, on that day's Luxury Bet spending", dailyPct, setDailyPct],
+          ["📅 Extra daily commission (%)", "Every night 12:00 on the days below, on that day's Luxury Bet spending", dailyPct, setDailyPct],
         ] as [string, string, string, (v: string) => void][]
       ).map(([label, hint, v, set]) => (
         <label key={label} className="block">
@@ -150,6 +157,29 @@ export function FestivalPayoutsCard({ onReset }: { onReset: () => void }) {
           </span>
         </label>
       ))}
+
+      <div>
+        <p className="text-xs font-bold text-white/75">📅 Daily commission days (Bangladesh)</p>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          {(
+            [
+              ["From", dailyFrom, setDailyFrom],
+              ["To", dailyTo, setDailyTo],
+            ] as [string, string, (v: string) => void][]
+          ).map(([label, v, set]) => (
+            <label key={label} className="block text-[11px] font-bold text-white/60">
+              {label}
+              <input
+                type="date"
+                value={v}
+                onChange={(e) => set(e.target.value)}
+                className="mt-0.5 block w-full rounded-xl border border-white/15 bg-black/25 px-2.5 py-2 text-sm font-semibold text-white outline-none [color-scheme:dark]"
+              />
+            </label>
+          ))}
+        </div>
+        <p className="mt-1 text-[11px] text-white/50">Paid at 12:00 after each of these days, to the top 25 of the last festival. Empty = no daily commission.</p>
+      </div>
 
       <button
         type="button"
