@@ -91,6 +91,15 @@ function MentorCoinsSetting() {
   );
 }
 
+// 💬 A member's status message, one line.
+function StatusLine({ text, light = false }: { text: string; light?: boolean }) {
+  return (
+    <span className={`mt-0.5 block truncate text-[12px] italic ${light ? "text-[#38517F]" : "text-[#CBD5E8]"}`} data-notranslate>
+      💬 {text}
+    </span>
+  );
+}
+
 // 🧑‍🏫 Mentorship term line: end date + days left (like the app).
 function MentorTermLine({ untilMs, light = false }: { untilMs: number; light?: boolean }) {
   if (untilMs <= 0)
@@ -143,7 +152,7 @@ const NAME_COLORS: Record<string, string> = {
   top: "#FFD54F",
 };
 
-type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number; repCountry: string };
+type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number; repCountry: string; status: string };
 
 const norm = (v: string) => v.trim().toLowerCase().replace(/[-\s]/g, "_");
 
@@ -160,6 +169,7 @@ function toMember(uid: string, d: DocumentData): Member {
     country: String(d.country || ""),
     roles,
     repCountry: String(d.repCountry || "").trim(),
+    status: String(d.statusMessage || "").trim(),
     mentorUntilMs:
       d.mentorUntil && typeof d.mentorUntil.toMillis === "function" ? d.mentorUntil.toMillis() : Number(d.mentorUntil || 0) || 0,
   };
@@ -324,7 +334,13 @@ export default function MembersPage() {
                         <span className={`block truncate text-xs ${lightCard ? "text-[#38517F]" : "text-white/70"}`}>
                           {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
                         </span>
-                        {selected.id === "mentor" && <MentorTermLine untilMs={m.mentorUntilMs} light={lightCard} />}
+                        {/* the term is for miGlife; everyone else sees the mentor's status (if any) */}
+                        {selected.id === "mentor" &&
+                          (isFounder ? (
+                            <MentorTermLine untilMs={m.mentorUntilMs} light={lightCard} />
+                          ) : (
+                            m.status && <StatusLine text={m.status} light={lightCard} />
+                          ))}
                       </span>
                       {selected.id === "country_representative" &&
                         (m.repCountry || canManage) &&

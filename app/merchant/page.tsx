@@ -29,7 +29,7 @@ import { isMainFounderName } from "../../lib/founder";
 // mentor_merchants record opens the Merchant Dashboard; mentors get a link to
 // the Mentor Dashboard (/mentor).
 
-type Mentor = { username: string; level: number; country: string; merchants: number; pending: number };
+type Mentor = { username: string; level: number; country: string; status: string; merchants: number; pending: number };
 
 const toMs = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
 
@@ -101,6 +101,7 @@ export default function MerchantPage() {
           username: String(d.get("username") || "").trim(),
           level: Number(d.get("level") || 1),
           country: String(d.get("country") || "").trim(),
+          status: String(d.get("statusMessage") || "").trim(),
           merchants: 0,
           pending: 0,
         }))
@@ -221,6 +222,11 @@ export default function MerchantPage() {
                       {m.country && (
                         <span className="block truncate text-xs text-[#5B6B8C]">
                           {flag} {m.country}
+                        </span>
+                      )}
+                      {m.status && (
+                        <span data-notranslate className="mt-0.5 block truncate text-[12px] italic text-[#38517F]">
+                          💬 {m.status}
                         </span>
                       )}
                     </span>
