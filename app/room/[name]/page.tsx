@@ -496,13 +496,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   useEffect(() => {
     if (!user) return;
     getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
+      .then(async (snap) => {
         const level = Number(snap.get("level") || 1);
+        const username = String(snap.get("username") || migIdFromAliasEmail(user.email) || "");
         setProfile({
-          username: String(snap.get("username") || migIdFromAliasEmail(user.email) || ""),
+          username,
           level,
           badge: String(snap.get("levelBadgeIcon") || badgeForLevel(level)),
-          badges: presenceBadgesForDoc(snap.data()),
+          badges: withMerchantBadge(presenceBadgesForDoc(snap.data()), await hasRunningMerchantTerm(username)),
           role: normRole(snap.get("role")),
           invisible: snap.get("isInvisible") === true,
           quiet: snap.get("isInvisible") === true || String(snap.get("presenceStatus") || "").toUpperCase() === "INVISIBLE",
@@ -3514,3 +3515,27 @@ function presenceList(docs: QueryDocumentSnapshot[]) {
       parkedUntil: Number(d.get("parkedUntil") || 0),
     }));
 }
+
+// 🏪 A Merchant whose role field says something else (Country Representative,
+// "user" …) is still a Merchant while their Merchant Program record
+// (mentor_merchants, 30 days) runs — like the Members page and the server's
+// isMerchantAccount. Their 🛒 then shows in "has entered / has left" too.
+async function hasRunningMerchantTerm(username: string): Promise<boolean> {
+  if (!username) return false;
+  try {
+    const names = [...new Set([username, username.toLowerCase()])];
+    const snap = await getDocs(query(collection(db, "mentor_merchants"), where("merchantUsername", "in", names)));
+    const now = Date.now();
+    return snap.docs.some((d) => (d.get("expiresAt")?.toMillis?.() || 0) > now);
+  } catch {
+    return false;
+  }
+}
+
+function withMerchantBadge(badges: string[], merchant: boolean): string[] {
+  if (!merchant || badges.includes("🛒")) return badges;
+  // right after the role badge (if any), before the Color Shop badges — like a role badge
+  const roleCount = badges.filter((b) => ROLE_BADGES.has(b)).length;
+  return [...badges.slice(0, roleCount), "🛒", ...badges.slice(roleCount)];
+}
+const ROLE_BADGES = new Set(["💼", "🛒", "🛠️", "⚙️", "✨", "🏛️", "🌍"]);
