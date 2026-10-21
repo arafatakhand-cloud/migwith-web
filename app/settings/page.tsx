@@ -18,6 +18,9 @@ import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 
+// 🔒 Profile lock goes through the server (it keeps the private-chat lock too).
+const setProfileLockCall = httpsCallable<{ locked: boolean }, { ok: boolean }>(functions, "setProfileLock");
+
 
 // Settings, like the app's: Profile Lock / Email Privacy switches, Blocked
 // Users, Change Password (after the Security Question, same as the app),
@@ -172,7 +175,14 @@ export default function SettingsPage() {
                     on={profileLock}
                     disabled={!loaded}
                     onChange={async (v) => {
-                      if (await save("profileLocked", v, v ? "Profile locked." : "Profile unlocked.")) setProfileLock(v);
+                      // 🔒 through the server: it also keeps the lock the private-chat rule checks
+                      try {
+                        await setProfileLockCall({ locked: v });
+                        setProfileLock(v);
+                        setMessage(v ? "Profile locked." : "Profile unlocked.");
+                      } catch (e: any) {
+                        setMessage(e?.message || "Could not save setting.");
+                      }
                     }}
                   />
                 }
