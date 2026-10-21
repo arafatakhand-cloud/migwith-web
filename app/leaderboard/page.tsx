@@ -12,6 +12,7 @@ import { PastelCard, SectionLabel } from "../_components/LightCards";
 import { BackButton } from "../_components/BackButton";
 import { ClassicTitleBar, useIsClassic } from "../_components/Classic";
 import { RefreshButton } from "../_components/RefreshButton";
+import { Face } from "../_components/RankFace";
 
 // Same boards as the app's Leader Board. Game boards come from the
 // getLeaderboard function (ranked by spend, but only win counts are sent);
@@ -34,7 +35,7 @@ const RANKINGS: Ranking[] = [
 
 const PERIODS = ["Today", "Yesterday", "This Week", "This Month"];
 
-type Row = { name: string; score: string; position: number; photoUrl: string };
+type Row = { name: string; score: string; position: number; photoUrl: string; value: number };
 
 const getLeaderboard = httpsCallable<
   { gameKey: string; period: string },
@@ -77,6 +78,7 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
         score: p.wins === 1 ? "1 win" : `${p.wins || 0} wins`,
         position: p.position || i + 1,
         photoUrl: i === 0 ? topPhoto : "",
+        value: Number(p.wins || 0),
       })),
       mySpend: Number(data?.mySpend || 0),
     };
@@ -102,6 +104,7 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
         score: n === 1 ? "1 gift" : `${n} gifts`,
         position: i + 1,
         photoUrl: i === 0 ? topPhoto : "",
+        value: n,
       })),
       mySpend: null,
     };
@@ -115,6 +118,7 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
       score: `Lv ${Number(d.get("level") || 1)}`,
       position: i + 1,
       photoUrl: i === 0 ? photoOf(d) : "",
+      value: Number(d.get("level") || 1),
     })),
     mySpend: null,
   };
@@ -122,10 +126,21 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+// 🏆 Royal look (like the Luxury Festival): the 1-2-3 podium with profile
+// pictures, the rest with a bar against #1, and "You" at the bottom. Classic
+// keeps its own look below.
+const ROYAL_BG = "radial-gradient(120% 60% at 50% 0%, #5B2BA8 0%, #2A1150 55%, #170A2E 100%)";
+const ROYAL_PODIUM = [
+  { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: "#FFD36E", h: 84 },
+  { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#D6DEEA", h: 58 },
+  { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#F3C29E", h: 44 },
+];
+
 export default function LeaderboardPage() {
   const router = useRouter();
   const classic = useIsClassic();
-  const { user, loading } = useCurrentUser();
+  const { user, username, loading } = useCurrentUser();
+  const [photos, setPhotos] = useState<Record<string, string>>({});
   const [ranking, setRanking] = useState<Ranking>(RANKINGS[0]);
   // The board list first, like the app; a board opens when picked.
   const [picked, setPicked] = useState(false);
@@ -161,6 +176,26 @@ export default function LeaderboardPage() {
     };
   }, [user, picked, ranking, period, refresh]);
 
+  // Profile pictures of everyone on the board (by username, 10 per read), each read once.
+  const nameKey = (rows || []).map((r) => r.name).join(",");
+  useEffect(() => {
+    const want = nameKey.split(",").filter((n) => n && !(n in photos));
+    if (!want.length) return;
+    let gone = false;
+    const chunks: string[][] = [];
+    for (let i = 0; i < want.length; i += 10) chunks.push(want.slice(i, i + 10));
+    Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c))).catch(() => null))).then((snaps) => {
+      if (gone) return;
+      const got: Record<string, string> = Object.fromEntries(want.map((n) => [n, ""]));
+      snaps.forEach((q) => q?.docs.forEach((d) => (got[String(d.get("username") || "")] = photoOf(d))));
+      setPhotos((p) => ({ ...p, ...got }));
+    });
+    return () => {
+      gone = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nameKey]);
+
   if (loading || !user) {
     return (
       <PageShell light>
@@ -171,6 +206,191 @@ export default function LeaderboardPage() {
 
   const top = rows?.[0];
   const timed = ranking.id !== "level";
+
+  if (!classic) {
+    const list = rows || [];
+    const best = list[0]?.value || 0;
+    const myIndex = username ? list.findIndex((r) => r.name.toLowerCase() === username.toLowerCase()) : -1;
+    const photo = (r: Row) => photos[r.name] || r.photoUrl;
+    return (
+      <PageShell light>
+        <div className="min-h-[calc(100dvh-57px)] text-white" style={{ background: ROYAL_BG }}>
+          <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6 lg:max-w-4xl">
+            {/* header */}
+            <div className="flex items-center gap-3 py-3">
+              <button
+                type="button"
+                aria-label="Back"
+                onClick={() => (picked ? setPicked(false) : router.back())}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold"
+              >
+                ‹
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}</h1>
+                <p className="text-[10.5px] font-extrabold uppercase tracking-[0.15em] text-[#E9C46A]">
+                  {picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
+                </p>
+              </div>
+              <RefreshButton
+                onClick={() => setRefresh((n) => n + 1)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white"
+              />
+            </div>
+
+            {!picked ? (
+              /* the boards */
+              <div className="grid gap-2 md:grid-cols-2">
+                {RANKINGS.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => {
+                      setRanking(r);
+                      setPeriod("Today");
+                      setPicked(true);
+                    }}
+                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.07] px-3 py-2.5 text-left transition hover:bg-white/[.11]"
+                    style={{ boxShadow: `inset 3px 0 0 ${r.color}` }}
+                  >
+                    <span
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-[22px]"
+                      style={{ background: `linear-gradient(135deg, ${r.color}, ${r.color}88)` }}
+                    >
+                      {r.icon}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-extrabold">{r.title}</span>
+                      <span className="block text-[11.5px] text-white/60">{r.id === "level" ? "All time" : "Today · Yesterday · Week · Month"}</span>
+                    </span>
+                    <span className="text-lg text-white/40">›</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <>
+                {/* period */}
+                {timed && (
+                  <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1">
+                    {PERIODS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPeriod(p)}
+                        className={`rounded-xl py-2 text-[12px] font-extrabold transition ${period === p ? "text-[#3A2600] shadow" : "text-white/70 hover:bg-white/10"}`}
+                        style={period === p ? { background: "linear-gradient(90deg,#FFE08A,#E0A100)" } : undefined}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {rows === null ? (
+                  <p className="py-14 text-center text-sm text-white/70">Loading…</p>
+                ) : list.length === 0 ? (
+                  <div className="mt-6 rounded-[20px] border border-dashed border-white/25 bg-white/[.07] px-4 py-7 text-center">
+                    <p className="text-[38px] leading-none">{ranking.icon}</p>
+                    <p className="mt-2 text-[14px] font-bold text-white/80">
+                      {error || `No ${ranking.title} players ${timed ? period.toLowerCase() : ""} yet — be the first!`}
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {/* podium: 2 · 1 · 3 */}
+                    <div className="mb-3 mt-8 flex items-end gap-2">
+                      {[1, 0, 2].map((i) => {
+                        const p = list[i];
+                        const look = ROYAL_PODIUM[i];
+                        if (!p) return <div key={i} className="flex-1" />;
+                        return (
+                          <Link key={p.name} href={`/profile/${encodeURIComponent(p.name)}`} className="min-w-0 flex-1 text-center">
+                            <div className="relative mx-auto w-fit">
+                              {i === 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[22px]">👑</span>}
+                              <Face name={p.name} url={photo(p)} size={i === 0 ? 70 : 56} ring={look.ring} glow={i === 0 ? "#FFC93C" : undefined} />
+                            </div>
+                            <p data-notranslate className={`mt-1.5 truncate font-extrabold ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
+                              {p.name}
+                            </p>
+                            <p className="text-[11.5px] font-extrabold" style={{ color: look.text }}>
+                              {p.score}
+                            </p>
+                            <div
+                              className="mt-2 flex items-start justify-center rounded-t-[14px] rounded-b-[4px] pt-2 text-[22px] font-black text-white"
+                              style={{ height: look.h, background: look.step }}
+                            >
+                              {i + 1}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    {/* 4 and down */}
+                    <ul className="space-y-[7px]">
+                      {list.slice(3).map((r, k) => {
+                        const mine = k + 3 === myIndex;
+                        return (
+                          <li key={`${r.position}-${r.name}`}>
+                            <Link
+                              href={`/profile/${encodeURIComponent(r.name)}`}
+                              className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${mine ? "border-[#FFD36E77] bg-[#FFD36E]/15" : "border-white/10 bg-white/[.07]"}`}
+                            >
+                              <span className="w-7 text-center text-sm font-black text-[#B9A6E6]">{r.position}</span>
+                              <Face name={r.name} url={photo(r)} size={38} />
+                              <span className="min-w-0 flex-1">
+                                <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                                  {r.name}
+                                </span>
+                                {best > 0 && (
+                                  <span className="mt-1 block h-1 overflow-hidden rounded-full bg-white/10">
+                                    <i
+                                      className="block h-full rounded-full"
+                                      style={{ width: `${Math.max(2, Math.round((r.value / best) * 100))}%`, background: "linear-gradient(90deg,#B07CFF,#FFD36E)" }}
+                                    />
+                                  </span>
+                                )}
+                              </span>
+                              <span className="whitespace-nowrap text-[13.5px] font-black text-[#FFD36E]">{r.score}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+
+                    {/* you */}
+                    {myIndex >= 0 && (
+                      <div
+                        className="mt-3 flex items-center gap-3 rounded-2xl border px-3 py-2.5"
+                        style={{ background: "linear-gradient(90deg,rgba(255,211,110,.25),rgba(255,211,110,.08))", borderColor: "#FFD36E77" }}
+                      >
+                        <span className="w-7 text-center text-sm font-black text-[#FFD36E]">#{list[myIndex].position}</span>
+                        <Face name={list[myIndex].name} url={photo(list[myIndex])} size={38} ring="linear-gradient(#FFE08A,#E0A100)" />
+                        <span className="min-w-0 flex-1">
+                          <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                            You · {list[myIndex].name}
+                          </span>
+                          <span className="block text-[11px] text-white/75">{myIndex === 0 ? "👑 You are on top — keep it up!" : "Keep going to climb higher!"}</span>
+                        </span>
+                        <span className="whitespace-nowrap text-[13.5px] font-black text-[#FFD36E]">{list[myIndex].score}</span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {ranking.gameKey && mySpend !== null && (
+                  <p className="mt-4 text-center text-[11.5px] text-white/60">
+                    Ranked by coins played. Your {ranking.title} play {period.toLowerCase()}:{" "}
+                    <span className="font-bold text-[#FFD36E]">🪙 {mySpend.toLocaleString()}</span> (only you can see this)
+                  </p>
+                )}
+              </>
+            )}
+          </section>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
