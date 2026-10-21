@@ -12,6 +12,7 @@ import { PhotoCropDialog } from "../../_components/PhotoCropDialog";
 import { CountryPickerDialog } from "../../_components/CountryPicker";
 import { countryFlag, countryInfoFor } from "../../../lib/countries";
 import { useIsClassic } from "../../_components/Classic";
+import { getProfileDetails, saveProfileDetails } from "../../../lib/blocks";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
@@ -50,17 +51,20 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     if (!user || !username) return;
-    getDoc(doc(db, "users", user.uid))
-      .then((snap) => {
+    // 🔒 the details are in profile_details/{uid} now (an account not moved
+    // yet still has them on users/{uid})
+    Promise.all([getDoc(doc(db, "users", user.uid)), getProfileDetails(user.uid)])
+      .then(([snap, det]) => {
         const x = snap.data() || {};
-        setFullName(String(x.fullName || "").trim() || username);
-        setDateOfBirth(String(x.dateOfBirth || "").trim());
-        setBio(String(x.bio || "").trim());
+        const pick = (k: keyof typeof det) => det[k] || String(x[k] || "").trim();
+        setFullName(pick("fullName") || username);
+        setDateOfBirth(pick("dateOfBirth"));
+        setBio(pick("bio"));
         setCountry(String(x.country || "").trim());
         if (x.gender) setGender(String(x.gender));
-        if (x.relationship) setRelationship(String(x.relationship));
+        if (pick("relationship")) setRelationship(pick("relationship"));
         setPhotoUrl(String(x.photoUrl || x.profilePic || x.avatarUrl || x.imageUrl || "").trim());
-        setCoverPhotoUrl(String(x.coverPhotoUrl || "").trim());
+        setCoverPhotoUrl(pick("coverPhotoUrl"));
         setLoaded(true);
       })
       .catch(() => setError("Could not load your profile."));
@@ -83,8 +87,8 @@ export default function EditProfilePage() {
       const r = ref(storage, path);
       await uploadBytes(r, file, { contentType: file.type });
       const url = await getDownloadURL(r);
-      const field = kind === "photo" ? "photoUrl" : "coverPhotoUrl";
-      await setDoc(doc(db, "users", user.uid), { [field]: url }, { merge: true });
+      if (kind === "photo") await setDoc(doc(db, "users", user.uid), { photoUrl: url }, { merge: true });
+      else await saveProfileDetails(user.uid, username, { coverPhotoUrl: url });
       if (kind === "photo") setPhotoUrl(url);
       else setCoverPhotoUrl(url);
     } catch (err) {
@@ -105,18 +109,16 @@ export default function EditProfilePage() {
     setSaving(true);
     setError("");
     try {
-      await setDoc(
-        doc(db, "users", user.uid),
-        {
+      await Promise.all([
+        setDoc(doc(db, "users", user.uid), { country: country.trim(), gender }, { merge: true }),
+        // 🔒 private details: profile_details/{uid}
+        saveProfileDetails(user.uid, username, {
           fullName: cleanName,
           dateOfBirth: dateOfBirth.trim(),
           bio: bio.trim(),
-          country: country.trim(),
-          gender,
           relationship,
-        },
-        { merge: true }
-      );
+        }),
+      ]);
       leave();
     } catch (err: any) {
       console.error(err);

@@ -37,6 +37,7 @@ import { GiftImg } from "../../_components/GiftImg";
 import { openReport } from "../../_components/ReportDialog";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
+import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -197,10 +198,7 @@ export default function PrivateChatPage() {
 
   useEffect(() => {
     if (!user) return;
-    return onSnapshot(doc(db, "users", user.uid), (s) => {
-      const b = s.get("blockedUsers");
-      setBlockedList(Array.isArray(b) ? b.map(String) : []);
-    });
+    return watchBlockedNames(user.uid, setBlockedList);
   }, [user]);
   const blocked = blockedList.some((b) => b.trim().toLowerCase() === friend.toLowerCase());
   const setBlock = async (on: boolean) => {
@@ -209,7 +207,7 @@ export default function PrivateChatPage() {
       ? Array.from(new Set([...blockedList, friend]))
       : blockedList.filter((b) => b.trim().toLowerCase() !== friend.toLowerCase());
     try {
-      await updateDoc(doc(db, "users", user.uid), { blockedUsers: next });
+      await saveBlockedNames(user.uid, next);
     } catch (e: any) {
       setError(e?.message || "Could not save.");
     }

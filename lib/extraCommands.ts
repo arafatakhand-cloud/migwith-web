@@ -15,6 +15,8 @@ import {
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 import { OFFICIAL_COUNTRY_ROOMS, isAutoRoomDescription, officialRoomDefaultDescription } from "./rooms";
+// 🔒 /block uses the private block list (user_blocks/{uid}) — same as profile + Settings.
+import { setBlocked } from "./blocks";
 
 // Room commands the app has that live outside the moderator list (RoomPage.kt):
 //   /block, /unblock                — hide someone's messages for yourself
@@ -34,17 +36,6 @@ export type ExtraContext = {
 
 const errMsg = (e: any) => e?.message || "Please try again.";
 
-// users/{uid}.blockedUsers — the same list the profile page and Settings edit.
-async function setBlocked(uid: string, target: string, blocked: boolean): Promise<void> {
-  const ref = doc(db, "users", uid);
-  const snap = await getDoc(ref);
-  const raw = snap.get("blockedUsers");
-  const current = Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string") : [];
-  const already = current.some((n) => n.toLowerCase() === target.toLowerCase());
-  if (blocked === already) return;
-  const updated = blocked ? [...current, target] : current.filter((n) => n.toLowerCase() !== target.toLowerCase());
-  await updateDoc(ref, { blockedUsers: updated });
-}
 
 const CHARACTER_BY_WORD: Record<string, string> = {
   chor: "🕵️ Chor",

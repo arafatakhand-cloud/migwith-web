@@ -37,6 +37,7 @@ import { badgeForLevel } from "../../../lib/rooms";
 import { RainbowName } from "../../_components/RainbowName";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { useIsClassic } from "../../../lib/uiStyle";
+import { getBlockedNames, getProfileDetails, setBlocked } from "../../../lib/blocks";
 
 const getFriendCount = httpsCallable<{ username: string }, { count: number }>(functions, "getFriendCount");
 
@@ -231,13 +232,19 @@ export default function ProfilePage() {
     setProfile(null);
     setNotFound(false);
     getDocs(query(collection(db, "users"), where("username", "==", username), limit(1)))
-      .then((snap) => {
+      .then(async (snap) => {
         const d = snap.docs[0];
         if (!d) {
           setNotFound(true);
           return;
         }
-        const x = d.data();
+        // 🔒 the details come from profile_details/{uid} (empty if they are
+        // hidden from me); an account not moved yet still has them on users/{uid}
+        const det = await getProfileDetails(d.id);
+        const x = { ...d.data() };
+        (Object.keys(det) as (keyof typeof det)[]).forEach((k) => {
+          if (det[k]) x[k] = det[k];
+        });
         const created = toMs(x.createdAt);
         setProfile({
           uid: d.id,
@@ -339,12 +346,14 @@ export default function ProfilePage() {
   // My follow / block state for this person, and leave a footprint.
   useEffect(() => {
     if (!user || !username || !me || isOwn) return;
+    getBlockedNames(user.uid)
+      .then((names) => setIsBlocked(names.some((n) => sameName(n, username))))
+      .catch(() => {});
     const ref = doc(db, "users", user.uid);
     getDoc(ref)
       .then((snap) => {
         const list = (k: string) => ((snap.get(k) as unknown[]) || []).filter((v): v is string => typeof v === "string");
         setIsFollowing(list("following").some((n) => sameName(n, username)));
-        setIsBlocked(list("blockedUsers").some((n) => sameName(n, username)));
         setHasVoted(list("votedProfiles").some((n) => sameName(n, username)));
         const visited = list("visitedProfiles");
         if (!visited.some((n) => sameName(n, username))) {
@@ -388,6 +397,12 @@ export default function ProfilePage() {
     setBusy(field);
     setError("");
     try {
+      // 🔒 the block list is private now (user_blocks/{uid})
+      if (field === "blockedUsers") {
+        await setBlocked(user.uid, username, on);
+        setIsBlocked(on);
+        return;
+      }
       const ref = doc(db, "users", user.uid);
       const snap = await getDoc(ref);
       const current = ((snap.get(field) as unknown[]) || []).filter((v): v is string => typeof v === "string");

@@ -17,6 +17,7 @@ import { clearRememberedAmounts } from "../../lib/amountMemory";
 import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { markOfflineForLogout } from "../../lib/heartbeat";
+import { getBlockedNames, saveBlockedNames } from "../../lib/blocks";
 
 // 🔒 Profile lock goes through the server (it keeps the private-chat lock too).
 const setProfileLockCall = httpsCallable<{ locked: boolean }, { ok: boolean }>(functions, "setProfileLock");
@@ -101,12 +102,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!uid) return;
+    // 🔒 my block list is private now (user_blocks/{uid})
+    getBlockedNames(uid)
+      .then(setBlocked)
+      .catch(() => {});
     getDoc(doc(db, "users", uid))
       .then((snap) => {
         setProfileLock(snap.get("profileLocked") === true);
         setEmailPrivacy(snap.get("emailPrivacy") !== false);
-        const b = snap.get("blockedUsers");
-        setBlocked(Array.isArray(b) ? b.map(String) : []);
         setLoaded(true);
       })
       .catch((e) => setMessage(e?.message || "Could not load settings."));
@@ -316,7 +319,7 @@ function BlockedDialog({
     setBusy(true);
     setError("");
     try {
-      await updateDoc(doc(db, "users", uid), { blockedUsers: list });
+      await saveBlockedNames(uid, list);
       onUpdated(list);
       onMessage(ok);
       return true;

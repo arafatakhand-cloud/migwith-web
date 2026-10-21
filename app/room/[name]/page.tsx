@@ -149,6 +149,7 @@ import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
+import { watchBlockedNames } from "../../../lib/blocks";
 
 type ChatMessage = SessionMessage;
 
@@ -1076,18 +1077,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       });
   }, [messages, localNotes, myUid, sinceMs]);
 
-  // People I blocked (users/{uid}.blockedUsers, /block): their lines are hidden for me, like the app.
+  // People I blocked (user_blocks/{uid}, /block): their lines are hidden for me, like the app.
   const [blockedNames, setBlockedNames] = useState<string[]>([]);
   useEffect(() => {
     if (!myUid) return;
-    return onSnapshot(
-      doc(db, "users", myUid),
-      (s) => {
-        const raw = s.get("blockedUsers");
-        setBlockedNames(Array.isArray(raw) ? raw.filter((x): x is string => typeof x === "string").map((x) => x.toLowerCase()) : []);
-      },
-      () => {}
-    );
+    return watchBlockedNames(myUid, (names) => setBlockedNames(names.map((x) => x.toLowerCase())));
   }, [myUid]);
 
   // Live "is a game running?" line for game rooms (and chat rooms with a game
