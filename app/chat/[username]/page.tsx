@@ -110,7 +110,8 @@ export default function PrivateChatPage() {
   const [blockedList, setBlockedList] = useState<string[]>([]);
 
   // 🔒 They locked their profile and I am not their friend → I can't write to them.
-  const [lockedOut, setLockedOut] = useState(false);
+  // null = still checking
+  const [lockedOut, setLockedOut] = useState<boolean | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -409,6 +410,31 @@ export default function PrivateChatPage() {
     return (
       <PageShell light>
         <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
+      </PageShell>
+    );
+  }
+
+  // 🤝 Friends only: no chat at all with someone who is not my friend.
+  if (!self && lockedOut !== false) {
+    return (
+      <PageShell light>
+        {lockedOut === null ? (
+          <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>
+        ) : (
+          <div className="mx-auto flex max-w-md flex-col items-center px-6 py-16 text-center">
+            <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[#E8EEF9] text-4xl">🔒</span>
+            <p className="mt-4 text-lg font-extrabold text-[#0B2A5B]">{friend}</p>
+            <p className="mt-2 text-sm font-semibold text-[#35507E]">{lockedChatText(friend)}</p>
+            <div className="mt-5 flex gap-2">
+              <Link href={`/profile/${encodeURIComponent(friend)}`} className="rounded-full bg-[#2F80ED] px-5 py-2.5 text-sm font-bold text-white">
+                👤 Profile · Add Friend
+              </Link>
+              <button type="button" onClick={() => router.back()} className="rounded-full bg-white px-5 py-2.5 text-sm font-bold text-[#35507E] shadow-sm">
+                ‹ Back
+              </button>
+            </div>
+          </div>
+        )}
       </PageShell>
     );
   }
