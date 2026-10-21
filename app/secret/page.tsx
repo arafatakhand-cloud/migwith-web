@@ -22,6 +22,7 @@ import {
 } from "./_MainFounderCards";
 import { LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
 import { AccountDeleteCard } from "./_AccountDeleteCard";
+import { DailyGameRewardsCard } from "./_DailyGameRewardsCard";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
@@ -233,6 +234,7 @@ export default function SecretPage() {
           { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
           // (🎲 Luxury Bot Tiers removed — Luxury Bot Official is gone; Luxury Bet replaced it)
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
+          { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.isMigwith },
         ],
       ],
       [
@@ -348,6 +350,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
       {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
       {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
+      {f.isMigwith && tool === "daily_rewards" && <DailyGameRewardsCard />}
       {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}
       {f.isMigwith && tool === "delete_account" && <AccountDeleteCard />}
 
