@@ -249,6 +249,15 @@ function inkOnWhite(c: string): string {
   return lum > 0.6 ? `color-mix(in srgb, ${c} 65%, black)` : c;
 }
 
+// 🎁 A failed gift, said plainly for people: the server's reason without the
+// emoji in front or any technical code like "[404]" (that stays in the log).
+function giftErrorText(e: any): string {
+  console.warn("gift send failed", e?.code, e?.message);
+  const raw = String(e?.message || "").replace(/\s*\[\d{3}\]\s*$/, "").replace(/^🎁\s*/, "").trim();
+  if (/not.?found/i.test(String(e?.code || "")) && !raw) return "This gift was not found. Please pick one from the Gift Gallery.";
+  return raw || "Something went wrong. Please try again.";
+}
+
 export default function RoomPage() {
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
@@ -1515,7 +1524,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             const failed = (data?.failed || []).map((f) => `• ${f.target || ""} — ${String(f.reason || "").replace(/^🎁/, "").trim() || "Gift sending failed."}`);
             if (failed.length) setPopup({ title: "🎁 Gift Shower", text: `These people did not get the ${shownGift}:\n${failed.join("\n")}` });
           })
-          .catch((e: any) => setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\nReason: ${e?.message || "Gift sending failed."}` }));
+          .catch((e: any) => setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\n${giftErrorText(e)}` }));
         return;
       }
       httpsCallable<
@@ -1532,7 +1541,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             recipientLevel: Number(data?.recipientLevel) || undefined,
           });
         })
-        .catch((e: any) => note(`🎁 That gift did not actually send: ${e?.message || "Gift sending failed."}`));
+        .catch((e: any) => setPopup({ title: "🎁 Gift not sent", text: `That gift could not be sent.\n\n${giftErrorText(e)}` }));
       return;
     }
 
