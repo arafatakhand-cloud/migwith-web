@@ -34,6 +34,9 @@ type Mentor = { username: string; level: number; country: string; status: string
 
 const toMs = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
 
+// 🎨 mentor card colours, one after another
+const MENTOR_COLORS = ["#7B3FC7", "#12AFC7", "#E0457B", "#22A447", "#3F55C7", "#FF6F00", "#E0A800"];
+
 const card = "rounded-3xl bg-[#0B1F3A] p-6 text-center text-white shadow-lg";
 
 export default function MerchantPage() {
@@ -200,20 +203,24 @@ export default function MerchantPage() {
               <p className="mt-1.5 text-[13px] text-[#5B6B8C]">No mentors available right now.</p>
             </div>
           ) : (
-            mentors.map((m) => {
+            mentors.map((m, idx) => {
               const sel = selected === m.username;
+              // 🎨 every mentor card its own colour (like the Community page)
+              const c = MENTOR_COLORS[idx % MENTOR_COLORS.length];
               const info = m.country ? countryInfoFor(m.country) : undefined;
               const flag = info ? countryFlag(info.iso) : "📍";
               return (
                 <div
                   key={m.username}
-                  className={`rounded-[20px] border p-3 transition ${
-                    sel ? "border-[#2F6ABD] shadow-[0_8px_20px_rgba(47,106,189,.25)]" : "border-[#E3D9F5] shadow-[0_2px_10px_rgba(123,63,199,.08)]"
-                  }`}
-                  style={{ background: sel ? "linear-gradient(90deg,#FFFFFF,#EEF4FF)" : "linear-gradient(90deg,#FFFFFF,#F8F4FD,#F1E9FB)" }}
+                  className="rounded-[20px] p-3 transition"
+                  style={{
+                    border: `${sel ? 2 : 1}px solid ${c}${sel ? "" : "40"}`,
+                    background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${c}${sel ? "33" : "1F"})`,
+                    boxShadow: `0 ${sel ? 8 : 3}px ${sel ? 20 : 10}px ${c}${sel ? "40" : "1F"}`,
+                  }}
                 >
                   <div className="flex items-center gap-3">
-                    <Face name={m.username} url={m.photo} size={52} ring={sel ? "linear-gradient(#5A8FD6,#2F6ABD)" : "linear-gradient(#E3D9F5,#C9B6EC)"} />
+                    <Face name={m.username} url={m.photo} size={52} ring={`linear-gradient(${c}${sel ? "" : "66"}, ${c})`} />
                     <span className="min-w-0 flex-1">
                       <span data-notranslate className="block truncate text-base font-black text-[#0B2A5B]">
                         @{m.username}
@@ -232,13 +239,15 @@ export default function MerchantPage() {
                     <span className="shrink-0 rounded-full bg-[#FFF6DD] px-2.5 py-1 text-[11px] font-black text-[#B7791F]">⭐ Lv {m.level}</span>
                   </div>
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                    <span className="rounded-full bg-[#EDE6FF] px-2.5 py-1 text-[11px] font-extrabold text-[#5B2A86]">🏪 {m.merchants} merchants</span>
+                    <span className="rounded-full px-2.5 py-1 text-[11px] font-extrabold" style={{ background: `${c}1F`, color: c }}>
+                      🏪 {m.merchants} merchants
+                    </span>
                     <span className="rounded-full bg-[#FFF3D6] px-2.5 py-1 text-[11px] font-extrabold text-[#B7791F]">⏳ {m.pending} pending</span>
                     <button
                       type="button"
                       onClick={() => setSelected(sel ? "" : m.username)}
                       className={`ml-auto rounded-full px-[18px] py-2 text-[13px] font-black text-white transition active:scale-95 ${sel ? "bg-[#16A34A]" : ""}`}
-                      style={sel ? undefined : { background: "linear-gradient(90deg,#5A8FD6,#2F6ABD)" }}
+                      style={sel ? undefined : { background: `linear-gradient(90deg, ${c}B3, ${c})` }}
                     >
                       {sel ? "✓ Chosen" : "Choose"}
                     </button>
