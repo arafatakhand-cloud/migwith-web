@@ -49,7 +49,7 @@ export function MenuPanel() {
 
   const links: [string, string, string, number][] = [
     ["/", "⌂", "Lobby", 0],
-    ["/profile/me", "🪪", "My Space", 0],
+    ["/profile/me", "👤", "Profile", 0],
     ["/wallet", "▣", "Wallet", 0],
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "◉", "Discover", 0],
