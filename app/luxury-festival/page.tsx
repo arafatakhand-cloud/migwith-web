@@ -10,6 +10,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { isMainFounderName } from "../../lib/founder";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
+import { Face, profileImageUrl } from "../_components/RankFace";
 
 // 💎 Discover › Luxury Festival: everyone sees the festival time and the top 25
 // Luxury Bet players with how much each has spent (getLuxuryFestival). miglife
@@ -55,52 +56,12 @@ function parts(ms: number): [string, string][] {
 }
 const short = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "")}M` : n >= 1e4 ? `${Math.round(n / 1e3)}K` : n.toLocaleString();
-function profileImageUrl(d: Record<string, unknown> | undefined): string {
-  for (const key of ["photoUrl", "profilePic", "avatarUrl", "imageUrl"]) {
-    const v = String(d?.[key] || "").trim();
-    if (v) return v;
-  }
-  return "";
-}
-
 const GOLD = "#FFD36E";
 const PODIUM = [
   { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: GOLD, h: 88 },
   { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#D6DEEA", h: 62 },
   { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#F3C29E", h: 46 },
 ];
-const COLORS = ["#6C4BC4", "#D9527F", "#C8871E", "#4A90E2", "#2FAE85", "#E0703C", "#3FA7C9"];
-
-/** Round profile picture; no picture → the first letter on a colour. */
-function Face({ name, url, size, ring, glow }: { name: string; url?: string; size: number; ring?: string; glow?: boolean }) {
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return (
-    <span
-      className="relative flex shrink-0 items-center justify-center rounded-full"
-      style={{
-        width: size,
-        height: size,
-        padding: ring ? 3 : 2,
-        background: ring || "rgba(255,255,255,.85)",
-        boxShadow: glow ? "0 0 0 3px #FFD36E55, 0 0 22px #FFC93C88" : "0 2px 8px rgba(0,0,0,.3)",
-      }}
-    >
-      {url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={url} alt="" className="h-full w-full rounded-full object-cover" />
-      ) : (
-        <span
-          className="flex h-full w-full items-center justify-center rounded-full font-black text-white"
-          style={{ backgroundColor: COLORS[h % COLORS.length], fontSize: size * 0.4 }}
-        >
-          {name.slice(0, 1).toUpperCase()}
-        </span>
-      )}
-    </span>
-  );
-}
-
 function left(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
   const d = Math.floor(s / 86400);
@@ -357,7 +318,7 @@ export default function LuxuryFestivalPage() {
                     <Link key={p.uid} href={`/profile/${encodeURIComponent(p.username)}`} className="min-w-0 flex-1 text-center">
                       <div className="relative mx-auto w-fit">
                         {i === 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[22px]">👑</span>}
-                        <Face name={p.username} url={photos[p.uid]} size={i === 0 ? 70 : 56} ring={look.ring} glow={i === 0} />
+                        <Face name={p.username} url={photos[p.uid]} size={i === 0 ? 70 : 56} ring={look.ring} glow={i === 0 ? "#FFC93C" : undefined} />
                       </div>
                       <p data-notranslate className={`mt-1.5 truncate font-extrabold ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
                         {p.username}
