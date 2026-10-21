@@ -9,6 +9,7 @@ import { useAchievementSync } from "./Achievements";
 import { useSpecialColorListener } from "../../lib/specialColor";
 import { useOnlineHeartbeat } from "../../lib/heartbeat";
 import { useAutoLeave } from "../../lib/autoLeave";
+import { AlertPopup } from "./AlertPopup";
 
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
@@ -44,7 +45,13 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (signedOut && !isPublicPath(pathname)) router.replace("/login");
   }, [signedOut, pathname, router]);
-  return <SessionContext.Provider value={{ ...current, badges }}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={{ ...current, badges }}>
+      {children}
+      {/* 🔔 a new gift / alert pops up on any page, also inside a room */}
+      <AlertPopup username={current.user ? current.username : ""} />
+    </SessionContext.Provider>
+  );
 }
 
 export function useSession(): Session {
