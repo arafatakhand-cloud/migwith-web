@@ -22,7 +22,8 @@ import {
   where,
   type DocumentData,
 } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
+import { db, functions } from "../../../lib/firebase";
+import { httpsCallable } from "firebase/functions";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
@@ -36,6 +37,8 @@ import { badgeForLevel } from "../../../lib/rooms";
 import { RainbowName } from "../../_components/RainbowName";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { useIsClassic } from "../../../lib/uiStyle";
+
+const getFriendCount = httpsCallable<{ username: string }, { count: number }>(functions, "getFriendCount");
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -290,19 +293,9 @@ export default function ProfilePage() {
       .then((s) => setGiftCount(s.data().count))
       .catch(() => {});
 
-    const fr = collection(db, "friend_requests");
-    Promise.all([
-      getDocs(query(fr, where("fromUsername", "==", username), where("status", "==", "accepted"))),
-      getDocs(query(fr, where("toUsername", "==", username), where("status", "==", "accepted"))),
-    ])
-      .then(([out, inc]) => {
-        const names = new Set([
-          ...out.docs.map((d) => String(d.get("toUsername") || "")),
-          ...inc.docs.map((d) => String(d.get("fromUsername") || "")),
-        ]);
-        names.delete("");
-        setFriends(names.size);
-      })
+    // 🔒 friend lists are private: the server sends only the number
+    getFriendCount({ username })
+      .then((r) => setFriends(Number(r.data?.count || 0)))
       .catch(() => {});
 
     getDocs(
