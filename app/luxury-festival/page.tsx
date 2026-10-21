@@ -11,6 +11,7 @@ import { isMainFounderName } from "../../lib/founder";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 import { Face, profileImageUrl } from "../_components/RankFace";
+import { FestivalPayoutsCard } from "./_PayoutsCard";
 
 // 💎 Discover › Luxury Festival: everyone sees the festival time and the top 25
 // Luxury Bet players with how much each has spent (getLuxuryFestival). miglife
@@ -26,6 +27,8 @@ type Festival = {
   players: Player[];
   mySpend: number;
   myPosition: number;
+  /** 🏆 prize for #1 … #25 (only while miglife's payouts are ON) */
+  prizes?: number[];
 };
 
 const getLuxuryFestival = httpsCallable<Record<string, never>, Festival>(functions, "getLuxuryFestival");
@@ -165,7 +168,7 @@ export default function LuxuryFestivalPage() {
         endMinute: b.minute,
         festivalId,
         updatedAt: serverTimestamp(),
-      });
+      }, { merge: true });
       setMsg(sameStart ? "✅ Saved — the ranking keeps going." : "✅ Saved — a new festival starts from zero.");
       setTimeout(load, 1500);
     } catch (e: any) {
@@ -299,6 +302,7 @@ export default function LuxuryFestivalPage() {
               </p>
             </div>
           )}
+          {isMiglife && <FestivalPayoutsCard onReset={() => setTick((t) => t + 1)} />}
 
           {/* ranking */}
           {error ? (
@@ -327,6 +331,9 @@ export default function LuxuryFestivalPage() {
                         <p className="text-[11.5px] font-extrabold" style={{ color: look.text }}>
                           🪙 {short(amount)}
                         </p>
+                      )}
+                      {(data.prizes?.[i] || 0) > 0 && (
+                        <p className="mx-auto mt-0.5 w-fit rounded-full bg-[#2EE59D]/15 px-2 text-[10.5px] font-extrabold text-[#7CF5C4]">🎁 {short(data.prizes![i])}</p>
                       )}
                       <div
                         className="mt-2 flex items-start justify-center rounded-t-[14px] rounded-b-[4px] pt-2 text-[22px] font-black text-white"
@@ -365,6 +372,9 @@ export default function LuxuryFestivalPage() {
                             </span>
                           )}
                           {r.bets !== undefined && <span className="mt-0.5 block text-[11px] text-white/60">{r.bets.toLocaleString()} bets</span>}
+                          {(data.prizes?.[r.position - 1] || 0) > 0 && (
+                            <span className="mt-0.5 block text-[11px] font-extrabold text-[#7CF5C4]">🎁 Prize {data.prizes![r.position - 1].toLocaleString()}</span>
+                          )}
                         </span>
                         {amount !== undefined && (
                           <span className="whitespace-nowrap text-[13.5px] font-black tabular-nums" style={{ color: GOLD }}>

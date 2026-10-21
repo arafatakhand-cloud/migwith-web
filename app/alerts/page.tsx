@@ -100,6 +100,10 @@ function styleFor(type: string): Style {
       return { icon: "🎁", title: "Gift received", top: "#FF6FA8", bottom: "#D6336C", group: "gifts" };
     case "gift_contest_win":
       return { icon: "🎁", title: "Gift contest win", top: "#FF6FA8", bottom: "#D6336C", group: "gifts" };
+    case "luxury_festival_reward":
+      return { icon: "💎", title: "Luxury Festival reward", top: "#B07CFF", bottom: "#5B2BA8", group: "coins" };
+    case "luxury_festival_payout":
+      return { icon: "💎", title: "Luxury Festival payouts", top: "#B07CFF", bottom: "#5B2BA8", group: "coins" };
     case "game_reward":
       return { icon: "🏆", title: "Daily reward", top: "#FFD36E", bottom: "#C98A00", group: "coins" };
     case "mentor_coin_grant":
