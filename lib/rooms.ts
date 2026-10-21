@@ -76,15 +76,17 @@ const SHOP_BADGES: [string, string][] = [
   ["diamond", "💎"], ["premium", "🏵️"], ["supporter", "🛡️"], ["streamer", "🎬"],
 ];
 
-/** Every Color Shop badge the user owns that has not expired, oldest first (the app's activeShopBadges). */
+/** Every Color Shop badge the user owns, has switched ON (My Owned Colors) and has not
+ * expired, oldest first (the app's activeShopBadges). A colour that is switched off
+ * shows no badge. */
 export function activeShopBadges(ownedColors: unknown): string[] {
   if (!ownedColors || typeof ownedColors !== "object") return [];
-  const owned = ownedColors as Record<string, { expiresAt?: unknown; grantedAt?: unknown } | undefined>;
+  const owned = ownedColors as Record<string, { expiresAt?: unknown; grantedAt?: unknown; active?: unknown } | undefined>;
   const now = Date.now();
   return SHOP_BADGES.flatMap(([id, badge]) => {
     const e = owned[id];
     const expiresAt = Number(e?.expiresAt || 0);
-    return e && expiresAt > now ? [{ at: Number(e.grantedAt || 0), badge }] : [];
+    return e && e.active === true && expiresAt > now ? [{ at: Number(e.grantedAt || 0), badge }] : [];
   })
     .sort((a, b) => a.at - b.at)
     .map((x) => x.badge);
