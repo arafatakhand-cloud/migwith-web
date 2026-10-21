@@ -23,6 +23,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
+import { chatLockedFor, lockedChatText } from "../../../lib/privacy";
 import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
 import { withEmotes } from "../../_components/Emote";
@@ -106,6 +107,9 @@ export default function PrivateChatPage() {
   const [viewImage, setViewImage] = useState<string | null>(null);
   // 🚫 I blocked this person (users/{me}.blockedUsers): their messages are hidden and I can't write to them.
   const [blockedList, setBlockedList] = useState<string[]>([]);
+
+  // 🔒 They locked their profile and I am not their friend → I can't write to them.
+  const [lockedOut, setLockedOut] = useState(false);
 
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -211,6 +215,17 @@ export default function PrivateChatPage() {
     }
   };
 
+  // 🔒 Profile lock check (again whenever they write to me: then I may answer).
+  const theirMsgCount = messages.filter((m) => m.from.toLowerCase() === friend.toLowerCase() && m.type !== "gift").length;
+  useEffect(() => {
+    if (!username || !friend) return;
+    let live = true;
+    chatLockedFor(username, friend).then((v) => live && setLockedOut(v));
+    return () => {
+      live = false;
+    };
+  }, [username, friend, theirMsgCount]);
+
   // Friend's "Online / Last seen" (users.lastActiveAt).
   useEffect(() => {
     if (!user || !friend) return;
@@ -269,6 +284,7 @@ export default function PrivateChatPage() {
     if (!clean || !user || !username) return;
     if (self) return setError("You cannot message yourself.");
     if (blocked) return setError(`You blocked ${friend}. Unblock to send a message.`);
+    if (lockedOut) return setError(lockedChatText(friend));
     // "/gift GiftName [-m message]" — the gift panel does the sending.
     if (/^\/gift\b/i.test(clean)) {
       setText("");
@@ -289,6 +305,7 @@ export default function PrivateChatPage() {
   // 📷 Photo: same Storage folder and message shape as the app.
   const sendPhoto = async (file: File | undefined) => {
     if (!file || !user || !username || uploading || self) return;
+    if (lockedOut) return setError(lockedChatText(friend));
     setUploading(true);
     setError("");
     try {
@@ -305,6 +322,7 @@ export default function PrivateChatPage() {
   // 📎 File (not programs), up to 10 MB — private_files/, like the app.
   const sendFile = async (file: File | undefined) => {
     if (!file || !user || !username || uploading || self) return;
+    if (lockedOut) return setError(lockedChatText(friend));
     if (file.type.startsWith("image/")) return sendPhoto(file);
     const ext = (file.name.split(".").pop() || "").toLowerCase();
     if (file.name.includes(".") && BLOCKED_EXT.has(ext)) return setError(`That type of file (.${ext}) can't be sent.`);
@@ -340,6 +358,7 @@ export default function PrivateChatPage() {
   const sendVoice = async (audio: Blob, seconds: number) => {
     if (!user || !username || self) return;
     if (blocked) throw new Error(`You blocked ${friend}. Unblock to send a message.`);
+    if (lockedOut) throw new Error(lockedChatText(friend));
     const type = audio.type || "audio/webm";
     const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
     const r = storageRef(storage, `private_files/${storageSafeSegment(chatId)}/voice_${crypto.randomUUID()}.${ext}`);
@@ -399,8 +418,8 @@ export default function PrivateChatPage() {
   const status = lastSeenLabel(friendLastActive);
   const online = status === "Online";
   const menu: [string, string, () => void][] = [
-    ["📎", "Send File", () => fileRef.current?.click()],
-    ["🎁", "Send Gift", () => setGiftOpen(true)],
+    ["📎", "Send File", () => (lockedOut ? setError(lockedChatText(friend)) : fileRef.current?.click())],
+    ["🎁", "Send Gift", () => (lockedOut ? setError(lockedChatText(friend)) : setGiftOpen(true))],
     ["🧹", "Clear Chat", clearChat],
     ["👤", "View Profile", () => router.push(`/profile/${encodeURIComponent(friend)}`)],
     ["💰", "Send Credit", () => router.push(`/wallet?to=${encodeURIComponent(friend)}`)],
@@ -621,6 +640,10 @@ export default function PrivateChatPage() {
         </div>
 
         {error && <p className="px-3.5 py-1 text-xs text-[#B3261E]">{error}</p>}
+
+        {lockedOut && !blocked && (
+          <div className="bg-[#FFF8E1] px-3.5 py-2 text-[13px] font-semibold text-[#7A5A00]">{lockedChatText(friend)}</div>
+        )}
 
         {blocked && (
           <div className="flex items-center gap-2 bg-[#FFF4F3] px-3.5 py-2 text-[13px] text-[#8A1C14]">

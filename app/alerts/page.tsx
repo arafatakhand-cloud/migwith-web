@@ -25,6 +25,7 @@ import { db, functions } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { roomHref } from "../../lib/rooms";
 import { chatHref } from "../../lib/privateChat";
+import { chatLockedFor, lockedChatText } from "../../lib/privacy";
 import { PageShell } from "../_components/PageShell";
 import { PushToggle } from "../_components/PushToggle";
 import { BackButton } from "../_components/BackButton";
@@ -270,7 +271,8 @@ function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string 
 // 🎁 A gift you got: a pink card with the gift big, the sender's message in a
 // chat bubble, the room it was sent in, and 💝 Say thanks (opens a private
 // chat with the sender).
-function GiftAlertCard({ a, isNew }: { a: Alert; isNew: boolean }) {
+function GiftAlertCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string }) {
+  const [lockedNote, setLockedNote] = useState("");
   const icon = a.giftIcon && Array.from(a.giftIcon).length <= 8 ? a.giftIcon : "🎁";
   return (
     <div
@@ -308,16 +310,36 @@ function GiftAlertCard({ a, isNew }: { a: Alert; isNew: boolean }) {
             🏠 {a.roomName} room
           </Link>
         )}
-        <Link
-          href={chatHref(a.fromUsername)}
-          className="ml-auto shrink-0 rounded-full bg-white px-3.5 py-2 text-[13px] font-extrabold text-[#B0245A]"
-        >
-          💝 Say thanks
-        </Link>
+        <SayThanksButton me={me} from={a.fromUsername} onLocked={setLockedNote} />
       </div>
+      {lockedNote && <p className="relative mt-2 rounded-xl bg-white/20 px-3 py-2 text-xs font-bold">{lockedNote}</p>}
     </div>
   );
 }
+
+// 💝 Say thanks → the private chat — unless the sender locked their profile and
+// I am not their friend (🔒 privacy: then it only says so).
+function SayThanksButton({ me, from, onLocked }: { me: string; from: string; onLocked: (t: string) => void }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        const locked = await chatLockedFor(me, from);
+        setBusy(false);
+        if (locked) onLocked(lockedChatText(from));
+        else router.push(chatHref(from));
+      }}
+      className="ml-auto shrink-0 rounded-full bg-white px-3.5 py-2 text-[13px] font-extrabold text-[#B0245A] disabled:opacity-70"
+    >
+      {busy ? "…" : "💝 Say thanks"}
+    </button>
+  );
+}
+
 
 // ⏳ Mentorship / Merchant renewal: a countdown card — a ring with the days
 // left (of the last 5), the end date, a 5-step bar, and one tap to act:
@@ -871,7 +893,7 @@ export default function AlertsPage() {
               } else if (a.type === "mentor_renewal" || a.type === "merchant_renewal") {
                 card = <RenewalCard a={a} isNew={isNew} me={username} />;
               } else if (a.type === "gift" && a.fromUsername.trim()) {
-                card = <GiftAlertCard a={a} isNew={isNew} />;
+                card = <GiftAlertCard a={a} isNew={isNew} me={username} />;
               } else if (a.type === "friend_request" && a.fromUsername.trim()) {
                 card = <FriendRequestCard a={a} username={username} />;
               } else if (a.type === "mentor_request" && a.requestId) {

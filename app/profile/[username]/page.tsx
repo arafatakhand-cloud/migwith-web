@@ -60,6 +60,8 @@ type Profile = {
   /** Online / Away / Busy / Offline, like the app. */
   presence: "Online" | "Away" | "Busy" | "Offline";
   statusMessage: string;
+  // 🔒 Settings › Privacy › Profile lock: only friends see the profile
+  locked: boolean;
   gifts: number;
   votes: number;
   following: number;
@@ -237,6 +239,7 @@ export default function ProfilePage() {
         setProfile({
           uid: d.id,
           supporter: activeSupporterTeam(x.supporterTeam, x.supporterUntil),
+          locked: x.profileLocked === true,
           fullName: String(x.fullName || "").trim(),
           photoUrl: profileImageUrl(x),
           coverPhotoUrl: String(x.coverPhotoUrl || "").trim(),
@@ -458,6 +461,55 @@ export default function ProfilePage() {
     return (
       <PageShell light>
         <p className="py-20 text-center text-[#5B6B8C]">{error || "Loading…"}</p>
+      </PageShell>
+    );
+  }
+
+  // 🔒 Locked profile and I'm not their friend: name, picture and level only —
+  // no details, no Message button. (Add Friend, Block and Report still work.)
+  if (profile.locked && !isOwn && relation !== "friend") {
+    return (
+      <PageShell light>
+        <div className="mx-auto flex max-w-md flex-col items-center px-6 py-14 text-center">
+          {profile.photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.photoUrl} alt="" className="h-24 w-24 rounded-full object-cover shadow-md" />
+          ) : (
+            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-[#DCE6F5] text-4xl font-bold text-[#35507E]">
+              {username.slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <p className="mt-3 text-xl font-extrabold text-[#0B2A5B]">{username}</p>
+          <p className="text-sm text-[#5B6B8C]">Level {profile.level}</p>
+          <p className="mt-5 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-[#35507E] shadow-sm">
+            🔒 This profile is locked. Only {username}&apos;s friends can see it and message them.
+          </p>
+          {error && <p className="mt-2 text-xs text-[#B3261E]">{error}</p>}
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              disabled={!!busy}
+              onClick={friendAction}
+              className="rounded-full bg-[#2F80ED] px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {relation === "sent" ? "⏳ Request sent · Cancel" : relation === "incoming" ? "🤝 Accept friend request" : "🤝 Add Friend"}
+            </button>
+            <button
+              type="button"
+              onClick={() => toggleMine("blockedUsers", !isBlocked)}
+              className="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-rose-600 shadow-sm"
+            >
+              {isBlocked ? `✓ Unblock` : `🚫 Block`}
+            </button>
+            <button
+              type="button"
+              onClick={() => openReport({ kind: "user", targetUsername: username })}
+              className="rounded-full bg-white px-4 py-2.5 text-sm font-bold text-rose-600 shadow-sm"
+            >
+              🚩 Report
+            </button>
+          </div>
+        </div>
       </PageShell>
     );
   }
