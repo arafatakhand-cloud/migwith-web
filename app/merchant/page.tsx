@@ -278,15 +278,19 @@ export default function MerchantPage() {
     );
   } else {
     // 🧭 the Merchant journey: 4 coloured steps on a path, an example and the start button
-    const steps: [string, string, string, string][] = [
-      ["1", "Pick a mentor", "Choose who will approve you", "from-[#5A8FD6] to-[#1E63D6]"],
-      ["2", "Send your request", "Add a short message (optional)", "from-[#8B7CF0] to-[#6A5BEA]"],
-      ["3", "Get approved", "You're a Merchant for 30 days", "from-[#C77BE6] to-[#B04BD6]"],
-      ["4", "Tag users & earn", "5,000-coin tag · 2.5% on their spending · paid every night", "from-[#3CC774] to-[#16A34A]"],
+    // 🎨 each step is a Community-page card in its own colour
+    const steps: [string, string, string, string, string][] = [
+      ["1", "🧑‍🏫", "Pick a mentor", "Choose who will approve you", "#1E63D6"],
+      ["2", "✉️", "Send your request", "Add a short message (optional)", "#6A5BEA"],
+      ["3", "✅", "Get approved", "You're a Merchant for 30 days", "#B04BD6"],
+      ["4", "🏷️", "Tag users & earn", "5,000-coin tag · 2.5% on their spending · paid every night", "#16A34A"],
     ];
     body = (
       <div>
-        <div className="flex items-center gap-3 rounded-[20px] bg-white p-3.5 shadow-[0_2px_10px_rgba(30,99,214,.08)]">
+        <div
+          className="flex items-center gap-3 rounded-[20px] border p-3.5"
+          style={{ borderColor: "#E9801A38", background: "linear-gradient(90deg,#FFFFFF,#FFFFFF,#E9801A1A)", boxShadow: "0 3px 10px #E9801A1F" }}
+        >
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-2xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
             🧳
           </span>
@@ -296,22 +300,37 @@ export default function MerchantPage() {
           </div>
         </div>
 
-        <ol className="mt-4 pl-1">
-          {steps.map(([n, title, sub, grad], i) => (
-            <li key={n} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${grad} text-sm font-black text-white shadow-md`}>{n}</span>
-                {i < steps.length - 1 && <span className={`my-1 w-[3px] flex-1 rounded-full bg-gradient-to-b ${grad} opacity-60`} style={{ minHeight: 34 }} />}
-              </div>
-              <div className="pb-4 pt-1.5">
-                <p className="text-[15px] font-black text-[#0B2A5B]">{title}</p>
-                <p className="text-xs text-[#5B6B8C]">{sub}</p>
-              </div>
+        <ol className="mt-3 space-y-2.5">
+          {steps.map(([n, icon, title, sub, color]) => (
+            <li
+              key={n}
+              className="flex items-center gap-3 rounded-[18px] border px-3 py-2.5"
+              style={{ borderColor: `${color}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${color}1A)`, boxShadow: `0 3px 10px ${color}1F` }}
+            >
+              <span
+                className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border text-[21px]"
+                style={{ background: `linear-gradient(135deg, ${color}3D, ${color}12)`, borderColor: `${color}4D` }}
+              >
+                {icon}
+                <span
+                  className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-black text-white shadow"
+                  style={{ background: color }}
+                >
+                  {n}
+                </span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-bold text-[#0B2A5B]">{title}</span>
+                <span className="block text-xs text-[#5B6B8C]">{sub}</span>
+              </span>
             </li>
           ))}
         </ol>
 
-        <div className="flex items-center gap-3 rounded-[18px] border border-[#CDEFD8] bg-gradient-to-br from-[#E3F7EA] to-white px-3.5 py-3">
+        <div
+          className="mt-3 flex items-center gap-3 rounded-[18px] border px-3.5 py-3"
+          style={{ borderColor: "#16A34A38", background: "linear-gradient(90deg,#FFFFFF,#FFFFFF,#16A34A1A)", boxShadow: "0 3px 10px #16A34A1F" }}
+        >
           <span className="text-2xl">💚</span>
           <p className="text-[13px] text-[#0B2A5B]">
             <b>Example:</b> your users spend 🪙100,000 → you get <b className="text-[#16A34A]">🪙2,500</b>
