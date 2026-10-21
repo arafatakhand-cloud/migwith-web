@@ -9,6 +9,8 @@ import { useSession } from "../_components/AppSession";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
+import { BackButton } from "../_components/BackButton";
+import { useIsClassic } from "../../lib/uiStyle";
 import { isMainFounderName } from "../../lib/founder";
 import { CountryPickerDialog } from "../_components/CountryPicker";
 import { countryFlag, countryInfoFor, countryWithFlag } from "../../lib/countries";
@@ -140,6 +142,48 @@ const COMMUNITY: Category[] = [
   { id: "top", icon: "🏆", title: "Top Level Users", subtitle: "Highest level users", color: "#E0B000", roles: [] },
 ];
 
+// 🌙 Each category's gradient on the night page (like Discover).
+const NIGHT_GRAD: Record<string, [string, string]> = {
+  executive_board: ["#7C8CFF", "#3F55C7"],
+  admin: ["#FFD54F", "#E0A100"],
+  country_representative: ["#3FD0D4", "#12848C"],
+  staff: ["#5EE08A", "#22A447"],
+  elite_user: ["#5AD8F0", "#1287C7"],
+  mentor: ["#FF7A8A", "#E12A2A"],
+  merchant: ["#C77BE6", "#7B1FB8"],
+  top: ["#FFC94A", "#E08A00"],
+};
+
+/** A category row on the night page: icon tile in its gradient, a thin line on the left. */
+function NightRow({ c, onClick }: { c: Category; onClick: () => void }) {
+  const [g1, g2] = NIGHT_GRAD[c.id] || ["#5A8FD6", "#8B5CFF"];
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="relative flex w-full items-center gap-3 overflow-hidden rounded-[18px] border px-3 py-2.5 text-left transition active:scale-[.98]"
+      style={{ background: "rgba(255,255,255,.05)", borderColor: "rgba(255,255,255,.08)" }}
+    >
+      <span className="absolute inset-y-2.5 left-0 w-[3px] rounded-r-full" style={{ background: `linear-gradient(${g1}, ${g2})` }} />
+      <span
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-[22px]"
+        style={{ background: `linear-gradient(135deg, ${g1}, ${g2})`, boxShadow: `0 4px 12px ${g2}55` }}
+      >
+        {c.icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-extrabold text-white">{c.title}</span>
+        <span className="block truncate text-[11.5px]" style={{ color: "#8FA0C9" }}>
+          {c.subtitle}
+        </span>
+      </span>
+      <span className="shrink-0 text-xl leading-none" style={{ color: "#5B6B8C" }}>
+        ›
+      </span>
+    </button>
+  );
+}
+
 // Name colours on the dark rows (the app's accents).
 const NAME_COLORS: Record<string, string> = {
   executive_board: "#8FA2FF",
@@ -181,6 +225,7 @@ export default function MembersPage() {
   const [selected, setSelected] = useState<Category | null>(null);
   const { user, username } = useSession();
   const isFounder = isMainFounderName(username);
+  const classic = useIsClassic();
   const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -256,6 +301,46 @@ export default function MembersPage() {
       .sort((a, b) => b.level - a.level);
   }, [selected, members]);
   const lightCard = !!selected && isDarkAccent(selected.color);
+
+  // 🌙 The category list: a night page like Discover (Classic keeps its cards).
+  if (!selected && !classic) {
+    return (
+      <PageShell light>
+        <div className="relative isolate min-h-[calc(100dvh-64px)] overflow-hidden text-white" style={{ background: "linear-gradient(180deg,#0F1630,#171338 60%,#1F1238)" }}>
+          <span className="pointer-events-none absolute -right-20 -top-20 -z-10 h-64 w-64 rounded-full blur-3xl" style={{ background: "#5A8FD655" }} />
+          <span className="pointer-events-none absolute -left-24 top-80 -z-10 h-72 w-72 rounded-full blur-3xl" style={{ background: "#8B5CFF40" }} />
+          <section className="mx-auto max-w-2xl px-3 pb-10 pt-3 sm:px-6">
+            <div className="flex items-center gap-3">
+              <BackButton variant="dark" href="/explore" />
+              <div>
+                <h1 className="text-[22px] font-black">👥 Community</h1>
+                <p className="text-xs" style={{ color: "#8FA0C9" }}>
+                  Management · Mentors · Merchants
+                </p>
+              </div>
+            </div>
+            {(
+              [
+                ["🛡️ MANAGEMENT", MANAGEMENT],
+                ["👥 COMMUNITY", COMMUNITY],
+              ] as [string, Category[]][]
+            ).map(([label, list]) => (
+              <div key={label}>
+                <p className="mb-2 ml-1 mt-5 text-[11px] font-black tracking-[1.3px]" style={{ color: "#8FA0C9" }}>
+                  {label}
+                </p>
+                <div className="grid gap-2 md:grid-cols-2">
+                  {list.map((c) => (
+                    <NightRow key={c.id} c={c} onClick={() => setSelected(c)} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </section>
+        </div>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell light>
