@@ -279,8 +279,6 @@ html[data-theme="mint"] .stroke-\[\#1E63D6\]{stroke:#117756}
 html[data-theme="mint"] .text-\[\#8B5CFF\]{color:#5cfffa}
 html[data-theme="mint"] .border-\[\#8B5CFF\]{border-color:#5cfffa}
 html[data-theme="mint"] .text-\[\#0E8FA5\]{color:#0d964b}
-html[data-theme="mint"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#c7ddd5}
-html[data-theme="mint"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#c7ddd5}
 html[data-theme="mint"] .to-\[\#1E63D6\]{--tw-gradient-to:#117756}
 html[data-theme="mint"] .from-\[\#8B7CF0\]{--tw-gradient-from:#7cf0e4}
 html[data-theme="mint"] .to-\[\#6A5BEA\]{--tw-gradient-to:#5beada}
@@ -686,8 +684,6 @@ html[data-theme="lavender"] .stroke-\[\#1E63D6\]{stroke:#7e42e5}
 html[data-theme="lavender"] .text-\[\#8B5CFF\]{color:#c95cff}
 html[data-theme="lavender"] .border-\[\#8B5CFF\]{border-color:#c95cff}
 html[data-theme="lavender"] .text-\[\#0E8FA5\]{color:#836ef3}
-html[data-theme="lavender"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#cfc7dd}
-html[data-theme="lavender"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#cfc7dd}
 html[data-theme="lavender"] .to-\[\#1E63D6\]{--tw-gradient-to:#7e42e5}
 html[data-theme="lavender"] .from-\[\#8B7CF0\]{--tw-gradient-from:#c17cf0}
 html[data-theme="lavender"] .to-\[\#6A5BEA\]{--tw-gradient-to:#af5bea}
@@ -1093,8 +1089,6 @@ html[data-theme="rose_pink"] .stroke-\[\#1E63D6\]{stroke:#c61c70}
 html[data-theme="rose_pink"] .text-\[\#8B5CFF\]{color:#ff5c7c}
 html[data-theme="rose_pink"] .border-\[\#8B5CFF\]{border-color:#ff5c7c}
 html[data-theme="rose_pink"] .text-\[\#0E8FA5\]{color:#ec25b3}
-html[data-theme="rose_pink"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#ddc7d2}
-html[data-theme="rose_pink"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#ddc7d2}
 html[data-theme="rose_pink"] .to-\[\#1E63D6\]{--tw-gradient-to:#c61c70}
 html[data-theme="rose_pink"] .from-\[\#8B7CF0\]{--tw-gradient-from:#f07c9b}
 html[data-theme="rose_pink"] .to-\[\#6A5BEA\]{--tw-gradient-to:#ea5b83}
@@ -1500,8 +1494,6 @@ html[data-theme="sunset"] .stroke-\[\#1E63D6\]{stroke:#a65117}
 html[data-theme="sunset"] .text-\[\#8B5CFF\]{color:#ffce5c}
 html[data-theme="sunset"] .border-\[\#8B5CFF\]{border-color:#ffce5c}
 html[data-theme="sunset"] .text-\[\#0E8FA5\]{color:#ec4721}
-html[data-theme="sunset"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#ddd0c7}
-html[data-theme="sunset"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#ddd0c7}
 html[data-theme="sunset"] .to-\[\#1E63D6\]{--tw-gradient-to:#a65117}
 html[data-theme="sunset"] .from-\[\#8B7CF0\]{--tw-gradient-from:#f0c57c}
 html[data-theme="sunset"] .to-\[\#6A5BEA\]{--tw-gradient-to:#eab45b}
@@ -1907,8 +1899,6 @@ html[data-theme="sunshine"] .stroke-\[\#1E63D6\]{stroke:#7f6612}
 html[data-theme="sunshine"] .text-\[\#8B5CFF\]{color:#f4ff5c}
 html[data-theme="sunshine"] .border-\[\#8B5CFF\]{border-color:#f4ff5c}
 html[data-theme="sunshine"] .text-\[\#0E8FA5\]{color:#bd7010}
-html[data-theme="sunshine"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#ddd8c7}
-html[data-theme="sunshine"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#ddd8c7}
 html[data-theme="sunshine"] .to-\[\#1E63D6\]{--tw-gradient-to:#7f6612}
 html[data-theme="sunshine"] .from-\[\#8B7CF0\]{--tw-gradient-from:#f0f07c}
 html[data-theme="sunshine"] .to-\[\#6A5BEA\]{--tw-gradient-to:#eae85b}
@@ -2314,8 +2304,6 @@ html[data-theme="aqua"] .stroke-\[\#1E63D6\]{stroke:#12747f}
 html[data-theme="aqua"] .text-\[\#8B5CFF\]{color:#5cbdff}
 html[data-theme="aqua"] .border-\[\#8B5CFF\]{border-color:#5cbdff}
 html[data-theme="aqua"] .text-\[\#0E8FA5\]{color:#0c9384}
-html[data-theme="aqua"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#c7dbdd}
-html[data-theme="aqua"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#c7dbdd}
 html[data-theme="aqua"] .to-\[\#1E63D6\]{--tw-gradient-to:#12747f}
 html[data-theme="aqua"] .from-\[\#8B7CF0\]{--tw-gradient-from:#7ccaf0}
 html[data-theme="aqua"] .to-\[\#6A5BEA\]{--tw-gradient-to:#5bbcea}
@@ -2721,8 +2709,6 @@ html[data-theme="cherry"] .stroke-\[\#1E63D6\]{stroke:#cd1d2b}
 html[data-theme="cherry"] .text-\[\#8B5CFF\]{color:#ff805c}
 html[data-theme="cherry"] .border-\[\#8B5CFF\]{border-color:#ff805c}
 html[data-theme="cherry"] .text-\[\#0E8FA5\]{color:#ee3a6f}
-html[data-theme="cherry"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#ddc7c9}
-html[data-theme="cherry"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#ddc7c9}
 html[data-theme="cherry"] .to-\[\#1E63D6\]{--tw-gradient-to:#cd1d2b}
 html[data-theme="cherry"] .from-\[\#8B7CF0\]{--tw-gradient-from:#f08d7c}
 html[data-theme="cherry"] .to-\[\#6A5BEA\]{--tw-gradient-to:#ea6f5b}
@@ -3128,8 +3114,6 @@ html[data-theme="teal"] .stroke-\[\#1E63D6\]{stroke:#117669}
 html[data-theme="teal"] .text-\[\#8B5CFF\]{color:#5ce3ff}
 html[data-theme="teal"] .border-\[\#8B5CFF\]{border-color:#5ce3ff}
 html[data-theme="teal"] .text-\[\#0E8FA5\]{color:#0d9566}
-html[data-theme="teal"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#c7ddda}
-html[data-theme="teal"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#c7ddda}
 html[data-theme="teal"] .to-\[\#1E63D6\]{--tw-gradient-to:#117669}
 html[data-theme="teal"] .from-\[\#8B7CF0\]{--tw-gradient-from:#7ce5f0}
 html[data-theme="teal"] .to-\[\#6A5BEA\]{--tw-gradient-to:#5bdeea}
@@ -3535,8 +3519,6 @@ html[data-theme="emerald"] .stroke-\[\#1E63D6\]{stroke:#11793d}
 html[data-theme="emerald"] .text-\[\#8B5CFF\]{color:#5cffd1}
 html[data-theme="emerald"] .border-\[\#8B5CFF\]{border-color:#5cffd1}
 html[data-theme="emerald"] .text-\[\#0E8FA5\]{color:#0d9729}
-html[data-theme="emerald"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#c7ddd0}
-html[data-theme="emerald"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#c7ddd0}
 html[data-theme="emerald"] .to-\[\#1E63D6\]{--tw-gradient-to:#11793d}
 html[data-theme="emerald"] .from-\[\#8B7CF0\]{--tw-gradient-from:#7cf0c7}
 html[data-theme="emerald"] .to-\[\#6A5BEA\]{--tw-gradient-to:#5beab6}
@@ -3942,8 +3924,6 @@ html[data-theme="ruby"] .stroke-\[\#1E63D6\]{stroke:#cb1d48}
 html[data-theme="ruby"] .text-\[\#8B5CFF\]{color:#ff655c}
 html[data-theme="ruby"] .border-\[\#8B5CFF\]{border-color:#ff655c}
 html[data-theme="ruby"] .text-\[\#0E8FA5\]{color:#ee348a}
-html[data-theme="ruby"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#ddc7cd}
-html[data-theme="ruby"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#ddc7cd}
 html[data-theme="ruby"] .to-\[\#1E63D6\]{--tw-gradient-to:#cb1d48}
 html[data-theme="ruby"] .from-\[\#8B7CF0\]{--tw-gradient-from:#f07c7e}
 html[data-theme="ruby"] .to-\[\#6A5BEA\]{--tw-gradient-to:#ea5b5f}
@@ -4349,8 +4329,6 @@ html[data-theme="purple"] .stroke-\[\#1E63D6\]{stroke:#843fe4}
 html[data-theme="purple"] .text-\[\#8B5CFF\]{color:#d15cff}
 html[data-theme="purple"] .border-\[\#8B5CFF\]{border-color:#d15cff}
 html[data-theme="purple"] .text-\[\#0E8FA5\]{color:#886cf3}
-html[data-theme="purple"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#d0c7dd}
-html[data-theme="purple"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#d0c7dd}
 html[data-theme="purple"] .to-\[\#1E63D6\]{--tw-gradient-to:#843fe4}
 html[data-theme="purple"] .from-\[\#8B7CF0\]{--tw-gradient-from:#c77cf0}
 html[data-theme="purple"] .to-\[\#6A5BEA\]{--tw-gradient-to:#b65bea}
@@ -4756,8 +4734,6 @@ html[data-theme="black_gold"] .stroke-\[\#1E63D6\]{stroke:#706952}
 html[data-theme="black_gold"] .text-\[\#8B5CFF\]{color:#bcbe9d}
 html[data-theme="black_gold"] .border-\[\#8B5CFF\]{border-color:#bcbe9d}
 html[data-theme="black_gold"] .text-\[\#0E8FA5\]{color:#937f68}
-html[data-theme="black_gold"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#d4d3d0}
-html[data-theme="black_gold"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#d4d3d0}
 html[data-theme="black_gold"] .to-\[\#1E63D6\]{--tw-gradient-to:#706952}
 html[data-theme="black_gold"] .from-\[\#8B7CF0\]{--tw-gradient-from:#c2c1aa}
 html[data-theme="black_gold"] .to-\[\#6A5BEA\]{--tw-gradient-to:#b1b094}
@@ -5163,8 +5139,6 @@ html[data-theme="dark_luxury"] .stroke-\[\#1E63D6\]{stroke:#606979}
 html[data-theme="dark_luxury"] .text-\[\#8B5CFF\]{color:#a1a3ba}
 html[data-theme="dark_luxury"] .border-\[\#8B5CFF\]{border-color:#a1a3ba}
 html[data-theme="dark_luxury"] .text-\[\#0E8FA5\]{color:#728592}
-html[data-theme="dark_luxury"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#d0d2d4}
-html[data-theme="dark_luxury"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#d0d2d4}
 html[data-theme="dark_luxury"] .to-\[\#1E63D6\]{--tw-gradient-to:#606979}
 html[data-theme="dark_luxury"] .from-\[\#8B7CF0\]{--tw-gradient-from:#adb0bf}
 html[data-theme="dark_luxury"] .to-\[\#6A5BEA\]{--tw-gradient-to:#989bad}
@@ -5570,8 +5544,6 @@ html[data-theme="light_clean"] .stroke-\[\#1E63D6\]{stroke:#2b66c6}
 html[data-theme="light_clean"] .text-\[\#8B5CFF\]{color:#6873f3}
 html[data-theme="light_clean"] .border-\[\#8B5CFF\]{border-color:#6873f3}
 html[data-theme="light_clean"] .text-\[\#0E8FA5\]{color:#2288ce}
-html[data-theme="light_clean"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#c9d0db}
-html[data-theme="light_clean"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#c9d0db}
 html[data-theme="light_clean"] .to-\[\#1E63D6\]{--tw-gradient-to:#2b66c6}
 html[data-theme="light_clean"] .from-\[\#8B7CF0\]{--tw-gradient-from:#8594e7}
 html[data-theme="light_clean"] .to-\[\#6A5BEA\]{--tw-gradient-to:#667adf}
@@ -5977,8 +5949,6 @@ html[data-theme="rose_gold"] .stroke-\[\#1E63D6\]{stroke:#ad4850}
 html[data-theme="rose_gold"] .text-\[\#8B5CFF\]{color:#da9481}
 html[data-theme="rose_gold"] .border-\[\#8B5CFF\]{border-color:#da9481}
 html[data-theme="rose_gold"] .text-\[\#0E8FA5\]{color:#c66380}
-html[data-theme="rose_gold"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#d8cccd}
-html[data-theme="rose_gold"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#d8cccd}
 html[data-theme="rose_gold"] .to-\[\#1E63D6\]{--tw-gradient-to:#ad4850}
 html[data-theme="rose_gold"] .from-\[\#8B7CF0\]{--tw-gradient-from:#d6a096}
 html[data-theme="rose_gold"] .to-\[\#6A5BEA\]{--tw-gradient-to:#ca867b}
@@ -6363,8 +6333,7 @@ html[data-theme="dark_night"] .border-\[\#C9DAF2\]{border-color:#1b2738}
 html[data-theme="dark_night"] .stroke-\[\#1E63D6\]{stroke:#79a4ec}
 html[data-theme="dark_night"] .bg-\[\#FFF6DD\]{background-color:#2c2615}
 html[data-theme="dark_night"] .text-\[\#0E8FA5\]{color:#72e0f3}
-html[data-theme="dark_night"] .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#242e3b}
-html[data-theme="dark_night"] .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#242e3b}
+html[data-theme="dark_night"] .text-\[\#073B24\]{color:#76efb9}
 html[data-theme="dark_night"] .border-\[\#CDEFD8\]{border-color:#1b3724}
 html[data-theme="dark_night"] .from-\[\#E3F7EA\]{--tw-gradient-from:#152c1d}
 html[data-theme="dark_night"] .bg-\[\#EEF3F8\]{background-color:#131e28}
@@ -6592,8 +6561,6 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#F7F0FF\]{--tw-gra
 html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#E3EAF6\]{border-color:#ebecee}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#E3E8F2\]{border-color:#e9eaec}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#C9DAF2\]{border-color:#dadde1}
-html[data-ui="classic"]:not([data-theme="dark_night"]) .disabled\:from-\[\#C7D0DD\]:disabled{--tw-gradient-from:#d0d2d4}
-html[data-ui="classic"]:not([data-theme="dark_night"]) .disabled\:to-\[\#C7D0DD\]:disabled{--tw-gradient-to:#d0d2d4}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#EEF3F8\]{background-color:#f2f3f4}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#C9CED6\]{--tw-gradient-from:#cecfd1}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#E8EEF5\]{background-color:#edeef0}
@@ -6868,6 +6835,9 @@ html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#7B
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#8B5CFF\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#8B5CFF\].classic-light{color:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .border-\[\#8B5CFF\],html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#8B5CFF\].classic-light{border-color:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .bg-\[\#FFF6DD\],html[data-ui="classic"]:not([data-theme="dark_night"]) .bg-\[\#FFF6DD\].classic-light{background-color:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .border-\[\#FFD36E\],html[data-ui="classic"]:not([data-theme="dark_night"]) .border-\[\#FFD36E\].classic-light{border-color:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .text-\[\#FFE7A3\],html[data-ui="classic"]:not([data-theme="dark_night"]) .text-\[\#FFE7A3\].classic-light{color:#F07A00}
+html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .focus-within\:border-\[\#FFD36E\]:focus-within,html[data-ui="classic"]:not([data-theme="dark_night"]) .focus-within\:border-\[\#FFD36E\].classic-light{border-color:#F07A00}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#8B7CF0\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#8B7CF0\].classic-light{--tw-gradient-from:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .to-\[\#6A5BEA\],html[data-ui="classic"]:not([data-theme="dark_night"]) .to-\[\#6A5BEA\].classic-light{--tw-gradient-to:#2F6ABD}
 html[data-ui="classic"]:not([data-theme="dark_night"]) .classic-light .from-\[\#C77BE6\],html[data-ui="classic"]:not([data-theme="dark_night"]) .from-\[\#C77BE6\].classic-light{--tw-gradient-from:#2F6ABD}

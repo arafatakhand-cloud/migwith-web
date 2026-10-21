@@ -23,13 +23,14 @@ import { PageTitle } from "../_components/LightCards";
 import { MerchantDashboard } from "./MerchantDashboard";
 import { MentorIdCard } from "./MentorIdCard";
 import { isMainFounderName } from "../../lib/founder";
+import { Face, profileImageUrl } from "../_components/RankFace";
 
 // Explore › miGlife Partner (Merchant Program), same documents as the app's MentorProgramPage:
 // a normal user picks a mentor and sends a mentor_requests entry; an active
 // mentor_merchants record opens the Merchant Dashboard; mentors get a link to
 // the Mentor Dashboard (/mentor).
 
-type Mentor = { username: string; level: number; country: string; status: string; merchants: number; pending: number };
+type Mentor = { username: string; level: number; country: string; status: string; photo: string; merchants: number; pending: number };
 
 const toMs = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
 
@@ -102,6 +103,7 @@ export default function MerchantPage() {
           level: Number(d.get("level") || 1),
           country: String(d.get("country") || "").trim(),
           status: String(d.get("statusMessage") || "").trim(),
+          photo: profileImageUrl(d.data()),
           merchants: 0,
           pending: 0,
         }))
@@ -183,21 +185,19 @@ export default function MerchantPage() {
       </div>
     );
   } else if (step === "PICK") {
+    // 👑 Royal look (like Rankings): glass cards with profile pictures; the
+    // chosen mentor glows gold. The page frame is drawn below (ROYAL_BG).
     body = (
       <div>
-        {/* 🧳 a short line instead of the big banner */}
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-2xl" style={{ background: "linear-gradient(135deg, #F7C948, #E9801A)" }}>
-            🧳
-          </span>
-          <p className="text-[13px] leading-[18px] text-[#5B6B8C]">Pick a mentor and send your request. They&apos;ll review and approve it.</p>
-        </div>
+        <p className="mx-1 mb-3 text-[12.5px] text-white/75">Pick a mentor and send your request — they&apos;ll review and approve it. ✨</p>
 
-        <div className="mt-3 space-y-2.5">
-          {mentors === null ? null : mentors.length === 0 ? (
-            <div className="flex flex-col items-center rounded-[20px] bg-white py-6 shadow-sm">
+        <div className="space-y-[9px]">
+          {mentors === null ? (
+            <p className="py-10 text-center text-sm text-white/60">Loading…</p>
+          ) : mentors.length === 0 ? (
+            <div className="rounded-[20px] border border-dashed border-white/25 bg-white/[.07] py-7 text-center">
               <span className="text-3xl">🔍</span>
-              <p className="mt-1.5 text-[13px] text-[#5B6B8C]">No mentors available right now.</p>
+              <p className="mt-1.5 text-[13px] text-white/70">No mentors available right now.</p>
             </div>
           ) : (
             mentors.map((m) => {
@@ -207,44 +207,36 @@ export default function MerchantPage() {
               return (
                 <div
                   key={m.username}
-                  className={`rounded-[20px] bg-white p-3 transition ${
-                    sel ? "shadow-[0_0_0_2px_#16A34A,0_6px_14px_rgba(22,163,74,.2)]" : "shadow-[0_2px_8px_rgba(30,99,214,.08)]"
-                  }`}
+                  className={`rounded-[20px] border p-3 transition ${sel ? "border-[#FFD36E] shadow-[0_0_22px_rgba(255,201,60,.27)]" : "border-white/10 bg-white/[.07]"}`}
+                  style={sel ? { background: "linear-gradient(135deg, rgba(255,211,110,.22), rgba(255,211,110,.06))" } : undefined}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] text-xl font-black text-white">
-                      {m.username.slice(0, 1).toUpperCase()}
-                    </span>
+                    <Face name={m.username} url={m.photo} size={52} ring={sel ? "linear-gradient(#FFE08A,#E0A100)" : undefined} />
                     <span className="min-w-0 flex-1">
-                      <span data-notranslate className="block truncate text-base font-black text-[#0B2A5B]">
+                      <span data-notranslate className="block truncate text-base font-black">
                         @{m.username}
                       </span>
                       {m.country && (
-                        <span className="block truncate text-xs text-[#5B6B8C]">
+                        <span className="block truncate text-xs text-white/70">
                           {flag} {m.country}
                         </span>
                       )}
                       {m.status && (
-                        <span data-notranslate className="mt-0.5 block truncate text-[12px] italic text-[#38517F]">
+                        <span data-notranslate className="mt-0.5 block truncate text-[12px] italic text-[#FFE7A3]">
                           💬 {m.status}
                         </span>
                       )}
                     </span>
-                    <span className="shrink-0 rounded-full bg-[#FFF6DD] px-2.5 py-0.5 text-[11px] font-black text-[#B7791F]">Lv {m.level}</span>
+                    <span className="shrink-0 rounded-full bg-[#FFD36E]/15 px-2.5 py-1 text-[11px] font-black text-[#FFD36E]">⭐ Lv {m.level}</span>
                   </div>
-                  <div className="mt-2.5 flex gap-2">
-                    <div className="flex-1 rounded-xl bg-[#EAF1FC] py-1.5 text-center">
-                      <p className="text-base font-black leading-tight text-[#1E63D6]">{m.merchants}</p>
-                      <p className="text-[10px] text-[#5B6B8C]">Merchants</p>
-                    </div>
-                    <div className="flex-1 rounded-xl bg-[#EAF1FC] py-1.5 text-center">
-                      <p className="text-base font-black leading-tight text-[#C98A0C]">{m.pending}</p>
-                      <p className="text-[10px] text-[#5B6B8C]">Pending</p>
-                    </div>
+                  <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                    <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold">🏪 {m.merchants} merchants</span>
+                    <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-extrabold">⏳ {m.pending} pending</span>
                     <button
                       type="button"
                       onClick={() => setSelected(sel ? "" : m.username)}
-                      className={`flex-[1.3] rounded-xl text-sm font-black text-white transition active:scale-95 ${sel ? "bg-[#16A34A]" : "bg-[#1E63D6]"}`}
+                      className={`ml-auto rounded-full px-[18px] py-2 text-[13px] font-black transition active:scale-95 ${sel ? "bg-[#2EE59D] text-[#073B24]" : "text-[#3A2600]"}`}
+                      style={sel ? undefined : { background: "linear-gradient(90deg,#FFE08A,#E0A100)" }}
                     >
                       {sel ? "✓ Chosen" : "Choose"}
                     </button>
@@ -256,29 +248,26 @@ export default function MerchantPage() {
         </div>
 
         {/* message + send in one bar */}
-        <div className="mt-3 flex items-end gap-2 rounded-[24px] bg-white p-1.5 pl-3.5 shadow-[0_2px_8px_rgba(30,99,214,.1)] focus-within:shadow-[0_0_0_2px_#1E63D6]">
+        <div className="mt-3 flex items-end gap-2 rounded-[18px] border border-white/15 bg-white/[.08] p-1.5 pl-3.5 focus-within:border-[#FFD36E]">
           <span className="pb-2 text-lg">✍️</span>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, 500))}
             rows={1}
-            placeholder={selected ? `Message for @${selected} (optional)` : "Message (optional)"}
-            className="max-h-28 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] text-[#0B2A5B] outline-none placeholder:text-[#8A9BBC]"
+            placeholder={selected ? `Message to @${selected} (optional)` : "Message (optional)"}
+            className="max-h-28 min-h-[40px] min-w-0 flex-1 resize-none bg-transparent py-2.5 text-[15px] text-white outline-none placeholder:text-white/50"
           />
           <button
             type="button"
             onClick={send}
             disabled={!selected || busy}
-            className="h-10 shrink-0 rounded-full bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] px-4 text-sm font-black text-white shadow disabled:from-[#C7D0DD] disabled:to-[#C7D0DD] disabled:shadow-none"
+            className="h-10 shrink-0 rounded-[14px] px-4 text-sm font-black text-[#3A2600] disabled:opacity-40"
+            style={{ background: "linear-gradient(90deg,#FFE08A,#E0A100)" }}
           >
             {busy ? "…" : "Send 🚀"}
           </button>
         </div>
-        <p className="mr-2 mt-1 text-right text-[11px] text-[#8A9BBC]">{selected ? `To @${selected}` : "Choose a mentor first"} · {note.length}/500</p>
-
-        <button type="button" onClick={() => setStep("INTRO")} className="mt-1 w-full py-2 text-sm font-bold text-[#5B6B8C]">
-          Back
-        </button>
+        <p className="mr-2 mt-1 text-right text-[11px] text-white/50">{selected ? `To @${selected}` : "Choose a mentor first"} · {note.length}/500</p>
       </div>
     );
   } else {
@@ -331,6 +320,33 @@ export default function MerchantPage() {
           Start step 1 →
         </button>
       </div>
+    );
+  }
+
+  if (ready && loaded && !isMentor && !pending && step === "PICK") {
+    return (
+      <PageShell light>
+        <div className="min-h-[calc(100dvh-57px)] text-white" style={{ background: "radial-gradient(120% 60% at 50% 0%, #5B2BA8 0%, #2A1150 55%, #170A2E 100%)" }}>
+          <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
+            <div className="flex items-center gap-3 py-3">
+              <button
+                type="button"
+                aria-label="Back"
+                onClick={() => setStep("INTRO")}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold"
+              >
+                ‹
+              </button>
+              <div className="min-w-0 flex-1">
+                <h1 className="truncate text-xl font-black">🏪 Choose Your Mentor</h1>
+                <p className="text-[10.5px] font-extrabold tracking-[0.15em] text-[#E9C46A]">BECOME A MERCHANT</p>
+              </div>
+            </div>
+            {error && <p className="mb-3 rounded-xl bg-white/10 px-4 py-2 text-sm text-[#FFB4AB]">{error}</p>}
+            {body}
+          </section>
+        </div>
+      </PageShell>
     );
   }
 
