@@ -691,26 +691,51 @@ export default function AlertsPage() {
   }, [loading, user, router]);
 
   // The NEWEST 100. Needs an index (toUsername + createdAt); until it exists
-  // the unordered 100 are used and sorted here, like the app.
+  // the unordered 100 are used and sorted here, like the app. Those 100 are
+  // NOT the newest once someone has more than 100 alerts, so the unread ones
+  // (no index needed) are added on top — a new gift always shows. Kept for
+  // this visit even after they are marked read.
+  const [loadError, setLoadError] = useState("");
   useEffect(() => {
     if (!username) return;
+    setLoadError("");
     let fallback: (() => void) | null = null;
+    let unread: (() => void) | null = null;
     const off = onSnapshot(
       query(collection(db, "alerts"), where("toUsername", "==", username), orderBy("createdAt", "desc"), limit(100)),
       (snap) => setAlerts(snap.docs.map(toAlert)),
       (err) => {
         console.error("Newest-first alerts need an index:", err);
         if (fallback) return;
+        const some = new Map<string, Alert>();
+        const fresh = new Map<string, Alert>();
+        const show = () => setAlerts([...new Map([...some, ...fresh]).values()].sort((a, b) => b.createdAtMs - a.createdAtMs));
         fallback = onSnapshot(
           query(collection(db, "alerts"), where("toUsername", "==", username), limit(100)),
-          (snap) => setAlerts(snap.docs.map(toAlert).sort((a, b) => b.createdAtMs - a.createdAtMs)),
-          () => setAlerts([])
+          (snap) => {
+            some.clear();
+            snap.docs.forEach((d) => some.set(d.id, toAlert(d)));
+            show();
+          },
+          (e) => {
+            setLoadError(e?.message || String(e));
+            setAlerts([]);
+          }
+        );
+        unread = onSnapshot(
+          query(collection(db, "alerts"), where("toUsername", "==", username), where("read", "==", false), limit(200)),
+          (snap) => {
+            snap.docs.forEach((d) => fresh.set(d.id, toAlert(d)));
+            show();
+          },
+          () => {}
         );
       }
     );
     return () => {
       off();
       fallback?.();
+      unread?.();
     };
   }, [username]);
 
@@ -801,6 +826,9 @@ export default function AlertsPage() {
 
         <div className="px-3.5 pt-2">
           <PushToggle />
+          {loadError && (
+            <p className="mb-2 rounded-xl bg-[#FDECEA] px-3 py-2 text-xs font-semibold text-[#B3261E]">⚠️ Alerts could not load: {loadError}</p>
+          )}
           {alerts === null ? (
             <p className="py-10 text-center text-sm text-[#6B7A99]">Loading…</p>
           ) : shown.length === 0 ? (
