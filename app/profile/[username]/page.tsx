@@ -315,7 +315,7 @@ export default function ProfilePage() {
       })
       .catch(() => {});
 
-    Promise.all([latestGifts("fromUsername", username, 10), latestGifts("toUsername", username, 10)])
+    Promise.all([latestGifts("fromUsername", username, 10, isOwn), latestGifts("toUsername", username, 10, isOwn)])
       .then(([sent, got]) => {
         const list: GiftEntry[] = [
           ...sent.map((d) => ({
@@ -334,7 +334,7 @@ export default function ProfilePage() {
         setGifts(list.sort((a, b) => b.at - a.at).slice(0, 6));
       })
       .catch(() => {});
-  }, [user, username]);
+  }, [user, username, isOwn]);
 
   // My follow / block state for this person, and leave a footprint.
   useEffect(() => {

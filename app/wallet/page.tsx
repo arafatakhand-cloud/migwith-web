@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -168,6 +168,7 @@ export default function WalletPage() {
   const [gifts, setGifts] = useState<{ id: string; data: DocumentData }[]>([]);
   const [todayTx, setTodayTx] = useState<DocumentData[]>([]);
   const [todayGifts, setTodayGifts] = useState<DocumentData[]>([]);
+  const todayGiftParts = useRef<{ gift_activity: DocumentData[]; gift_activity_private: DocumentData[] }>({ gift_activity: [], gift_activity_private: [] });
 
   const [showTransfer, setShowTransfer] = useState(false);
   // 🔐 PIN status (checked when the wallet opens, so Transfer reacts at once):
@@ -230,11 +231,17 @@ export default function WalletPage() {
         (s) => setTodayTx(s.docs.map((d) => d.data())),
         (e) => console.error("today tx", e)
       ),
-      onSnapshot(
-        query(collection(db, "gift_activity"), where("fromUsername", "==", username), where("createdAt", ">=", midnight)),
-        // the doc id rides along, so today's gifts also join the activity list
-        (s) => setTodayGifts(s.docs.map((d) => ({ ...d.data(), __id: d.id }))),
-        (e) => console.error("today gifts", e)
+      // today's gifts: public + my private-chat gifts (both are spending)
+      ...(["gift_activity", "gift_activity_private"] as const).map((name) =>
+        onSnapshot(
+          query(collection(db, name), where("fromUsername", "==", username), where("createdAt", ">=", midnight)),
+          // the doc id rides along, so today's gifts also join the activity list
+          (s) => {
+            todayGiftParts.current[name] = s.docs.map((d) => ({ ...d.data(), __id: d.id }));
+            setTodayGifts([...todayGiftParts.current.gift_activity, ...todayGiftParts.current.gift_activity_private]);
+          },
+          (e) => console.error("today gifts", name, e)
+        )
       ),
     ];
     ensureCoinAccount({}).catch(() => {});
@@ -245,7 +252,7 @@ export default function WalletPage() {
   // than 30: one Gift Shower alone is up to 40 docs, shown as ONE line.
   useEffect(() => {
     if (!username) return;
-    latestGifts("fromUsername", username, 150)
+    latestGifts("fromUsername", username, 150, true)
       .then((docs) => setGifts(docs.map((d) => ({ id: d.id, data: d.data() }))))
       .catch((e) => console.error("gifts", e));
   }, [username, todayGifts.length]);

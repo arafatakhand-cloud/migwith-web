@@ -74,16 +74,18 @@ export const todayStr = () => new Date().toLocaleDateString("en-CA", { timeZone:
 export async function spendBetween(uid: string, username: string, from: Timestamp, end: Timestamp): Promise<number> {
   if (from.toMillis() >= end.toMillis()) return 0;
   const range = [where("createdAt", ">=", from), where("createdAt", "<", end)];
-  const [bets, refunds, gifts] = await Promise.all([
+  const [bets, refunds, gifts, privateGifts] = await Promise.all([
     getDocs(query(collection(db, "users", uid, "coin_transactions"), where("type", "==", "bet"), ...range)),
     getDocs(query(collection(db, "users", uid, "coin_transactions"), where("type", "==", "refund"), ...range)),
     getDocs(query(collection(db, "gift_activity"), where("fromUsername", "==", username), ...range)),
+    // 🔒 private-chat gifts (readable by the person's own Mentor / Merchant)
+    getDocs(query(collection(db, "gift_activity_private"), where("fromUsername", "==", username), ...range)).catch(() => null),
   ]);
   let game = 0;
   bets.docs.forEach((t) => (game += Math.abs(Number(t.get("amount") || 0))));
   refunds.docs.forEach((t) => (game -= Math.abs(Number(t.get("amount") || 0))));
   let spend = Math.max(0, game);
-  gifts.docs.forEach((g) => (spend += Math.abs(Number(g.get("cost") || 0))));
+  [...gifts.docs, ...(privateGifts?.docs || [])].forEach((g) => (spend += Math.abs(Number(g.get("cost") || 0))));
   return spend;
 }
 
