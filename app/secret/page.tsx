@@ -268,33 +268,35 @@ export default function SecretPage() {
             </div>
           </div>
           {groups.map(([groupTitle, list]) => (
-            <div key={groupTitle} className="space-y-1.5">
+            <div key={groupTitle} className="space-y-2">
               <p className="pl-0.5 pt-2 text-[11px] font-bold uppercase tracking-[1px] text-[#5B6B8C]">{groupTitle}</p>
               {list.map((t) => {
                 const body = (
                   <>
                     <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] text-[17px]"
-                      style={{ background: `linear-gradient(135deg, ${t.tint}F2, ${t.tint}99)` }}
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[18px]"
+                      style={{ background: `linear-gradient(135deg, ${t.tint}3D, ${t.tint}12)`, borderColor: `${t.tint}4D` }}
                     >
                       {t.icon}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold">{t.label}</span>
+                      <span className="block text-sm font-bold text-[#0B2A5B]">{t.label}</span>
                       <span className="block truncate text-[11px] text-[#5B6B8C]">{t.hint}</span>
                     </span>
-                    <span className="text-[22px] font-bold" style={{ color: t.tint }}>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold" style={{ background: `${t.tint}24`, color: t.tint }}>
                       ›
                     </span>
                   </>
                 );
-                const cls = "flex w-full items-center gap-3 rounded-[14px] border border-[#E3EAF5] bg-[#F4F7FC] px-2.5 py-[9px] text-left";
+                // 🎨 the Community page's card: white → the tool's colour
+                const cls = "flex w-full items-center gap-3 rounded-[18px] border px-2.5 py-2.5 text-left transition hover:brightness-[.98]";
+                const style = { borderColor: `${t.tint}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${t.tint}1A)`, boxShadow: `0 3px 10px ${t.tint}1F` };
                 return t.href ? (
-                  <Link key={t.label} href={t.href} className={cls}>
+                  <Link key={t.label} href={t.href} className={cls} style={style}>
                     {body}
                   </Link>
                 ) : (
-                  <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls}>
+                  <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls} style={style}>
                     {body}
                   </button>
                 );

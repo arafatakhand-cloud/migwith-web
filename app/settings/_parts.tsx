@@ -4,13 +4,19 @@ import Link from "next/link";
 import { CHAT_TEXT_MAX, CHAT_TEXT_MIN, setChatTextSize, useChatTextSize } from "../../lib/chatTextSize";
 import { setUiStyle, useUiStyle, type UiStyle } from "../../lib/uiStyle";
 
-// ⚙ Settings rows: grouped white cards, a coloured icon tile, title + short
-// line, and a switch / value / › on the right.
+// ⚙ Settings rows: a coloured icon tile, title + short line, and a switch /
+// value / › on the right. Modern: every row is its own Community-page card
+// (white → its colour); Classic: grouped white cards with dividers.
 export function Group({ title, children }: { title: string; children: React.ReactNode }) {
+  const classic = useUiStyle() === "classic";
   return (
     <section>
       <p className="mb-1.5 px-2 text-[11px] font-extrabold uppercase tracking-[1.4px] text-[#5B6B8C]">{title}</p>
-      <div className="divide-y divide-[#EEF2F8] overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_rgba(16,40,90,0.06)]">{children}</div>
+      {classic ? (
+        <div className="divide-y divide-[#EEF2F8] overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_rgba(16,40,90,0.06)]">{children}</div>
+      ) : (
+        <div className="space-y-2.5">{children}</div>
+      )}
     </section>
   );
 }
@@ -34,11 +40,12 @@ export function Row({
   href?: string;
   onClick?: () => void;
 }) {
+  const classic = useUiStyle() === "classic";
   const body = (
     <>
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-        style={{ background: `linear-gradient(145deg, ${tint}26, ${tint}12)`, boxShadow: `inset 0 0 0 1px ${tint}22` }}
+        style={{ background: `linear-gradient(145deg, ${tint}26, ${tint}12)`, boxShadow: `inset 0 0 0 1px ${tint}${classic ? "22" : "4D"}` }}
       >
         {icon}
       </span>
@@ -49,15 +56,27 @@ export function Row({
       {right ?? (
         <span className="flex shrink-0 items-center gap-1.5">
           {value && <span className="text-[13px] font-semibold text-[#5B6B8C]">{value}</span>}
-          <span className="text-xl leading-none text-[#A9B4C2]">›</span>
+          {classic ? (
+            <span className="text-xl leading-none text-[#A9B4C2]">›</span>
+          ) : (
+            <span className="flex h-7 w-7 items-center justify-center rounded-full text-lg font-bold" style={{ background: `${tint}24`, color: tint }}>
+              ›
+            </span>
+          )}
         </span>
       )}
     </>
   );
-  const cls = "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#F6F9FD]";
-  if (href) return <Link href={href} className={cls}>{body}</Link>;
-  if (onClick) return <button type="button" onClick={onClick} className={cls}>{body}</button>;
-  return <div className={cls}>{body}</div>;
+  const cls = classic
+    ? "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#F6F9FD]"
+    : "flex w-full items-center gap-3 rounded-[18px] border px-3 py-2.5 text-left transition hover:brightness-[.98]";
+  // 🎨 the Community page's card: white → the row's colour
+  const style = classic
+    ? undefined
+    : { borderColor: `${tint}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${tint}1A)`, boxShadow: `0 3px 10px ${tint}1F` };
+  if (href) return <Link href={href} className={cls} style={style}>{body}</Link>;
+  if (onClick) return <button type="button" onClick={onClick} className={cls} style={style}>{body}</button>;
+  return <div className={cls} style={style}>{body}</div>;
 }
 
 // 🔠 Room text size inside the Appearance group: A− · size · A+ (saved in this browser).

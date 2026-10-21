@@ -16,6 +16,19 @@ import { useSwitchedSession } from "../../lib/switchAccount";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { brandMiglife } from "../../lib/brand";
+
+// 🎨 Each menu row's own colour (like the Community page's cards).
+const MENU_COLORS: Record<string, string> = {
+  Lobby: "#3F55C7",
+  Profile: "#12AFC7",
+  Wallet: "#E0A800",
+  Friends: "#22A447",
+  Discover: "#7B3FC7",
+  "miglife secret": "#E12A2A",
+  "Switch Account": "#FF6F00",
+  "Play Zone": "#E0457B",
+  Settings: "#5B6B8C",
+};
 import { clearRememberedAmounts } from "../../lib/amountMemory";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
@@ -48,17 +61,17 @@ export function MenuPanel() {
   }, [uid]);
 
   const links: [string, string, string, number][] = [
-    ["/", "⌂", "Lobby", 0],
+    ["/", "🏠", "Lobby", 0],
     ["/profile/me", "👤", "Profile", 0],
-    ["/wallet", "▣", "Wallet", 0],
+    ["/wallet", "👛", "Wallet", 0],
     ["/friends", "👥", "Friends", badges.requests],
-    ["/explore", "◉", "Discover", 0],
+    ["/explore", "🧭", "Discover", 0],
     // The founder tools, like the app's "miglife secret" (founders only).
-    ...(founder.isAnyFounder ? ([["/secret", "▤", "miglife secret", 0]] as [string, string, string, number][]) : []),
+    ...(founder.isAnyFounder ? ([["/secret", "🔐", "miglife secret", 0]] as [string, string, string, number][]) : []),
     // 🔀 miglife's Switch Account (also shown inside an account miglife opened, to switch on / return)
     ...(founder.isMigwith || switched ? ([["/switch-account", "🔀", "Switch Account", 0]] as [string, string, string, number][]) : []),
     ["/games", "🎮", "Play Zone", 0],
-    ["/settings", "⚙", "Settings", 0],
+    ["/settings", "⚙️", "Settings", 0],
   ];
 
   const logout = async () => {
@@ -234,16 +247,20 @@ export function MenuPanel() {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
           <li key={href}>
+            {/* 🎨 the Community page's card: white → own colour, colour icon tile, › chip */}
             <Link
               href={href}
-              className={`flex items-center gap-3 rounded-2xl border px-2.5 py-2 text-sm font-semibold shadow-sm transition ${
-                active ? "border-[#174EA6] bg-[#DCEBFB]" : "border-transparent bg-white/90 hover:bg-white"
-              }`}
+              className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] ${active ? "font-extrabold" : "font-bold"}`}
+              style={{
+                borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
+                borderWidth: active ? 1.6 : 1,
+                background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${MENU_COLORS[label] || "#3984D9"}${active ? "2E" : "1A"})`,
+                boxShadow: `0 3px 10px ${MENU_COLORS[label] || "#3984D9"}${active ? "40" : "1F"}`,
+              }}
             >
               <span
-                className={`flex h-9 w-9 items-center justify-center rounded-xl text-base ${
-                  active ? "bg-[#2F80ED]" : "bg-[#EAF2FC]"
-                }`}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[19px]"
+                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, borderColor: `${MENU_COLORS[label] || "#3984D9"}4D` }}
               >
                 {icon}
               </span>
@@ -253,6 +270,12 @@ export function MenuPanel() {
                   {badgeText(n)}
                 </span>
               )}
+              <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold"
+                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, color: MENU_COLORS[label] || "#3984D9" }}
+              >
+                ›
+              </span>
             </Link>
           </li>
         );

@@ -116,7 +116,9 @@ export function PastelCard({
   );
   const cls = "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left shadow-sm transition";
   const style = { background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`, borderColor: `${color}40` };
-  if (right)
+  // A `right` with nothing to open (a switch, say) stays a plain row; with an
+  // href / onClick the whole card still opens it (Discover's LIVE, Play Zone).
+  if (right && !href && !onClick)
     return (
       <div className={cls} style={style}>
         {body}

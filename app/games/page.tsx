@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { roomHref } from "../../lib/rooms";
 import { useRequireLogin } from "../../lib/useRequireLogin";
@@ -15,6 +14,7 @@ import { ROYALE_ROOM } from "../_components/RoyaleGame";
 import { TN_FREE_ROOM, TN_ROOM } from "../_components/TwentyNine";
 import { TRIVIA_ROOM } from "../_components/Trivia";
 import { BackButton } from "../_components/BackButton";
+import { PastelCard } from "../_components/LightCards";
 import { ClassicListRow, ClassicTitleBar, useIsClassic } from "../_components/Classic";
 
 // 🎮 Game List, like the app's (menu → Game List): the running games, each
@@ -80,32 +80,33 @@ export default function GameListPage() {
         {ready && !classic && (
           <div className="px-4 py-2.5">
             <p className="pb-2 text-xs font-bold tracking-[1.2px] text-[#6C87B0]">RUNNING GAMES</p>
-            {RUNNING.filter(([, , , , room]) => room !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([icon, name, sub, color, room]) => (
-              <Link
-                key={room}
-                href={roomHref(room)}
-                className="mb-2.5 flex items-center gap-3.5 rounded-[18px] border border-[#C3D9F5] bg-[#EAF2FC] p-3.5 shadow-[0_4px_10px_rgba(143,168,204,.45)]"
-              >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-2xl" style={{ background: color }}>
-                  {icon}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[17px] font-bold text-[#12335E]">{name}</span>
-                  <span className="block text-xs text-[#6C87B0]">{sub}</span>
-                </span>
-                <span className="rounded-xl bg-[#DFF3E3] px-2.5 py-1 text-[11px] font-bold text-[#1E7A34]">● LIVE</span>
-              </Link>
-            ))}
-            <p className="pb-2 pt-2.5 text-xs font-bold tracking-[1.2px] text-[#6C87B0]">COMING SOON</p>
-            {SOON.map(([icon, name, color]) => (
-              <div key={name} className="mb-2.5 flex items-center gap-3.5 rounded-[18px] border border-[#DDE3EF] bg-[#F0F3F8] p-3.5">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] text-2xl" style={{ background: `${color}59` }}>
-                  <span className="opacity-60">{icon}</span>
-                </span>
-                <span className="flex-1 text-[17px] font-bold text-[#6C7787]">{name}</span>
-                <span className="rounded-xl bg-[#E4E8EF] px-2.5 py-1 text-[10px] font-bold text-[#6C7787]">COMING SOON</span>
-              </div>
-            ))}
+            {/* 🎨 the Community page's cards, "● LIVE" where the › is */}
+            <div className="space-y-2.5">
+              {RUNNING.filter(([, , , , room]) => room !== LUXURY_BET_ROOM || luxuryBetAccess.canSee).map(([icon, name, sub, color, room]) => (
+                <PastelCard
+                  key={room}
+                  icon={icon}
+                  title={name}
+                  subtitle={sub}
+                  color={color}
+                  href={roomHref(room)}
+                  right={<span className="shrink-0 rounded-xl bg-[#DFF3E3] px-2.5 py-1 text-[11px] font-bold text-[#1E7A34]">● LIVE</span>}
+                />
+              ))}
+            </div>
+            <p className="pb-2 pt-4 text-xs font-bold tracking-[1.2px] text-[#6C87B0]">COMING SOON</p>
+            <div className="space-y-2.5 opacity-60">
+              {SOON.map(([icon, name, color]) => (
+                <PastelCard
+                  key={name}
+                  icon={icon}
+                  title={name}
+                  subtitle="Coming soon"
+                  color={color}
+                  right={<span className="shrink-0 rounded-xl bg-[#E4E8EF] px-2.5 py-1 text-[10px] font-bold text-[#6C7787]">COMING SOON</span>}
+                />
+              ))}
+            </div>
           </div>
         )}
       </section>
