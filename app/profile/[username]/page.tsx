@@ -6,11 +6,10 @@ import { activeSupporterTeam, supporterBackground, type SupporterTeam } from "..
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
-  FieldPath,
   arrayRemove,
   arrayUnion,
   collection,
-  deleteField,
+  deleteDoc,
   doc,
   getCountFromServer,
   getDoc,
@@ -18,6 +17,7 @@ import {
   limit,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
   type DocumentData,
@@ -39,7 +39,7 @@ import { useSpecialColors } from "../../../lib/specialColor";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { getBlockedNames, getProfileDetails, setBlocked } from "../../../lib/blocks";
 
-const getFriendCount = httpsCallable<{ username: string }, { count: number }>(functions, "getFriendCount");
+const getFriendCount = httpsCallable<{ username: string }, { count: number; footprints?: number; voters?: number }>(functions, "getFriendCount");
 
 // Same profile as the app's ProfilePage (MainActivity.kt): the users/{uid}
 // document found by username, plus friends / followers / footprints counted by
@@ -288,21 +288,19 @@ export default function ProfilePage() {
     getDocs(query(users, where("following", "array-contains", username)))
       .then((s) => setFollowers(s.size))
       .catch(() => {});
-    // count(): the server returns only the number, like the app.
-    getCountFromServer(query(users, where("visitedProfiles", "array-contains", username)))
-      .then((s) => setFootprints(s.data().count))
-      .catch(() => {});
-    getCountFromServer(query(users, where("votedProfiles", "array-contains", username)))
-      .then((s) => setVoters(s.data().count))
-      .catch(() => {});
     // Gifts really received (gift_activity), as the app counts them.
     getCountFromServer(query(collection(db, "gift_activity"), where("toUsername", "==", username)))
       .then((s) => setGiftCount(s.data().count))
       .catch(() => {});
 
     // 🔒 friend lists are private: the server sends only the number
+    // (👣 footprints and ❤️ votes too: who = the owner only, everyone sees the numbers)
     getFriendCount({ username })
-      .then((r) => setFriends(Number(r.data?.count || 0)))
+      .then((r) => {
+        setFriends(Number(r.data?.count || 0));
+        setFootprints(Number(r.data?.footprints || 0));
+        setVoters(Number(r.data?.voters || 0));
+      })
       .catch(() => {});
 
     getDocs(
@@ -354,16 +352,15 @@ export default function ProfilePage() {
       .then((snap) => {
         const list = (k: string) => ((snap.get(k) as unknown[]) || []).filter((v): v is string => typeof v === "string");
         setIsFollowing(list("following").some((n) => sameName(n, username)));
-        setHasVoted(list("votedProfiles").some((n) => sameName(n, username)));
-        const visited = list("visitedProfiles");
-        if (!visited.some((n) => sameName(n, username))) {
-          updateDoc(ref, { visitedProfiles: arrayUnion(username) }).catch(() => {});
-        }
-        // WHEN: visitedAt.<name>, refreshed on every visit, for the owner's
-        // "Who viewed my profile" list. Separate write, like the app.
-        updateDoc(ref, new FieldPath("visitedAt", username.toLowerCase()), serverTimestamp()).catch(() => {});
       })
       .catch(() => {});
+    // 🔒 👣 my footprint + ❤️ my vote live under THEIR name (profile_visits /
+    // profile_votes/{name}/by/{me}); only they see who
+    const key = username.toLowerCase();
+    getDoc(doc(db, "profile_votes", key, "by", user.uid))
+      .then((v) => setHasVoted(v.exists()))
+      .catch(() => {});
+    setDoc(doc(db, "profile_visits", key, "by", user.uid), { username: me, at: serverTimestamp() }).catch(() => {});
   }, [user, username, me, isOwn]);
 
   // Vote / remove my vote. Only MY document is written: votedProfiles and
@@ -373,16 +370,13 @@ export default function ProfilePage() {
     setBusy("vote");
     setError("");
     try {
-      const ref = doc(db, "users", user.uid);
-      const snap = await getDoc(ref);
-      const current = ((snap.get("votedProfiles") as unknown[]) || []).filter((v): v is string => typeof v === "string");
-      const matches = current.filter((n) => sameName(n, username));
-      const already = matches.length > 0;
-      if (already) await updateDoc(ref, { votedProfiles: arrayRemove(...matches) });
-      else await updateDoc(ref, { votedProfiles: arrayUnion(username) });
+      // 🔒 profile_votes/{name}/by/{me} — only they see who voted
+      const ref = doc(db, "profile_votes", username.toLowerCase(), "by", user.uid);
+      const already = (await getDoc(ref)).exists();
+      if (already) await deleteDoc(ref);
+      else await setDoc(ref, { username: me, at: serverTimestamp() });
       setHasVoted(!already);
       setVoters((c) => Math.max(0, c + (already ? -1 : 1)));
-      updateDoc(ref, new FieldPath("votedAt", username.toLowerCase()), already ? deleteField() : serverTimestamp()).catch(() => {});
     } catch (err) {
       console.error(err);
       setError("Something went wrong. Please try again.");

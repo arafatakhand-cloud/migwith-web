@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, documentId, getDocs, limit, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { BackButton } from "./BackButton";
 import { ClassicTitleBar, useIsClassic } from "./Classic";
 
 // Owner-only list of everyone who visited (Footprints) or voted for (Votes)
-// this profile, latest first — like the app's ProfileFootprintsDialog. Reads
-// every user whose own visitedProfiles / votedProfiles list has my name, plus
-// their visitedAt / votedAt time for me.
+// this profile, latest first — like the app's ProfileFootprintsDialog.
+// 🔒 profile_visits|profile_votes/{myName}/by/{theirUid} — only I (and
+// miglife) can read it; their photos come from their users docs.
 
 type Person = { username: string; photo: string; at: number | null };
 
@@ -45,8 +45,7 @@ export function ProfilePeopleList({
   onClose: () => void;
 }) {
   const votes = kind === "votes";
-  const listField = votes ? "votedProfiles" : "visitedProfiles";
-  const timeField = votes ? "votedAt" : "visitedAt";
+  const sub = votes ? "profile_votes" : "profile_visits";
   const [people, setPeople] = useState<Person[] | null>(null);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
@@ -55,26 +54,29 @@ export function ProfilePeopleList({
   useEffect(() => {
     setPeople(null);
     setError("");
-    const key = ownerName.toLowerCase();
-    getDocs(query(collection(db, "users"), where(listField, "array-contains", ownerName), limit(500)))
-      .then((snap) => {
-        const list = snap.docs
-          .filter((d) => d.id !== ownerUid)
-          .map((d) => {
-            const x = d.data();
-            const t = (x[timeField] as Record<string, any> | undefined)?.[key];
-            return {
-              username: String(x.username || "").trim(),
-              photo: photoOf(x),
-              at: t && typeof t.toMillis === "function" ? t.toMillis() : null,
-            };
-          })
-          .filter((p) => p.username)
-          .sort((a, b) => (b.at ?? -Infinity) - (a.at ?? -Infinity) || a.username.localeCompare(b.username));
-        setPeople(list);
-      })
-      .catch((err) => setError(err?.message || "Could not load the list."));
-  }, [ownerName, ownerUid, listField, timeField, reload]);
+    (async () => {
+      const snap = await getDocs(query(collection(db, sub, ownerName.toLowerCase(), "by"), limit(500)));
+      const rows = snap.docs
+        .filter((d) => d.id !== ownerUid)
+        .map((d) => {
+          const t = d.get("at");
+          return { uid: d.id, username: String(d.get("username") || "").trim(), at: t && typeof t.toMillis === "function" ? (t.toMillis() as number) : null };
+        })
+        .filter((p) => p.username);
+      // their pictures, 30 users at a time
+      const photos = new Map<string, string>();
+      for (let i = 0; i < rows.length; i += 30) {
+        const ids = rows.slice(i, i + 30).map((r) => r.uid);
+        const us = await getDocs(query(collection(db, "users"), where(documentId(), "in", ids))).catch(() => null);
+        us?.docs.forEach((u) => photos.set(u.id, photoOf(u.data())));
+      }
+      setPeople(
+        rows
+          .map((r) => ({ username: r.username, photo: photos.get(r.uid) || "", at: r.at }))
+          .sort((a, b) => (b.at ?? -Infinity) - (a.at ?? -Infinity) || a.username.localeCompare(b.username))
+      );
+    })().catch((err) => setError(err?.message || "Could not load the list."));
+  }, [ownerName, ownerUid, sub, reload]);
 
   // 📟 Classic: white page, blue title bar, plain list lines with square photos.
   const subtitle = people ? `${people.length} ${people.length === 1 ? "person" : "people"} ${votes ? "voted for you" : "viewed your profile"}` : "";
