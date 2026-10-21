@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
-import { db, functions, storage } from "../../../lib/firebase";
+import { functions, storage } from "../../../lib/firebase";
 
 // Saved by the server (not straight into Firestore), so a rules hiccup can't block miglife.
 const ceoSetMediaPermission = httpsCallable<{ roleKey: string; picture: boolean; voice: boolean; video: boolean }, { ok: boolean }>(
@@ -12,6 +11,10 @@ const ceoSetMediaPermission = httpsCallable<{ roleKey: string; picture: boolean;
   "ceoSetMediaPermission"
 );
 const ceoSetBadgeImage = httpsCallable<{ docId: string; key: string; url: string }, { ok: boolean }>(functions, "ceoSetBadgeImage");
+const ceoGetSharePermissions = httpsCallable<
+  Record<string, never>,
+  { permissions: Record<string, unknown>; badgeImages: Record<string, unknown>; levelBadgeImages: Record<string, unknown> }
+>(functions, "ceoGetSharePermissions");
 import { useFounderPerms } from "../../../lib/founder";
 import { LEVEL_TIERS } from "../../../lib/rooms";
 import { FounderShell } from "../_Shell";
@@ -52,23 +55,23 @@ export default function SharePermissionsPage() {
   const [uploading, setUploading] = useState<string | null>(null);
   const [status, setStatus] = useState("");
 
+  // Read by the server (ceoGetSharePermissions) — shows exactly what is saved.
+  const load = () =>
+    ceoGetSharePermissions({})
+      .then(({ data }) => {
+        const out: Record<string, Perm> = {};
+        ROLES.forEach(([k]) => {
+          const m = ((data.permissions || {})[k] || {}) as Record<string, unknown>;
+          out[k] = { picture: m.picture === true, voice: m.voice === true, video: m.video === true };
+        });
+        setPerms(out);
+        setBadges((data.badgeImages || {}) as Record<string, string>);
+        setLevelBadges((data.levelBadgeImages || {}) as Record<string, string>);
+      })
+      .catch((e) => setStatus(e?.message || "Could not load."));
   useEffect(() => {
     if (!f.can("share_permissions")) return;
-    const a = onSnapshot(doc(db, "app_settings", "media_sharing_permissions"), (s) => {
-      const out: Record<string, Perm> = {};
-      ROLES.forEach(([k]) => {
-        const m = (s.get(k) || {}) as Record<string, unknown>;
-        out[k] = { picture: m.picture === true, voice: m.voice === true, video: m.video === true };
-      });
-      setPerms(out);
-    });
-    const b = onSnapshot(doc(db, "app_settings", "badge_images"), (s) => setBadges((s.data() || {}) as Record<string, string>));
-    const c = onSnapshot(doc(db, "app_settings", "level_badge_images"), (s) => setLevelBadges((s.data() || {}) as Record<string, string>));
-    return () => {
-      a();
-      b();
-      c();
-    };
+    void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.loaded]);
 
@@ -91,6 +94,7 @@ export default function SharePermissionsPage() {
       const r = storageRef(storage, `${docId}/${key}.jpg`);
       await uploadBytes(r, file, { contentType: file.type || "image/jpeg" });
       await ceoSetBadgeImage({ docId, key, url: await getDownloadURL(r) });
+      await load();
     } catch (e: any) {
       setStatus(e?.message || "Badge image upload failed.");
     } finally {
@@ -114,7 +118,11 @@ export default function SharePermissionsPage() {
         <input type="file" accept="image/*" hidden onChange={(e) => upload(docId, k, e.target.files?.[0])} />
       </label>
       {url && (
-        <button type="button" onClick={() => ceoSetBadgeImage({ docId, key: k, url: "" }).catch((e) => setStatus(e?.message || "Could not reset."))} className="text-xs text-[#B3261E]">
+        <button type="button" onClick={() =>
+            ceoSetBadgeImage({ docId, key: k, url: "" })
+              .then(load)
+              .catch((e) => setStatus(e?.message || "Could not reset."))
+          } className="text-xs text-[#B3261E]">
           Reset
         </button>
       )}
@@ -166,6 +174,7 @@ export default function SharePermissionsPage() {
               await ceoSetBadgeImage({ docId: "level_badge_images", key: name, url: `${LEVEL_BADGE_PACK_BASE}/${name.toLowerCase().replace(/\s+/g, "_")}.webp` });
             }
             setStatus("✅ The miGlife level badges are on for every tier.");
+            await load();
           } catch (e: any) {
             setStatus(e?.message || "Could not set the badges.");
           } finally {
