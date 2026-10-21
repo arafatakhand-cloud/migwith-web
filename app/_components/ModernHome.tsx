@@ -181,9 +181,9 @@ export function ModernHomeTop({
             >
               {levelBadgeUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={levelBadgeUrl} alt="" className="h-[52px] w-[52px] object-contain" />
+                <img src={levelBadgeUrl} alt="" className="h-full w-full scale-[1.32] object-contain" />
               ) : (
-                <span className="text-[40px] leading-none">{levelIcon}</span>
+                <span className="text-[46px] leading-none">{levelIcon}</span>
               )}
             </span>
             <span className="mt-1 whitespace-nowrap text-[11.5px] font-extrabold">Level {level}</span>
