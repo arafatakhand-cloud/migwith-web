@@ -1495,11 +1495,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (everyone.length === 0) return note("🎁 There is nobody else in this room right now.");
         if (gifts.length && !giftByName.has(giftName.toLowerCase())) return note(`🎁 No active gift named "${giftName}".`);
         const sendShower = httpsCallable<
-          { roomId: string; targets: string[]; giftName: string; message: string },
-          { sentTo?: string[]; giftName?: string; giftIcon?: string; failed?: { target?: string; reason?: string }[] }
+          { roomId: string; targets: string[]; giftName: string; message: string; postRoomLine: boolean },
+          { sentTo?: string[]; giftName?: string; giftIcon?: string; failed?: { target?: string; reason?: string }[]; roomLinePosted?: boolean }
         >(functions, "sendGiftShower");
         // at least 2 s between two Gift Showers (a quick second one waits its turn)
-        queueGiftShower(() => sendShower({ roomId: roomName, targets: everyone, giftName, message }))
+        // ⚡ postRoomLine: the server writes the room line together with the payment
+        stickToBottom.current = true;
+        queueGiftShower(() => sendShower({ roomId: roomName, targets: everyone, giftName, message, postRoomLine: true }))
           .then(({ data }) => {
             const sent = data?.sentTo || [];
             const shownGift = data?.giftName || giftName;
@@ -1509,7 +1511,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               awardUserXp(user.uid, 10, "gift", 30_000);
               const others = sent.length - 5;
               const toText = sent.slice(0, 5).join(", ") + (others > 0 ? ` and ${others} other` : "");
-              addDoc(collection(db, "room_messages", roomName, "messages"), {
+              // (an older server didn't write the line — post it here, as before)
+              if (data?.roomLinePosted !== true) addDoc(collection(db, "room_messages", roomName, "messages"), {
                 text: `<<🎁*GIFT SHOWER* ${profile.username}[${profile.level}] gives a ${shownGift} ${icon} to ${toText}! Hurray!>>${suffix}`,
                 sender: profile.username,
                 senderUid: user.uid,
@@ -1525,12 +1528,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           .catch((e: any) => setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\n${giftErrorText(e)}` }));
         return;
       }
+      stickToBottom.current = true;
       httpsCallable<
-        { roomId: string; target: string; giftName: string; message: string },
-        { giftName?: string; recipient?: string; giftIcon?: string; recipientLevel?: number }
-      >(functions, "sendGift")({ roomId: roomName, target, giftName, message })
+        { roomId: string; target: string; giftName: string; message: string; postRoomLine: boolean },
+        { giftName?: string; recipient?: string; giftIcon?: string; recipientLevel?: number; roomLinePosted?: boolean }
+      >(functions, "sendGift")({ roomId: roomName, target, giftName, message, postRoomLine: true })
         .then(({ data }) => {
           awardUserXp(user.uid, 5, "gift", 30_000); // +5 XP for a gift, like the app
+          // ⚡ the server already wrote the room line together with the payment
+          if (data?.roomLinePosted === true) return;
           announceGift({
             giftName: data?.giftName || giftName,
             giftIcon: data?.giftIcon || giftByName.get(giftName.toLowerCase())?.icon || "🎁",
@@ -1714,6 +1720,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // way the app does ("<<name [level] gives a Rose 🌹 to friend[12]!>>").
   const announceGift = async (r: GiftResult) => {
     if (!user || !profile) return;
+    stickToBottom.current = true;
+    // ⚡ the server already wrote the line together with the payment
+    if (r.roomLinePosted) return;
     // The receiver's level (like the app): the server's answer first, then
     // who is in the room, else their profile — so it shows even when the
     // person is not in the room.

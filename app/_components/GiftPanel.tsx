@@ -16,6 +16,8 @@ export type GiftResult = {
   message: string;
   /** The receiver's level from the server (sendGift's recipientLevel). */
   recipientLevel?: number;
+  /** ⚡ true = the server already wrote the room line with the payment. */
+  roomLinePosted?: boolean;
 };
 
 type SendGiftResponse = {
@@ -24,10 +26,11 @@ type SendGiftResponse = {
   recipient?: string;
   message?: string;
   recipientLevel?: number;
+  roomLinePosted?: boolean;
 };
 
 const sendGiftCall = httpsCallable<
-  { roomId: string; target: string; giftName: string; message: string },
+  { roomId: string; target: string; giftName: string; message: string; postRoomLine: boolean },
   SendGiftResponse
 >(functions, "sendGift");
 
@@ -107,6 +110,8 @@ export function GiftPanel({
         target: cleanTarget,
         giftName: selected.name,
         message: message.trim().slice(0, 200),
+        // ⚡ in a room the server writes the gift line together with the payment
+        postRoomLine: true,
       });
       awardUserXp(uid, 5, "gift", 30_000); // +5 XP for a gift, like the app
       onSent({
@@ -115,6 +120,7 @@ export function GiftPanel({
         recipient: data?.recipient || cleanTarget,
         message: data?.message ?? message.trim().slice(0, 200),
         recipientLevel: Number(data?.recipientLevel) || undefined,
+        roomLinePosted: data?.roomLinePosted === true,
       });
       onClose();
     } catch (err: any) {
