@@ -586,10 +586,13 @@ export default function RoomsPage() {
                     const letter = (shown.match(/[\p{L}\p{N}]/u)?.[0] || "#").toUpperCase();
                     return (
                       <div key={name} className="px-2 py-[3px]">
-                        {/* 🃏 every room is its own white card, like the app */}
+                        {/* 🫧 every room is its own clear glass card, like the app */}
                         <div
-                          className="flex items-center rounded-[14px] border bg-white py-2 pl-2.5 pr-1"
-                          style={{ borderColor: `${accent}38`, boxShadow: `0 1px 3px ${accent}40` }}
+                          className="flex items-center rounded-[14px] border border-white/90 py-2 pl-2.5 pr-1 backdrop-blur-sm"
+                          style={{
+                            background: "linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0.18))",
+                            boxShadow: `0 1px 2px ${accent}2E`,
+                          }}
                         >
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
                             <span className="relative h-10 w-10 shrink-0">
