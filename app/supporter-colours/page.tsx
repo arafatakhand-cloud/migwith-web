@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { db, functions } from "../../lib/firebase";
+import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { db, functions, storage } from "../../lib/firebase";
+import { useSupporterImages } from "../../lib/supporterImages";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -30,7 +32,7 @@ import {
 // (buySupporterColour). Fan colours only.
 
 const buyCall = httpsCallable<{ team: string; operationId: string }, { until?: number }>(functions, "buySupporterColour");
-const setPriceCall = httpsCallable<{ price?: number; days?: number; team?: string; reset?: boolean }, { ok?: boolean }>(
+const setPriceCall = httpsCallable<{ price?: number; days?: number; team?: string; reset?: boolean; image?: string }, { ok?: boolean }>(
   functions,
   "founderSetSupporterPrice"
 );
@@ -58,6 +60,30 @@ export default function SupporterColoursPage() {
   const [editTeam, setEditTeam] = useState<SupporterTeam | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editDays, setEditDays] = useState("");
+  // 📷 a team's picture (miglife): shown instead of the jersey everywhere
+  const pictures = useSupporterImages();
+  const [picBusy, setPicBusy] = useState(false);
+
+  const savePicture = async (team: SupporterTeam, file: File | null) => {
+    setPicBusy(true);
+    try {
+      let url = "";
+      if (file) {
+        if (!file.type.startsWith("image/")) throw new Error("Pick a picture (JPG / PNG).");
+        if (file.size >= 5 * 1024 * 1024) throw new Error("The picture must be under 5 MB.");
+        const r = storageRef(storage, `supporter_badges/${team.id}.jpg`);
+        await uploadBytes(r, file, { contentType: file.type });
+        url = await getDownloadURL(r);
+      }
+      await setPriceCall({ team: team.id, image: url });
+      setMessage(file ? `📷 ${team.name}: picture saved` : `✅ ${team.name}: back to the jersey`);
+      setEditing(false);
+    } catch (e: any) {
+      setMessage(e?.message || "Could not save the picture.");
+    } finally {
+      setPicBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!uid) return;
@@ -314,6 +340,37 @@ export default function SupporterColoursPage() {
                 className="mt-1 w-full rounded-xl border border-[#D5E3F5] px-3 py-2 text-base font-semibold outline-none focus:border-[#2F6ABD]"
               />
             </label>
+            {editTeam && (
+              <div className="mt-3 rounded-xl border border-[#D5E3F5] p-3">
+                <p className="text-xs font-bold text-[#35507E]">📷 Picture (instead of the jersey)</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white shadow">
+                    <SupporterJersey team={editTeam} size={40} />
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <label className={`cursor-pointer rounded-full bg-[#0B2A5B] px-3 py-1.5 text-xs font-bold text-white ${picBusy ? "opacity-60" : ""}`}>
+                      {picBusy ? "Saving…" : pictures[editTeam.id] ? "Change" : "Upload"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={picBusy}
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] || null;
+                          e.target.value = "";
+                          if (f) savePicture(editTeam, f);
+                        }}
+                      />
+                    </label>
+                    {pictures[editTeam.id] && (
+                      <button type="button" disabled={picBusy} onClick={() => savePicture(editTeam, null)} className="px-1 text-xs font-bold text-[#D9534F]">
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             {!editTeam && (
             <label className="mt-3 block text-xs font-bold text-[#35507E]">
               Days

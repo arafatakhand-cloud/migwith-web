@@ -1,14 +1,24 @@
+"use client";
+
 import { useId } from "react";
 import type { SupporterTeam } from "../../lib/supporterTeams";
+import { useSupporterImages } from "../../lib/supporterImages";
 
 // ⚽ A little football JERSEY in the team's kit colours (solid, stripes,
 // coloured sleeves, a centre band or a diagonal split) — miGlife's own drawing,
 // never a club logo. Same shape in the app (SupporterColours.kt).
+// 📷 When miglife uploaded a picture for the team, that shows instead.
 const SHIRT = "M13 4 L4 9.5 L7.5 18 L11.5 16 V37 H28.5 V16 L32.5 18 L36 9.5 L27 4 Q24 8.5 20 8.5 Q16 8.5 13 4 Z";
 const SLEEVES = "M13 4 L4 9.5 L7.5 18 L11.5 16 V9 Z M27 4 L36 9.5 L32.5 18 L28.5 16 V9 Z";
 
 export function SupporterJersey({ team, size = 18 }: { team: SupporterTeam; size?: number }) {
   const clip = `j${useId().replace(/:/g, "")}`;
+  const picture = useSupporterImages()[team.id];
+  if (picture)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={picture} alt="" width={size} height={size} className="inline-block shrink-0 rounded-full object-contain align-middle" style={{ width: size, height: size }} />
+    );
   const light = ["#FFFFFF", "#FDE100", "#6CABDD"].includes(team.c1.toUpperCase());
   return (
     <svg width={size} height={size} viewBox="0 0 40 40" className="inline-block shrink-0 align-middle" aria-hidden>
