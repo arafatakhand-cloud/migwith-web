@@ -3109,7 +3109,6 @@ function MessageRow({
           style={{ fontSize: fontPx }}
         >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
-          {stamp}
         </p>
       </div>
     );
