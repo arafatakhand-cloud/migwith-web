@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { SupporterJersey } from "../../_components/SupporterBadge";
 import { activeSupporterTeam, supporterBackground, type SupporterTeam } from "../../../lib/supporterTeams";
 import Link from "next/link";
@@ -135,10 +135,11 @@ function Tile({ value, label, tint, icon, onClick }: { value: string; label: str
   // box: square corners, flat, no gloss.
   const classic = useIsClassic();
   const style = {
+    "--tint": tint,
     background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
     borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
     boxShadow: classic ? "0 1px 2px rgba(0,0,0,.3)" : `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
-  };
+  } as CSSProperties;
   const inner = (
     <>
       {!classic && (
@@ -149,11 +150,11 @@ function Tile({ value, label, tint, icon, onClick }: { value: string; label: str
         </>
       )}
       <span className="relative block text-[15px] leading-[17px]">{icon}</span>
-      <span className="relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
-      <span className="relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
+      <span className="pf-val relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
+      <span className="pf-lab relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
     </>
   );
-  const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "rounded-[22px]"}`;
+  const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "pf-tile rounded-[22px]"}`;
   return onClick ? (
     <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
       {inner}
@@ -549,11 +550,11 @@ export default function ProfilePage() {
 
   return (
     <PageShell light noTopBar>
-      <div className="mx-auto max-w-2xl bg-[#EEF3F8] pb-6">
+      <div className={`mx-auto max-w-2xl bg-[#EEF3F8] pb-6 ${classic ? "" : "page-bg"}`}>
         {/* Title bar: back · miglife logo · the person's ID (📟 Classic: the orange bar) */}
         <div
           className={`flex items-center gap-2 bg-gradient-to-b px-2 py-2 ${
-            classic ? "from-[#FF9D2E] to-[#F07A00]" : "from-[#3A3A3A] to-[#1C1C1C]"
+            classic ? "from-[#FF9D2E] to-[#F07A00]" : "pf-bar from-[#3A3A3A] to-[#1C1C1C]"
           }`}
         >
           <BackButton variant="dark" onClick={goBack} />
@@ -582,7 +583,7 @@ export default function ProfilePage() {
         {/* ⚽ Supporters Badge: this block takes the team's colours, with the
             jersey and the team's letters ("FCB") big and faint behind it. */}
         <div
-          className={`relative flex gap-3 p-2.5 ${team ? "" : "bg-white"}`}
+          className={`relative flex gap-3 p-2.5 ${team ? "" : "bg-white"} ${classic ? "" : "pf-hero"}`}
           style={team ? { background: supporterBackground(team) } : undefined}
         >
           {team && (
@@ -620,7 +621,7 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          <div className={`relative min-w-0 flex-1 text-[15px] ${team ? "text-white" : "text-[#333]"}`}>
+          <div className={`pf-ink relative min-w-0 flex-1 text-[15px] ${team ? "text-white" : "text-[#333]"}`}>
             <div className="flex items-center gap-1.5">
               {special.has(username) ? (
                 // 🌈 Special Edition Colour / miglife
@@ -628,7 +629,7 @@ export default function ProfilePage() {
               ) : (
                 <span
                   data-notranslate
-                  className={`truncate text-xl font-bold ${team ? "text-white" : "text-[#3AA0E0]"}`}
+                  className={`pf-name truncate text-xl font-bold ${team ? "text-white" : "text-[#3AA0E0]"}`}
                   style={team ? { textShadow: "0 1px 3px rgba(0,0,0,.35)" } : undefined}
                 >
                   {username}
@@ -644,7 +645,7 @@ export default function ProfilePage() {
               )}
             </div>
             {profile.fullName && !sameName(profile.fullName, username) && (
-              <p data-notranslate className={`truncate text-base ${team ? "text-white/80" : "text-[#6E6E6E]"}`}>{profile.fullName}</p>
+              <p data-notranslate className={`pf-sub truncate text-base ${team ? "text-white/80" : "text-[#6E6E6E]"}`}>{profile.fullName}</p>
             )}
             <p className="mt-1 flex items-center gap-1.5">
               <span
@@ -790,7 +791,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Gift history, under a dark section bar */}
-        <h2 data-notranslate className="mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
+        <h2 data-notranslate className="pf-bar mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
           {username}&apos;s Gift History
         </h2>
         <ul className="bg-white py-1">
