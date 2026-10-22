@@ -226,7 +226,7 @@ export default function LeaderboardPage() {
                 ‹
               </button>
               <div className="min-w-0 flex-1 text-center">
-                <h1 className="truncate text-xl font-black text-[#0B2A5B]">{picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}</h1>
+                <h1 className="truncate text-xl font-black text-[#0B2A5B]">{picked ? `${ranking.icon} ${ranking.title}` : "🏆 Leader Board"}</h1>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F80ED]">
                   {picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
                 </p>
@@ -391,7 +391,7 @@ export default function LeaderboardPage() {
         {classic ? (
           <div className="-mx-3 -mt-4 sm:-mx-6">
             <ClassicTitleBar
-              title={picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}
+              title={picked ? `${ranking.icon} ${ranking.title}` : "🏆 Leader Board"}
               subtitle={picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
               onBack={() => (picked ? setPicked(false) : router.back())}
             >
@@ -402,7 +402,7 @@ export default function LeaderboardPage() {
         <div className="flex items-center gap-3">
           <BackButton onClick={() => (picked ? setPicked(false) : router.back())} />
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Rankings"}</h1>
+            <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "Leader Board"}</h1>
             {picked && <p className="text-xs text-[#6B7A99]">{timed ? `${period} ranking` : "All time"}</p>}
           </div>
           <RefreshButton

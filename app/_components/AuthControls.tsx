@@ -136,7 +136,7 @@ export function HeroActions() {
           href="/leaderboard"
           className="flex w-full max-w-xs items-center justify-center rounded-2xl border border-white/15 bg-white/5 px-8 py-3 font-bold text-white/80 transition hover:bg-white/10"
         >
-          🏆 Rankings
+          🏆 Leader Board
         </Link>
       </div>
     );

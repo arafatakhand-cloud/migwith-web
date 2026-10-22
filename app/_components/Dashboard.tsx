@@ -488,7 +488,7 @@ export function Dashboard() {
           <div className="grid grid-cols-2 gap-2 text-center text-xs font-bold text-[#0B2A5B]">
             {[
               ["/gifts", "🎁", "Gift Gallery"],
-              ["/leaderboard", "🏆", "Rankings"],
+              ["/leaderboard", "🏆", "Leader Board"],
               ["/lucky", "🍀", "Lucky User"],
               ["/members", "👥", "Community"],
             ].map(([href, icon, label]) => (

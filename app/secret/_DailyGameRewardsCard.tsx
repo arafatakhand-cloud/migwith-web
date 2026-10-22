@@ -101,7 +101,7 @@ export function DailyGameRewardsCard() {
           <div className="min-w-0 flex-1">
             <p className="text-lg font-extrabold">🏆 Daily Game Rewards</p>
             <p className="text-xs text-[#5B6B8C]">
-              Every night at 12:00 (Bangladesh) the day&apos;s top players get these coins from your balance — the same order as Rankings. You get an
+              Every night at 12:00 (Bangladesh) the day&apos;s top players get these coins from your balance — the same order as the Leader Board. You get an
               alert each night.
             </p>
           </div>

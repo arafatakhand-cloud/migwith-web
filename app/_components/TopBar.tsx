@@ -42,7 +42,7 @@ const PAGE_NAMES: [string, string][] = [
   ["/supporter-colours", "Supporters Badge"],
   ["/merchant", "miGlife Partner"],
   ["/mentor", "Mentor"],
-  ["/leaderboard", "Rankings"],
+  ["/leaderboard", "Leader Board"],
   ["/security", "Security PIN"],
   ["/settings", "Settings"],
   ["/friends", "Friends"],
