@@ -2963,9 +2963,23 @@ function MessageRow({
   const ownKey = `${m.text}|${fontPx}`;
   const [ownWrap, setOwnWrap] = useState({ key: "", wraps: false });
   const ownWraps = ownWrap.key === ownKey && ownWrap.wraps;
+  // A wrapped own message is only as wide as its longest line (a first line that
+  // broke early left empty space on its right), like the app.
+  const [ownTight, setOwnTight] = useState({ key: "", w: 0 });
   useLayoutEffect(() => {
     const el = ownBodyRef.current;
-    if (!el || ownWraps) return;
+    if (!el) return;
+    if (ownWraps) {
+      if (ownTight.key === ownKey) return;
+      const range = document.createRange();
+      range.setStartBefore(el);
+      range.setEndAfter(el.nextElementSibling ?? el);
+      const rects = Array.from(range.getClientRects()).filter((r) => r.width > 0);
+      if (!rects.length) return;
+      const w = Math.ceil(Math.max(...rects.map((r) => r.right)) - Math.min(...rects.map((r) => r.left))) + 1;
+      setOwnTight({ key: ownKey, w });
+      return;
+    }
     const tops = Array.from(el.getClientRects())
       .filter((r) => r.width > 0)
       .map((r) => r.top);
@@ -3200,7 +3214,15 @@ function MessageRow({
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
           className={`relative ${(gameRoom || classic) && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`}
-          style={{ fontSize: fontPx, WebkitTouchCallout: canReact ? "none" : undefined }}
+          style={{
+            fontSize: fontPx,
+            WebkitTouchCallout: canReact ? "none" : undefined,
+            // a wrapped own text line: only as wide as its longest line
+            width:
+              rightSide && ownWraps && ownTight.key === ownKey && !quote && !translation && !ytLink && m.type !== "image" && m.type !== "voice"
+                ? ownTight.w
+                : undefined,
+          }}
           {...holdHandlers}
         >
           {picker && (
@@ -3297,7 +3319,7 @@ function MessageRow({
             <>
               {rightSide && !ownWraps && stampFront}
               <span
-                ref={rightSide && !ownWraps ? ownBodyRef : undefined}
+                ref={rightSide ? ownBodyRef : undefined}
                 className="whitespace-pre-wrap break-words"
                 style={{ color: INK }}
                 onClick={(e) => {
