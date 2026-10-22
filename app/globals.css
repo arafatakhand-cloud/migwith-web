@@ -545,3 +545,23 @@ html.no-boot-splash #boot-splash { display: none; }
 /* ↻ refresh buttons: the arrow turns once on every tap */
 @keyframes refresh-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .refresh-spin { animation: refresh-spin 0.7s ease-in-out; }
+
+/* ☁️ Lobby: a soft sky (blue → pink) with white clouds — drawn, no picture */
+.lobby-sky {
+  background:
+    radial-gradient(30% 18% at 25% 25%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(35% 20% at 75% 45%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(30% 16% at 35% 75%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, #9fd0ff, #d7ecff 60%, #ffe6f1);
+}
+/* 🫧 clear glass card: see-through, bright rim, a line of light on top */
+.glass-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1));
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1px 1px #fff,
+    inset 0 -2px 6px rgba(255, 255, 255, 0.35),
+    0 6px 16px rgba(40, 80, 140, 0.14);
+  -webkit-backdrop-filter: blur(6px) saturate(1.4);
+  backdrop-filter: blur(6px) saturate(1.4);
+}

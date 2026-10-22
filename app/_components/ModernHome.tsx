@@ -64,7 +64,7 @@ function StatTile({
         border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,
         ...(highlight
           ? {
-              backgroundImage: `linear-gradient(#fff, #fff), linear-gradient(${accent}1A, ${accent2}0A), linear-gradient(135deg, ${accent}, ${accent2})`,
+              backgroundImage: `linear-gradient(rgba(255,255,255,.6), rgba(255,255,255,.6)), linear-gradient(${accent}1A, ${accent2}0A), linear-gradient(135deg, ${accent}, ${accent2})`,
               backgroundOrigin: "border-box",
               backgroundClip: "padding-box, padding-box, border-box",
               boxShadow: `0 4px 12px ${accent}55`,
@@ -130,7 +130,7 @@ export function ModernHomeTop({
   const dot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[presence] || "#9AA3AE";
   const presenceLabel = { ONLINE: "Online", BUSY: "Busy", AWAY: "Away", INVISIBLE: "Invisible" }[presence] || "Offline";
   return (
-    // see-through: the Lobby's faint butterfly picture shows behind (Dashboard)
+    // see-through: the Lobby's sky shows behind the clear glass cards (Dashboard)
     <div className="pb-1.5">
       {/* ✨ AURORA hero card (the app's AuroraProfileCard): soft coloured lights
           drift behind the card, the photo's rainbow ring turns, the status sits
@@ -224,7 +224,7 @@ export function ModernHomeTop({
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
           its tile up with a glowing border and a pulsing dot; Online pulses
           while friends are online (the app's HomeStatTile). */}
-      <div className="mx-2.5 mb-1.5 flex gap-2 rounded-[22px] bg-white p-2.5 shadow-[0_4px_12px_rgba(21,101,216,.18)]">
+      <div className="glass-card mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
         <StatTile href="/mail" icon="✉️" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
         <StatTile href="/alerts" icon="🔔" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
         <StatTile href="/friends" icon="👥" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
@@ -235,7 +235,7 @@ export function ModernHomeTop({
           buttons were removed — the tabs above already open them.) */}
 
       {/* search */}
-      <div className="mx-2.5 my-3 rounded-[18px] bg-white px-3.5 py-3 shadow-[0_3px_8px_rgba(0,0,0,.12)]">
+      <div className="glass-card mx-2.5 my-3 rounded-[18px] px-3.5 py-3">
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
@@ -268,7 +268,7 @@ export function ModernHomeTop({
       )}
       <div data-notranslate>
         {friends.map((f) => (
-          <div key={f.name} className="mx-2.5 my-1.5 flex items-center rounded-[18px] bg-white px-3 py-2.5 shadow-[0_3px_8px_rgba(0,0,0,.1)]">
+          <div key={f.name} className="glass-card mx-2.5 my-1.5 flex items-center rounded-[18px] px-3 py-2.5">
             <Link href={`/profile/${encodeURIComponent(f.name)}`} className="relative shrink-0">
               <Avatar name={f.name} photo={f.photo} size={44} />
               <span
