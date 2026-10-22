@@ -193,40 +193,58 @@ export default function SupporterColoursPage() {
             <SectionLabel>
               {l.flag} {l.name}
             </SectionLabel>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {/* store grid: 2 cards a row — the jersey in a white circle, the
+                team name in its colour, price, days and a Buy button */}
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {SUPPORTER_TEAMS.filter((t) => t.league === l.id).map((t) => {
                 const isMine = current?.id === t.id;
                 return (
-                  <div key={t.id} className="relative">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setConfirm(t)}
-                      className={`flex w-full items-center gap-3 rounded-2xl bg-white p-3 text-left shadow-sm transition hover:shadow-md disabled:opacity-60 ${isFounder ? "pr-10" : ""}`}
-                      style={{ borderLeft: `5px solid ${t.text}` }}
-                    >
-                    <SupporterJersey team={t} size={40} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-extrabold" style={{ color: t.text }}>
-                        {t.name}
+                  <div
+                    key={t.id}
+                    className="relative flex flex-col items-center rounded-2xl bg-white px-2 pb-3 pt-4 text-center shadow-sm"
+                    style={{ border: `1.5px solid ${isMine ? t.text : "#E3ECF7"}` }}
+                  >
+                    {isMine && (
+                      <span className="absolute left-2 top-2 rounded-full px-1.5 py-[1px] text-[9px] font-black text-white" style={{ background: t.text }}>
+                        ✓ MINE
                       </span>
-                      <span className="text-[11px] text-[#8A97B0]">{isMine ? `✅ Your team · tap to add ${terms.days} days` : "Supporters badge"}</span>
-                    </span>
-                    <span className="shrink-0 rounded-full border border-[#F5D77A] bg-[#FFF8E1] px-2 py-0.5 text-[11px] font-bold text-[#8A5A00]">
-                      🪙 {short(supporterPriceOf(terms, t.id))}
-                    </span>
-                    </button>
+                    )}
                     {/* ✏️ this team's own price (miglife) */}
                     {isFounder && (
                       <button
                         type="button"
                         aria-label={`Set the ${t.name} price`}
                         onClick={() => openEdit(t)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-1 text-[15px]"
+                        className="absolute right-1.5 top-1.5 rounded-lg px-1 text-[14px]"
                       >
                         ✏️
                       </button>
                     )}
+                    <span
+                      className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-white"
+                      style={{ boxShadow: `0 3px 10px rgba(0,0,0,.14), 0 0 0 2px ${t.text}22` }}
+                    >
+                      <SupporterJersey team={t} size={48} />
+                    </span>
+                    <span className="mt-2 block w-full truncate text-[13.5px] font-extrabold" style={{ color: t.text }}>
+                      {t.name}
+                    </span>
+                    <span className="mt-0.5 text-[14px] font-bold text-[#14213D]">🪙 {supporterPriceOf(terms, t.id).toLocaleString()}</span>
+                    <span className="mt-1 rounded-full bg-[#EEF2F7] px-2 py-[1px] text-[10px] font-semibold text-[#5B6B8C]">{terms.days} days</span>
+                    {/* the kit colours */}
+                    <span className="mt-2 flex gap-1.5">
+                      {[t.c1, t.c2, t.text].map((c, i) => (
+                        <span key={i} className="h-4 w-4 rounded-full" style={{ background: c, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
+                      ))}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirm(t)}
+                      className="mt-2.5 rounded-full bg-[#0B2A5B] px-4 py-1.5 text-[11.5px] font-bold text-white shadow disabled:opacity-60"
+                    >
+                      {isMine ? `+ ${terms.days} days` : "Buy Badge"}
+                    </button>
                   </div>
                 );
               })}
