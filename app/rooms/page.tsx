@@ -104,6 +104,8 @@ export default function RoomsPage() {
   const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
   // Which folders show ALL their rooms (the ⌄ button under the top 5).
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
+  // 🔥 Hot now's ↻ moves on to the next 5 busy rooms (the rest stay under ⌄)
+  const [hotOffset, setHotOffset] = useState(0);
   const classic = useIsClassic();
   const { favorites, recent, toggleFavorite } = useRoomPrefs();
 
@@ -497,10 +499,13 @@ export default function RoomsPage() {
     public: ["🌍", "#1FA2B8"],
     private: ["🔐", "#E5484D"],
   };
-  const hot = Array.from(new Set(sections.flatMap(([, , names]) => names)))
+  // every room with people, busiest first; ↻ turns the list by 5 so the
+  // next busy rooms come to the top (the rest stay under the ⌄ below)
+  const hotAll = Array.from(new Set(sections.flatMap(([, , names]) => names)))
     .filter((n) => live(n) > 0)
-    .sort(byLive)
-    .slice(0, 8);
+    .sort(byLive);
+  const hotStart = hotAll.length > 5 ? hotOffset % hotAll.length : 0;
+  const hot = [...hotAll.slice(hotStart), ...hotAll.slice(0, hotStart)];
   // 🔥 Hot now is a normal folder like the others, at the bottom (no coloured
   // strip on top any more); only shown while rooms have people.
   const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "Hot now", hot]] : sections;
@@ -533,7 +538,7 @@ export default function RoomsPage() {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
           const limited = key !== "fav" && !q && allRooms.length > 5;
           const expanded = !!showAll[key];
-          const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
+          const rooms = limited ? (key === "hot" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
@@ -549,10 +554,14 @@ export default function RoomsPage() {
                   <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
                   <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
                 </button>
-                {/* 🔥 Hot now: its own ↻, the live numbers count again */}
+                {/* 🔥 Hot now: its own ↻ — the live numbers count again and the
+                    next 5 busy rooms come to the top */}
                 {key === "hot" && (
                   <RefreshButton
-                    onClick={() => setRefreshKey((k) => k + 1)}
+                    onClick={() => {
+                      setHotOffset((o) => o + 5);
+                      setRefreshKey((k) => k + 1);
+                    }}
                     className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-bold text-[#FF6B3D] shadow-sm"
                   />
                 )}
