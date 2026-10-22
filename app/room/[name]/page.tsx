@@ -3069,13 +3069,12 @@ function MessageRow({
     );
   }
 
-  // /me: "name action" in red, on the left.
+  // /me: drawn like /roll — "**name action**", bold red, in the middle, no time.
   if (m.type === "me") {
     const c = m.text.indexOf(":");
     return (
-      <p className="px-1 text-left leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
-        {brandMiglife(c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text)}
-        {stamp}
+      <p className="px-2 text-center font-bold leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
+        {brandMiglife(`**${c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text}**`)}
       </p>
     );
   }
