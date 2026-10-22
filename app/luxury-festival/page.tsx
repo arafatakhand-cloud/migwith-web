@@ -70,6 +70,8 @@ const short = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "")}M` : n >= 1e4 ? `${Math.round(n / 1e3)}K` : n.toLocaleString();
 // amounts in gold, on the light Community look
 const GOLD = "#B7791F";
+// 🎨 each row from #4 down gets its own colour (like the Community cards)
+const ROW_COLORS = ["#3B7BF0", "#22A06B", "#7B5CF0", "#F5A623", "#1FA2B8", "#E5484D", "#D9730D", "#E12A6B"];
 const PODIUM = [
   { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: GOLD, h: 88 },
   { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#5B6B8C", h: 62 },
@@ -377,8 +379,9 @@ export default function LuxuryFestivalPage() {
 
               {/* 4 – 25 */}
               <ul className="space-y-[7px]">
-                {rest.map((r) => {
+                {rest.map((r, k) => {
                   const mine = r.username === username;
+                  const c = ROW_COLORS[k % ROW_COLORS.length];
                   const amount = r.spend ?? (mine ? data.mySpend : undefined);
                   return (
                     <li key={r.uid}>
@@ -388,20 +391,22 @@ export default function LuxuryFestivalPage() {
                         style={
                           mine
                             ? { background: "linear-gradient(90deg,#FFF3D6,#FFE7A8)", borderColor: "#F5D77A" }
-                            : { background: "linear-gradient(90deg,#ffffff 40%,#E12A6B14)", borderColor: "#E12A6B2e" }
+                            : { background: `linear-gradient(90deg,#ffffff 40%,${c}1f)`, borderColor: `${c}40`, boxShadow: `0 3px 10px ${c}26` }
                         }
                       >
-                        <span className="w-7 text-center text-sm font-black text-[#E12A6B]">{r.position}</span>
+                        <span className="w-7 text-center text-sm font-black" style={{ color: c }}>
+                          {r.position}
+                        </span>
                         <Face name={r.username} url={photos[r.uid]} size={38} />
                         <span className="min-w-0 flex-1">
                           <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                             {r.username}
                           </span>
                           {top > 0 && amount !== undefined && (
-                            <span className="mt-1 block h-1 overflow-hidden rounded-full bg-[#E12A6B1f]">
+                            <span className="mt-1 block h-1 overflow-hidden rounded-full" style={{ background: `${c}1f` }}>
                               <i
                                 className="block h-full rounded-full"
-                                style={{ width: `${Math.max(2, Math.round((amount / top) * 100))}%`, background: "linear-gradient(90deg,#E12A6B,#FFC93C)" }}
+                                style={{ width: `${Math.max(2, Math.round((amount / top) * 100))}%`, background: `linear-gradient(90deg,${c},#FFC93C)` }}
                               />
                             </span>
                           )}

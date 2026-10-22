@@ -176,6 +176,7 @@ function toMember(uid: string, d: DocumentData): Member {
 }
 
 // 🥇🥈🥉 Top Level Users: the first three in gold, silver and bronze.
+const ROW_COLORS = ["#3B7BF0", "#22A06B", "#7B5CF0", "#F5A623", "#1FA2B8", "#E5484D", "#D9730D", "#E12A6B"];
 const TOP3 = [
   { medal: "🥇", bg: "linear-gradient(90deg,#FFF6D6,#FFE7A0)", line: "#F2C94C", ring: "#F2C94C", glow: "#F2C94C55", ink: "#8A5A00" },
   { medal: "🥈", bg: "linear-gradient(90deg,#F7F9FC,#E3E9F2)", line: "#B8C3D3", ring: "#AEB9C9", glow: "#9AA6B855", ink: "#4A5873" },
@@ -316,6 +317,8 @@ export default function MembersPage() {
                 {list.map((m, i) => {
                   // 🥇🥈🥉 the top 3 stand out: gold, silver, bronze
                   const podium = isTop && i < 3 ? TOP3[i] : null;
+                  // 🎨 from #4 down each row its own colour
+                  const rowColor = isTop ? ROW_COLORS[i % ROW_COLORS.length] : selected.color;
                   return (
                   <li key={m.uid} className={podium && i === 0 ? "md:col-span-2" : ""}>
                     <Link
@@ -327,7 +330,7 @@ export default function MembersPage() {
                         podium
                           ? { borderColor: podium.line, background: podium.bg, boxShadow: `0 4px 14px ${podium.glow}` }
                           : lightCard
-                            ? { borderColor: `${selected.color}55`, background: `linear-gradient(90deg, #FFFFFF, #F6F2FB, ${selected.color}1A)` }
+                            ? { borderColor: `${rowColor}55`, background: `linear-gradient(90deg, #FFFFFF, #F6F2FB, ${rowColor}1A)` }
                             : undefined
                       }
                     >
@@ -335,7 +338,9 @@ export default function MembersPage() {
                         (podium ? (
                           <span className="w-7 text-center text-[24px] leading-none">{podium.medal}</span>
                         ) : (
-                          <span className="w-7 text-center text-sm font-black text-[#B7791F]">{i + 1}</span>
+                          <span className="w-7 text-center text-sm font-black" style={{ color: rowColor }}>
+                            {i + 1}
+                          </span>
                         ))}
                       <span
                         className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-black ${podium ? "h-[52px] w-[52px]" : "h-11 w-11"} ${lightCard ? "" : "bg-white/10 text-white"}`}
@@ -343,7 +348,7 @@ export default function MembersPage() {
                           podium
                             ? { background: "#fff", color: podium.ink, boxShadow: `0 0 0 3px ${podium.ring}` }
                             : lightCard
-                              ? { background: `${selected.color}1F`, color: selected.color }
+                              ? { background: `${rowColor}1F`, color: rowColor }
                               : undefined
                         }
                       >
