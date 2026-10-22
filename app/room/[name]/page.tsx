@@ -217,12 +217,15 @@ function isModerationLine(text: string) {
  *  than one line (a long Gift Shower), it goes back to the normal size.
  *  Lines are counted from the text's own boxes, so the time stamp and padding
  *  don't matter. */
-function FitOneLine({ base, children }: { base: number; children: (px: number) => ReactNode }) {
+function FitOneLine({ base, grow = false, children }: { base: number; grow?: boolean; children: (px: number) => ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [fit, setFit] = useState({ base, px: base, done: false });
+  // 🎁 grow: a single gift line starts big (chat size + 10) and shrinks until it
+  // fits on one line, so it fills the whole chat width (like the app).
+  const start = grow ? base + 10 : base;
+  const [fit, setFit] = useState({ base, px: start, done: false });
   // a new text size in Settings starts the fitting again
-  if (fit.base !== base) setFit({ base, px: base, done: false });
-  const px = fit.base === base ? fit.px : base;
+  if (fit.base !== base) setFit({ base, px: start, done: false });
+  const px = fit.base === base ? fit.px : start;
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el || fit.done) return;
@@ -2047,7 +2050,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 // 👢👋🚫 kick / bump / ban lines and 🎁 gift / Gift Shower lines shrink a
                 // little to fit on one line (when a little is enough)
                 const row = isModerationLine(m.text) || m.type === "gift" ? (
-                  <FitOneLine key={m.id} base={fontPx}>
+                  <FitOneLine key={m.id} base={fontPx} grow={m.type === "gift" && !m.text.includes("GIFT SHOWER")}>
                     {rowAt}
                   </FitOneLine>
                 ) : (
@@ -2879,7 +2882,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
       seg.split(giftIcon).forEach((piece, i) => {
         if (i > 0)
           out.push(
-            <GiftImg key={`g${k++}`} src={giftImage} fallback={giftIcon} className="mx-0.5 inline h-[1.25em] w-[1.25em] rounded-full object-cover align-middle" />
+            <GiftImg key={`g${k++}`} src={giftImage} fallback={giftIcon} className="mx-0.5 inline h-[1.4em] w-[1.4em] object-contain align-middle" />
           );
         if (piece) out.push(...emotesIn(piece));
       });
@@ -2892,7 +2895,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
     const i = m.index ?? 0;
     if (i > last) pushSegment(clean.slice(last, i));
     out.push(
-      <span key={`l${k++}`} className="text-[#FFC107]">
+      <span key={`l${k++}`}>
         {m[0]}
       </span>
     );
@@ -3102,7 +3105,7 @@ function MessageRow({
             Justified (like Word's "Justify"): every full line ends at the same
             right edge, whatever names / gift fill it. */}
         <p
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-justify leading-snug text-[#FF2D95]"
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-justify font-semibold leading-snug text-[#FF2D95]"
           style={{ fontSize: fontPx }}
         >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
