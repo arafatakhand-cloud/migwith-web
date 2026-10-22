@@ -42,7 +42,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-theme="glass">
       <body className="antialiased">
         {/* 📱 Every phone shows the page the same: it is laid out 412px wide (a
             normal phone) and the phone scales that to its own screen, so a small
@@ -58,7 +58,7 @@ export default function RootLayout({
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{localStorage.removeItem("migwith.font");var t=localStorage.getItem("migwith.theme");if(t&&t!=="sky_blue")document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
+            __html: `try{localStorage.removeItem("migwith.font");var t=localStorage.getItem("migwith.theme");if(t==="sky_blue")delete document.documentElement.dataset.theme;else if(t)document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />
