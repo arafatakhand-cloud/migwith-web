@@ -262,7 +262,8 @@ export default function MembersPage() {
       <section className="mx-auto max-w-2xl px-3 lg:max-w-4xl pb-8 sm:px-6">
         {selected ? (
           <>
-            <PageTitle title={selected.title} subtitle={selected.subtitle} icon={selected.icon} />
+            {/* ‹ goes back to all the categories */}
+            <PageTitle title={selected.title} subtitle={selected.subtitle} icon={selected.icon} onBack={() => setSelected(null)} />
             {canManage && (
               <div className="mb-2.5 rounded-2xl border bg-[#304477] p-2.5 text-white" style={{ borderColor: NAME_COLORS[selected.id] }}>
                 <p className="flex items-center gap-1.5 text-sm font-bold text-[#FFD54F]">
@@ -408,13 +409,6 @@ export default function MembersPage() {
             {canManage && (
               <p className="mt-2 px-1 text-xs text-[#35507E]">Only the FOUNDER can add or remove {selected.title} members.</p>
             )}
-            <button
-              type="button"
-              onClick={() => setSelected(null)}
-              className="mt-4 w-full rounded-2xl bg-white py-3 text-sm font-bold text-[#2F80ED] shadow-sm"
-            >
-              ← All categories
-            </button>
           </>
         ) : (
           <>
