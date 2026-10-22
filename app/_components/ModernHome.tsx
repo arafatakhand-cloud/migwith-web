@@ -130,7 +130,8 @@ export function ModernHomeTop({
   const dot = { ONLINE: "#3CC24A", BUSY: "#E53935", AWAY: "#FFB300" }[presence] || "#9AA3AE";
   const presenceLabel = { ONLINE: "Online", BUSY: "Busy", AWAY: "Away", INVISIBLE: "Invisible" }[presence] || "Offline";
   return (
-    <div className="bg-[#EEF4FD] pb-1.5">
+    // see-through: the Lobby's faint butterfly picture shows behind (Dashboard)
+    <div className="pb-1.5">
       {/* ✨ AURORA hero card (the app's AuroraProfileCard): soft coloured lights
           drift behind the card, the photo's rainbow ring turns, the status sits
           in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
