@@ -121,14 +121,15 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white">
+    // 🫧 / 🔵 the look follows the theme (globals.css: .login-page under the Glass theme)
+    <main className="login-page relative min-h-screen overflow-hidden bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white">
       <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center px-6 pb-10 pt-12">
         {/* mig + life bubble */}
         <Link href="/welcome" aria-label="About MIGlife" className="relative mt-4 block">
           <MigLoginLogo />
         </Link>
 
-        <p className="mt-8 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
+        <p className="login-ink mt-8 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
 
         {/* the app's five chat bubbles */}
         <LoginBubbles />
@@ -142,7 +143,7 @@ export default function LoginPage() {
             handleLogin();
           }}
         >
-          <label className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+          <label className="login-field flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
             <PersonIcon />
             <input
               id="identifier"
@@ -155,7 +156,7 @@ export default function LoginPage() {
               className="min-w-0 flex-1 bg-transparent py-3.5 text-lg text-[#17375A] outline-none placeholder:text-[#9FB3C8]"
             />
           </label>
-          <label className="flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+          <label className="login-field flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
             <LockIcon />
             <input
               id="password"
@@ -192,21 +193,23 @@ export default function LoginPage() {
           type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="mt-6 w-full rounded-2xl bg-[#17375A] py-3.5 text-xl font-bold text-white shadow-[0_6px_14px_rgba(23,55,90,.35)] transition active:scale-[.98] disabled:opacity-60"
+          className="login-main mt-6 w-full rounded-2xl bg-[#17375A] py-3.5 text-xl font-bold text-white shadow-[0_6px_14px_rgba(23,55,90,.35)] transition active:scale-[.98] disabled:opacity-60"
         >
           {loading ? "…" : "Login"}
         </button>
         <Link
           href="/register"
-          className="mt-3.5 block w-full rounded-2xl border border-white bg-white py-3.5 text-center text-xl font-bold text-[#111827] shadow-[0_4px_10px_rgba(0,0,0,.12)] transition active:scale-[.98]"
+          className="login-alt mt-3.5 block w-full rounded-2xl border border-white bg-white py-3.5 text-center text-xl font-bold text-[#111827] shadow-[0_4px_10px_rgba(0,0,0,.12)] transition active:scale-[.98]"
         >
           Create Account
         </Link>
-        <Link href="/forgot-password" className="mt-5 text-[17px] text-white/90 underline underline-offset-4">
+        <Link href="/forgot-password" className="login-link mt-5 text-[17px] text-white/90 underline underline-offset-4">
           Forgot Password?
         </Link>
         {/* ✨ / 📟 The site opens in whichever style is ticked here (same switch as Settings › Appearance). */}
         <LoginStyleChoice />
+        {/* 🫧 Glass / 🔵 Blue: pick the look before signing in (it is the theme too) */}
+        <LoginThemeChoice />
         {/* Android app download (the link miglife sets in miglife secret) */}
         <AndroidDownload />
       </section>
@@ -228,7 +231,7 @@ function LoginStyleChoice() {
           key={id}
           type="button"
           onClick={() => setUiStyle(id)}
-          className="flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white"
+          className="login-ink flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white"
         >
           <span className="flex h-[26px] w-[26px] items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-lg font-bold text-[#2B2B2B]">
             {style === id ? "✓" : ""}
@@ -241,11 +244,45 @@ function LoginStyleChoice() {
 }
 
 /** A rounded tick box with its label. */
+// 🫧 Glass / 🔵 Blue (miGlife Classic): the same choice as Settings › Appearance,
+// saved in this browser, so the site opens in it after signing in too.
+function LoginThemeChoice() {
+  const [glass, setGlass] = useState(true);
+  useEffect(() => setGlass(document.documentElement.dataset.theme === "glass"), []);
+  const pick = (g: boolean) => {
+    setGlass(g);
+    try {
+      localStorage.setItem("migwith.theme", g ? "glass" : "sky_blue");
+    } catch {
+      // storage blocked
+    }
+    if (g) document.documentElement.dataset.theme = "glass";
+    else delete document.documentElement.dataset.theme;
+  };
+  return (
+    <div className="mt-3 flex w-full items-center justify-evenly gap-2 px-2">
+      {(
+        [
+          [true, "🫧 Glass"],
+          [false, "🔵 Blue"],
+        ] as const
+      ).map(([g, label]) => (
+        <button key={label} type="button" onClick={() => pick(g)} className="login-ink flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white">
+          <span className="flex h-[26px] w-[26px] items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-lg font-bold text-[#2B2B2B]">
+            {glass === g ? "✓" : ""}
+          </span>
+          <span className={`whitespace-nowrap ${glass === g ? "font-bold" : ""}`}>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function AppCheck({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button type="button" onClick={() => onChange(!checked)} className="flex items-center gap-3 text-left text-base text-white">
+    <button type="button" onClick={() => onChange(!checked)} className="login-ink flex items-center gap-3 text-left text-base text-white">
       <span
-        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 text-sm font-black ${
+        className={`login-box flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 text-sm font-black ${
           checked ? "border-white bg-white text-[#17375A]" : "border-white/80"
         }`}
       >

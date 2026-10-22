@@ -593,3 +593,50 @@ html[data-theme="glass"] .lobby-butterfly {
 html[data-theme="glass"] main[data-shell] .page-bg {
   background: transparent !important;
 }
+
+/* 🫧 Glass theme: the login page on the soft sky, clear glass fields */
+html[data-theme="glass"] .login-page {
+  background:
+    radial-gradient(30% 18% at 25% 25%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(35% 20% at 75% 45%, rgba(255, 255, 255, 0.9), transparent 70%),
+    radial-gradient(30% 16% at 35% 75%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, #9fd0ff, #d7ecff 60%, #ffe6f1) !important;
+  color: #0b2a5b;
+}
+html[data-theme="glass"] .login-page .login-ink {
+  color: #0b2a5b;
+}
+html[data-theme="glass"] .login-page p.login-ink {
+  font-weight: 800;
+}
+html[data-theme="glass"] .login-page .login-box:not(.bg-white) {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.5);
+}
+html[data-theme="glass"] .login-page .login-field,
+html[data-theme="glass"] .login-page .login-alt {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.15)) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+  box-shadow:
+    inset 0 1px 1px #fff,
+    0 6px 16px rgba(40, 80, 140, 0.14) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #0b2a5b;
+}
+html[data-theme="glass"] .login-page .login-main {
+  background: linear-gradient(180deg, #3b82f6, #1e4fa8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.7),
+    0 8px 18px rgba(30, 79, 168, 0.35) !important;
+}
+html[data-theme="glass"] .login-page .login-link {
+  color: #2f63d6;
+}
+html[data-theme="glass"] .login-page .ml-word .text-white {
+  color: #1e63d6;
+}
+html[data-theme="glass"] .login-page .ml-tag {
+  color: #35507e;
+}
