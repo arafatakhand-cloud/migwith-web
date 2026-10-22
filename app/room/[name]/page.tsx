@@ -3137,6 +3137,10 @@ function MessageRow({
   if (!splitByUid && /voucher/i.test(m.text)) {
     return (
       <p className="px-1 text-left text-[13px] leading-snug text-[#E8327E]">
+        {/* 🏷 the room's name first ("Bangladesh: Hurray! …"), like the app */}
+        <span className="font-bold" style={{ color: ROOM_ORANGE }}>
+          {roomName}:{" "}
+        </span>
         {m.text}
         {stamp}
       </p>
