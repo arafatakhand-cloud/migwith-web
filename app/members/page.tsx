@@ -250,7 +250,8 @@ export default function MembersPage() {
 
   const list = useMemo(() => {
     if (!selected || !members) return [];
-    if (selected.id === "top") return [...members].sort((a, b) => b.level - a.level).slice(0, 100);
+    // 🏆 only the top 15
+    if (selected.id === "top") return [...members].sort((a, b) => b.level - a.level).slice(0, 15);
     return members
       .filter((m) => m.roles.some((r) => selected.roles.includes(r)))
       .sort((a, b) => b.level - a.level);
