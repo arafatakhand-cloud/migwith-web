@@ -21,6 +21,8 @@ import { Face } from "../_components/RankFace";
 type Ranking = { id: string; title: string; icon: string; color: string; gameKey?: string; gifts?: "sent" | "received" };
 
 const RANKINGS: Ranking[] = [
+  // every game together (the server adds the games up)
+  { id: "all", title: "All Games", icon: "🎮", gameKey: "all", color: "#2F80ED" },
   { id: "cricket", title: "Cricket", icon: "🏏", gameKey: "cricket", color: "#1E8C4E" },
   { id: "teenpatti", title: "Teen Patti", icon: "🃏", gameKey: "teenpatti", color: "#E12A6B" },
   { id: "ludo", title: "Ludo", icon: "🎲", gameKey: "ludo", color: "#3984D9" },
@@ -32,6 +34,8 @@ const RANKINGS: Ranking[] = [
   { id: "gift_received", title: "Gift Received", icon: "🎉", gifts: "received", color: "#D9730D" },
   { id: "level", title: "Top Level", icon: "⭐", color: "#D9A400" },
 ];
+
+const ALL_GAMES_LINE = "Cricket, Teen Patti, Ludo, MIG Royale, 29, LowCard and Luxury";
 
 const PERIODS = ["Today", "Yesterday", "This Week", "This Month"];
 
@@ -245,7 +249,7 @@ export default function LeaderboardPage() {
                     key={r.id}
                     icon={r.icon}
                     title={r.title}
-                    subtitle={r.id === "level" ? "All time" : "Today · Yesterday · Week · Month"}
+                    subtitle={r.id === "level" ? "All time" : r.id === "all" ? ALL_GAMES_LINE : "Today · Yesterday · Week · Month"}
                     color={r.color}
                     onClick={() => {
                       setRanking(r);
