@@ -175,6 +175,13 @@ function toMember(uid: string, d: DocumentData): Member {
   };
 }
 
+// 🥇🥈🥉 Top Level Users: the first three in gold, silver and bronze.
+const TOP3 = [
+  { medal: "🥇", bg: "linear-gradient(90deg,#FFF6D6,#FFE7A0)", line: "#F2C94C", ring: "#F2C94C", glow: "#F2C94C55", ink: "#8A5A00" },
+  { medal: "🥈", bg: "linear-gradient(90deg,#F7F9FC,#E3E9F2)", line: "#B8C3D3", ring: "#AEB9C9", glow: "#9AA6B855", ink: "#4A5873" },
+  { medal: "🥉", bg: "linear-gradient(90deg,#FFF1E6,#F8D9C2)", line: "#E3A576", ring: "#E3A576", glow: "#C8784455", ink: "#8A4A1C" },
+];
+
 export default function MembersPage() {
   const ready = useRequireLogin();
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -256,7 +263,9 @@ export default function MembersPage() {
       .filter((m) => m.roles.some((r) => selected.roles.includes(r)))
       .sort((a, b) => b.level - a.level);
   }, [selected, members]);
-  const lightCard = !!selected && isDarkAccent(selected.color);
+  // 🏆 Top Level Users always in the light Community look
+  const lightCard = !!selected && (selected.id === "top" || isDarkAccent(selected.color));
+  const isTop = selected?.id === "top";
 
   return (
     <PageShell light>
@@ -304,23 +313,39 @@ export default function MembersPage() {
               <p className="py-10 text-center text-sm text-[#5B6B8C]">No members yet.</p>
             ) : (
               <ul className="grid gap-2 md:grid-cols-2">
-                {list.map((m, i) => (
-                  <li key={m.uid}>
+                {list.map((m, i) => {
+                  // 🥇🥈🥉 the top 3 stand out: gold, silver, bronze
+                  const podium = isTop && i < 3 ? TOP3[i] : null;
+                  return (
+                  <li key={m.uid} className={podium && i === 0 ? "md:col-span-2" : ""}>
                     <Link
                       href={`/profile/${encodeURIComponent(m.name)}`}
                       className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-md hover:brightness-110 ${
                         lightCard ? "" : "border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656]"
                       }`}
                       style={
-                        lightCard
-                          ? { borderColor: `${selected.color}55`, background: `linear-gradient(90deg, #FFFFFF, #F6F2FB, ${selected.color}1A)` }
-                          : undefined
+                        podium
+                          ? { borderColor: podium.line, background: podium.bg, boxShadow: `0 4px 14px ${podium.glow}` }
+                          : lightCard
+                            ? { borderColor: `${selected.color}55`, background: `linear-gradient(90deg, #FFFFFF, #F6F2FB, ${selected.color}1A)` }
+                            : undefined
                       }
                     >
-                      {selected.id === "top" && <span className="w-6 text-center text-sm font-black text-[#D9A400]">{i + 1}</span>}
+                      {isTop &&
+                        (podium ? (
+                          <span className="w-7 text-center text-[24px] leading-none">{podium.medal}</span>
+                        ) : (
+                          <span className="w-7 text-center text-sm font-black text-[#B7791F]">{i + 1}</span>
+                        ))}
                       <span
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full font-black ${lightCard ? "" : "bg-white/10 text-white"}`}
-                        style={lightCard ? { background: `${selected.color}1F`, color: selected.color } : undefined}
+                        className={`flex shrink-0 items-center justify-center overflow-hidden rounded-full font-black ${podium ? "h-[52px] w-[52px]" : "h-11 w-11"} ${lightCard ? "" : "bg-white/10 text-white"}`}
+                        style={
+                          podium
+                            ? { background: "#fff", color: podium.ink, boxShadow: `0 0 0 3px ${podium.ring}` }
+                            : lightCard
+                              ? { background: `${selected.color}1F`, color: selected.color }
+                              : undefined
+                        }
                       >
                         {m.photo ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -330,7 +355,10 @@ export default function MembersPage() {
                         )}
                       </span>
                       <span data-notranslate className="min-w-0 flex-1">
-                        <span className="block truncate font-bold" style={{ color: lightCard ? selected.color : NAME_COLORS[selected.id] || selected.color }}>
+                        <span
+                          className={`block truncate font-bold ${podium ? "text-[17px]" : ""}`}
+                          style={{ color: podium ? podium.ink : isTop ? "#0B2A5B" : lightCard ? selected.color : NAME_COLORS[selected.id] || selected.color }}
+                        >
                           {m.name}
                         </span>
                         <span className={`block truncate text-xs ${lightCard ? "text-[#38517F]" : "text-white/70"}`}>
@@ -404,7 +432,8 @@ export default function MembersPage() {
                       )}
                     </Link>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
             {canManage && (
