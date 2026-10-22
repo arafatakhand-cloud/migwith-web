@@ -585,9 +585,12 @@ export default function RoomsPage() {
                     const shown = roomListName(name);
                     const letter = (shown.match(/[\p{L}\p{N}]/u)?.[0] || "#").toUpperCase();
                     return (
-                      <div key={name}>
-                        {i > 0 && <div className="ml-16 h-px bg-[#EEF2F7]" />}
-                        <div className="flex items-center py-2 pl-3 pr-1">
+                      <div key={name} className="px-2 py-[3px]">
+                        {/* 🃏 every room is its own white card, like the app */}
+                        <div
+                          className="flex items-center rounded-[14px] border bg-white py-2 pl-2.5 pr-1"
+                          style={{ borderColor: `${accent}38`, boxShadow: `0 1px 3px ${accent}40` }}
+                        >
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
                             <span className="relative h-10 w-10 shrink-0">
                               <span
