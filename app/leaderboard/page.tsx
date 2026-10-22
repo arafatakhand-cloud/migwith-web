@@ -126,14 +126,13 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
 
 const MEDALS = ["🥇", "🥈", "🥉"];
 
-// 🏆 Royal look (like the Luxury Festival): the 1-2-3 podium with profile
-// pictures, the rest with a bar against #1, and "You" at the bottom. Classic
-// keeps its own look below.
-const ROYAL_BG = "radial-gradient(120% 60% at 50% 0%, #5B2BA8 0%, #2A1150 55%, #170A2E 100%)";
-const ROYAL_PODIUM = [
-  { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: "#FFD36E", h: 84 },
-  { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#D6DEEA", h: 58 },
-  { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#F3C29E", h: 44 },
+// 🏆 Light look (like Community): pastel board cards, then the 1-2-3 podium
+// with profile pictures, the rest with a bar against #1, and "You" at the
+// bottom. Classic keeps its own look below.
+const PODIUM = [
+  { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: "#B7791F", h: 84 },
+  { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#5B6B8C", h: 58 },
+  { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#9C5222", h: 44 },
 ];
 
 export default function LeaderboardPage() {
@@ -214,7 +213,7 @@ export default function LeaderboardPage() {
     const photo = (r: Row) => photos[r.name] || r.photoUrl;
     return (
       <PageShell light>
-        <div className="min-h-[calc(100dvh-57px)] text-white" style={{ background: ROYAL_BG }}>
+        <div className="min-h-[calc(100dvh-57px)] text-[#0B2A5B]">
           <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6 lg:max-w-4xl">
             {/* header */}
             <div className="flex items-center gap-3 py-3">
@@ -222,63 +221,52 @@ export default function LeaderboardPage() {
                 type="button"
                 aria-label="Back"
                 onClick={() => (picked ? setPicked(false) : router.back())}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-xl font-bold text-[#2F80ED] shadow-sm"
               >
                 ‹
               </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="truncate text-xl font-black">{picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}</h1>
-                <p className="text-[10.5px] font-extrabold uppercase tracking-[0.15em] text-[#E9C46A]">
+              <div className="min-w-0 flex-1 text-center">
+                <h1 className="truncate text-xl font-black text-[#0B2A5B]">{picked ? `${ranking.icon} ${ranking.title}` : "🏆 Rankings"}</h1>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F80ED]">
                   {picked ? (timed ? `${period} ranking` : "All time") : "Top players"}
                 </p>
               </div>
               <RefreshButton
                 onClick={() => setRefresh((n) => n + 1)}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg font-bold text-[#2F80ED] shadow-sm"
               />
             </div>
 
             {!picked ? (
               /* the boards */
-              <div className="grid gap-2 md:grid-cols-2">
+              <div className="grid gap-2.5 md:grid-cols-2">
                 {RANKINGS.map((r) => (
-                  <button
+                  <PastelCard
                     key={r.id}
-                    type="button"
+                    icon={r.icon}
+                    title={r.title}
+                    subtitle={r.id === "level" ? "All time" : "Today · Yesterday · Week · Month"}
+                    color={r.color}
                     onClick={() => {
                       setRanking(r);
                       setPeriod("Today");
                       setPicked(true);
                     }}
-                    className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.07] px-3 py-2.5 text-left transition hover:bg-white/[.11]"
-                    style={{ boxShadow: `inset 3px 0 0 ${r.color}` }}
-                  >
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-[22px]"
-                      style={{ background: `linear-gradient(135deg, ${r.color}, ${r.color}88)` }}
-                    >
-                      {r.icon}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-extrabold">{r.title}</span>
-                      <span className="block text-[11.5px] text-white/60">{r.id === "level" ? "All time" : "Today · Yesterday · Week · Month"}</span>
-                    </span>
-                    <span className="text-lg text-white/40">›</span>
-                  </button>
+                  />
                 ))}
               </div>
             ) : (
               <>
                 {/* period */}
                 {timed && (
-                  <div className="grid grid-cols-4 gap-1 rounded-2xl border border-white/10 bg-black/20 p-1">
+                  <div className="grid grid-cols-4 gap-1 rounded-2xl border border-[#D5E3F5] bg-white p-1 shadow-sm">
                     {PERIODS.map((p) => (
                       <button
                         key={p}
                         type="button"
                         onClick={() => setPeriod(p)}
-                        className={`rounded-xl py-2 text-[12px] font-extrabold transition ${period === p ? "text-[#3A2600] shadow" : "text-white/70 hover:bg-white/10"}`}
-                        style={period === p ? { background: "linear-gradient(90deg,#FFE08A,#E0A100)" } : undefined}
+                        className={`rounded-xl py-2 text-[12px] font-extrabold transition ${period === p ? "text-white shadow" : "text-[#5B6B8C] hover:bg-[#F4F9FF]"}`}
+                        style={period === p ? { background: `linear-gradient(90deg, ${ranking.color}, ${ranking.color}cc)` } : undefined}
                       >
                         {p}
                       </button>
@@ -287,11 +275,11 @@ export default function LeaderboardPage() {
                 )}
 
                 {rows === null ? (
-                  <p className="py-14 text-center text-sm text-white/70">Loading…</p>
+                  <p className="py-14 text-center text-sm text-[#6B7A99]">Loading…</p>
                 ) : list.length === 0 ? (
-                  <div className="mt-6 rounded-[20px] border border-dashed border-white/25 bg-white/[.07] px-4 py-7 text-center">
+                  <div className="mt-6 rounded-[20px] border border-dashed px-4 py-7 text-center" style={{ borderColor: `${ranking.color}66`, background: `linear-gradient(180deg, #ffffff, ${ranking.color}14)` }}>
                     <p className="text-[38px] leading-none">{ranking.icon}</p>
-                    <p className="mt-2 text-[14px] font-bold text-white/80">
+                    <p className="mt-2 text-[14px] font-bold text-[#35507E]">
                       {error || `No ${ranking.title} players ${timed ? period.toLowerCase() : ""} yet — be the first!`}
                     </p>
                   </div>
@@ -301,7 +289,7 @@ export default function LeaderboardPage() {
                     <div className="mb-3 mt-8 flex items-end gap-2">
                       {[1, 0, 2].map((i) => {
                         const p = list[i];
-                        const look = ROYAL_PODIUM[i];
+                        const look = PODIUM[i];
                         if (!p) return <div key={i} className="flex-1" />;
                         return (
                           <Link key={p.name} href={`/profile/${encodeURIComponent(p.name)}`} className="min-w-0 flex-1 text-center">
@@ -309,7 +297,7 @@ export default function LeaderboardPage() {
                               {i === 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[22px]">👑</span>}
                               <Face name={p.name} url={photo(p)} size={i === 0 ? 70 : 56} ring={look.ring} glow={i === 0 ? "#FFC93C" : undefined} />
                             </div>
-                            <p data-notranslate className={`mt-1.5 truncate font-extrabold ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
+                            <p data-notranslate className={`mt-1.5 truncate font-extrabold text-[#0B2A5B] ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
                               {p.name}
                             </p>
                             <p className="text-[11.5px] font-extrabold" style={{ color: look.text }}>
@@ -334,24 +322,29 @@ export default function LeaderboardPage() {
                           <li key={`${r.position}-${r.name}`}>
                             <Link
                               href={`/profile/${encodeURIComponent(r.name)}`}
-                              className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${mine ? "border-[#FFD36E77] bg-[#FFD36E]/15" : "border-white/10 bg-white/[.07]"}`}
+                              className="flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-sm transition hover:brightness-[0.98]"
+                              style={
+                                mine
+                                  ? { background: "linear-gradient(90deg,#FFF3D6,#FFE7A8)", borderColor: "#F5D77A" }
+                                  : { background: `linear-gradient(90deg, #ffffff 40%, ${ranking.color}1f)`, borderColor: `${ranking.color}40` }
+                              }
                             >
-                              <span className="w-7 text-center text-sm font-black text-[#B9A6E6]">{r.position}</span>
+                              <span className="w-7 text-center text-sm font-black" style={{ color: ranking.color }}>{r.position}</span>
                               <Face name={r.name} url={photo(r)} size={38} />
                               <span className="min-w-0 flex-1">
-                                <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                                <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                                   {r.name}
                                 </span>
                                 {best > 0 && (
-                                  <span className="mt-1 block h-1 overflow-hidden rounded-full bg-white/10">
+                                  <span className="mt-1 block h-1 overflow-hidden rounded-full" style={{ backgroundColor: `${ranking.color}1f` }}>
                                     <i
                                       className="block h-full rounded-full"
-                                      style={{ width: `${Math.max(2, Math.round((r.value / best) * 100))}%`, background: "linear-gradient(90deg,#B07CFF,#FFD36E)" }}
+                                      style={{ width: `${Math.max(2, Math.round((r.value / best) * 100))}%`, background: `linear-gradient(90deg, ${ranking.color}, #FFC93C)` }}
                                     />
                                   </span>
                                 )}
                               </span>
-                              <span className="whitespace-nowrap text-[13.5px] font-black text-[#FFD36E]">{r.score}</span>
+                              <span className="whitespace-nowrap text-[13.5px] font-black text-[#B7791F]">{r.score}</span>
                             </Link>
                           </li>
                         );
@@ -362,26 +355,26 @@ export default function LeaderboardPage() {
                     {myIndex >= 0 && (
                       <div
                         className="mt-3 flex items-center gap-3 rounded-2xl border px-3 py-2.5"
-                        style={{ background: "linear-gradient(90deg,rgba(255,211,110,.25),rgba(255,211,110,.08))", borderColor: "#FFD36E77" }}
+                        style={{ background: "linear-gradient(90deg,#FFF3D6,#FFE7A8)", borderColor: "#F5D77A" }}
                       >
-                        <span className="w-7 text-center text-sm font-black text-[#FFD36E]">#{list[myIndex].position}</span>
+                        <span className="w-7 text-center text-sm font-black text-[#B7791F]">#{list[myIndex].position}</span>
                         <Face name={list[myIndex].name} url={photo(list[myIndex])} size={38} ring="linear-gradient(#FFE08A,#E0A100)" />
                         <span className="min-w-0 flex-1">
-                          <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                          <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                             You · {list[myIndex].name}
                           </span>
-                          <span className="block text-[11px] text-white/75">{myIndex === 0 ? "👑 You are on top — keep it up!" : "Keep going to climb higher!"}</span>
+                          <span className="block text-[11px] text-[#8A6A1F]">{myIndex === 0 ? "👑 You are on top — keep it up!" : "Keep going to climb higher!"}</span>
                         </span>
-                        <span className="whitespace-nowrap text-[13.5px] font-black text-[#FFD36E]">{list[myIndex].score}</span>
+                        <span className="whitespace-nowrap text-[13.5px] font-black text-[#B7791F]">{list[myIndex].score}</span>
                       </div>
                     )}
                   </>
                 )}
 
                 {ranking.gameKey && mySpend !== null && (
-                  <p className="mt-4 text-center text-[11.5px] text-white/60">
+                  <p className="mt-4 text-center text-[11.5px] text-[#6B7A99]">
                     Ranked by coins played. Your {ranking.title} play {period.toLowerCase()}:{" "}
-                    <span className="font-bold text-[#FFD36E]">🪙 {mySpend.toLocaleString()}</span> (only you can see this)
+                    <span className="font-bold text-[#B7791F]">🪙 {mySpend.toLocaleString()}</span> (only you can see this)
                   </p>
                 )}
               </>
