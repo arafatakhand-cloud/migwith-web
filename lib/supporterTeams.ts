@@ -1,6 +1,6 @@
 // ⚽ Supporter Colours (Discover › Supporter Colours): 25 football teams, the
-// top 5 leagues × 5 teams. Fan colours only — the badge is a little JERSEY in
-// the team's kit colours (stripes, sleeves, band …) + short name, never a club
+// top 5 leagues × 5 teams. Fan colours only — the badge is miGlife's own CREST in
+// the team's kit colours (stripes, band …) + the team's letters, never a club
 // logo. Same list in the app
 // (SupporterColours.kt) and the server (buySupporterColour).
 

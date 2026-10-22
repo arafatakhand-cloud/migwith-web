@@ -7,7 +7,7 @@ import { auth, db } from "./firebase";
 
 // 📷 Supporters Badge team pictures miglife uploaded
 // (app_settings/shop_overrides.supporter.images.{team}). One listener for the
-// whole page, shared by every badge; a team without a picture keeps its jersey.
+// whole page, shared by every badge; a team without a picture keeps its crest.
 
 type Images = Record<string, string>;
 

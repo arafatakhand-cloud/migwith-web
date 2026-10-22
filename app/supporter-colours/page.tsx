@@ -60,7 +60,7 @@ export default function SupporterColoursPage() {
   const [editTeam, setEditTeam] = useState<SupporterTeam | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editDays, setEditDays] = useState("");
-  // 📷 a team's picture (miglife): shown instead of the jersey everywhere
+  // 📷 a team's picture (miglife): shown instead of the crest everywhere
   const pictures = useSupporterImages();
   const [picBusy, setPicBusy] = useState(false);
 
@@ -76,7 +76,7 @@ export default function SupporterColoursPage() {
         url = await getDownloadURL(r);
       }
       await setPriceCall({ team: team.id, image: url });
-      setMessage(file ? `📷 ${team.name}: picture saved` : `✅ ${team.name}: back to the jersey`);
+      setMessage(file ? `📷 ${team.name}: picture saved` : `✅ ${team.name}: back to the crest`);
       setEditing(false);
     } catch (e: any) {
       setMessage(e?.message || "Could not save the picture.");
@@ -219,7 +219,7 @@ export default function SupporterColoursPage() {
             <SectionLabel>
               {l.flag} {l.name}
             </SectionLabel>
-            {/* store grid: 2 cards a row — the jersey in a white circle, the
+            {/* store grid: 2 cards a row — the crest in a white circle, the
                 team name in its colour, price, days and a Buy button */}
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               {SUPPORTER_TEAMS.filter((t) => t.league === l.id).map((t) => {
@@ -342,7 +342,7 @@ export default function SupporterColoursPage() {
             </label>
             {editTeam && (
               <div className="mt-3 rounded-xl border border-[#D5E3F5] p-3">
-                <p className="text-xs font-bold text-[#35507E]">📷 Picture (instead of the jersey)</p>
+                <p className="text-xs font-bold text-[#35507E]">📷 Picture (instead of the crest)</p>
                 <div className="mt-2 flex items-center gap-3">
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white shadow">
                     <SupporterJersey team={editTeam} size={40} />
