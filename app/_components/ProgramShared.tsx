@@ -312,7 +312,7 @@ function DatePickerSheet({ day, onPick, onClose }: { day: string; onPick: (d: st
  *  blurred colour glows, so the white cards float on colour. */
 export function WavePage({ children }: { children: ReactNode }) {
   return (
-    <div className="relative isolate min-h-[calc(100dvh-64px)] overflow-hidden bg-gradient-to-b from-[#E4EEFD] via-[#EEE8FF] to-[#FFE8F2]">
+    <div className="page-bg relative isolate min-h-[calc(100dvh-64px)] overflow-hidden bg-gradient-to-b from-[#E4EEFD] via-[#EEE8FF] to-[#FFE8F2]">
       <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[250px] overflow-hidden rounded-b-[50%_22%] bg-gradient-to-br from-[#2F6ABD] via-[#5A8FD6] to-[#8B5CFF]">
         <span className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/15" />
         <span className="absolute bottom-6 left-[-30px] h-28 w-28 rounded-full bg-white/10" />

@@ -358,8 +358,19 @@ export function Dashboard() {
 
   return (
     <div className="relative mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
-      {/* ☁️ Modern Lobby: a soft sky with clouds behind the clear glass cards */}
-      {!classic && <div aria-hidden className="lobby-sky pointer-events-none fixed inset-0 z-0" />}
+      {/* 🦋 Modern Lobby: the butterfly picture, very faint, behind everything —
+          in the 🫧 Glass theme the sky (globals.css) shows instead */}
+      {!classic && (
+        <div
+          aria-hidden
+          className="lobby-butterfly pointer-events-none fixed inset-0 z-0"
+          style={{
+            backgroundImage: "linear-gradient(rgba(255,255,255,.86), rgba(255,255,255,.86)), url(/lobby-bg.webp)",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
       <div className="relative z-[1] min-w-0 flex-1 lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-md">
       {classic ? (
         classicStrip

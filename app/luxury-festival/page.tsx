@@ -223,7 +223,7 @@ export default function LuxuryFestivalPage() {
 
   return (
     <PageShell light>
-      <div className="min-h-[calc(100dvh-57px)] text-[#0B2A5B]" style={{ background: BG }}>
+      <div className="page-bg min-h-[calc(100dvh-57px)] text-[#0B2A5B]" style={{ background: BG }}>
         <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
           {/* header */}
           <div className="flex items-center gap-3 py-3">
