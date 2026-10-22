@@ -20,6 +20,7 @@ import {
   SUPPORTER_TEAMS,
   activeSupporterTeam,
   parseSupporterTerms,
+  supporterBackground,
   supporterPriceOf,
   type SupporterTeam,
   type SupporterTerms,
@@ -37,6 +38,9 @@ const setPriceCall = httpsCallable<{ price?: number; days?: number; team?: strin
   "founderSetSupporterPrice"
 );
 
+// 300,000 → "300K", 1,500,000 → "1.5M"
+const compact = (n: number) =>
+  n >= 1_000_000 ? `${+(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${+(n / 1000).toFixed(1)}K` : String(n);
 const short = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
 const fmtDate = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const opId = () => (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`);
@@ -49,6 +53,7 @@ export default function SupporterColoursPage() {
   const [balance, setBalance] = useState<number | null>(null);
   const [mine, setMine] = useState<{ team: string; until: number }>({ team: "", until: 0 });
   const [league, setLeague] = useState("all");
+  const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState<SupporterTeam | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -144,6 +149,13 @@ export default function SupporterColoursPage() {
   };
 
   const leagues = league === "all" ? SUPPORTER_LEAGUES : SUPPORTER_LEAGUES.filter((l) => l.id === league);
+  // 🔍 find a team by name or letters
+  const needle = search.trim().toLowerCase();
+  const teamsOf = (leagueId: string) =>
+    SUPPORTER_TEAMS.filter(
+      (t) => t.league === leagueId && (!needle || t.name.toLowerCase().includes(needle) || t.mark.toLowerCase().includes(needle) || t.short.toLowerCase().includes(needle))
+    );
+  const shownLeagues = leagues.filter((l) => teamsOf(l.id).length > 0);
 
   return (
     <PageShell light>
@@ -163,40 +175,43 @@ export default function SupporterColoursPage() {
         </div>
         {message && <p className="mt-3 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{message}</p>}
 
-        {/* my team */}
-        <div
-          className="mt-3 rounded-2xl p-[1.5px]"
-          style={{ background: current ? `linear-gradient(135deg, ${current.text}, ${current.c2 === "#FFFFFF" ? current.text : current.c2})` : "#D5E3F5" }}
-        >
-          <div className="rounded-[15px] bg-white p-3.5">
-            <p className="text-[11px] font-bold tracking-widest text-[#8A97B0]">MY TEAM</p>
-            {current ? (
-              <>
-                <div className="mt-1.5 flex items-center gap-2">
-                  <SupporterBadge team={current} size={13} />
-                  <span className="text-lg font-black" style={{ color: current.text }}>
-                    {current.name}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-[#5B6B8C]">
+        {/* my team: a hero card in the team's colours */}
+        {current ? (
+          <div className="relative mt-3 overflow-hidden rounded-[22px] p-4 text-white shadow-lg" style={{ background: supporterBackground(current) }}>
+            <span className="pointer-events-none absolute -right-2 -top-6 select-none text-[86px] font-black leading-none text-white/10">{current.mark}</span>
+            <div className="relative flex items-center gap-3">
+              <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white/95 shadow-md">
+                <SupporterJersey team={current} size={54} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[10.5px] font-bold tracking-[0.2em] text-white/75">MY TEAM</p>
+                <p className="truncate text-xl font-black drop-shadow">{current.name}</p>
+                <p className="text-xs text-white/85">
                   {daysLeft} day{daysLeft === 1 ? "" : "s"} left · until {fmtDate(mine.until)}
                 </p>
-                <div className="mt-2 rounded-xl bg-[#F4F7FB] px-3 py-2 text-sm">
-                  <span className="font-bold" style={{ color: current.text }}>
-                    {username || "you"}
-                  </span>{" "}
-                  <SupporterBadge team={current} size={9} />
-                  <span className="font-bold" style={{ color: current.text }}>
-                    :
-                  </span>{" "}
-                  <span className="text-[#222]">Come on! ⚽🔥</span>
-                </div>
-              </>
-            ) : (
-              <p className="mt-1 text-sm text-[#5B6B8C]">No team yet — pick one below.</p>
-            )}
+              </div>
+            </div>
+            {/* how the name looks in a room */}
+            <div className="relative mt-3 flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm">
+              <span className="font-bold" style={{ color: current.text }}>
+                {username || "you"}
+              </span>
+              <SupporterBadge team={current} size={9} />
+              <span className="font-bold" style={{ color: current.text }}>
+                :
+              </span>
+              <span className="text-[#222]">Come on! ⚽🔥</span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-3 flex items-center gap-3 rounded-[22px] bg-gradient-to-r from-[#0E5E2E] via-[#1B9E4B] to-[#0F1B3D] p-4 text-white shadow-lg">
+            <span className="text-[40px] leading-none">⚽</span>
+            <div>
+              <p className="text-base font-black">Pick your team</p>
+              <p className="text-xs text-white/80">Your name in its colour + its crest in rooms and on your profile.</p>
+            </div>
+          </div>
+        )}
 
         {/* league chips */}
         <div className="-mx-1 mt-4 flex gap-1.5 overflow-x-auto px-1 pb-1">
@@ -214,25 +229,56 @@ export default function SupporterColoursPage() {
           ))}
         </div>
 
-        {leagues.map((l) => (
+        {/* 🔍 search */}
+        <div className="mt-2 flex items-center gap-2 rounded-2xl border border-[#D5E3F5] bg-white px-3 py-2 shadow-sm">
+          <span className="text-[#8A97B0]">🔍</span>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search teams… (FCB, Liverpool)"
+            className="min-w-0 flex-1 bg-transparent text-sm text-[#14213D] outline-none placeholder:text-[#A8B3C7]"
+          />
+          {search && (
+            <button type="button" aria-label="Clear" onClick={() => setSearch("")} className="px-1 font-bold text-[#8A97B0]">
+              ×
+            </button>
+          )}
+        </div>
+
+        {shownLeagues.length === 0 && <p className="py-10 text-center text-sm text-[#8A97B0]">No team found.</p>}
+        {shownLeagues.map((l) => (
           <div key={l.id}>
             <SectionLabel>
               {l.flag} {l.name}
             </SectionLabel>
-            {/* store grid: 2 cards a row — the crest in a white circle, the
-                team name in its colour, price, days and a Buy button */}
+            {/* store grid: each card a soft wash of the team's colour behind its
+                crest, the name, the price and a Buy pill in the team's colour */}
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {SUPPORTER_TEAMS.filter((t) => t.league === l.id).map((t) => {
+              {teamsOf(l.id).map((t) => {
                 const isMine = current?.id === t.id;
                 return (
                   <div
                     key={t.id}
-                    className="relative flex flex-col items-center rounded-2xl bg-white px-2 pb-3 pt-4 text-center shadow-sm"
-                    style={{ border: `1.5px solid ${isMine ? t.text : "#E3ECF7"}` }}
+                    className="relative overflow-hidden rounded-[18px] bg-white transition hover:-translate-y-0.5"
+                    style={{ border: `1.5px solid ${isMine ? t.text : `${t.text}26`}`, boxShadow: `0 6px 16px ${t.text}1f` }}
                   >
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirm(t)}
+                      className="relative flex h-[96px] w-full items-center justify-center disabled:opacity-70"
+                      style={{ background: `linear-gradient(160deg, ${t.text}38, ${t.text}0d 72%)` }}
+                      aria-label={`Buy ${t.name}`}
+                    >
+                      <span className="absolute -right-7 -top-7 h-20 w-20 rounded-full" style={{ background: `${t.text}17` }} />
+                      <span className="absolute -bottom-8 -left-6 h-16 w-16 rounded-full" style={{ background: `${t.text}12` }} />
+                      <span className="relative drop-shadow-[0_4px_6px_rgba(0,0,0,.18)]">
+                        <SupporterJersey team={t} size={64} />
+                      </span>
+                    </button>
                     {isMine && (
-                      <span className="absolute left-2 top-2 rounded-full px-1.5 py-[1px] text-[9px] font-black text-white" style={{ background: t.text }}>
-                        ✓ MINE
+                      <span className="absolute left-2 top-2 rounded-full px-2 py-[2px] text-[9px] font-black text-white shadow" style={{ background: t.text }}>
+                        ✓ MY TEAM
                       </span>
                     )}
                     {/* ✏️ this team's own price (miglife) */}
@@ -241,36 +287,31 @@ export default function SupporterColoursPage() {
                         type="button"
                         aria-label={`Set the ${t.name} price`}
                         onClick={() => openEdit(t)}
-                        className="absolute right-1.5 top-1.5 rounded-lg px-1 text-[14px]"
+                        className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/85 text-[13px] shadow-sm"
                       >
                         ✏️
                       </button>
                     )}
-                    <span
-                      className="flex h-[68px] w-[68px] items-center justify-center rounded-full bg-white"
-                      style={{ boxShadow: `0 3px 10px rgba(0,0,0,.14), 0 0 0 2px ${t.text}22` }}
-                    >
-                      <SupporterJersey team={t} size={48} />
-                    </span>
-                    <span className="mt-2 block w-full truncate text-[13.5px] font-extrabold" style={{ color: t.text }}>
-                      {t.name}
-                    </span>
-                    <span className="mt-0.5 text-[14px] font-bold text-[#14213D]">🪙 {supporterPriceOf(terms, t.id).toLocaleString()}</span>
-                    <span className="mt-1 rounded-full bg-[#EEF2F7] px-2 py-[1px] text-[10px] font-semibold text-[#5B6B8C]">{terms.days} days</span>
-                    {/* the kit colours */}
-                    <span className="mt-2 flex gap-1.5">
-                      {[t.c1, t.c2, t.text].map((c, i) => (
-                        <span key={i} className="h-4 w-4 rounded-full" style={{ background: c, boxShadow: "inset 0 0 0 1px rgba(0,0,0,.15)" }} />
-                      ))}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => setConfirm(t)}
-                      className="mt-2.5 rounded-full bg-[#0B2A5B] px-4 py-1.5 text-[11.5px] font-bold text-white shadow disabled:opacity-60"
-                    >
-                      {isMine ? `+ ${terms.days} days` : "Buy Badge"}
-                    </button>
+                    <div className="px-2.5 pb-2.5 pt-2">
+                      <p className="truncate text-[13.5px] font-extrabold leading-5" style={{ color: t.text }}>
+                        {t.name}
+                      </p>
+                      <p className="text-[10.5px] font-semibold text-[#8A97B0]">
+                        {t.mark} · {terms.days} days
+                      </p>
+                      <div className="mt-2 flex items-center justify-between gap-1">
+                        <span className="text-[13.5px] font-black text-[#14213D]">🪙 {compact(supporterPriceOf(terms, t.id))}</span>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => setConfirm(t)}
+                          className="rounded-full px-3 py-1 text-[11.5px] font-bold text-white shadow disabled:opacity-60"
+                          style={{ background: `linear-gradient(135deg, ${t.text}, ${t.text}c8)` }}
+                        >
+                          {isMine ? "+ Days" : "Buy"}
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
