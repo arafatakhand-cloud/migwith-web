@@ -514,7 +514,7 @@ export default function RoomsPage() {
       {/* 🦋 the Lobby's butterfly picture, very faint, behind the room list */}
       <div
         aria-hidden
-        className="pointer-events-none fixed inset-0 z-0"
+        className="rooms-butterfly pointer-events-none fixed inset-0 z-0"
         style={{
           backgroundImage: "linear-gradient(rgba(255,255,255,.86), rgba(255,255,255,.86)), url(/lobby-bg.webp)",
           backgroundSize: "cover",

@@ -29,6 +29,7 @@ const THEMES: [string, string, string, string, string, string][] = [
   ["dark_luxury", "Dark Luxury", "Graphite + silver · Quiet", "#090B10", "#B8C6D9", "#E8EEF7"],
   ["light_clean", "Light / Clean", "White + blue · Light", "#F5F7FA", "#2563EB", "#60A5FA"],
   ["rose_gold", "Rose Gold", "Blush + gold · Warm", "#1F1216", "#E8A0A0", "#F6C9B8"],
+  ["glass", "Glass", "Sky + clear glass · New", "#9FD0FF", "#5B8CFF", "#FFE6F1"],
 ];
 
 // a colour mixed toward white (0..1)
