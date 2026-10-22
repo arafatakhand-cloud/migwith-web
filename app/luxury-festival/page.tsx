@@ -68,11 +68,12 @@ function parts(ms: number): [string, string][] {
 }
 const short = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 1 : 2).replace(/\.?0+$/, "")}M` : n >= 1e4 ? `${Math.round(n / 1e3)}K` : n.toLocaleString();
-const GOLD = "#FFD36E";
+// amounts in gold, on the light Community look
+const GOLD = "#B7791F";
 const PODIUM = [
   { ring: "linear-gradient(#FFE08A,#E0A100)", step: "linear-gradient(#FFD36E,#C98A00)", text: GOLD, h: 88 },
-  { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#D6DEEA", h: 62 },
-  { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#F3C29E", h: 46 },
+  { ring: "linear-gradient(#E3E8F0,#9AA6B8)", step: "linear-gradient(#C9D2E0,#7E8AA0)", text: "#5B6B8C", h: 62 },
+  { ring: "linear-gradient(#F3B68A,#B8642A)", step: "linear-gradient(#E9A070,#9C5222)", text: "#9C5222", h: 46 },
 ];
 function left(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -187,12 +188,13 @@ export default function LuxuryFestivalPage() {
     }
   };
 
-  const BG = "radial-gradient(120% 60% at 50% 0%, #5B2BA8 0%, #2A1150 55%, #170A2E 100%)";
+  // the Community look: a light blue → lilac page, white cards
+  const BG = "linear-gradient(#EAF4FE, #EFEAFB)";
   if (loading) {
     return (
       <PageShell light>
         <div className="min-h-[calc(100dvh-57px)]" style={{ background: BG }}>
-          <p className="py-20 text-center text-sm text-white/70">Loading…</p>
+          <p className="py-20 text-center text-sm text-[#6B7A99]">Loading…</p>
         </div>
       </PageShell>
     );
@@ -210,16 +212,16 @@ export default function LuxuryFestivalPage() {
   const gap = above?.spend !== undefined ? Math.max(0, above.spend - data!.mySpend) : null;
   const pill =
     status === "live"
-      ? { t: "LIVE", bg: "rgba(46,229,157,.15)", c: "#7CF5C4", dot: "#2EE59D" }
+      ? { t: "LIVE", bg: "#DDF6E8", c: "#15824B", dot: "#34C77B" }
       : status === "soon"
-        ? { t: "STARTS SOON", bg: "rgba(255,211,110,.15)", c: GOLD, dot: GOLD }
+        ? { t: "STARTS SOON", bg: "#FFF6DD", c: GOLD, dot: "#E0A100" }
         : status === "ended"
-          ? { t: "ENDED", bg: "rgba(255,255,255,.1)", c: "#D6CCF0", dot: "#A99BD0" }
-          : { t: status === "loading" ? "LOADING…" : "NO FESTIVAL", bg: "rgba(255,255,255,.1)", c: "#D6CCF0", dot: "#A99BD0" };
+          ? { t: "ENDED", bg: "#F0F3F8", c: "#6B7A99", dot: "#A8B3C7" }
+          : { t: status === "loading" ? "LOADING…" : "NO FESTIVAL", bg: "#F0F3F8", c: "#6B7A99", dot: "#A8B3C7" };
 
   return (
     <PageShell light>
-      <div className="min-h-[calc(100dvh-57px)] text-white" style={{ background: BG }}>
+      <div className="min-h-[calc(100dvh-57px)] text-[#0B2A5B]" style={{ background: BG }}>
         <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
           {/* header */}
           <div className="flex items-center gap-3 py-3">
@@ -227,55 +229,55 @@ export default function LuxuryFestivalPage() {
               type="button"
               aria-label="Back"
               onClick={() => router.push("/explore")}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-xl font-bold"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-xl font-bold text-[#2F80ED] shadow-sm"
             >
               ‹
             </button>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-black">💎 Luxury Festival</h1>
-              <p className="text-[10.5px] font-extrabold tracking-[0.15em]" style={{ color: "#E9C46A" }}>
+              <h1 className="text-xl font-black text-[#0B2A5B]">💎 Luxury Festival</h1>
+              <p className="text-[10.5px] font-extrabold tracking-[0.15em] text-[#2F80ED]">
                 LUXURY BET · TOP 25
               </p>
             </div>
             <RefreshButton
               onClick={() => setTick((t) => t + 1)}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#BFD7F2] bg-white text-lg font-bold text-[#2F80ED] shadow-sm"
             />
           </div>
 
           {/* status + countdown */}
-          <div className="rounded-[20px] border border-white/10 bg-white/[.07] p-3">
+          <div className="rounded-[20px] border p-3 shadow-sm" style={{ background: "linear-gradient(90deg,#ffffff 40%,#E12A6B1a)", borderColor: "#E12A6B33" }}>
             <div className="mb-2.5 flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-extrabold" style={{ background: pill.bg, color: pill.c }}>
                 <i className="h-[7px] w-[7px] rounded-full" style={{ background: pill.dot, boxShadow: `0 0 0 3px ${pill.dot}44` }} />
                 {pill.t}
               </span>
               {f && (
-                <span className="truncate text-[11.5px] text-white/75">
+                <span className="truncate text-[11.5px] text-[#6B7A99]">
                   {niceMs(f.startMs)} → {niceMs(f.endMs)}
                 </span>
               )}
             </div>
             {f && (status === "live" || status === "soon") ? (
               <>
-                {status === "soon" && <p className="mb-1.5 text-center text-[11px] font-bold text-white/70">Starts in</p>}
+                {status === "soon" && <p className="mb-1.5 text-center text-[11px] font-bold text-[#6B7A99]">Starts in</p>}
                 <div className="flex gap-1.5">
                   {parts((status === "live" ? f.endMs : f.startMs) - now).map(([v, l]) => (
-                    <div key={l} className="flex-1 rounded-xl bg-black/25 py-1.5 text-center">
+                    <div key={l} className="flex-1 rounded-xl bg-[#FFF6DD] py-1.5 text-center">
                       <b className="block text-xl tabular-nums" style={{ color: GOLD }}>
                         {v}
                       </b>
-                      <span className="text-[9.5px] font-bold tracking-wider text-white/70">{l}</span>
+                      <span className="text-[9.5px] font-bold tracking-wider text-[#8A97B0]">{l}</span>
                     </div>
                   ))}
                 </div>
               </>
             ) : (
-              <p className="text-center text-[13px] text-white/75">
+              <p className="text-center text-[13px] text-[#35507E]">
                 {status === "ended" ? "🏁 The festival has ended — here are the winners!" : status === "none" ? "No festival has been set yet. Check back soon! 💎" : "Loading…"}
               </p>
             )}
-            <p className="mt-2.5 text-center text-[11.5px] text-white/60">Play Luxury Bet during the festival — the more you play, the higher you rank. 🎰</p>
+            <p className="mt-2.5 text-center text-[11.5px] text-[#6B7A99]">Play Luxury Bet during the festival — the more you play, the higher you rank. 🎰</p>
           </div>
 
           {/* ⚙️ settings: miglife only — one small box (＋ / －) */}
@@ -333,9 +335,9 @@ export default function LuxuryFestivalPage() {
 
           {/* ranking */}
           {error ? (
-            <p className="mt-6 px-1 text-center text-sm text-[#FFB4AB]">{error}</p>
+            <p className="mt-6 px-1 text-center text-sm text-[#D9534F]">{error}</p>
           ) : !data || !f ? null : players.length === 0 ? (
-            <p className="mt-8 px-1 text-center text-sm text-white/70">No one has played yet — be the first! 🎰</p>
+            <p className="mt-8 px-1 text-center text-sm text-[#6B7A99]">No one has played yet — be the first! 🎰</p>
           ) : (
             <>
               {/* podium: 2 · 1 · 3 */}
@@ -351,7 +353,7 @@ export default function LuxuryFestivalPage() {
                         {i === 0 && <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-[22px]">👑</span>}
                         <Face name={p.username} url={photos[p.uid]} size={i === 0 ? 70 : 56} ring={look.ring} glow={i === 0 ? "#FFC93C" : undefined} />
                       </div>
-                      <p data-notranslate className={`mt-1.5 truncate font-extrabold ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
+                      <p data-notranslate className={`mt-1.5 truncate font-extrabold text-[#0B2A5B] ${i === 0 ? "text-[15px]" : "text-[13.5px]"}`}>
                         {p.username}
                       </p>
                       {amount !== undefined && (
@@ -360,7 +362,7 @@ export default function LuxuryFestivalPage() {
                         </p>
                       )}
                       {(data.prizes?.[i] || 0) > 0 && (
-                        <p className="mx-auto mt-0.5 w-fit rounded-full bg-[#2EE59D]/15 px-2 text-[10.5px] font-extrabold text-[#7CF5C4]">🎁 {short(data.prizes![i])}</p>
+                        <p className="mx-auto mt-0.5 w-fit rounded-full bg-[#DDF6E8] px-2 text-[10.5px] font-extrabold text-[#15824B]">🎁 {short(data.prizes![i])}</p>
                       )}
                       <div
                         className="mt-2 flex items-start justify-center rounded-t-[14px] rounded-b-[4px] pt-2 text-[22px] font-black text-white"
@@ -382,25 +384,30 @@ export default function LuxuryFestivalPage() {
                     <li key={r.uid}>
                       <Link
                         href={`/profile/${encodeURIComponent(r.username)}`}
-                        className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 ${mine ? "border-[#FFD36E77] bg-[#FFD36E]/15" : "border-white/10 bg-white/[.07]"}`}
+                        className="flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-sm transition hover:brightness-[0.98]"
+                        style={
+                          mine
+                            ? { background: "linear-gradient(90deg,#FFF3D6,#FFE7A8)", borderColor: "#F5D77A" }
+                            : { background: "linear-gradient(90deg,#ffffff 40%,#E12A6B14)", borderColor: "#E12A6B2e" }
+                        }
                       >
-                        <span className="w-7 text-center text-sm font-black text-[#B9A6E6]">{r.position}</span>
+                        <span className="w-7 text-center text-sm font-black text-[#E12A6B]">{r.position}</span>
                         <Face name={r.username} url={photos[r.uid]} size={38} />
                         <span className="min-w-0 flex-1">
-                          <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                          <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                             {r.username}
                           </span>
                           {top > 0 && amount !== undefined && (
-                            <span className="mt-1 block h-1 overflow-hidden rounded-full bg-white/10">
+                            <span className="mt-1 block h-1 overflow-hidden rounded-full bg-[#E12A6B1f]">
                               <i
                                 className="block h-full rounded-full"
-                                style={{ width: `${Math.max(2, Math.round((amount / top) * 100))}%`, background: "linear-gradient(90deg,#B07CFF,#FFD36E)" }}
+                                style={{ width: `${Math.max(2, Math.round((amount / top) * 100))}%`, background: "linear-gradient(90deg,#E12A6B,#FFC93C)" }}
                               />
                             </span>
                           )}
-                          {r.bets !== undefined && <span className="mt-0.5 block text-[11px] text-white/60">{r.bets.toLocaleString()} bets</span>}
+                          {r.bets !== undefined && <span className="mt-0.5 block text-[11px] text-[#8A97B0]">{r.bets.toLocaleString()} bets</span>}
                           {(data.prizes?.[r.position - 1] || 0) > 0 && (
-                            <span className="mt-0.5 block text-[11px] font-extrabold text-[#7CF5C4]">🎁 Prize {data.prizes![r.position - 1].toLocaleString()}</span>
+                            <span className="mt-0.5 block text-[11px] font-extrabold text-[#15824B]">🎁 Prize {data.prizes![r.position - 1].toLocaleString()}</span>
                           )}
                         </span>
                         {amount !== undefined && (
@@ -418,17 +425,17 @@ export default function LuxuryFestivalPage() {
               {meOnList && (
                 <div
                   className="mt-3 flex items-center gap-3 rounded-2xl border px-3 py-2.5"
-                  style={{ background: "linear-gradient(90deg,rgba(255,211,110,.25),rgba(255,211,110,.08))", borderColor: "#FFD36E77" }}
+                  style={{ background: "linear-gradient(90deg,#FFF3D6,#FFE7A8)", borderColor: "#F5D77A" }}
                 >
                   <span className="w-7 text-center text-sm font-black" style={{ color: GOLD }}>
                     #{data.myPosition}
                   </span>
                   <Face name={username || "?"} url={user ? photos[user.uid] : ""} size={38} ring="linear-gradient(#FFE08A,#E0A100)" />
                   <span className="min-w-0 flex-1">
-                    <span data-notranslate className="block truncate text-[14.5px] font-bold">
+                    <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                       You · {username}
                     </span>
-                    <span className="block text-[11px] text-white/75">
+                    <span className="block text-[11px] text-[#8A6A1F]">
                       {data.myPosition === 1 ? "👑 You are on top — keep it up!" : gap !== null ? `🪙 ${gap.toLocaleString()} more to reach #${data.myPosition - 1}` : "Keep playing to climb!"}
                     </span>
                   </span>
