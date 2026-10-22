@@ -219,9 +219,9 @@ function isModerationLine(text: string) {
  *  don't matter. */
 function FitOneLine({ base, grow = false, children }: { base: number; grow?: boolean; children: (px: number) => ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
-  // 🎁 grow: a single gift line starts big (chat size + 10) and shrinks until it
+  // 🎁 grow: a single gift line starts bigger (chat size + 3) and shrinks until it
   // fits on one line, so it fills the whole chat width (like the app).
-  const start = grow ? base + 10 : base;
+  const start = grow ? base + 3 : base;
   const [fit, setFit] = useState({ base, px: start, done: false });
   // a new text size in Settings starts the fitting again
   if (fit.base !== base) setFit({ base, px: start, done: false });
@@ -3105,7 +3105,7 @@ function MessageRow({
             Justified (like Word's "Justify"): every full line ends at the same
             right edge, whatever names / gift fill it. */}
         <p
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-justify font-semibold leading-snug text-[#FF2D95]"
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-justify font-medium leading-snug text-[#FF2D95]"
           style={{ fontSize: fontPx }}
         >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
