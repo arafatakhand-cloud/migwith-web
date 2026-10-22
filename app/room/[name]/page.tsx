@@ -3060,11 +3060,11 @@ function MessageRow({
 
   // /hug, /roll, 8ball …: centered, one red colour, bold — shown with its
   // "**" stars, exactly like the app ("**friend bows down to everyone! 🙇**").
+  // No time stamp: "**rkn rolls 72**" reads as a plain announcement.
   if (m.type === "social") {
     return (
       <p className="px-2 text-center font-bold leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
         {brandMiglife(m.text)}
-        {stamp}
       </p>
     );
   }
