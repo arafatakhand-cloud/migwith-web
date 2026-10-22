@@ -1,7 +1,7 @@
 "use client";
 
 import { cancelAccountDeletion } from "../../lib/accountDeletion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -122,14 +122,14 @@ export default function LoginPage() {
 
   return (
     // 🫧 / 🔵 the look follows the theme (globals.css: .login-page under the Glass theme)
-    <main className="login-page relative min-h-screen overflow-hidden bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white">
-      <section className="relative z-10 mx-auto flex min-h-screen w-full max-w-sm flex-col items-center px-6 pb-10 pt-12">
+    <main className="login-page relative min-h-dvh overflow-x-hidden bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white">
+      <FitToScreen>
         {/* mig + life bubble */}
         <Link href="/welcome" aria-label="About MIGlife" className="relative mt-4 block">
           <MigLoginLogo />
         </Link>
 
-        <p className="login-ink mt-8 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
+        <p className="login-ink mt-5 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
 
         {/* the app's five chat bubbles */}
         <LoginBubbles />
@@ -212,7 +212,7 @@ export default function LoginPage() {
         <LoginThemeChoice />
         {/* Android app download (the link miglife sets in miglife secret) */}
         <AndroidDownload />
-      </section>
+      </FitToScreen>
     </main>
   );
 }
@@ -244,6 +244,50 @@ function LoginStyleChoice() {
 }
 
 /** A rounded tick box with its label. */
+// 📱 The whole login page fits on the phone's screen — no scrolling. When it is
+// taller than the screen it is shrunk (zoom) to fit; the tallest screen height
+// seen is used, so the keyboard opening doesn't shrink it further.
+function FitToScreen({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLElement>(null);
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    let tallest = 0;
+    let width = window.innerWidth;
+    const fit = () => {
+      const el = ref.current;
+      if (!el) return;
+      if (window.innerWidth !== width) {
+        // turned the phone: start again
+        width = window.innerWidth;
+        tallest = 0;
+      }
+      tallest = Math.max(tallest, window.innerHeight);
+      // its height at full size
+      const was = el.style.zoom;
+      el.style.zoom = "1";
+      const natural = el.getBoundingClientRect().height;
+      el.style.zoom = was;
+      if (natural > 0) setZoom(Math.max(0.6, Math.min(1, tallest / natural)));
+    };
+    fit();
+    const t = setTimeout(fit, 400); // after the fonts / pictures settle
+    window.addEventListener("resize", fit);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", fit);
+    };
+  }, []);
+  return (
+    <section
+      ref={ref}
+      style={{ zoom }}
+      className="relative z-10 mx-auto flex w-full max-w-sm flex-col items-center px-6 pb-5 pt-6"
+    >
+      {children}
+    </section>
+  );
+}
+
 // 🫧 Glass / 🔵 Blue (miGlife Classic): the same choice as Settings › Appearance,
 // saved in this browser, so the site opens in it after signing in too.
 function LoginThemeChoice() {
