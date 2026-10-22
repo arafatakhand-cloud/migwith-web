@@ -2955,6 +2955,24 @@ function MessageRow({
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const time = timeLabel(m.createdAtMs);
   const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  // 🕘 Own messages (right side), like the app: ONE line → the time in FRONT of
+  // the text; 2+ lines → the time at the END. Worked out from the real layout
+  // (with the time in front); once it wraps it stays at the end.
+  const stampFront = time && <span className="mr-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  const ownBodyRef = useRef<HTMLSpanElement>(null);
+  const ownKey = `${m.text}|${fontPx}`;
+  const [ownWrap, setOwnWrap] = useState({ key: "", wraps: false });
+  const ownWraps = ownWrap.key === ownKey && ownWrap.wraps;
+  useLayoutEffect(() => {
+    const el = ownBodyRef.current;
+    if (!el || ownWraps) return;
+    const tops = Array.from(el.getClientRects())
+      .filter((r) => r.width > 0)
+      .map((r) => r.top);
+    if (!tops.length) return;
+    const first = Math.min(...tops);
+    if (tops.some((t) => t - first > fontPx * 0.9)) setOwnWrap({ key: ownKey, wraps: true });
+  });
   const reactions = Object.entries(m.reactions || {});
   const stopHold = () => {
     if (hold.current) clearTimeout(hold.current.t);
@@ -3273,7 +3291,9 @@ function MessageRow({
             </>
           ) : (
             <>
+              {rightSide && !ownWraps && stampFront}
               <span
+                ref={rightSide && !ownWraps ? ownBodyRef : undefined}
                 className="whitespace-pre-wrap break-words"
                 style={{ color: INK }}
                 onClick={(e) => {
@@ -3289,7 +3309,7 @@ function MessageRow({
                   <Fragment key={k}>{withEmotes(seg, fontPx, (t, k2) => withMentions(t, `${k}${k2}`))}</Fragment>
                 ))}
               </span>
-              {stamp}
+              {(!rightSide || ownWraps) && stamp}
               {/* 🌐 translation under the message (tap to hide) */}
               {translation && (
                 <span
