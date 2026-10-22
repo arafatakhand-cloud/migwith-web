@@ -511,7 +511,17 @@ export default function RoomsPage() {
   const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "Hot now", hot]] : sections;
   return (
     <PageShell light>
-      <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl space-y-2.5 bg-gradient-to-b from-[#EAF4FE] to-[#EFEAFB] px-3 pb-6 pt-2.5 lg:max-w-4xl">
+      {/* 🦋 the Lobby's butterfly picture, very faint, behind the room list */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0"
+        style={{
+          backgroundImage: "linear-gradient(rgba(255,255,255,.86), rgba(255,255,255,.86)), url(/lobby-bg.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      <section className="relative z-[1] mx-auto min-h-[calc(100dvh-64px)] max-w-2xl space-y-2.5 px-3 pb-6 pt-2.5 lg:max-w-4xl">
         {/* search + create + refresh */}
         <div className="flex items-center">
           <input
