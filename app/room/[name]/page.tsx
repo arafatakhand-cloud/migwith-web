@@ -900,7 +900,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           activity: "",
           level: profile.level,
           levelBadgeIcon: profile.badge,
-          shopBadges: [],
+          shopBadges: profile.badges, // like the app: the "has left" line (server / other phones) shows the same badges as "has entered"
           // Hidden (allowed) people stay out of "Currently in this room".
           presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
           lastSeen: serverTimestamp(),
@@ -982,7 +982,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           activity: "",
           level: profile.level,
           levelBadgeIcon: profile.badge,
-          shopBadges: [],
+          shopBadges: profile.badges, // like the app: the "has left" line (server / other phones) shows the same badges as "has entered"
           presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
           lastSeen: serverTimestamp(),
           visitId: visitId || newVisitId(),
