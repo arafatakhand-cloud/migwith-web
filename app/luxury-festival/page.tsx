@@ -11,7 +11,7 @@ import { isMainFounderName } from "../../lib/founder";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 import { Face, profileImageUrl } from "../_components/RankFace";
-import { FestivalPayoutsCard } from "./_PayoutsCard";
+import { FestivalControls } from "./_PayoutsCard";
 
 // 💎 Discover › Luxury Festival: everyone sees the festival time and the top 25
 // Luxury Bet players with how much each has spent (getLuxuryFestival). miglife
@@ -44,6 +44,15 @@ const toInput = (date: string, h: number, m: number) => (date ? `${date}T${pad(h
 function fromInput(v: string): { date: string; hour: number; minute: number } | null {
   const m = v.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
   return m ? { date: m[1], hour: Number(m[2]), minute: Number(m[3]) } : null;
+}
+// "YYYY-MM-DDTHH:mm" + n days (an empty input starts from today 23:59)
+function addDays(v: string, n: number): string {
+  const p = fromInput(v);
+  const [y, m, d] = p ? p.date.split("-").map(Number) : [0, 0, 0];
+  const base = p ? new Date(Date.UTC(y, m - 1, d)) : new Date(Date.now() + 6 * 3600_000); // Dhaka today
+  base.setUTCDate(base.getUTCDate() + n);
+  const date = `${base.getUTCFullYear()}-${pad(base.getUTCMonth() + 1)}-${pad(base.getUTCDate())}`;
+  return toInput(date, p ? p.hour : 23, p ? p.minute : 59);
 }
 const niceMs = (ms: number) =>
   new Date(ms).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
@@ -269,40 +278,58 @@ export default function LuxuryFestivalPage() {
             <p className="mt-2.5 text-center text-[11.5px] text-white/60">Play Luxury Bet during the festival — the more you play, the higher you rank. 🎰</p>
           </div>
 
-          {/* settings: miglife only */}
+          {/* ⚙️ settings: miglife only — one small box (＋ / －) */}
           {isMiglife && (
-            <div className="mt-4 space-y-2.5 rounded-[20px] border border-white/10 bg-white/[.07] p-4">
-              <p className="text-[11px] font-black tracking-wider text-[#E9C46A]">📅 FESTIVAL TIME (BANGLADESH) · ONLY YOU SEE THIS</p>
-              {[
-                ["Start", startIn, setStartIn],
-                ["End", endIn, setEndIn],
-              ].map(([label, v, set]) => (
-                <label key={label as string} className="block text-xs font-bold text-white/75">
-                  {label as string}
-                  <input
-                    type="datetime-local"
-                    value={v as string}
-                    onChange={(e) => (set as (x: string) => void)(e.target.value)}
-                    className="mt-1 block w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm font-semibold text-white outline-none [color-scheme:dark]"
-                  />
-                </label>
-              ))}
-              <button
-                type="button"
-                disabled={saving}
-                onClick={save}
-                className="w-full rounded-xl py-2.5 text-sm font-extrabold text-[#3A2600] disabled:opacity-60"
-                style={{ background: "linear-gradient(90deg,#FFE08A,#E0A100)" }}
-              >
-                {saving ? "Saving…" : "💾 Save festival time"}
-              </button>
-              {msg && <p className="text-xs font-semibold text-white/80">{msg}</p>}
-              <p className="text-[11px] leading-4 text-white/55">
-                Only Luxury Bet bets placed between the start and the end count. A new start begins a new festival from zero; changing only the end keeps the ranking.
-              </p>
-            </div>
+            <FestivalControls
+              status={status}
+              onReset={() => setTick((t) => t + 1)}
+              timePanel={
+                <div className="space-y-2">
+                  <p className="text-[11px] text-[#6B7A99]">Bangladesh time · only Luxury Bet bets between the start and the end count.</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["▶ Start", startIn, setStartIn],
+                      ["■ End", endIn, setEndIn],
+                    ].map(([label, v, set]) => (
+                      <label key={label as string} className="block text-[11px] font-bold text-[#6B7A99]">
+                        {label as string}
+                        <input
+                          type="datetime-local"
+                          value={v as string}
+                          onChange={(e) => (set as (x: string) => void)(e.target.value)}
+                          className="mt-0.5 block w-full rounded-xl border border-[#D5E3F5] bg-[#F7F9FC] px-2 py-1.5 text-[12.5px] font-semibold text-[#0B2A5B] outline-none"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {/* quick: move the end later */}
+                    {[1, 3, 7].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setEndIn(addDays(endIn || startIn, d))}
+                        className="shrink-0 rounded-full bg-[#F0F3F8] px-2.5 py-1.5 text-[11.5px] font-extrabold text-[#35507E]"
+                      >
+                        +{d}d
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={save}
+                      className="flex-1 rounded-xl py-2 text-sm font-extrabold text-white shadow-md disabled:opacity-60"
+                      style={{ background: "linear-gradient(90deg,#7B5CF0,#5B8CFF)" }}
+                    >
+                      {saving ? "Saving…" : "💾 Save"}
+                    </button>
+                  </div>
+                  {msg && <p className="text-xs font-semibold text-[#35507E]">{msg}</p>}
+                  <p className="text-[10.5px] leading-4 text-[#8A97B0]">A new start begins a new festival from zero; changing only the end keeps the ranking.</p>
+                </div>
+              }
+            />
           )}
-          {isMiglife && <FestivalPayoutsCard onReset={() => setTick((t) => t + 1)} />}
 
           {/* ranking */}
           {error ? (
