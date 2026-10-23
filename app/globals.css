@@ -807,3 +807,9 @@ html[data-theme="glass"] .login-page .ml-word .text-white {
 html[data-theme="glass"] .login-page .ml-tag {
   color: #35507e;
 }
+
+/* 🫧 Clear Glass bet box: no dark game strip behind it — the chat shows through,
+   like the "Mention a user" panel. */
+.game-strip:has(.lb-glass) {
+  background: transparent;
+}

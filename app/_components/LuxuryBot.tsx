@@ -326,7 +326,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
   return (
     <div className="px-[7px] py-[3px]">
       <div
-        className="rounded-2xl px-[7px] py-1"
+        className={`rounded-2xl px-[7px] py-1${skin.id === "glass" ? " lb-glass" : ""}`}
         style={lbBoxStyle(skin)}
       >
         <div className="flex items-center gap-[3px]">

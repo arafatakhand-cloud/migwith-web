@@ -2158,7 +2158,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
             {/* Game tables keep their dark look */}
             {(luxury || luxuryBet || royale || teenPatti || cricket || twentyNine || lowCard || ludo) && (
-              <div data-noswipe className="bg-[#0B1F3A] text-white">
+              <div data-noswipe className="game-strip bg-[#0B1F3A] text-white">
                 {luxury && <LuxuryBetBox state={luxury} uid={user.uid} note={note} />}
                 {luxuryBet && (
                   <LuxuryBetTable state={luxuryBet} uid={user.uid} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
