@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
@@ -158,10 +159,17 @@ export function StyleShopDialog({
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+  // FIX (no way to close it on a phone): the shop used to be drawn INSIDE the
+  // game box, which trapped it there — its top (title + ✕) was cut off under
+  // the top bar. It now opens over the whole page (a portal on <body>), sized
+  // to the screen you can really see (dvh), with a big ✕ and a Close button.
+  const [portalOk, setPortalOk] = useState(false);
+  useEffect(() => setPortalOk(true), []);
+  if (!portalOk) return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div
-        className="flex max-h-[88vh] w-full max-w-md flex-col rounded-[22px] p-3.5"
+        className="flex max-h-[85dvh] w-full max-w-md flex-col rounded-[22px] p-3.5"
         style={{ background: theme.bg, border: `1.5px solid ${theme.border}` }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -174,7 +182,12 @@ export function StyleShopDialog({
               {subtitle}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="px-1 text-lg text-white/70">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/15 text-lg font-bold text-white"
+          >
             ✕
           </button>
         </div>
@@ -235,6 +248,14 @@ export function StyleShopDialog({
             );
           })}
         </div>
+        {/* a plain Close button at the bottom too (easy to reach with a thumb) */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2.5 w-full shrink-0 rounded-full bg-white/15 py-2 text-sm font-extrabold text-white"
+        >
+          Close
+        </button>
       </div>
 
       {confirm && (
@@ -265,6 +286,7 @@ export function StyleShopDialog({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
