@@ -191,7 +191,7 @@ export default function GiftContestPage() {
               </p>
               <div className="mt-3 flex flex-wrap justify-center gap-2">
                 <Link href="/announcements" className="rounded-full bg-[#FF5CC8] px-3 py-1.5 text-[12px] font-bold text-white">
-                  📢 Announcements
+                  <span className="inline-block -scale-x-100">📢</span> Announcements
                 </Link>
                 <Link href="/gifts" className="rounded-full bg-white/15 px-3 py-1.5 text-[12px] font-bold">
                   🎁 Gift Store

@@ -43,7 +43,7 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
       <span className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#5A8FD6] to-[#8B5CFF]" />
       <button type="button" onClick={() => setOpen((v) => !v)} className="block w-full py-3 pl-5 pr-4 text-left">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-xl">📢</span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-xl"><span className="inline-block -scale-x-100">📢</span></span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {isNew && <span className="rounded-full bg-[#FF5E8A] px-1.5 py-px text-[9px] font-black tracking-wide text-white">NEW</span>}

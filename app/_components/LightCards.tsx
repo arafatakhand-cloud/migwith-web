@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BackButton } from "./BackButton";
+import { flipMegaphone } from "./Megaphone";
 import { ClassicListRow, ClassicSectionBar, ClassicTitleBar } from "./Classic";
 import { useIsClassic } from "../../lib/uiStyle";
 
@@ -33,7 +34,7 @@ export function PageTitle({
         <ClassicTitleBar
           title={
             <>
-              {icon && <span className="mr-1">{icon}</span>}
+              {icon && <span className="mr-1">{flipMegaphone(icon)}</span>}
               {title}
             </>
           }
@@ -47,7 +48,7 @@ export function PageTitle({
       <BackButton onClick={back} />
       <div className="min-w-0 flex-1 text-center">
         <h1 className="text-xl font-black text-[#0B2A5B]">
-          {icon && <span className="mr-1">{icon}</span>}
+          {icon && <span className="mr-1">{flipMegaphone(icon)}</span>}
           {title}
         </h1>
         {subtitle && <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F80ED]">{subtitle}</p>}
@@ -59,10 +60,10 @@ export function PageTitle({
 
 export function SectionLabel({ children }: { children: React.ReactNode }) {
   const classic = useIsClassic();
-  if (classic) return <ClassicSectionBar>{children}</ClassicSectionBar>;
+  if (classic) return <ClassicSectionBar>{flipMegaphone(children)}</ClassicSectionBar>;
   return (
     <p className="mb-2 mt-4 border-l-4 border-[#2F80ED] pl-2 text-xs font-bold uppercase tracking-widest text-[#35507E]">
-      {children}
+      {flipMegaphone(children)}
     </p>
   );
 }
@@ -107,7 +108,7 @@ export function PastelCard({
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
         style={{ backgroundColor: `${color}26` }}
       >
-        {icon}
+        {flipMegaphone(icon)}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-bold text-[#0B2A5B]">{title}</span>
