@@ -103,15 +103,6 @@ html.kb-lock main[data-shell] {
   min-height: 0;
   overflow: hidden;
 }
-/* 📱 iPhone's editable message box (PlainEditableBox): the hint text while empty */
-.editable-box:empty::before {
-  content: attr(data-placeholder);
-  color: rgba(122, 133, 153, 0.8);
-  font-size: 13px;
-  pointer-events: none;
-}
-.editable-box { -webkit-user-modify: read-write-plaintext-only; cursor: text; }
-
 /* Room above the iPhone home bar. */
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
