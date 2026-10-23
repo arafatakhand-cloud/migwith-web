@@ -333,7 +333,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // ⋮ Room menu (like the app's) and its Room Info / Kick User sheets.
   const [menuOpen, setMenuOpen] = useState(false);
   // The Participants panel beside the room menu (like the app).
-  const [menuPeople, setMenuPeople] = useState(false);
+  // 👥 the Room Participants list (slides in from the right) and its ••• menu
+  const [peopleOpen, setPeopleOpen] = useState(false);
+  const [peopleMenuFor, setPeopleMenuFor] = useState<string | null>(null);
   // 🛡 the moderation tools live on their own page inside the room menu (like the app)
   const [modToolsOpen, setModToolsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -1854,7 +1856,6 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // ⋮ Room menu helpers (like the app's RoomMenuContent).
   const closeMenu = () => {
     setMenuOpen(false);
-    setMenuPeople(false);
     setModToolsOpen(false);
   };
   const prefill = (cmd: string) => {
@@ -2364,188 +2365,116 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       )}
       {whoisInfo && <WhoisPopup info={whoisInfo} onClose={() => setWhoisInfo(null)} />}
       {commandsOpen && <CommandListPage onPick={(cmd) => (setCommandsOpen(false), prefill(cmd))} onBack={() => setCommandsOpen(false)} />}
+      {/* ⋮ Room menu — a small list above the ⋮ button (7 items, like the reference) */}
       {menuOpen && (
-        <div className="room-glass-scrim fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe" onClick={closeMenu}>
-          {/* ✨ Room menu (half-page card), like the app: header with my role, three big
-              buttons, the rest, and the moderation tiles for people who may use them. */}
+        <div className="fixed inset-0 z-50" onClick={closeMenu}>
           <div
-            className="room-glass-panel max-h-[85vh] w-[62%] min-w-[230px] max-w-[300px] overflow-y-auto rounded-[28px] bg-white pb-2.5 shadow-2xl"
+            className="room-glass-panel absolute bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2 w-[188px] overflow-hidden rounded-[18px] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {modToolsOpen && canModMenu ? (
-              <>
-                <div className={`flex items-center gap-2 px-2 py-2.5 text-white ${classic ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" : "bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4]"}`}>
-                  <button
-                    type="button"
-                    onClick={() => setModToolsOpen(false)}
-                    aria-label="Back"
-                    className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-white/20 text-xl font-bold leading-none"
-                  >
-                    ‹
-                  </button>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-black">🛡 Moderation Tools</p>
-                    <p data-notranslate className="truncate text-[10px] text-white/80">
-                      {roomDisplayName(roomName)}
-                    </p>
-                  </div>
-                </div>
-                {modSections.map(([title, tools]) =>
-                  tools.length === 0 ? null : (
-                    <div key={title}>
-                      <p className="px-3.5 pb-[3px] pt-2.5 text-[9.5px] font-black tracking-[0.08em] text-[#7D8AA5]">{title}</p>
-                      {tools.map((tool) => (
-                        <button
-                          key={tool.title}
-                          type="button"
-                          onClick={tool.act}
-                          className="mx-2 my-0.5 flex w-[calc(100%-16px)] items-center rounded-[14px] bg-[#F7F9FC] px-2 py-[7px] text-left"
-                        >
-                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-base" style={{ background: tool.tint }}>
-                            {tool.icon}
-                          </span>
-                          <span className="ml-[9px] min-w-0 flex-1">
-                            <span className="block truncate text-[13px] font-bold text-[#12233F]">{tool.title}</span>
-                            <span className="block truncate text-[10px] text-[#7D8AA5]">{tool.desc}</span>
-                          </span>
-                          <span className="text-lg text-[#A9B4C2]">›</span>
-                        </button>
-                      ))}
-                    </div>
-                  )
-                )}
-              </>
-            ) : (
-            <>
-            <div className={`px-3 py-[11px] text-white ${classic ? "bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" : "bg-gradient-to-br from-[#1565D8] via-[#5B5BF0] to-[#833AB4]"}`}>
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-white/55 bg-white/20 text-lg">🏠</span>
-                <div className="min-w-0 flex-1">
-                  <p data-notranslate className="truncate text-[15px] font-bold">
-                    {roomDisplayName(roomName)}
-                    {locked && <span className="ml-1.5 text-sm">🔒</span>}
-                    {silenced && <span className="ml-1 text-sm">🔇</span>}
-                  </p>
-                  <p className="flex items-center gap-1 text-[10.5px] text-[#E6EEFF]">
-                    <span className="inline-block h-[7px] w-[7px] rounded-full bg-[#4ADE80]" />
-                    {roomUsers.length}
-                    {roomInfo.maxUsers > 0 && ` / ${roomInfo.maxUsers}`} here
-                  </p>
-                </div>
-              </div>
-              <span
-                className="mt-[7px] inline-block rounded-full px-[9px] py-[3px] text-[9.5px] font-black"
-                style={{ background: myRole[1], color: myRole[2] }}
+            {(
+              [
+                ["info", "Room Info", () => (closeMenu(), setInfoOpen(true))],
+                [favorite ? "heartOn" : "heart", favorite ? "Remove favorite" : "Add as favorite", () => (closeMenu(), toggleFavorite(roomName))],
+                ["clear", "Clear Chat", () => (closeMenu(), clearChat())],
+                ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
+                ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
+                ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
+                ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],
+              ] as [MenuIconName, string, () => void][]
+            ).map(([icon, label, act]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={act}
+                className="flex w-full items-center gap-3 px-4 py-[10px] text-left text-[14px] text-[#1E2A3B] active:bg-black/5"
               >
-                {myRole[0]}
-              </span>
-            </div>
-
-            {/* Three big buttons */}
-            <div className="flex justify-evenly px-2 py-[9px]">
-              {(
-                [
-                  ["ℹ️", "Info", "#E7F0FF", () => (closeMenu(), setInfoOpen(true)), 0],
-                  [favorite ? "❤️" : "🤍", "Favorite", "#FFE8EE", () => toggleFavorite(roomName), 0],
-                  ["👥", "People", "#E8F7EF", () => setMenuPeople((v) => !v), roomUsers.length],
-                ] as [string, string, string, () => void, number][]
-              ).map(([icon, label, bg, act, badge]) => (
-                <button key={label} type="button" onClick={act} className="flex flex-col items-center rounded-[14px] px-1.5 py-0.5">
-                  <span className="relative">
-                    <span className="glass-shine flex h-[42px] w-[42px] items-center justify-center rounded-[13px] text-[19px]" style={{ background: bg }}>
-                      {icon}
-                    </span>
-                    {badge > 0 && (
-                      <span className="absolute -right-[5px] -top-1 rounded-[10px] bg-[#E5484D] px-[5px] py-px text-[8.5px] font-bold text-white">
-                        {badge > 99 ? "99+" : badge}
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-[3px] text-[10px] font-extrabold text-[#3A4B6B]">{label}</span>
-                </button>
-              ))}
-            </div>
-
-            <ul className="space-y-1.5 px-2">
-              {(
-                [
-                  ["💰", "Check Balance", () => (closeMenu(), checkBalance())],
-                  ["🧹", "Clear Chat", () => (closeMenu(), clearChat())],
-                  ["📤", "Invite Friend", () => prefill("/invite ")],
-                  ["📜", "Command", () => (closeMenu(), setCommandsOpen(true))],
-                  // 🤖 busy game rooms: hide every bot line (lines that mention you still show)
-                  ["🤖", hideBots ? "Bot Messages: Hidden — tap to show" : "Bot Messages: Shown — tap to hide", () => toggleHideBots()],
-                ] as [string, string, () => void][]
-              ).map(([icon, label, act]) => (
-                <li key={label}>
-                  <button type="button" onClick={act} className="glass-shine flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]">
-                    <span className="glass-shine flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">{icon}</span>
-                    <span className="flex-1">{label}</span>
-                    <span className="pr-1 text-sm text-[#6B7A99]">›</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            {/* 🛡 MODERATION — one line that opens the Moderation Tools page */}
-            {canModMenu && (
-              <div className="mt-1.5 px-2">
-                <button
-                  type="button"
-                  onClick={() => setModToolsOpen(true)}
-                  className="glass-shine flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]"
-                >
-                  <span className="glass-shine flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">🛡</span>
-                  <span className="flex-1">Moderation Tools</span>
-                  <span className="pr-1 text-sm text-[#6B7A99]">›</span>
-                </button>
-              </div>
-            )}
-
-            {/* Leave — red, on its own */}
-            <button
-              type="button"
-              onClick={() => (closeMenu(), leaveRoom())}
-              className="glass-shine mx-2.5 mt-2 block w-[calc(100%-20px)] rounded-[14px] bg-gradient-to-r from-[#FF5F6D] to-[#E5484D] py-2.5 text-[13px] font-black text-white shadow-md"
-            >
-              🚪 Leave Room
-            </button>
-            </>
-            )}
+                <MenuIcon name={icon} />
+                <span className="truncate">{label}</span>
+              </button>
+            ))}
           </div>
+        </div>
+      )}
 
-          {menuPeople && (
-            <div
-              className="room-glass-panel max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-white pb-2 shadow-2xl ring-1 ring-black/5"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <p className="px-3.5 pb-3 pt-3.5 text-[13px] font-bold text-[#0B1F3A]">👥 Participants ({roomUsers.length})</p>
-              <ul data-notranslate className="space-y-[5px] px-2">
-                {roomUsers.map((u) => (
-                  <li key={u.uid}>
-                    <Link
-                      href={`/profile/${encodeURIComponent(u.username)}`}
-                      className="glass-row glass-shine flex items-center gap-[7px] rounded-[14px] bg-[#F1F4F8] px-2 py-[7px]"
-                    >
-                      <span className="relative shrink-0">
-                        <span
-                          className="flex h-[26px] w-[26px] items-center justify-center rounded-full text-[11px] font-bold text-white"
-                          style={{ background: colorOf(u.username) }}
-                        >
-                          {u.username.charAt(0).toUpperCase() || "U"}
-                        </span>
-                        <span className="absolute -bottom-px -right-px h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#4ADE80]" />
-                      </span>
-                      <span className="truncate text-[13px] font-bold" style={{ color: inkOnWhite(colorOf(u.username)) }}>
+      {/* 👥 Room Participants — a list that slides in from the right */}
+      {peopleOpen && (
+        <div className="fixed inset-0 z-50 bg-black/25" onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))}>
+          <aside
+            className="room-glass-panel absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col bg-white pt-safe shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center px-3.5 pb-2 pt-3">
+              <p className="flex-1 text-[12px] text-[#8A96AB]">Room Participants</p>
+              <button type="button" onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))} aria-label="Close" className="px-1 text-[15px] text-[#8A96AB]">
+                ⤢
+              </button>
+            </div>
+            <ul data-notranslate className="min-h-0 flex-1 overflow-y-auto pb-safe">
+              {roomUsers.map((u) => {
+                const owner = !!roomInfo.ownerUid && u.uid === roomInfo.ownerUid;
+                const actions = (
+                  [
+                    ["👤 View Profile", () => router.push(`/profile/${encodeURIComponent(u.username)}`)],
+                    u.uid !== user.uid && [
+                      "@ Mention",
+                      () => {
+                        const mention = `@${u.username}`;
+                        setText((t) => (t.includes(mention) ? t : t.trim() ? `${t.trimEnd()} ${mention} ` : `${mention} `));
+                      },
+                    ],
+                    u.uid !== user.uid && ["🎁 Send Gift", () => setGiftTarget(u.username)],
+                    u.uid !== user.uid && perms.canKick && ["👢 Kick", () => { const c = modCtx(); if (c) kickUser(c, u.username); }],
+                    u.uid !== user.uid && perms.canKick && ["👋 Bump", () => { const c = modCtx(); if (c) bumpUser(c, u.username); }],
+                    u.uid !== user.uid && perms.canBan && ["🚫 Ban", () => { const c = modCtx(); if (c) banUser(c, u.username, true); }],
+                    u.uid !== user.uid && perms.canMute && ["🔇 Mute", () => { const c = modCtx(); if (c) muteUser(c, u.username, true); }],
+                    u.uid !== user.uid && perms.canMute && ["🔊 Unmute", () => { const c = modCtx(); if (c) muteUser(c, u.username, false); }],
+                    u.uid !== user.uid &&
+                      perms.isUserRoom &&
+                      perms.canManagePrivate &&
+                      (roomInfo.moderators.includes(u.username.toLowerCase())
+                        ? ["🛑 Remove Mod", () => { const c = modCtx(); if (c) setModerator(c, u.username, false); }]
+                        : ["⭐ Make Mod", () => { const c = modCtx(); if (c) setModerator(c, u.username, true); }]),
+                  ].filter(Boolean) as [string, () => void][]
+                );
+                return (
+                  <li key={u.uid} className="relative">
+                    <div className="flex items-center gap-2 px-3.5 py-[9px]">
+                      <span className="min-w-0 flex-1 truncate text-[13.5px]" style={{ color: owner ? "#E0388A" : inkOnWhite(colorOf(u.username)) }}>
                         {u.username}
                       </span>
-                      {roomInfo.ownerUid && u.uid === roomInfo.ownerUid && <span className="text-[13px] font-bold text-[#FFC83D]">★</span>}
-                    </Link>
+                      <button
+                        type="button"
+                        onClick={() => setPeopleMenuFor(peopleMenuFor === u.uid ? null : u.uid)}
+                        aria-label={`Options for ${u.username}`}
+                        className="shrink-0 px-1 text-[13px] font-black tracking-[1px] text-[#8A96AB]"
+                      >
+                        •••
+                      </button>
+                    </div>
+                    {peopleMenuFor === u.uid && (
+                      <div className="room-glass-panel absolute right-2 top-[34px] z-10 w-40 overflow-hidden rounded-xl bg-white py-1 text-[13px] text-[#0B2A5B] shadow-xl">
+                        {actions.map(([label, run]) => (
+                          <button
+                            key={label}
+                            type="button"
+                            onClick={() => {
+                              setPeopleMenuFor(null);
+                              setPeopleOpen(false);
+                              run();
+                            }}
+                            className="block w-full px-3 py-2 text-left active:bg-black/5"
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </li>
-                ))}
-              </ul>
-            </div>
-          )}
+                );
+              })}
+            </ul>
+          </aside>
         </div>
       )}
 
@@ -2570,37 +2499,40 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         />
       )}
 
-      {/* Kick User */}
+      {/* 👢 Kick user — a list of names from the bottom (like the reference) */}
       {kickOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-2 pb-safe sm:items-center" onClick={() => setKickOpen(false)}>
-          <div className="w-full max-w-sm rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-black">👢 Kick User</h2>
-            <ul className="mt-2 max-h-[50vh] space-y-1 overflow-y-auto">
-              {roomUsers.filter((u) => u.uid !== user.uid).length === 0 && <li className="text-sm text-[#6B7A99]">No one else is here.</li>}
+        <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={() => setKickOpen(false)}>
+          <div
+            className="room-glass-panel w-full rounded-t-[22px] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
+            <ul data-notranslate className="max-h-[50vh] overflow-y-auto px-5 pb-2">
+              {roomUsers.filter((u) => u.uid !== user.uid).length === 0 && (
+                <li className="border-t border-black/[0.06] py-3 text-center text-sm text-[#8A96AB]">No one else is here.</li>
+              )}
               {roomUsers
                 .filter((u) => u.uid !== user.uid)
                 .map((u) => (
-                  <li key={u.uid} className="flex items-center gap-2 rounded-xl bg-[#F4F9FF] px-3 py-2">
-                    <span data-notranslate className="flex-1 truncate font-semibold">
-                      {u.username}
-                    </span>
+                  <li key={u.uid} className="border-t border-black/[0.06]">
                     <button
                       type="button"
                       onClick={() => {
+                        setKickOpen(false);
+                        if (!perms.canKick) {
+                          note("Public kick is disabled for this room");
+                          return;
+                        }
                         const c = modCtx();
                         if (c) kickUser(c, u.username);
-                        setKickOpen(false);
                       }}
-                      className="rounded-lg bg-rose-500 px-3 py-1 text-xs font-bold text-white"
+                      className="block w-full py-3 text-center text-[14px] text-[#2F80ED]"
                     >
-                      Kick
+                      {u.username}
                     </button>
                   </li>
                 ))}
             </ul>
-            <button type="button" onClick={() => setKickOpen(false)} className="mt-3 w-full rounded-xl border border-[#D5E3F5] py-2.5 text-sm font-bold text-[#5B6B8C]">
-              Close
-            </button>
           </div>
         </div>
       )}
@@ -3632,3 +3564,59 @@ function withMerchantBadge(badges: string[], merchant: boolean): string[] {
   return [...badges.slice(0, roleCount), "🛒", ...badges.slice(roleCount)];
 }
 const ROLE_BADGES = new Set(["💼", "🛒", "🛠️", "⚙️", "✨", "🏛️", "🌍"]);
+
+// ⋮ room menu icons: thin line icons, like the reference
+type MenuIconName = "info" | "heart" | "heartOn" | "clear" | "wallet" | "people" | "kick" | "leave";
+function MenuIcon({ name }: { name: MenuIconName }) {
+  const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden className="shrink-0 text-[#3A4658]">
+      {name === "info" && (
+        <>
+          <circle cx="12" cy="12" r="9" {...p} />
+          <path d="M12 11v6M12 7.5v.01" {...p} />
+        </>
+      )}
+      {(name === "heart" || name === "heartOn") && (
+        <path
+          d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"
+          {...p}
+          fill={name === "heartOn" ? "#E5484D" : "none"}
+          stroke={name === "heartOn" ? "#E5484D" : "currentColor"}
+        />
+      )}
+      {name === "clear" && (
+        <>
+          <path d="M4 20h7M14.5 4.5l5 5L11 18l-5-5z" {...p} />
+          <path d="M9 10l5 5" {...p} />
+        </>
+      )}
+      {name === "wallet" && (
+        <>
+          <rect x="3.5" y="6.5" width="17" height="13" rx="2.5" {...p} />
+          <path d="M3.5 10h17M16 14.5h1.5M7 6.5l8-3 1 3" {...p} />
+        </>
+      )}
+      {name === "people" && (
+        <>
+          <circle cx="9" cy="8.5" r="3" {...p} />
+          <path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5" {...p} />
+          <circle cx="16.5" cy="9" r="2.4" {...p} />
+          <path d="M15.5 14.3c2.4-.2 4.4 1.1 5 3.9" {...p} />
+        </>
+      )}
+      {name === "kick" && (
+        <>
+          <path d="M8 4v8.5c0 1 .5 1.8 1.4 2.2L16 18h3.5c.8 0 1-1 .3-1.4L14 13V4" {...p} />
+          <path d="M8 8h6M3.5 19.5h17" {...p} />
+        </>
+      )}
+      {name === "leave" && (
+        <>
+          <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" {...p} />
+          <path d="M14 8l4 4-4 4M18 12H9" {...p} />
+        </>
+      )}
+    </svg>
+  );
+}
