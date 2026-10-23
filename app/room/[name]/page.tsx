@@ -2059,7 +2059,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 // 👢👋🚫 kick / bump / ban lines and 🎁 gift / Gift Shower lines shrink a
                 // little to fit on one line (when a little is enough)
                 const row = isModerationLine(m.text) || m.type === "gift" ? (
-                  <FitOneLine key={m.id} base={fontPx} grow={m.type === "gift" && !m.text.includes("GIFT SHOWER")}>
+                  <FitOneLine key={m.id} base={fontPx}>
                     {rowAt}
                   </FitOneLine>
                 ) : (
@@ -3146,13 +3146,12 @@ function MessageRow({
             Justified (like Word's "Justify"): every full line ends at the same
             right edge, whatever names / gift fill it. */}
         <p
-          className={`w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] leading-snug text-[#FF2D95] ${
-            // 🎁 Gift Shower: bold, every line centred (like the app)
-            m.text.includes("GIFT SHOWER") ? "text-center font-bold" : "text-justify font-medium"
-          }`}
+          // 🎁 gift / Gift Shower: bold, every line centred, normal size (like the app)
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-center font-bold leading-snug text-[#FF2D95]"
           style={{ fontSize: fontPx }}
         >
-          {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
+          {/* "name[51]" — no space before the level, like the app */}
+          {giftLine(m.text.replace(/ \[/g, "["), gift?.icon || "", gift?.imageUrl || "", fontPx)}
         </p>
       </div>
     );
