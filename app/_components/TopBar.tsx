@@ -301,12 +301,24 @@ export function TopBar() {
       root.classList.toggle("kb-lock", chat && kbOpen);
       if (chat && kbOpen && (window.scrollY !== 0 || vv.offsetTop !== 0)) window.scrollTo(0, 0);
     };
-    // iPhone moves the page in steps while the keyboard slides in, so check again a few times.
+    // iPhone moves the page in steps while the keyboard slides in.
+    // FIX (blank sky / half a page for a moment when the keyboard opened): it
+    // was only checked a few times (50 … 800 ms), so in between the page sat in
+    // the wrong place. Now it follows EVERY frame while the keyboard moves
+    // (about 1.2 s), plus the old checks as a last safety.
     let timers: number[] = [];
+    let raf = 0;
+    let followUntil = 0;
+    const follow = () => {
+      set();
+      raf = performance.now() < followUntil ? requestAnimationFrame(follow) : 0;
+    };
     const settle = () => {
       timers.forEach(clearTimeout);
       set();
-      timers = [50, 150, 300, 500, 800].map((ms) => window.setTimeout(set, ms));
+      followUntil = performance.now() + 1200;
+      if (!raf) raf = requestAnimationFrame(follow);
+      timers = [300, 800, 1400].map((ms) => window.setTimeout(set, ms));
     };
     set();
     vv.addEventListener("resize", settle);
@@ -316,6 +328,7 @@ export function TopBar() {
     window.addEventListener("focusout", settle);
     return () => {
       timers.forEach(clearTimeout);
+      if (raf) cancelAnimationFrame(raf);
       vv.removeEventListener("resize", settle);
       vv.removeEventListener("scroll", set);
       window.removeEventListener("scroll", set);
