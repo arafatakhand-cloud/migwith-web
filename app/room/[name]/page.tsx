@@ -375,6 +375,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const scrollTopRef = useRef(initial?.scrollTop ?? 0);
   // Highest scroll position while following the newest line (see onScroll).
   const pinnedTopRef = useRef(0);
+  // ✋ When the reader last touched / wheeled / keyed the chat. Only a move UP made
+  // by the reader lets go of the bottom — the browser also moves scrollTop up by
+  // itself (old lines trimmed off the top, the bet box changing height), which in
+  // a fast bet round froze the chat under "⬇ 75 new messages".
+  const userScrollAtRef = useRef(0);
+  const userTouchingRef = useRef(false);
 
   // ⏰ Auto left while this room is open on screen (back after a long time away).
   useEffect(() => {
@@ -1960,6 +1966,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             )}
             <div
               ref={listRef} data-notranslate
+              onWheel={() => { userScrollAtRef.current = Date.now(); }}
+              onTouchStart={() => { userTouchingRef.current = true; userScrollAtRef.current = Date.now(); }}
+              onTouchMove={() => { userScrollAtRef.current = Date.now(); }}
+              onTouchEnd={() => { userTouchingRef.current = false; userScrollAtRef.current = Date.now(); }}
+              onTouchCancel={() => { userTouchingRef.current = false; userScrollAtRef.current = Date.now(); }}
+              onPointerDown={() => { userScrollAtRef.current = Date.now(); }}
+              onKeyDown={() => { userScrollAtRef.current = Date.now(); }}
               onScroll={(e) => {
                 const el = e.currentTarget;
                 // BUG FIX (chat stopped following during a fast burst of bet
@@ -1973,7 +1986,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   pinnedTopRef.current = el.scrollTop;
                 } else if (stickToBottom.current) {
                   if (el.scrollTop >= pinnedTopRef.current) pinnedTopRef.current = el.scrollTop;
-                  else if (el.scrollTop < pinnedTopRef.current - 8) stickToBottom.current = false;
+                  else if (el.scrollTop < pinnedTopRef.current - 8) {
+                    const byReader = userTouchingRef.current || Date.now() - userScrollAtRef.current < 1500;
+                    if (byReader) stickToBottom.current = false;
+                    else {
+                      // not the reader: stay glued to the newest line
+                      pinnedTopRef.current = el.scrollTop;
+                      el.scrollTop = el.scrollHeight;
+                    }
+                  }
                 }
                 if (stickToBottom.current) {
                   setNewBelow((n) => (n ? 0 : n));
