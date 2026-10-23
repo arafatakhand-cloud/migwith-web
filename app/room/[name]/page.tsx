@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "firebase/auth";
+import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { awardUserXp } from "../../../lib/xp";
 import Link from "next/link";
@@ -336,6 +337,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 👥 the Room Participants list (slides in from the right) and its ••• menu
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [peopleMenuFor, setPeopleMenuFor] = useState<string | null>(null);
+  // the Participants list starts right under the top bar
+  const [peopleTop, setPeopleTop] = useState(0);
+  useEffect(() => {
+    if (!peopleOpen) return;
+    const bar = document.querySelector("[data-topbar]");
+    setPeopleTop(bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0);
+  }, [peopleOpen]);
   // 🛡 the moderation tools live on their own page inside the room menu (like the app)
   const [modToolsOpen, setModToolsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -2406,10 +2414,21 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       )}
 
       {/* 👥 Room Participants — a list that slides in from the right */}
-      {peopleOpen && (
-        <div className="fixed inset-0 z-50 bg-black/25" onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))}>
+      {/* (on document.body: inside the page the top bar sat over the list's title) */}
+      {peopleOpen && createPortal(
+        <div
+          className="fixed inset-x-0 bottom-0 z-[80] bg-black/25"
+          style={{ top: peopleTop }}
+          onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))}
+        >
           <aside
-            className="room-glass-panel absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col bg-white pt-safe shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
+            className="absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col border-l-[1.5px] border-white/90 shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
+            style={{
+              // thick white glass: the names stay easy to read over any chat
+              background: "linear-gradient(180deg, rgba(255,255,255,.93), rgba(244,248,255,.9))",
+              backdropFilter: "blur(14px) saturate(1.3)",
+              WebkitBackdropFilter: "blur(14px) saturate(1.3)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center border-b border-white/70 bg-white/60 px-3.5 pb-2.5 pt-3">
@@ -2484,6 +2503,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             </ul>
           </aside>
         </div>
+      ,
+        document.body
       )}
 
       {/* ℹ️ Room Info — a full page with ✎ edit, like the app */}
@@ -2516,7 +2537,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             </div>
           )}
           <div
-            className="room-glass-panel w-full rounded-t-[22px] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
+            className="w-full rounded-t-[22px] border-t-[1.5px] border-white/90 pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
+            style={{
+              // thick white glass: the names stay easy to read over any chat
+              background: "linear-gradient(180deg, rgba(255,255,255,.93), rgba(244,248,255,.9))",
+              backdropFilter: "blur(14px) saturate(1.3)",
+              WebkitBackdropFilter: "blur(14px) saturate(1.3)",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <p className="py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
