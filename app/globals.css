@@ -827,3 +827,15 @@ html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass .chat-field bu
 html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass .chat-field button[aria-label="Keyboard"] {
   font-size: 22px;
 }
+
+/* 🫧 Room menu, Participants and Kick user: a SOLID card in the Lobby's own sky
+   (blue → pale → pink, soft white glows) with a white rim — see-through glass
+   made the names hard to read. Other themes keep the white card. */
+html[data-theme="glass"]:not([data-ui="classic"]) .room-sky-card {
+  background:
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), transparent 45%),
+    radial-gradient(circle at 75% 45%, rgba(255, 255, 255, 0.9), transparent 50%),
+    radial-gradient(circle at 35% 75%, rgba(255, 255, 255, 0.9), transparent 45%),
+    linear-gradient(180deg, #9fd0ff 0%, #d7ecff 60%, #ffe6f1 100%) !important;
+  border-color: rgba(255, 255, 255, 0.92) !important;
+}
