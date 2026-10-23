@@ -2344,11 +2344,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {whoisInfo && <WhoisPopup info={whoisInfo} onClose={() => setWhoisInfo(null)} />}
       {commandsOpen && <CommandListPage onPick={(cmd) => (setCommandsOpen(false), prefill(cmd))} onBack={() => setCommandsOpen(false)} />}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe" onClick={closeMenu}>
+        <div className="room-glass-scrim fixed inset-0 z-50 flex items-end gap-2 bg-black/35 p-2 pb-safe" onClick={closeMenu}>
           {/* ✨ Room menu (half-page card), like the app: header with my role, three big
               buttons, the rest, and the moderation tiles for people who may use them. */}
           <div
-            className="max-h-[85vh] w-[62%] min-w-[230px] max-w-[300px] overflow-y-auto rounded-[28px] bg-white pb-2.5 shadow-2xl"
+            className="room-glass-panel max-h-[85vh] w-[62%] min-w-[230px] max-w-[300px] overflow-y-auto rounded-[28px] bg-white pb-2.5 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {modToolsOpen && canModMenu ? (
@@ -2495,7 +2495,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
           {menuPeople && (
             <div
-              className="max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-white pb-2 shadow-2xl ring-1 ring-black/5"
+              className="room-glass-panel max-h-[70vh] min-w-[150px] max-w-[220px] overflow-y-auto rounded-[28px] bg-white pb-2 shadow-2xl ring-1 ring-black/5"
               onClick={(e) => e.stopPropagation()}
             >
               <p className="px-3.5 pb-3 pt-3.5 text-[13px] font-bold text-[#0B1F3A]">👥 Participants ({roomUsers.length})</p>
@@ -2504,7 +2504,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   <li key={u.uid}>
                     <Link
                       href={`/profile/${encodeURIComponent(u.username)}`}
-                      className="flex items-center gap-[7px] rounded-[14px] bg-[#F1F4F8] px-2 py-[7px]"
+                      className="glass-row glass-shine flex items-center gap-[7px] rounded-[14px] bg-[#F1F4F8] px-2 py-[7px]"
                     >
                       <span className="relative shrink-0">
                         <span
