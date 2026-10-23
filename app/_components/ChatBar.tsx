@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
+import { PlainEditableBox, useEditableBox } from "./PlainEditableBox";
 import { withEmotes } from "./Emote";
 import { useIsClassic } from "../../lib/uiStyle";
 
@@ -104,6 +105,8 @@ export function ChatBar({
   reply?: { sender: string; snippet: string; color?: string; onCancel: () => void } | null;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
+  // 📱 iPhone: the editable message box (no Safari ⌃ ⌄ ✓ bar)
+  const editableBox = useEditableBox();
   const classic = useIsClassic();
   // ➤ the paper plane flies off and comes back on every send
   const [fly, setFly] = useState(0);
@@ -222,29 +225,45 @@ export function ChatBar({
               </label>
               {/* A textarea, not an input: Chrome and Safari show no password /
                   card / address AutoFill bar above the keyboard for it. Enter sends. */}
-              <textarea
-                ref={inputRef}
-                rows={1}
-                value={text}
-                onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
-                autoComplete="off"
-                autoCorrect="on"
-                name="migwith-chat-message"
-                enterKeyHint="send"
-                data-1p-ignore
-                data-lpignore="true"
-                data-form-type="other"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
+              {editableBox ? (
+                // 📱 iPhone: an editable box, so Safari doesn't add its ⌃ ⌄ ✓ bar
+                <PlainEditableBox
+                  boxRef={inputRef as React.MutableRefObject<HTMLTextAreaElement | null>}
+                  value={text}
+                  onChange={setText}
+                  onEnter={() => {
                     if (canSend) send();
-                  }
-                }}
-                maxLength={maxLength}
-                disabled={disabled}
-                placeholder={placeholder}
-                className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
-              />
+                  }}
+                  maxLength={maxLength}
+                  disabled={disabled}
+                  placeholder={placeholder}
+                  className="my-[5.5px] max-h-20 min-h-5 min-w-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none"
+                />
+              ) : (
+                <textarea
+                  ref={inputRef}
+                  rows={1}
+                  value={text}
+                  onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
+                  autoComplete="off"
+                  autoCorrect="on"
+                  name="migwith-chat-message"
+                  enterKeyHint="send"
+                  data-1p-ignore
+                  data-lpignore="true"
+                  data-form-type="other"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (canSend) send();
+                    }
+                  }}
+                  maxLength={maxLength}
+                  disabled={disabled}
+                  placeholder={placeholder}
+                  className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
+                />
+              )}
               <span className="flex h-[31px] shrink-0 items-center">
                 <EmojiPicker
                   inputRef={inputRef}
