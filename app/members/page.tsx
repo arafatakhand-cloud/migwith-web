@@ -125,14 +125,14 @@ function isDarkAccent(hex: string): boolean {
 const MANAGED = new Set(["executive_board", "admin", "country_representative", "staff", "elite_user", "mentor"]);
 const PROTECTED = new Set(["ceo", "owner", "superadmin"]);
 
-type Category = { id: string; icon: string; title: string; subtitle: string; color: string; roles: string[] };
+type Category = { id: string; icon: React.ReactNode; title: string; subtitle: string; color: string; roles: string[] };
 
 const MANAGEMENT: Category[] = [
   { id: "executive_board", icon: "🏅", title: "Executive Board", subtitle: "FOUNDER • Owner • Executive", color: "#3F55C7", roles: ["executive_board", "executive", "owner", "ceo"] },
   { id: "admin", icon: "🛡", title: "Admin", subtitle: "Admin IDs", color: "#E0A800", roles: ["admin", "administrator", "superadmin"] },
   { id: "country_representative", icon: "🌍", title: "Country Representative", subtitle: "Country representatives", color: "#B58A70", roles: ["country_representative", "countryrep", "country_rep"] },
   { id: "staff", icon: "🪪", title: "Staff", subtitle: "Staff IDs", color: "#22A447", roles: ["staff"] },
-  { id: "elite_user", icon: "🛡", title: "Elite User", subtitle: "Elite members", color: "#12AFC7", roles: ["elite_user", "elite"] },
+  { id: "elite_user", icon: <HonorIcon />, title: "Honor Members", subtitle: "Honor members", color: "#1565D8", roles: ["elite_user", "elite"] },
 ];
 const COMMUNITY: Category[] = [
   { id: "mentor", icon: "💼", title: "Mentor", subtitle: "Mentors", color: "#E12A2A", roles: ["mentor"] },
@@ -483,4 +483,10 @@ export default function MembersPage() {
       )}
     </PageShell>
   );
+}
+
+// 🛡⭐ Honor Members: their own shield picture (was 🛡 "Elite User")
+function HonorIcon() {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/badges/honor_member.png" alt="" className="inline-block h-[1.35em] w-[1.35em] align-[-0.3em]" />;
 }

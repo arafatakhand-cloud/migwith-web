@@ -18,7 +18,7 @@ export function PageTitle({
 }: {
   title: string;
   subtitle?: string;
-  icon?: string;
+  icon?: React.ReactNode;
   backHref?: string;
   /** a back that stays on the page (a list inside it, say) */
   onBack?: () => void;
@@ -79,7 +79,7 @@ export function PastelCard({
   note,
   right,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   subtitle: string;
   color: string;

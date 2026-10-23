@@ -47,7 +47,7 @@ function roleLabel(role: string): string {
   if (r === "mentor") return "Mentor";
   if (r === "staff") return "Staff";
   if (r === "admin" || r === "superadmin") return "Admin";
-  if (r === "elite" || r === "elite_user") return "Elite";
+  if (r === "elite" || r === "elite_user") return "Honor Member";
   return "User";
 }
 

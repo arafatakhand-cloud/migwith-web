@@ -106,7 +106,7 @@ function roleInfo(raw: string): { label: string; color: string; icon?: string } 
   if (key === "staff") return { label: "Staff", color: "#1E9E4F" };
   if (key === "mentor") return { label: "Mentor", color: "#E0303F" };
   if (key === "merchant") return { label: "Merchant", color: "#9C27B0" };
-  if (key === "elite" || key === "elite_user") return { label: "Elite", color: "#0097A7" };
+  if (key === "elite" || key === "elite_user") return { label: "Honor Member", color: "#1565D8" };
   if (["country_representative", "countryrep", "country_rep"].includes(key)) return { label: "Country Representative", color: "#B58A70", icon: "🌍" };
   return null;
 }
