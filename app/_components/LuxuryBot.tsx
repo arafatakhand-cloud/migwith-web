@@ -147,6 +147,8 @@ type LbSkin = ShopItem & {
 };
 
 export const LB_SKINS: LbSkin[] = [
+  // 🫧 Clear Glass (shown FIRST in the shop) — a see-through box (the chat shows behind it), bright white rims, dark-blue writing
+  { id: "glass", name: "Clear Glass", emoji: "🫧", price: 150000, bgTop: "rgba(255,255,255,.55)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.45)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.78)", tileBottom: "rgba(255,255,255,.35)", tileBase: "rgba(255,255,255,.2)", tileBorder: "rgba(255,255,255,.95)" },
   { id: "royal", name: "Royal Night", emoji: "👑", price: 0, bgTop: "#1E1A2E", bgBottom: "#151222", chip: "#2A2440", accent: "#D4AF37", accent2: "#FFF0B3", accentText: "#F2D675", cream: "#F2E6C2", tileTop: "#3A3350", tileBottom: "#27213A", tileBase: "#0E0B18", tileBorder: "#5A4F7A" },
   { id: "ocean", name: "Ocean Breeze", emoji: "🌊", price: 50000, bgTop: "#0B2A3F", bgBottom: "#061826", chip: "#12384F", accent: "#3FC1E8", accent2: "#B8F1FF", accentText: "#9BE7FF", cream: "#DDF6FF", tileTop: "#17506E", tileBottom: "#0E3349", tileBase: "#04121B", tileBorder: "#2E86A8" },
   { id: "emerald", name: "Emerald Palace", emoji: "💚", price: 75000, bgTop: "#0E3324", bgBottom: "#071C13", chip: "#134430", accent: "#2ED48A", accent2: "#C8FFE3", accentText: "#9BF5C8", cream: "#DFF8EA", tileTop: "#1B5A3E", tileBottom: "#113B29", tileBase: "#05140D", tileBorder: "#31956A" },
@@ -160,8 +162,6 @@ export const LB_SKINS: LbSkin[] = [
   { id: "crimson", name: "Crimson Fire", emoji: "🔥", price: 150000, bgTop: "#360A0E", bgBottom: "#1E0507", chip: "#4A1015", accent: "#FF4A3D", accent2: "#FFC66E", accentText: "#FF9E9B", cream: "#FFE1E0", tileTop: "#661A1F", tileBottom: "#431014", tileBase: "#160405", tileBorder: "#B8352F" },
   { id: "galaxy", name: "Purple Galaxy", emoji: "🌌", price: 175000, bgTop: "#1A0E40", bgBottom: "#0B0524", chip: "#261659", accent: "#B388FF", accent2: "#7DF9FF", accentText: "#D9C2FF", cream: "#EEE4FF", tileTop: "#3A2478", tileBottom: "#241452", tileBase: "#07031A", tileBorder: "#7A55E6" },
   { id: "diamond", name: "Diamond Ice", emoji: "💎", price: 200000, bgTop: "#1B2E3E", bgBottom: "#0C1823", chip: "#243C50", accent: "#DDEFFF", accent2: "#8FD3FF", accentText: "#FFFFFF", cream: "#E6F0F8", tileTop: "#34556E", tileBottom: "#213A4E", tileBase: "#08121A", tileBorder: "#A9D2F0" },
-  // 🫧 Clear Glass — a see-through box (the chat shows behind it), bright white rims, dark-blue writing
-  { id: "glass", name: "Clear Glass", emoji: "🫧", price: 150000, bgTop: "rgba(255,255,255,.55)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.45)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.78)", tileBottom: "rgba(255,255,255,.35)", tileBase: "rgba(255,255,255,.2)", tileBorder: "rgba(255,255,255,.95)" },
 ];
 
 // 📟 Classic app style: a light box (white / grey, orange accents, navy text)
@@ -173,7 +173,8 @@ export const LB_CLASSIC_SKIN: LbSkin = {
 };
 export function lbSkinNow(id: string | undefined): LbSkin {
   if (isClassicNow()) return LB_CLASSIC_SKIN;
-  return LB_SKINS.find((k) => k.id === id) || LB_SKINS[0];
+  // (the free Royal Night is the default — not simply the first in the list)
+  return LB_SKINS.find((k) => k.id === id) || LB_SKINS.find((k) => k.id === "royal")!;
 }
 
 function LbSkinPreview({ skin }: { skin: LbSkin }) {
