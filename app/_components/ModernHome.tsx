@@ -58,7 +58,7 @@ function StatTile({
   return (
     <Link
       href={href}
-      className="flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93]"
+      className={`flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine"}`}
       style={{
         background: `linear-gradient(${accent}1A, ${accent2}0A)`,
         border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,

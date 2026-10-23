@@ -158,7 +158,7 @@ export function ChatBar({
         in from the sides, 32 px round buttons 5 px apart, and a 39 px white
         message pill. The phone's safe area goes under it, not inside it. */}
     {/* Round at all four corners, a little in from the sides, like the app. */}
-    <div className="keep-round mx-1.5 mb-1 flex items-end gap-[5px] rounded-[26px] bg-[#0B1F3A] px-2 py-1.5 shadow-[0_4px_14px_rgba(11,31,58,.25)] sm:mx-1 sm:my-1 sm:gap-2 sm:px-3 sm:py-1.5">
+    <div className="chat-bar-glass keep-round mx-1.5 mb-1 flex items-end gap-[5px] rounded-[26px] bg-[#0B1F3A] px-2 py-1.5 shadow-[0_4px_14px_rgba(11,31,58,.25)] sm:mx-1 sm:my-1 sm:gap-2 sm:px-3 sm:py-1.5">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative mb-[4px] shrink-0">
         <button
@@ -166,7 +166,7 @@ export function ChatBar({
           onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
           aria-label="More"
           aria-expanded={moreOpen}
-          className={`${BAR_BTN} bg-[#2E3E56]`}
+          className={`${BAR_BTN} glass-bubble glass-shine bg-[#2E3E56]`}
         >
           <MoreGlyph />
         </button>
@@ -204,7 +204,7 @@ export function ChatBar({
             <div className="chat-field keep-round flex min-h-[37px] items-end gap-1 rounded-[19.5px] bg-white py-[3px] pl-[3px] pr-1">
               <label
                 title={photo.title}
-                className={`flex h-[31px] w-[31px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
+                className={`glass-shine flex h-[31px] w-[31px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
                 style={classic ? CLASSIC_BTN_BG : PHOTO_BG}
               >
                 {photo.uploading ? "⏳" : <PhotoGlyph />}
@@ -268,7 +268,7 @@ export function ChatBar({
               onClick={send}
               disabled={!canSend}
               aria-label="Send"
-              className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-50 ${canSend ? "chat-send-shine" : ""}`}
+              className={`glass-shine relative flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-50 ${canSend ? "chat-send-shine" : ""}`}
               style={classic ? CLASSIC_BTN_BG : SEND_BG}
             >
               <SendGlyph key={fly} fly={fly > 0} />

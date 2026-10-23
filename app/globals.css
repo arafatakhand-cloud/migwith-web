@@ -594,6 +594,56 @@ html[data-theme="glass"] main[data-shell] .page-bg {
   background: transparent !important;
 }
 
+/* 🫧 GLASS BUBBLE buttons (Glass theme): a thick clear-glass rim, a bright
+   shine across the top and a soft glow at the bottom — like glass marbles.
+   .glass-shine = rim + shine over the button's own colour;
+   .glass-bubble = also a clear white inside (dark icon). */
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-shine {
+  isolation: isolate;
+  border: 2px solid rgba(255, 255, 255, 0.92) !important;
+  box-shadow:
+    inset 0 1px 1px #fff,
+    inset 0 -2px 4px rgba(255, 255, 255, 0.45),
+    0 3px 8px rgba(40, 80, 160, 0.22) !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-shine:not(.absolute):not(.fixed):not(.sticky) { position: relative; }
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-shine::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 38% at 50% 22%, rgba(255, 255, 255, 0.8), transparent 70%),
+    radial-gradient(ellipse 56% 30% at 50% 84%, rgba(255, 255, 255, 0.4), transparent 72%);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-bubble {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.55)) !important;
+  color: #1e3a6e;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-bubble svg { fill: #1e3a6e; }
+/* the room's bottom bar: clear glass with a bright rim (was navy) */
+html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.28)) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+/* a closed tab's icon on the top bar: a small glass bubble */
+html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass {
+  height: 30px;
+  width: 30px;
+  margin: 0 -5px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.16);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass.pill-glass { border: 1.5px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 1px #fff, 0 2px 6px rgba(20, 40, 120, 0.25); }
+/* the profile tiles: the glass shine replaces the old gloss */
+html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display: none; }
+
 /* 🫧 Glass theme: the message box is clear WHITE glass — the coloured edge stays
    only a rim (a see-through inside showed the colour under it). */
 html[data-theme="glass"] main[data-shell] .chat-field.chat-field.chat-field {

@@ -2414,7 +2414,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               ).map(([icon, label, bg, act, badge]) => (
                 <button key={label} type="button" onClick={act} className="flex flex-col items-center rounded-[14px] px-1.5 py-0.5">
                   <span className="relative">
-                    <span className="flex h-[42px] w-[42px] items-center justify-center rounded-[13px] text-[19px]" style={{ background: bg }}>
+                    <span className="glass-shine flex h-[42px] w-[42px] items-center justify-center rounded-[13px] text-[19px]" style={{ background: bg }}>
                       {icon}
                     </span>
                     {badge > 0 && (
@@ -2440,8 +2440,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ] as [string, string, () => void][]
               ).map(([icon, label, act]) => (
                 <li key={label}>
-                  <button type="button" onClick={act} className="flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">{icon}</span>
+                  <button type="button" onClick={act} className="glass-shine flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]">
+                    <span className="glass-shine flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">{icon}</span>
                     <span className="flex-1">{label}</span>
                     <span className="pr-1 text-sm text-[#6B7A99]">›</span>
                   </button>
@@ -2455,9 +2455,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 <button
                   type="button"
                   onClick={() => setModToolsOpen(true)}
-                  className="flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]"
+                  className="glass-shine flex w-full items-center gap-2.5 rounded-2xl bg-[#F1F4F8] px-2 py-1.5 text-left text-[13px] font-semibold text-[#0B1F3A]"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">🛡</span>
+                  <span className="glass-shine flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#DCE7F5] text-base">🛡</span>
                   <span className="flex-1">Moderation Tools</span>
                   <span className="pr-1 text-sm text-[#6B7A99]">›</span>
                 </button>
@@ -2468,7 +2468,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             <button
               type="button"
               onClick={() => (closeMenu(), leaveRoom())}
-              className="mx-2.5 mt-2 block w-[calc(100%-20px)] rounded-[14px] bg-gradient-to-r from-[#FF5F6D] to-[#E5484D] py-2.5 text-[13px] font-black text-white shadow-md"
+              className="glass-shine mx-2.5 mt-2 block w-[calc(100%-20px)] rounded-[14px] bg-gradient-to-r from-[#FF5F6D] to-[#E5484D] py-2.5 text-[13px] font-black text-white shadow-md"
             >
               🚪 Leave Room
             </button>

@@ -282,7 +282,11 @@ export function PillTabStrip({ items, colors, className = "" }: { items: PillTab
       const iconColor = overlay ? colors.activeIcon || "#FFFFFF" : colors.idleIcon;
       const inner = (
         <>
-          <span className={blink ? "pill-alert-blink flex" : "flex"} style={blink ? undefined : { color: iconColor }}>
+          <span
+            // 🫧 Glass theme: a closed tab's icon in a small glass bubble
+            className={`${blink ? "pill-alert-blink flex" : "flex"} ${!overlay && !item.selected ? "pill-glass" : ""}`}
+            style={blink ? undefined : { color: iconColor }}
+          >
             <PillGlyphIcon
               glyph={item.glyph}
               selected={overlay}

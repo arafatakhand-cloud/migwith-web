@@ -459,7 +459,7 @@ export function TopBar() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className={`mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/[0.18] lg:hidden ${
+          className={`glass-shine mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/[0.18] lg:hidden ${
             hasUnread ? "pill-alert-blink" : "text-white"
           }`}
         >

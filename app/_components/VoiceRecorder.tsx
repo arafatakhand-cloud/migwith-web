@@ -170,7 +170,7 @@ export function VoiceRecorder({
       onClick={onTap}
       disabled={disabled && state !== "recording"}
       title={state === "recording" ? "Stop recording" : "Record a voice message"}
-      className={`${btn} select-none disabled:opacity-40 ${state === "recording" ? "chat-mic-rec border-2" : ""}`}
+      className={`${btn} select-none disabled:opacity-40 ${state === "recording" ? "chat-mic-rec border-2" : "glass-shine"}`}
       style={state === "recording" ? MIC_REC_BG : MIC_BG}
     >
       {state === "recording" ? <span className="block h-[11px] w-[11px] rounded-[2.5px] bg-white" /> : <MicGlyph />}
