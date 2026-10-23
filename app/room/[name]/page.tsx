@@ -2053,7 +2053,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
                   <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
-                    <span className="text-[20px] leading-none">📢</span>
+                    {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
+                    <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
                     <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#8A5A00] [overflow-wrap:anywhere]">
                       {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
@@ -3112,8 +3113,10 @@ function MessageRow({
           className="max-w-[336px] whitespace-pre-wrap rounded-[9px] border px-[7px] py-[7px] text-[14px] leading-snug"
           style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: INK }}
         >
+          {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
+          {gold && m.text.startsWith("📢") && <span className="inline-block -scale-x-100">📢</span>}
           {/* emotes (";m3", ":)") as pictures, like chat lines */}
-          {withEmotes(brandMiglife(m.text), fontPx, (t, k) => withMentions(t, `b${k}`))}
+          {withEmotes(brandMiglife(gold && m.text.startsWith("📢") ? m.text.slice("📢".length) : m.text), fontPx, (t, k) => withMentions(t, `b${k}`))}
           {stamp}
         </p>
       </div>
