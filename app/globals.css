@@ -623,6 +623,10 @@ html[data-theme="glass"]:not([data-ui="classic"]) .glass-bubble {
   color: #1e3a6e;
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .glass-bubble svg { fill: #1e3a6e; }
+/* ⋮ on the glass bar: a light-blue glass bubble (white on white was hard to see) */
+html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass .glass-bubble {
+  background: linear-gradient(180deg, rgba(232, 241, 255, 0.98), rgba(191, 219, 254, 0.8)) !important;
+}
 /* the room's bottom bar: clear glass with a bright rim (was navy) */
 html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.28)) !important;

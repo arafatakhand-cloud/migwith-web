@@ -189,7 +189,9 @@ export function ChatBar({
         )}
       </div>
 
-      {!voiceActive && extra}
+      {/* FIX (▶ sat lower than ⋮ and the box): the same 4 px lift as ⋮, so every
+          button's middle lines up with the middle of the one-line message box */}
+      {!voiceActive && extra && <div className="mb-[4px] flex shrink-0 items-center">{extra}</div>}
 
       {/* While recording (or a clip waits) the recorder takes over the row. It
           always stays in the same slot below, so it keeps its state. */}
