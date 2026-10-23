@@ -398,28 +398,12 @@ export function Dashboard() {
       )}
       {/* Modern: status editor (tap the status in the hero card) */}
       {!classic && editing && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3 pb-safe sm:items-center" onClick={() => setEditing(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <p className="text-sm font-bold text-[#0B2A5B]">💬 Your status</p>
-            <input
-              autoFocus
-              value={statusDraft}
-              onChange={(e) => setStatusDraft(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveStatus()}
-              maxLength={300}
-              placeholder="What are you thinking?"
-              className="mt-2 w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-3 py-2.5 text-sm text-[#0B2A5B] outline-none focus:border-[#2F80ED]"
-            />
-            <div className="mt-3 flex gap-2">
-              <button type="button" onClick={() => setEditing(false)} className="flex-1 rounded-xl border border-[#D5E3F5] py-2.5 text-sm font-bold text-[#5B6B8C]">
-                Cancel
-              </button>
-              <button type="button" onClick={saveStatus} className="flex-1 rounded-xl bg-[#2F80ED] py-2.5 text-sm font-bold text-white">
-                Save
-              </button>
-            </div>
-          </div>
-        </div>
+        <StatusEditor
+          value={statusDraft}
+          onChange={setStatusDraft}
+          onCancel={() => setEditing(false)}
+          onSave={saveStatus}
+        />
       )}
 
       {classic && <InstallHint />}
@@ -513,6 +497,133 @@ export function Dashboard() {
           </div>
         </div>
       </aside>
+    </div>
+  );
+}
+
+/* ✨ The status editor (Modern): a glass card, a rounded writing box with a live
+   word bar, one-tap ready statuses and emojis, big gradient buttons — like the app. */
+const QUICK_STATUSES = ["😊 Available", "💬 Free to chat", "🎮 Playing games", "🎵 Listening to music", "📚 Studying", "💼 At work", "😴 Sleeping", "📵 Busy"];
+const QUICK_EMOJIS = ["😀", "😍", "😎", "🥰", "🔥", "✨", "💯", "❤️", "🙏", "🌙"];
+const BRAND = "linear-gradient(135deg, #1565D8, #3B7BF0, #7B5CF0)";
+const wordCount = (t: string) => t.trim().split(/\s+/).filter(Boolean).length;
+const limitWords = (t: string) => {
+  const words = t.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= 120) return t;
+  return words.slice(0, 120).join(" ");
+};
+
+function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; onChange: (v: string) => void; onCancel: () => void; onSave: () => void | Promise<void> }) {
+  const [saving, setSaving] = useState(false);
+  const words = wordCount(value);
+  const near = words >= 110;
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onSave();
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/45 p-3 pb-safe backdrop-blur-[2px] sm:items-center" onClick={() => !saving && onCancel()}>
+      <div
+        className="w-full max-w-md rounded-[28px] border-[1.5px] border-white/95 p-[18px] shadow-[0_20px_50px_rgba(40,80,160,.35)]"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,.98), #EFF5FF 60%, #FCF1F8)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-[1.5px] border-white/85 text-xl shadow-[0_4px_10px_rgba(59,123,240,.45)]" style={{ background: BRAND }}>
+            💬
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[19px] font-extrabold leading-6 text-[#0B2A5B]">Edit Status</p>
+            <p className="text-xs text-[#5B6B8C]">Let your friends know what&apos;s on your mind</p>
+          </div>
+          <button type="button" onClick={onCancel} disabled={saving} aria-label="Close" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF1FB] text-sm font-bold text-[#5B6B8C]">
+            ✕
+          </button>
+        </div>
+
+        <div className="relative mt-4">
+          <textarea
+            autoFocus
+            value={value}
+            onChange={(e) => onChange(limitWords(e.target.value))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                save();
+              }
+            }}
+            rows={4}
+            placeholder="What are you thinking?"
+            className="block min-h-[104px] w-full resize-none rounded-[18px] border border-[#D5E3F5] bg-white px-3.5 pb-7 pt-3 text-base leading-[22px] text-[#0B2A5B] outline-none transition focus:border-[#3B7BF0] focus:shadow-[0_0_0_3px_rgba(59,123,240,.15)]"
+          />
+          {value && (
+            <button type="button" onClick={() => onChange("")} className="absolute bottom-2 right-3 rounded-lg px-1 text-xs font-bold text-[#3B7BF0]">
+              Clear
+            </button>
+          )}
+        </div>
+
+        <div className="mt-2 flex items-center gap-2.5">
+          <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-[#E3ECF7]">
+            <div
+              className="h-full rounded-full transition-[width]"
+              style={{ width: `${Math.min(100, (words / 120) * 100)}%`, background: near ? "linear-gradient(90deg, #FF8A3D, #E5484D)" : BRAND }}
+            />
+          </div>
+          <span className={`text-[11px] font-semibold ${near ? "text-[#E5484D]" : "text-[#5B6B8C]"}`}>{words}/120 words</span>
+        </div>
+
+        <p className="mt-3.5 text-xs font-bold text-[#0B2A5B]">✨ Quick status</p>
+        <div className="no-scrollbar mt-1.5 flex gap-1.5 overflow-x-auto pb-0.5">
+          {QUICK_STATUSES.map((q) => {
+            const picked = value.trim() === q;
+            return (
+              <button
+                key={q}
+                type="button"
+                onClick={() => onChange(q)}
+                className={`shrink-0 whitespace-nowrap rounded-2xl border px-3 py-[7px] text-[13px] font-semibold ${picked ? "border-white/80 text-white" : "border-[#D5E3F5] text-[#0B2A5B]"}`}
+                style={{ background: picked ? BRAND : "linear-gradient(180deg, #fff, #EAF1FB)" }}
+              >
+                {q}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="no-scrollbar mt-2.5 flex gap-1 overflow-x-auto">
+          {QUICK_EMOJIS.map((e) => (
+            <button
+              key={e}
+              type="button"
+              onClick={() => onChange(limitWords(value.trimEnd() + (value.trim() ? " " : "") + e))}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2F6FD] text-[19px]"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-[18px] flex gap-2.5">
+          <button type="button" onClick={onCancel} disabled={saving} className="h-12 flex-1 rounded-3xl border border-[#D5E3F5] bg-white text-[15px] font-bold text-[#5B6B8C]">
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="h-12 flex-[1.4] rounded-3xl border-[1.5px] border-white/60 text-[15px] font-extrabold text-white shadow-[0_6px_14px_rgba(59,123,240,.4)] disabled:opacity-70"
+            style={{ background: BRAND }}
+          >
+            {saving ? "Saving…" : "✓  Save status"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
