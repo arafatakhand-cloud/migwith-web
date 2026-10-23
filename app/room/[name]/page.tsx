@@ -2404,8 +2404,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             className="room-glass-panel absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col bg-white pt-safe shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center px-3.5 pb-2 pt-3">
-              <p className="flex-1 text-[12px] text-[#8A96AB]">Room Participants</p>
+            <div className="flex items-center border-b border-white/70 bg-white/60 px-3.5 pb-2.5 pt-3">
+              <p className="flex-1 text-[12.5px] font-semibold text-[#5B6B8C]">Room Participants</p>
               <button type="button" onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))} aria-label="Close" className="px-1 text-[15px] text-[#8A96AB]">
                 ⤢
               </button>
@@ -2453,7 +2453,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                       </button>
                     </div>
                     {peopleMenuFor === u.uid && (
-                      <div className="room-glass-panel absolute right-2 top-[34px] z-10 w-40 overflow-hidden rounded-xl bg-white py-1 text-[13px] text-[#0B2A5B] shadow-xl">
+                      <div className="absolute right-2 top-[34px] z-10 w-40 overflow-hidden rounded-xl border-[1.5px] border-white/90 bg-white/95 py-1 text-[13px] text-[#0B2A5B] shadow-[0_8px_24px_rgba(11,31,58,.22)] backdrop-blur-md">
                         {actions.map(([label, run]) => (
                           <button
                             key={label}
