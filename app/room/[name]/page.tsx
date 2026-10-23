@@ -321,6 +321,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // ⏰ My spot here was cleared (away too long, kicked or banned) → I'm not in
   // the room any more: no quiet "has entered" again, sending shows a popup.
   const [autoLeft, setAutoLeft] = useState(() => !!user && isAutoLeft(user.uid, roomName));
+  // ⚠️ "You are not in this room" popup (a message typed after being taken out)
+  const [notInRoomOpen, setNotInRoomOpen] = useState(false);
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -1067,7 +1069,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           if (heartbeat) clearInterval(heartbeat);
           restorePresenceRef.current = null;
           setAutoLeft(true);
-          note(`⏰ ${roomName} : You've been out of this room for a while (away too long, kicked or banned).`);
+          note(`${roomName} : You have been auto left due to inactivity, kick or ban by other!`);
         });
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
@@ -1394,8 +1396,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (!clean || !user || !profile || sending) return;
     if (autoLeft) {
       // Nothing sent: the room says why and how to come back in.
-      note(`⏰ ${roomName} : You've been out of this room for a while (away too long, kicked or banned).`);
-      note(`🚪 ${roomName} : Your message wasn't sent. Close this tab (✕) and open ${roomName} room again to rejoin.`);
+      note(`${roomName} : You are not in ${roomName} chat room`);
+      setNotInRoomOpen(true);
       return;
     }
 
@@ -2522,6 +2524,23 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         />
       )}
 
+      {/* ⚠️ You are not in this room */}
+      {notInRoomOpen && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-8" onClick={() => setNotInRoomOpen(false)}>
+          <div className="w-full max-w-[340px] rounded-3xl bg-white px-7 py-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[72px] leading-none">⚠️</div>
+            <p className="mt-4 text-[17px] text-[#8FA6C4]">You are not in this room</p>
+            <button
+              type="button"
+              onClick={() => setNotInRoomOpen(false)}
+              className="mt-7 h-[50px] w-full rounded-md bg-[#1B3A5C] text-[17px] font-bold text-white shadow-md"
+            >
+              Ok
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 👢 Kick user — a list of names from the bottom (like the reference) */}
       {kickOpen && (
         <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={() => (setKickOpen(false), setKickToast(""))}>
@@ -3220,6 +3239,17 @@ function MessageRow({
   // Reactions work on real chat lines only (not local notices or the room's own lines).
   const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice");
   const holdHandlers = holdFor(canReact);
+
+  // ⏰ "Room : You have been auto left …" / "Room : You are not in Room chat room":
+  // a plain full-width line (no card), the room's name in red — like the app.
+  const outNote = m.local ? /^(.+?) : (You have been auto left|You are not in )/.exec(m.text) : null;
+  if (outNote) {
+    return (
+      <div className="w-full px-1 leading-snug" style={{ fontSize: fontPx }}>
+        <b className="text-[#D7261E]">{outNote[1]} :</b> <span style={{ color: INK }}>{m.text.slice(outNote[1].length + 3)}</span>
+      </div>
+    );
+  }
 
   return (
     <SwipeToReply enabled={canReply} fullWidth={(gameRoom || classic) && !rightSide} onReply={() => onReply(senderName, snippet)}>
