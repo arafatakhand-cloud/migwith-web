@@ -33,7 +33,8 @@ import { PageShell } from "../../_components/PageShell";
 import { ProfilePeopleList } from "../../_components/ProfilePeopleList";
 import { BackButton } from "../../_components/BackButton";
 import { useProfileAchievements } from "../../_components/Achievements";
-import { badgeForLevel } from "../../../lib/rooms";
+import { badgeForLevel, roleBadgesFor } from "../../../lib/rooms";
+import { useBadgeImages } from "../../../lib/badgeImages";
 import { RainbowName } from "../../_components/RainbowName";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { useIsClassic } from "../../../lib/uiStyle";
@@ -175,6 +176,7 @@ export default function ProfilePage() {
   const username = raw === "me" ? me : raw;
   const isOwn = !!me && sameName(username, me);
   const classic = useIsClassic();
+  const badgeImages = useBadgeImages(!!user);
   // 📟 Classic: the main button keeps its colour with navy text and a light frame (like the app).
   const mainBtnInk = classic ? "border-[#C9D2DE] text-[#16315F]" : "border-[#B8350A] text-white";
 
@@ -520,6 +522,10 @@ export default function ProfilePage() {
   const role = roleInfo(profile.role);
   // "Owner" is shown only on your own profile, same as the app.
   const shownRole = role && !(role.label === "Owner" && !isOwn) ? role : null;
+  // 🏅 the role's own badge: miglife's uploaded picture (app_settings/badge_images)
+  // when there is one, else its badge emoji (🛒 Merchant, 💼 Mentor …), like the app
+  const roleEmoji = roleBadgesFor(profile.role)[0] || shownRole?.icon || "🎖";
+  const roleBadgeUrl = badgeImages[roleEmoji] || "";
   const facts = [profile.gender, profile.age > 0 ? String(profile.age) : ""].filter(Boolean);
   const bubble = profile.statusMessage || profile.bio;
   const dot = PRESENCE_DOT[profile.presence];
@@ -640,7 +646,13 @@ export default function ProfilePage() {
                   className={`shrink-0 text-[13px] font-bold ${team ? "rounded-full bg-white/90 px-2 py-0.5 shadow-sm" : ""}`}
                   style={{ color: shownRole.color }}
                 >
-                  {shownRole.icon || "🎖"} {shownRole.label}
+                  {roleBadgeUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={roleBadgeUrl} alt="" className="mr-1 inline-block h-5 w-5 object-contain align-[-4px]" />
+                  ) : (
+                    <>{roleEmoji} </>
+                  )}
+                  {shownRole.label}
                 </span>
               )}
             </div>
