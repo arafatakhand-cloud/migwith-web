@@ -641,6 +641,43 @@ html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass {
   background: rgba(255, 255, 255, 0.16);
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass.pill-glass { border: 1.5px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 1px #fff, 0 2px 6px rgba(20, 40, 120, 0.25); }
+/* the same glass shine for elements that already use ::before (status bubble) */
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-shine-a {
+  isolation: isolate;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: inset 0 1px 1px #fff, 0 3px 8px rgba(40, 80, 160, 0.22);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-shine-a::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 45% at 50% 18%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(ellipse 56% 30% at 50% 88%, rgba(255, 255, 255, 0.3), transparent 72%);
+}
+/* the Home photo: a glass lens (bright rim + shine) */
+html[data-theme="glass"]:not([data-ui="classic"]) .glass-lens {
+  border: 2.5px solid rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 -3px 6px rgba(255, 255, 255, 0.45);
+  background:
+    radial-gradient(ellipse 70% 38% at 50% 20%, rgba(255, 255, 255, 0.6), transparent 70%),
+    radial-gradient(ellipse 56% 30% at 50% 86%, rgba(255, 255, 255, 0.3), transparent 72%);
+}
+/* the level hexagon: a glass shine inside */
+html[data-theme="glass"]:not([data-ui="classic"]) .hex-glass {
+  background:
+    radial-gradient(ellipse 70% 32% at 50% 18%, rgba(255, 255, 255, 0.75), transparent 70%),
+    radial-gradient(ellipse 56% 26% at 50% 88%, rgba(255, 255, 255, 0.4), transparent 72%),
+    linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.1)) !important;
+}
+/* the Home stat tiles: clear glass bubbles with a light wash of their colour */
+html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), color-mix(in srgb, var(--accent) 14%, transparent), rgba(255, 255, 255, 0.52)) !important;
+  border-width: 2.5px !important;
+}
 /* the profile tiles: the glass shine replaces the old gloss */
 html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display: none; }
 

@@ -58,8 +58,10 @@ function StatTile({
   return (
     <Link
       href={href}
-      className={`flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine"}`}
+      className={`flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
       style={{
+        // (the Glass theme's .stat-glass washes the tile with this colour)
+        ["--accent" as string]: accent,
         background: `linear-gradient(${accent}1A, ${accent2}0A)`,
         border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,
         ...(highlight
@@ -74,7 +76,7 @@ function StatTile({
     >
       <span className="relative flex h-[30px] w-[30px] items-center justify-center">
         {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
-        <span className="relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-sm" style={{ background: `linear-gradient(135deg, ${accent}, ${accent2})` }}>
+        <span className="glass-shine relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-sm" style={{ background: `linear-gradient(135deg, ${accent}, ${accent2})` }}>
           {icon}
         </span>
         {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
@@ -152,19 +154,21 @@ export function ModernHomeTop({
             <span className="absolute inset-[3px]">
               <Avatar name={username || "U"} photo={photo} size={64} ring="#FFFFFF" />
             </span>
+            {/* 🫧 Glass theme: a glass-bubble lens over the photo */}
+            <span aria-hidden className="glass-lens pointer-events-none absolute inset-0 rounded-full" />
           </Link>
           <div className="ml-3 min-w-0 flex-1">
             <Link href="/profile/me" data-notranslate className="block truncate text-xl font-black">
               {username || "User"}
             </Link>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <span className="rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
+              <span className="glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
                 {roleLabel}
               </span>
               <button
                 type="button"
                 onClick={openPresencePopup}
-                className="flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
+                className="glass-shine flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
               >
                 <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
                 {presenceLabel}
@@ -174,7 +178,7 @@ export function ModernHomeTop({
           {/* 🏅 level badge in a glass hexagon, the level under it */}
           <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-start">
             <span
-              className="flex h-[68px] w-[62px] items-center justify-center"
+              className="hex-glass flex h-[68px] w-[62px] items-center justify-center"
               style={{
                 clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
                 background: "linear-gradient(rgba(255,255,255,.36), rgba(255,255,255,.08))",
@@ -195,7 +199,7 @@ export function ModernHomeTop({
           type="button"
           onClick={onStatus}
           data-notranslate
-          className="relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          className="glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
           <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
