@@ -2385,7 +2385,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {menuOpen && (
         <div className="fixed inset-0 z-50" onClick={closeMenu}>
           <div
-            className="room-glass-panel absolute bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2 w-[188px] overflow-hidden rounded-[18px] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)]"
+            className="absolute bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2 w-[188px] overflow-hidden rounded-[18px] border border-[#E3ECF7] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)]"
             onClick={(e) => e.stopPropagation()}
           >
             {(
@@ -2422,16 +2422,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))}
         >
           <aside
-            className="absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col border-l-[1.5px] border-white/90 shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
-            style={{
-              // thick white glass: the names stay easy to read over any chat
-              background: "linear-gradient(180deg, rgba(255,255,255,.93), rgba(244,248,255,.9))",
-              backdropFilter: "blur(14px) saturate(1.3)",
-              WebkitBackdropFilter: "blur(14px) saturate(1.3)",
-            }}
+            className="absolute bottom-0 right-0 top-0 flex w-[54%] min-w-[200px] max-w-[320px] flex-col border-l border-[#E3ECF7] bg-white shadow-[-8px_0_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center border-b border-white/70 bg-white/60 px-3.5 pb-2.5 pt-3">
+            <div className="flex items-center border-b border-[#EEF2F7] px-3.5 pb-2.5 pt-3">
               <p className="flex-1 text-[12.5px] font-semibold text-[#5B6B8C]">Room Participants</p>
               <button type="button" onClick={() => (setPeopleOpen(false), setPeopleMenuFor(null))} aria-label="Close" className="px-1 text-[15px] text-[#8A96AB]">
                 ⤢
@@ -2537,13 +2531,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             </div>
           )}
           <div
-            className="w-full rounded-t-[22px] border-t-[1.5px] border-white/90 pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
-            style={{
-              // thick white glass: the names stay easy to read over any chat
-              background: "linear-gradient(180deg, rgba(255,255,255,.93), rgba(244,248,255,.9))",
-              backdropFilter: "blur(14px) saturate(1.3)",
-              WebkitBackdropFilter: "blur(14px) saturate(1.3)",
-            }}
+            className="w-full rounded-t-[22px] border-t border-[#E3ECF7] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
