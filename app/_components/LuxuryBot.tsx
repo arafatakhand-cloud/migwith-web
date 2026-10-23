@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { awardUserXp } from "../../lib/xp";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -148,7 +148,7 @@ type LbSkin = ShopItem & {
 
 export const LB_SKINS: LbSkin[] = [
   // 🫧 Clear Glass (shown FIRST in the shop) — a see-through box (the chat shows behind it), bright white rims, dark-blue writing
-  { id: "glass", name: "Clear Glass", emoji: "🫧", price: 150000, bgTop: "rgba(255,255,255,.55)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.45)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.78)", tileBottom: "rgba(255,255,255,.35)", tileBase: "rgba(255,255,255,.2)", tileBorder: "rgba(255,255,255,.95)" },
+  { id: "glass", name: "Clear Glass", emoji: "🫧", price: 150000, bgTop: "rgba(255,255,255,.34)", bgBottom: "rgba(255,255,255,.1)", chip: "rgba(255,255,255,.22)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.4)", tileBottom: "rgba(255,255,255,.14)", tileBase: "rgba(255,255,255,.1)", tileBorder: "rgba(255,255,255,.92)" },
   { id: "royal", name: "Royal Night", emoji: "👑", price: 0, bgTop: "#1E1A2E", bgBottom: "#151222", chip: "#2A2440", accent: "#D4AF37", accent2: "#FFF0B3", accentText: "#F2D675", cream: "#F2E6C2", tileTop: "#3A3350", tileBottom: "#27213A", tileBase: "#0E0B18", tileBorder: "#5A4F7A" },
   { id: "ocean", name: "Ocean Breeze", emoji: "🌊", price: 50000, bgTop: "#0B2A3F", bgBottom: "#061826", chip: "#12384F", accent: "#3FC1E8", accent2: "#B8F1FF", accentText: "#9BE7FF", cream: "#DDF6FF", tileTop: "#17506E", tileBottom: "#0E3349", tileBase: "#04121B", tileBorder: "#2E86A8" },
   { id: "emerald", name: "Emerald Palace", emoji: "💚", price: 75000, bgTop: "#0E3324", bgBottom: "#071C13", chip: "#134430", accent: "#2ED48A", accent2: "#C8FFE3", accentText: "#9BF5C8", cream: "#DFF8EA", tileTop: "#1B5A3E", tileBottom: "#113B29", tileBase: "#05140D", tileBorder: "#31956A" },
@@ -171,6 +171,24 @@ export const LB_CLASSIC_SKIN: LbSkin = {
   accent: "#F07A00", accent2: "#FFC27A", accentText: "#7A3A00", cream: "#16315F",
   tileTop: "#FFFFFF", tileBottom: "#E9EEF4", tileBase: "#B9C4D2", tileBorder: "#C9D2DE",
 };
+/** Bet box frame. "Clear Glass" uses the same recipe as the "Mention a user" panel. */
+export function lbBoxStyle(skin: LbSkin, borderPx = 1.6): CSSProperties {
+  if (skin.id === "glass") {
+    return {
+      background: "linear-gradient(160deg, rgba(255,255,255,.34), rgba(255,255,255,.1))",
+      border: "1.5px solid rgba(255,255,255,.92)",
+      boxShadow: "inset 0 1px 1px #fff, 0 6px 16px rgba(40,80,140,.14)",
+      backdropFilter: "blur(6px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(6px) saturate(1.4)",
+    };
+  }
+  return {
+    background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom}) padding-box, linear-gradient(135deg, ${skin.accent}, ${skin.accent2}, ${skin.accent}) border-box`,
+    border: `${borderPx}px solid transparent`,
+    boxShadow: `0 3px 10px ${skin.accent}55`,
+  };
+}
+
 export function lbSkinNow(id: string | undefined): LbSkin {
   if (isClassicNow()) return LB_CLASSIC_SKIN;
   // (the free Royal Night is the default — not simply the first in the list)
@@ -309,11 +327,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
     <div className="px-[7px] py-[3px]">
       <div
         className="rounded-2xl px-[7px] py-1"
-        style={{
-          background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom}) padding-box, linear-gradient(135deg, ${skin.accent}, ${skin.accent2}, ${skin.accent}) border-box`,
-          border: "1.6px solid transparent",
-          boxShadow: `0 3px 10px ${skin.accent}55`,
-        }}
+        style={lbBoxStyle(skin)}
       >
         <div className="flex items-center gap-[3px]">
           {state.running && (

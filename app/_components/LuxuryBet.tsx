@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
-import { LbStyleDialog, lbSkinNow } from "./LuxuryBot";
+import { LbStyleDialog, lbBoxStyle, lbSkinNow } from "./LuxuryBot";
 import { LB_KINDS, useInventory } from "./StyleShop";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { awardUserXp } from "../../lib/xp";
@@ -348,11 +348,7 @@ export function LuxuryBetTable({
   return (
     <div
       className="m-1.5 rounded-2xl px-2 py-1.5"
-      style={{
-        border: "1.5px solid transparent",
-        background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom}) padding-box, linear-gradient(135deg, ${skin.accent}, ${skin.accent2}, ${skin.accent}) border-box`,
-        boxShadow: `0 3px 10px ${skin.accent}55`,
-      }}
+      style={lbBoxStyle(skin, 1.5)}
     >
       <div className="flex items-center gap-1.5">
         <span
