@@ -686,17 +686,20 @@ html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), color-mix(in srgb, var(--accent) 14%, transparent), rgba(255, 255, 255, 0.52)) !important;
   border-width: 2.5px !important;
 }
-/* 🫧 the room menu and the Participants list: clear frosted glass (like the
-   "Mention a user" list), a lighter shade behind them */
-html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-scrim { background: rgba(0, 0, 0, 0.18) !important; }
+/* 🫧 the room menu and the Participants list: exactly like the "Mention a
+   user" list — very clear glass, the chat behind it blurred, no dark shade */
+html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-scrim { background: transparent !important; }
 html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(234, 243, 255, 0.66), rgba(252, 239, 247, 0.7)) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.95);
-  -webkit-backdrop-filter: blur(14px) saturate(1.4);
-  backdrop-filter: blur(14px) saturate(1.4);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1px 1px #fff,
+    0 6px 16px rgba(40, 80, 140, 0.14) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(1.4);
+  backdrop-filter: blur(6px) saturate(1.4);
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel li > button,
-html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel .glass-row { background: rgba(255, 255, 255, 0.45) !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel .glass-row { background: rgba(255, 255, 255, 0.18) !important; }
 /* the profile tiles: the glass shine replaces the old gloss */
 html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display: none; }
 
