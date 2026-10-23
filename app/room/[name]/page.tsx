@@ -340,6 +340,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [modToolsOpen, setModToolsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [kickOpen, setKickOpen] = useState(false);
+  // a short toast inside the Kick user list ("You are not authorized to kick him")
+  const [kickToast, setKickToast] = useState("");
+  const kickToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showKickToast = (t: string) => {
+    setKickToast(t);
+    if (kickToastTimer.current) clearTimeout(kickToastTimer.current);
+    kickToastTimer.current = setTimeout(() => setKickToast(""), 2000);
+  };
   const { favorites, toggleFavorite } = useRoomPrefs();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [giftTarget, setGiftTarget] = useState<string | null>(null);
@@ -2501,7 +2509,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
       {/* 👢 Kick user — a list of names from the bottom (like the reference) */}
       {kickOpen && (
-        <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={() => setKickOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-end bg-black/30" onClick={() => (setKickOpen(false), setKickToast(""))}>
+          {kickToast && (
+            <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+28px)] left-1/2 z-[60] -translate-x-1/2 whitespace-nowrap rounded-xl bg-[#333]/90 px-3.5 py-2 text-[12.5px] text-white shadow-lg">
+              {kickToast}
+            </div>
+          )}
           <div
             className="room-glass-panel w-full rounded-t-[22px] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
@@ -2518,15 +2531,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     <button
                       type="button"
                       onClick={() => {
-                        setKickOpen(false);
+                        // Not allowed → only a short note; the list stays open (like the reference).
                         if (!perms.canKick) {
-                          note("Public kick is disabled for this room");
+                          showKickToast(perms.isUserRoom ? "You are not authorized to kick him" : "Public kick is disabled for this room");
                           return;
                         }
+                        setKickOpen(false);
                         const c = modCtx();
                         if (c) kickUser(c, u.username);
                       }}
-                      className="block w-full py-3 text-center text-[14px] text-[#2F80ED]"
+                      className="block w-full py-3 text-center text-[14px]"
+                      style={{ color: inkOnWhite(colorOf(u.username)) }}
                     >
                       {u.username}
                     </button>
