@@ -462,7 +462,24 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎰 Luxury Bet (only in the Luxury Bet room) — run by the server.
   const luxuryBet = useLuxuryBet(roomName === LUXURY_BET_ROOM, user?.uid, note);
   // Eye button: show only my own Luxury Bet bet lines.
-  const [onlyMyBets, setOnlyMyBets] = useState(false);
+  // 👁 "only my bets": kept per room for this browser tab, so going to another
+  // room and back doesn't show the hidden bids again (like the app)
+  const onlyMyBetsKey = `migwith.onlyMyBets.${roomName}`;
+  const [onlyMyBets, setOnlyMyBets] = useState(() => {
+    try {
+      return typeof window !== "undefined" && sessionStorage.getItem(onlyMyBetsKey) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      if (onlyMyBets) sessionStorage.setItem(onlyMyBetsKey, "1");
+      else sessionStorage.removeItem(onlyMyBetsKey);
+    } catch {
+      // private mode: just not remembered
+    }
+  }, [onlyMyBets, onlyMyBetsKey]);
   // 👑 MIG Royale round + bets (only in the MIG Royale room).
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
   // 🎴 Teen Patti table (only in the Teen Patti room).
