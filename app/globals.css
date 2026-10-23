@@ -682,10 +682,7 @@ html[data-theme="glass"]:not([data-ui="classic"]) .hex-glass {
     linear-gradient(rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.1)) !important;
 }
 /* the Home stat tiles: clear glass bubbles with a light wash of their colour */
-html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.68), color-mix(in srgb, var(--accent) 14%, transparent), rgba(255, 255, 255, 0.52)) !important;
-  border-width: 2.5px !important;
-}
+html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass { border-width: 2.5px !important; }
 /* 🫧 the room menu and the Participants list: exactly like the "Mention a
    user" list — very clear glass, the chat behind it blurred, no dark shade */
 html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-scrim { background: transparent !important; }
@@ -700,6 +697,27 @@ html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel {
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel li > button,
 html[data-theme="glass"]:not([data-ui="classic"]) .room-glass-panel .glass-row { background: rgba(255, 255, 255, 0.18) !important; }
+/* 🫧 Lobby: the hero card and the stat tiles are the same clear glass as the
+   "Mention a user" list (no blue → purple, no drifting lights), dark writing */
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1px 1px #fff,
+    0 6px 16px rgba(40, 80, 140, 0.14) !important;
+  -webkit-backdrop-filter: blur(6px) saturate(1.4);
+  backdrop-filter: blur(6px) saturate(1.4);
+  color: #0b2a5b !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .aurora-light { display: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .text-white,
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .text-white\/95,
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .text-white\/90 { color: #0b2a5b !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .text-white\/70 { color: rgba(11, 42, 91, 0.7) !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .bg-white\/\[0\.22\] { background: rgba(11, 42, 91, 0.12) !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
+}
 /* the profile tiles: the glass shine replaces the old gloss */
 html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display: none; }
 
