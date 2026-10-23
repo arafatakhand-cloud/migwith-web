@@ -3146,7 +3146,10 @@ function MessageRow({
             Justified (like Word's "Justify"): every full line ends at the same
             right edge, whatever names / gift fill it. */}
         <p
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-justify font-medium leading-snug text-[#FF2D95]"
+          className={`w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] leading-snug text-[#FF2D95] ${
+            // 🎁 Gift Shower: bold, every line centred (like the app)
+            m.text.includes("GIFT SHOWER") ? "text-center font-bold" : "text-justify font-medium"
+          }`}
           style={{ fontSize: fontPx }}
         >
           {giftLine(m.text, gift?.icon || "", gift?.imageUrl || "", fontPx)}
