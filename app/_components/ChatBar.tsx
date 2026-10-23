@@ -201,7 +201,7 @@ export function ChatBar({
             className="keep-round min-w-0 flex-1 rounded-[21px] p-[1.5px]"
             style={{ background: classic ? "linear-gradient(90deg, #FF9D2E, #F07A00)" : "linear-gradient(90deg, #5B8DEF, #8B6CF0, #3FB6F2)" }}
           >
-            <div className="keep-round flex min-h-[37px] items-end gap-1 rounded-[19.5px] bg-white py-[3px] pl-[3px] pr-1">
+            <div className="chat-field keep-round flex min-h-[37px] items-end gap-1 rounded-[19.5px] bg-white py-[3px] pl-[3px] pr-1">
               <label
                 title={photo.title}
                 className={`flex h-[31px] w-[31px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
