@@ -154,8 +154,6 @@ export function ModernHomeTop({
             <span className="absolute inset-[3px]">
               <Avatar name={username || "U"} photo={photo} size={64} ring="#FFFFFF" />
             </span>
-            {/* 🫧 Glass theme: a glass-bubble lens over the photo */}
-            <span aria-hidden className="glass-lens pointer-events-none absolute inset-0 rounded-full" />
           </Link>
           <div className="ml-3 min-w-0 flex-1">
             <Link href="/profile/me" data-notranslate className="block truncate text-xl font-black">

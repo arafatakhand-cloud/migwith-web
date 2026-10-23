@@ -528,19 +528,19 @@ export default function RoomsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="🔍  Search any room"
-            className="h-[46px] min-w-0 flex-1 rounded-full bg-white px-4 text-sm font-semibold text-[#0B2A5B] shadow-[0_2px_6px_rgba(0,0,0,.1)] outline-none placeholder:font-normal placeholder:text-[#6B7A99]"
+            className="glass-shine h-[46px] min-w-0 flex-1 rounded-full bg-white px-4 text-sm font-semibold text-[#0B2A5B] shadow-[0_2px_6px_rgba(0,0,0,.1)] outline-none placeholder:font-normal placeholder:text-[#6B7A99]"
           />
           <button
             type="button"
             onClick={tryCreate}
             title="Create Room"
-            className="ml-2 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] via-[#3B7BF0] to-[#7B5CF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
+            className="glass-shine ml-2 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] via-[#3B7BF0] to-[#7B5CF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
           >
             +
           </button>
           <RefreshButton
             onClick={() => setRefreshKey((k) => k + 1)}
-            className="ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[17px] font-bold text-[#6B7A99]"
+            className="glass-bubble glass-shine ml-1.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[17px] font-bold text-[#6B7A99]"
           />
         </div>
 
@@ -558,7 +558,7 @@ export default function RoomsPage() {
                   onClick={() => setModernOpen((o) => ({ ...o, [key]: !isOpen }))}
                   className="flex min-w-0 flex-1 items-center py-2.5 pl-3 text-left"
                 >
-                  <span className="flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
+                  <span className="glass-shine flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
                     {icon}
                   </span>
                   <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
@@ -572,7 +572,7 @@ export default function RoomsPage() {
                       setHotOffset((o) => o + 5);
                       setRefreshKey((k) => k + 1);
                     }}
-                    className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-bold text-[#FF6B3D] shadow-sm"
+                    className="glass-bubble glass-shine ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[15px] font-bold text-[#FF6B3D] shadow-sm"
                   />
                 )}
               </div>
@@ -597,7 +597,7 @@ export default function RoomsPage() {
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
                             <span className="relative h-10 w-10 shrink-0">
                               <span
-                                className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[17px] font-extrabold text-white"
+                                className="glass-shine flex h-10 w-10 items-center justify-center rounded-[13px] text-[17px] font-extrabold text-white"
                                 style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent}8C)` }}
                               >
                                 {letter}
@@ -613,7 +613,7 @@ export default function RoomsPage() {
                               <span className="block truncate text-[11.5px] text-[#6B7A99]">{subtitle(name)}</span>
                             </span>
                             <span
-                              className={`shrink-0 rounded-full px-[9px] py-[3px] text-[11.5px] font-extrabold ${
+                              className={`glass-shine shrink-0 rounded-full px-[9px] py-[3px] text-[11.5px] font-extrabold ${
                                 users > 0 ? "bg-[#DDF6E8] text-[#15824B]" : "bg-[#F0F3F8] text-[#6B7A99]"
                               }`}
                             >
@@ -643,7 +643,7 @@ export default function RoomsPage() {
                         type="button"
                         onClick={() => setShowAll((o) => ({ ...o, [key]: !expanded }))}
                         aria-label={expanded ? "Show fewer rooms" : "Show all rooms"}
-                        className="relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-[20px] font-black leading-none text-white"
+                        className="glass-shine relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-[20px] font-black leading-none text-white"
                         style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent})`, boxShadow: `0 2px 6px ${accent}80` }}
                       >
                         <span className={`-mt-0.5 transition-transform duration-300 ${expanded ? "-rotate-90" : "rotate-90"}`}>›</span>
