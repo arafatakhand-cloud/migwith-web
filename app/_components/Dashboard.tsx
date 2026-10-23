@@ -527,10 +527,15 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
     }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/45 p-3 pb-safe backdrop-blur-[2px] sm:items-center" onClick={() => !saving && onCancel()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/[0.12] p-3 pb-safe sm:items-center" onClick={() => !saving && onCancel()}>
       <div
-        className="w-full max-w-md rounded-[28px] border-[1.5px] border-white/95 p-[18px] shadow-[0_20px_50px_rgba(40,80,160,.35)]"
-        style={{ background: "linear-gradient(180deg, rgba(255,255,255,.98), #EFF5FF 60%, #FCF1F8)" }}
+        className="w-full max-w-md rounded-[28px] border-[1.5px] border-white/[0.92] p-[18px] shadow-[inset_0_1px_1px_#fff,0_10px_30px_rgba(40,80,140,.22)]"
+        style={{
+          // 🫧 clear glass, the "Mention a user" panel's recipe
+          background: "linear-gradient(160deg, rgba(255,255,255,.42), rgba(255,255,255,.16))",
+          backdropFilter: "blur(14px) saturate(1.4)",
+          WebkitBackdropFilter: "blur(14px) saturate(1.4)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3">
@@ -541,7 +546,7 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
             <p className="text-[19px] font-extrabold leading-6 text-[#0B2A5B]">Edit Status</p>
             <p className="text-xs text-[#5B6B8C]">Let your friends know what&apos;s on your mind</p>
           </div>
-          <button type="button" onClick={onCancel} disabled={saving} aria-label="Close" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#EAF1FB] text-sm font-bold text-[#5B6B8C]">
+          <button type="button" onClick={onCancel} disabled={saving} aria-label="Close" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/90 bg-white/45 text-sm font-bold text-[#5B6B8C]">
             ✕
           </button>
         </div>
@@ -559,7 +564,7 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
             }}
             rows={4}
             placeholder="What are you thinking?"
-            className="block min-h-[104px] w-full resize-none rounded-[18px] border border-[#D5E3F5] bg-white px-3.5 pb-7 pt-3 text-base leading-[22px] text-[#0B2A5B] outline-none transition focus:border-[#3B7BF0] focus:shadow-[0_0_0_3px_rgba(59,123,240,.15)]"
+            className="block min-h-[104px] w-full resize-none rounded-[18px] border-[1.5px] border-white/[0.92] bg-white/55 px-3.5 pb-7 pt-3 text-base leading-[22px] text-[#0B2A5B] outline-none transition focus:border-[#3B7BF0] focus:shadow-[0_0_0_3px_rgba(59,123,240,.15)]"
           />
           {value && (
             <button type="button" onClick={() => onChange("")} className="absolute bottom-2 right-3 rounded-lg px-1 text-xs font-bold text-[#3B7BF0]">
@@ -569,7 +574,7 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
         </div>
 
         <div className="mt-2 flex items-center gap-2.5">
-          <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-[#E3ECF7]">
+          <div className="h-[5px] flex-1 overflow-hidden rounded-full bg-white/55">
             <div
               className="h-full rounded-full transition-[width]"
               style={{ width: `${Math.min(100, (words / 120) * 100)}%`, background: near ? "linear-gradient(90deg, #FF8A3D, #E5484D)" : BRAND }}
@@ -587,8 +592,8 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
                 key={q}
                 type="button"
                 onClick={() => onChange(q)}
-                className={`shrink-0 whitespace-nowrap rounded-2xl border px-3 py-[7px] text-[13px] font-semibold ${picked ? "border-white/80 text-white" : "border-[#D5E3F5] text-[#0B2A5B]"}`}
-                style={{ background: picked ? BRAND : "linear-gradient(180deg, #fff, #EAF1FB)" }}
+                className={`shrink-0 whitespace-nowrap rounded-2xl border px-3 py-[7px] text-[13px] font-semibold ${picked ? "border-white/80 text-white" : "border-white/90 text-[#0B2A5B]"}`}
+                style={{ background: picked ? BRAND : "linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.28))" }}
               >
                 {q}
               </button>
@@ -602,7 +607,7 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
               key={e}
               type="button"
               onClick={() => onChange(limitWords(value.trimEnd() + (value.trim() ? " " : "") + e))}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2F6FD] text-[19px]"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/85 bg-white/40 text-[19px]"
             >
               {e}
             </button>
@@ -610,7 +615,7 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
         </div>
 
         <div className="mt-[18px] flex gap-2.5">
-          <button type="button" onClick={onCancel} disabled={saving} className="h-12 flex-1 rounded-3xl border border-[#D5E3F5] bg-white text-[15px] font-bold text-[#5B6B8C]">
+          <button type="button" onClick={onCancel} disabled={saving} className="h-12 flex-1 rounded-3xl border-[1.5px] border-white/[0.92] bg-white/45 text-[15px] font-bold text-[#5B6B8C]">
             Cancel
           </button>
           <button

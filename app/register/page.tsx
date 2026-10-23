@@ -180,6 +180,8 @@ export default function RegisterPage() {
         referralCode: referral.trim(),
         termsAccepted: true,
         verificationCode: c,
+        // 📵 the server allows at most 3 new IDs a day per browser / network
+        webDevice: webDeviceId(),
       });
       created = data?.username || id;
     } catch (e: any) {
@@ -559,4 +561,22 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+// A random ID for this browser (kept in localStorage), sent with sign-up so the
+// server can count new IDs per device. "" if storage is blocked.
+function webDeviceId(): string {
+  try {
+    const key = "migwith.deviceId";
+    let v = localStorage.getItem(key) || "";
+    if (!/^[a-z0-9-]{16,64}$/.test(v)) {
+      v = typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(key, v);
+    }
+    return v;
+  } catch {
+    return "";
+  }
 }
