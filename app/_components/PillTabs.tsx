@@ -284,7 +284,8 @@ export function PillTabStrip({ items, colors, className = "" }: { items: PillTab
         <>
           <span
             // 🫧 Glass theme: a closed tab's icon in a small glass bubble
-            className={`${blink ? "pill-alert-blink flex" : "flex"} ${!overlay && !item.selected ? "pill-glass" : ""}`}
+            // (pill-slot: the SAME size in both rows, so the pill's copy lines up)
+            className={`${blink ? "pill-alert-blink flex" : "flex"} pill-slot ${!overlay && !item.selected ? "pill-glass" : ""}`}
             style={blink ? undefined : { color: iconColor }}
           >
             <PillGlyphIcon

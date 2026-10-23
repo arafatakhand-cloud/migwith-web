@@ -631,12 +631,16 @@ html[data-theme="glass"]:not([data-ui="classic"]) .chat-bar-glass {
   backdrop-filter: blur(6px);
 }
 /* a closed tab's icon on the top bar: a small glass bubble */
-html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass {
+/* the icon's slot is the SAME size in the row under the pill and in the
+   pill's own row (or the two copies slide apart while the pill moves) */
+html[data-theme="glass"]:not([data-ui="classic"]) .pill-slot {
   height: 30px;
   width: 30px;
   margin: 0 -5px;
   align-items: center;
   justify-content: center;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .pill-glass {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.16);
 }
