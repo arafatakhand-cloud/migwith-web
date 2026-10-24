@@ -52,7 +52,7 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
               {isNew && <span className="rounded-full bg-[#FF5E8A] px-1.5 py-px text-[9px] font-black tracking-wide text-white">NEW</span>}
               <span className="truncate text-[11px] font-semibold text-[#64748B]">{when}</span>
             </div>
-            <p className={`mt-0.5 break-words text-[15px] font-black leading-5 text-[#5B21B6] ${open ? "" : "line-clamp-2"}`}>{title}</p>
+            <p className={`mt-0.5 break-words text-[15px] font-black leading-5 text-[#1565D8] ${open ? "" : "line-clamp-2"}`}>{title}</p>
             {rest && (
               <p className={`mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-5 text-[#1E293B] ${open ? "" : "line-clamp-2"}`}>
                 {/* a line that starts with an emoji (✨ 🚀 👉 …) stands out: teal and bold */}
