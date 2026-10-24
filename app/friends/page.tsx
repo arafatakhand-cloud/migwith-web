@@ -18,13 +18,29 @@ type Info = { level: number; online: boolean };
 
 const profileHref = (u: string) => `/profile/${encodeURIComponent(u)}`;
 
+// Same colours and pick as the app's avatarColorFor().
+const AVATAR_COLORS = ["#43B65A", "#3984D9", "#E9A625", "#7B1FB8", "#12AFC7", "#E12A2A", "#D4AF37", "#3F55C7"];
+const avatarColorFor = (name: string) => {
+  const n = name.trim().toLowerCase();
+  if (!n) return AVATAR_COLORS[0];
+  let sum = 0;
+  for (const ch of n) sum += ch.codePointAt(0) || 0;
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+};
+
 function Avatar({ name }: { name: string }) {
   return (
-    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCEBFB] font-black text-[#174EA6]">
+    <div
+      className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full font-bold text-white"
+      style={{ backgroundColor: avatarColorFor(name) }}
+    >
       {name.slice(0, 1).toUpperCase()}
     </div>
   );
 }
+
+// A solid white card, like the app (the Glass theme would make it see-through).
+const CARD = "fr-solid flex items-center gap-3 rounded-2xl bg-white px-3 py-3 shadow-sm";
 
 export default function FriendsPage() {
   const router = useRouter();
@@ -34,6 +50,7 @@ export default function FriendsPage() {
   const [tab, setTab] = useState<"FRIENDS" | "REQUESTS" | "FIND">("FRIENDS");
   const [reqTab, setReqTab] = useState<"INCOMING" | "SENT">("INCOMING");
   const [friendFilter, setFriendFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
+  const [menuFor, setMenuFor] = useState<string | null>(null);
   const [info, setInfo] = useState<Record<string, Info>>({});
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<{ username: string; level: number }[]>([]);
@@ -137,8 +154,11 @@ export default function FriendsPage() {
     <button
       type="button"
       onClick={() => setTab(id)}
-      className={`flex-1 rounded-full py-2.5 text-sm font-bold transition ${
-        tab === id ? "bg-[#0B1F3A] text-[#F5D77A] shadow" : "bg-white text-[#0B2A5B] shadow-sm hover:bg-[#F4F9FF]"
+      // like the app: the chosen tab navy → gold with a gold rim, the others white
+      className={`fr-solid min-w-0 flex-1 truncate rounded-full border py-2.5 text-[13px] font-bold transition ${
+        tab === id
+          ? "border-[#D4AF37] bg-[linear-gradient(90deg,#0B1F3A,#1E3A66,#D4AF37)] text-white shadow-md"
+          : "border-[#DDE3EF] bg-white text-[#0B1F3A]"
       }`}
     >
       {label}
@@ -149,7 +169,7 @@ export default function FriendsPage() {
     const other = incoming ? r.from : r.to;
     const k = other.toLowerCase();
     return (
-      <li key={r.id} className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-3 py-2.5 shadow-sm">
+      <li key={r.id} className={CARD}>
         <Avatar name={other} />
         <Link href={profileHref(other)} className="min-w-0 flex-1 truncate font-bold hover:text-[#2F80ED]">
           {other}
@@ -210,29 +230,34 @@ export default function FriendsPage() {
             <div className="mt-4 grid grid-cols-3 gap-2">
               {(
                 [
-                  ["ONLINE", "Online", online.length, "#1E8C4E"],
-                  ["OFFLINE", "Offline", fr.friends.length - online.length, "#D9A400"],
-                  ["ALL", "Total", fr.friends.length, "#7B3FC7"],
+                  ["ONLINE", "Online", online.length, "#32A852"],
+                  ["OFFLINE", "Offline", fr.friends.length - online.length, "#E9A625"],
+                  ["ALL", "Total", fr.friends.length, "#7B1FB8"],
                 ] as const
               ).map(([id, label, n, color]) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setFriendFilter(id)}
-                  className={`rounded-2xl border-2 py-3 text-center transition ${friendFilter === id ? "shadow-md" : "opacity-80"}`}
-                  style={{ borderColor: color, backgroundColor: `${color}14` }}
+                  className="rounded-[14px] py-3 text-center transition"
+                  style={{
+                    border: `${friendFilter === id ? 2 : 1}px solid ${color}`,
+                    backgroundColor: `${color}${friendFilter === id ? "33" : "1A"}`,
+                  }}
                 >
                   <div className="text-xl font-black" style={{ color }}>
                     {n}
                   </div>
-                  <div className="text-xs font-semibold" style={{ color }}>
+                  <div className="text-xs font-bold" style={{ color }}>
                     {label}
                   </div>
                 </button>
               ))}
             </div>
 
-            <ul className="mt-4 grid gap-2 md:grid-cols-2">
+            {/* Total is only a count (like the app): no list under it */}
+            {friendFilter !== "ALL" && (
+            <ul className="mt-3 grid gap-2 md:grid-cols-2">
               {shownFriends.length === 0 && (
                 <li className="py-10 text-center text-sm text-[#6B7A99]">
                   {fr.friends.length === 0
@@ -243,36 +268,53 @@ export default function FriendsPage() {
                 </li>
               )}
               {shownFriends.map((f) => (
-                <li
-                  key={f.name}
-                  className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-3 py-2.5 shadow-sm"
-                >
+                <li key={f.name} className={`relative ${CARD}`}>
                   <Avatar name={f.name} />
-                  <Link href={profileHref(f.name)} className="min-w-0 flex-1">
-                    <p className="truncate font-bold hover:text-[#2F80ED]">{f.name}</p>
-                    <p className="text-xs text-[#6B7A99]">Lv.{f.level}</p>
+                  {/* tap the name → private chat (like the app) */}
+                  <Link href={chatHref(f.name)} className="min-w-0 flex-1">
+                    <p className="truncate font-bold text-[#0B1F3A]">{f.name}</p>
+                    <p className="text-xs text-[#2F6ABD]">Lv.{f.level}</p>
                   </Link>
-                  <span className={`text-xs ${f.online ? "text-emerald-600" : "text-[#6B7A99]"}`}>
-                    {f.online ? "🟢 Online" : "Offline"}
-                  </span>
-                  <Link href={chatHref(f.name)} title="Message" className="rounded-lg px-2 py-1 hover:bg-[#EAF4FE]">
-                    ✉️
-                  </Link>
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${f.online ? "bg-[#32A852]" : "bg-[#8A93AC]"}`} />
+                  <span className={`text-xs ${f.online ? "text-[#32A852]" : "text-[#6B7A99]"}`}>{f.online ? "Online" : "Offline"}</span>
                   <button
                     type="button"
-                    title="Remove friend"
-                    disabled={busy.has(f.name.toLowerCase())}
-                    onClick={() => {
-                      if (confirm(`Remove ${f.name} from your friends?`))
-                        act(f.name.toLowerCase(), () => fr.remove(f.name), `${f.name} removed from friends.`);
-                    }}
-                    className="rounded-lg px-2 py-1 text-sm text-rose-500 hover:bg-rose-50 disabled:opacity-40"
+                    aria-label="More"
+                    onClick={() => setMenuFor(menuFor === f.name ? null : f.name)}
+                    className="rounded-md px-1.5 text-xl font-bold leading-none text-[#6B7A99] hover:bg-[#EEF3FA]"
                   >
-                    ✕
+                    ⋮
                   </button>
+                  {menuFor === f.name && (
+                    <>
+                      <div className="fixed inset-0 z-20" onClick={() => setMenuFor(null)} />
+                      <div className="fr-solid absolute right-2 top-12 z-30 w-44 overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/5">
+                        <Link
+                          href={profileHref(f.name)}
+                          className="block px-4 py-2.5 text-sm text-[#0B1F3A] hover:bg-[#F2F6FC]"
+                          onClick={() => setMenuFor(null)}
+                        >
+                          View profile
+                        </Link>
+                        <button
+                          type="button"
+                          disabled={busy.has(f.name.toLowerCase())}
+                          onClick={() => {
+                            setMenuFor(null);
+                            if (confirm(`Remove ${f.name} from your friends?`))
+                              act(f.name.toLowerCase(), () => fr.remove(f.name), `${f.name} removed from friends.`);
+                          }}
+                          className="block w-full px-4 py-2.5 text-left text-sm text-[#E5484D] hover:bg-[#FFF1F1] disabled:opacity-40"
+                        >
+                          Remove friend
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
+            )}
           </>
         )}
 
@@ -281,17 +323,20 @@ export default function FriendsPage() {
             <div className="mt-4 flex gap-2">
               {(
                 [
-                  ["INCOMING", `Received (${fr.incoming.length})`],
-                  ["SENT", `Sent (${fr.sent.length})`],
+                  ["INCOMING", fr.incoming.length ? `Friend requests (${fr.incoming.length})` : "Friend requests", "#3984D9"],
+                  ["SENT", fr.sent.length ? `Sent requests (${fr.sent.length})` : "Sent requests", "#E9A625"],
                 ] as const
-              ).map(([id, label]) => (
+              ).map(([id, label, color]) => (
                 <button
                   key={id}
                   type="button"
                   onClick={() => setReqTab(id)}
-                  className={`rounded-full border px-4 py-1.5 text-sm font-bold ${
-                    reqTab === id ? "border-[#2F80ED] bg-[#2F80ED] text-white" : "border-[#D5E3F5] bg-white text-[#0B2A5B]"
-                  }`}
+                  className="min-w-0 flex-1 truncate rounded-full py-2.5 text-[13px] font-bold"
+                  style={{
+                    color,
+                    border: `${reqTab === id ? 2 : 1}px solid ${color}`,
+                    backgroundColor: `${color}${reqTab === id ? "33" : "1A"}`,
+                  }}
                 >
                   {label}
                 </button>
@@ -335,7 +380,7 @@ export default function FriendsPage() {
                   return (
                     <li
                       key={r.username}
-                      className="flex items-center gap-3 rounded-2xl border border-[#E3ECF7] bg-white px-3 py-2.5 shadow-sm"
+                      className={CARD}
                     >
                       <Avatar name={r.username} />
                       <Link href={profileHref(r.username)} className="min-w-0 flex-1">
