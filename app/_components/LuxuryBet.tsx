@@ -320,6 +320,10 @@ export function LuxuryBetTable({
   const [showStyles, setShowStyles] = useState(false);
   const skin = lbSkinNow(inv.active.box);
   const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
+  // ✨ smooth feel: the first tap lights the tile up, a placed bet makes it bounce
+  const [armed, setArmed] = useState("");
+  const [popped, setPopped] = useState<{ c: string; n: number }>({ c: "", n: 0 });
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const urgent = state.secondsLeft >= 1 && state.secondsLeft <= 10;
   const blinkOn = useBlink(urgent);
 
@@ -337,10 +341,17 @@ export function LuxuryBetTable({
   const tap = (character: string) => {
     const t = Date.now();
     const prev = lastTap.current;
+    if (armTimer.current) clearTimeout(armTimer.current);
     if (prev.character === character && t - prev.at <= 500) {
       lastTap.current = { character: "", at: 0 };
+      setArmed("");
+      setPopped((p) => ({ c: character, n: p.n + 1 }));
       state.bet(character, amount);
-    } else lastTap.current = { character, at: t };
+    } else {
+      lastTap.current = { character, at: t };
+      setArmed(character);
+      armTimer.current = setTimeout(() => setArmed(""), 500);
+    }
   };
   const title = state.inFlight > 0 ? "⏳ Sending bet…" : state.phase === "SETTLING" ? "Calculating result…" : "Luxury Bet · tap 2x to bid";
   const circle = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold";
@@ -427,11 +438,12 @@ export function LuxuryBetTable({
                   type="button"
                   disabled={!open}
                   onClick={() => tap(c)}
-                  className="relative select-none touch-manipulation rounded-xl pb-[3px] active:translate-y-px"
+                  className={`lb-press relative select-none touch-manipulation rounded-xl pb-[3px] ${armed === c ? "lb-armed" : ""}`}
                   style={{ background: !open ? "#15131C" : mine ? "#C8901A" : skin.tileBase }}
                 >
                   <span
-                    className="flex h-full flex-col items-center justify-center rounded-xl py-1"
+                    key={popped.c === c ? popped.n : 0}
+                    className={`flex h-full flex-col items-center justify-center rounded-xl py-1 ${popped.c === c && popped.n ? "lb-pop" : ""}`}
                     style={{
                       background: !open
                         ? "linear-gradient(#2E2A3C,#24212F)"
@@ -471,7 +483,7 @@ export function LuxuryBetTable({
                   type="button"
                   disabled={!open}
                   onClick={() => setAmount(c)}
-                  className="h-[24px] rounded-xl border text-[11px] font-bold shadow"
+                  className="lb-press lb-chip h-[24px] rounded-xl border text-[11px] font-bold shadow"
                   style={{
                     background: !open
                       ? "linear-gradient(#2E2A3C,#24212F)"

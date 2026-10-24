@@ -256,6 +256,10 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
   const [lastBet, setLastBet] = useState<{ character: string; amount: number } | null>(null);
   const lastBetAt = useRef(0);
   const lastTap = useRef<{ character: string; at: number }>({ character: "", at: 0 });
+  // ✨ smooth feel: the first tap lights the tile up, a placed bet makes it bounce
+  const [armed, setArmed] = useState("");
+  const [popped, setPopped] = useState<{ c: string; n: number }>({ c: "", n: 0 });
+  const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastClosedNoteAt = useRef(0);
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
 
@@ -308,11 +312,16 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
   const tap = (character: string) => {
     const now = Date.now();
     const prev = lastTap.current;
+    if (armTimer.current) clearTimeout(armTimer.current);
     if (prev.character === character && now - prev.at <= 500) {
       lastTap.current = { character: "", at: 0 };
+      setArmed("");
+      setPopped((p) => ({ c: character, n: p.n + 1 }));
       bet(character, amount);
     } else {
       lastTap.current = { character, at: now };
+      setArmed(character);
+      armTimer.current = setTimeout(() => setArmed(""), 500);
     }
   };
 
@@ -421,11 +430,12 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                       type="button"
                       onClick={() => tap(c)}
                       disabled={!canBet}
-                      className="select-none touch-manipulation rounded-xl pb-[3px] transition active:translate-y-px"
+                      className={`lb-press select-none touch-manipulation rounded-xl pb-[3px] ${armed === c ? "lb-armed" : ""}`}
                       style={{ background: face[2] }}
                     >
                       <span
-                        className="flex h-[58px] flex-col items-center justify-center rounded-xl"
+                        key={popped.c === c ? popped.n : 0}
+                        className={`flex h-[58px] flex-col items-center justify-center rounded-xl ${popped.c === c && popped.n ? "lb-pop" : ""}`}
                         style={{ background: `linear-gradient(${face[0]}, ${face[1]})`, border: `${mine ? 2 : 1}px solid ${face[3]}` }}
                       >
                         <span className="text-lg leading-5" style={canBet ? undefined : { filter: "grayscale(1)", opacity: 0.6 }}>
@@ -461,7 +471,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                       type="button"
                       onClick={() => setAmount(c)}
                       disabled={!canBet}
-                      className="h-[23px] flex-1 rounded-xl text-[10px] font-bold shadow-sm"
+                      className="lb-press lb-chip h-[23px] flex-1 rounded-xl text-[10px] font-bold shadow-sm"
                       style={
                         !canBet
                           ? { background: "linear-gradient(#2E2A3C, #24212F)", border: "1px solid #3A3648", color: "#6E6880" }
