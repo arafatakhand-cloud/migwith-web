@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   browserLocalPersistence,
-  browserSessionPersistence,
   setPersistence,
   signInWithEmailAndPassword,
 } from "firebase/auth";
@@ -17,6 +16,7 @@ import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome"
 import { migAliasEmail } from "../../lib/migAlias";
 import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
+const REMEMBER_ID_KEY = "migwith.rememberedId";
 const OFFLINE_KEY = "migwith.loginOffline";
 
 export default function LoginPage() {
@@ -31,6 +31,12 @@ export default function LoginPage() {
   useEffect(() => {
     try {
       setOffline(localStorage.getItem(OFFLINE_KEY) === "1");
+      // "Remember Me" (like the app): the MIG ID is filled in next time
+      const saved = localStorage.getItem(REMEMBER_ID_KEY);
+      if (saved) {
+        setLoginId(saved);
+        setRememberMe(true);
+      }
     } catch {
       // storage blocked
     }
@@ -55,12 +61,16 @@ export default function LoginPage() {
         ? cleanId.toLowerCase()
         : migAliasEmail(cleanId);
 
-      await setPersistence(
-        auth,
-        rememberMe
-          ? browserLocalPersistence
-          : browserSessionPersistence
-      );
+      // Stay signed in like the app (closing / minimising the browser used to
+      // sign you out when "Remember Me" was off). "Remember Me" now only
+      // remembers the MIG ID, same as the app.
+      await setPersistence(auth, browserLocalPersistence);
+      try {
+        if (rememberMe) localStorage.setItem(REMEMBER_ID_KEY, cleanId);
+        else localStorage.removeItem(REMEMBER_ID_KEY);
+      } catch {
+        // storage blocked
+      }
 
       const cred = await signInWithEmailAndPassword(
         auth,
