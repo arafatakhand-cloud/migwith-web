@@ -840,7 +840,13 @@ html[data-theme="glass"]:not([data-ui="classic"]) .room-sky-card {
   border-color: rgba(255, 255, 255, 0.92) !important;
 }
 
-/* 🫧 The room's chat page: clear WHITE glass — the Lobby sky shows faintly through */
+/* 🫧 The room's chat page: clear WHITE glass — no blue / pink, just soft white
+   light spots on a pale neutral base under a see-through white layer */
 html[data-theme="glass"]:not([data-ui="classic"]) .room-chat-bg {
-  background: rgba(255, 255, 255, 0.5) !important;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
+    radial-gradient(30% 18% at 25% 25%, #fff, transparent 70%),
+    radial-gradient(35% 20% at 75% 45%, #fff, transparent 70%),
+    radial-gradient(30% 16% at 35% 75%, #fff, transparent 70%),
+    #eceef2 !important;
 }
