@@ -568,7 +568,7 @@ html[data-theme="glass"] .glass-card {
 html[data-theme="glass"] {
   --card-surface: rgba(255, 255, 255, 0.34);
 }
-html[data-theme="glass"] main[data-shell] {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
   background:
     radial-gradient(30% 18% at 25% 25%, rgba(255, 255, 255, 0.95), transparent 70%),
     radial-gradient(35% 20% at 75% 45%, rgba(255, 255, 255, 0.9), transparent 70%),
@@ -576,7 +576,7 @@ html[data-theme="glass"] main[data-shell] {
     linear-gradient(180deg, #9fd0ff, #d7ecff 60%, #ffe6f1) !important;
   background-attachment: fixed !important;
 }
-html[data-theme="glass"] main[data-shell] .bg-white:not(header):not(header *):not(.fixed *):not(input):not(textarea) {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .bg-white:not(header):not(header *):not(.fixed *):not(input):not(textarea) {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
   border-color: rgba(255, 255, 255, 0.92) !important;
   box-shadow:
@@ -590,7 +590,7 @@ html[data-theme="glass"] .rooms-butterfly,
 html[data-theme="glass"] .lobby-butterfly {
   display: none;
 }
-html[data-theme="glass"] main[data-shell] .page-bg {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .page-bg {
   background: transparent !important;
 }
 
@@ -723,17 +723,17 @@ html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display
 
 /* 🫧 Glass theme: the message box is clear WHITE glass — the coloured edge stays
    only a rim (a see-through inside showed the colour under it). */
-html[data-theme="glass"] main[data-shell] .chat-field.chat-field.chat-field {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .chat-field.chat-field.chat-field {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)) !important;
   box-shadow: inset 0 1px 1px #fff !important;
 }
 
 /* 🫧 Glass theme: the profile page — clear glass on the sky, in the app's own
    colours (the blue → purple bar), dark writing (like the app). */
-html[data-theme="glass"] main[data-shell] .pf-bar {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-bar {
   background: linear-gradient(90deg, #1565d8, #3b7bf0, #7b5cf0) !important;
 }
-html[data-theme="glass"] main[data-shell] .pf-hero {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-hero {
   margin: 8px;
   border-radius: 20px;
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
@@ -744,19 +744,19 @@ html[data-theme="glass"] main[data-shell] .pf-hero {
   -webkit-backdrop-filter: blur(6px) saturate(1.4);
   backdrop-filter: blur(6px) saturate(1.4);
 }
-html[data-theme="glass"] main[data-shell] .pf-hero .pf-ink { color: #0b2a5b !important; }
-html[data-theme="glass"] main[data-shell] .pf-hero .pf-name { color: #1e63d6 !important; text-shadow: none !important; }
-html[data-theme="glass"] main[data-shell] .pf-hero .pf-sub { color: #35507e !important; }
-html[data-theme="glass"] main[data-shell] .pf-tile {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-hero .pf-ink { color: #0b2a5b !important; }
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-hero .pf-name { color: #1e63d6 !important; text-shadow: none !important; }
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-hero .pf-sub { color: #35507e !important; }
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-tile {
   background: linear-gradient(180deg, color-mix(in srgb, var(--tint) 30%, transparent), color-mix(in srgb, var(--tint) 10%, transparent)) !important;
   border: 1.5px solid rgba(255, 255, 255, 0.92) !important;
   box-shadow: 0 2px 6px color-mix(in srgb, var(--tint) 30%, transparent) !important;
 }
-html[data-theme="glass"] main[data-shell] .pf-tile .pf-val {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-tile .pf-val {
   color: color-mix(in srgb, var(--tint) 65%, black);
   text-shadow: none;
 }
-html[data-theme="glass"] main[data-shell] .pf-tile .pf-lab {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-tile .pf-lab {
   color: #0b2a5b;
   text-shadow: none;
 }

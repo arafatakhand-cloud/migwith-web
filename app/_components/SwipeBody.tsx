@@ -99,6 +99,9 @@ function buildHost(body: HTMLElement, path: string, side: Side): Beside | null {
   const main = body.closest("main");
   const host = document.createElement("div");
   host.setAttribute("aria-hidden", "true");
+  // the Glass theme's page styles reach this copy too (they are written for
+  // main[data-shell]); without it the copy showed other colours while sliding
+  host.setAttribute("data-shell-copy", "");
   host.inert = true;
   const bg = main ? getComputedStyle(main) : null;
   Object.assign(host.style, {
