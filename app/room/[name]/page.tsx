@@ -2056,7 +2056,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 </div>
                   </>
                 ) : (
-                  // ✨ design 1+3: pastel cards, coloured edge, names as chips
+                  // ✨ design 3: soft pastel cards
                   <RoomInfoCards
                     manager={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                     description={roomDescription}
