@@ -24,6 +24,7 @@ import { setBlocked } from "./blocks";
 //   /rejectcolor                    — Color Shop purchase review (founder)
 //   /luxconfig                      — Luxury Bot sequence config (founder)
 //   /seeddescriptions               — default Room Info texts (room admin)
+//   /description <text>             — set this room's description (room admin, like the app)
 
 export type ExtraContext = {
   uid: string;
@@ -204,6 +205,27 @@ export function handleExtraCommand(clean: string, ctx: ExtraContext): boolean {
       httpsCallable(functions, "rejectColorPurchase")({ requestId: arg })
         .then(() => ctx.note(`${u}: Rejected color request ${arg} — coins refunded.`))
         .catch((e) => ctx.note(`${u}: Could not reject. ${errMsg(e)}`));
+      return true;
+    }
+    case "/description": {
+      // Same as the app: sets this room's description (the welcome text on the
+      // room card) straight from chat — room admins only, at most 300 letters.
+      const text = clean.trim().replace(/^\/description/i, "").trim();
+      if (!ctx.isRoomAdmin) {
+        ctx.note(`${ctx.roomName}: Only room admins can change the room description.`);
+        return true;
+      }
+      if (!text) {
+        ctx.note(`${u}: Usage: /description your text here`);
+        return true;
+      }
+      setDoc(
+        doc(db, "rooms", ctx.roomName),
+        { description: text.slice(0, 300), updatedBy: ctx.username, updatedAt: serverTimestamp() },
+        { merge: true }
+      )
+        .then(() => ctx.note(`📝 ${u} updated the room description.`))
+        .catch((e) => ctx.note(`${ctx.roomName}: Could not update the description — ${errMsg(e)}`));
       return true;
     }
     case "/seeddescriptions":
