@@ -964,6 +964,8 @@ html[data-theme="glass"]:not([data-ui="classic"]) .lv-up {
   background: linear-gradient(180deg, #fffaf0, #fff1d6) !important;
   color: #b87800 !important;
   box-shadow: inset 0 2px 1px #fff, 0 8px 20px rgba(184, 120, 0, 0.15);
+}
+
 /* 🫧 Glass theme: Friends rows, tabs and menus stay solid white, like the app */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .fr-solid.fr-solid.fr-solid.bg-white {
   background: #fff !important;
