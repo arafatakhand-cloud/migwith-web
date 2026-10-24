@@ -558,8 +558,9 @@ export default function ProfilePage() {
     <PageShell light noTopBar>
       <div className={`mx-auto max-w-2xl bg-[#EEF3F8] pb-6 ${classic ? "" : "page-bg"}`}>
         {/* Title bar: back · miglife logo · the person's ID (📟 Classic: the orange bar) */}
+        {/* stays at the top while scrolling, with a ✕ on the right (like the photo viewer) */}
         <div
-          className={`flex items-center gap-2 bg-gradient-to-b px-2 py-2 ${
+          className={`sticky top-0 z-30 flex items-center gap-2 bg-gradient-to-b px-2 py-2 pt-[max(8px,env(safe-area-inset-top))] ${
             classic ? "from-[#FF9D2E] to-[#F07A00]" : "pf-bar from-[#3A3A3A] to-[#1C1C1C]"
           }`}
         >
@@ -569,6 +570,16 @@ export default function ProfilePage() {
           <h1 data-notranslate className={`min-w-0 flex-1 truncate pl-1 text-[21px] font-medium ${classic ? "text-[#16315F]" : "text-white"}`}>
             {username}
           </h1>
+          <button
+            type="button"
+            onClick={goBack}
+            aria-label="Close"
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
+              classic ? "bg-white/70 text-[#16315F]" : "border border-white/70 bg-white/20 text-white"
+            }`}
+          >
+            ✕
+          </button>
         </div>
 
         {classic ? (
