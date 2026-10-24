@@ -1230,6 +1230,7 @@ html[data-theme="glass"]:not([data-ui="classic"]) .wl-row.wl-row {
   border-radius: 18px;
   box-shadow: inset 0 2px 1px #fff, 0 3px 0 #8db8ee, 0 6px 12px rgba(40, 80, 160, 0.14);
   margin: 0 0 9px;
+}
 
 /* 🌿 Lobby in the Glass theme — "6 · Aurora Mint": the profile card is mint →
    sky → lilac glass with a white rim and a turquoise 3D lip; white chips,
