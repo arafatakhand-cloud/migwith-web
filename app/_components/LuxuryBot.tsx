@@ -412,7 +412,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
             </button>
           ) : (
             <>
-              <div className="mt-1 grid grid-cols-6 gap-1">
+              <div className="mt-1 grid grid-cols-6 gap-1.5">
                 {LUXURY_CHARACTERS.map((c) => {
                   const total = shownTotal(c);
                   const mine = total > 0;
