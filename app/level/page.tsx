@@ -128,8 +128,9 @@ export default function LevelPage() {
               </p>
             </div>
 
-            {/* 📅 Today: how much of the daily limit is used — when it's full, say so */}
-            {(() => {
+            {/* 📅 Today: how much of the daily limit is used — when it's full, say so.
+                miglife only (like the XP details below). */}
+            {showXpDetails && (() => {
               const full = todayXp >= DAILY_XP_CAP;
               return (
                 <div className={`classic-light rounded-[14px] border bg-[#2A365A] p-3.5 text-white ${full ? "border-[#E5484D]" : "border-[#5B6F9D]"}`}>
