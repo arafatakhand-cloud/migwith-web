@@ -65,11 +65,17 @@ const MAX_MERCHANTS = 15;
 const allowedMemory = new Map<string, boolean>();
 const reportMemory = new Map<string, { direct: Row[]; merchant: Row[] }>();
 
+function startTab() {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("tab") || "";
+}
+
 export default function MentorDashboardPage() {
   const ready = useRequireLogin();
   const { user, username } = useSession();
   const [allowed, setAllowed] = useState<boolean | null>(() => (user ? allowedMemory.get(user.uid) ?? null : null));
-  const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");
+  // miGlife Partner's quick buttons open a tab here: /mentor?tab=requests|merchants|tagged|bonus
+  const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">(() => (startTab() === "bonus" ? "EARNING" : "DASHBOARD"));
   const [refresh, setRefresh] = useState(0);
   const router = useRouter();
 
@@ -128,7 +134,9 @@ export default function MentorDashboardPage() {
 /* ----------------------------------------------------------------- DASHBOARD */
 
 function Dashboard({ me, refresh }: { me: string; refresh: number }) {
-  const [tab, setTab] = useState<"REQUESTS" | "MERCHANTS" | "TAGGED">("REQUESTS");
+  const [tab, setTab] = useState<"REQUESTS" | "MERCHANTS" | "TAGGED">(() =>
+    startTab() === "merchants" ? "MERCHANTS" : startTab() === "tagged" ? "TAGGED" : "REQUESTS"
+  );
   const [requests, setRequests] = useState<DocumentSnapshot[]>([]);
   const [merchants, setMerchants] = useState<DocumentSnapshot[]>([]);
   const [tagged, setTagged] = useState<DocumentSnapshot[]>([]);
