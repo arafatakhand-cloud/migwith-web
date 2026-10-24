@@ -97,6 +97,8 @@ type Style = { icon: string; title: string; top: string; bottom: string; group: 
 
 function styleFor(type: string): Style {
   switch (type) {
+    case "report":
+      return { icon: "🚩", title: "New report", top: "#FF7A7A", bottom: "#D32F2F", group: "all" };
     case "birthday":
       return { icon: "🎂", title: "Birthday Card", top: "#FF7A59", bottom: "#E0457B", group: "all" };
     case "birthday_wish":
@@ -932,7 +934,9 @@ export default function AlertsPage() {
                 const href =
                   a.type === "friend_request" || a.type === "friend_request_accepted"
                     ? "/friends"
-                    : mentionRoom
+                    : a.type === "report"
+                      ? "/secret/reports"
+                      : mentionRoom
                       ? roomHref(mentionRoom)
                       : undefined;
                 card = <AlertRow a={a} isNew={isNew} href={href} />;
