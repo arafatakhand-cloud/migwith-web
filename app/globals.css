@@ -1141,3 +1141,19 @@ html[data-theme="glass"]:not([data-ui="classic"]) .rc-card .rc-white {
 html[data-theme="glass"]:not([data-ui="classic"]) .rc-card .rc-lilac {
   background: linear-gradient(135deg, rgba(226, 208, 250, 0.62), rgba(255, 255, 255, 0.34)) !important;
 }
+
+/* 💠 Glass bet boxes (Glass 3D Rim / Pastel / Ring): a soft shine on the top half
+   of each tile and chip. */
+.lb-shine { position: relative; overflow: hidden; }
+.lb-shine::before {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  top: 2px;
+  height: 42%;
+  border-radius: 10px 10px 40% 40%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.lb-shine > * { position: relative; }

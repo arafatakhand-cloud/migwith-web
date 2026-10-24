@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
-import { LbStyleDialog, lbBoxStyle, lbSkinNow } from "./LuxuryBot";
+import { LbStyleDialog, lbBoxStyle, lbSkinNow, lbIsGlass, lbTileFace, lbChipFace, lbValueColor, lbHasShine } from "./LuxuryBot";
 import { LB_KINDS, useInventory } from "./StyleShop";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { awardUserXp } from "../../lib/xp";
@@ -358,7 +358,7 @@ export function LuxuryBetTable({
 
   return (
     <div
-      className={`m-1.5 rounded-2xl px-2 py-1.5${skin.id === "glass" ? " lb-glass" : ""}`}
+      className={`m-1.5 rounded-2xl px-2 py-1.5${lbIsGlass(skin) ? " lb-glass" : ""}`}
       style={lbBoxStyle(skin, 1.5)}
     >
       <div className="flex items-center gap-1.5">
@@ -443,15 +443,15 @@ export function LuxuryBetTable({
                 >
                   <span
                     key={popped.c === c ? popped.n : 0}
-                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl py-1.5 ${popped.c === c && popped.n ? "lb-pop" : ""}`}
-                    style={{
-                      background: !open
-                        ? "linear-gradient(#2E2A3C,#24212F)"
-                        : mine
-                          ? "linear-gradient(#FFF8DC,#FCD97A)"
-                          : `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`,
-                      border: `${mine ? 2 : 1}px solid ${!open ? "#3A3648" : mine ? "#D4A017" : skin.tileBorder}`,
-                    }}
+                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl py-1.5 ${popped.c === c && popped.n ? "lb-pop" : ""}${open && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
+                    style={
+                      open && !mine
+                        ? lbTileFace(skin, LUXURY_BET_CHARACTERS.indexOf(c))
+                        : {
+                            background: !open ? "linear-gradient(#2E2A3C,#24212F)" : "linear-gradient(#FFF8DC,#FCD97A)",
+                            border: `${mine ? 2 : 1}px solid ${!open ? "#3A3648" : "#D4A017"}`,
+                          }
+                    }
                   >
                     <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
                     <span
@@ -462,7 +462,7 @@ export function LuxuryBetTable({
                     </span>
                     <span
                       className="text-[11px] font-extrabold leading-3"
-                      style={{ color: !open ? "#6E6880" : mine ? "#B8790A" : skin.cream, opacity: !open || mine ? 1 : 0.7 }}
+                      style={{ color: !open ? "#6E6880" : mine ? "#B8790A" : lbValueColor(skin), opacity: !open || mine || lbValueColor(skin) !== skin.cream ? 1 : 0.7 }}
                     >
                       {totalLabel(total)}
                     </span>
@@ -483,16 +483,12 @@ export function LuxuryBetTable({
                   type="button"
                   disabled={!open}
                   onClick={() => setAmount(c)}
-                  className="lb-press lb-chip h-[34px] rounded-xl border text-[13px] font-bold shadow"
-                  style={{
-                    background: !open
-                      ? "linear-gradient(#2E2A3C,#24212F)"
-                      : selected
-                        ? `linear-gradient(${skin.accent2}, ${skin.accent})`
-                        : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
-                    borderColor: !open ? "#3A3648" : selected ? skin.accent : skin.tileBorder,
-                    color: !open ? "#6E6880" : selected ? "#2A1E00" : skin.cream,
-                  }}
+                  className={`lb-press lb-chip h-[34px] rounded-xl border text-[13px] font-bold shadow${open && !selected && lbHasShine(skin) ? " lb-shine" : ""}`}
+                  style={
+                    !open
+                      ? { background: "linear-gradient(#2E2A3C,#24212F)", borderColor: "#3A3648", color: "#6E6880" }
+                      : lbChipFace(skin, selected)
+                  }
                 >
                   {c >= 1000 ? `${c / 1000}k` : c}
                 </button>

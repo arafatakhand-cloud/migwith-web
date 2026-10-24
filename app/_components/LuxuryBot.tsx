@@ -141,7 +141,7 @@ export function useLuxuryBot(enabled: boolean, uid: string | undefined, note: (t
 
 // 🎨 Bet box colours (the app's LbBoxSkins). Royal Night is free; the rest
 // are bought through buyLuxuryItem and kept in lb_inventory/{uid}.
-type LbSkin = ShopItem & {
+export type LbSkin = ShopItem & {
   bgTop: string; bgBottom: string; chip: string; accent: string; accent2: string; accentText: string;
   cream: string; tileTop: string; tileBottom: string; tileBase: string; tileBorder: string;
 };
@@ -149,6 +149,11 @@ type LbSkin = ShopItem & {
 export const LB_SKINS: LbSkin[] = [
   // 🫧 Clear Glass (shown FIRST in the shop) — a see-through box (the chat shows behind it), bright white rims, dark-blue writing
   { id: "glass", name: "Clear Glass", emoji: "🫧", price: 150000, bgTop: "rgba(255,255,255,.34)", bgBottom: "rgba(255,255,255,.1)", chip: "rgba(255,255,255,.22)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.4)", tileBottom: "rgba(255,255,255,.14)", tileBase: "rgba(255,255,255,.1)", tileBorder: "rgba(255,255,255,.92)" },
+  // 🫧 Four more glass boxes (demos A–D): 3D rim, pastel per character, raised white, gradient ring
+  { id: "glass3d", name: "Glass 3D Rim", emoji: "💠", price: 150000, bgTop: "rgba(255,255,255,.5)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.28)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.62)", tileBottom: "rgba(255,255,255,.28)", tileBase: "transparent", tileBorder: "rgba(255,255,255,.95)" },
+  { id: "glasspastel", name: "Pastel Glass", emoji: "🍬", price: 150000, bgTop: "rgba(255,255,255,.5)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.28)", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.62)", tileBottom: "rgba(255,255,255,.28)", tileBase: "transparent", tileBorder: "rgba(255,255,255,.95)" },
+  { id: "white3d", name: "White 3D", emoji: "🕊️", price: 150000, bgTop: "rgba(255,255,255,.5)", bgBottom: "rgba(255,255,255,.25)", chip: "#EAF2FF", accent: "#3B82F6", accent2: "#A5D8FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "#FFFFFF", tileBottom: "#EAF2FF", tileBase: "transparent", tileBorder: "#FFFFFF" },
+  { id: "glassring", name: "Glass Ring", emoji: "💍", price: 150000, bgTop: "rgba(255,255,255,.5)", bgBottom: "rgba(255,255,255,.25)", chip: "rgba(255,255,255,.35)", accent: "#3B82F6", accent2: "#C8B6FF", accentText: "#1E3A6E", cream: "#0B2A5B", tileTop: "rgba(255,255,255,.7)", tileBottom: "rgba(255,255,255,.35)", tileBase: "transparent", tileBorder: "#9CC8FF" },
   { id: "royal", name: "Royal Night", emoji: "👑", price: 0, bgTop: "#1E1A2E", bgBottom: "#151222", chip: "#2A2440", accent: "#D4AF37", accent2: "#FFF0B3", accentText: "#F2D675", cream: "#F2E6C2", tileTop: "#3A3350", tileBottom: "#27213A", tileBase: "#0E0B18", tileBorder: "#5A4F7A" },
   { id: "ocean", name: "Ocean Breeze", emoji: "🌊", price: 50000, bgTop: "#0B2A3F", bgBottom: "#061826", chip: "#12384F", accent: "#3FC1E8", accent2: "#B8F1FF", accentText: "#9BE7FF", cream: "#DDF6FF", tileTop: "#17506E", tileBottom: "#0E3349", tileBase: "#04121B", tileBorder: "#2E86A8" },
   { id: "emerald", name: "Emerald Palace", emoji: "💚", price: 75000, bgTop: "#0E3324", bgBottom: "#071C13", chip: "#134430", accent: "#2ED48A", accent2: "#C8FFE3", accentText: "#9BF5C8", cream: "#DFF8EA", tileTop: "#1B5A3E", tileBottom: "#113B29", tileBase: "#05140D", tileBorder: "#31956A" },
@@ -171,8 +176,67 @@ export const LB_CLASSIC_SKIN: LbSkin = {
   accent: "#F07A00", accent2: "#FFC27A", accentText: "#7A3A00", cream: "#16315F",
   tileTop: "#FFFFFF", tileBottom: "#E9EEF4", tileBase: "#B9C4D2", tileBorder: "#C9D2DE",
 };
+const LB_GLASS_3D = new Set(["glass3d", "glasspastel", "white3d", "glassring"]);
+/** Any see-through glass box (the dark game strip behind it is hidden). */
+export const lbIsGlass = (skin: LbSkin) => skin.id === "glass" || LB_GLASS_3D.has(skin.id);
+
+// Pastel tint for each character slot (Laila, Majnu, Romeo, Juliet, Shirin, Farhad).
+const LB_PASTELS = ["#FFD6E7", "#FFE6C7", "#D6E8FF", "#F4D9FF", "#FFD9D9", "#D9F5EC"];
+const LB_RIM = "inset 0 2px 1px #fff, inset 0 -3px 5px rgba(40,80,160,.14), 0 5px 12px rgba(40,80,160,.16)";
+
+/** An open, un-bet character tile (slot = its position, for the pastel tints). */
+export function lbTileFace(skin: LbSkin, slot: number): CSSProperties {
+  switch (skin.id) {
+    case "glass3d":
+      return { background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: "1.5px solid rgba(255,255,255,.95)", boxShadow: LB_RIM };
+    case "glasspastel": {
+      const t = LB_PASTELS[slot % LB_PASTELS.length];
+      return { background: `linear-gradient(${t}cc, ${t}55)`, border: "1.5px solid rgba(255,255,255,.95)", boxShadow: "inset 0 2px 1px #fff, inset 0 -3px 5px rgba(0,0,0,.08), 0 5px 12px rgba(40,80,160,.16)" };
+    }
+    case "white3d":
+      return { background: "linear-gradient(#fff, #eaf2ff)", border: "1.5px solid #fff", boxShadow: "inset 0 2px 1px #fff, inset 0 -4px 6px rgba(40,80,160,.14), 0 6px 12px rgba(40,80,160,.2)" };
+    case "glassring":
+      return { background: "linear-gradient(rgba(255,255,255,.7), rgba(255,255,255,.35)) padding-box, linear-gradient(160deg, #9cc8ff, #c8b6ff, #ffffff) border-box", border: "2px solid transparent", boxShadow: "0 5px 12px rgba(40,80,160,.16)" };
+  }
+  return { background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: `1px solid ${skin.tileBorder}` };
+}
+
+/** An open amount chip. The glass boxes use a blue 3D chip when selected. */
+export function lbChipFace(skin: LbSkin, selected: boolean): CSSProperties {
+  if (LB_GLASS_3D.has(skin.id)) {
+    if (selected)
+      return {
+        background: "linear-gradient(rgba(255,255,255,.38), transparent 48%), linear-gradient(#5aa2ff, #1565d8)",
+        border: "1.5px solid rgba(255,255,255,.85)",
+        boxShadow: "inset 0 -3px 4px rgba(0,0,0,.12), 0 6px 14px rgba(21,101,216,.45)",
+        color: "#fff",
+      };
+    const face = lbTileFace(skin.id === "glasspastel" ? { ...skin, id: "glass3d" } : skin, 0);
+    return { ...face, color: skin.cream };
+  }
+  return {
+    background: selected ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
+    border: `1px solid ${selected ? skin.accent : skin.tileBorder}`,
+    color: selected ? "#2A1E00" : skin.cream,
+  };
+}
+
+/** The bet total under each character: blue in the glass boxes. */
+export const lbValueColor = (skin: LbSkin) => (LB_GLASS_3D.has(skin.id) ? "#1565D8" : skin.cream);
+/** Shine on the top half of a glass tile / chip. */
+export const lbHasShine = (skin: LbSkin) => skin.id === "glass3d" || skin.id === "glasspastel" || skin.id === "glassring";
+
 /** Bet box frame. "Clear Glass" uses the same recipe as the "Mention a user" panel. */
 export function lbBoxStyle(skin: LbSkin, borderPx = 1.6): CSSProperties {
+  if (LB_GLASS_3D.has(skin.id)) {
+    return {
+      background: "linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.25))",
+      border: "1.5px solid rgba(255,255,255,.95)",
+      boxShadow: "inset 0 1.5px 1px #fff, 0 10px 24px rgba(40,80,160,.18)",
+      backdropFilter: "blur(12px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+    };
+  }
   if (skin.id === "glass") {
     return {
       background: "linear-gradient(160deg, rgba(255,255,255,.34), rgba(255,255,255,.1))",
@@ -199,14 +263,18 @@ function LbSkinPreview({ skin }: { skin: LbSkin }) {
   return (
     <div
       className="rounded-xl p-1.5"
-      style={{ background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom})`, border: `1.2px solid ${skin.accent}` }}
+      style={
+        LB_GLASS_3D.has(skin.id)
+          ? { background: "linear-gradient(#dfe8f5, #eef1f6)", border: "1.2px solid #fff" }
+          : { background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom})`, border: `1.2px solid ${skin.accent}` }
+      }
     >
       <div className="flex gap-[3px]">
-        {["🧕", "🤵", "💃"].map((e) => (
+        {["🧕", "🤵", "💃"].map((e, i) => (
           <span
             key={e}
             className="flex h-[30px] flex-1 items-center justify-center rounded-[7px] text-sm"
-            style={{ background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: `1px solid ${skin.tileBorder}` }}
+            style={{ ...lbTileFace(skin, [0, 2, 4][i]), boxShadow: LB_GLASS_3D.has(skin.id) ? "inset 0 1px 1px #fff, 0 2px 4px rgba(40,80,160,.18)" : undefined }}
           >
             {e}
           </span>
@@ -217,10 +285,7 @@ function LbSkinPreview({ skin }: { skin: LbSkin }) {
           <span
             key={t}
             className="flex h-3.5 flex-1 items-center justify-center rounded-[7px] text-[7px] font-bold"
-            style={{
-              background: i === 1 ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
-              color: i === 1 ? "#1A1200" : skin.cream,
-            }}
+            style={{ ...lbChipFace(skin, i === 1), border: undefined, boxShadow: undefined }}
           >
             {t}
           </span>
@@ -335,7 +400,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
   return (
     <div className="px-[7px] py-[3px]">
       <div
-        className={`rounded-2xl px-[7px] py-1${skin.id === "glass" ? " lb-glass" : ""}`}
+        className={`rounded-2xl px-[7px] py-1${lbIsGlass(skin) ? " lb-glass" : ""}`}
         style={lbBoxStyle(skin)}
       >
         <div className="flex items-center gap-[3px]">
@@ -435,8 +500,12 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                     >
                       <span
                         key={popped.c === c ? popped.n : 0}
-                        className={`flex h-[64px] flex-col items-center justify-center rounded-xl ${popped.c === c && popped.n ? "lb-pop" : ""}`}
-                        style={{ background: `linear-gradient(${face[0]}, ${face[1]})`, border: `${mine ? 2 : 1}px solid ${face[3]}` }}
+                        className={`flex h-[64px] flex-col items-center justify-center rounded-xl ${popped.c === c && popped.n ? "lb-pop" : ""}${canBet && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
+                        style={
+                          canBet && !mine
+                            ? lbTileFace(skin, LUXURY_CHARACTERS.indexOf(c))
+                            : { background: `linear-gradient(${face[0]}, ${face[1]})`, border: `${mine ? 2 : 1}px solid ${face[3]}` }
+                        }
                       >
                         <span className="text-lg leading-5" style={canBet ? undefined : { filter: "grayscale(1)", opacity: 0.6 }}>
                           {emoji}
@@ -450,7 +519,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                         {/* My total, the app's label: 500 → "500", 2000 → "2k", 2500 → "2.5k" */}
                         <span
                           className="text-[11px] font-extrabold leading-3"
-                          style={{ color: !canBet ? "#6E6880" : mine ? "#B8790A" : skin.cream, opacity: !canBet || mine ? 1 : 0.7 }}
+                          style={{ color: !canBet ? "#6E6880" : mine ? "#B8790A" : lbValueColor(skin), opacity: !canBet || mine || lbValueColor(skin) !== skin.cream ? 1 : 0.7 }}
                         >
                           {betTotalLabel(total)}
                         </span>
@@ -471,15 +540,11 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                       type="button"
                       onClick={() => setAmount(c)}
                       disabled={!canBet}
-                      className="lb-press lb-chip h-[34px] flex-1 rounded-xl text-[13px] font-bold shadow-sm"
+                      className={`lb-press lb-chip h-[34px] flex-1 rounded-xl text-[13px] font-bold shadow-sm${canBet && !sel && lbHasShine(skin) ? " lb-shine" : ""}`}
                       style={
                         !canBet
                           ? { background: "linear-gradient(#2E2A3C, #24212F)", border: "1px solid #3A3648", color: "#6E6880" }
-                          : {
-                              background: sel ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
-                              border: `1px solid ${sel ? skin.accent : skin.tileBorder}`,
-                              color: sel ? "#2A1E00" : skin.cream,
-                            }
+                          : lbChipFace(skin, sel)
                       }
                     >
                       {c >= 1000 ? `${c / 1000}k` : c}
