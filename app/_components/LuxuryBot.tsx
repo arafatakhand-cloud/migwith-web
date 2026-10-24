@@ -313,7 +313,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
     const now = Date.now();
     const prev = lastTap.current;
     if (armTimer.current) clearTimeout(armTimer.current);
-    if (prev.character === character && now - prev.at <= 500) {
+    if (prev.character === character && now - prev.at <= 600) {
       lastTap.current = { character: "", at: 0 };
       setArmed("");
       setPopped((p) => ({ c: character, n: p.n + 1 }));
@@ -321,7 +321,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
     } else {
       lastTap.current = { character, at: now };
       setArmed(character);
-      armTimer.current = setTimeout(() => setArmed(""), 500);
+      armTimer.current = setTimeout(() => setArmed(""), 600);
     }
   };
 
@@ -435,7 +435,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                     >
                       <span
                         key={popped.c === c ? popped.n : 0}
-                        className={`flex h-[58px] flex-col items-center justify-center rounded-xl ${popped.c === c && popped.n ? "lb-pop" : ""}`}
+                        className={`flex h-[64px] flex-col items-center justify-center rounded-xl ${popped.c === c && popped.n ? "lb-pop" : ""}`}
                         style={{ background: `linear-gradient(${face[0]}, ${face[1]})`, border: `${mine ? 2 : 1}px solid ${face[3]}` }}
                       >
                         <span className="text-lg leading-5" style={canBet ? undefined : { filter: "grayscale(1)", opacity: 0.6 }}>
@@ -462,7 +462,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
               <p className="py-px text-center text-[8px]" style={{ color: skin.accentText, opacity: 0.75 }}>
                 👆 Tap twice on a character to bid instantly{myTotal > 0 ? ` · Your bets: 🪙 ${myTotal.toLocaleString()}` : ""}
               </p>
-              <div className="flex gap-1 pb-[3px]">
+              <div className="flex gap-1.5 pb-1">
                 {CHIPS.map((c) => {
                   const sel = amount === c;
                   return (
@@ -471,7 +471,7 @@ export function LuxuryBetBox({ state, uid, note }: { state: LuxuryState; uid: st
                       type="button"
                       onClick={() => setAmount(c)}
                       disabled={!canBet}
-                      className="lb-press lb-chip h-[23px] flex-1 rounded-xl text-[10px] font-bold shadow-sm"
+                      className="lb-press lb-chip h-[34px] flex-1 rounded-xl text-[13px] font-bold shadow-sm"
                       style={
                         !canBet
                           ? { background: "linear-gradient(#2E2A3C, #24212F)", border: "1px solid #3A3648", color: "#6E6880" }

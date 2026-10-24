@@ -342,7 +342,7 @@ export function LuxuryBetTable({
     const t = Date.now();
     const prev = lastTap.current;
     if (armTimer.current) clearTimeout(armTimer.current);
-    if (prev.character === character && t - prev.at <= 500) {
+    if (prev.character === character && t - prev.at <= 600) {
       lastTap.current = { character: "", at: 0 };
       setArmed("");
       setPopped((p) => ({ c: character, n: p.n + 1 }));
@@ -350,7 +350,7 @@ export function LuxuryBetTable({
     } else {
       lastTap.current = { character, at: t };
       setArmed(character);
-      armTimer.current = setTimeout(() => setArmed(""), 500);
+      armTimer.current = setTimeout(() => setArmed(""), 600);
     }
   };
   const title = state.inFlight > 0 ? "⏳ Sending bet…" : state.phase === "SETTLING" ? "Calculating result…" : "Luxury Bet · tap 2x to bid";
@@ -427,7 +427,7 @@ export function LuxuryBetTable({
             className="mt-1 h-[2px] rounded-sm"
             style={{ background: `linear-gradient(90deg, transparent, ${skin.accent}, ${skin.accent2}, ${skin.accent}, transparent)` }}
           />
-          <div className="mt-1.5 grid grid-cols-6 gap-1">
+          <div className="mt-1.5 grid grid-cols-6 gap-1.5">
             {LUXURY_BET_CHARACTERS.map((c) => {
               const total = Number(state.myBets[c] || 0);
               const mine = total > 0;
@@ -443,7 +443,7 @@ export function LuxuryBetTable({
                 >
                   <span
                     key={popped.c === c ? popped.n : 0}
-                    className={`flex h-full flex-col items-center justify-center rounded-xl py-1 ${popped.c === c && popped.n ? "lb-pop" : ""}`}
+                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl py-1.5 ${popped.c === c && popped.n ? "lb-pop" : ""}`}
                     style={{
                       background: !open
                         ? "linear-gradient(#2E2A3C,#24212F)"
@@ -474,7 +474,7 @@ export function LuxuryBetTable({
           <p className="py-0.5 text-center text-[9px]" style={{ color: skin.accentText, opacity: 0.75 }}>
             👆 Tap twice on a character to bid instantly
           </p>
-          <div className="grid grid-cols-6 gap-1 pb-0.5">
+          <div className="grid grid-cols-6 gap-1.5 pb-1">
             {CHIPS.map((c) => {
               const selected = amount === c;
               return (
@@ -483,7 +483,7 @@ export function LuxuryBetTable({
                   type="button"
                   disabled={!open}
                   onClick={() => setAmount(c)}
-                  className="lb-press lb-chip h-[24px] rounded-xl border text-[11px] font-bold shadow"
+                  className="lb-press lb-chip h-[34px] rounded-xl border text-[13px] font-bold shadow"
                   style={{
                     background: !open
                       ? "linear-gradient(#2E2A3C,#24212F)"
