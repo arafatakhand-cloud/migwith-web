@@ -24,6 +24,9 @@ import { isMainFounderName } from "../../lib/founder";
 
 type Item = { id: string; message: string; createdAtMs: number };
 
+// A line that starts with an emoji / symbol (not a letter or number).
+const EMOJI_START = /^[^\p{L}\p{N}\s"'(—–-]/u;
+
 // A short card: the first line as the title, 2 lines of preview, and a tap
 // opens the whole announcement (tap again to close). New ones (3 days) get a NEW tag.
 function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: boolean; onEdit: () => void; onDelete: () => void }) {
@@ -47,11 +50,19 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {isNew && <span className="rounded-full bg-[#FF5E8A] px-1.5 py-px text-[9px] font-black tracking-wide text-white">NEW</span>}
-              <span className="truncate text-[11px] font-semibold text-[#8A97B2]">{when}</span>
+              <span className="truncate text-[11px] font-semibold text-[#64748B]">{when}</span>
             </div>
-            <p className={`mt-0.5 break-words text-[15px] font-extrabold leading-5 text-[#0B2A5B] ${open ? "" : "line-clamp-2"}`}>{title}</p>
+            <p className={`mt-0.5 break-words text-[15px] font-black leading-5 text-[#5B21B6] ${open ? "" : "line-clamp-2"}`}>{title}</p>
             {rest && (
-              <p className={`mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-5 text-[#3D4F72] ${open ? "" : "line-clamp-2"}`}>{rest}</p>
+              <p className={`mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-5 text-[#1E293B] ${open ? "" : "line-clamp-2"}`}>
+                {/* a line that starts with an emoji (✨ 🚀 👉 …) stands out: teal and bold */}
+                {rest.split("\n").map((ln, i, all) => (
+                  <span key={i} className={EMOJI_START.test(ln.trim()) ? "font-extrabold text-[#0E7490]" : undefined}>
+                    {ln}
+                    {i < all.length - 1 ? "\n" : ""}
+                  </span>
+                ))}
+              </p>
             )}
             {(rest || title.length > 60) && (
               <span className="mt-1.5 inline-flex items-center gap-1 ann-chip rounded-full bg-[#EEF3FB] px-2.5 py-1 text-[11px] font-bold text-[#1E63D6]">
