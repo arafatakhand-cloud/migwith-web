@@ -2119,9 +2119,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   fontPx={px}
                   gift={giftByName.get(m.giftName.toLowerCase()) || null}
                   onMention={(name) => {
-                    // Tap a name: add "@name" to the message box, like the app.
-                    const mention = `@${name}`;
-                    setText((t) => (t.includes(mention) ? t : t.trim() ? `${t.trimEnd()} ${mention} ` : `${mention} `));
+                    // Tap a name: add the plain ID (no "@", so not a mention) to the message box, like the app.
+                    const lower = name.toLowerCase();
+                    setText((t) =>
+                      t.split(" ").some((w) => w.toLowerCase() === lower) ? t : t.trim() ? `${t.trimEnd()} ${name} ` : `${name} `
+                    );
                     inputRef.current?.focus();
                   }}
                   onLink={setPendingLink}
