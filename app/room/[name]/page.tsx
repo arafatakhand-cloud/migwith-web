@@ -2072,7 +2072,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 )}
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
-                  <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
+                  <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5">
                     {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
                     <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
