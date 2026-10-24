@@ -1277,3 +1277,5 @@ html[data-theme="glass"]:not([data-ui="classic"]) :is(.mh-search, .mh-row).glass
   border-color: #fff #9fd8d0 #7cc9be #9fd8d0;
   box-shadow: inset 0 2px 1px #fff, 0 3px 0 #7cc9be, 0 6px 12px rgba(40, 120, 140, 0.14);
 }
+/* the role chip: the role's own colour (Merchant purple, Mentor red …) */
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip.mh-role { color: var(--role-ink, #0e7490) !important; }

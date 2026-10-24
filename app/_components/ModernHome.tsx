@@ -91,6 +91,20 @@ function StatTile({
   );
 }
 
+// 🎨 The role chip's writing in the role's own colour (the app's role colours;
+// the light ones a shade darker so they read on the white chip).
+function roleInk(label: string): string {
+  const r = label.trim().toLowerCase();
+  if (r === "merchant") return "#9C27B0";
+  if (r === "mentor") return "#E0102F";
+  if (r === "founder" || r === "executive board") return "#B8860B";
+  if (r === "admin" || r === "administrator") return "#B8900A";
+  if (r === "staff") return "#1FA80E";
+  if (r === "elite" || r === "elite user") return "#0097A7";
+  if (r === "country rep") return "#9A6E52";
+  return "#3984D9";
+}
+
 export function ModernHomeTop({
   username,
   photo,
@@ -160,7 +174,10 @@ export function ModernHomeTop({
               {username || "User"}
             </Link>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <span className="mh-chip glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
+              <span
+                className="mh-chip mh-role glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase"
+                style={{ ["--role-ink" as string]: roleInk(roleLabel) }}
+              >
                 {roleLabel}
               </span>
               <button
