@@ -182,21 +182,38 @@ export const lbIsGlass = (skin: LbSkin) => skin.id === "glass" || LB_GLASS_3D.ha
 
 // Pastel tint for each character slot (Laila, Majnu, Romeo, Juliet, Shirin, Farhad).
 const LB_PASTELS = ["#FFD6E7", "#FFE6C7", "#D6E8FF", "#F4D9FF", "#FFD9D9", "#D9F5EC"];
-const LB_RIM = "inset 0 2px 1px #fff, inset 0 -3px 5px rgba(40,80,160,.14), 0 5px 12px rgba(40,80,160,.16)";
+// 🎨 The coloured 3D edge of each glass box's tiles (pastel: one per character).
+const LB_RIMS: Record<string, string> = { glass: "#8DB8EE", glass3d: "#6FA3EA", white3d: "#A9BEDD", glassring: "#A993F2" };
+const LB_PASTEL_RIMS = ["#F49AC1", "#F2B266", "#86B4F0", "#C99BF0", "#F09A9A", "#76CFAF"];
+const lbRim = (skin: LbSkin, slot: number) =>
+  skin.id === "glasspastel" ? LB_PASTEL_RIMS[slot % LB_PASTEL_RIMS.length] : LB_RIMS[skin.id] || "#8DB8EE";
+/** Floating 3D look: white top edge, coloured sides and bottom, a coloured lip under it. */
+const lbFloat = (rim: string): CSSProperties => ({
+  borderWidth: 2,
+  borderStyle: "solid",
+  borderColor: `rgba(255,255,255,.95) ${rim}cc ${rim} ${rim}cc`,
+  boxShadow: `inset 0 2px 1px #fff, inset 0 -3px 5px rgba(40,80,160,.12), 0 3px 0 ${rim}, 0 7px 12px rgba(40,80,160,.22)`,
+});
 
 /** An open, un-bet character tile (slot = its position, for the pastel tints). */
 export function lbTileFace(skin: LbSkin, slot: number): CSSProperties {
+  const rim = lbRim(skin, slot);
   switch (skin.id) {
+    case "glass":
     case "glass3d":
-      return { background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: "1.5px solid rgba(255,255,255,.95)", boxShadow: LB_RIM };
+      return { background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, ...lbFloat(rim) };
     case "glasspastel": {
       const t = LB_PASTELS[slot % LB_PASTELS.length];
-      return { background: `linear-gradient(${t}cc, ${t}55)`, border: "1.5px solid rgba(255,255,255,.95)", boxShadow: "inset 0 2px 1px #fff, inset 0 -3px 5px rgba(0,0,0,.08), 0 5px 12px rgba(40,80,160,.16)" };
+      return { background: `linear-gradient(${t}cc, ${t}55)`, ...lbFloat(rim) };
     }
     case "white3d":
-      return { background: "linear-gradient(#fff, #eaf2ff)", border: "1.5px solid #fff", boxShadow: "inset 0 2px 1px #fff, inset 0 -4px 6px rgba(40,80,160,.14), 0 6px 12px rgba(40,80,160,.2)" };
+      return { background: "linear-gradient(#fff, #eaf2ff)", ...lbFloat(rim) };
     case "glassring":
-      return { background: "linear-gradient(rgba(255,255,255,.7), rgba(255,255,255,.35)) padding-box, linear-gradient(160deg, #9cc8ff, #c8b6ff, #ffffff) border-box", border: "2px solid transparent", boxShadow: "0 5px 12px rgba(40,80,160,.16)" };
+      return {
+        background: "linear-gradient(rgba(255,255,255,.7), rgba(255,255,255,.35)) padding-box, linear-gradient(160deg, #9cc8ff, #c8b6ff, #ffffff) border-box",
+        border: "2px solid transparent",
+        boxShadow: `inset 0 2px 1px #fff, 0 3px 0 ${rim}, 0 7px 12px rgba(40,80,160,.22)`,
+      };
   }
   return { background: `linear-gradient(${skin.tileTop}, ${skin.tileBottom})`, border: `1px solid ${skin.tileBorder}` };
 }
@@ -214,6 +231,7 @@ export function lbChipFace(skin: LbSkin, selected: boolean): CSSProperties {
     const face = lbTileFace(skin.id === "glasspastel" ? { ...skin, id: "glass3d" } : skin, 0);
     return { ...face, color: skin.cream };
   }
+  if (skin.id === "glass" && !selected) return { ...lbTileFace(skin, 0), color: skin.cream };
   return {
     background: selected ? `linear-gradient(${skin.accent2}, ${skin.accent})` : `linear-gradient(${skin.tileTop}, ${skin.chip})`,
     border: `1px solid ${selected ? skin.accent : skin.tileBorder}`,
@@ -264,7 +282,7 @@ function LbSkinPreview({ skin }: { skin: LbSkin }) {
     <div
       className="rounded-xl p-1.5"
       style={
-        LB_GLASS_3D.has(skin.id)
+        lbIsGlass(skin)
           ? { background: "linear-gradient(#dfe8f5, #eef1f6)", border: "1.2px solid #fff" }
           : { background: `linear-gradient(${skin.bgTop}, ${skin.bgBottom})`, border: `1.2px solid ${skin.accent}` }
       }
@@ -274,7 +292,7 @@ function LbSkinPreview({ skin }: { skin: LbSkin }) {
           <span
             key={e}
             className="flex h-[30px] flex-1 items-center justify-center rounded-[7px] text-sm"
-            style={{ ...lbTileFace(skin, [0, 2, 4][i]), boxShadow: LB_GLASS_3D.has(skin.id) ? "inset 0 1px 1px #fff, 0 2px 4px rgba(40,80,160,.18)" : undefined }}
+            style={lbTileFace(skin, [0, 2, 4][i])}
           >
             {e}
           </span>
