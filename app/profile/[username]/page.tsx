@@ -571,6 +571,8 @@ export default function ProfilePage() {
           </h1>
         </div>
 
+        {classic ? (
+        <>
         {/* Cover photo (only when the person has one), in the same frame as the photo */}
         {/* 📟 Classic: no cover photo */}
         {profile.coverPhotoUrl && !classic && (
@@ -772,6 +774,200 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+        </>
+ ) : (
+        <>
+        {/* ✨ Modern profile ("C"): a cover with a curved bottom edge and a passing
+            shine, the photo in a story-style ring with a level tag, name + chips
+            beside it, the details in a glass box (with the team's crest faint
+            behind), round buttons. 📟 Classic keeps its own look below. */}
+        <div className="relative h-[190px] overflow-hidden [clip-path:ellipse(85%_100%_at_50%_0%)]">
+          {profile.coverPhotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={profile.coverPhotoUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div
+              className="h-full w-full"
+              style={{
+                background: team
+                  ? `radial-gradient(40% 60% at 25% 30%, rgba(255,255,255,.35), transparent 70%), linear-gradient(120deg, ${team.c1}, ${team.c2})`
+                  : "radial-gradient(35% 55% at 25% 30%, rgba(255,255,255,.45), transparent 70%), radial-gradient(30% 50% at 78% 60%, rgba(255,255,255,.35), transparent 70%), linear-gradient(120deg, #1565D8, #7B5CF0 60%, #FF7EB6)",
+              }}
+            />
+          )}
+          <span className="pf-cover-shine pointer-events-none absolute inset-y-0 w-[30%]" aria-hidden />
+        </div>
+
+        <div className="relative z-10 -mt-[58px] flex items-end gap-3.5 px-4">
+          {/* photo in a story ring + LV tag */}
+          <div className="relative h-[118px] w-[118px] shrink-0">
+            <span
+              className="absolute -inset-[6px] rounded-full"
+              style={{ background: "conic-gradient(from 40deg, #F58529, #DD2A7B, #8134AF, #515BD4, #F58529)" }}
+            />
+            <span className="absolute -inset-[2px] rounded-full bg-white" />
+            <div className="relative h-full w-full overflow-hidden rounded-full border-[3px] border-white bg-[#E8EEF5]">
+              {profile.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.photoUrl} alt={username} className="h-full w-full object-cover" />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center text-[44px] font-bold text-[#8FA3BF]">
+                  {username.slice(0, 1).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span className="absolute -bottom-[10px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border-2 border-white bg-gradient-to-r from-[#FFE9A8] to-[#FFD36B] px-2 py-px text-[11px] font-black text-[#7A4B00] shadow">
+              LV {profile.level} {badgeForLevel(profile.level)}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1 pb-1.5">
+            {special.has(username) ? (
+              <RainbowName name={username} style={special.styleOf(username)} className="block truncate text-[23px]" />
+            ) : (
+              <p data-notranslate className="truncate text-[23px] font-black leading-tight text-[#1E63D6]">
+                {username}
+              </p>
+            )}
+            {profile.fullName && !sameName(profile.fullName, username) && (
+              <p data-notranslate className="truncate text-[13px] text-[#35507E]">{profile.fullName}</p>
+            )}
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {shownRole && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-bold shadow-sm"
+                  style={{ color: shownRole.color }}
+                >
+                  {roleBadgeUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={roleBadgeUrl} alt="" className="inline-block h-[18px] w-[18px] object-contain" />
+                  ) : (
+                    <>{roleEmoji}</>
+                  )}
+                  {shownRole.label}
+                </span>
+              )}
+              {team && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-extrabold shadow-sm"
+                  style={{ color: team.text }}
+                  title={`${team.name} supporter`}
+                >
+                  <SupporterJersey team={team} size={16} />
+                  {team.mark}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 pt-[18px]">
+          {/* the details, in a glass box with the team's crest faint behind */}
+          <div className="pf-info-glass relative overflow-hidden rounded-[20px] px-3.5 py-3 text-[14px] leading-[1.75] text-[#0B2A5B]">
+            {team && (
+              <span className="pointer-events-none absolute -right-4 -top-6 rotate-12 opacity-[0.17]" aria-hidden>
+                <SupporterJersey team={team} size={150} />
+              </span>
+            )}
+            <div className="relative">
+              <p className="flex items-center gap-1.5">
+                <span
+                  className="h-[13px] w-[13px] rounded-full border"
+                  style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})`, borderColor: dot[1] }}
+                />
+                {profile.presence}
+              </p>
+              {team && <p className="truncate">⚽ {team.name} supporter</p>}
+              {(profile.relationship || facts.length > 0) && (
+                <p className="truncate">
+                  {profile.relationship ? `💍 ${profile.relationship}` : "👤"}
+                  {facts.length > 0 ? `${profile.relationship ? " · " : " "}${facts.join(", ")}` : ""}
+                </p>
+              )}
+              {(profile.country || profile.memberSince) && (
+                <p className="truncate">
+                  {profile.country ? `📍 ${profile.country}` : ""}
+                  {profile.country && profile.memberSince ? " · " : ""}
+                  {profile.memberSince ? `🗓 Member since ${profile.memberSince}` : ""}
+                </p>
+              )}
+              {taggedDays !== null && <p className="truncate">🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}</p>}
+              {bubble && (
+                <p data-notranslate className="mt-1.5 whitespace-pre-wrap rounded-xl bg-white/60 px-2.5 py-1.5 text-[13.5px] leading-snug text-[#0B2A5B]">
+                  💬 {bubble}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* round buttons */}
+          <div className="mt-3 flex items-center gap-2">
+            {isOwn ? (
+              <Link
+                href="/profile/edit"
+                className="flex h-[44px] flex-1 items-center justify-center rounded-full bg-gradient-to-r from-[#FF8A3D] to-[#F2552C] text-[16px] font-extrabold text-white shadow-[0_6px_14px_rgba(242,85,44,.35)]"
+              >
+                ✎ Edit Profile
+              </Link>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled={!!busy}
+                  onClick={() => toggleMine("following", !isFollowing)}
+                  className={`h-[44px] flex-1 rounded-full text-[16px] font-extrabold text-white disabled:opacity-60 ${
+                    isFollowing
+                      ? "bg-gradient-to-r from-[#9AA5B5] to-[#6B7A99]"
+                      : "bg-gradient-to-r from-[#FF8A3D] to-[#F2552C] shadow-[0_6px_14px_rgba(242,85,44,.35)]"
+                  }`}
+                >
+                  {busy === "following" ? "…" : isFollowing ? "Unfollow" : "Follow"}
+                </button>
+                <button
+                  type="button"
+                  disabled={!!busy}
+                  onClick={toggleVote}
+                  aria-label={hasVoted ? "Remove vote" : "Vote"}
+                  className={`pf-round flex h-[44px] w-[44px] items-center justify-center rounded-full text-[18px] disabled:opacity-60 ${hasVoted ? "!bg-[#E0303F]" : ""}`}
+                >
+                  {hasVoted ? "❤️" : "🤍"}
+                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setMoreOpen((o) => !o)}
+                    aria-label="More"
+                    className="pf-round flex h-[44px] w-[44px] items-center justify-center rounded-full text-[17px] font-black text-[#0B2A5B]"
+                  >
+                    •••
+                  </button>
+                  {moreOpen && (
+                    <>
+                      <button type="button" aria-label="Close" className="fixed inset-0 z-30 cursor-default" onClick={() => setMoreOpen(false)} />
+                      <div className="absolute right-0 top-full z-40 mt-1 w-56 overflow-hidden rounded-xl bg-white py-1 shadow-xl ring-1 ring-black/10">
+                        {menu.map(([label, act, cls]) => (
+                          <button
+                            key={label}
+                            type="button"
+                            disabled={!!busy}
+                            onClick={() => {
+                              setMoreOpen(false);
+                              act();
+                            }}
+                            className={`block w-full px-4 py-2.5 text-left text-[15px] hover:bg-[#F1F5FB] disabled:opacity-50 ${cls || "text-[#0B1F3A]"}`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        </>
+        )}
 
         {/* 4 × 2 grid of number tiles */}
         <div className="mt-px space-y-2 bg-white px-2 py-2">
