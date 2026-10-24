@@ -97,7 +97,7 @@ function roleInk(label: string): string {
   const r = label.trim().toLowerCase();
   if (r === "merchant") return "#9C27B0";
   if (r === "mentor") return "#E0102F";
-  if (r === "founder" || r === "executive board") return "#B8860B";
+  // (Founder stays the plain blue, like a normal user)
   if (r === "admin" || r === "administrator") return "#B8900A";
   if (r === "staff") return "#1FA80E";
   if (r === "elite" || r === "elite user") return "#0097A7";
