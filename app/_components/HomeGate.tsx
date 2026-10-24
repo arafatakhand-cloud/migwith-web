@@ -1,5 +1,6 @@
 "use client";
 
+import { BirthdayPopup } from "./BirthdayPopup";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "./AppSession";
@@ -39,7 +40,7 @@ export function Splash() {
 
 /* "/" — splash, then the signed-in home (Dashboard) or, signed out, the login screen. */
 export function HomeGate() {
-  const { user, loading } = useSession();
+  const { user, loading, username } = useSession();
   const router = useRouter();
   const [splashDone, setSplashDone] = useState(false);
 
@@ -73,6 +74,8 @@ export function HomeGate() {
   return (
     <PageShell light>
       <Dashboard />
+      {/* 🎂 today's birthdays, once a day when the Lobby opens */}
+      <BirthdayPopup username={username} />
     </PageShell>
   );
 }

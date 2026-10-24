@@ -97,6 +97,10 @@ type Style = { icon: string; title: string; top: string; bottom: string; group: 
 
 function styleFor(type: string): Style {
   switch (type) {
+    case "birthday":
+      return { icon: "🎂", title: "Birthday Card", top: "#FF7A59", bottom: "#E0457B", group: "all" };
+    case "birthday_wish":
+      return { icon: "🎂", title: "Birthday wish", top: "#FF8FB1", bottom: "#D6336C", group: "social" };
     case "gift":
       return { icon: "🎁", title: "Gift received", top: "#FF6FA8", bottom: "#D6336C", group: "gifts" };
     case "gift_contest_win":
@@ -228,6 +232,21 @@ function FancyCard({ top, bottom, children }: { top: string; bottom: string; chi
       <span className="pointer-events-none absolute -right-10 -top-10 h-[110px] w-[110px] rounded-full bg-white/[0.08]" />
       <span className="pointer-events-none absolute -bottom-8 right-0 h-[60px] w-[60px] rounded-full bg-white/[0.06]" />
       <div className="relative p-3">{children}</div>
+    </div>
+  );
+}
+
+// 🎂 miGlife's Birthday Card (sent by the server at 12 AM on the day)
+function BirthdayCard({ a }: { a: Alert }) {
+  return (
+    <div
+      className="relative my-[3px] overflow-hidden rounded-[22px] border-[1.5px] border-white/70 p-[18px] text-white shadow-[0_12px_26px_rgba(255,79,139,.35)]"
+      style={{ background: "linear-gradient(135deg,#ff7a59,#ff4f8b 50%,#a855f7)" }}
+    >
+      <span className="pointer-events-none absolute -right-2 -top-3 text-[86px] opacity-25">🎂</span>
+      <p className="relative text-[11px] font-black tracking-[2px]">🎉 BIRTHDAY CARD · miGlife</p>
+      <p className="relative mt-1.5 whitespace-pre-wrap text-[15px] font-semibold leading-[21px]">{a.text}</p>
+      <p className="relative mt-2 text-[11px] opacity-80">{fullTime(a.createdAtMs)}</p>
     </div>
   );
 }
@@ -886,6 +905,8 @@ export default function AlertsPage() {
                     </Link>
                   </FancyCard>
                 );
+              } else if (a.type === "birthday") {
+                card = <BirthdayCard a={a} />;
               } else if (a.type === "color_purchase_request" && a.requestId) {
                 card = <ColorRequestCard a={a} />;
               } else if ((a.type === "merchant_tag_request" || a.type === "mentor_tag_request") && a.requestId) {
