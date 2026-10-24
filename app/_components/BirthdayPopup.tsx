@@ -58,12 +58,9 @@ export function BirthdayPopup({ username }: { username: string }) {
       .then(({ data }) => {
         if (!alive) return;
         const list = (data?.people || []).filter(Boolean);
-        if (!data?.me && list.length === 0) {
-          try {
-            localStorage.setItem(key, "1");
-          } catch {}
-          return;
-        }
+        // nobody today (yet): don't remember it — a birthday added later
+        // today still shows on the next visit
+        if (!data?.me && list.length === 0) return;
         setPeople(list);
         setStep(data?.me ? "mine" : "others");
         try {
