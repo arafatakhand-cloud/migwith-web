@@ -247,10 +247,10 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                   </div>
                   {note && <p data-notranslate className="mt-2 text-xs text-[#5B6B8C]">&ldquo;{note}&rdquo;</p>}
                   <div className="mt-3 flex gap-2.5">
-                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="flex-1 rounded-xl border border-[#E5484D]/60 py-2 text-sm font-bold text-[#E5484D] disabled:opacity-40">
+                    <button type="button" disabled={busy.has(r.id)} onClick={() => reject(r)} className="reject-3d flex-1 rounded-xl border border-[#E5484D]/60 py-2 text-sm font-bold text-[#E5484D] disabled:opacity-40">
                       ✕ Reject
                     </button>
-                    <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="flex-[1.4] rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] py-2 text-sm font-black text-white disabled:opacity-40">
+                    <button type="button" disabled={busy.has(r.id)} onClick={() => approve(r)} className="approve-3d flex-[1.4] rounded-xl bg-gradient-to-r from-[#22C55E] to-[#16A34A] py-2 text-sm font-black text-white disabled:opacity-40">
                       {busy.has(r.id) ? "…" : acceptCoins > 0 ? `✓ Approve · ${acceptCoins % 1000 === 0 ? `${acceptCoins / 1000}K` : acceptCoins}` : "✓ Approve"}
                     </button>
                   </div>

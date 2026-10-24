@@ -901,3 +901,45 @@ html[data-theme="glass"]:not([data-ui="classic"]) .room-chat-bg {
 @media (prefers-reduced-motion: reduce) {
   .lb-armed, .lb-pop { animation: none; }
 }
+
+/* 🫧 Mentor / Merchant dashboards in the Glass theme ("demo 10"): the Lobby sky
+   (no purple wave), white 3D glass cards, blue 3D tabs and buttons. */
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .wave-top,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .wave-glow { display: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-hello { color: #0b2a5b; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-hello p { color: inherit; filter: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-hello p + p { color: #35507e; }
+html[data-theme="glass"]:not([data-ui="classic"]) main[data-shell] .wave-page .bg-white,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .gtabs,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero-chip,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .reject-3d {
+  background:
+    linear-gradient(180deg, transparent 72%, rgba(40, 80, 160, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 246, 255, 0.88)) !important;
+  border: 1.5px solid #fff !important;
+  box-shadow:
+    inset 0 2px 1px #fff,
+    inset 0 -3px 6px rgba(40, 80, 140, 0.1),
+    0 10px 24px rgba(40, 80, 140, 0.16) !important;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .gtabs-bubble,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .approve-3d {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 45%),
+    linear-gradient(180deg, #5aa2ff, #1565d8) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: inset 0 -3px 4px rgba(0, 0, 0, 0.12), 0 6px 14px rgba(21, 101, 216, 0.4) !important;
+  color: #fff !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero { color: #0b2a5b; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero > span.pointer-events-none { display: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-white,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-white\/85,
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-white\/80 { color: #5b6b8c !important; text-shadow: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .earn-hero-amt { color: #1565d8 !important; filter: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-\[\#FFD66B\] { color: #c98a0c !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-\[\#8FF0B4\] { color: #059669 !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .bg-white\/20 { background: #eaf2ff !important; color: #1565d8 !important; }

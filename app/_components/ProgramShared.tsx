@@ -312,14 +312,14 @@ function DatePickerSheet({ day, onPick, onClose }: { day: string; onPick: (d: st
  *  blurred colour glows, so the white cards float on colour. */
 export function WavePage({ children }: { children: ReactNode }) {
   return (
-    <div className="page-bg relative isolate min-h-[calc(100dvh-64px)] overflow-hidden bg-gradient-to-b from-[#E4EEFD] via-[#EEE8FF] to-[#FFE8F2]">
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[250px] overflow-hidden rounded-b-[50%_22%] bg-gradient-to-br from-[#2F6ABD] via-[#5A8FD6] to-[#8B5CFF]">
+    <div className="wave-page page-bg relative isolate min-h-[calc(100dvh-64px)] overflow-hidden bg-gradient-to-b from-[#E4EEFD] via-[#EEE8FF] to-[#FFE8F2]">
+      <div className="wave-top pointer-events-none absolute inset-x-0 top-0 -z-10 h-[250px] overflow-hidden rounded-b-[50%_22%] bg-gradient-to-br from-[#2F6ABD] via-[#5A8FD6] to-[#8B5CFF]">
         <span className="absolute -right-10 -top-14 h-48 w-48 rounded-full bg-white/15" />
         <span className="absolute bottom-6 left-[-30px] h-28 w-28 rounded-full bg-white/10" />
       </div>
-      <span className="pointer-events-none absolute -left-24 top-[420px] -z-10 h-72 w-72 rounded-full bg-[#7FB2FF]/40 blur-3xl" />
-      <span className="pointer-events-none absolute -right-24 top-[720px] -z-10 h-72 w-72 rounded-full bg-[#B79CFF]/40 blur-3xl" />
-      <span className="pointer-events-none absolute -left-10 top-[1050px] -z-10 h-64 w-64 rounded-full bg-[#FFB3CF]/40 blur-3xl" />
+      <span className="wave-glow pointer-events-none absolute -left-24 top-[420px] -z-10 h-72 w-72 rounded-full bg-[#7FB2FF]/40 blur-3xl" />
+      <span className="wave-glow pointer-events-none absolute -right-24 top-[720px] -z-10 h-72 w-72 rounded-full bg-[#B79CFF]/40 blur-3xl" />
+      <span className="wave-glow pointer-events-none absolute -left-10 top-[1050px] -z-10 h-64 w-64 rounded-full bg-[#FFB3CF]/40 blur-3xl" />
       {children}
     </div>
   );
@@ -339,9 +339,9 @@ export function GradientTabs<T extends string>({
 }) {
   const i = Math.max(0, tabs.findIndex((t) => t.id === value));
   return (
-    <div className={`relative flex min-w-0 flex-1 rounded-2xl bg-white p-1 shadow-[0_2px_10px_rgba(30,99,214,.12)] ${small ? "text-[12px]" : "text-[11px]"}`}>
+    <div className={`gtabs relative flex min-w-0 flex-1 rounded-2xl bg-white p-1 shadow-[0_2px_10px_rgba(30,99,214,.12)] ${small ? "text-[12px]" : "text-[11px]"}`}>
       <span
-        className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-r from-[#5A8FD6] via-[#1E63D6] to-[#8B5CFF] shadow-[0_4px_12px_rgba(30,99,214,.45)] transition-all duration-300 ease-out"
+        className="gtabs-bubble pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-r from-[#5A8FD6] via-[#1E63D6] to-[#8B5CFF] shadow-[0_4px_12px_rgba(30,99,214,.45)] transition-all duration-300 ease-out"
         style={{ left: `calc(${(i * 100) / tabs.length}% + 4px)`, width: `calc(${100 / tabs.length}% - 8px)` }}
       />
       {tabs.map((t) => {
@@ -400,7 +400,7 @@ export function ProgramBar<P extends string>({
   return (
     <div className={gold ? "bg-transparent" : "bg-[#0B1F3A]"}>
       {gold && hello && hello.name && (
-        <div className="mx-auto max-w-4xl px-4 pb-1 pt-3 text-white">
+        <div className="wave-hello mx-auto max-w-4xl px-4 pb-1 pt-3 text-white">
           <p className="text-lg font-extrabold drop-shadow-sm">👋 Hi, {hello.name}</p>
           <p className="text-xs text-white/85">{hello.line}</p>
         </div>
@@ -611,7 +611,7 @@ export function EarningPanel({
   return (
     <div className="space-y-3 px-3 py-3">
       {gold ? (
-        <div className="relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#5A8FD6] via-[#2F6ABD] to-[#8B5CFF] p-4 text-white shadow-[0_10px_24px_rgba(47,106,189,.35)]">
+        <div className="earn-hero relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#5A8FD6] via-[#2F6ABD] to-[#8B5CFF] p-4 text-white shadow-[0_10px_24px_rgba(47,106,189,.35)]">
           <span className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/10" />
           <span className="pointer-events-none absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-white/[0.07]" />
           <div className="relative flex items-center justify-between">
@@ -619,7 +619,7 @@ export function EarningPanel({
             <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
           </div>
           <div className="relative mt-1 flex items-center gap-3">
-            <p className="min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-white drop-shadow-sm">
+            <p className="earn-hero-amt min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-white drop-shadow-sm">
               {amount(view.total)}
             </p>
             <SettledRing settled={view.settled} pending={view.pending} />
@@ -630,7 +630,7 @@ export function EarningPanel({
               ["Settled", view.settled, "text-[#8FF0B4]"],
               ["Balance", balance, "text-white"],
             ].map(([l, v, col]) => (
-              <div key={l as string} className="rounded-xl bg-white/15 py-1.5 backdrop-blur-sm">
+              <div key={l as string} className="earn-hero-chip rounded-xl bg-white/15 py-1.5 backdrop-blur-sm">
                 <p className="text-[10px] text-white/80">
                   <span className={col as string}>●</span> {l}
                 </p>
