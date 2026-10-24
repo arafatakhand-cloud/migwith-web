@@ -970,3 +970,49 @@ html[data-theme="glass"]:not([data-ui="classic"]) .lv-up {
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .fr-solid.fr-solid.fr-solid.bg-white {
   background: #fff !important;
 }
+
+/* 🫧 Landing page (miglife.app): clear 3D glass on the Lobby sky */
+.lp-sky {
+  background:
+    radial-gradient(30% 18% at 22% 12%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(35% 20% at 80% 34%, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(30% 16% at 30% 62%, rgba(255, 255, 255, 0.8), transparent 70%),
+    radial-gradient(35% 18% at 75% 86%, rgba(255, 255, 255, 0.75), transparent 70%),
+    linear-gradient(180deg, #9fd0ff, #d7ecff 45%, #ffe6f1);
+}
+.lp-glass {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.16));
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 1.5px 1px #fff,
+    inset 0 -3px 8px rgba(40, 80, 140, 0.08),
+    0 16px 40px -16px rgba(40, 80, 140, 0.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.5);
+  backdrop-filter: blur(18px) saturate(1.5);
+}
+.lp-glass-soft {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 1px 1px #fff, 0 4px 12px -6px rgba(40, 80, 140, 0.3);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.lp-btn3d {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.38), transparent 48%),
+    linear-gradient(180deg, #5aa2ff, #1565d8);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  box-shadow: inset 0 -3px 4px rgba(0, 0, 0, 0.12), 0 10px 22px -8px rgba(21, 101, 216, 0.6);
+  color: #fff;
+}
+.lp-gloss {
+  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  box-shadow: inset 0 2px 1px rgba(255, 255, 255, 0.6), inset 0 -4px 8px rgba(0, 0, 0, 0.15), 0 14px 30px -12px rgba(11, 31, 58, 0.45);
+}
+.lp-gloss::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 55% 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
+  pointer-events: none;
+}

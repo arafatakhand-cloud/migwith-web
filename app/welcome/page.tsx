@@ -39,11 +39,12 @@ function Logo({ small = false }: { small?: boolean }) {
   );
 }
 
-const card = "relative overflow-hidden rounded-[28px] border border-white bg-white/75 p-6 shadow-[0_10px_30px_-12px_rgba(31,116,196,0.35)] backdrop-blur-xl";
+// 🫧 clear 3D glass cards on the Lobby sky (classes in globals.css)
+const card = "lp-glass relative overflow-hidden rounded-[28px] p-6";
 
 export default function Landing() {
   return (
-    <main className="relative min-h-screen overflow-x-clip bg-gradient-to-b from-[#EAF7FF] via-[#D3EEFD] to-[#B9E2FA] text-[#0B2A5B]">
+    <main className="lp-sky relative min-h-screen overflow-x-clip text-[#0B2A5B]">
       {/* aurora */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[1100px] overflow-hidden">
         <div className="lp-aurora absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-white/70 blur-[120px]" />
@@ -54,7 +55,7 @@ export default function Landing() {
 
       {/* Header */}
       <header className="sticky top-0 z-40">
-        <div className="mx-auto mt-3 flex max-w-6xl items-center gap-4 rounded-full border border-white bg-white/75 px-4 py-2.5 shadow-sm backdrop-blur-xl sm:mx-6 lg:mx-auto">
+        <div className="mx-auto mt-3 lp-glass flex max-w-6xl items-center gap-4 rounded-full px-4 py-2.5 sm:mx-6 lg:mx-auto">
           <a href="#top" aria-label="miGlife">
             <Logo />
           </a>
@@ -65,7 +66,7 @@ export default function Landing() {
           </nav>
           <WebLink
             path="/login"
-            className="ml-auto rounded-full bg-[#1F74C4] px-4 py-1.5 text-sm font-bold text-white transition hover:bg-[#1A64AA] md:ml-0"
+            className="lp-btn3d ml-auto rounded-full px-4 py-1.5 text-sm font-bold md:ml-0"
           >
             Log in
           </WebLink>
@@ -76,7 +77,7 @@ export default function Landing() {
       <section id="top" className="relative">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.15fr_1fr] lg:pb-24 lg:pt-20">
           <div className="text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-[#24416B] backdrop-blur">
+            <span className="lp-glass-soft inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold text-[#24416B]">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#3DDC84] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#3DDC84]" />
@@ -98,26 +99,26 @@ export default function Landing() {
               <DownloadButton />
               <WebLink
                 path="/register"
-                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6] px-6 py-3.5 font-bold text-white shadow-[0_10px_40px_-10px_rgba(99,102,241,0.8)] transition hover:-translate-y-0.5"
+                className="lp-btn3d group inline-flex items-center gap-2 rounded-2xl px-6 py-3.5 font-bold transition hover:-translate-y-0.5"
               >
                 Start in your browser
                 <span className="transition-transform group-hover:translate-x-1">→</span>
               </WebLink>
             </div>
             <div className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs font-semibold text-[#24416B] lg:justify-start">
-              <span>✓ Free</span>
-              <span>✓ No phone number</span>
-              <span>✓ Android & web</span>
+              <span className="lp-glass-soft rounded-full px-3 py-1">✓ Free</span>
+              <span className="lp-glass-soft rounded-full px-3 py-1">✓ No phone number</span>
+              <span className="lp-glass-soft rounded-full px-3 py-1">✓ Android & web</span>
             </div>
           </div>
           <LiveDemo />
         </div>
 
         {/* command marquee */}
-        <div className="relative border-y border-white bg-white/50 py-3 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="relative border-y border-white/80 bg-white/25 py-3 backdrop-blur-md [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="lp-marquee flex w-max gap-3">
             {[...COMMANDS, ...COMMANDS].map((c, i) => (
-              <span key={i} className="rounded-full border border-[#CFE6F8] bg-white/80 px-3.5 py-1 font-mono text-sm font-semibold text-[#155A9E]">
+              <span key={i} className="lp-glass-soft rounded-full px-3.5 py-1 font-mono text-sm font-semibold text-[#155A9E]">
                 {c}
               </span>
             ))}
@@ -145,7 +146,7 @@ export default function Landing() {
                   ["🏙️", "Ctg", "#C86BFA"],
                   ["💬", "Chat", "#5AA8FF"],
                 ].map(([i, n, c]) => (
-                  <div key={n} className="flex items-center gap-3 rounded-2xl border border-[#DCEBF8] bg-[#F4FAFF] px-3 py-2.5">
+                  <div key={n} className="lp-glass-soft flex items-center gap-3 rounded-2xl px-3 py-2.5">
                     <span className="text-lg">{i}</span>
                     <span className="font-bold">{n}</span>
                     <span className="ml-auto h-2 w-2 rounded-full" style={{ background: c, boxShadow: `0 0 10px ${c}` }} />
@@ -158,7 +159,7 @@ export default function Landing() {
               <p className="text-sm font-bold text-[#A86400]">⭐ Levels</p>
               <h3 className="mt-1 text-2xl font-black">Level up</h3>
               <p className="mt-2 text-sm leading-6 text-[#24416B]">Chat, join rooms and send gifts to earn XP.</p>
-              <div className="mt-5 h-3 overflow-hidden rounded-full bg-[#E3EEF8]">
+              <div className="mt-5 h-3 overflow-hidden rounded-full bg-white/50 shadow-[inset_0_1px_2px_rgba(40,80,140,.15)]">
                 <div className="lp-xp h-full rounded-full bg-gradient-to-r from-[#FFB547] to-[#FF6B6B]" />
               </div>
               <div className="mt-4 flex justify-between text-xl">
@@ -205,7 +206,7 @@ export default function Landing() {
               <p className="text-sm font-bold text-[#6D4BD8]">✨ Style</p>
               <h3 className="mt-1 text-2xl font-black">Make an entrance</h3>
               <p className="mt-2 text-sm leading-6 text-[#24416B]">Entry effects, colour themes and the classic look.</p>
-              <div className="mt-5 rounded-2xl border border-[#D9CCFA] bg-gradient-to-r from-[#F1EBFF] to-[#E3F0FD] px-3 py-2.5 text-sm font-bold">
+              <div className="lp-glass-soft mt-5 rounded-2xl px-3 py-2.5 text-sm font-bold">
                 <span className="lp-sparkle inline-block">✨</span> nila [32] has entered.
               </div>
             </div>
@@ -227,7 +228,7 @@ export default function Landing() {
             {GAMES.map((g) => (
               <div
                 key={g.name}
-                className="group relative overflow-hidden rounded-3xl p-4 text-white shadow-lg transition hover:-translate-y-1"
+                className="lp-gloss group relative overflow-hidden rounded-3xl p-4 text-white transition hover:-translate-y-1"
                 style={{ background: `linear-gradient(145deg, ${g.from}, ${g.to})` }}
               >
                 <span className="absolute -right-3 -top-3 text-6xl opacity-25 transition group-hover:scale-110">{g.icon}</span>
@@ -241,17 +242,17 @@ export default function Landing() {
 
       {/* Get started */}
       <section id="start" className="scroll-mt-24 px-4 pb-20 sm:px-6">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[36px] border border-white/10 bg-gradient-to-br from-[#0E4C92] via-[#1560B0] to-[#1E88E5] px-6 py-14 text-white sm:px-12">
+        <div className="lp-glass relative mx-auto max-w-6xl overflow-hidden rounded-[36px] px-6 py-14 text-[#0B2A5B] sm:px-12">
           <div className="lp-aurora pointer-events-none absolute -right-20 -top-20 h-80 w-80 rounded-full bg-[#FF8A3D]/30 blur-[100px]" />
           <div className="relative grid items-center gap-10 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-black tracking-tight sm:text-5xl">Your seat is waiting.</h2>
-              <p className="mt-4 max-w-md text-white/90">Three steps and you&apos;re in a room.</p>
+              <p className="mt-4 max-w-md text-[#35507E]">Three steps and you&apos;re in a room.</p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <DownloadButton big />
                 <WebLink
                   path="/register"
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 text-lg font-black backdrop-blur transition hover:bg-white/20"
+                  className="lp-btn3d inline-flex items-center justify-center gap-2 rounded-2xl px-6 py-4 text-lg font-black transition hover:-translate-y-0.5"
                 >
                   ✨ Create your ID
                 </WebLink>
@@ -263,11 +264,11 @@ export default function Landing() {
                 ["Create your ID", "A username and a password — that's it."],
                 ["Join a room", "Say hi, send a gift, start a game."],
               ].map(([t, d], i) => (
-                <li key={t} className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-base font-black text-[#0E4C92]">{i + 1}</span>
+                <li key={t} className="lp-glass-soft flex items-start gap-4 rounded-2xl p-4">
+                  <span className="lp-btn3d flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base font-black">{i + 1}</span>
                   <span>
                     <span className="block font-black">{t}</span>
-                    <span className="block text-sm text-white/90">{d}</span>
+                    <span className="block text-sm text-[#35507E]">{d}</span>
                   </span>
                 </li>
               ))}
@@ -280,7 +281,7 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-white bg-white/60">
+      <footer className="border-t border-white/80 bg-white/30 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 px-4 py-8 text-sm text-[#24416B] sm:flex-row sm:px-6">
           <Logo small />
           <span>Chat · Play · Make friends</span>

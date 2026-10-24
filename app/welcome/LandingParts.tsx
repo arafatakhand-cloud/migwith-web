@@ -139,18 +139,18 @@ export function LiveDemo() {
   return (
     <div className="relative mx-auto w-[290px] sm:w-[310px]">
       {/* floating chips around the phone */}
-      <span className="lp-float absolute -left-10 top-16 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float absolute -left-10 top-16 z-20 hidden lp-glass rounded-2xl px-3 py-2 text-xs font-bold text-[#0B2A5B] sm:block">
         ⭐ +2 XP
       </span>
-      <span className="lp-float-slow absolute -right-12 top-40 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float-slow absolute -right-12 top-40 z-20 hidden lp-glass rounded-2xl px-3 py-2 text-xs font-bold text-[#0B2A5B] sm:block">
         🥈 Level 12
       </span>
-      <span className="lp-float absolute -left-6 bottom-24 z-20 hidden rounded-2xl border border-white bg-white/85 px-3 py-2 text-xs font-bold text-[#0B2A5B] shadow-xl backdrop-blur-md sm:block">
+      <span className="lp-float absolute -left-6 bottom-24 z-20 hidden lp-glass rounded-2xl px-3 py-2 text-xs font-bold text-[#0B2A5B] sm:block">
         🌹 Gift sent
       </span>
 
       <div className="absolute -inset-8 -z-10 rounded-[60px] bg-gradient-to-br from-[#3B82F6]/40 via-[#C86BFA]/30 to-[#FF8A3D]/40 blur-3xl" />
-      <div className="rounded-[44px] border border-white/15 bg-gradient-to-b from-[#1B2A4E] to-[#0B1430] p-[9px] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)]">
+      <div className="lp-glass rounded-[44px] p-[9px] shadow-[0_30px_80px_-20px_rgba(11,31,58,0.55)]">
         <div className="overflow-hidden rounded-[36px] bg-[#0E1A38]">
           <div className="flex items-center justify-between px-6 pb-1 pt-3 text-[10px] font-bold text-white/80">
             <span>9:41</span>
@@ -207,7 +207,7 @@ export function LiveDemo() {
       </div>
 
       {/* scene switcher */}
-      <div className="mt-6 flex justify-center gap-1.5 rounded-full border border-white bg-white/60 p-1 shadow-sm backdrop-blur-md">
+      <div className="lp-glass mt-6 flex justify-center gap-1.5 rounded-full p-1">
         {SCENES.map((sc, k) => (
           <button
             key={sc.id}
@@ -217,7 +217,7 @@ export function LiveDemo() {
               setShown(1);
             }}
             className={`flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition ${
-              k === scene ? "bg-[#1F74C4] text-white shadow" : "text-[#3D5A80] hover:text-[#1F74C4]"
+              k === scene ? "lp-btn3d" : "text-[#3D5A80] hover:text-[#1F74C4]"
             }`}
           >
             {sc.label}
