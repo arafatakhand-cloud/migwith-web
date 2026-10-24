@@ -2076,10 +2076,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
                     <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#8A5A00] [overflow-wrap:anywhere]">
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#800020] [overflow-wrap:anywhere]">
                       {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
                         /^https?:\/\//.test(part) ? (
-                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#EF9F27] underline-offset-2">
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#800020]/50 underline-offset-2">
                             {part}
                           </a>
                         ) : (
