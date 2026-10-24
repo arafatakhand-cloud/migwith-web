@@ -943,3 +943,25 @@ html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .earn-he
 html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-\[\#FFD66B\] { color: #c98a0c !important; }
 html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .text-\[\#8FF0B4\] { color: #059669 !important; }
 html[data-theme="glass"]:not([data-ui="classic"]) .wave-page .earn-hero .bg-white\/20 { background: #eaf2ff !important; color: #1565d8 !important; }
+
+/* 🫧 Glass theme: Level System — white 3D glass cards with dark writing on the
+   Lobby sky (the navy cards looked heavy), like the app. */
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card {
+  background:
+    linear-gradient(180deg, transparent 72%, rgba(40, 80, 160, 0.08)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(240, 246, 255, 0.88)) !important;
+  border-color: #fff !important;
+  box-shadow: inset 0 2px 1px #fff, inset 0 -3px 6px rgba(40, 80, 140, 0.1), 0 10px 24px rgba(40, 80, 140, 0.16);
+  color: #0b2a5b !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card.border-\[\#E5484D\] { border-color: #e5484d !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card :is(.text-\[\#B9C5DF\]),
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card.text-\[\#B9C5DF\] { color: #5b6b8c !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card :is(.text-\[\#FFC04A\]),
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card.text-\[\#FFC04A\] { color: #b87800 !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-card .bg-\[\#586079\] { background: #e3ecf7 !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .lv-up {
+  background: linear-gradient(180deg, #fffaf0, #fff1d6) !important;
+  color: #b87800 !important;
+  box-shadow: inset 0 2px 1px #fff, 0 8px 20px rgba(184, 120, 0, 0.15);
+}

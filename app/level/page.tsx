@@ -106,7 +106,7 @@ export default function LevelPage() {
                 <span className="text-xl font-bold text-[#0B2A5B]">Level System</span>
               </div>
             )}
-            <div className="classic-light rounded-3xl border-[1.5px] border-[#5B6F9D] bg-[#2A365A] p-5 text-white">
+            <div className="lv-card classic-light rounded-3xl border-[1.5px] border-[#5B6F9D] bg-[#2A365A] p-5 text-white">
               <h1 className="text-2xl font-bold">🛡️ Level System</h1>
               <p className="mt-1.5 text-sm text-[#B9C5DF]">{username}</p>
               <div className="mt-3.5 flex items-center gap-1.5">
@@ -133,7 +133,7 @@ export default function LevelPage() {
             {showXpDetails && (() => {
               const full = todayXp >= DAILY_XP_CAP;
               return (
-                <div className={`classic-light rounded-[14px] border bg-[#2A365A] p-3.5 text-white ${full ? "border-[#E5484D]" : "border-[#5B6F9D]"}`}>
+                <div className={`lv-card classic-light rounded-[14px] border bg-[#2A365A] p-3.5 text-white ${full ? "border-[#E5484D]" : "border-[#5B6F9D]"}`}>
                   <div className="flex items-center">
                     <span className="flex-1 text-[15px] font-bold">📅 Today</span>
                     <span className={`text-sm font-extrabold ${full ? "text-[#FF6B6B]" : "text-[#FFC04A]"}`}>
@@ -153,7 +153,7 @@ export default function LevelPage() {
             })()}
 
             {lastLevelUp > 1 && (
-              <p className="rounded-[14px] border border-[#E1A229] bg-[#3D2E1A] p-3.5 text-[15px] font-bold text-[#FFC04A]">
+              <p className="lv-up rounded-[14px] border border-[#E1A229] bg-[#3D2E1A] p-3.5 text-[15px] font-bold text-[#FFC04A]">
                 🎉 You reached Level {lastLevelUp}!
               </p>
             )}
@@ -163,7 +163,7 @@ export default function LevelPage() {
                     <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">How you earn XP</h2>
                     <div className="space-y-1.5">
                       {EARN.map(([icon, label]) => (
-                        <div key={label} className="classic-light flex items-center gap-3 rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-white">
+                        <div key={label} className="lv-card classic-light flex items-center gap-3 rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-white">
                           <span className="text-[22px]">{icon}</span>
                           {label}
                         </div>
@@ -174,11 +174,11 @@ export default function LevelPage() {
 
             <h2 className="pt-1 text-lg font-bold text-[#0B2A5B]">Unlocked Rewards</h2>
             {gifts.length === 0 ? (
-              <p className="rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-[#B9C5DF]">Reach Level 2 to unlock your first gift.</p>
+              <p className="lv-card rounded-[14px] bg-[#2A365A] p-3.5 text-[13px] text-[#B9C5DF]">Reach Level 2 to unlock your first gift.</p>
             ) : (
               <div className="space-y-1.5">
                 {gifts.map((g) => (
-                  <p key={g} className="rounded-[14px] border border-[#5B6F9D] bg-[#2A365A] p-3.5 text-sm font-bold text-[#FFC04A]">
+                  <p key={g} className="lv-card rounded-[14px] border border-[#5B6F9D] bg-[#2A365A] p-3.5 text-sm font-bold text-[#FFC04A]">
                     ✓ {g}
                   </p>
                 ))}
