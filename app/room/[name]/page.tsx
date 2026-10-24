@@ -127,6 +127,7 @@ import { RainbowName } from "../../_components/RainbowName";
 import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
 import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
+import { RoomInfoCards } from "../../_components/RoomInfoCards";
 import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
 import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
@@ -2036,6 +2037,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               {/* Room cards, like the app: manager, welcome text, who is here —
                   the app's own sizes (15 / 15 / 16, announcement 17) */}
               <div className="space-y-1.5 pb-1">
+                {classic ? (
+                  <>
                 <p className={`${infoBox} px-3.5 py-2.5 text-[15px]`}>
                   👥 This room is managed by: {isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                 </p>
@@ -2051,6 +2054,22 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   <p>👫 Currently in this room:</p>
                   {roomUsers.length > 0 && <p className={`mt-1 ${classic ? "text-[#16315F]" : "text-black"}`}>{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
                 </div>
+                  </>
+                ) : (
+                  // ✨ design 1+3: pastel cards, coloured edge, names as chips
+                  <RoomInfoCards
+                    manager={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
+                    description={roomDescription}
+                    people={roomUsers.map((u) => brandMiglife(u.username))}
+                    locked={
+                      locked && (
+                        <p className="rounded-xl border border-[#D85A30] bg-[#4A1B0C] px-3.5 py-2.5 text-[13px] font-bold text-[#F0997B]">
+                          🔒 This room is locked. Only admins/mods can enter until it&apos;s unlocked.
+                        </p>
+                      )
+                    }
+                  />
+                )}
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {announcement && (
                   <div className="flex items-start gap-2 rounded-[14px] border border-[#EF9F27] px-3.5 py-2.5">
