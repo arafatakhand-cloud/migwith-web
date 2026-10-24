@@ -3347,7 +3347,7 @@ function MessageRow({
             })()}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
               and the Classic style, which shows your own name ("legend: hi"). */}
-          {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
+          {(!mine || classic || (!isRoomLine && special.paid(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
               style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
