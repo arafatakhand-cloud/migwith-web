@@ -517,6 +517,22 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
   const [saving, setSaving] = useState(false);
   const words = wordCount(value);
   const near = words >= 110;
+  // ⌨️ The phone keyboard: the sheet sits in the part of the screen you can
+  // still see (above the keyboard) and scrolls inside when it doesn't fit —
+  // the title and the box were pushed off the top before.
+  const [vv, setVv] = useState<{ top: number; h: number } | null>(null);
+  useEffect(() => {
+    const v = window.visualViewport;
+    if (!v) return;
+    const upd = () => setVv({ top: v.offsetTop, h: v.height });
+    upd();
+    v.addEventListener("resize", upd);
+    v.addEventListener("scroll", upd);
+    return () => {
+      v.removeEventListener("resize", upd);
+      v.removeEventListener("scroll", upd);
+    };
+  }, []);
   const save = async () => {
     if (saving) return;
     setSaving(true);
@@ -527,9 +543,13 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
     }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/[0.12] p-3 pb-safe sm:items-center" onClick={() => !saving && onCancel()}>
+    <div
+      className="fixed inset-x-0 top-0 z-50 flex h-[100dvh] items-end justify-center bg-[#0B1F3A]/[0.12] p-3 pb-safe sm:items-center"
+      style={vv ? { top: vv.top, height: vv.h } : undefined}
+      onClick={() => !saving && onCancel()}
+    >
       <div
-        className="w-full max-w-md rounded-[28px] border-[1.5px] border-white/[0.92] p-[18px] shadow-[inset_0_1px_1px_#fff,0_10px_30px_rgba(40,80,140,.22)]"
+        className="max-h-full w-full max-w-md overflow-y-auto overscroll-contain rounded-[28px] border-[1.5px] border-white/[0.92] p-[18px] shadow-[inset_0_1px_1px_#fff,0_10px_30px_rgba(40,80,140,.22)]"
         style={{
           // a solid white card (the clear glass let the page show through)
           background: "linear-gradient(180deg, #ffffff, #f7faff)",
