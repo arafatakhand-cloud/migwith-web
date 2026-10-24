@@ -184,6 +184,8 @@ export const lbIsGlass = (skin: LbSkin) => skin.id === "glass" || LB_GLASS_3D.ha
 const LB_PASTELS = ["#FFD6E7", "#FFE6C7", "#D6E8FF", "#F4D9FF", "#FFD9D9", "#D9F5EC"];
 // 🎨 The coloured 3D edge of each glass box's tiles (pastel: one per character).
 const LB_RIMS: Record<string, string> = { glass: "#8DB8EE", glass3d: "#6FA3EA", white3d: "#A9BEDD", glassring: "#A993F2" };
+// …and of the whole bet box's frame.
+const LB_BOX_RIMS: Record<string, string> = { ...LB_RIMS, glasspastel: "#C99BF0" };
 const LB_PASTEL_RIMS = ["#F49AC1", "#F2B266", "#86B4F0", "#C99BF0", "#F09A9A", "#76CFAF"];
 const lbRim = (skin: LbSkin, slot: number) =>
   skin.id === "glasspastel" ? LB_PASTEL_RIMS[slot % LB_PASTEL_RIMS.length] : LB_RIMS[skin.id] || "#8DB8EE";
@@ -246,11 +248,20 @@ export const lbHasShine = (skin: LbSkin) => skin.id === "glass3d" || skin.id ===
 
 /** Bet box frame. "Clear Glass" uses the same recipe as the "Mention a user" panel. */
 export function lbBoxStyle(skin: LbSkin, borderPx = 1.6): CSSProperties {
+  // 🫧 glass boxes: a coloured 3D frame + a lip under it, so the box stands out from the room
+  const frame = LB_BOX_RIMS[skin.id];
+  const frameStyle: CSSProperties = frame
+    ? {
+        borderWidth: 2,
+        borderStyle: "solid",
+        borderColor: `${frame}99 ${frame} ${frame} ${frame}`,
+        boxShadow: `inset 0 1.5px 1px #fff, 0 4px 0 ${frame}, 0 10px 24px rgba(40,80,160,.22)`,
+      }
+    : {};
   if (LB_GLASS_3D.has(skin.id)) {
     return {
       background: "linear-gradient(rgba(255,255,255,.5), rgba(255,255,255,.25))",
-      border: "1.5px solid rgba(255,255,255,.95)",
-      boxShadow: "inset 0 1.5px 1px #fff, 0 10px 24px rgba(40,80,160,.18)",
+      ...frameStyle,
       backdropFilter: "blur(12px) saturate(1.4)",
       WebkitBackdropFilter: "blur(12px) saturate(1.4)",
     };
@@ -258,8 +269,7 @@ export function lbBoxStyle(skin: LbSkin, borderPx = 1.6): CSSProperties {
   if (skin.id === "glass") {
     return {
       background: "linear-gradient(160deg, rgba(255,255,255,.34), rgba(255,255,255,.1))",
-      border: "1.5px solid rgba(255,255,255,.92)",
-      boxShadow: "inset 0 1px 1px #fff, 0 6px 16px rgba(40,80,140,.14)",
+      ...frameStyle,
       backdropFilter: "blur(6px) saturate(1.4)",
       WebkitBackdropFilter: "blur(6px) saturate(1.4)",
     };
