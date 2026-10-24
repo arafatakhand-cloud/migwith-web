@@ -135,27 +135,49 @@ function Tile({ value, label, tint, icon, onClick }: { value: string; label: str
   // 📟 Classic: same colours, numbers and white text as Modern, but a classic
   // box: square corners, flat, no gloss.
   const classic = useIsClassic();
+  if (!classic) {
+    // ✨ Modern (design 7): a white card with a coloured top band (icon), the
+    // number in the tile's colour under it — solid, never see-through.
+    const deep = `color-mix(in srgb, ${tint} 78%, black)`;
+    const body = (
+      <>
+        <span
+          className="relative block overflow-hidden py-[5px] text-[16px] leading-[19px]"
+          style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 82%, white), ${deep})` }}
+        >
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
+          <span className="relative">{icon}</span>
+        </span>
+        <span className="block pt-[3px] text-[19px] font-black leading-[22px]" style={{ color: deep }}>
+          {value}
+        </span>
+        <span className="block truncate px-0.5 pb-[5px] text-[11.5px] font-bold leading-[15px] text-[#5B6B8C]">{label}</span>
+      </>
+    );
+    const cls7 =
+      "pf-tile7 relative block min-w-0 overflow-hidden rounded-[18px] border-[1.5px] border-white bg-white text-center shadow-[0_6px_14px_rgba(40,80,140,.16)]";
+    return onClick ? (
+      <button type="button" onClick={onClick} className={`${cls7} transition active:translate-y-0.5 active:scale-[.97]`}>
+        {body}
+      </button>
+    ) : (
+      <div className={cls7}>{body}</div>
+    );
+  }
   const style = {
     "--tint": tint,
     background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 70%, white), ${tint}, color-mix(in srgb, ${tint} 65%, black))`,
     borderColor: `color-mix(in srgb, ${tint} 60%, black)`,
-    boxShadow: classic ? "0 1px 2px rgba(0,0,0,.3)" : `0 4px 8px color-mix(in srgb, ${tint} 45%, transparent)`,
+    boxShadow: "0 1px 2px rgba(0,0,0,.3)",
   } as CSSProperties;
   const inner = (
     <>
-      {!classic && (
-        <>
-          <span className="tile-gloss pointer-events-none absolute inset-x-0.5 top-0.5 h-[48%] rounded-t-[20px] rounded-b-[40px] bg-gradient-to-b from-white/[0.34] to-white/[0.06]" />
-          <span className="tile-gloss pointer-events-none absolute bottom-0 right-0 h-[34px] w-[34px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,.18),transparent_70%)]" />
-          <span className="tile-gloss pointer-events-none absolute left-2.5 top-[7px] h-1.5 w-3.5 rounded-full bg-white/55" />
-        </>
-      )}
       <span className="relative block text-[15px] leading-[17px]">{icon}</span>
       <span className="pf-val relative block text-[19px] font-extrabold leading-[21px] [text-shadow:0_2px_3px_rgba(0,0,0,.55)]">{value}</span>
       <span className="pf-lab relative block text-[13px] font-semibold [text-shadow:0_1.5px_2px_rgba(0,0,0,.5)]">{label}</span>
     </>
   );
-  const cls = `relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden border text-white ${classic ? "rounded" : "pf-tile glass-shine rounded-[22px]"}`;
+  const cls = "relative flex h-[76px] min-w-0 flex-col items-center justify-center overflow-hidden rounded border text-white";
   return onClick ? (
     <button type="button" onClick={onClick} className={`${cls} transition active:translate-y-0.5 active:scale-[.97]`} style={style}>
       {inner}

@@ -1058,3 +1058,8 @@ html[data-theme="glass"]:not([data-ui="classic"]) .ann-add {
   padding-bottom: 10px;
   font-weight: 900;
 }
+
+/* Profile tiles (design 7) stay solid white in the Glass theme */
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-tile7.pf-tile7.pf-tile7.bg-white {
+  background: #fff !important;
+}
