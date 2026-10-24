@@ -189,7 +189,9 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
 // ---- Modern dark "trophy room" look for the Achievements window (like the app) ----
 // 📟 Classic: white window, navy text, orange + blue instead of pink + violet
 // (medals keep their metals). The window opens on a tap, so this is read then.
-const achC = (dark: string, classic: string) => (isClassicNow() ? classic : dark);
+// 🫧 Glass theme: the light colours too (the window is clear glass there).
+const isGlassNow = () => typeof document !== "undefined" && document.documentElement.dataset.theme === "glass";
+const achC = (dark: string, classic: string) => (isClassicNow() || isGlassNow() ? classic : dark);
 const gold = () => achC("#FFD36B", "#F07A00");
 const pink = () => achC("#FF5FA2", "#F07A00");
 const violet = () => achC("#8B5CFF", "#2F6ABD");
@@ -201,7 +203,7 @@ function ModernChip({ label, count, on, onClick }: { label: string; count: strin
       type="button"
       onClick={onClick}
       className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full py-1.5 pl-3 pr-1.5 text-xs font-semibold text-[#F3EEFF] ${
-        on ? "bg-gradient-to-r from-[#FF5FA2] to-[#8B5CFF]" : "border border-white/15 bg-white/[0.08]"
+        on ? "ach-on bg-gradient-to-r from-[#FF5FA2] to-[#8B5CFF]" : "ach-chip border border-white/15 bg-white/[0.08]"
       }`}
     >
       {label}
@@ -240,9 +242,9 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
   const C = 2 * Math.PI * R;
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/55 px-3 py-[22px]" onClick={onClose}>
+    <div className="ach-dim fixed inset-0 z-[90] flex items-center justify-center bg-black/55 px-3 py-[22px]" onClick={onClose}>
       <div
-        className="classic-light relative flex max-h-[min(680px,94vh)] w-full max-w-lg flex-col overflow-hidden rounded-[26px] bg-gradient-to-b from-[#150A30] to-[#0B0620] text-[#F3EEFF] shadow-[0_10px_40px_rgba(139,92,255,.55)]"
+        className="ach-win classic-light relative flex max-h-[min(680px,94vh)] w-full max-w-lg flex-col overflow-hidden rounded-[26px] bg-gradient-to-b from-[#150A30] to-[#0B0620] text-[#F3EEFF] shadow-[0_10px_40px_rgba(139,92,255,.55)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* gradient border */}
@@ -299,7 +301,7 @@ function AchievementsDialog({ ach, isOwnProfile, onClose }: { ach: AchData; isOw
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/[0.13] text-[15px] font-bold"
+            className="ach-x flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/[0.13] text-[15px] font-bold"
           >
             ✕
           </button>
@@ -391,7 +393,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
       role="button"
       tabIndex={0}
       onClick={onClick}
-      className="relative w-full cursor-pointer rounded-[18px] p-3"
+      className={`relative w-full cursor-pointer rounded-[18px] p-3 ${complete ? "ach-done" : best !== null ? "ach-earned" : "ach-plain"}`}
       style={
         complete
           ? {
@@ -431,7 +433,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
           </p>
           {next !== null && s.steps[next] > 1 && (
             <div className="mt-1.5 flex items-center gap-2">
-              <div className="h-[7px] flex-1 overflow-hidden rounded-full bg-white/[0.12]">
+              <div className="ach-track h-[7px] flex-1 overflow-hidden rounded-full bg-white/[0.12]">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#FFD36B] via-[#FF5FA2] to-[#8B5CFF]"
                   style={{ width: `${Math.min(100, (Math.min(value, s.steps[next]) / s.steps[next]) * 100)}%` }}
@@ -460,7 +462,7 @@ function SeriesRow({ s, ach, open, onClick }: { s: AchSeries; ach: AchData; open
       </div>
       {open && (
         <>
-          <div className="my-2.5 h-px bg-white/15" />
+          <div className="ach-line my-2.5 h-px bg-white/15" />
           <div className="no-scrollbar flex gap-2.5 overflow-x-auto">
             {s.steps.map((_, i) => {
               const b = ach.badges[achKey(s, i)];

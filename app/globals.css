@@ -1063,3 +1063,60 @@ html[data-theme="glass"]:not([data-ui="classic"]) .ann-add {
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .pf-tile7.pf-tile7.pf-tile7.bg-white {
   background: #fff !important;
 }
+
+/* 🫧 Glass theme: the Badges (Achievements) window — clear light glass, navy text */
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-dim {
+  background: rgba(11, 31, 58, 0.25) !important;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(234, 243, 255, 0.8) 55%, rgba(252, 239, 247, 0.84)) !important;
+  color: #1e293b !important;
+  border: 1.5px solid #fff;
+  box-shadow: 0 14px 40px rgba(40, 80, 160, 0.35) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-chip {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border-color: #fff !important;
+  color: #0b2a5b !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-plain {
+  background: rgba(255, 255, 255, 0.66) !important;
+  border-color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 4px 12px rgba(40, 80, 160, 0.12);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-earned {
+  background: linear-gradient(135deg, rgba(255, 236, 179, 0.85), rgba(255, 255, 255, 0.75)) !important;
+  border-color: rgba(240, 160, 30, 0.55) !important;
+  box-shadow: 0 4px 12px rgba(240, 160, 30, 0.18);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-track { background: rgba(11, 42, 91, 0.1) !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-line { background: rgba(11, 42, 91, 0.1) !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .ach-win .ach-x { background: rgba(11, 42, 91, 0.08) !important; color: #0b2a5b; }
+
+/* 🫧 Glass theme: Votes / Footprints lists — Lobby sky, glass header and rows */
+html[data-theme="glass"]:not([data-ui="classic"]) .ppl-win {
+  background:
+    radial-gradient(30% 18% at 25% 20%, rgba(255, 255, 255, 0.95), transparent 70%),
+    radial-gradient(35% 20% at 80% 60%, rgba(255, 255, 255, 0.85), transparent 70%),
+    linear-gradient(180deg, #9fd0ff, #d7ecff 55%, #ffe6f1) !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ppl-win .ppl-head {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.3)) !important;
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.9);
+  color: #0b2a5b !important;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ppl-win .ppl-head * { color: #0b2a5b !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .ppl-win .ppl-row {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.55)) !important;
+  border: 1.5px solid #fff;
+  box-shadow: 0 6px 16px rgba(40, 80, 160, 0.14);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .ppl-win .ppl-note { color: #35507e !important; }

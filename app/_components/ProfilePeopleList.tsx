@@ -125,8 +125,8 @@ export function ProfilePeopleList({
     );
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-sky-app">
-      <div className="flex items-center gap-3 bg-[#1E6FD9] px-3 py-2.5 text-white">
+    <div className="ppl-win fixed inset-0 z-50 flex flex-col bg-sky-app">
+      <div className="ppl-head flex items-center gap-3 bg-[#1E6FD9] px-3 py-2.5 text-white">
         <BackButton variant="dark" onClick={onClose} />
         <div>
           <p className="text-[17px] font-bold">{votes ? "❤️ Votes" : "👣 Footprints"}</p>
@@ -139,16 +139,16 @@ export function ProfilePeopleList({
       </div>
       <div className="flex-1 overflow-y-auto p-3">
         {error ? (
-          <div className="mt-16 text-center text-white">
+          <div className="ppl-note mt-16 text-center text-white">
             <p className="text-sm">{error}</p>
             <button type="button" onClick={() => setReload((r) => r + 1)} className="mt-3 rounded-xl bg-[#0B2A5B] px-5 py-2 font-bold">
               Retry
             </button>
           </div>
         ) : !people ? (
-          <p className="mt-16 text-center text-sm text-white">Loading…</p>
+          <p className="ppl-note mt-16 text-center text-sm text-white">Loading…</p>
         ) : people.length === 0 ? (
-          <p className="mt-16 text-center text-sm text-white">
+          <p className="ppl-note mt-16 text-center text-sm text-white">
             {votes ? "No one has voted for you yet." : "No one has viewed your profile yet."}
           </p>
         ) : (
@@ -157,7 +157,7 @@ export function ProfilePeopleList({
               <li key={p.username}>
                 <Link
                   href={`/profile/${encodeURIComponent(p.username)}`}
-                  className="flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm hover:bg-[#F4F9FF]"
+                  className="ppl-row flex items-center gap-3 rounded-2xl bg-white px-3 py-2.5 shadow-sm hover:bg-[#F4F9FF]"
                 >
                   {p.photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
