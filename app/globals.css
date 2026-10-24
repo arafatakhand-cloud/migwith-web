@@ -1230,4 +1230,49 @@ html[data-theme="glass"]:not([data-ui="classic"]) .wl-row.wl-row {
   border-radius: 18px;
   box-shadow: inset 0 2px 1px #fff, 0 3px 0 #8db8ee, 0 6px 12px rgba(40, 80, 160, 0.14);
   margin: 0 0 9px;
+
+/* 🌿 Lobby in the Glass theme — "6 · Aurora Mint": the profile card is mint →
+   sky → lilac glass with a white rim and a turquoise 3D lip; white chips,
+   status and stat tiles, each with a turquoise lip; a turquoise → blue XP bar;
+   search and friend rows are floating glass with turquoise edges. */
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card.aurora-card {
+  background: linear-gradient(140deg, rgba(214, 255, 240, 0.85), rgba(220, 236, 255, 0.75) 50%, rgba(240, 226, 255, 0.85)) !important;
+  border: 2px solid #fff;
+  box-shadow: inset 0 2px 1px #fff, 0 4px 0 #7cc9be, 0 12px 26px rgba(40, 120, 140, 0.2) !important;
+  margin-bottom: 14px;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip {
+  background: #fff !important;
+  border: 1.5px solid #fff !important;
+  box-shadow: 0 2px 0 #9fd8d0;
+  color: #0e7490 !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip::before { display: none; }
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-status {
+  background: rgba(255, 255, 255, 0.75) !important;
+  border: 2px solid #fff !important;
+  box-shadow: 0 2px 0 #9fd8d0;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-status::before { border-bottom-color: #fff !important; }
+html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .xp-fill {
+  background: linear-gradient(90deg, #4dd6c8, #3b8cff) !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .mh-stats.mh-stats {
+  background: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  padding: 0 0 4px;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) .mh-stats .stat-glass.stat-glass {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 2px solid #fff !important;
+  box-shadow: inset 0 2px 1px #fff, 0 3px 0 #7cc9be, 0 6px 12px rgba(40, 120, 140, 0.14) !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) :is(.mh-search, .mh-row).glass-card {
+  background: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.5));
+  border: 2px solid;
+  border-color: #fff #9fd8d0 #7cc9be #9fd8d0;
+  box-shadow: inset 0 2px 1px #fff, 0 3px 0 #7cc9be, 0 6px 12px rgba(40, 120, 140, 0.14);
 }

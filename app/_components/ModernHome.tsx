@@ -160,13 +160,13 @@ export function ModernHomeTop({
               {username || "User"}
             </Link>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <span className="glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
+              <span className="mh-chip glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase">
                 {roleLabel}
               </span>
               <button
                 type="button"
                 onClick={openPresencePopup}
-                className="glass-shine flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
+                className="mh-chip glass-shine flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
               >
                 <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
                 {presenceLabel}
@@ -197,7 +197,7 @@ export function ModernHomeTop({
           type="button"
           onClick={onStatus}
           data-notranslate
-          className="glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          className="mh-status glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
           <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
@@ -226,7 +226,7 @@ export function ModernHomeTop({
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
           its tile up with a glowing border and a pulsing dot; Online pulses
           while friends are online (the app's HomeStatTile). */}
-      <div className="glass-card mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
+      <div className="mh-stats glass-card mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
         <StatTile href="/mail" icon="✉️" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
         <StatTile href="/alerts" icon="🔔" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
         <StatTile href="/friends" icon="👥" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
@@ -237,7 +237,7 @@ export function ModernHomeTop({
           buttons were removed — the tabs above already open them.) */}
 
       {/* search */}
-      <div className="glass-card mx-2.5 my-3 rounded-[18px] px-3.5 py-3">
+      <div className="mh-search glass-card mx-2.5 my-3 rounded-[18px] px-3.5 py-3">
         <input
           value={search}
           onChange={(e) => onSearch(e.target.value)}
@@ -270,7 +270,7 @@ export function ModernHomeTop({
       )}
       <div data-notranslate>
         {friends.map((f) => (
-          <div key={f.name} className="glass-card mx-2.5 my-1.5 flex items-center rounded-[18px] px-3 py-2.5">
+          <div key={f.name} className="mh-row glass-card mx-2.5 my-1.5 flex items-center rounded-[18px] px-3 py-2.5">
             <Link href={`/profile/${encodeURIComponent(f.name)}`} className="relative shrink-0">
               <Avatar name={f.name} photo={f.photo} size={44} />
               <span
