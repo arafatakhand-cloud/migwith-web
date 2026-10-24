@@ -3246,6 +3246,8 @@ function MessageRow({
   // app) — except in the Classic style, where every line is on the left.
   const rightSide = mine && !classic;
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
+  // my own line shows my name too (miglife / VIP / 🎂 birthday colour)
+  const ownNameShown = rightSide && !isRoomLine && !!senderName && special.has(senderName);
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
   // the text to translate: without a "↩ quote" line in front
   const plainBody = body.startsWith("↩ ") && body.includes("\n") ? body.slice(body.indexOf("\n") + 1) : body;
@@ -3347,6 +3349,9 @@ function MessageRow({
             })()}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
               and the Classic style, which shows your own name ("legend: hi"). */}
+          {/* own line WITH the name (miglife / VIP / birthday colour): the time
+              sits on the left of the name — "8:50 PM pro: hi" */}
+          {rightSide && !ownWraps && ownNameShown && m.type !== "image" && m.type !== "voice" && stampFront}
           {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
@@ -3383,7 +3388,7 @@ function MessageRow({
             </>
           ) : (
             <>
-              {rightSide && !ownWraps && stampFront}
+              {rightSide && !ownWraps && !ownNameShown && stampFront}
               <span
                 ref={rightSide ? ownBodyRef : undefined}
                 className="whitespace-pre-wrap break-words"
