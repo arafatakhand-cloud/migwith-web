@@ -38,12 +38,12 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
       : "";
   return (
     <div
-      className={`relative overflow-hidden rounded-[20px] border bg-white shadow-sm transition ${open ? "border-[#BFD5F5] shadow-md" : "border-[#E3ECF7]"}`}
+      className={`ann-card relative overflow-hidden rounded-[20px] border bg-white shadow-sm transition ${open ? "border-[#BFD5F5] shadow-md" : "border-[#E3ECF7]"}`}
     >
       <span className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#5A8FD6] to-[#8B5CFF]" />
       <button type="button" onClick={() => setOpen((v) => !v)} className="block w-full py-3 pl-5 pr-4 text-left">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-xl"><span className="inline-block -scale-x-100">📢</span></span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center ann-icon rounded-2xl bg-gradient-to-br from-[#EAF1FC] to-[#F1EAFF] text-xl"><span className="inline-block -scale-x-100">📢</span></span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5">
               {isNew && <span className="rounded-full bg-[#FF5E8A] px-1.5 py-px text-[9px] font-black tracking-wide text-white">NEW</span>}
@@ -54,7 +54,7 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
               <p className={`mt-1 whitespace-pre-wrap break-words text-[13.5px] leading-5 text-[#3D4F72] ${open ? "" : "line-clamp-2"}`}>{rest}</p>
             )}
             {(rest || title.length > 60) && (
-              <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-[#EEF3FB] px-2.5 py-1 text-[11px] font-bold text-[#1E63D6]">
+              <span className="mt-1.5 inline-flex items-center gap-1 ann-chip rounded-full bg-[#EEF3FB] px-2.5 py-1 text-[11px] font-bold text-[#1E63D6]">
                 {open ? "Show less ▴" : "Read more ▾"}
               </span>
             )}
@@ -62,7 +62,7 @@ function AnnouncementCard({ a, isAdmin, onEdit, onDelete }: { a: Item; isAdmin: 
         </div>
       </button>
       {isAdmin && open && (
-        <div className="flex justify-end gap-2 border-t border-[#EEF3FB] px-4 py-2 text-xs font-bold">
+        <div className="ann-line flex justify-end gap-2 border-t border-[#EEF3FB] px-4 py-2 text-xs font-bold">
           <button type="button" onClick={onEdit} className="rounded-full bg-[#FFF4DC] px-3 py-1 text-[#B7791F]">
             ✏️ EDIT
           </button>
@@ -129,7 +129,7 @@ export default function AnnouncementsPage() {
           <button
             type="button"
             onClick={() => setEditor({ id: null, text: "" })}
-            className="mb-2 w-full rounded-full bg-[#2F80ED] py-2 text-[13px] font-semibold text-white"
+            className="ann-add mb-2 w-full rounded-full bg-[#2F80ED] py-2 text-[13px] font-semibold text-white"
           >
             ＋ Add Announcement
           </button>
