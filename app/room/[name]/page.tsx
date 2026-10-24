@@ -296,7 +296,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
 
   const [profile, setProfile] = useState<Profile | null>(null);
-  const specialHasMe = specialColors.has(profile?.username);
+  // the photo perk is for VIP / miglife only (not the 🎂 birthday colour)
+  const specialHasMe = specialColors.paid(profile?.username);
   const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages ?? []);
   // Start of this visit (see savedEntry); null until known.
   const [sinceMs, setSinceMs] = useState<number | null>(initial?.sinceMs ?? null);

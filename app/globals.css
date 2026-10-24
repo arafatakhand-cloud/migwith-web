@@ -1016,3 +1016,10 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .fr-solid.fr-s
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
   pointer-events: none;
 }
+
+/* 🎂 Birthday name colour (RainbowName style 6): pink ↔ gold wave */
+@keyframes rb-bday {
+  0%, 100% { color: #ff3d8b; }
+  50% { color: #f5a300; }
+}
+.rb-bday { animation: rb-bday 2.4s ease-in-out infinite; }

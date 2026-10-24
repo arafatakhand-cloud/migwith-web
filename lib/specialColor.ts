@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, limit, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { isMainFounderName } from "./founder";
+import { todayKey } from "./xp";
 
 // 👑 VIP SUBSCRIPTION — miglife's moving rainbow name, paid in 🪙 COINS (like
 // the app's SpecialColor.kt). Choose → Apply → Approve (Cloud Functions
@@ -43,10 +44,13 @@ export const SPECIAL_COLOR_STYLE_NAMES = [
   "🍬 Candy Pastel",
   "🔥 Fire & Ice",
   "✨ Gold Sparkle",
+  "🎂 Birthday",
 ];
+/** 🎂 The birthday colour (style 6): on for the whole birthday (24 hours). */
+export const BIRTHDAY_STYLE = 6;
 
-type Holders = { until: Map<string, number>; style: Map<string, number> };
-let holders: Holders = { until: new Map(), style: new Map() };
+type Holders = { until: Map<string, number>; style: Map<string, number>; bdayDate: string; bday: Set<string> };
+let holders: Holders = { until: new Map(), style: new Map(), bdayDate: "", bday: new Set() };
 const subs = new Set<() => void>();
 const subscribe = (f: () => void) => {
   subs.add(f);
@@ -68,7 +72,21 @@ export function useSpecialColorListener(uid: string | undefined) {
           until.set(name, Number(d.get("until") || 0));
           style.set(name, Number(d.get("style") || 1));
         });
-        holders = { until, style };
+        holders = { ...holders, until, style };
+        subs.forEach((f) => f());
+      },
+      () => {}
+    );
+  }, [uid]);
+  // 🎂 today's birthdays (server: birthdays/{yyyy-MM-dd}.names)
+  useEffect(() => {
+    if (!uid) return;
+    return onSnapshot(
+      query(collection(db, "birthdays"), orderBy("date", "desc"), limit(1)),
+      (snap) => {
+        const d = snap.docs[0];
+        const names = ((d?.get("names") as unknown[]) || []).map((n) => String(n).trim().toLowerCase()).filter(Boolean);
+        holders = { ...holders, bdayDate: String(d?.get("date") || ""), bday: new Set(names) };
         subs.forEach((f) => f());
       },
       () => {}
@@ -78,17 +96,30 @@ export function useSpecialColorListener(uid: string | undefined) {
 
 const key = (name?: string | null) => (name || "").trim().toLowerCase();
 
-export function specialColorHas(h: Holders, name?: string | null): boolean {
+/** VIP (paid) or miglife — the perks (photos in rooms) only come with this. */
+export function specialColorPaid(h: Holders, name?: string | null): boolean {
   const n = key(name);
   if (!n) return false;
   if (isMainFounderName(n)) return true;
   return (h.until.get(n) || 0) > Date.now();
 }
 
-/** 0 = miglife's original rainbow, 1-5 = the buyer's own animation. */
+/** 🎂 It's their birthday today (Bangladesh day). */
+export function birthdayToday(h: Holders, name?: string | null): boolean {
+  const n = key(name);
+  return !!n && h.bday.has(n) && h.bdayDate === todayKey();
+}
+
+/** A coloured name: VIP / miglife, or the birthday colour for the day. */
+export function specialColorHas(h: Holders, name?: string | null): boolean {
+  return specialColorPaid(h, name) || birthdayToday(h, name);
+}
+
+/** 0 = miglife's original rainbow, 1-5 = the buyer's own animation, 6 = 🎂 birthday. */
 export function specialColorStyle(h: Holders, name?: string | null): number {
   const n = key(name);
   if (isMainFounderName(n)) return 0;
+  if (!specialColorPaid(h, n) && birthdayToday(h, n)) return BIRTHDAY_STYLE;
   return h.style.get(n) ?? 1;
 }
 
@@ -96,6 +127,8 @@ export function useSpecialColors() {
   const h = useSyncExternalStore(subscribe, () => holders, () => holders);
   return {
     has: (name?: string | null) => specialColorHas(h, name),
+    paid: (name?: string | null) => specialColorPaid(h, name),
+    birthday: (name?: string | null) => birthdayToday(h, name),
     styleOf: (name?: string | null) => specialColorStyle(h, name),
     /** Styles (1-5) held by people whose colour is on right now. */
     takenStyles: (exceptName?: string) => {

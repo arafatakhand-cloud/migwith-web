@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
 //   3 Candy Pastel — soft pastel rainbow drifting slowly
 //   4 Fire & Ice   — warm reds/golds sweeping into cool cyans/blues
 //   5 Gold Sparkle — rainbow letters with a white sparkle running across
+//   6 🎂 Birthday   — pink ↔ gold wave, for the whole birthday (everyone)
 // Every letter runs the same CSS cycle (globals.css .rb-*) from its own
 // starting point, so the page needs no timers.
 
@@ -32,6 +33,8 @@ function letterStyle(style: number, i: number, n: number): [string, CSSPropertie
       const start = (i + 2) / (n + 4) - 0.055;
       return ["rb-spark", { animationDelay: `${-frac(1 - start) * 2.4}s`, ["--rc" as string]: `hsl(${(i * 50 + 40) % 360} 88% 57%)` }];
     }
+    case 6: // 🎂 birthday: pink ↔ gold wave along the name
+      return ["rb-bday", { animationDelay: `${-((i / n) * 0.8) * 2.4}s` }];
     default: // miglife: hue i·48° − 360° per 2.4 s
       return ["rb-ch rb-down", { animationDuration: "2.4s", animationDelay: `${-frac(1 - (i * 48) / 360) * 2.4}s` }];
   }
