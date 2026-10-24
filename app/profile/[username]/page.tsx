@@ -136,17 +136,19 @@ function Tile({ value, label, tint, icon, onClick }: { value: string; label: str
   // box: square corners, flat, no gloss.
   const classic = useIsClassic();
   if (!classic) {
-    // ✨ Modern (design 7): a white card with a coloured top band (icon), the
-    // number in the tile's colour under it — solid, never see-through.
+    // ✨ Modern (design 7+8 B): a white card with a navy top band (icon) and a
+    // line in the tile's colour, the number in that colour — solid, never see-through.
     const deep = `color-mix(in srgb, ${tint} 78%, black)`;
     const body = (
       <>
         <span
-          className="relative block overflow-hidden py-[5px] text-[16px] leading-[19px]"
-          style={{ background: `linear-gradient(180deg, color-mix(in srgb, ${tint} 82%, white), ${deep})` }}
+          className="relative block overflow-hidden pb-[6px] pt-[5px] text-[16px] leading-[19px]"
+          style={{ background: "linear-gradient(180deg, #1b2d55, #0e1a38)" }}
         >
-          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
+          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/15 to-transparent" />
           <span className="relative">{icon}</span>
+          {/* the tile's own colour as a line under the navy band */}
+          <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: tint }} />
         </span>
         <span className="block pt-[3px] text-[19px] font-black leading-[22px]" style={{ color: deep }}>
           {value}
