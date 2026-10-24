@@ -705,7 +705,7 @@ export default function PrivateChatPage() {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <div className="absolute bottom-12 left-0 z-40 w-48 overflow-hidden rounded-2xl bg-white py-1 shadow-xl">
+                <div className="pc-menu absolute bottom-12 left-0 z-40 w-52 overflow-hidden rounded-[18px] bg-white py-1 shadow-xl">
                   {menu.map(([icon, label, act], i) => (
                     <button
                       key={label}
@@ -715,7 +715,7 @@ export default function PrivateChatPage() {
                         act();
                       }}
                       className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-[#12233F] hover:bg-[#F4F9FF] ${
-                        i > 0 ? "border-t border-[#E8EEF5]" : ""
+                        i > 0 ? "pc-menu-line border-t border-[#E8EEF5]" : ""
                       }`}
                     >
                       <span className="text-lg">{icon}</span>
