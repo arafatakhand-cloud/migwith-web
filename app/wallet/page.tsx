@@ -442,12 +442,12 @@ export default function WalletPage() {
   return (
     <PageShell light noTopBar>
       {/* The app's sub-page bar: ← Wallet */}
-      <header className="sticky top-0 z-30 flex h-14 items-center bg-[#0B1A3A] px-2 text-white shadow">
+      <header className="wl-head sticky top-0 z-30 flex h-14 items-center bg-[#0B1A3A] px-2 text-white shadow">
         <button
           type="button"
           aria-label="Back"
           onClick={() => (window.history.length > 1 ? router.back() : router.push("/profile/me"))}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15"
+          className="wl-back flex h-10 w-10 items-center justify-center rounded-full bg-white/15"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M11 5l-7 7 7 7" />
@@ -456,7 +456,7 @@ export default function WalletPage() {
         <h1 className="flex-1 pr-10 text-center text-lg font-bold">Wallet</h1>
       </header>
 
-      <div className="min-h-[calc(100dvh-56px)]" style={{ background: "linear-gradient(180deg, #CDEBFB, #A9DAF5 55%, #86C8EE)" }}>
+      <div className="wl-page min-h-[calc(100dvh-56px)]" style={{ background: "linear-gradient(180deg, #CDEBFB, #A9DAF5 55%, #86C8EE)" }}>
         <section className="mx-auto max-w-2xl px-3 pb-6 sm:px-6">
           <div className="pb-2 pt-2.5">
             <BalanceHeroCard
@@ -499,10 +499,11 @@ export default function WalletPage() {
             >
               <div className="grid grid-cols-3 gap-1.5">
                 <button type="button" onClick={() => setShowSpent(true)} className="text-left active:scale-[.98]" aria-label="What I spent today">
-                  <StatMiniCard tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spent Today" value={short(spentToday)} />
+                  <StatMiniCard tone="red" tint="#E5202E" top="#FFF1F3" bottom="#FFDCE2" icon="down" label="Spent Today" value={short(spentToday)} />
                 </button>
-                <StatMiniCard tint="#14A044" top="#F0FBF4" bottom="#D5F5E1" icon="up" label="Earned Today" value={short(earnedToday)} />
+                <StatMiniCard tone="grn" tint="#14A044" top="#F0FBF4" bottom="#D5F5E1" icon="up" label="Earned Today" value={short(earnedToday)} />
                 <StatMiniCard
+                  tone="pur"
                   tint="#4A1FD6"
                   top="#F5F2FF"
                   bottom="#E5DDFD"
@@ -524,7 +525,7 @@ export default function WalletPage() {
               setSuccess("");
               setError("");
             }}
-            className="h-[46px] w-full rounded-[15px] bg-[#70B6FF] text-sm font-bold text-white shadow-sm active:scale-[.99]"
+            className="wl-transfer h-[46px] w-full rounded-[15px] bg-[#70B6FF] text-sm font-bold text-white shadow-sm active:scale-[.99]"
           >
             ➤&nbsp;&nbsp;Transfer Coins
           </button>
@@ -532,7 +533,7 @@ export default function WalletPage() {
 
           <div className="mt-2 flex items-center gap-[7px]">
             <h2 className="text-[17px] font-bold text-[#0E1B3D]">Activity</h2>
-            <span className="rounded-full bg-[#65DDF1] px-2 py-[3px] text-[10px] font-bold leading-none text-[#16315F]">{items.length}</span>
+            <span className="wl-count rounded-full bg-[#65DDF1] px-2 py-[3px] text-[10px] font-bold leading-none text-[#16315F]">{items.length}</span>
           </div>
           <div className="h-[7px]" />
 
@@ -707,7 +708,7 @@ function BalanceHeroCard({ balance, menu, children }: { balance: number | null; 
   const classic = useIsClassic();
   return (
     <div
-      className={`relative w-full overflow-hidden ${classic ? "rounded border border-[#C9D2DE]" : "rounded-[22px] border-[1.5px] border-white/90"}`}
+      className={`relative w-full overflow-hidden ${classic ? "rounded border border-[#C9D2DE]" : "wl-hero rounded-[22px] border-[1.5px] border-white/90"}`}
       style={
         classic
           ? { background: "linear-gradient(180deg, #FFFFFF, #F1F3F6)", boxShadow: "0 1px 2px rgba(90,160,240,.35)" }
@@ -811,6 +812,7 @@ function MiniIcon({ kind, color }: { kind: "down" | "up" | "swap"; color: string
 }
 
 function StatMiniCard({
+  tone,
   tint,
   top,
   bottom,
@@ -819,6 +821,7 @@ function StatMiniCard({
   value,
   sub,
 }: {
+  tone: "red" | "grn" | "pur";
   tint: string;
   top: string;
   bottom: string;
@@ -831,7 +834,7 @@ function StatMiniCard({
   const classic = useIsClassic();
   return (
     <div
-      className={`relative overflow-hidden ${classic ? "rounded" : "rounded-xl border-[1.5px] border-white/95"}`}
+      className={`relative overflow-hidden ${classic ? "rounded" : `wl-stat wl-${tone} rounded-xl border-[1.5px] border-white/95`}`}
       style={
         classic
           ? { background: "#FFFFFF", border: `1px solid color-mix(in srgb, ${tint} 45%, transparent)` }
@@ -852,7 +855,7 @@ function StatMiniCard({
       )}
       <div className="relative flex flex-col items-center px-1 py-1.5 text-center">
         <span
-          className="flex h-[26px] w-[26px] items-center justify-center rounded-full"
+          className="wl-ic flex h-[26px] w-[26px] items-center justify-center rounded-full"
           style={{ background: `color-mix(in srgb, ${tint} 16%, transparent)` }}
         >
           <MiniIcon kind={icon} color={tint} />
@@ -876,7 +879,7 @@ function ActivityCard({ item }: { item: Item }) {
   const before = m ? item.title.slice(0, m.index).trimEnd() : item.title;
   const highlighted = m ? m[0].slice(m[0].indexOf(" ") + 1).trim() : "";
   return (
-    <div className="my-[3px] flex min-h-[58px] items-center rounded-[14px] border border-[#D3E4F8] bg-[#F6FAFF] px-2.5 py-[7px]">
+    <div className="wl-row my-[3px] flex min-h-[58px] items-center rounded-[14px] border border-[#D3E4F8] bg-[#F6FAFF] px-2.5 py-[7px]">
       <span
         className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[11px] border"
         style={{ borderColor: iconBorder, background: `color-mix(in srgb, ${iconBorder} 12%, transparent)` }}
