@@ -47,6 +47,9 @@ import {
 //  EARNING    merchant_earnings/{username} and your coin balance.
 
 const RATE = 2.5;
+// 5,380,614.6 → "5.38M", 12,500 → "12.5K"
+const shortCoins = (n: number) =>
+  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(/\.?0+$/, "")}M` : n >= 1e4 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K` : amount(n);
 type Row = { username: string; spend: number; earning: number };
 
 // One day's 2.5% trail: from the server (getTrailReport), else worked out here.
@@ -230,38 +233,78 @@ function Dashboard({
   };
 
   const today = live?.today ?? stored.today;
+  const endsMs = toMs(merchantDoc?.get("expiresAt"));
+  const termOn = left === null ? !!merchantDoc : left > 0 || endsMs > Date.now();
+  const termPct = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
   return (
     <div className="space-y-3 px-3 py-3">
       {msg && <p className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
 
-      <div className="rounded-3xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
+      {/* 🏪 Merchant status (design 2): ACTIVE dot, mentor, all-time earned,
+          days remaining and a 30-day term bar with the end date */}
+      <div className="rounded-3xl border-[1.5px] border-white bg-white p-4 text-[#0B2A5B]" style={{ boxShadow: "0 5px 0 #b9cdee, 0 16px 30px rgba(40,80,160,.16)" }}>
         <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 text-xl">🧳</span>
-          <div>
-            <p className="font-bold">Active Merchant 🎁</p>
-            <p className="text-xs text-white/80">{amount(stored.allTime)} coins earned all-time</p>
+          <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-[26px]" style={{ background: "linear-gradient(135deg,#34d399,#059669)", boxShadow: "0 4px 0 #047857" }}>
+            🏪
+          </span>
+          <div className="min-w-0">
+            <p className={`flex items-center gap-1.5 text-[11px] font-black tracking-[.6px] ${termOn ? "text-[#059669]" : "text-[#D32F2F]"}`}>
+              <i className="h-2 w-2 rounded-full" style={{ background: termOn ? "#10b981" : "#ef4444", boxShadow: `0 0 0 3px ${termOn ? "rgba(16,185,129,.2)" : "rgba(239,68,68,.2)"}` }} />
+              {termOn ? "ACTIVE" : "ENDED"}
+            </p>
+            <p className="text-[19px] font-black leading-6">Merchant</p>
+          </div>
+          <div className="ml-auto text-right text-[10.5px] font-bold text-[#5B6B8C]">
+            Mentor
+            <p data-notranslate className="text-[13px] font-black text-[#1565D8]">{mentor ? `@${mentor}` : "—"}</p>
+          </div>
+        </div>
+        <div className="mt-3.5 grid grid-cols-2 gap-2">
+          <div className="rounded-2xl bg-[#F3F7FE] px-3 py-2.5" title={`${amount(stored.allTime)} coins`}>
+            <p className="text-[10.5px] font-bold text-[#5B6B8C]">All-time earned</p>
+            <p className="text-[17px] font-black text-[#1565D8]">{shortCoins(stored.allTime)} 🪙</p>
+          </div>
+          <div className="rounded-2xl bg-[#F3F7FE] px-3 py-2.5">
+            <p className="text-[10.5px] font-bold text-[#5B6B8C]">Days remaining</p>
+            <p className={`text-[17px] font-black ${termOn ? "text-[#059669]" : "text-[#D32F2F]"}`}>{left === null ? "—" : `${left} day${left === 1 ? "" : "s"}`}</p>
           </div>
         </div>
         {left !== null && (
-          <p className="mt-3 inline-block rounded-xl bg-white/20 px-3 py-2 text-xs font-bold text-white">⏱ {left} days remaining</p>
+          <>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-md bg-[#E6EEFA]">
+              <div className="h-full rounded-md" style={{ width: `${termPct}%`, background: "linear-gradient(90deg,#34d399,#3B82F6)" }} />
+            </div>
+            <div className="mt-1 flex justify-between text-[10.5px] font-bold text-[#5B6B8C]">
+              <span>Term · 30 days</span>
+              {endsMs > 0 && <span>ends {new Date(endsMs).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", year: "numeric" })}</span>}
+            </div>
+          </>
         )}
       </div>
 
-      <div className="rounded-3xl border border-[#D5E3F5] bg-white p-4 text-[#0B2A5B] shadow-sm">
-        <div className="flex items-center gap-2">
+      <div className="rounded-3xl border-[1.5px] border-white bg-white p-4 text-[#0B2A5B]" style={{ boxShadow: "0 4px 0 #cfdcf0, 0 12px 26px rgba(40,80,160,.12)" }}>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[#E7FAF2] text-xl">🏷️</span>
           <div className="min-w-0 flex-1">
-            <p className="font-bold">🏪 Tagged Normal Users</p>
-            <p className="text-[11px] text-[#5B6B8C]">
-              {tagged.length} active tagged user{tagged.length === 1 ? "" : "s"}
-            </p>
+            <p className="text-base font-black">Tagged Users</p>
+            <p className="text-[11.5px] text-[#5B6B8C]">{tagged.length} active</p>
           </div>
-          <button type="button" onClick={() => setTagOpen(true)} className="rounded-xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] px-3 py-2 text-[11px] font-black text-white shadow">
-            + TAG USER
+          <button
+            type="button"
+            onClick={() => setTagOpen(true)}
+            className="flex h-9 items-center gap-1 rounded-[18px] border-[1.5px] border-white/85 px-3.5 text-[12.5px] font-black text-white active:scale-[.97]"
+            style={{ background: "linear-gradient(180deg,rgba(255,255,255,.35),transparent 50%),linear-gradient(90deg,#10b981,#059669)", boxShadow: "0 3px 0 #047857" }}
+          >
+            ＋ Tag User
           </button>
         </div>
-        <p className="mt-1 text-[11px] text-[#1E63D6]">5000-coin tag · 2.5% bonus on tagged users' coin use</p>
+        <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px] font-extrabold">
+          <span className="rounded-[11px] bg-[#E7FAF2] px-2.5 py-1 text-[#059669]">2.5% bonus</span>
+          <span className="rounded-[11px] bg-[#EEF4FF] px-2.5 py-1 text-[#1565D8]">5,000-coin tag</span>
+          <span className="rounded-[11px] bg-[#FFF3E3] px-2.5 py-1 text-[#B8580A]">30 days</span>
+        </div>
         {tagged.length === 0 ? (
-          <p className="mt-2 text-xs text-[#5B6B8C]">No tagged users yet.</p>
+          <p className="mt-2.5 rounded-2xl border-[1.5px] border-dashed border-[#c9d8ef] p-3 text-center text-xs text-[#7F8FB0]">No tagged users yet</p>
         ) : (
           <ul className="mt-2 space-y-1.5">
             {tagged.map((t, i) => {
