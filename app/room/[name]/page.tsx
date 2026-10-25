@@ -2839,9 +2839,9 @@ function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
   const [loaded, setLoaded] = useState(() => loadedBadgeUrls.has(src));
   if (failed || failedBadgeUrls.has(src)) return <>{emoji}</>;
   return (
-    // 🔍 bigger (1.5 × the text), a small gap on each side, and the WHOLE picture
-    // (no longer cut into a circle, which cut off its edges) — like the app
-    <span className="relative mx-[2px] inline-block h-[1.5em] w-[1.5em] shrink-0 overflow-hidden rounded-md align-middle" style={{ background: loaded ? undefined : "rgba(0,0,0,.08)" }}>
+    // 🔍 bigger (1.5 × the text), a small gap on each side; ⭕ round (miglife's
+    // choice): the picture fills a circle — like the app
+    <span className="relative mx-[2px] inline-block h-[1.5em] w-[1.5em] shrink-0 overflow-hidden rounded-full align-middle" style={{ background: loaded ? undefined : "rgba(0,0,0,.08)" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
@@ -2863,7 +2863,7 @@ function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
           failedBadgeUrls.add(src);
           setFailed(true);
         }}
-        className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
+        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
       />
     </span>
   );
