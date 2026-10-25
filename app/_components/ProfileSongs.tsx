@@ -152,6 +152,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ProfileSong | null>(null);
+  const [tab, setTab] = useState<"All" | "Happy" | "Sad">("All");
   const { playing, play } = usePlayer();
   const now = serverNow();
 
@@ -239,8 +240,22 @@ export function ProfileSongShop({ uid }: { uid: string }) {
         </div>
       )}
 
+      {/* 😊 / 😢 tabs */}
+      <div className="mt-3 flex gap-1.5">
+        {(["All", "Happy", "Sad"] as const).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold ${tab === t ? "bg-[#1E63D6] text-white" : "bg-white text-[#35507E]"}`}
+          >
+            {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : "All"} ({t === "All" ? PROFILE_SONGS.length : PROFILE_SONGS.filter((s) => s.category === t).length})
+          </button>
+        ))}
+      </div>
+
       <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {PROFILE_SONGS.map((s) => {
+        {PROFILE_SONGS.filter((s) => tab === "All" || s.category === tab).map((s) => {
           const on = playing === s.id;
           const have = (owned[s.id] || 0) > now;
           return (

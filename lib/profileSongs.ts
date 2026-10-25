@@ -9,6 +9,8 @@ export type ProfileSong = {
   name: string;
   emoji: string;
   mood: string;
+  /** shop tab */
+  category: "Happy" | "Sad";
   price: number;
   bpm: number;
   voice: "trumpet" | "bell" | "soft" | "piano" | "chip" | "pluck";
@@ -18,34 +20,135 @@ export type ProfileSong = {
 
 export const PROFILE_SONGS: ProfileSong[] = [
   {
-    id: "royal", name: "Royal Fanfare", emoji: "👑", mood: "Grand entrance", price: 150000, bpm: 132, voice: "trumpet",
+    id: "royal", name: "Royal Fanfare", emoji: "👑", mood: "Grand entrance", category: "Happy", price: 150000, bpm: 132, voice: "trumpet",
     colors: ["#F5C542", "#B07A06"],
     notes: [["G4", 0.5], ["C5", 0.5], ["E5", 0.5], ["G5", 1.5], ["E5", 0.5], ["G5", 1.5], ["A5", 0.5], ["G5", 0.5], ["F5", 0.5], ["E5", 0.5], ["D5", 0.5], ["E5", 0.5], ["C5", 2], ["G4", 0.5], ["C5", 0.5], ["E5", 0.5], ["G5", 1], ["A5", 0.5], ["B5", 0.5], ["C6", 1.5], ["B5", 0.5], ["A5", 0.5], ["G5", 0.5], ["F5", 0.5], ["E5", 1], ["D5", 1], ["C5+E5", 1], ["D5+F5", 1], ["E5+G5", 1], ["F5+A5", 1], ["G5+B5", 1], ["A5+C6", 1], ["G5+B5+D6", 1], ["C5+E5+G5+C6", 6]],
   },
   {
-    id: "bells", name: "Happy Bells", emoji: "🔔", mood: "Bright & cheerful", price: 100000, bpm: 150, voice: "bell",
+    id: "bells", name: "Happy Bells", emoji: "🔔", mood: "Bright & cheerful", category: "Happy", price: 100000, bpm: 150, voice: "bell",
     colors: ["#5aa2ff", "#1565D8"],
     notes: [["E6", 0.5], ["G6", 0.5], ["C7", 1], ["B6", 0.5], ["G6", 0.5], ["A6", 1], ["G6", 0.5], ["E6", 0.5], ["F6", 0.5], ["D6", 0.5], ["C6", 2], ["E6", 0.5], ["G6", 0.5], ["C7", 1], ["D7", 0.5], ["C7", 0.5], ["B6", 1], ["A6", 0.5], ["B6", 0.5], ["C7", 0.5], ["A6", 0.5], ["G6", 2], ["F6", 0.5], ["A6", 0.5], ["C7", 1], ["B6", 0.5], ["A6", 0.5], ["G6", 1], ["E6", 0.5], ["G6", 0.5], ["E6", 0.5], ["D6", 0.5], ["C6", 2], ["C6", 0.5], ["E6", 0.5], ["G6", 0.5], ["C7", 0.5], ["E7", 1], ["D7", 1], ["C7+E7", 1], ["G6", 0.5], ["E6", 0.5], ["C6+E6+G6+C7", 4]],
   },
   {
-    id: "lofi", name: "Lo-fi Night", emoji: "🌙", mood: "Calm & chill", price: 120000, bpm: 84, voice: "soft",
+    id: "lofi", name: "Lo-fi Night", emoji: "🌙", mood: "Calm & chill", category: "Happy", price: 120000, bpm: 84, voice: "soft",
     colors: ["#8B4DFF", "#4B1BA8"],
     notes: [["A3+C4+E4", 1], ["E5", 0.5], ["C5", 0.5], ["F3+A3+C4", 1], ["D5", 0.5], ["A4", 0.5], ["C4+E4+G4", 1], ["E5", 0.5], ["G5", 0.5], ["G3+B3+D4", 1], ["D5", 1], ["A3+C4+E4", 1], ["C5", 0.5], ["E5", 0.5], ["F3+A3+C4", 1], ["A5", 0.5], ["G5", 0.5], ["C4+E4+G4", 1], ["E5", 1], ["G3+B3+D4", 1], ["B4", 0.5], ["D5", 0.5], ["F3+A3+C4+E5", 2], ["A3+C4+E4+A4", 3]],
   },
   {
-    id: "love", name: "Love Piano", emoji: "💖", mood: "Sweet & romantic", price: 140000, bpm: 96, voice: "piano",
+    id: "love", name: "Love Piano", emoji: "💖", mood: "Sweet & romantic", category: "Happy", price: 140000, bpm: 96, voice: "piano",
     colors: ["#FF5FA8", "#C21E6E"],
     notes: [["C5", 0.5], ["E5", 0.5], ["G5", 1], ["A5", 0.5], ["G5", 0.5], ["E5", 1], ["F5", 0.5], ["E5", 0.5], ["D5", 0.5], ["E5", 0.5], ["C5", 2], ["E5", 0.5], ["G5", 0.5], ["C6", 1], ["B5", 0.5], ["A5", 0.5], ["G5", 1], ["A5", 0.5], ["G5", 0.5], ["F5", 0.5], ["E5", 0.5], ["D5", 2], ["C5", 0.5], ["E5", 0.5], ["G5", 0.5], ["C6", 0.5], ["B5", 1], ["G5", 1], ["A5", 1], ["F5+A5", 1], ["C4+E4+G4+C5+E5", 3]],
   },
   {
-    id: "victory", name: "Victory", emoji: "🏆", mood: "Gamer win", price: 130000, bpm: 168, voice: "chip",
+    id: "victory", name: "Victory", emoji: "🏆", mood: "Gamer win", category: "Happy", price: 130000, bpm: 168, voice: "chip",
     colors: ["#2FC46B", "#0E7A3E"],
     notes: [["C5", 0.33], ["C5", 0.33], ["C5", 0.33], ["C5", 1], ["G#4", 1], ["A#4", 1], ["C5", 0.66], ["A#4", 0.33], ["C5", 2], ["G5", 0.5], ["F5", 0.5], ["D#5", 0.5], ["F5", 0.5], ["G5", 1], ["D#5", 0.5], ["C5", 0.5], ["D#5", 1], ["F5", 0.5], ["D#5", 0.5], ["D5", 0.5], ["D#5", 0.5], ["F5", 1], ["D5", 0.5], ["A#4", 0.5], ["C5", 2], ["C5", 0.33], ["C5", 0.33], ["C5", 0.33], ["C5", 1], ["G#4", 1], ["A#4", 1], ["C5", 0.66], ["A#4", 0.33], ["C5", 2], ["G5", 0.5], ["A#5", 0.5], ["C6", 1], ["A#5", 0.5], ["G5", 0.5], ["D#5", 1], ["F5", 0.5], ["G5", 0.5], ["C6", 3], ["C5", 0.33], ["D#5", 0.33], ["G5", 0.33], ["C6", 2], ["C5+D#5+G5+C6", 4]],
   },
   {
-    id: "ektara", name: "Ektara Folk", emoji: "🪕", mood: "Desi folk vibe", price: 160000, bpm: 120, voice: "pluck",
+    id: "ektara", name: "Ektara Folk", emoji: "🪕", mood: "Desi folk vibe", category: "Happy", price: 160000, bpm: 120, voice: "pluck",
     colors: ["#FF8A3D", "#C2410C"],
     notes: [["D5", 0.5], ["E5", 0.5], ["G5", 0.5], ["A5", 0.5], ["G5", 0.5], ["E5", 0.5], ["D5", 1], ["A4", 0.5], ["D5", 0.5], ["E5", 0.5], ["D5", 0.5], ["B4", 1], ["A4", 1], ["D5", 0.5], ["E5", 0.5], ["G5", 0.5], ["A5", 0.5], ["B5", 0.5], ["A5", 0.5], ["G5", 1], ["A5", 0.5], ["B5", 0.5], ["A5", 0.5], ["G5", 0.5], ["E5", 1], ["D5", 1], ["G5", 0.5], ["G5", 0.5], ["A5", 0.5], ["G5", 0.5], ["E5", 0.5], ["D5", 0.5], ["E5", 1], ["D5", 0.5], ["E5", 0.5], ["G5", 0.5], ["E5", 0.5], ["D5", 0.5], ["B4", 0.5], ["A4", 1], ["D5", 0.5], ["E5", 0.5], ["D5", 0.5], ["A4", 0.5], ["D5", 4]],
+  },
+  // 😢 20 sad tunes (minor keys, slow)
+  {
+    id: "sad01", name: "Rainy Window", emoji: "🌧️", mood: "Soft rain, soft heart", category: "Sad", price: 120000, bpm: 69, voice: "piano",
+    colors: ["#7F9CC7", "#3F5B8A"],
+    notes: [["A2+C3+E3+E5", 0.5], ["D5", 1], ["B4", 0.5], ["F3+A3+C4+C5", 2], ["C3+E3+G3+C5", 1.5], ["B4", 0.5], ["G3+B3+D4+B4", 2], ["A2+C3+E3+C5", 0.5], ["A4", 1], ["B4", 0.5], ["F3+A3+C4+A4", 0.5], ["A4", 1], ["A4", 0.5], ["C3+E3+G3+G4", 1], ["F4", 0.5], ["F4", 0.5], ["C5", 0.5], ["B4", 0.5], ["A2+C3+E3+A4", 3]],
+  },
+  {
+    id: "sad02", name: "Broken Heart", emoji: "💔", mood: "Hurts quietly", category: "Sad", price: 120000, bpm: 72, voice: "piano",
+    colors: ["#F07A9A", "#9E2F54"],
+    notes: [["E3+G3+B3+G5", 2], ["A3+C4+E4+A5", 0.5], ["G5", 0.5], ["E5", 1], ["C4+E4+G4+E5", 1.5], ["F#5", 0.5], ["B3+D#4+F#4+F#5", 1], ["E5", 1], ["E3+G3+B3+E5", 2], ["A3+C4+E4+E5", 1.5], ["D5", 0.5], ["C4+E4+G4+C5", 1], ["C5", 1], ["G5", 0.5], ["F#5", 0.5], ["E3+G3+B3+E5", 3]],
+  },
+  {
+    id: "sad03", name: "Lonely Night", emoji: "🌃", mood: "Alone with the city", category: "Sad", price: 120000, bpm: 66, voice: "soft",
+    colors: ["#5E6AD2", "#2B2F7A"],
+    notes: [["D3+F3+A3+A5", 2], ["C4+E4+G4+G5", 0.5], ["F5", 1], ["G5", 0.5], ["A#3+D4+F4+F5", 2], ["C4+E4+G4+G5", 1.5], ["A5", 0.5], ["D3+F3+A3+A5", 0.5], ["A#5", 0.5], ["G5", 1], ["C4+E4+G4+G5", 1], ["E5", 1], ["F5", 0.5], ["E5", 0.5], ["D3+F3+A3+D5", 3]],
+  },
+  {
+    id: "sad04", name: "Tears", emoji: "😢", mood: "When words don't come", category: "Sad", price: 120000, bpm: 70, voice: "piano",
+    colors: ["#8FB8E8", "#3A6EA8"],
+    notes: [["G3+A#3+D4+A#5", 1.5], ["A5", 0.5], ["D4+F#4+A4+A5", 0.5], ["F5", 1], ["D#5", 0.5], ["D#4+G4+A#4+D#5", 0.5], ["D#5", 1], ["D#5", 0.5], ["C4+D#4+G4+D#5", 2], ["G3+A#3+D4+G5", 0.5], ["A5", 1], ["G5", 0.5], ["D4+F#4+A4+A5", 2], ["D#4+G4+A#4+G5", 0.5], ["G5", 0.5], ["F5", 1], ["A#5", 0.5], ["A5", 0.5], ["G3+A#3+D4+G5", 3]],
+  },
+  {
+    id: "sad05", name: "Missing You", emoji: "🥀", mood: "Someone far away", category: "Sad", price: 120000, bpm: 74, voice: "piano",
+    colors: ["#D9708A", "#7A2340"],
+    notes: [["C#4+F4+G#4+G#5", 0.5], ["A#5", 0.5], ["G5", 1], ["D#4+G4+A#4+G5", 0.5], ["F5", 0.5], ["D#5", 1], ["F3+G#3+C4+F5", 2], ["F3+G#3+C4+F5", 1], ["D#5", 1], ["C#4+F4+G#4+C#5", 2], ["D#4+G4+A#4+D#5", 1.5], ["F5", 0.5], ["F3+G#3+C4+F5", 2], ["G#5", 0.5], ["G5", 0.5], ["F3+G#3+C4+F5", 3]],
+  },
+  {
+    id: "sad06", name: "Last Goodbye", emoji: "👋", mood: "One more look back", category: "Sad", price: 120000, bpm: 68, voice: "soft",
+    colors: ["#A08BD6", "#5B3F9E"],
+    notes: [["A2+C3+E3+C5", 1], ["A4", 0.5], ["G4", 0.5], ["D3+F3+A3+F4", 1.5], ["G4", 0.5], ["A2+C3+E3+A4", 1], ["G4", 0.5], ["G4", 0.5], ["E3+G#3+B3+B4", 1], ["G4", 1], ["A2+C3+E3+A4", 1], ["F4", 0.5], ["F4", 0.5], ["D3+F3+A3+F4", 1], ["F4", 1], ["A2+C3+E3+A4", 1], ["F4", 1], ["C5", 0.5], ["B4", 0.5], ["A2+C3+E3+A4", 3]],
+  },
+  {
+    id: "sad07", name: "Empty Room", emoji: "🕯️", mood: "Quiet after everyone left", category: "Sad", price: 120000, bpm: 72, voice: "bell",
+    colors: ["#C9B27A", "#7A6430"],
+    notes: [["E3+G3+B3+B5", 2], ["C4+E4+G4+C6", 1], ["B5", 1], ["A3+C4+E4+A5", 1], ["G5", 0.5], ["F#5", 0.5], ["B3+D#4+F#4+F#5", 1.5], ["E5", 0.5], ["E3+G3+B3+E5", 1], ["D5", 1], ["C4+E4+G4+E5", 0.5], ["D5", 0.5], ["C5", 1], ["A3+C4+E4+C5", 2], ["G5", 0.5], ["F#5", 0.5], ["E3+G3+B3+E5", 3]],
+  },
+  {
+    id: "sad08", name: "Autumn Leaves", emoji: "🍂", mood: "Falling slowly", category: "Sad", price: 120000, bpm: 76, voice: "pluck",
+    colors: ["#E39A5B", "#9A4E16"],
+    notes: [["F3+G#3+C4+F5", 0.5], ["G5", 1], ["F5", 0.5], ["G3+B3+D4+G5", 1], ["F5", 1], ["C3+D#3+G3+D#5", 1], ["D5", 1], ["G#3+C4+D#4+C5", 1], ["D5", 1], ["F3+G#3+C4+C5", 2], ["G3+B3+D4+D5", 0.5], ["D#5", 1], ["D5", 0.5], ["C3+D#3+G3+D#5", 1.5], ["D5", 0.5], ["G#3+C4+D#4+C5", 1.5], ["C5", 0.5], ["D#5", 0.5], ["D5", 0.5], ["C3+D#3+G3+C5", 3]],
+  },
+  {
+    id: "sad09", name: "Silent Moon", emoji: "🌑", mood: "Dark and calm", category: "Sad", price: 120000, bpm: 64, voice: "soft",
+    colors: ["#6B7A99", "#2E3A55"],
+    notes: [["D3+F3+A3+F5", 0.5], ["G5", 0.5], ["G5", 1], ["F3+A3+C4+F5", 1], ["E5", 0.5], ["F5", 0.5], ["A#3+D4+F4+F5", 2], ["C4+E4+G4+E5", 2], ["D3+F3+A3+F5", 2], ["F3+A3+C4+F5", 1.5], ["F5", 0.5], ["F5", 0.5], ["E5", 0.5], ["D3+F3+A3+D5", 3]],
+  },
+  {
+    id: "sad10", name: "Faded Memory", emoji: "📷", mood: "An old photo", category: "Sad", price: 120000, bpm: 70, voice: "bell",
+    colors: ["#B6A7C9", "#6A5A84"],
+    notes: [["D#4+G4+A#4+A#5", 0.5], ["A5", 0.5], ["A5", 1], ["C4+D#4+G4+G5", 1], ["G5", 1], ["G3+A#3+D4+G5", 1.5], ["D#5", 0.5], ["D4+F#4+A4+A5", 1.5], ["A5", 0.5], ["D#4+G4+A#4+G5", 2], ["C4+D#4+G4+G5", 2], ["G3+A#3+D4+G5", 0.5], ["F5", 0.5], ["F5", 1], ["A#5", 0.5], ["A5", 0.5], ["G3+A#3+D4+G5", 3]],
+  },
+  {
+    id: "sad11", name: "Cold Rain", emoji: "☔", mood: "Grey streets", category: "Sad", price: 120000, bpm: 78, voice: "piano",
+    colors: ["#7FA6B8", "#335F73"],
+    notes: [["F3+G#3+C4+C6", 1], ["C6", 1], ["C#4+F4+G#4+G#5", 1], ["G5", 0.5], ["G#5", 0.5], ["G#3+C4+D#4+G#5", 2], ["D#4+G4+A#4+G5", 2], ["F3+G#3+C4+F5", 1], ["G5", 1], ["C#4+F4+G#4+F5", 0.5], ["G5", 1], ["F5", 0.5], ["G#3+C4+D#4+D#5", 0.5], ["C#5", 0.5], ["C#5", 1], ["D#4+G4+A#4+D#5", 1.5], ["C#5", 0.5], ["G#5", 0.5], ["G5", 0.5], ["F3+G#3+C4+F5", 3]],
+  },
+  {
+    id: "sad12", name: "Lost Love", emoji: "💌", mood: "What could have been", category: "Sad", price: 120000, bpm: 68, voice: "piano",
+    colors: ["#E58FB0", "#9B3A66"],
+    notes: [["A2+C3+E3+C5", 0.5], ["D5", 1], ["C5", 0.5], ["D3+F3+A3+D5", 1], ["D5", 1], ["F3+A3+C4+C5", 0.5], ["C5", 1], ["C5", 0.5], ["E3+G#3+B3+B4", 1.5], ["A4", 0.5], ["A2+C3+E3+A4", 0.5], ["A4", 1], ["G4", 0.5], ["D3+F3+A3+F4", 0.5], ["F4", 0.5], ["F4", 1], ["F3+A3+C4+F4", 0.5], ["F4", 1], ["F4", 0.5], ["C5", 0.5], ["B4", 0.5], ["A2+C3+E3+A4", 3]],
+  },
+  {
+    id: "sad13", name: "Distant Star", emoji: "✨", mood: "So far, still shining", category: "Sad", price: 120000, bpm: 74, voice: "bell",
+    colors: ["#8CA6E8", "#3B4FA0"],
+    notes: [["E3+G3+B3+B5", 1.5], ["B5", 0.5], ["D4+F#4+A4+A5", 2], ["C4+E4+G4+G5", 2], ["D4+F#4+A4+F#5", 2], ["E3+G3+B3+G5", 1], ["A5", 0.5], ["G5", 0.5], ["D4+F#4+A4+A5", 1], ["G5", 1], ["C4+E4+G4+G5", 0.5], ["F#5", 1], ["E5", 0.5], ["G5", 0.5], ["F#5", 0.5], ["E3+G3+B3+E5", 3]],
+  },
+  {
+    id: "sad14", name: "Grey Sky", emoji: "☁️", mood: "No sun today", category: "Sad", price: 120000, bpm: 70, voice: "soft",
+    colors: ["#9AA5B4", "#566273"],
+    notes: [["D3+F3+A3+F5", 2], ["A3+C#4+E4+E5", 1.5], ["C5", 0.5], ["A#3+D4+F4+A#4", 0.5], ["A#4", 0.5], ["A#4", 1], ["G3+A#3+D4+A#4", 2], ["D3+F3+A3+D5", 1.5], ["C5", 0.5], ["A3+C#4+E4+E5", 1], ["C5", 1], ["A#3+D4+F4+A#4", 2], ["F5", 0.5], ["E5", 0.5], ["D3+F3+A3+D5", 3]],
+  },
+  {
+    id: "sad15", name: "Ocean of Tears", emoji: "🌊", mood: "Waves of feeling", category: "Sad", price: 120000, bpm: 66, voice: "soft",
+    colors: ["#5FA8D3", "#1E5F8A"],
+    notes: [["D#4+G4+A#4+A#5", 2], ["F4+A4+C5+C6", 1], ["A#5", 1], ["G3+A#3+D4+A#5", 2], ["G3+A#3+D4+A#5", 2], ["D#4+G4+A#4+A#5", 1], ["A5", 0.5], ["G5", 0.5], ["F4+A4+C5+F5", 1], ["G5", 0.5], ["F5", 0.5], ["A#5", 0.5], ["A5", 0.5], ["G3+A#3+D4+G5", 3]],
+  },
+  {
+    id: "sad16", name: "Alone Again", emoji: "🚶", mood: "Walking home alone", category: "Sad", price: 120000, bpm: 72, voice: "pluck",
+    colors: ["#A3A3C2", "#55557A"],
+    notes: [["C3+D#3+G3+G5", 0.5], ["F5", 1], ["F5", 0.5], ["F3+G#3+C4+F5", 1.5], ["D5", 0.5], ["C3+D#3+G3+D#5", 1], ["C5", 0.5], ["A#4", 0.5], ["G3+B3+D4+D5", 2], ["C3+D#3+G3+D#5", 0.5], ["D5", 0.5], ["D#5", 1], ["F3+G#3+C4+F5", 1], ["F5", 0.5], ["F5", 0.5], ["C3+D#3+G3+D#5", 2], ["D#5", 0.5], ["D5", 0.5], ["C3+D#3+G3+C5", 3]],
+  },
+  {
+    id: "sad17", name: "Midnight Blue", emoji: "💙", mood: "Late-night thoughts", category: "Sad", price: 120000, bpm: 64, voice: "piano",
+    colors: ["#4F7BD9", "#1D3C8A"],
+    notes: [["F3+G#3+C4+G#5", 1.5], ["F5", 0.5], ["C#4+F4+G#4+F5", 2], ["A#3+C#4+F4+F5", 1], ["D#5", 1], ["C4+E4+G4+G5", 2], ["F3+G#3+C4+G#5", 2], ["C#4+F4+G#4+G#5", 0.5], ["A#5", 0.5], ["G#5", 1], ["G#5", 0.5], ["G5", 0.5], ["F3+G#3+C4+F5", 3]],
+  },
+  {
+    id: "sad18", name: "Paper Boat", emoji: "⛵", mood: "Childhood, gone", category: "Sad", price: 120000, bpm: 76, voice: "bell",
+    colors: ["#7EC8C8", "#2C7A7A"],
+    notes: [["D3+F3+A3+F5", 2], ["E3+G#3+B3+E5", 1], ["F5", 0.5], ["G5", 0.5], ["A2+C3+E3+E5", 1], ["D5", 1], ["F3+A3+C4+C5", 2], ["D3+F3+A3+D5", 0.5], ["C5", 1], ["A4", 0.5], ["E3+G#3+B3+B4", 0.5], ["A4", 1], ["G4", 0.5], ["A2+C3+E3+A4", 0.5], ["G4", 0.5], ["F4", 1], ["F3+A3+C4+F4", 2], ["C5", 0.5], ["B4", 0.5], ["A2+C3+E3+A4", 3]],
+  },
+  {
+    id: "sad19", name: "Old Letter", emoji: "✉️", mood: "Words from long ago", category: "Sad", price: 120000, bpm: 70, voice: "pluck",
+    colors: ["#C9A27E", "#7A5530"],
+    notes: [["E3+G3+B3+B5", 0.5], ["A5", 1], ["G5", 0.5], ["G3+B3+D4+G5", 0.5], ["F#5", 0.5], ["E5", 1], ["C4+E4+G4+E5", 2], ["D4+F#4+A4+F#5", 1.5], ["F#5", 0.5], ["E3+G3+B3+G5", 1.5], ["A5", 0.5], ["G3+B3+D4+B5", 2], ["C4+E4+G4+C6", 2], ["G5", 0.5], ["F#5", 0.5], ["E3+G3+B3+E5", 3]],
+  },
+  {
+    id: "sad20", name: "Sad Flute", emoji: "🎶", mood: "A lonely village tune", category: "Sad", price: 120000, bpm: 68, voice: "soft",
+    colors: ["#7FC29B", "#2F7A52"],
+    notes: [["A#3+D4+F4+A#5", 2], ["G3+A#3+D4+A#5", 1.5], ["A5", 0.5], ["D3+F3+A3+A5", 0.5], ["G5", 0.5], ["G5", 1], ["A3+C#4+E4+A5", 1], ["G5", 1], ["A#3+D4+F4+F5", 1], ["D5", 1], ["G3+A#3+D4+D5", 1.5], ["A#4", 0.5], ["D3+F3+A3+D5", 0.5], ["D5", 0.5], ["E5", 1], ["F5", 0.5], ["E5", 0.5], ["D3+F3+A3+D5", 3]],
   },
 ];
 
