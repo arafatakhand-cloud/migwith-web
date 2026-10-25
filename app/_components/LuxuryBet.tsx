@@ -19,14 +19,14 @@ const LB_BOT = "🎰 Luxury Bet";
 
 export const LUXURY_BET_CHARACTERS = ["🫅 King", "👸 Queen", "🤴 Prince", "🧚‍♀️ Fairy", "🧙‍♂️ Wizard", "🦄 Unicorn"];
 
-// 🖼️ 3D pictures for the tiles (Microsoft Fluent Emoji 3D, MIT licence — public/lb/).
+// 🖼️ Picture cards for the tiles (miglife's own Royal Bet art — public/lb/).
 const ART: Record<string, string> = {
-  King: "/lb/king.png",
-  Queen: "/lb/queen.png",
-  Prince: "/lb/prince.png",
-  Fairy: "/lb/fairy.png",
-  Wizard: "/lb/wizard.png",
-  Unicorn: "/lb/unicorn.png",
+  King: "/lb/king.webp",
+  Queen: "/lb/queen.webp",
+  Prince: "/lb/prince.webp",
+  Fairy: "/lb/fairy.webp",
+  Wizard: "/lb/wizard.webp",
+  Unicorn: "/lb/unicorn.webp",
 };
 
 const CODES: Record<string, string> = {
@@ -453,7 +453,7 @@ export function LuxuryBetTable({
                 >
                   <span
                     key={popped.c === c ? popped.n : 0}
-                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl py-1.5 ${popped.c === c && popped.n ? "lb-pop" : ""}${open && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
+                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl ${ART[rest.join(" ")] ? "pb-1 pt-0.5" : "py-1.5"} ${popped.c === c && popped.n ? "lb-pop" : ""}${open && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
                     style={
                       open && !mine
                         ? lbTileFace(skin, LUXURY_BET_CHARACTERS.indexOf(c))
@@ -464,8 +464,14 @@ export function LuxuryBetTable({
                     }
                   >
                     {ART[rest.join(" ")] ? (
+                      // 🖼️ the character's picture card fills the top of the tile
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={ART[rest.join(" ")]} alt={emoji} draggable={false} className={`h-[22px] w-[22px] object-contain ${open ? "" : "opacity-50"}`} />
+                      <img
+                        src={ART[rest.join(" ")]}
+                        alt={emoji}
+                        draggable={false}
+                        className={`mx-0.5 mb-0.5 aspect-[7/8] w-[calc(100%-4px)] rounded-[10px] object-cover object-[50%_30%] ${open ? "" : "opacity-45"}`}
+                      />
                     ) : (
                       <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
                     )}
