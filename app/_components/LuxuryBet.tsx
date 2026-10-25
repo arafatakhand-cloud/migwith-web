@@ -12,20 +12,30 @@ import { awardUserXp } from "../../lib/xp";
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
 // the round and sends !start / bets, same as the app's LuxuryBetGame.kt.
-// Commands: !start · !b [k|q|p|f|e|m or name] [amount]   (e.g. !b k 1000)
+// Commands: !start · !b [k|q|p|f|m|t or name] [amount]   (e.g. !b k 1000)
 
 export const LUXURY_BET_ROOM = "🎰 Luxury Bet";
 const LB_BOT = "🎰 Luxury Bet";
 
-export const LUXURY_BET_CHARACTERS = ["👑 King", "👸 Queen", "🤴 Prince", "🧚 Fairy", "🧝 Elf", "🧜‍♀️ Mermaid"];
+export const LUXURY_BET_CHARACTERS = ["🫅 King", "👸 Queen", "🤴 Prince", "🧚‍♀️ Fairy", "🧔‍♂️ Motu", "🤓 Patlu"];
+
+// 🖼️ 3D pictures for the tiles (Microsoft Fluent Emoji 3D, MIT licence — public/lb/).
+const ART: Record<string, string> = {
+  King: "/lb/king.png",
+  Queen: "/lb/queen.png",
+  Prince: "/lb/prince.png",
+  Fairy: "/lb/fairy.png",
+  Motu: "/lb/motu.png",
+  Patlu: "/lb/patlu.png",
+};
 
 const CODES: Record<string, string> = {
-  k: "👑 King",
+  k: "🫅 King",
   q: "👸 Queen",
   p: "🤴 Prince",
-  f: "🧚 Fairy",
-  e: "🧝 Elf",
-  m: "🧜‍♀️ Mermaid",
+  f: "🧚‍♀️ Fairy",
+  m: "🧔‍♂️ Motu",
+  t: "🤓 Patlu",
 };
 
 const CHIPS = [500, 1000, 2000, 5000, 10000, 12000];
@@ -224,7 +234,7 @@ export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note
   const character = parts[1] ? characterFor(parts[1]) : null;
   const amount = Number(parts[2]);
   if (!character || !Number.isInteger(amount)) {
-    note(`${LB_BOT}: Usage: !b [k/q/p/f/e/m] [amount] — e.g. !b k 1000 (King, Queen, Prince, Fairy, Elf, Mermaid)`);
+    note(`${LB_BOT}: Usage: !b [k/q/p/f/m/t] [amount] — e.g. !b k 1000 (King, Queen, Prince, Fairy, Motu, Patlu)`);
   } else {
     state.bet(character, amount);
   }
@@ -453,7 +463,12 @@ export function LuxuryBetTable({
                           }
                     }
                   >
-                    <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
+                    {ART[rest.join(" ")] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ART[rest.join(" ")]} alt={emoji} draggable={false} className={`h-[22px] w-[22px] object-contain ${open ? "" : "opacity-50"}`} />
+                    ) : (
+                      <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
+                    )}
                     <span
                       className="w-full truncate text-[9px] font-bold leading-[10px]"
                       style={{ color: !open ? "#6E6880" : mine ? "#7A4E00" : skin.cream }}
