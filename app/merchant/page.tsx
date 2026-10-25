@@ -47,8 +47,6 @@ export default function MerchantPage() {
   const [level, setLevel] = useState(1);
   const [pending, setPending] = useState<DocumentSnapshot | null>(null);
   const [merchant, setMerchant] = useState<DocumentSnapshot | null>(null);
-  // The account's role says "merchant" (role / membershipRole / memberType).
-  const [isMerchantRole, setIsMerchantRole] = useState(false);
   const [step, setStep] = useState<"INTRO" | "PICK">("INTRO");
   const [mentors, setMentors] = useState<Mentor[] | null>(null);
   const [selected, setSelected] = useState("");
@@ -66,26 +64,17 @@ export default function MerchantPage() {
         setLevel(Number(me.get("level") || 1));
         const mentor = role === "mentor" || isMainFounderName(username);
         setIsMentor(mentor);
-        // A role can be saved in role, membershipRole or memberType (older tools).
-        const roles = [
-          ...["role", "membershipRole", "memberType"].map((f) => String(me.get(f) || "").trim().toLowerCase()),
-          // a Merchant who also has another role keeps "merchant" in the roles list
-          ...(Array.isArray(me.get("roles")) ? me.get("roles").map((r: unknown) => String(r).trim().toLowerCase()) : []),
-        ];
-        const merchantRole = !mentor && roles.includes("merchant");
-        setIsMerchantRole(merchantRole);
         if (!mentor) {
           const [req, merch] = await Promise.all([
             getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", username), where("status", "==", "pending"), limit(1))),
             getDocs(query(collection(db, "mentor_merchants"), where("merchantUsername", "==", username))),
           ]);
           setPending(req.docs[0] || null);
-          // A running record = a Merchant, whatever other role they also have.
+          // Only a RUNNING record (not run out) opens the Merchant Dashboard.
+          // Run out or removed → the normal miGlife Partner page (Request
+          // Pending for a renewal, or pick a mentor again), like the app.
           const active = merch.docs.find((m) => toMs(m.get("expiresAt")) > Date.now()) || null;
-          // A merchant by role still opens the dashboard with the newest record,
-          // even if it ran out or is missing its date.
-          const latest = [...merch.docs].sort((a, b) => toMs(b.get("expiresAt")) - toMs(a.get("expiresAt")))[0] || null;
-          setMerchant(active || (merchantRole ? latest : null));
+          setMerchant(active);
         }
       } catch (e: any) {
         setError(e?.message || "Could not load miGlife Partner.");
@@ -163,8 +152,8 @@ export default function MerchantPage() {
     }
   };
 
-  // An active merchant gets the full Merchant Dashboard.
-  if (ready && loaded && (merchant || isMerchantRole) && uid) {
+  // Only an active (not run out) merchant gets the full Merchant Dashboard.
+  if (ready && loaded && merchant && uid) {
     return <MerchantDashboard me={username} uid={uid} merchantDoc={merchant} />;
   }
 
