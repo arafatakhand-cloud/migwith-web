@@ -2548,14 +2548,22 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       )}
 
       {/* ⚠️ You are not in this room */}
-      {notInRoomOpen && (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-8" onClick={() => setNotInRoomOpen(false)}>
-          <div className="w-full max-w-[340px] rounded-3xl bg-white px-7 py-8 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      {/* Out of the room (away too long, kicked or banned): NOTHING of the room
+          is shown — only this page. Ok closes the tab; open the room again
+          from the list to come back in. */}
+      {(notInRoomOpen || autoLeft) && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] p-8">
+          <div className="w-full max-w-[340px] rounded-3xl bg-white px-7 py-8 text-center shadow-2xl">
             <div className="text-[72px] leading-none">⚠️</div>
-            <p className="mt-4 text-[17px] text-[#8FA6C4]">You are not in this room</p>
+            <p className="mt-4 text-[17px] font-semibold text-[#5B6B8C]">You are not in this room</p>
+            <p className="mt-1.5 text-[13px] text-[#8FA6C4]">Open the room again from the room list to come back in.</p>
             <button
               type="button"
-              onClick={() => setNotInRoomOpen(false)}
+              onClick={() => {
+                setNotInRoomOpen(false);
+                if (user) removeOpenRoom(user.uid, roomName);
+                router.replace("/rooms");
+              }}
               className="mt-7 h-[50px] w-full rounded-md bg-[#1B3A5C] text-[17px] font-bold text-white shadow-md"
             >
               Ok
