@@ -10,6 +10,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
 import { isMainFounderName } from "../../lib/founder";
+import { useIsClassic } from "../../lib/uiStyle";
 import { CountryPickerDialog } from "../_components/CountryPicker";
 import { countryFlag, countryInfoFor, countryWithFlag } from "../../lib/countries";
 
@@ -129,9 +130,10 @@ type Category = { id: string; icon: React.ReactNode; title: string; subtitle: st
 
 const MANAGEMENT: Category[] = [
   { id: "executive_board", icon: "🏅", title: "Executive Board", subtitle: "FOUNDER • Owner • Executive", color: "#3F55C7", roles: ["executive_board", "executive", "owner", "ceo"] },
+  // (the order miGlife asked for: Executive Board, Staff, Admin, …)
+  { id: "staff", icon: "🪪", title: "Staff", subtitle: "Staff IDs", color: "#22A447", roles: ["staff"] },
   { id: "admin", icon: "🛡", title: "Admin", subtitle: "Admin IDs", color: "#E0A800", roles: ["admin", "administrator", "superadmin"] },
   { id: "country_representative", icon: "🌍", title: "Country Representative", subtitle: "Country representatives", color: "#B58A70", roles: ["country_representative", "countryrep", "country_rep"] },
-  { id: "staff", icon: "🪪", title: "Staff", subtitle: "Staff IDs", color: "#22A447", roles: ["staff"] },
   { id: "elite_user", icon: <HonorIcon />, title: "Honor Members", subtitle: "Honor members", color: "#1565D8", roles: ["elite_user", "elite"] },
 ];
 const COMMUNITY: Category[] = [
@@ -189,6 +191,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [selected, setSelected] = useState<Category | null>(null);
   const { user, username } = useSession();
+  const classicUi = useIsClassic();
   const isFounder = isMainFounderName(username);
   const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
@@ -470,15 +473,23 @@ export default function MembersPage() {
             <PageTitle title="Community" subtitle="Discover · Community" />
             <SectionLabel>Management</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
-              {MANAGEMENT.map((c) => (
-                <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
-              ))}
+              {MANAGEMENT.map((c, i) =>
+                classicUi ? (
+                  <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
+                ) : (
+                  <NumberedCard key={c.id} n={i + 1} c={c} onClick={() => setSelected(c)} />
+                )
+              )}
             </div>
             <SectionLabel>Community</SectionLabel>
             <div className="grid gap-2.5 md:grid-cols-2">
-              {COMMUNITY.map((c) => (
-                <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
-              ))}
+              {COMMUNITY.map((c, i) =>
+                classicUi ? (
+                  <PastelCard key={c.id} icon={c.icon} title={c.title} subtitle={c.subtitle} color={c.color} onClick={() => setSelected(c)} />
+                ) : (
+                  <NumberedCard key={c.id} n={MANAGEMENT.length + i + 1} c={c} onClick={() => setSelected(c)} />
+                )
+              )}
             </div>
           </>
         )}
@@ -509,4 +520,45 @@ export default function MembersPage() {
 function HonorIcon() {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/badges/honor_member.png" alt="" className="inline-block h-[1.35em] w-[1.35em] align-[-0.3em]" />;
+}
+
+// 🔢 A numbered 3D card (Modern): number ball · icon · title · arrow ball, a rim
+// and a lip in the category's colour — like the app.
+function NumberedCard({ n, c, onClick }: { n: number; c: Category; onClick: () => void }) {
+  const deep = c.id === "admin" ? "#D4A017" : c.id === "staff" ? "#1FA80E" : c.color;
+  const ball = {
+    background: `linear-gradient(180deg, rgba(255,255,255,.4), transparent 50%), ${deep}`,
+    border: "1.5px solid #fff",
+    boxShadow: "0 2px 0 rgba(0,0,0,.15)",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="mb-[3px] flex w-full items-center gap-3 rounded-[20px] px-3 py-2.5 text-left transition active:scale-[.98]"
+      style={{
+        background: "linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.72))",
+        border: "2px solid",
+        borderColor: `#fff color-mix(in srgb, ${deep} 55%, #fff) ${deep} color-mix(in srgb, ${deep} 55%, #fff)`,
+        boxShadow: `inset 0 2px 1px #fff, 0 3px 0 ${deep}, 0 6px 12px rgba(40,80,160,.14)`,
+      }}
+    >
+      <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-xs font-black text-white" style={ball}>
+        {n}
+      </span>
+      <span
+        className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-2xl"
+        style={{ background: `linear-gradient(#fff, color-mix(in srgb, ${deep} 14%, #fff))`, border: "1.5px solid #fff", boxShadow: `0 2px 0 ${deep}` }}
+      >
+        {c.icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-base font-black text-[#0B2A5B]">{c.title}</span>
+        <span className="block truncate text-xs text-[#5B6B8C]">{c.subtitle}</span>
+      </span>
+      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-lg font-black text-white" style={ball}>
+        ›
+      </span>
+    </button>
+  );
 }
