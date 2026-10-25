@@ -18,6 +18,7 @@ import {
   type DocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "../../lib/firebase";
+import { isMainFounderName } from "../../lib/founder";
 import { PageShell } from "../_components/PageShell";
 import {
   amount,
@@ -79,7 +80,18 @@ async function merchantTrailInBrowser(me: string, day: string): Promise<Row[]> {
 const dayStr = (daysAgo: number) =>
   new Date(Date.now() - daysAgo * 86_400_000).toLocaleDateString("en-CA", { timeZone: "Asia/Dhaka" });
 
-export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: string; merchantDoc: DocumentSnapshot | null }) {
+export function MerchantDashboard({
+  me,
+  uid,
+  merchantDoc,
+  onChangeMentor,
+}: {
+  me: string;
+  uid: string;
+  merchantDoc: DocumentSnapshot | null;
+  /** Opens the mentor list, to send a merchant request to another mentor. */
+  onChangeMentor?: () => void;
+}) {
   const [panel, setPanel] = useState<"DASHBOARD" | "REPORT" | "EARNING">("DASHBOARD");
   const [refresh, setRefresh] = useState(0);
   return (
@@ -98,7 +110,7 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
       {/* 🌊 on the wave background (WavePage) — the cards float on colour */}
       <section className="mx-auto max-w-4xl pb-10 text-[#0B2A5B]">
         {panel === "DASHBOARD" ? (
-          <Dashboard me={me} merchantDoc={merchantDoc} refresh={refresh} />
+          <Dashboard me={me} merchantDoc={merchantDoc} refresh={refresh} onChangeMentor={onChangeMentor} />
         ) : panel === "REPORT" ? (
           <Report me={me} refresh={refresh} />
         ) : (
@@ -111,14 +123,29 @@ export function MerchantDashboard({ me, uid, merchantDoc }: { me: string; uid: s
 }
 
 // merchantDoc = null: a merchant by role whose mentor record is missing.
-function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: DocumentSnapshot | null; refresh: number }) {
+function Dashboard({
+  me,
+  merchantDoc,
+  refresh,
+  onChangeMentor,
+}: {
+  me: string;
+  merchantDoc: DocumentSnapshot | null;
+  refresh: number;
+  onChangeMentor?: () => void;
+}) {
   const mentor = String(merchantDoc?.get("mentorUsername") || "");
   const left = daysLeft(merchantDoc?.get("expiresAt"));
   const approvedMs = toMs(merchantDoc?.get("createdAt"));
   const [tagged, setTagged] = useState<DocumentSnapshot[]>([]);
   const [stored, setStored] = useState({ today: 0, last7: 0, pending: 0, allTime: 0 });
   const [live, setLive] = useState<{ today: number; last7: number } | null>(null);
-  const [renewalPending, setRenewalPending] = useState(false);
+  // a merchant request waiting with ANY mentor (a renewal, or one to a new mentor)
+  const [pendingTo, setPendingTo] = useState("");
+  const renewalPending = pendingTo !== "";
+  // ⛔ the mentor's own term ended (or the role was taken away): this Merchant
+  // keeps their colour until their own term ends, and may ask another mentor.
+  const [mentorEnded, setMentorEnded] = useState(false);
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState("");
   const [tagOpen, setTagOpen] = useState(false);
@@ -134,9 +161,17 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
   );
 
   useEffect(() => {
-    if (mentor)
-      getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", me), where("toMentor", "==", mentor), where("status", "==", "pending"), limit(1)))
-        .then((s) => setRenewalPending(!s.empty))
+    getDocs(query(collection(db, "mentor_requests"), where("fromUsername", "==", me), where("status", "==", "pending"), limit(1)))
+      .then((s) => setPendingTo(s.empty ? "" : String(s.docs[0].get("toMentor") || "?")))
+      .catch(() => {});
+    if (mentor && !isMainFounderName(mentor))
+      getDocs(query(collection(db, "users"), where("username", "==", mentor), limit(1)))
+        .then((s) => {
+          const u = s.docs[0];
+          const roles = u ? [u.get("role"), ...((u.get("roles") as unknown[]) || [])].map((r) => String(r || "").trim().toLowerCase()) : [];
+          const until = toMs(u?.get("mentorUntil"));
+          setMentorEnded(!u || !roles.includes("mentor") || (until > 0 && until <= Date.now()));
+        })
         .catch(() => {});
     getDoc(doc(db, "merchant_earnings", me))
       .then((e) =>
@@ -186,7 +221,7 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
     setRenewing(true);
     try {
       await addDoc(collection(db, "mentor_requests"), { fromUsername: me, toMentor: mentor, note: "Renewal", status: "pending", createdAt: serverTimestamp() });
-      setRenewalPending(true);
+      setPendingTo(mentor);
     } catch (e: any) {
       setMsg(e?.message || "Could not request renewal.");
     } finally {
@@ -277,8 +312,24 @@ function Dashboard({ me, merchantDoc, refresh }: { me: string; merchantDoc: Docu
         </div>
       </div>
 
+      {mentorEnded && (
+        <div className="rounded-2xl border border-[#F5B7B1] bg-[#FFF1F0] px-4 py-3 text-xs text-[#9B2C2C]">
+          <p className="font-bold">
+            ⛔ Your mentor <span data-notranslate>@{mentor}</span>&apos;s term has ended.
+          </p>
+          <p className="mt-1 leading-5">
+            You stay a Merchant (and keep your colour) until your own term ends{(left ?? 0) > 0 ? ` — ${left} day${left === 1 ? "" : "s"} left` : ""}. You can send a merchant request to another mentor.
+          </p>
+        </div>
+      )}
       {renewalPending ? (
-        <p className="rounded-2xl border border-[#F2C94C] bg-[#FFF6DD] px-4 py-3 text-xs font-bold text-[#B7791F]">⏳ Renewal request pending mentor approval</p>
+        <p className="rounded-2xl border border-[#F2C94C] bg-[#FFF6DD] px-4 py-3 text-xs font-bold text-[#B7791F]">
+          ⏳ {pendingTo === mentor ? "Renewal request" : "Merchant request"} pending — waiting for <span data-notranslate>@{pendingTo}</span>
+        </p>
+      ) : mentorEnded ? (
+        <button type="button" onClick={onChangeMentor} disabled={!onChangeMentor} className="w-full rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-sm font-black text-white shadow disabled:opacity-50">
+          Choose another mentor →
+        </button>
       ) : (
         <button type="button" onClick={renew} disabled={renewing || !mentor} className="w-full rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-sm font-black text-white shadow disabled:opacity-50">
           {renewing ? "Requesting…" : "Request Renewal"}

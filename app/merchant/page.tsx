@@ -48,6 +48,8 @@ export default function MerchantPage() {
   const [pending, setPending] = useState<DocumentSnapshot | null>(null);
   const [merchant, setMerchant] = useState<DocumentSnapshot | null>(null);
   const [step, setStep] = useState<"INTRO" | "PICK">("INTRO");
+  // an active Merchant whose mentor's term ended, picking another mentor
+  const [changeMentor, setChangeMentor] = useState(false);
   const [mentors, setMentors] = useState<Mentor[] | null>(null);
   const [selected, setSelected] = useState("");
   const [note, setNote] = useState("");
@@ -132,6 +134,7 @@ export default function MerchantPage() {
       });
       setPending(await getDoc(ref));
       setStep("INTRO");
+      setChangeMentor(false);
     } catch (e: any) {
       setError(e?.message || "Could not send the request.");
     } finally {
@@ -153,8 +156,18 @@ export default function MerchantPage() {
   };
 
   // Only an active (not run out) merchant gets the full Merchant Dashboard.
-  if (ready && loaded && merchant && uid) {
-    return <MerchantDashboard me={username} uid={uid} merchantDoc={merchant} />;
+  if (ready && loaded && merchant && uid && !(changeMentor && step === "PICK" && !pending)) {
+    return (
+      <MerchantDashboard
+        me={username}
+        uid={uid}
+        merchantDoc={merchant}
+        onChangeMentor={() => {
+          setChangeMentor(true);
+          setStep("PICK");
+        }}
+      />
+    );
   }
 
   let body: React.ReactNode;
