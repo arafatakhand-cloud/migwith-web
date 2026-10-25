@@ -137,6 +137,8 @@ export function useFriendRequests(username: string) {
     incoming: incomingOne,
     sent: sentOne,
     friends,
+    /** true once both "accepted" lists have answered (before that `friends` is the remembered list) */
+    friendsLoaded,
     relationTo,
 
     async send(to: string) {

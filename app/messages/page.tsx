@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCurrentUser } from "../../lib/useCurrentUser";
-import { chatHref, useFriends, useUnreadBySender } from "../../lib/privateChat";
+import { useSession } from "../_components/AppSession";
+import { useFriendRequests } from "../../lib/friends";
+import { chatHref, useUnreadBySender } from "../../lib/privateChat";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
 
 export default function MessagesPage() {
-  const router = useRouter();
-  const { user, username, loading } = useCurrentUser();
-  const friends = useFriends(username);
+  // BUG FIX (the list showed "imran", then "No friends yet" after coming back
+  // from a chat): the same friends list as the Lobby — remembered on this
+  // device, and "No friends yet" only once the server has really answered.
+  // (Signed-out visitors are sent to /login by AppSession.)
+  const { user, username, loading } = useSession();
+  const fr = useFriendRequests(username);
+  const friends = fr.friends;
   const unread = useUnreadBySender(username);
   const [search, setSearch] = useState("");
-
-  useEffect(() => {
-    if (!loading && !user) router.replace("/login");
-  }, [loading, user, router]);
 
   // Friends first (unread on top), then anyone else who has written to me.
   const people = Array.from(new Set([...friends, ...Object.keys(unread)]))
@@ -47,7 +47,9 @@ export default function MessagesPage() {
         <div className="mt-4 overflow-hidden rounded-2xl bg-white shadow-sm">
           {people.length === 0 && (
             <p className="px-4 py-10 text-center text-sm text-[#6B7A99]">
-              {friends.length === 0
+              {friends.length === 0 && !fr.friendsLoaded
+                ? "Loading…"
+                : friends.length === 0
                 ? "No friends yet. Add friends from the 👥 Friends page to chat here."
                 : "No friends match your search."}
             </p>
