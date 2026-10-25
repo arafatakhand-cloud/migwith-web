@@ -47,7 +47,7 @@ export default function ProfileSongDemo() {
       <style>{`@keyframes songEq{from{height:3px}to{height:16px}}`}</style>
       <p className="mx-1 text-[11px] font-black tracking-[1.3px] text-[#35507E]">DEMO · PROFILE THEME SONGS</p>
       <h1 className="mx-1 mt-1 text-2xl font-black">🎵 Profile Songs</h1>
-      <p className="mx-1 mt-1 text-[13px] text-[#5B6B8C]">A 5-second tune plays when someone opens your profile. 30 days, paid in coins. Tap ▶ to listen.</p>
+      <p className="mx-1 mt-1 text-[13px] text-[#5B6B8C]">A 15-second tune plays when someone opens your profile. 30 days, paid in coins. Tap ▶ to listen.</p>
 
       {/* 1 · how a profile looks with a song */}
       <p className="mx-1 mt-5 text-[11px] font-black tracking-[1.3px] text-[#35507E]">1 · ON A PROFILE</p>
