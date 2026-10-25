@@ -152,7 +152,7 @@ const NAME_COLORS: Record<string, string> = {
   top: "#FFD54F",
 };
 
-type Member = { uid: string; name: string; photo: string; level: number; country: string; roles: string[]; mentorUntilMs: number; repCountry: string; status: string };
+type Member = { uid: string; name: string; photo: string; level: number; country: string; gender: string; roles: string[]; mentorUntilMs: number; repCountry: string; status: string };
 
 const norm = (v: string) => v.trim().toLowerCase().replace(/[-\s]/g, "_");
 
@@ -166,7 +166,8 @@ function toMember(uid: string, d: DocumentData): Member {
     name: String(d.username || ""),
     photo: String(d.photoUrl || d.profilePic || d.avatarUrl || d.imageUrl || "").trim(),
     level: Number(d.level || 1),
-    country: String(d.country || ""),
+    country: String(d.country || "").trim(),
+    gender: String(d.gender || "").trim(),
     roles,
     repCountry: String(d.repCountry || "").trim(),
     status: String(d.statusMessage || "").trim(),
@@ -366,9 +367,17 @@ export default function MembersPage() {
                         >
                           {m.name}
                         </span>
-                        <span className={`block truncate text-xs ${lightCard ? "text-[#38517F]" : "text-white/70"}`}>
-                          {[`Level ${m.level}`, m.country].filter(Boolean).join(" · ")}
-                        </span>
+                        {/* ⚧ gender · 🌍 country (from the profile), like the app */}
+                        {(() => {
+                          const g = m.gender.toLowerCase();
+                          const gender = g === "male" || g === "m" ? "♂ Male" : g === "female" || g === "f" ? "♀ Female" : m.gender;
+                          const info = m.country ? countryInfoFor(m.country) : null;
+                          const country = m.country ? `${info ? countryFlag(info.iso) : "🌍"} ${m.country}` : "";
+                          const about = [gender, country].filter(Boolean).join("  ·  ");
+                          return about ? (
+                            <span className={`block truncate text-xs ${lightCard ? "text-[#38517F]" : "text-white/70"}`}>{about}</span>
+                          ) : null;
+                        })()}
                         {/* the term is for miGlife; everyone else sees the mentor's status (if any) */}
                         {selected.id === "mentor" &&
                           (isFounder ? (
@@ -376,6 +385,17 @@ export default function MembersPage() {
                           ) : (
                             m.status && <StatusLine text={m.status} light={lightCard} />
                           ))}
+                      </span>
+                      {/* 🏅 the level, on the right */}
+                      <span
+                        className="shrink-0 rounded-xl border px-[9px] py-1 text-[13px] font-extrabold"
+                        style={{
+                          color: podium ? podium.ink : lightCard ? rowColor : "#fff",
+                          background: `${podium ? podium.line : rowColor}24`,
+                          borderColor: `${podium ? podium.line : rowColor}80`,
+                        }}
+                      >
+                        Lv {m.level}
                       </span>
                       {selected.id === "country_representative" &&
                         (m.repCountry || canManage) &&
