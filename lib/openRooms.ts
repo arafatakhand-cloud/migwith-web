@@ -84,7 +84,13 @@ export async function autoLeaveOpenRooms(uid: string) {
   const rooms = readOpenRooms(uid).filter((r) => !isAutoLeft(uid, r));
   // Flag first, so an open room page stops its heartbeat before its spot goes.
   rooms.forEach((r) => setAutoLeftFlag(uid, r, true));
-  await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
+  const left = await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
+  // BUG FIX ("You are not in this room" while still listed in the room): a
+  // /parked spot (or a failed check / delete) keeps me IN — so the tab must not
+  // say I'm out.
+  rooms.forEach((r, i) => {
+    if (!left[i]) setAutoLeftFlag(uid, r, false);
+  });
 }
 
 /** Opening an auto-left room from a room list is coming back in: a fresh
@@ -170,10 +176,13 @@ export async function deletePresenceUnlessParked(ref: DocumentReference): Promis
 
 // Leave a room you are not currently looking at: remove the presence doc and
 // post "has left" (skipped when invisible / Presence Status INVISIBLE).
-export async function leaveRoomInBackground(uid: string, name: string) {
+/** Leaves quietly in the background. true = out of the room now (or never in);
+ *  false = still in it (a /parked spot, or the check / delete failed). */
+export async function leaveRoomInBackground(uid: string, name: string): Promise<boolean> {
   const presenceRef = doc(db, "room_presence", name, "users", uid);
   const presence = await getDoc(presenceRef).catch(() => null);
-  if (!presence?.exists()) return; // never entered (invisible) or already gone
+  if (presence === null) return false; // couldn't check: stay in
+  if (!presence.exists()) return true; // never entered (invisible) or already gone
   const me = await getDoc(doc(db, "users", uid)).catch(() => null);
   const username = String(presence.get("username") || me?.get("username") || "");
   const level = Number(presence.get("level") || me?.get("level") || 1);
@@ -182,8 +191,8 @@ export async function leaveRoomInBackground(uid: string, name: string) {
   const quiet = String(presence.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
   const visitId = String(presence.get("visitId") || "") || null;
   // "has left" only once the delete really went through (a /parked spot stays).
-  if (!(await deletePresenceUnlessParked(presenceRef))) return;
-  if (quiet || !username) return;
+  if (!(await deletePresenceUnlessParked(presenceRef))) return false;
+  if (quiet || !username) return true;
   await setDoc(doc(db, "room_messages", name, "messages", leaveDocId(uid, visitId)), {
     text: presenceLine(name, username, level, false, presenceBadgesForDoc(me?.data())),
     sender: username,
@@ -191,6 +200,7 @@ export async function leaveRoomInBackground(uid: string, name: string) {
     type: "room_leave",
     createdAt: serverTimestamp(),
   }).catch(() => {});
+  return true;
 }
 
 /** Signed out: forget this ID's room tabs and where each room's chat began
