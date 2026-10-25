@@ -2917,7 +2917,7 @@ function withLbArt(line: string, keyPrefix: string, big: boolean): ReactNode[] {
           src={LUXURY_BET_ART_BY_EMOJI[hit]}
           alt={hit}
           draggable={false}
-          className={`inline-block rounded-[5px] object-cover object-[50%_30%] align-middle ${big ? "mx-[2px] h-[30px] w-[26px]" : "mx-[1px] h-[1.3em] w-[1.15em]"}`}
+          className={`inline-block rounded-[5px] object-cover object-[50%_30%] align-middle ${big ? "mx-[3px] h-[36px] w-[36px] !rounded-full shadow-[0_0_0_2px_#fff,0_2px_6px_rgba(0,0,0,.18)]" : "mx-[1px] h-[1.3em] w-[1.15em]"}`}
         />
       );
       i += hit.length;
@@ -2949,7 +2949,7 @@ function luxuryBetLine(text: string): ReactNode | null {
             <span key={i}>
               {i > 0 && "\n"}
               {iconsOnly ? (
-                <span className="text-[20px] leading-[34px] tracking-[1px]">{withLbArt(line, `lb${i}_`, true)}</span>
+                <span className="inline-block py-1 text-[20px] leading-[40px] tracking-[1px]">{withLbArt(line, `lb${i}_`, true)}</span>
               ) : (
                 withLbArt(line, `lb${i}_`, false)
               )}
