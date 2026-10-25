@@ -2918,8 +2918,7 @@ function withLbArt(line: string, keyPrefix: string, big: boolean): ReactNode[] {
           src={art.src}
           alt={hit}
           draggable={false}
-          style={{ background: `radial-gradient(circle at 50% 35%, ${art.col[0]}, ${art.col[1]})` }}
-          className={`inline-block rounded-full object-cover object-top align-middle ${big ? "mx-[3px] h-[38px] w-[38px] shadow-[0_0_0_2px_#fff,0_2px_6px_rgba(0,0,0,.2)]" : "mx-[1px] h-[1.35em] w-[1.35em]"}`}
+          className={`inline-block object-contain object-bottom align-middle ${big ? "mx-[1px] h-[42px] w-[42px] drop-shadow-[0_2px_2px_rgba(0,0,0,.25)]" : "mx-[1px] h-[1.4em] w-[1.4em]"}`}
         />
       );
       i += hit.length;
