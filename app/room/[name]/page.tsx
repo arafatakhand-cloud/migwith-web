@@ -2910,14 +2910,16 @@ function withLbArt(line: string, keyPrefix: string, big: boolean): ReactNode[] {
     const hit = LB_ART_KEYS.find((e) => line.startsWith(e, i));
     if (hit) {
       flush();
+      const art = LUXURY_BET_ART_BY_EMOJI[hit];
       out.push(
         // eslint-disable-next-line @next/next/no-img-element
         <img
           key={`${keyPrefix}a${k++}`}
-          src={LUXURY_BET_ART_BY_EMOJI[hit]}
+          src={art.src}
           alt={hit}
           draggable={false}
-          className={`inline-block rounded-[5px] object-cover object-[50%_30%] align-middle ${big ? "mx-[3px] h-[36px] w-[36px] !rounded-full shadow-[0_0_0_2px_#fff,0_2px_6px_rgba(0,0,0,.18)]" : "mx-[1px] h-[1.3em] w-[1.15em]"}`}
+          style={{ background: `radial-gradient(circle at 50% 35%, ${art.col[0]}, ${art.col[1]})` }}
+          className={`inline-block rounded-full object-cover object-top align-middle ${big ? "mx-[3px] h-[38px] w-[38px] shadow-[0_0_0_2px_#fff,0_2px_6px_rgba(0,0,0,.2)]" : "mx-[1px] h-[1.35em] w-[1.35em]"}`}
         />
       );
       i += hit.length;

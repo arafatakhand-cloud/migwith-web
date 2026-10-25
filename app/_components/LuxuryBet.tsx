@@ -29,13 +29,25 @@ const ART: Record<string, string> = {
   Unicorn: "/lb/unicorn.webp",
 };
 
+/** Each character's own colour (top, bottom) — its name plate and chat circle. */
+export const LUXURY_BET_COLORS: Record<string, [string, string]> = {
+  King: ["#F5C542", "#B07A06"],
+  Queen: ["#F0405E", "#A3122E"],
+  Prince: ["#3D7BFF", "#1438A8"],
+  Fairy: ["#FF5FA8", "#C21E6E"],
+  Wizard: ["#8B4DFF", "#4B1BA8"],
+  Unicorn: ["#2FC46B", "#0E7A3E"],
+};
+
 /** Each character's emoji → its picture card (for the bot's chat lines). */
-export const LUXURY_BET_ART_BY_EMOJI: Record<string, string> = Object.fromEntries(
+export const LUXURY_BET_ART_BY_EMOJI: Record<string, { src: string; col: [string, string] }> = Object.fromEntries(
   LUXURY_BET_CHARACTERS.flatMap((c) => {
     const [emoji, ...rest] = c.split(" ");
-    const src = ART[rest.join(" ")];
+    const label = rest.join(" ");
+    const src = ART[label];
+    const art = src ? { src, col: LUXURY_BET_COLORS[label] ?? ["#8B4DFF", "#4B1BA8"] } : null;
     // also without the trailing U+FE0F, in case a line drops it
-    return src ? [[emoji, src], [emoji.replace(/\uFE0F$/, ""), src]] : [];
+    return art ? [[emoji, art], [emoji.replace(/\uFE0F$/, ""), art]] : [];
   })
 );
 
@@ -452,6 +464,46 @@ export function LuxuryBetTable({
               const total = Number(state.myBets[c] || 0);
               const mine = total > 0;
               const [emoji, ...rest] = c.split(" ");
+              const label = rest.join(" ");
+              const art = ART[label];
+              const col = LUXURY_BET_COLORS[label];
+              if (art && col)
+                // 🖼️ Royal look: the character stands on its own coloured name plate
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    disabled={!open}
+                    onClick={() => tap(c)}
+                    className={`lb-press relative flex select-none touch-manipulation flex-col items-center rounded-xl ${armed === c ? "lb-armed" : ""}`}
+                    style={{ filter: open ? undefined : "grayscale(.85) brightness(.7)" }}
+                  >
+                    <span key={popped.c === c ? popped.n : 0} className={`flex w-full flex-col items-center ${popped.c === c && popped.n ? "lb-pop" : ""}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={art}
+                        alt={emoji}
+                        draggable={false}
+                        className="relative z-0 -mb-1.5 h-[46px] w-full object-contain object-bottom drop-shadow-[0_2px_3px_rgba(0,0,0,.35)]"
+                      />
+                      <span
+                        className="relative z-10 flex w-full flex-col items-center rounded-[9px] px-0.5 pb-[3px] pt-[2px]"
+                        style={{
+                          background: `linear-gradient(180deg,rgba(255,255,255,.35),transparent 45%),linear-gradient(${col[0]},${col[1]})`,
+                          border: `1.5px solid ${mine ? "#FFF3B0" : "#E9C766"}`,
+                          boxShadow: mine ? "0 0 0 2px #FFD66B, 0 2px 0 #7A5A12" : "0 2px 0 #7A5A12",
+                        }}
+                      >
+                        <span className="w-full truncate text-center text-[9.5px] font-extrabold leading-[11px] text-white [text-shadow:0_1px_1px_rgba(0,0,0,.45)]">
+                          {label}
+                        </span>
+                        <span className="mt-[2px] w-[88%] rounded-full bg-black/45 text-center text-[11px] font-black leading-[13px] text-[#FFD66B]">
+                          {totalLabel(total)}
+                        </span>
+                      </span>
+                    </span>
+                  </button>
+                );
               return (
                 <button
                   key={c}
