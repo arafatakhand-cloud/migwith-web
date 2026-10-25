@@ -182,7 +182,7 @@ export function officialRoomDefaultDescription(roomName: string): string {
     case "👻 Luxury Bot Official":
       return "🎲 Welcome to the official Luxury Bot room! 🎉\n\nOn behalf of the miGlife team — place your bets, enjoy the game, and play responsibly. ✨";
     case "🎰 Luxury Bet":
-      return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b k 1000) to bet on King, Queen, Prince, Fairy, Motu or Patlu. Play responsibly! ✨";
+      return "🎰 Welcome to Luxury Bet! 🎉\n\nType !start to open a round, then tap a character twice (or !b k 1000) to bet on King, Queen, Prince, Fairy, Wizard or Unicorn. Play responsibly! ✨";
     case "🃏 LowCard Official":
       return "🃏 Welcome to the official LowCard room! 🎉\n\nOn behalf of the miGlife team — join a game, draw your card, and play responsibly. ✨";
     case "🏏 Cricket Official":
