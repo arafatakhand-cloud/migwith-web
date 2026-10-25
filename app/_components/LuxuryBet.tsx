@@ -463,7 +463,7 @@ export function LuxuryBetTable({
                 >
                   <span
                     key={popped.c === c ? popped.n : 0}
-                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl ${ART[rest.join(" ")] ? "pb-1 pt-0.5" : "py-1.5"} ${popped.c === c && popped.n ? "lb-pop" : ""}${open && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
+                    className={`flex h-full min-h-[62px] flex-col items-center justify-center rounded-xl ${ART[rest.join(" ")] ? "py-1" : "py-1.5"} ${popped.c === c && popped.n ? "lb-pop" : ""}${open && !mine && lbHasShine(skin) ? " lb-shine" : ""}`}
                     style={
                       open && !mine
                         ? lbTileFace(skin, LUXURY_BET_CHARACTERS.indexOf(c))
@@ -474,13 +474,13 @@ export function LuxuryBetTable({
                     }
                   >
                     {ART[rest.join(" ")] ? (
-                      // 🖼️ the character's picture card fills the top of the tile
+                      // 🖼️ a small picture card with a gold edge
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={ART[rest.join(" ")]}
                         alt={emoji}
                         draggable={false}
-                        className={`mx-0.5 mb-0.5 aspect-[7/8] w-[calc(100%-4px)] rounded-[10px] object-cover object-[50%_30%] ${open ? "" : "opacity-45"}`}
+                        className={`h-[38px] w-[34px] rounded-[9px] object-cover object-[50%_30%] shadow-[0_0_0_1.5px_#D4AF37] ${open ? "" : "opacity-45"}`}
                       />
                     ) : (
                       <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
