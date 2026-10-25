@@ -158,7 +158,7 @@ export function ChatBar({
         in from the sides, 32 px round buttons 5 px apart, and a 39 px white
         message pill. The phone's safe area goes under it, not inside it. */}
     {/* Round at all four corners, a little in from the sides, like the app. */}
-    <div className="chat-bar-glass keep-round mx-1.5 mb-1 flex items-end gap-[5px] rounded-[26px] bg-[#0B1F3A] px-2 py-1.5 shadow-[0_4px_14px_rgba(11,31,58,.25)] sm:mx-1 sm:my-1 sm:gap-2 sm:px-3 sm:py-1.5">
+    <div className="chat-bar-glass keep-round mx-1.5 mb-1 flex items-end gap-[5px] rounded-[26px] bg-[#0B1F3A] px-2 py-1 shadow-[0_4px_14px_rgba(11,31,58,.25)] sm:mx-1 sm:my-1 sm:gap-2 sm:px-3 sm:py-1">
       {/* ⋮ more */}
       <div ref={moreRef} className="relative mb-[4px] shrink-0">
         <button
@@ -203,10 +203,10 @@ export function ChatBar({
             className="keep-round min-w-0 flex-1 rounded-[21px] p-[1.5px]"
             style={{ background: classic ? "linear-gradient(90deg, #FF9D2E, #F07A00)" : "linear-gradient(90deg, #5B8DEF, #8B6CF0, #3FB6F2)" }}
           >
-            <div className="chat-field keep-round flex min-h-[37px] items-end gap-1 rounded-[19.5px] bg-white py-[3px] pl-[3px] pr-1">
+            <div className="chat-field keep-round flex min-h-[34px] items-end gap-1 rounded-[19.5px] bg-white py-[2px] pl-[2px] pr-1">
               <label
                 title={photo.title}
-                className={`glass-shine flex h-[31px] w-[31px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
+                className={`glass-shine flex h-[28px] w-[28px] shrink-0 cursor-pointer items-center justify-center rounded-full text-sm ${photo.disabled || photo.uploading ? "pointer-events-none opacity-40" : ""}`}
                 style={classic ? CLASSIC_BTN_BG : PHOTO_BG}
               >
                 {photo.uploading ? "⏳" : <PhotoGlyph />}
@@ -243,9 +243,9 @@ export function ChatBar({
                 maxLength={maxLength}
                 disabled={disabled}
                 placeholder={placeholder}
-                className="my-[5.5px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
+                className="my-[4px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
               />
-              <span className="flex h-[31px] shrink-0 items-center">
+              <span className="flex h-[28px] shrink-0 items-center">
                 <EmojiPicker
                   inputRef={inputRef}
                   value={text}
@@ -270,7 +270,7 @@ export function ChatBar({
               onClick={send}
               disabled={!canSend}
               aria-label="Send"
-              className={`glass-shine relative flex h-[38px] w-[38px] shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-50 ${canSend ? "chat-send-shine" : ""}`}
+              className={`glass-shine relative flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full disabled:opacity-50 ${canSend ? "chat-send-shine" : ""}`}
               style={classic ? CLASSIC_BTN_BG : SEND_BG}
             >
               <SendGlyph key={fly} fly={fly > 0} />
