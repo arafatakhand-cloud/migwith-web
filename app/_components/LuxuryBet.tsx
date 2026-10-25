@@ -12,12 +12,12 @@ import { awardUserXp } from "../../lib/xp";
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
 // the round and sends !start / bets, same as the app's LuxuryBetGame.kt.
-// Commands: !start · !b [k|q|p|f|w|u or name] [amount]   (e.g. !b k 1000)
+// Commands: !start · !b [k|q|p|f|w|a or name] [amount]   (e.g. !b k 1000)
 
 export const LUXURY_BET_ROOM = "🎰 Luxury Bet";
 const LB_BOT = "🎰 Luxury Bet";
 
-export const LUXURY_BET_CHARACTERS = ["🫅 King", "👸 Queen", "🤴 Prince", "🧚‍♀️ Fairy", "🧙‍♂️ Wizard", "🦄 Unicorn"];
+export const LUXURY_BET_CHARACTERS = ["🫅 King", "👸 Queen", "🤴 Prince", "🧚‍♀️ Fairy", "🧙‍♂️ Wizard", "👼 Angel"];
 
 // 🖼️ Picture cards for the tiles (miglife's own Royal Bet art — public/lb/).
 const ART: Record<string, string> = {
@@ -26,7 +26,7 @@ const ART: Record<string, string> = {
   Prince: "/lb/prince.webp",
   Fairy: "/lb/fairy.webp",
   Wizard: "/lb/wizard.webp",
-  Unicorn: "/lb/unicorn.webp",
+  Angel: "/lb/angel.webp",
 };
 
 /** Each character's own colour (top, bottom) — its name plate and chat circle. */
@@ -36,7 +36,7 @@ export const LUXURY_BET_COLORS: Record<string, [string, string]> = {
   Prince: ["#3D7BFF", "#1438A8"],
   Fairy: ["#FF5FA8", "#C21E6E"],
   Wizard: ["#8B4DFF", "#4B1BA8"],
-  Unicorn: ["#2FC46B", "#0E7A3E"],
+  Angel: ["#2FC46B", "#0E7A3E"],
 };
 
 /** Each character's emoji → its picture card (for the bot's chat lines). */
@@ -57,7 +57,7 @@ const CODES: Record<string, string> = {
   p: "🤴 Prince",
   f: "🧚‍♀️ Fairy",
   w: "🧙‍♂️ Wizard",
-  u: "🦄 Unicorn",
+  a: "👼 Angel",
 };
 
 const CHIPS = [500, 1000, 2000, 5000, 10000, 12000];
@@ -256,7 +256,7 @@ export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note
   const character = parts[1] ? characterFor(parts[1]) : null;
   const amount = Number(parts[2]);
   if (!character || !Number.isInteger(amount)) {
-    note(`${LB_BOT}: Usage: !b [k/q/p/f/w/u] [amount] — e.g. !b k 1000 (King, Queen, Prince, Fairy, Wizard, Unicorn)`);
+    note(`${LB_BOT}: Usage: !b [k/q/p/f/w/a] [amount] — e.g. !b k 1000 (King, Queen, Prince, Fairy, Wizard, Angel)`);
   } else {
     state.bet(character, amount);
   }

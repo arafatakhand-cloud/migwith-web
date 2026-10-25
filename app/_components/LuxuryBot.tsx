@@ -180,7 +180,7 @@ const LB_GLASS_3D = new Set(["glass3d", "glasspastel", "white3d", "glassring"]);
 /** Any see-through glass box (the dark game strip behind it is hidden). */
 export const lbIsGlass = (skin: LbSkin) => skin.id === "glass" || LB_GLASS_3D.has(skin.id);
 
-// Pastel tint for each character slot (King, Queen, Prince, Fairy, Wizard, Unicorn).
+// Pastel tint for each character slot (King, Queen, Prince, Fairy, Wizard, Angel).
 const LB_PASTELS = ["#FFD6E7", "#FFE6C7", "#D6E8FF", "#F4D9FF", "#FFD9D9", "#D9F5EC"];
 // 🎨 The coloured 3D edge of each glass box's tiles (pastel: one per character).
 const LB_RIMS: Record<string, string> = { glass: "#8DB8EE", glass3d: "#6FA3EA", white3d: "#A9BEDD", glassring: "#A993F2" };
