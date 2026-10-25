@@ -2918,7 +2918,7 @@ function withLbArt(line: string, keyPrefix: string, big: boolean): ReactNode[] {
           src={art.src}
           alt={hit}
           draggable={false}
-          className={`inline-block object-contain object-bottom align-middle ${big ? "mx-[1px] h-[42px] w-[42px] drop-shadow-[0_2px_2px_rgba(0,0,0,.25)]" : "mx-[1px] h-[1.4em] w-[1.4em]"}`}
+          className={`inline-block object-contain object-bottom align-middle ${big ? "mx-[1px] h-[32px] w-[32px] drop-shadow-[0_2px_2px_rgba(0,0,0,.25)]" : "mx-[1px] h-[1.4em] w-[1.4em]"}`}
         />
       );
       i += hit.length;
