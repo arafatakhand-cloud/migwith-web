@@ -75,6 +75,7 @@ import {
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
+  LUXURY_BET_ART_BY_EMOJI,
   LUXURY_BET_ROOM,
   LuxuryBetStartButton,
   LuxuryBetTable,
@@ -2894,6 +2895,43 @@ function withBadgeImages(text: string, images: Record<string, string>): ReactNod
 
 // "🎰 Luxury Bet: …" — the bot name in orange, the rest in blue. In the
 // Result, the row made only of character icons (👑👑👸👸🐼🐼) is drawn bigger.
+// 🖼️ Luxury Bet's character emoji (🫅 👸 🤴 …) drawn as their small picture
+// cards, like the bet tiles. Longest first, so 🧙‍♂️ wins over a bare 🧙.
+const LB_ART_KEYS = Object.keys(LUXURY_BET_ART_BY_EMOJI).sort((a, b) => b.length - a.length);
+function withLbArt(line: string, keyPrefix: string, big: boolean): ReactNode[] {
+  const out: ReactNode[] = [];
+  let plain = "";
+  let k = 0;
+  const flush = () => {
+    if (plain) out.push(<Fragment key={`${keyPrefix}t${k++}`}>{big ? plain : withMentions(plain, `${keyPrefix}${k}_`)}</Fragment>);
+    plain = "";
+  };
+  for (let i = 0; i < line.length; ) {
+    const hit = LB_ART_KEYS.find((e) => line.startsWith(e, i));
+    if (hit) {
+      flush();
+      out.push(
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={`${keyPrefix}a${k++}`}
+          src={LUXURY_BET_ART_BY_EMOJI[hit]}
+          alt={hit}
+          draggable={false}
+          className={`inline-block rounded-[5px] object-cover object-[50%_30%] align-middle ${big ? "mx-[2px] h-[30px] w-[26px]" : "mx-[1px] h-[1.3em] w-[1.15em]"}`}
+        />
+      );
+      i += hit.length;
+      // the U+FE0F after a stripped key belongs to the picture too
+      if (line[i] === "\uFE0F") i += 1;
+    } else {
+      plain += line[i];
+      i += 1;
+    }
+  }
+  flush();
+  return out;
+}
+
 function luxuryBetLine(text: string): ReactNode | null {
   const prefix = "🎰 Luxury Bet";
   if (!text.startsWith(`${prefix}:`)) return null;
@@ -2910,7 +2948,11 @@ function luxuryBetLine(text: string): ReactNode | null {
           return (
             <span key={i}>
               {i > 0 && "\n"}
-              {iconsOnly ? <span className="text-[20px] leading-[26px] tracking-[1px]">{line}</span> : withMentions(line, `lb${i}_`)}
+              {iconsOnly ? (
+                <span className="text-[20px] leading-[34px] tracking-[1px]">{withLbArt(line, `lb${i}_`, true)}</span>
+              ) : (
+                withLbArt(line, `lb${i}_`, false)
+              )}
             </span>
           );
         })}

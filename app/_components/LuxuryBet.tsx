@@ -29,6 +29,16 @@ const ART: Record<string, string> = {
   Unicorn: "/lb/unicorn.webp",
 };
 
+/** Each character's emoji → its picture card (for the bot's chat lines). */
+export const LUXURY_BET_ART_BY_EMOJI: Record<string, string> = Object.fromEntries(
+  LUXURY_BET_CHARACTERS.flatMap((c) => {
+    const [emoji, ...rest] = c.split(" ");
+    const src = ART[rest.join(" ")];
+    // also without the trailing U+FE0F, in case a line drops it
+    return src ? [[emoji, src], [emoji.replace(/\uFE0F$/, ""), src]] : [];
+  })
+);
+
 const CODES: Record<string, string> = {
   k: "🫅 King",
   q: "👸 Queen",
