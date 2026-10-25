@@ -464,46 +464,6 @@ export function LuxuryBetTable({
               const total = Number(state.myBets[c] || 0);
               const mine = total > 0;
               const [emoji, ...rest] = c.split(" ");
-              const label = rest.join(" ");
-              const art = ART[label];
-              const col = LUXURY_BET_COLORS[label];
-              if (art && col)
-                // 🖼️ Royal look: the character stands on its own coloured name plate
-                return (
-                  <button
-                    key={c}
-                    type="button"
-                    disabled={!open}
-                    onClick={() => tap(c)}
-                    className={`lb-press relative flex select-none touch-manipulation flex-col items-center rounded-xl ${armed === c ? "lb-armed" : ""}`}
-                    style={{ filter: open ? undefined : "grayscale(.85) brightness(.7)" }}
-                  >
-                    <span key={popped.c === c ? popped.n : 0} className={`flex w-full flex-col items-center ${popped.c === c && popped.n ? "lb-pop" : ""}`}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={art}
-                        alt={emoji}
-                        draggable={false}
-                        className="relative z-0 -mb-1.5 h-[46px] w-full object-contain object-bottom drop-shadow-[0_2px_3px_rgba(0,0,0,.35)]"
-                      />
-                      <span
-                        className="relative z-10 flex w-full flex-col items-center rounded-[9px] px-0.5 pb-[3px] pt-[2px]"
-                        style={{
-                          background: `linear-gradient(180deg,rgba(255,255,255,.35),transparent 45%),linear-gradient(${col[0]},${col[1]})`,
-                          border: `1.5px solid ${mine ? "#FFF3B0" : "#E9C766"}`,
-                          boxShadow: mine ? "0 0 0 2px #FFD66B, 0 2px 0 #7A5A12" : "0 2px 0 #7A5A12",
-                        }}
-                      >
-                        <span className="w-full truncate text-center text-[9.5px] font-extrabold leading-[11px] text-white [text-shadow:0_1px_1px_rgba(0,0,0,.45)]">
-                          {label}
-                        </span>
-                        <span className="mt-[2px] w-[88%] rounded-full bg-black/45 text-center text-[11px] font-black leading-[13px] text-[#FFD66B]">
-                          {totalLabel(total)}
-                        </span>
-                      </span>
-                    </span>
-                  </button>
-                );
               return (
                 <button
                   key={c}
@@ -526,13 +486,13 @@ export function LuxuryBetTable({
                     }
                   >
                     {ART[rest.join(" ")] ? (
-                      // 🖼️ a small picture card with a gold edge
+                      // 🖼️ the character's small cut-out picture
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={ART[rest.join(" ")]}
                         alt={emoji}
                         draggable={false}
-                        className={`h-[38px] w-[34px] rounded-[9px] object-cover object-[50%_30%] shadow-[0_0_0_1.5px_#D4AF37] ${open ? "" : "opacity-45"}`}
+                        className={`h-[34px] w-[34px] object-contain object-bottom drop-shadow-[0_1px_2px_rgba(0,0,0,.25)] ${open ? "" : "opacity-45 grayscale"}`}
                       />
                     ) : (
                       <span className={`text-[18px] leading-5 ${open ? "" : "opacity-50"}`}>{emoji}</span>
