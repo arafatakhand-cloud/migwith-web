@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { SupporterJersey } from "../../_components/SupporterBadge";
+import { ProfileSongChip } from "../../_components/ProfileSongs";
 import { activeSupporterTeam, supporterBackground, type SupporterTeam } from "../../../lib/supporterTeams";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -718,6 +719,8 @@ export default function ProfilePage() {
                 </span>
               </p>
             )}
+            {/* 🎵 Profile Song — plays once when the profile opens */}
+            <ProfileSongChip username={username} classic />
             {facts.length > 0 && <p className="mt-1 truncate">{facts.join(", ")}</p>}
             {profile.relationship && <p className="mt-0.5 truncate text-sm">💍 {profile.relationship}</p>}
             {profile.memberSince && <p className="mt-0.5 truncate text-sm">🗓 Member since {profile.memberSince}</p>}
@@ -926,6 +929,8 @@ export default function ProfilePage() {
                 </p>
               )}
               {taggedDays !== null && <p className="truncate">🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}</p>}
+              {/* 🎵 Profile Song — plays once when the profile opens */}
+              <ProfileSongChip username={username} />
               {bubble && (
                 <p data-notranslate className="mt-1.5 whitespace-pre-wrap rounded-xl bg-white/60 px-2.5 py-1.5 text-[13.5px] leading-snug text-[#0B2A5B]">
                   💬 {bubble}
