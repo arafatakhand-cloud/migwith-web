@@ -702,12 +702,12 @@ export default function PrivateChatPage() {
 
         {/* Input bar: ⋮ menu, a rounded message box (photo, text, emoji) and
             🎤 voice, which turns into ➤ send as soon as something is typed. */}
-        <div className="keep-round relative mx-2 mb-2 flex items-end gap-1.5 rounded-[28px] bg-white px-2 py-2 shadow-[0_4px_16px_rgba(11,42,91,.14)]">
+        <div className="keep-round relative mx-2 mb-2 flex items-end gap-1.5 rounded-[28px] bg-white px-2 py-1.5 shadow-[0_4px_16px_rgba(11,42,91,.14)]">
           <div className="relative">
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex h-11 w-9 items-center justify-center rounded-full text-[22px] font-bold text-[#35507E] hover:bg-[#EEF4FB]"
+              className="flex h-10 w-9 items-center justify-center rounded-full text-[22px] font-bold text-[#35507E] hover:bg-[#EEF4FB]"
               aria-label="Menu"
             >
               ⋮
@@ -715,7 +715,7 @@ export default function PrivateChatPage() {
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <div className="pc-menu absolute bottom-12 left-0 z-40 w-52 overflow-hidden rounded-[18px] bg-white py-1 shadow-xl">
+                <div className="pc-menu absolute bottom-11 left-0 z-40 w-44 overflow-hidden rounded-[16px] bg-white py-0.5 shadow-xl">
                   {menu.map(([icon, label, act], i) => (
                     <button
                       key={label}
@@ -724,11 +724,11 @@ export default function PrivateChatPage() {
                         setMenuOpen(false);
                         act();
                       }}
-                      className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-[#12233F] hover:bg-[#F4F9FF] ${
+                      className={`flex w-full items-center gap-2.5 px-3 py-[7px] text-left text-[13px] font-medium text-[#12233F] hover:bg-[#F4F9FF] ${
                         i > 0 ? "pc-menu-line border-t border-[#E8EEF5]" : ""
                       }`}
                     >
-                      <span className="text-lg">{icon}</span>
+                      <span className="text-[15px]">{icon}</span>
                       {label}
                     </button>
                   ))}
@@ -740,12 +740,12 @@ export default function PrivateChatPage() {
           <input ref={fileRef} type="file" hidden onChange={(e) => (sendFile(e.target.files?.[0]), (e.target.value = ""))} />
           {!voiceActive && (
             <div className="min-w-0 flex-1 rounded-[24px] bg-gradient-to-r from-[#5B8DEF] via-[#8B6CF0] to-[#3FB6F2] p-[1.5px] shadow-[0_2px_10px_rgba(91,141,239,.18)]">
-              <div className="flex min-h-[41px] items-end gap-1 rounded-[22.5px] bg-[#F7FAFF] py-[3px] pl-1 pr-1.5">
+              <div className="flex min-h-[36px] items-end gap-1 rounded-[22.5px] bg-[#F7FAFF] py-[2px] pl-1 pr-1.5">
                 <button
                   type="button"
                   onClick={() => photoRef.current?.click()}
                   disabled={uploading || self}
-                  className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
+                  className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
                   style={{ background: "linear-gradient(135deg, #EC4677, #C13A93, #9B3DAB)" }}
                   aria-label="Send a photo"
                 >
@@ -771,9 +771,9 @@ export default function PrivateChatPage() {
                     }
                   }}
                   placeholder="Message…"
-                  className="my-[6.5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[13px] placeholder:text-[#8A9BB5]"
+                  className="my-[5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[13px] placeholder:text-[#8A9BB5]"
                 />
-                <span className="flex h-[35px] shrink-0 items-center">
+                <span className="flex h-[32px] shrink-0 items-center">
                   <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
                 </span>
               </div>
@@ -783,7 +783,7 @@ export default function PrivateChatPage() {
             <button
               type="button"
               onClick={send}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white active:scale-95"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:scale-95"
               style={SEND_BG}
               aria-label="Send"
             >
