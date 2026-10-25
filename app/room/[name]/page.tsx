@@ -633,6 +633,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked]);
 
   // Live chat — the latest 150 messages, same collection the app uses.
+  // 🔒 The server lets only people IN the room read its chat: opening a room,
+  // this can start a moment before my presence spot is written and be refused —
+  // then it tries again shortly (a refused listener never resumes by itself).
+  const [chatRetry, setChatRetry] = useState(0);
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -664,9 +668,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           }))
         );
       },
-      (err) => console.error("room chat listener failed", err)
+      (err) => {
+        console.error("room chat listener failed", err);
+        if ((err as { code?: string })?.code === "permission-denied" && chatRetry < 40) {
+          window.setTimeout(() => setChatRetry((n) => n + 1), 1500);
+        }
+      }
     );
-  }, [user, roomName]);
+  }, [user, roomName, chatRetry]);
 
   // Who is in the room.
   useEffect(() => {

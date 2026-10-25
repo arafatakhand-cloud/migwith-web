@@ -35,6 +35,9 @@ export function useGlowingRoomTabs(uid: string | undefined, rooms: string[], cur
   const [latest, setLatest] = useState<Record<string, number>>({});
   const [, setTick] = useState(0);
   const key = rooms.join("|");
+  // 🔒 a room's chat is readable only while I'm IN it: refused (a moment before
+  // my spot was written) → try again shortly
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     if (!uid) return;
@@ -48,12 +51,16 @@ export function useGlowingRoomTabs(uid: string | undefined, rooms: string[], cur
           const at = d.get("createdAt")?.toMillis?.() || 0;
           setLatest((m) => (m[room] === at ? m : { ...m, [room]: at }));
         },
-        () => {}
+        (err) => {
+          if ((err as { code?: string })?.code === "permission-denied" && retry < 20) {
+            window.setTimeout(() => setRetry((n) => n + 1), 3000);
+          }
+        }
       )
     );
     return () => offs.forEach((off) => off());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid, key]);
+  }, [uid, key, retry]);
 
   // the room on screen stays "seen" while it is open
   useEffect(() => {
