@@ -29,6 +29,7 @@ import { EmojiPicker } from "../../_components/EmojiPicker";
 import { withEmotes } from "../../_components/Emote";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
+import { previousPath } from "../../../lib/navHistory";
 import { BackButton } from "../../_components/BackButton";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
@@ -439,6 +440,15 @@ export default function PrivateChatPage() {
     );
   }
 
+  // ← / Close Chat: really go back to where the chat was opened from, so the
+  // phone's back gesture can't bring the chat up again; opened directly (a
+  // link, a notification) → the Messages list in its place.
+  const leaveChat = () => {
+    const prev = previousPath();
+    if (prev && !prev.startsWith("/chat/")) router.back();
+    else router.replace("/messages");
+  };
+
   const status = lastSeenLabel(friendLastActive);
   const online = status === "Online";
   const menu: [string, string, () => void][] = [
@@ -449,7 +459,7 @@ export default function PrivateChatPage() {
     ["💰", "Send Credit", () => router.push(`/wallet?to=${encodeURIComponent(friend)}`)],
     blocked ? ["✓", `Unblock ${friend}`, () => setBlock(false)] : ["🚫", `Block ${friend}`, () => setBlock(true)],
     ["🚩", `Report ${friend}`, () => openReport({ kind: "user", targetUsername: friend })],
-    ["🚪", "Close Chat", () => router.push("/messages")],
+    ["🚪", "Close Chat", leaveChat],
   ];
 
   return (
@@ -457,7 +467,7 @@ export default function PrivateChatPage() {
       <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] sm:my-3 sm:overflow-hidden sm:rounded-3xl">
         {/* Header */}
         <div className="flex items-center gap-2.5 rounded-b-3xl bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3.5 py-2 shadow-lg">
-          <BackButton variant="dark" href="/messages" />
+          <BackButton variant="dark" onClick={leaveChat} />
           <span className="relative h-11 w-11 shrink-0">
             <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-[#FFE08A] bg-gradient-to-br from-[#E9C55A] to-[#D4AF37] text-lg font-extrabold text-white">
               {(friend[0] || "?").toUpperCase()}

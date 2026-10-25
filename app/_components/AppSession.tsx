@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect } from "react";
+import { useTrackPath } from "../../lib/navHistory";
 import { usePathname, useRouter } from "next/navigation";
 import { syncPush } from "../../lib/push";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -21,6 +22,8 @@ const SessionContext = createContext<Session | null>(null);
 
 export function AppSession({ children }: { children: React.ReactNode }) {
   const current = useCurrentUser();
+  // remembers the page before this one (for ← / Close that really go back)
+  useTrackPath();
   const badges = useBadges(current.username);
 
   // Keep this browser's push token saved for whoever is signed in.
