@@ -21,7 +21,7 @@ import { ClassicListRow, ClassicTitleBar, useIsClassic } from "../_components/Cl
 // opening its official room, and what's coming soon.
 
 const RUNNING: [string, string, string, string, string][] = [
-  ["🎰", "Luxury Bet", "Laila–Majnu · Romeo–Juliet · Shirin–Farhad", "#B8860B", LUXURY_BET_ROOM],
+  ["🎰", "Luxury Bet", "King · Queen · Prince · Fairy · Elf · Mermaid", "#B8860B", LUXURY_BET_ROOM],
   ["🃏", "LowCard", "Draw the lowest card, survive", "#1D9E75", LOWCARD_ROOM],
   ["🏏", "Cricket", "Bat 6 rounds, top scorer wins", "#3984D9", CRICKET_ROOM],
   ["🎴", "3 Patti", "Blind or seen — best hand wins", "#7B1FA2", TEEN_PATTI_ROOM],
