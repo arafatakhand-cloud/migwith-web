@@ -99,6 +99,9 @@ export type LuxuryBetState = {
   lastBet: { character: string; amount: number } | null;
   start: () => void;
   bet: (character: string, amount: number) => void;
+  /** 2x: places my bets of this round again, so every bet is doubled. */
+  double: () => void;
+  doubling: boolean;
 };
 
 export function useLuxuryBet(
@@ -118,6 +121,10 @@ export function useLuxuryBet(
   const [lastBet, setLastBet] = useState<{ character: string; amount: number } | null>(null);
   const lastTick = useRef(0);
   const lastBetSentAt = useRef(0);
+  const [doubling, setDoubling] = useState(false);
+  const doublingRef = useRef(false);
+  const endsAtRef = useRef(0);
+  endsAtRef.current = phaseEndsAt;
   const noteRef = useRef(note);
   noteRef.current = note;
 
@@ -225,6 +232,66 @@ export function useLuxuryBet(
       .finally(() => setInFlight((n) => Math.max(0, n - 1)));
   };
 
+  // 2x — every character I bet on this round gets the same amount again
+  // (Prince 36k → 72k), in bids of up to 12,000, one after another (the server
+  // takes one bid per ~0.8 s), never past 500,000 for the round.
+  const double = () => {
+    if (doublingRef.current) return;
+    if (!running || phase !== "BETTING" || secondsLeft <= 0) {
+      noteRef.current(`${LB_BOT}: Betting is closed. Type !start to start a new round.`);
+      return;
+    }
+    const mine = Object.entries(myBets).filter(([, v]) => Number(v) > 0);
+    if (mine.length === 0) {
+      noteRef.current(`${LB_BOT}: Place a bet first, then tap 2x to double it.`);
+      return;
+    }
+    const total = mine.reduce((a, [, v]) => a + Number(v), 0);
+    let room = Math.max(0, 500_000 - total);
+    const queue: [string, number][] = [];
+    for (const [character, v] of mine) {
+      let left = Math.min(Number(v), room);
+      room -= left;
+      while (left >= 100) {
+        const amount = Math.min(12_000, left);
+        queue.push([character, amount]);
+        left -= amount;
+      }
+    }
+    if (queue.length === 0) {
+      noteRef.current(`${LB_BOT}: You already reached 500,000 for this round.`);
+      return;
+    }
+    doublingRef.current = true;
+    setDoubling(true);
+    setInFlight((n) => n + 1);
+    (async () => {
+      try {
+        for (const [character, amount] of queue) {
+          if (Date.now() >= endsAtRef.current) break; // the round closed
+          const wait = 900 - (Date.now() - lastBetSentAt.current);
+          if (wait > 0) await new Promise((res) => setTimeout(res, wait));
+          lastBetSentAt.current = Date.now();
+          const { data } = await betCall({
+            character,
+            amount,
+            roundNumber: round,
+            operationId: crypto.randomUUID().replace(/-/g, ""),
+          });
+          if (data?.bets) setMyBets(data.bets);
+          setLastBet({ character, amount });
+        }
+        awardUserXp(uid, 3, "luxury_bot_bet", 15_000);
+      } catch (e: any) {
+        noteRef.current(`${LB_BOT}: ${e?.message || "Bet failed."}`);
+      } finally {
+        doublingRef.current = false;
+        setDoubling(false);
+        setInFlight((n) => Math.max(0, n - 1));
+      }
+    })();
+  };
+
   return {
     canSee: access.canSee,
     running,
@@ -237,6 +304,8 @@ export function useLuxuryBet(
     lastBet,
     start,
     bet,
+    double,
+    doubling,
   };
 }
 
@@ -403,12 +472,13 @@ export function LuxuryBetTable({
         <span className="min-w-0 flex-1 truncate text-[13px] font-bold" style={{ color: skin.accentText }}>
           {title}
         </span>
-        {open && state.lastBet && (
+        {open && (state.lastBet || Object.values(state.myBets).some((v) => Number(v) > 0)) && (
           <>
             <button
               type="button"
               title="Repeat last bet"
-              onClick={() => state.bet(state.lastBet!.character, state.lastBet!.amount)}
+              onClick={() => state.lastBet && state.bet(state.lastBet.character, state.lastBet.amount)}
+              disabled={!state.lastBet || state.doubling}
               className={circle}
               style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
@@ -416,8 +486,9 @@ export function LuxuryBetTable({
             </button>
             <button
               type="button"
-              title="Double last bet"
-              onClick={() => state.bet(state.lastBet!.character, Math.min(state.lastBet!.amount * 2, 12000))}
+              title="Double all my bets this round"
+              onClick={() => state.double()}
+              disabled={state.doubling}
               className={circle}
               style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
