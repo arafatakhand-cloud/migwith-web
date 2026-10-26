@@ -89,11 +89,12 @@ export function EmoteView({ id, size, playing = true }: { id: string; size: numb
 
 /**
  * Text with emote codes (":c12", ";a3") and Google emoji drawn as pictures, the
- * size of the text around them (10/7 of the font size, like the app).
+ * size of the text around them (1.15 × the font size, like the app).
  * `renderText` renders the plain parts (e.g. @mentions).
  */
 export function withEmotes(text: string, fontPx: number, renderText: (s: string, key: string) => ReactNode = (s) => s): ReactNode[] {
-  const size = Math.round((fontPx * 10) / 7);
+  // ~the height of the text (was 10/7 — emoji looked bigger than the words)
+  const size = Math.round(fontPx * 1.15);
   const pieces = splitEmotes(text);
   return pieces.map((p, i) => {
     if ("emote" in p) return <EmoteView key={`e${i}`} id={p.emote} size={size} />;
