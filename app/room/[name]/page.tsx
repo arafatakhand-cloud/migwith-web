@@ -139,6 +139,7 @@ import {
   NO_NEW_BELOW,
   addNewBelow,
   chatBotAccent,
+  chatLineAtMentionsMe,
   chatBotKey,
   chatHideBotLine,
   newBelowLabel,
@@ -2122,6 +2123,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   key={m.id}
                   m={m}
                   mine={!!m.senderUid && m.senderUid === user.uid}
+                  mentionsMe={
+                    !(m.senderUid && m.senderUid === user.uid) &&
+                    m.type !== "room_entry" &&
+                    m.type !== "room_leave" &&
+                    !!myName &&
+                    chatLineAtMentionsMe(m.text, myName)
+                  }
                   classic={classic}
                   roomName={roomName}
                   gameRoom={gameRoom}
@@ -3030,9 +3038,12 @@ function MessageRow({
   myUid,
   onReact,
   onShowReactors,
+  mentionsMe = false,
 }: {
   m: ChatMessage;
   mine: boolean;
+  /** 🟠 someone wrote "@me" in this line: the whole line gets an orange highlight. */
+  mentionsMe?: boolean;
   /** 📟 Classic style: every line on the left, own name shown too. */
   classic: boolean;
   roomName: string;
@@ -3339,9 +3350,12 @@ function MessageRow({
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
-          className={`relative ${(gameRoom || classic) && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left`}
+          className={`relative ${(gameRoom || classic) && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
+            mentionsMe ? "rounded-md border-l-[3px] border-[#FF8A00] px-1.5 py-0.5" : ""
+          }`}
           style={{
             fontSize: fontPx,
+            ...(mentionsMe ? { background: "rgba(255, 138, 0, 0.14)" } : {}),
             WebkitTouchCallout: canReact ? "none" : undefined,
             // a wrapped own text line: only as wide as its longest line
             width:

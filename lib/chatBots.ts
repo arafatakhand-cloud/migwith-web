@@ -34,6 +34,21 @@ export function chatBotKey(text: string, roomName: string): string | null {
   return null;
 }
 
+/** True when [text] has "@me" in its body (someone mentioned you with @) — the orange line in the room. */
+export function chatLineAtMentionsMe(text: string, me: string): boolean {
+  if (!me.trim() || me === "User") return false;
+  const i0 = text.indexOf(":");
+  const body = (i0 >= 0 ? text.slice(i0 + 1) : text).toLowerCase();
+  const tag = `@${me.toLowerCase()}`;
+  let i = body.indexOf(tag);
+  while (i >= 0) {
+    const after = body[i + tag.length];
+    if (!after || !isLetterOrDigit(after)) return true;
+    i = body.indexOf(tag, i + 1);
+  }
+  return false;
+}
+
 /** True when [text] mentions [me] ("@me" or the plain name in the message body). */
 export function chatLineMentionsMe(text: string, me: string): boolean {
   if (!me.trim() || me === "User") return false;
