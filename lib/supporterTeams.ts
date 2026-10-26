@@ -40,7 +40,7 @@ export const SUPPORTER_TEAMS: SupporterTeam[] = [
   { id: "liverpool", mark: "LFC", name: "Liverpool", short: "LIV", league: "epl", text: "#C8102E", c1: "#C8102E", c2: "#FFFFFF", kit: "solid" },
   { id: "chelsea", mark: "CFC", name: "Chelsea", short: "CHE", league: "epl", text: "#034694", c1: "#034694", c2: "#FFFFFF", kit: "solid" },
   { id: "barcelona", mark: "FCB", name: "Barcelona", short: "BAR", league: "laliga", text: "#A50044", c1: "#A50044", c2: "#004D98", kit: "stripes" },
-  { id: "realmadrid", mark: "RMCF", name: "Real Madrid", short: "RMA", league: "laliga", text: "#C99A06", c1: "#FFFFFF", c2: "#FEBE10", kit: "solid" },
+  { id: "realmadrid", mark: "RMFC", name: "Real Madrid", short: "RMA", league: "laliga", text: "#C99A06", c1: "#FFFFFF", c2: "#FEBE10", kit: "solid" },
   { id: "atletico", mark: "ATM", name: "Atlético Madrid", short: "ATM", league: "laliga", text: "#CB3524", c1: "#CB3524", c2: "#FFFFFF", kit: "stripes" },
   { id: "valencia", mark: "VCF", name: "Valencia", short: "VAL", league: "laliga", text: "#E87500", c1: "#FFFFFF", c2: "#F18A00", kit: "solid" },
   { id: "sevilla", mark: "SFC", name: "Sevilla", short: "SEV", league: "laliga", text: "#D81920", c1: "#FFFFFF", c2: "#D81920", kit: "solid" },
