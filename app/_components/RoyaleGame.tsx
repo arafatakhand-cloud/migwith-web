@@ -5,13 +5,10 @@ import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
-import { isClassicNow } from "../../lib/uiStyle";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { useGameAutoFold } from "../../lib/gameBoxFold";
 import { LiveWatch } from "./LiveWatch";
 
-// 📟 Classic app style: the purple accent becomes blue (team red / blue stay).
-const royaleBtn = () => (isClassicNow() ? "from-[#5A8FD6] to-[#2F6ABD]" : "from-violet-500 to-purple-700");
 
 // 👑 MIG Royale — Red vs Blue. Server-driven (startRoyale / royaleBet /
 // tickRoyale): the web only shows the round and sends bets, same as the app's
@@ -56,6 +53,8 @@ export type RoyaleState = {
   lastRound: number;
   history: HistoryItem[];
   busy: boolean;
+  /** My last bet this session (for ↻ Same). */
+  lastBet: { option: string; amount: number } | null;
   start: () => void;
   bet: (option: string, amount: number) => void;
 };
@@ -74,6 +73,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [phaseEndsAt, setPhaseEndsAt] = useState(0);
   const [round, setRound] = useState(0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
+  const [lastBet, setLastBet] = useState<{ option: string; amount: number } | null>(null);
   const [pool, setPool] = useState<Record<string, { coins: number; people: number }>>({});
   const [last, setLast] = useState({
     red: [] as string[],
@@ -201,6 +201,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     lastRound: last.round,
     history,
     busy,
+    lastBet,
     start: () => {
       if (busy) return;
       setBusy(true);
@@ -212,6 +213,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
       if (busy) return;
       setBusy(true);
       royaleBetCall({ option, amount, operationId: royaleOpId() })
+        .then(() => setLastBet({ option, amount }))
         .catch((err: any) =>
           noteRef.current(`MIG Royale Bot: Bet rejected. ${err?.message || "Something went wrong. Try again."}`)
         )
@@ -257,164 +259,278 @@ export function royaleHandleCommand(state: RoyaleState, text: string, note: (t: 
   return false;
 }
 
+// ⚔ ARENA bet box (miglife picked design 1, compact): Red VS Blue face-off with a
+// tug bar of the coins on each side, five hand tiles (🔥 = most coins), amount
+// chips, ↻ Same + Bet, and the last results with the current streak.
 export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [amount, setAmount] = useRememberedAmount("royale_bet", 500);
   const [collapsed, setCollapsed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [flash, setFlash] = useState(false);
+  const prevMine = useRef(0);
 
   // A new round clears the pick.
   useEffect(() => setSelected(null), [state.round]);
   // folded unless I have a bet in this round (kept open 90 s after, like the app)
   useGameAutoFold(state.running && Object.values(state.myBets).some((v) => v > 0), setCollapsed, 90_000);
+  // ✓ "Bet placed" for a moment whenever my total on the table grows
+  const myTotal = Object.values(state.myBets).reduce((a, v) => a + Number(v || 0), 0);
+  useEffect(() => {
+    if (myTotal > prevMine.current) {
+      setFlash(true);
+      const t = setTimeout(() => setFlash(false), 1500);
+      prevMine.current = myTotal;
+      return () => clearTimeout(t);
+    }
+    prevMine.current = myTotal;
+  }, [myTotal]);
 
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
   const opt = ROYALE_OPTIONS.find((o) => o.key === selected);
   const ready = canBet && !!opt && !state.busy;
+  const tap = (key: string) => setSelected(key);
+  const quick = (key: string) => canBet && !state.busy && state.bet(key, amount);
+
+  const redIn = state.pool.red?.coins || 0;
+  const blueIn = state.pool.blue?.coins || 0;
+  const redPct = redIn + blueIn > 0 ? Math.round((redIn / (redIn + blueIn)) * 100) : 50;
+  const hands = ROYALE_OPTIONS.filter((o) => !o.side);
+  const hot = hands.reduce<string | null>((best, o) => ((state.pool[o.key]?.coins || 0) > (best ? state.pool[best]?.coins || 0 : 0) ? o.key : best), null);
+  const RING = 2 * Math.PI * 14;
+  const total = 45; // betting lasts 45 s
 
   return (
-    <div className="border-t border-violet-300/20 bg-gradient-to-b from-violet-500/10 to-transparent px-2 py-2">
-      {/* Header */}
+    <div
+      className="m-1.5 rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] shadow-[0_10px_30px_rgba(8,12,30,.35)]"
+      style={{ background: "radial-gradient(130% 80% at 50% 0%, #26306A 0%, #141A3A 55%, #0D1128 100%)" }}
+    >
+      {/* Header: ⏱ ring · title / round · pool · 📊 · − */}
       <div className="flex items-center gap-2">
-        <span className="text-sm font-black text-violet-200">👑 MIG Royale</span>
-        {state.running && (
-          <span
-            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-              state.secondsLeft <= 5 ? "bg-red-500/80" : "bg-violet-600/80"
-            }`}
-          >
-            {state.phase === "BETTING" && state.secondsLeft > 0 ? `⏱ ${state.secondsLeft}s` : "🃏 Dealing…"}
-          </span>
-        )}
+        <div className="relative h-8 w-8 shrink-0">
+          <svg viewBox="0 0 32 32" className="h-full w-full -rotate-90" aria-hidden>
+            <circle cx="16" cy="16" r="14" fill="none" stroke="#2A3366" strokeWidth="3.5" />
+            {state.running && (
+              <circle
+                cx="16" cy="16" r="14" fill="none" stroke={state.secondsLeft <= 5 ? "#EF4444" : "#A78BFA"} strokeWidth="3.5" strokeLinecap="round"
+                strokeDasharray={RING} strokeDashoffset={RING * (1 - Math.min(1, state.secondsLeft / total))}
+              />
+            )}
+          </svg>
+          <b className="absolute inset-0 grid place-items-center text-[12px] font-black tabular-nums">
+            {state.running ? (canBet ? state.secondsLeft : "🃏") : "👑"}
+          </b>
+        </div>
+        <div className="min-w-0 leading-tight">
+          <p className="text-[15px] font-black">MIG Royale</p>
+          <p className="truncate text-[10px] font-bold text-[#9BA6D6]">
+            {state.running ? `Round #${state.round} · ${canBet ? "bets open" : "dealing…"}` : "Red vs Blue"}
+          </p>
+        </div>
         {state.running && state.poolTotal > 0 && (
-          <span className="text-xs font-bold text-white/60">pool {shortK(state.poolTotal)}</span>
+          <div className="ml-auto text-right leading-none">
+            <b className="block text-[15px] font-black tabular-nums text-amber-300">{shortK(state.poolTotal)}</b>
+            <span className="text-[8.5px] font-extrabold tracking-[1px] text-[#9BA6D6]">POOL</span>
+          </div>
         )}
         <button
           type="button"
           onClick={() => setShowHistory((v) => !v)}
           title="Last results"
-          className="ml-auto rounded-lg border border-white/10 px-2 text-sm hover:bg-white/10"
+          className={`${state.running && state.poolTotal > 0 ? "" : "ml-auto"} rounded-lg border border-white/15 px-1.5 text-sm hover:bg-white/10`}
         >
           📊
         </button>
         {collapsed && state.running && <LiveWatch onWatch={() => setCollapsed(false)} />}
-        <button
-          type="button"
-          onClick={() => setCollapsed((v) => !v)}
-          className="rounded-lg border border-white/10 px-2 text-sm text-white/60 hover:bg-white/10"
-        >
+        <button type="button" onClick={() => setCollapsed((v) => !v)} className="rounded-lg border border-white/15 px-2 text-sm text-white/70 hover:bg-white/10">
           {collapsed ? "+" : "−"}
         </button>
       </div>
 
       {showHistory && <RoyaleHistory history={state.history} />}
 
-      {!collapsed && (
-        <>
-          {!state.running ? (
-            <>
-              <RoyaleLastResult state={state} />
-              <button
-                type="button"
-                onClick={state.start}
-                disabled={state.busy}
-                className={`mt-2 w-full rounded-xl bg-gradient-to-r py-3 text-sm font-black disabled:opacity-50 ${royaleBtn()}`}
-              >
-                {state.busy ? "Starting…" : "▶ Start MIG Royale"}
-              </button>
-            </>
-          ) : (
-            <>
-              {/* Red / Blue */}
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
-                  const sel = selected === o.key;
-                  const red = o.key === "red";
-                  return (
-                    <button
-                      key={o.key}
-                      type="button"
-                      disabled={!canBet}
-                      onClick={() => setSelected(o.key)}
-                      className={`rounded-xl border-2 py-2.5 text-base font-black transition disabled:opacity-40 ${
-                        red
-                          ? sel
-                            ? "border-red-500 bg-red-500 text-white"
-                            : "border-red-500/60 bg-red-500/10 text-red-300"
-                          : sel
-                            ? "border-blue-500 bg-blue-500 text-white"
-                            : "border-blue-500/60 bg-blue-500/10 text-blue-300"
-                      }`}
-                    >
-                      {o.label} <span className="text-xs font-semibold opacity-75">{o.mult}</span>
-                      <PoolLine mine={state.myBets[o.key] || 0} pool={state.pool[o.key]} />
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Hand types */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {ROYALE_OPTIONS.filter((o) => !o.side).map((o) => {
-                  const sel = selected === o.key;
-                  return (
-                    <button
-                      key={o.key}
-                      type="button"
-                      disabled={!canBet}
-                      onClick={() => setSelected(o.key)}
-                      className={`rounded-full border px-3 py-1 text-xs font-bold disabled:opacity-40 ${
-                        sel
-                          ? "border-violet-400 bg-violet-600 text-white"
-                          : "border-white/15 bg-white/[0.04] text-white/80 hover:bg-white/10"
-                      }`}
-                    >
-                      {o.label} <span className="opacity-60">{o.mult}</span>
-                      <PoolLine mine={state.myBets[o.key] || 0} pool={state.pool[o.key]} small />
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="mt-1 text-[10px] text-white/35">
-                Hand-type bets pay only when the winning side has that hand. Min 100 · max 200,000 per option.
-              </p>
-
-              {/* Amount */}
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {CHIPS.map((c) => (
+      {!collapsed &&
+        (!state.running ? (
+          <>
+            <RoyaleLastResult state={state} />
+            <button
+              type="button"
+              onClick={state.start}
+              disabled={state.busy}
+              className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-700 py-2.5 text-sm font-black shadow-[0_6px_18px_rgba(124,58,237,.45)] disabled:opacity-50"
+            >
+              {state.busy ? "Starting…" : "▶ Start MIG Royale"}
+            </button>
+          </>
+        ) : (
+          <>
+            {/* Red VS Blue */}
+            <div className="relative mt-2 grid grid-cols-2 gap-1.5">
+              {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
+                const red = o.key === "red";
+                const sel = selected === o.key;
+                const pool = state.pool[o.key];
+                const mine = state.myBets[o.key] || 0;
+                return (
                   <button
-                    key={c}
+                    key={o.key}
                     type="button"
-                    onClick={() => setAmount(c)}
-                    className={`rounded-full border px-2.5 py-1 text-xs font-bold ${
-                      amount === c
-                        ? "border-violet-400 bg-violet-600 text-white"
-                        : "border-white/10 text-white/60 hover:bg-white/5"
+                    disabled={!canBet}
+                    onClick={() => tap(o.key)}
+                    onDoubleClick={() => quick(o.key)}
+                    className="rounded-[14px] border-2 px-1 pb-1.5 pt-1.5 text-center transition disabled:opacity-60"
+                    style={{
+                      background: red ? "linear-gradient(160deg, rgba(239,68,68,.32), rgba(239,68,68,.08))" : "linear-gradient(200deg, rgba(59,130,246,.34), rgba(59,130,246,.08))",
+                      borderColor: sel ? (red ? "#FF7A7A" : "#7DB2FF") : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
+                      boxShadow: sel ? (red ? "0 0 0 3px rgba(239,68,68,.25), 0 0 18px rgba(239,68,68,.35)" : "0 0 0 3px rgba(59,130,246,.25), 0 0 18px rgba(59,130,246,.35)") : undefined,
+                    }}
+                  >
+                    <span className="flex justify-center gap-[2px]" aria-hidden>
+                      {[0, 1, 2].map((i) => (
+                        <i
+                          key={i}
+                          className="h-[20px] w-[14px] rounded-[3px] border border-white/55"
+                          style={{ background: "repeating-linear-gradient(45deg, #5B3FC9 0 3px, #6E54DA 3px 6px)" }}
+                        />
+                      ))}
+                    </span>
+                    <span className={`mt-0.5 block text-[16px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
+                      {o.label}
+                      <span className="ml-1 rounded-full bg-white/[0.12] px-1.5 align-[2px] text-[10px] font-black text-white">{o.mult}</span>
+                    </span>
+                    <span className="block text-[10px] font-bold tabular-nums text-[#C9D2F2]">
+                      {pool ? `${shortK(pool.coins)} in · 👥${pool.people}` : "no bets yet"}
+                    </span>
+                    {mine > 0 && <span className="mt-0.5 inline-block rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
+                  </button>
+                );
+              })}
+              <span
+                className="pointer-events-none absolute left-1/2 top-1/2 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10.5px] font-black text-[#1A1200]"
+                style={{ background: "radial-gradient(circle at 35% 30%, #FFF0B8, #F5C842 55%, #C8952A)", boxShadow: "0 0 0 3px #141A3A, 0 4px 12px rgba(0,0,0,.5)" }}
+              >
+                VS
+              </span>
+            </div>
+            {/* tug bar: which side has more coins */}
+            <div className="mt-1.5 flex h-[6px] overflow-hidden rounded-full bg-[#20284F]">
+              <i className="block h-full bg-gradient-to-r from-red-700 to-red-500 transition-[width] duration-500" style={{ width: `${redPct}%` }} />
+              <i className="block h-full bg-gradient-to-r from-blue-500 to-blue-700 transition-[width] duration-500" style={{ width: `${100 - redPct}%` }} />
+            </div>
+            <div className="mt-0.5 flex justify-between text-[9.5px] font-extrabold tabular-nums text-[#9BA6D6]">
+              <span>Red {redPct}%</span>
+              <span>Blue {100 - redPct}%</span>
+            </div>
+
+            {/* Hands */}
+            <div className="mt-1.5 grid grid-cols-5 gap-1">
+              {hands.map((o) => {
+                const sel = selected === o.key;
+                const pool = state.pool[o.key];
+                const mine = state.myBets[o.key] || 0;
+                return (
+                  <button
+                    key={o.key}
+                    type="button"
+                    disabled={!canBet}
+                    onClick={() => tap(o.key)}
+                    onDoubleClick={() => quick(o.key)}
+                    className={`relative rounded-[10px] border-[1.5px] px-0.5 pb-1 pt-1 text-center disabled:opacity-60 ${
+                      sel ? "border-violet-400 bg-violet-600/30 shadow-[0_0_14px_rgba(124,58,237,.4)]" : "border-white/10 bg-white/[0.06]"
                     }`}
                   >
-                    {c >= 1000 ? `${c / 1000}k` : c}
+                    {hot === o.key && <span className="absolute -right-0.5 -top-2 text-[11px]">🔥</span>}
+                    <b className="block truncate text-[10.5px] font-black">{o.key === "doublerun" ? "D.Run" : o.label}</b>
+                    <em className="block text-[14px] font-black not-italic leading-tight text-amber-300">{o.mult}</em>
+                    <small className="block truncate text-[8.5px] font-bold tabular-nums text-[#9BA6D6]">{pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "—"}</small>
+                    {mine > 0 && <span className="mt-0.5 inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
                   </button>
-                ))}
-              </div>
+                );
+              })}
+            </div>
+            <p className="mt-1 text-center text-[9px] text-[#8D97C4]">Hand bets pay only when the winning side has that hand · double-tap to bet</p>
 
+            {/* Amount chips */}
+            <div className="mt-1.5 flex gap-1">
+              {CHIPS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setAmount(c)}
+                  className={`flex-1 rounded-full border py-1 text-[11px] font-black ${
+                    amount === c ? "border-amber-300 bg-amber-300 text-[#3A2500]" : "border-white/[0.12] bg-white/[0.07] text-[#DCE3FF]"
+                  }`}
+                >
+                  {c >= 1000 ? `${c / 1000}k` : c}
+                </button>
+              ))}
+            </div>
+
+            {/* ↻ Same + Bet */}
+            <div className="mt-1.5 grid grid-cols-[auto_1fr] gap-1.5">
+              <button
+                type="button"
+                disabled={!canBet || !state.lastBet || state.busy}
+                onClick={() => state.lastBet && state.bet(state.lastBet.option, state.lastBet.amount)}
+                title="Repeat my last bet"
+                className="rounded-xl border border-white/[0.14] bg-white/[0.08] px-2.5 text-[11px] font-black text-[#DCE3FF] disabled:opacity-40"
+              >
+                ↻ Same
+              </button>
               <button
                 type="button"
                 disabled={!ready}
                 onClick={() => opt && state.bet(opt.key, amount)}
-                className={`mt-2 w-full rounded-xl bg-gradient-to-r py-2.5 text-sm font-black disabled:from-neutral-600 disabled:to-neutral-700 disabled:opacity-60 ${royaleBtn()}`}
+                className={`rounded-xl py-2 text-[13px] font-black text-white disabled:opacity-60 ${
+                  flash ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-violet-500 to-violet-700 shadow-[0_6px_16px_rgba(124,58,237,.4)]"
+                }`}
               >
-                {!canBet
-                  ? "🃏 Dealing cards…"
-                  : !opt
-                    ? "🃏 Tap an option, then bet"
-                    : state.busy
-                      ? "Placing bet…"
-                      : `🃏 Bet ${amount.toLocaleString()} on ${opt.label}`}
+                {flash
+                  ? "✓ Bet placed"
+                  : !canBet
+                    ? "🃏 Dealing cards…"
+                    : !opt
+                      ? "Tap a side or a hand"
+                      : state.busy
+                        ? "Placing bet…"
+                        : `🎯 Bet ${shortK(amount)} on ${opt.label}`}
               </button>
-            </>
-          )}
-        </>
-      )}
+            </div>
+
+            <RoyaleStreak history={state.history} />
+          </>
+        ))}
+    </div>
+  );
+}
+
+/** The last results as dots, with Red / Blue counts and the current streak. */
+function RoyaleStreak({ history }: { history: HistoryItem[] }) {
+  if (history.length === 0) return null;
+  const list = history.slice(0, 14);
+  const red = history.filter((h) => h.winner === "red").length;
+  const blue = history.filter((h) => h.winner === "blue").length;
+  let streak = 0;
+  for (const h of history) {
+    if (h.winner === history[0].winner) streak++;
+    else break;
+  }
+  const w = history[0].winner;
+  return (
+    <div className="mt-1.5 flex items-center gap-[3px] rounded-[10px] bg-black/25 px-2 py-1">
+      {list
+        .slice()
+        .reverse()
+        .map((h, i) => (
+          <i
+            key={i}
+            title={`#${h.round} ${h.winner} — ${h.hand}`}
+            className={`h-[11px] w-[11px] shrink-0 rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+          />
+        ))}
+      <span className="ml-auto whitespace-nowrap rounded-full bg-blue-500/20 px-1.5 text-[9.5px] font-black text-[#8DBBFF]">
+        {w === "red" || w === "blue" ? `${w === "red" ? "Red" : "Blue"} ×${streak} · ` : ""}🔴{red} 🔵{blue}
+      </span>
     </div>
   );
 }
@@ -494,23 +610,3 @@ function RoyaleHistory({ history }: { history: HistoryItem[] }) {
 }
 
 const shortK = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
-
-/** Under an option: a gold "You 100" pill (my bet) and "22.6k in · 2 bettors" (everyone). */
-function PoolLine({ mine, pool, small }: { mine: number; pool?: { coins: number; people: number }; small?: boolean }) {
-  if (mine <= 0 && !pool) return null;
-  return (
-    <span
-      className={`mt-0.5 flex items-center justify-center gap-[3px] font-semibold ${
-        small ? "flex-col text-[9.5px] leading-tight" : "flex-wrap gap-1 text-[10.5px]"
-      }`}
-    >
-      {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-[1px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
-      {pool && (
-        <span className="whitespace-nowrap opacity-80">
-          {/* small hand chips: "22.6k in · 👥3" so they stay narrow */}
-          {small ? `${shortK(pool.coins)} in · 👥${pool.people}` : `${shortK(pool.coins)} in · ${pool.people} ${pool.people === 1 ? "bettor" : "bettors"}`}
-        </span>
-      )}
-    </span>
-  );
-}
