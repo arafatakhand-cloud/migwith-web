@@ -131,7 +131,6 @@ import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { RoomInfoCards } from "../../_components/RoomInfoCards";
 import { brandMiglife, MIGLIFE_DISPLAY_NAME } from "../../../lib/brand";
-import { canBeInvisibleByRole } from "../../../lib/invisible";
 import { migIdFromAliasEmail } from "../../../lib/migAlias";
 import { noteServerTime, serverNow } from "../../../lib/serverTime";
 import { hideRoomTranslation, languageName, requestRoomTranslation, useRoomTranslation } from "../../../lib/roomTranslate";
@@ -784,10 +783,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     // Presence Status "INVISIBLE" only work for the Founder, official Admins
     // and Staff — in every room (a private room's owner / Super Mods can no
     // longer hide). Everybody else enters normally, with "has entered" / "has left".
-    const invisibleAllowed =
-      permsRef.current.isOwnerUser ||
-      permsRef.current.isHiddenFounder ||
-      canBeInvisibleByRole(profile.username, profile.role);
+    // 🚫 Nobody enters invisibly any more (miglife asked) — everyone gets the
+    // presence doc and the "has entered" / "has left" lines.
+    const invisibleAllowed = false;
     const hideMe = profile.invisible && invisibleAllowed; // no presence doc at all
     const quietMe = profile.quiet && invisibleAllowed; // no entered / left lines
     const presenceRef = doc(db, "room_presence", roomName, "users", uid);
