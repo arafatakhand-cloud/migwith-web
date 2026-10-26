@@ -499,11 +499,16 @@ const shortK = (n: number) => new Intl.NumberFormat("en-US", { notation: "compac
 function PoolLine({ mine, pool, small }: { mine: number; pool?: { coins: number; people: number }; small?: boolean }) {
   if (mine <= 0 && !pool) return null;
   return (
-    <span className={`mt-0.5 flex flex-wrap items-center justify-center gap-1 font-semibold ${small ? "text-[9.5px]" : "text-[10.5px]"}`}>
+    <span
+      className={`mt-0.5 flex items-center justify-center gap-[3px] font-semibold ${
+        small ? "flex-col text-[9.5px] leading-tight" : "flex-wrap gap-1 text-[10.5px]"
+      }`}
+    >
       {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-[1px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
       {pool && (
-        <span className="opacity-80">
-          {shortK(pool.coins)} in · {pool.people} {pool.people === 1 ? "bettor" : "bettors"}
+        <span className="whitespace-nowrap opacity-80">
+          {/* small hand chips: "22.6k in · 👥3" so they stay narrow */}
+          {small ? `${shortK(pool.coins)} in · 👥${pool.people}` : `${shortK(pool.coins)} in · ${pool.people} ${pool.people === 1 ? "bettor" : "bettors"}`}
         </span>
       )}
     </span>
