@@ -1,5 +1,8 @@
 "use client";
 
+import { SupporterJersey } from "./SupporterBadge";
+import type { SupporterTeam } from "../../lib/supporterTeams";
+
 import { openPresencePopup } from "./PresencePopup";
 import Link from "next/link";
 import { totalXpForLevel } from "../../lib/level";
@@ -115,6 +118,7 @@ export function ModernHomeTop({
   level,
   levelIcon,
   levelBadgeUrl = "",
+  supporter = null,
   friends,
   unreadEmails,
   unreadAlerts,
@@ -132,6 +136,8 @@ export function ModernHomeTop({
   levelIcon: string;
   /** The uploaded tier picture, if miglife set one. */
   levelBadgeUrl?: string;
+  /** ⚽ my Supporter Colours team: its jersey shows faint behind the card (like the profile). */
+  supporter?: SupporterTeam | null;
   friends: HomeFriend[];
   unreadEmails: number;
   unreadAlerts: number;
@@ -158,6 +164,11 @@ export function ModernHomeTop({
         <span aria-hidden className="aurora-light aurora-a" />
         <span aria-hidden className="aurora-light aurora-b" />
         <span aria-hidden className="aurora-light aurora-c" />
+        {supporter && (
+          <span className="pointer-events-none absolute right-16 -top-5 rotate-12 opacity-[0.17]" aria-hidden>
+            <SupporterJersey team={supporter} size={150} />
+          </span>
+        )}
         <div className="relative flex items-center">
           <Link href="/profile/me" className="relative h-[70px] w-[70px] shrink-0">
             <span

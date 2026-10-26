@@ -16,13 +16,14 @@ import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
 import { totalXpForLevel } from "../../lib/level";
+import { activeSupporterTeam, type SupporterTeam } from "../../lib/supporterTeams";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
 // friend search, online strip and friend cards (ModernHome.tsx). Classic: the
 // profile strip in the top bar, Email / Messages / migAlerts rows and the
 // Online / Offline folders. Both end with Find Friends and Invite Friends.
 
-type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string; coins: number; xp: number };
+type Me = { photoUrl: string; level: number; role: string; statusMessage: string; online: boolean; presence: string; coins: number; xp: number; supporter: SupporterTeam | null };
 type Friend = {
   name: string;
   photo: string;
@@ -103,6 +104,7 @@ export function Dashboard() {
         presence: String(d.presenceStatus || "ONLINE").toUpperCase(),
         coins: Number(d.balance || 0),
         xp: Number(d.xp || 0),
+        supporter: activeSupporterTeam(d.supporterTeam, d.supporterUntil),
       });
     });
   }, [user]);
@@ -385,6 +387,7 @@ export function Dashboard() {
           level={me?.level ?? 1}
           levelIcon={badgeForLevel(me?.level ?? 1)}
           levelBadgeUrl={levelBadgeUrl}
+          supporter={me?.supporter ?? null}
           friends={friends.filter((f) => !friendSearch.trim() || f.name.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
           unreadEmails={badges.emails}
           unreadAlerts={badges.alerts}
