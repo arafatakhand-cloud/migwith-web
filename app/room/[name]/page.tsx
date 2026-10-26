@@ -146,7 +146,7 @@ import {
   useHideBots,
   type NewBelowStats,
 } from "../../../lib/chatBots";
-import { RoomFireworksHost, RoomGiftRainHost, RoomHeartsHost } from "../../_components/RoomEffects";
+import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
@@ -2224,8 +2224,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
             <RoomFireworksHost messages={messages} roomKey={roomName} />
             <RoomHeartsHost messages={messages} roomKey={roomName} />
-            {/* 🎁 a Gift Shower: its gift rains down */}
-            <RoomGiftRainHost messages={messages} roomKey={roomName} giftOf={(n) => giftByName.get(n.toLowerCase()) || null} />
+            {/* (🎁 gift rain is OFF — miglife asked) */}
             {/* ✨ Entry Effects play only in CHAT rooms — never in game rooms (official
                 game rooms, their extra "#2" tables, or any room with a game bot on). */}
             {!entryFxGameRoom && (
