@@ -2660,6 +2660,24 @@ const LINK_BLUE = "var(--room-link, #174EA6)";
 const BET_BLUE = "var(--room-bet, #1565E8)";
 const APP_RED = "var(--room-red, #B3261E)";
 const ROOM_ORANGE = "#E6731E";
+// 🎨 Every gift line gets one of these colours (miglife's list) — the SAME gift
+// shows in a different colour each time. Picked from the message id, so everyone
+// sees the same colour and it never changes on reload. (Same list as RoomPage.kt.)
+const GIFT_LINE_COLORS = [
+  "#1E9E5A", // Green
+  "#1E6FD9", // Blue
+  "var(--gift-black, #1F1F24)", // Black (light grey in Dark Night)
+  "#FF2D95", // Pink
+  "#D32F2F", // Red
+  "#C08A6E", // Nude
+  "#6B8E23", // Avocado
+];
+function giftLineColor(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
+  const n = GIFT_LINE_COLORS.length;
+  return GIFT_LINE_COLORS[((h % n) + n) % n];
+}
 
 // A little playing card in a chat line ("10♥", "A♠"), like the app's.
 function InlineCard({ card }: { card: string }) {
@@ -3280,8 +3298,8 @@ function MessageRow({
             right edge, whatever names / gift fill it. */}
         <p
           // 🎁 gift / Gift Shower: bold, every line centred, normal size (like the app)
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-center font-bold leading-snug text-[#FF2D95]"
-          style={{ fontSize: fontPx }}
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-center font-bold leading-snug"
+          style={{ fontSize: fontPx, color: giftLineColor(m.id || m.text) }}
         >
           {/* "name[51]" — no space before the level, like the app */}
           {giftLine(m.text.replace(/ \[/g, "["), gift?.icon || "", gift?.imageUrl || "", fontPx)}

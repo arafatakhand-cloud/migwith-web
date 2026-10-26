@@ -1292,5 +1292,5 @@ html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip.mh-role 
 
 /* 🌙 Room text colours that follow the theme (room page INK / links / red / bet blue).
    Dark Night turns them light so chat lines stay readable on the dark page. */
-:root { --room-ink: #0B1F3A; --room-link: #174EA6; --room-bet: #1565E8; --room-red: #B3261E; }
-html[data-theme="dark_night"] { --room-ink: #E8EEF9; --room-link: #8AB4FF; --room-bet: #6EA8FF; --room-red: #FF8A80; }
+:root { --gift-black: #1F1F24; --room-ink: #0B1F3A; --room-link: #174EA6; --room-bet: #1565E8; --room-red: #B3261E; }
+html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --room-link: #8AB4FF; --room-bet: #6EA8FF; --room-red: #FF8A80; }
