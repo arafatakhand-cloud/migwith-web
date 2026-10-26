@@ -2653,11 +2653,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 }
 
 // Colours from the app (RoomPage.kt).
-const INK = "#0B1F3A";
-const LINK_BLUE = "#174EA6";
+// 🌙 these follow the theme (globals.css --room-*): light text in Dark Night
+const INK = "var(--room-ink, #0B1F3A)";
+const LINK_BLUE = "var(--room-link, #174EA6)";
 // Bright blue of the game lines: Luxury Bot bets and every game bot's text.
-const BET_BLUE = "#1565E8";
-const APP_RED = "#B3261E";
+const BET_BLUE = "var(--room-bet, #1565E8)";
+const APP_RED = "var(--room-red, #B3261E)";
 const ROOM_ORANGE = "#E6731E";
 
 // A little playing card in a chat line ("10♥", "A♠"), like the app's.
@@ -3218,7 +3219,7 @@ function MessageRow({
       <div className="flex px-1">
         <p
           className="max-w-[336px] whitespace-pre-wrap rounded-[9px] border px-[7px] py-[7px] text-[14px] leading-snug"
-          style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: INK }}
+          style={{ background: gold ? "#FFF1D6" : "#E3F7F0", borderColor: gold ? "#EF9F27" : "#2FBF8F", color: "#0B1F3A" }}
         >
           {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
           {gold && m.text.startsWith("📢") && <span className="inline-block -scale-x-100">📢</span>}

@@ -304,7 +304,7 @@ export function TriviaPanel({ state, uid, isStaff }: { state: TriviaState; uid: 
         className="rounded-[18px] p-[1.5px]"
         style={{ background: `linear-gradient(135deg, ${violet()}, ${gold()}, ${violet()})` }}
       >
-        <div className="rounded-[17px] bg-gradient-to-b from-[#F4F0FF] to-[#E9E2FF] p-2.5" style={{ color: INK }}>
+        <div className="rounded-[17px] bg-gradient-to-b from-[#F4F0FF] to-[#E9E2FF] p-2.5" style={{ color: `var(--room-ink, ${INK})` }}>
           <div className="flex items-center gap-1.5">
             <span className="mr-0.5 text-[15px] font-extrabold">🧠 Trivia</span>
             {state.running ? (
