@@ -340,6 +340,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [showUsers, setShowUsers] = useState(false);
   // ⋮ Room menu (like the app's) and its Room Info / Kick User sheets.
   const [menuOpen, setMenuOpen] = useState(false);
+  // where the ⋮ button is on screen: the menu opens right above it (on a wide screen it used to open at the far left)
+  const [menuAnchor, setMenuAnchor] = useState<{ left: number; bottom: number } | null>(null);
   // The Participants panel beside the room menu (like the app).
   // 👥 the Room Participants list (slides in from the right) and its ••• menu
   const [peopleOpen, setPeopleOpen] = useState(false);
@@ -2274,7 +2276,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               maxLength={1000}
               disabled={!profile}
               onGift={() => setGiftTarget("")}
-              onMore={() => setMenuOpen(true)}
+              onMore={(r) => {
+                setMenuAnchor(r ? { left: Math.max(8, Math.min(r.left, window.innerWidth - 196)), bottom: Math.max(8, window.innerHeight - r.top + 8) } : null);
+                setMenuOpen(true);
+              }}
               photo={{
                 // picking a photo never posts it straight away: "Send this photo?" first
                 onFile: (f: File | undefined) => f && setPendingPhoto(f),
@@ -2429,7 +2434,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {menuOpen && (
         <div className="fixed inset-0 z-50" onClick={closeMenu}>
           <div
-            className="room-sky-card absolute bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2 w-[188px] overflow-hidden rounded-[18px] border border-[#E3ECF7] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)]"
+            className={`room-sky-card absolute w-[188px] overflow-hidden rounded-[18px] border border-[#E3ECF7] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)] ${
+              menuAnchor ? "" : "bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2"
+            }`}
+            style={menuAnchor ? { left: menuAnchor.left, bottom: menuAnchor.bottom } : undefined}
             onClick={(e) => e.stopPropagation()}
           >
             {(
@@ -3228,7 +3236,8 @@ function MessageRow({
     const c = m.text.indexOf(":");
     return (
       <p className="px-1 text-left leading-snug" style={{ color: APP_RED, fontSize: fontPx }}>
-        {brandMiglife(c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text)}
+        {/* emote codes (;m3 …) show as pictures here too, like a normal line */}
+        {withEmotes(brandMiglife(c > 0 ? `${m.text.slice(0, c).trim()} ${m.text.slice(c + 1).trimStart()}` : m.text), fontPx)}
         {stamp}
       </p>
     );

@@ -500,7 +500,7 @@ export function LuxuryBetTable({
       armTimer.current = setTimeout(() => setArmed(""), 600);
     }
   };
-  const title = state.inFlight > 0 ? "⏳ Sending bet…" : state.phase === "SETTLING" ? "Calculating result…" : "Luxury Bet · tap 2x to bid";
+  const title = state.inFlight > 0 ? "⏳ Sending bet…" : state.phase === "SETTLING" ? "Calculating result…" : "Luxury Bet · double-tap to bid";
   const circle = "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold";
 
   return (
@@ -524,21 +524,11 @@ export function LuxuryBetTable({
               type="button"
               title="Repeat last bet"
               onClick={() => state.lastBet && state.bet(state.lastBet.character, state.lastBet.amount)}
-              disabled={!state.lastBet || state.doubling}
+              disabled={!state.lastBet}
               className={circle}
               style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
               ↻
-            </button>
-            <button
-              type="button"
-              title="Double all my bets this round"
-              onClick={() => state.double()}
-              disabled={state.doubling}
-              className={circle}
-              style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
-            >
-              2x
             </button>
           </>
         )}

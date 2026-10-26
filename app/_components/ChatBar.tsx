@@ -92,7 +92,8 @@ export function ChatBar({
   disabled?: boolean;
   onGift?: () => void;
   /** ⋮ opens the caller's own menu (the room menu) instead of the small gift menu. */
-  onMore?: () => void;
+  /** ⋮ tapped — gets the button's spot on screen, so the menu can open right above it. */
+  onMore?: (anchor?: DOMRect) => void;
   giftDisabled?: boolean;
   photo: { onFile: (f: File | undefined) => void; disabled: boolean; uploading: boolean; title: string };
   /** The <VoiceRecorder>; while it records it takes over the row. */
@@ -163,7 +164,7 @@ export function ChatBar({
       <div ref={moreRef} className="relative mb-[4px] shrink-0">
         <button
           type="button"
-          onClick={() => (onMore ? onMore() : setMoreOpen((v) => !v))}
+          onClick={(e) => (onMore ? onMore(e.currentTarget.getBoundingClientRect()) : setMoreOpen((v) => !v))}
           aria-label="More"
           aria-expanded={moreOpen}
           className={`${BAR_BTN} glass-bubble glass-shine bg-[#2E3E56]`}
