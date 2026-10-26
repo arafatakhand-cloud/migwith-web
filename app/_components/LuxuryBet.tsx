@@ -123,6 +123,7 @@ export function useLuxuryBet(
   const lastBetSentAt = useRef(0);
   const [doubling, setDoubling] = useState(false);
   const doublingRef = useRef(false);
+  const doubleDoneAt = useRef(0);
   const endsAtRef = useRef(0);
   endsAtRef.current = phaseEndsAt;
   const noteRef = useRef(note);
@@ -236,7 +237,7 @@ export function useLuxuryBet(
   // (Prince 36k → 72k), in bids of up to 12,000, one after another (the server
   // takes one bid per ~0.8 s), never past 500,000 for the round.
   const double = () => {
-    if (doublingRef.current) return;
+    if (doublingRef.current || Date.now() - doubleDoneAt.current < 2000) return;
     if (!running || phase !== "BETTING" || secondsLeft <= 0) {
       noteRef.current(`${LB_BOT}: Betting is closed. Type !start to start a new round.`);
       return;
@@ -265,29 +266,54 @@ export function useLuxuryBet(
     doublingRef.current = true;
     setDoubling(true);
     setInFlight((n) => n + 1);
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+    const before: Record<string, number> = Object.fromEntries(mine.map(([c, v]) => [c, Number(v)]));
+    let after: Record<string, number> = { ...before };
     (async () => {
+      let stopped = false;
       try {
         for (const [character, amount] of queue) {
-          if (Date.now() >= endsAtRef.current) break; // the round closed
-          const wait = 900 - (Date.now() - lastBetSentAt.current);
-          if (wait > 0) await new Promise((res) => setTimeout(res, wait));
-          lastBetSentAt.current = Date.now();
-          const { data } = await betCall({
-            character,
-            amount,
-            roundNumber: round,
-            operationId: crypto.randomUUID().replace(/-/g, ""),
-          });
-          if (data?.bets) setMyBets(data.bets);
-          setLastBet({ character, amount });
+          if (Date.now() >= endsAtRef.current) { stopped = true; break; } // the round closed
+          // one bid per ~1.2 s; "Betting too fast" (nothing charged) → wait and send the SAME bid again,
+          // so a 2x never stops halfway (it used to: 40k → 52k instead of 80k)
+          let sent = false;
+          for (let attempt = 0; attempt < 4 && !sent; attempt++) {
+            const wait = (attempt === 0 ? 1200 : 1600) - (Date.now() - lastBetSentAt.current);
+            if (wait > 0) await sleep(wait);
+            if (Date.now() >= endsAtRef.current) break;
+            lastBetSentAt.current = Date.now();
+            try {
+              const { data } = await betCall({
+                character,
+                amount,
+                roundNumber: round,
+                operationId: crypto.randomUUID().replace(/-/g, ""),
+              });
+              if (data?.bets) {
+                setMyBets(data.bets);
+                after = { ...after, ...Object.fromEntries(Object.entries(data.bets).map(([c, v]) => [c, Number(v)])) };
+              }
+              setLastBet({ character, amount });
+              sent = true;
+            } catch (e: any) {
+              if (!String(e?.code || "").includes("resource-exhausted")) throw e;
+            }
+          }
+          if (!sent) { stopped = true; break; }
         }
         awardUserXp(uid, 3, "luxury_bot_bet", 15_000);
+        const label = (c: string) => c.charAt(0).toUpperCase() + c.slice(1);
+        const fmt = (n: number) => n.toLocaleString("en-US");
+        const parts = Object.keys(before).map((c) => `${label(c)} ${fmt(before[c])} → ${fmt(after[c] ?? before[c])}`);
+        noteRef.current(`${LB_BOT}: ${stopped ? "2x stopped (time up)" : "✓ 2x done"}: ${parts.join(" · ")}`);
       } catch (e: any) {
         noteRef.current(`${LB_BOT}: ${e?.message || "Bet failed."}`);
       } finally {
         doublingRef.current = false;
         setDoubling(false);
         setInFlight((n) => Math.max(0, n - 1));
+        // a fast second tap on 2x right after it finished must not double AGAIN by mistake
+        doubleDoneAt.current = Date.now();
       }
     })();
   };
