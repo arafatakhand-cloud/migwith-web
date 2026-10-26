@@ -87,9 +87,15 @@ function persist() {
   } catch {}
 }
 
-function colorFor(name: string, p: Profile | undefined): string {
+// 🍀 Lucky User pink lasts 3 hours (LUCKY_PINK_MS on the server), so it began 3 h before luckyUntil.
+const LUCKY_PINK_MS = 3 * 60 * 60 * 1000;
+
+function colorFor(name: string, p: Profile | undefined, atMs?: number): string {
   if (!p) return USER_BLUE;
-  if (p.luckyUntil > Date.now()) return LUCKY_PINK;
+  // a line written BEFORE the person became Lucky User keeps the old colour;
+  // only lines from the lucky moment on turn pink
+  const luckyFrom = p.luckyUntil - LUCKY_PINK_MS;
+  if (p.luckyUntil > Date.now() && !(atMs && atMs < luckyFrom)) return LUCKY_PINK;
   if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
   }
@@ -117,7 +123,7 @@ export function cachedRoleOf(name: string): string {
 }
 
 /** lowercase name → CSS colour, for everyone named in `names`. */
-export function useSenderColors(names: string[]): (name: string) => string {
+export function useSenderColors(names: string[]): (name: string, atMs?: number) => string {
   const [, setTick] = useState(0);
   // Bumped to try again after a failed lookup (5 s) and to refresh everyone
   // every 5 minutes, so a new role / colour shows without reopening (like the app).
@@ -201,8 +207,9 @@ export function useSenderColors(names: string[]): (name: string) => string {
     };
   }, [key, round, signedIn]);
 
-  return (name: string) => {
+  /** atMs: when the chat line was written (keeps the pre-Lucky colour on older lines). */
+  return (name: string, atMs?: number) => {
     const k = name.trim().toLowerCase();
-    return colorFor(k, cache.get(k));
+    return colorFor(k, cache.get(k), atMs);
   };
 }

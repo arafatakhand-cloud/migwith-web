@@ -147,7 +147,7 @@ import {
   useHideBots,
   type NewBelowStats,
 } from "../../../lib/chatBots";
-import { RoomFireworksHost, RoomHeartsHost } from "../../_components/RoomEffects";
+import { RoomFireworksHost, RoomGiftRainHost, RoomHeartsHost } from "../../_components/RoomEffects";
 import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_components/EntryEffects";
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
@@ -2221,6 +2221,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             {/* 🎆 a game win, ❤️ /love, ✨ someone's entry effect — the whole room sees it */}
             <RoomFireworksHost messages={messages} roomKey={roomName} />
             <RoomHeartsHost messages={messages} roomKey={roomName} />
+            {/* 🎁 a Gift Shower: its gift rains down */}
+            <RoomGiftRainHost messages={messages} roomKey={roomName} giftOf={(n) => giftByName.get(n.toLowerCase()) || null} />
             {/* ✨ Entry Effects play only in CHAT rooms — never in game rooms (official
                 game rooms, their extra "#2" tables, or any room with a game bot on). */}
             {!entryFxGameRoom && (
@@ -3062,7 +3064,7 @@ function MessageRow({
   roomName: string;
   /** Game rooms: everything on the left, full-width plain lines, no swipe reply. */
   gameRoom: boolean;
-  colorOf: (name: string) => string;
+  colorOf: (name: string, atMs?: number) => string;
   /** Badge emoji -> uploaded picture, for the enter/left lines. */
   badgeImages: Record<string, string>;
   /** Room text size in px (Settings → Chat). */
@@ -3441,7 +3443,7 @@ function MessageRow({
           {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
-              style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName) }}
+              style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName, m.createdAtMs) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
               {!isRoomLine && special.has(senderName) ? (

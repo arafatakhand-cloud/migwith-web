@@ -406,6 +406,15 @@ html.kb-lock main[data-shell] {
 
 /* 🎆 Room effects (RoomEffects.tsx / EntryEffects.tsx) */
 .fx-fade { animation-name: fx-fade; animation-timing-function: linear; animation-fill-mode: both; }
+/* 🎁 gift rain: each picture falls from above the top to below the bottom, swaying and turning */
+.fx-gift-drop { opacity: 0; animation-name: fx-gift-fall; animation-timing-function: cubic-bezier(.45, .05, .7, .95); animation-fill-mode: both; }
+@keyframes fx-gift-fall {
+  0% { transform: translate(0, -60px) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  50% { transform: translate(var(--sway), 50vh) rotate(calc(var(--spin) * .5)); }
+  90% { opacity: 1; }
+  100% { transform: translate(0, 105vh) rotate(var(--spin)); opacity: 0; }
+}
 @keyframes fx-fade { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
 .fx-pop { animation: fx-pop .6s cubic-bezier(.3, 1.6, .5, 1) both; }
 @keyframes fx-pop { from { transform: scale(.2); } to { transform: scale(1); } }

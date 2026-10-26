@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { cricketSoundOn } from "./CricketCelebration";
 import { brandMiglife } from "../../lib/brand";
 import { useCricketWinFxRooms, winFxKey } from "../../lib/cricketWinFx";
@@ -12,7 +12,7 @@ import { useCricketWinFxRooms, winFxKey } from "../../lib/cricketWinFx";
 // the room sees it. Only NEW lines fire (never history); nothing takes touches.
 // 🔇 SOUND OFF (Cricket box) mutes the sounds too.
 
-type Line = { id: string; text: string; type: string };
+type Line = { id: string; text: string; type: string; giftName?: string };
 
 /** Lines that arrived after this room was first shown, parsed by `parse`. */
 export function useNewLineEvents<E>(messages: Line[], roomKey: string, parse: (m: Line) => E | null, max = 3) {
@@ -450,4 +450,83 @@ export function RoomHeartsHost({ messages, roomKey }: { messages: Line[]; roomKe
   const current = usePlayQueue(queue, setQueue, 4000, () => playFx("fx_love"));
   if (!current) return null;
   return <HeartsShow key={current.key} ev={current.e} seed={current.key % 100000} />;
+}
+
+// ---------------------------------------------------------------- 🎁 gift rain
+
+// A Gift Shower in the room → that gift's picture rains down over the screen
+// for ~4.5 s (everyone in the room sees it). A burst of showers plays once.
+
+type Rain = { name: string };
+
+function parseRain(m: Line): Rain | null {
+  if (m.type !== "gift" || !m.text.includes("GIFT SHOWER")) return null;
+  const name = (m.giftName || (/ gives an? (.+?) \S+ to /.exec(m.text)?.[1] ?? "")).trim();
+  return name ? { name } : null;
+}
+
+type Drop = { x: number; delay: number; size: number; dur: number; sway: number; spin: number };
+
+function GiftRainShow({ gift, seed }: { gift: { icon: string; imageUrl: string }; seed: number }) {
+  const drops = useRef<Drop[]>(
+    (() => {
+      const r = rng(seed * 7919 + 17);
+      return Array.from({ length: 26 }, () => ({
+        x: r() * 96,
+        delay: r() * 2,
+        size: 26 + r() * 22,
+        dur: 2.2 + r() * 1.3,
+        sway: -30 + r() * 60,
+        spin: -40 + r() * 80,
+      }));
+    })()
+  ).current;
+  return (
+    <FxLayer seconds={4.6}>
+      {drops.map((d, i) => (
+        <span
+          key={i}
+          className="fx-gift-drop absolute top-0"
+          style={
+            {
+              left: `${d.x}%`,
+              width: d.size,
+              height: d.size,
+              animationDelay: `${d.delay}s`,
+              animationDuration: `${d.dur}s`,
+              "--sway": `${d.sway}px`,
+              "--spin": `${d.spin}deg`,
+            } as CSSProperties
+          }
+        >
+          {gift.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={gift.imageUrl} alt="" className="h-full w-full object-contain" draggable={false} />
+          ) : (
+            <span className="block text-center leading-none" style={{ fontSize: d.size * 0.85 }}>
+              {gift.icon}
+            </span>
+          )}
+        </span>
+      ))}
+    </FxLayer>
+  );
+}
+
+/** Put this once over the room: a Gift Shower makes its gift rain down. */
+export function RoomGiftRainHost({
+  messages,
+  roomKey,
+  giftOf,
+}: {
+  messages: Line[];
+  roomKey: string;
+  giftOf: (name: string) => { icon: string; imageUrl: string } | null;
+}) {
+  const [queue, setQueue] = useNewLineEvents(messages, roomKey, parseRain, 1);
+  const current = usePlayQueue(queue, setQueue, 4600);
+  if (!current) return null;
+  const gift = giftOf(current.e.name);
+  if (!gift || (!gift.imageUrl && !gift.icon)) return null;
+  return <GiftRainShow key={current.key} gift={gift} seed={current.key % 100000} />;
 }
