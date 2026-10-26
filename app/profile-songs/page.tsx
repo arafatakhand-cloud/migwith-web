@@ -13,7 +13,7 @@ export default function ProfileSongsPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-8 sm:px-6 lg:max-w-4xl">
-        <PageTitle title="Profile Songs" subtitle="15-second tune · 30 days each" icon="🎵" />
+        <PageTitle title="Profile Songs" subtitle="15–30 second tunes · 30 days each" icon="🎵" />
         {ready && user ? <ProfileSongShop uid={user.uid} /> : <p className="py-20 text-center text-sm text-[#5B6B8C]">Loading…</p>}
       </section>
     </PageShell>

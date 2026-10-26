@@ -10,10 +10,12 @@ export type ProfileSong = {
   emoji: string;
   mood: string;
   /** shop tab */
-  category: "Happy" | "Sad";
+  category: "Happy" | "Sad" | "Flute";
   price: number;
   bpm: number;
-  voice: "trumpet" | "bell" | "soft" | "piano" | "chip" | "pluck";
+  voice: "trumpet" | "bell" | "soft" | "piano" | "chip" | "pluck" | "flute";
+  /** a low tanpura-like Sa–Pa that hums under the whole tune */
+  drone?: string;
   colors: [string, string];
   notes: SongNote[];
 };
@@ -150,6 +152,107 @@ export const PROFILE_SONGS: ProfileSong[] = [
     colors: ["#7FC29B", "#2F7A52"],
     notes: [["A#3+D4+F4+A#5", 2], ["G3+A#3+D4+A#5", 1.5], ["A5", 0.5], ["D3+F3+A3+A5", 0.5], ["G5", 0.5], ["G5", 1], ["A3+C#4+E4+A5", 1], ["G5", 1], ["A#3+D4+F4+F5", 1], ["D5", 1], ["G3+A#3+D4+D5", 1.5], ["A#4", 0.5], ["D3+F3+A3+D5", 0.5], ["D5", 0.5], ["E5", 1], ["F5", 0.5], ["E5", 0.5], ["D3+F3+A3+D5", 3]],
   },
+  // 🪈 20 sad bansuri tunes (~30 s, raag colours, tanpura drone)
+  {
+    id: "flute01", name: "Bansuri Lament", emoji: "🎋", mood: "A flute that cries", category: "Flute", price: 150000, bpm: 62, voice: "flute", drone: "D3+A3",
+    colors: ["#7FC29B", "#2F7A52"],
+    notes: [["E5", 0.15], ["D5", 1.85], ["E5", 1], ["B4", 1], ["A4", 2], ["A4", 2.0], ["-", 0.5], ["A4", 1.5], ["F4", 0.5], ["E4", 1], ["A4", 1], ["D5", 0.15], ["B4", 1.85], ["D5", 2.0], ["-", 0.5], ["D5", 1], ["D5", 0.5], ["A4", 0.5], ["A4", 0.15], ["F4", 1.85], ["F4", 0.15], ["E4", 1.85], ["F4", 0.5], ["A4", 2.0], ["-", 0.5], ["F5", 1.0], ["E5", 1.0], ["E5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute02", name: "Village Dusk", emoji: "🌾", mood: "Sun sets on the fields", category: "Flute", price: 150000, bpm: 60, voice: "flute", drone: "C3+G3",
+    colors: ["#C9A27E", "#7A5530"],
+    notes: [["C5", 1], ["C5", 0.5], ["C#5", 0.5], ["D#5", 2], ["D#5", 2], ["F5", 0.5], ["G5", 2.0], ["-", 0.5], ["G5", 1], ["G#5", 0.5], ["A#5", 0.5], ["C#6", 2], ["D#6", 2], ["C#6", 0.5], ["C6", 2.0], ["-", 0.5], ["C#6", 0.15], ["C6", 1.85], ["A#5", 1], ["C6", 1], ["F6", 0.15], ["D#6", 1.85], ["C#6", 0.5], ["C6", 2.0], ["-", 0.5], ["D#5", 1.0], ["C#5", 1.0], ["C#5", 0.15], ["C5", 3.85]],
+  },
+  {
+    id: "flute03", name: "River Goodbye", emoji: "🏞️", mood: "The boat leaves the ghat", category: "Flute", price: 150000, bpm: 64, voice: "flute", drone: "D3+A3",
+    colors: ["#6FB3C8", "#25677A"],
+    notes: [["D5", 1], ["F5", 0.5], ["A5", 0.5], ["A5", 0.15], ["G5", 1.85], ["F5", 2], ["E5", 0.5], ["D5", 2.0], ["-", 0.5], ["D5", 1], ["C5", 1], ["C5", 0.5], ["C5", 0.5], ["A#4", 1], ["A4", 2], ["A4", 2.0], ["-", 0.5], ["A#4", 0.15], ["A4", 1.35], ["A4", 0.5], ["A4", 0.15], ["G4", 1.85], ["G4", 0.5], ["G4", 0.5], ["E4", 1], ["F4", 0.5], ["G4", 0.5], ["A4", 2.0], ["-", 0.5], ["F5", 1.0], ["E5", 1.0], ["E5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute04", name: "Ma's Lullaby", emoji: "🤱", mood: "A song from childhood", category: "Flute", price: 150000, bpm: 58, voice: "flute", drone: "C3+G3",
+    colors: ["#E2A3C7", "#9B4C7A"],
+    notes: [["D5", 0.15], ["C5", 1.85], ["C5", 1], ["D#5", 1], ["G5", 0.15], ["F5", 1.85], ["G5", 2.0], ["-", 0.5], ["G5", 1], ["B5", 1], ["C6", 0.5], ["B5", 0.5], ["G#5", 1], ["G#5", 0.15], ["G5", 1.85], ["G5", 2.0], ["-", 0.5], ["G#5", 0.15], ["G5", 1.85], ["G#5", 0.5], ["G#5", 0.5], ["C6", 1], ["D#6", 0.15], ["D6", 1.85], ["C6", 2.0], ["-", 0.5], ["D#5", 1.0], ["D5", 1.0], ["D5", 0.15], ["C5", 3.85]],
+  },
+  {
+    id: "flute05", name: "Monsoon Night", emoji: "🌧️", mood: "Rain on a tin roof", category: "Flute", price: 150000, bpm: 60, voice: "flute", drone: "E3+B3",
+    colors: ["#7F9CC7", "#3F5B8A"],
+    notes: [["F#5", 1], ["B5", 1], ["E6", 0.5], ["B5", 0.5], ["G5", 1], ["E5", 2], ["E5", 2.0], ["-", 0.5], ["F#5", 0.15], ["E5", 2.85], ["C#5", 1], ["F#5", 0.15], ["E5", 1.85], ["E5", 2.0], ["-", 0.5], ["F#5", 0.15], ["E5", 1.85], ["C#5", 1], ["B4", 1], ["B4", 2], ["B4", 2.0], ["-", 0.5], ["G5", 1.0], ["F#5", 1.0], ["F#5", 0.15], ["E5", 3.85]],
+  },
+  {
+    id: "flute06", name: "Lonely Boatman", emoji: "🛶", mood: "Alone on the river", category: "Flute", price: 150000, bpm: 62, voice: "flute", drone: "D3+A3",
+    colors: ["#6FA8C8", "#2A5E80"],
+    notes: [["A4", 0.15], ["G4", 1.85], ["A4", 0.5], ["A#4", 0.5], ["A4", 1], ["G4", 0.15], ["F4", 1.85], ["G4", 0.5], ["A4", 2.0], ["-", 0.5], ["A4", 1.5], ["A#4", 0.5], ["C5", 1], ["D5", 1], ["F5", 0.15], ["D#5", 1.85], ["D5", 2.0], ["-", 0.5], ["D5", 1], ["A#4", 0.5], ["G4", 0.5], ["A#4", 2], ["C5", 2], ["D5", 2.0], ["-", 0.5], ["F5", 1.0], ["D#5", 1.0], ["D#5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute07", name: "Empty Courtyard", emoji: "🏡", mood: "Nobody comes home", category: "Flute", price: 150000, bpm: 58, voice: "flute", drone: "B2+F#3",
+    colors: ["#B8A98F", "#6E6048"],
+    notes: [["C#5", 3], ["D5", 1], ["D5", 0.15], ["C#5", 1.85], ["B4", 2.0], ["-", 0.5], ["B4", 3], ["D5", 1], ["G5", 0.15], ["F#5", 1.85], ["F#5", 2.0], ["-", 0.5], ["G5", 0.15], ["F#5", 2.85], ["E5", 1], ["D5", 0.15], ["C#5", 1.85], ["B4", 2.0], ["-", 0.5], ["D5", 1.0], ["C#5", 1.0], ["C#5", 0.15], ["B4", 3.85]],
+  },
+  {
+    id: "flute08", name: "Memories of Home", emoji: "🏠", mood: "The old house", category: "Flute", price: 150000, bpm: 64, voice: "flute", drone: "E3+B3",
+    colors: ["#D6A36F", "#8A5626"],
+    notes: [["F#5", 1.5], ["F#5", 0.5], ["G5", 2], ["A5", 0.5], ["B5", 0.5], ["B5", 1], ["B5", 2.0], ["-", 0.5], ["C6", 0.15], ["B5", 1.85], ["C6", 0.5], ["D#6", 0.5], ["B5", 1], ["A5", 0.15], ["G5", 1.85], ["F#5", 0.5], ["E5", 2.0], ["-", 0.5], ["E5", 1.5], ["G5", 0.5], ["C6", 0.15], ["B5", 1.85], ["A5", 0.5], ["G5", 0.5], ["F#5", 1], ["E5", 2.0], ["-", 0.5], ["G5", 1.0], ["F#5", 1.0], ["F#5", 0.15], ["E5", 3.85]],
+  },
+  {
+    id: "flute09", name: "Biraha", emoji: "💔", mood: "The pain of parting", category: "Flute", price: 150000, bpm: 58, voice: "flute", drone: "D3+A3",
+    colors: ["#E07A8E", "#8E2F44"],
+    notes: [["G4", 1], ["A4", 0.5], ["C5", 0.5], ["A#4", 0.15], ["A4", 1.85], ["A4", 0.15], ["G4", 1.85], ["A4", 2.0], ["-", 0.5], ["A4", 2], ["F4", 1], ["G4", 1], ["A4", 2], ["A4", 2.0], ["-", 0.5], ["A#4", 0.15], ["A4", 1.35], ["A4", 0.5], ["A#4", 0.15], ["A4", 1.85], ["F4", 0.5], ["D#4", 0.5], ["D#4", 1], ["F4", 0.5], ["G4", 0.5], ["A4", 2.0], ["-", 0.5], ["F5", 1.0], ["D#5", 1.0], ["D#5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute10", name: "Evening Lamp", emoji: "🪔", mood: "Sandhya, alone", category: "Flute", price: 150000, bpm: 60, voice: "flute", drone: "C3+G3",
+    colors: ["#E8B35A", "#9A6416"],
+    notes: [["C5", 1.5], ["D5", 0.5], ["D#5", 1], ["D#5", 1], ["G5", 0.15], ["D#5", 1.85], ["G5", 2.0], ["-", 0.5], ["A5", 0.15], ["G5", 1.85], ["A5", 0.5], ["D6", 0.5], ["C6", 1], ["C6", 0.15], ["A5", 1.85], ["C6", 2.0], ["-", 0.5], ["D6", 0.15], ["C6", 1.85], ["A5", 0.5], ["G5", 0.5], ["A5", 1], ["C6", 2], ["C6", 2.0], ["-", 0.5], ["D#5", 1.0], ["D5", 1.0], ["D5", 0.15], ["C5", 3.85]],
+  },
+  {
+    id: "flute11", name: "Fading Footsteps", emoji: "👣", mood: "Walking away slowly", category: "Flute", price: 150000, bpm: 62, voice: "flute", drone: "E3+B3",
+    colors: ["#9AA5B4", "#566273"],
+    notes: [["A4", 2], ["B4", 1], ["A4", 1], ["A4", 0.15], ["G4", 1.85], ["A4", 0.5], ["B4", 2.0], ["-", 0.5], ["C5", 0.15], ["B4", 1.35], ["G4", 0.5], ["F#4", 1], ["G4", 1], ["C5", 0.15], ["B4", 1.85], ["B4", 2.0], ["-", 0.5], ["C5", 0.15], ["B4", 1.35], ["G4", 0.5], ["F#4", 1], ["A4", 1], ["B4", 2], ["B4", 2.0], ["-", 0.5], ["G5", 1.0], ["F#5", 1.0], ["F#5", 0.15], ["E5", 3.85]],
+  },
+  {
+    id: "flute12", name: "Wounded Heart", emoji: "🩹", mood: "It still hurts", category: "Flute", price: 150000, bpm: 60, voice: "flute", drone: "D3+A3",
+    colors: ["#D98AA0", "#8A3550"],
+    notes: [["F5", 0.15], ["E5", 1.85], ["F5", 1], ["E5", 1], ["C#5", 2], ["D5", 2.0], ["-", 0.5], ["D5", 2], ["F5", 1], ["E5", 1], ["D5", 0.15], ["C#5", 1.85], ["D5", 2.0], ["-", 0.5], ["D5", 1], ["F5", 0.5], ["G5", 0.5], ["G5", 0.15], ["F5", 1.85], ["E5", 2], ["D5", 2.0], ["-", 0.5], ["F5", 1.0], ["E5", 1.0], ["E5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute13", name: "Moonlit Riverbank", emoji: "🌙", mood: "Silver water, silent night", category: "Flute", price: 150000, bpm: 56, voice: "flute", drone: "B2+F#3",
+    colors: ["#8C9EDB", "#3B4C93"],
+    notes: [["D4", 1], ["F#4", 0.5], ["G#4", 0.5], ["G#4", 0.15], ["F#4", 1.85], ["D4", 2], ["F#4", 2.0], ["-", 0.5], ["F#4", 1], ["C#4", 0.5], ["C#4", 0.5], ["D4", 0.15], ["C#4", 1.85], ["C#4", 2], ["D4", 0.5], ["F#4", 2.0], ["-", 0.5], ["F#4", 2], ["G#4", 1], ["C#5", 1], ["D5", 0.15], ["C#5", 1.85], ["B4", 2.0], ["-", 0.5], ["D5", 1.0], ["C#5", 1.0], ["C#5", 0.15], ["B4", 3.85]],
+  },
+  {
+    id: "flute14", name: "Unsent Words", emoji: "📜", mood: "Things never said", category: "Flute", price: 150000, bpm: 64, voice: "flute", drone: "C3+G3",
+    colors: ["#C7B38A", "#7A6638"],
+    notes: [["F4", 3], ["G#4", 1], ["A#4", 2], ["C5", 2.0], ["-", 0.5], ["C5", 1.5], ["A#4", 0.5], ["A#4", 2], ["G#4", 0.5], ["F4", 0.5], ["D#4", 1], ["F4", 0.5], ["G4", 2.0], ["-", 0.5], ["G#4", 0.15], ["G4", 1.35], ["G#4", 0.5], ["C#5", 0.15], ["C5", 1.85], ["G#4", 0.5], ["G4", 0.5], ["F4", 1], ["G4", 2.0], ["-", 0.5], ["D#5", 1.0], ["C#5", 1.0], ["C#5", 0.15], ["C5", 3.85]],
+  },
+  {
+    id: "flute15", name: "Last Train", emoji: "🚂", mood: "The platform empties", category: "Flute", price: 150000, bpm: 66, voice: "flute", drone: "D3+A3",
+    colors: ["#8FA3B8", "#45596E"],
+    notes: [["D5", 2], ["F5", 1], ["E5", 1], ["E5", 0.15], ["D5", 1.85], ["D5", 2.0], ["-", 0.5], ["D5", 1], ["C5", 1], ["A4", 0.5], ["G4", 0.5], ["G4", 1], ["F4", 2], ["G4", 0.5], ["A4", 2.0], ["-", 0.5], ["A4", 1], ["G4", 1], ["G4", 0.5], ["G4", 0.5], ["G4", 1], ["G4", 0.15], ["F4", 1.85], ["G4", 0.5], ["A4", 2.0], ["-", 0.5], ["F5", 1.0], ["E5", 1.0], ["E5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute16", name: "Withered Flower", emoji: "🥀", mood: "Beauty that faded", category: "Flute", price: 150000, bpm: 58, voice: "flute", drone: "E3+B3",
+    colors: ["#C98AA8", "#7A3A5E"],
+    notes: [["F#5", 0.15], ["E5", 2.85], ["G5", 1], ["G5", 0.15], ["F#5", 1.85], ["E5", 2.0], ["-", 0.5], ["E5", 1], ["D#5", 0.5], ["D#5", 0.5], ["E5", 0.15], ["D#5", 1.85], ["C5", 0.15], ["B4", 1.85], ["B4", 2.0], ["-", 0.5], ["B4", 2], ["C5", 1], ["A4", 1], ["A4", 0.15], ["G4", 1.85], ["A4", 0.5], ["B4", 2.0], ["-", 0.5], ["G5", 1.0], ["F#5", 1.0], ["F#5", 0.15], ["E5", 3.85]],
+  },
+  {
+    id: "flute17", name: "Silent Tears", emoji: "💧", mood: "Crying without sound", category: "Flute", price: 150000, bpm: 58, voice: "flute", drone: "D3+A3",
+    colors: ["#8CC4E0", "#2F6E91"],
+    notes: [["E5", 2], ["F5", 1], ["F5", 1], ["F5", 2], ["A5", 2.0], ["-", 0.5], ["B5", 0.15], ["A5", 1.35], ["E5", 0.5], ["B4", 1], ["E5", 1], ["B5", 0.15], ["A5", 1.85], ["A5", 2.0], ["-", 0.5], ["B5", 0.15], ["A5", 1.85], ["E5", 1], ["A5", 1], ["B5", 2], ["A5", 2.0], ["-", 0.5], ["F5", 1.0], ["E5", 1.0], ["E5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute18", name: "Far From Home", emoji: "🧳", mood: "Miles away from Ma", category: "Flute", price: 150000, bpm: 62, voice: "flute", drone: "C3+G3",
+    colors: ["#A9C79A", "#4F7A3F"],
+    notes: [["F4", 1.5], ["G4", 0.5], ["A#4", 1], ["G4", 1], ["F4", 0.15], ["D#4", 1.85], ["F4", 0.5], ["G4", 2.0], ["-", 0.5], ["G4", 1.5], ["G4", 0.5], ["G4", 1], ["F4", 1], ["G4", 0.15], ["F4", 1.85], ["G4", 2.0], ["-", 0.5], ["G4", 1], ["G#4", 1], ["C5", 0.5], ["G#4", 0.5], ["F4", 1], ["D#4", 2], ["F4", 0.5], ["G4", 2.0], ["-", 0.5], ["D#5", 1.0], ["D5", 1.0], ["D5", 0.15], ["C5", 3.85]],
+  },
+  {
+    id: "flute19", name: "Endless Wait", emoji: "⏳", mood: "Still waiting at the door", category: "Flute", price: 150000, bpm: 56, voice: "flute", drone: "D3+A3",
+    colors: ["#B9A3D6", "#5E4A85"],
+    notes: [["D#5", 0.15], ["D5", 1.35], ["F5", 0.5], ["G5", 2], ["D#5", 0.5], ["D5", 0.5], ["A#4", 1], ["A4", 2.0], ["-", 0.5], ["A4", 1], ["A#4", 0.5], ["D5", 0.5], ["D5", 0.15], ["C5", 1.85], ["A#4", 2], ["A4", 2.0], ["-", 0.5], ["A4", 2], ["F4", 0.5], ["D#4", 0.5], ["F4", 1], ["G4", 2], ["A4", 2.0], ["-", 0.5], ["F5", 1.0], ["D#5", 1.0], ["D#5", 0.15], ["D5", 3.85]],
+  },
+  {
+    id: "flute20", name: "Lost Melody", emoji: "🪈", mood: "A tune nobody remembers", category: "Flute", price: 150000, bpm: 60, voice: "flute", drone: "B2+F#3",
+    colors: ["#7FC2B4", "#2F7A6C"],
+    notes: [["B4", 2], ["C#5", 1], ["C#5", 1], ["E5", 0.15], ["D5", 1.85], ["C#5", 0.5], ["B4", 2.0], ["-", 0.5], ["C#5", 0.15], ["B4", 2.85], ["A4", 1], ["D5", 0.15], ["C#5", 1.85], ["B4", 2.0], ["-", 0.5], ["C#5", 0.15], ["B4", 1.85], ["G4", 0.5], ["E4", 0.5], ["F#4", 1], ["A4", 2], ["B4", 2.0], ["-", 0.5], ["D5", 1.0], ["C#5", 1.0], ["C#5", 0.15], ["B4", 3.85]],
+  },
 ];
 
 const NOTE_INDEX: Record<string, number> = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 };
@@ -161,6 +264,9 @@ function freqOf(note: string): number {
 }
 
 let ctx: AudioContext | null = null;
+/** how long a song plays (seconds) */
+export const songSeconds = (s: ProfileSong) => Math.round((s.notes.reduce((a, n) => a + n[1], 0) * 60) / s.bpm);
+
 let stopCurrent: (() => void) | null = null;
 
 /** Plays a song (stops the one playing). Returns how long it lasts (ms). */
@@ -184,9 +290,41 @@ export function playProfileSong(song: ProfileSong): number {
       for (const n of note.split("+")) {
         const f = freqOf(n);
         if (!f) continue;
+        const v = song.voice;
+        if (v === "flute") {
+          // 🪈 bansuri: soft breathy start, a light 2nd harmonic, vibrato that grows on long notes
+          const peakF = 0.5 / Math.sqrt(note.split("+").length);
+          const g = ac.createGain();
+          g.connect(master);
+          for (const [mul, amp] of [[1, 1], [2, 0.12]] as const) {
+            const o = ac.createOscillator();
+            o.type = "sine";
+            o.frequency.value = f * mul;
+            const lfo = ac.createOscillator();
+            lfo.frequency.value = 5.2;
+            const depth = ac.createGain();
+            depth.gain.setValueAtTime(0, t);
+            depth.gain.linearRampToValueAtTime(f * mul * 0.007, t + Math.min(0.45, dur * 0.6));
+            lfo.connect(depth);
+            depth.connect(o.frequency);
+            const og = ac.createGain();
+            og.gain.value = amp;
+            o.connect(og);
+            og.connect(g);
+            o.start(t);
+            lfo.start(t);
+            o.stop(t + dur + 0.12);
+            lfo.stop(t + dur + 0.12);
+            nodes.push(o, lfo);
+          }
+          g.gain.setValueAtTime(0, t);
+          g.gain.linearRampToValueAtTime(peakF, t + Math.min(0.08, dur * 0.4));
+          g.gain.setValueAtTime(peakF * 0.9, t + Math.max(0.09, dur - 0.07));
+          g.gain.linearRampToValueAtTime(0, t + dur + 0.1);
+          continue;
+        }
         const osc = ac.createOscillator();
         const g = ac.createGain();
-        const v = song.voice;
         osc.type = v === "trumpet" ? "sawtooth" : v === "chip" ? "square" : v === "pluck" ? "sawtooth" : v === "soft" ? "triangle" : "sine";
         osc.frequency.value = f;
         let out: AudioNode = g;
@@ -215,6 +353,27 @@ export function playProfileSong(song: ProfileSong): number {
       }
     }
     t += dur;
+  }
+  // 🎻 drone: a soft low Sa–Pa under the whole tune
+  if (song.drone) {
+    const start = ac.currentTime + 0.05;
+    for (const dn of song.drone.split("+")) {
+      const f = freqOf(dn);
+      if (!f) continue;
+      const o = ac.createOscillator();
+      const g = ac.createGain();
+      o.type = "triangle";
+      o.frequency.value = f;
+      o.connect(g);
+      g.connect(master);
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.07, start + 1.2);
+      g.gain.setValueAtTime(0.07, Math.max(start + 1.3, t - 1.5));
+      g.gain.linearRampToValueAtTime(0, t + 0.3);
+      o.start(start);
+      o.stop(t + 0.4);
+      nodes.push(o);
+    }
   }
   const total = (t - ac.currentTime) * 1000;
   stopCurrent = () => {

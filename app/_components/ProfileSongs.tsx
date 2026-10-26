@@ -5,7 +5,7 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
-import { PROFILE_SONGS, playProfileSong, stopProfileSong, type ProfileSong } from "../../lib/profileSongs";
+import { PROFILE_SONGS, playProfileSong, songSeconds, stopProfileSong, type ProfileSong } from "../../lib/profileSongs";
 
 // 🎵 Profile Theme Songs (the app's ProfileSongs.kt): buy a 15-second tune for
 // 30 days (buyProfileSong); the one that is on (setProfileSong) plays once when
@@ -152,7 +152,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ProfileSong | null>(null);
-  const [tab, setTab] = useState<"All" | "Happy" | "Sad">("All");
+  const [tab, setTab] = useState<"All" | "Happy" | "Sad" | "Flute">("All");
   const { playing, play } = usePlayer();
   const now = serverNow();
 
@@ -241,15 +241,15 @@ export function ProfileSongShop({ uid }: { uid: string }) {
       )}
 
       {/* 😊 / 😢 tabs */}
-      <div className="mt-3 flex gap-1.5">
-        {(["All", "Happy", "Sad"] as const).map((t) => (
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {(["All", "Happy", "Sad", "Flute"] as const).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
             className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold ${tab === t ? "bg-[#1E63D6] text-white" : "bg-white text-[#35507E]"}`}
           >
-            {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : "All"} ({t === "All" ? PROFILE_SONGS.length : PROFILE_SONGS.filter((s) => s.category === t).length})
+            {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : t === "Flute" ? "🪈 Bansuri" : "All"} ({t === "All" ? PROFILE_SONGS.length : PROFILE_SONGS.filter((s) => s.category === t).length})
           </button>
         ))}
       </div>
@@ -268,7 +268,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
                 {have && <span className="ml-auto rounded-md bg-[#2E9E6B] px-1.5 py-px text-[9px] font-black text-white">{daysLeft(s.id)}d</span>}
               </div>
               <p className="mt-2 text-[15px] font-black leading-5">{s.name}</p>
-              <p className="text-[11px] text-[#5B6B8C]">{s.mood} · 15 s</p>
+              <p className="text-[11px] text-[#5B6B8C]">{s.mood} · {songSeconds(s)} s</p>
               <p className="mt-1 text-[12px] font-black" style={{ color: s.colors[1] }}>
                 🪙 {s.price.toLocaleString("en-US")} · 30 days
               </p>
