@@ -37,6 +37,25 @@ export function useCustomSongs(): ProfileSong[] {
   );
   return list;
 }
+/** 💲 miglife's edited prices for the built-in songs (shop_overrides.profileSong.{id}.price). */
+export function useSongPrices(): Record<string, number> {
+  const [prices, setPrices] = useState<Record<string, number>>({});
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "shop_overrides"),
+        (d) => {
+          const raw = (d.get("profileSong") || {}) as Record<string, { price?: unknown }>;
+          const out: Record<string, number> = {};
+          for (const [id, v] of Object.entries(raw)) if (v && typeof v.price === "number" && v.price > 0) out[id] = Math.trunc(v.price);
+          setPrices(out);
+        },
+        () => {}
+      ),
+    []
+  );
+  return prices;
+}
 const opId = () => "song_" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 
 // 🔈 "no profile songs for me" — this device only
@@ -187,7 +206,8 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   const [tab, setTab] = useState<"All" | "Happy" | "Sad" | "Flute" | "miGlife">("All");
   const { playing, play } = usePlayer();
   const custom = useCustomSongs() as (ProfileSong & { hidden?: boolean })[];
-  const ALL = [...PROFILE_SONGS, ...custom.filter((s) => !s.hidden)];
+  const prices = useSongPrices();
+  const ALL = [...PROFILE_SONGS.map((s) => (prices[s.id] ? { ...s, price: prices[s.id] } : s)), ...custom.filter((s) => !s.hidden)];
   const byId = (id: string) => songById(id) || custom.find((s) => s.id === id) || null;
   const now = serverNow();
 

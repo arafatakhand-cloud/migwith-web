@@ -4,8 +4,8 @@ import { useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../../lib/firebase";
 import { useFounderPerms } from "../../../lib/founder";
-import { playProfileSong, stopProfileSong, type ProfileSong } from "../../../lib/profileSongs";
-import { useCustomSongs } from "../../_components/ProfileSongs";
+import { PROFILE_SONGS, playProfileSong, stopProfileSong, type ProfileSong } from "../../../lib/profileSongs";
+import { useCustomSongs, useSongPrices } from "../../_components/ProfileSongs";
 import { FounderShell, card, input } from "../_Shell";
 
 // 🎤 Profile Songs — miglife uploads ANY music (up to 5 minutes, 7 MB) as a
@@ -13,6 +13,7 @@ import { FounderShell, card, input } from "../_Shell";
 // switched on like the built-in tunes (founderProfileSong on the server).
 
 const call = httpsCallable<Record<string, unknown>, { ok?: boolean; id?: string }>(functions, "founderProfileSong");
+const editBuiltIn = httpsCallable<{ kind: "song"; id: string; name: string; price: number }, { ok?: boolean }>(functions, "founderEditShopItem");
 const MAX_SECONDS = 300;
 const MAX_BYTES = 7 * 1024 * 1024;
 
@@ -57,6 +58,8 @@ export default function SongsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const prices = useSongPrices();
+  const [tab, setTab] = useState<"Happy" | "Sad" | "Flute">("Sad");
 
   const pick = async (fl: File | null) => {
     setMsg(null);
@@ -104,6 +107,20 @@ export default function SongsPage() {
   const update = async (s: ProfileSong, patch: Record<string, unknown>) => {
     try {
       await call({ action: "update", id: s.id, ...patch });
+    } catch (e: any) {
+      setMsg({ text: e?.message || "Could not save.", bad: true });
+    }
+  };
+
+  const editPrice = async (s: ProfileSong) => {
+    const cur = prices[s.id] || s.price;
+    const p = window.prompt(`New price for "${s.name}" (coins, 30 days)`, String(cur));
+    if (!p) return;
+    const price = Math.floor(Number(p.replace(/\D/g, "")));
+    if (!price || price < 1000 || price > 100000000) return setMsg({ text: "Price: a whole number from 1,000 to 100,000,000.", bad: true });
+    try {
+      await editBuiltIn({ kind: "song", id: s.id, name: s.name, price });
+      setMsg({ text: `✅ "${s.name}" now costs 🪙 ${price.toLocaleString("en-US")}.`, bad: false });
     } catch (e: any) {
       setMsg({ text: e?.message || "Could not save.", bad: true });
     }
@@ -189,6 +206,45 @@ export default function SongsPage() {
           ))}
         </ul>
         <p className="mt-2 text-[11px] text-[#5B6B8C]">Hide removes a song from the shop. People who already bought it keep it until their 30 days end.</p>
+      </div>
+      <div className={`${card} mt-3`}>
+        <p className="font-bold">🎵 Built-in songs — price</p>
+        <div className="mt-2 flex gap-2">
+          {(["Happy", "Sad", "Flute"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`rounded-full px-3 py-1 text-xs font-bold ${tab === t ? "bg-[#8B4DFF] text-white" : "bg-[#EEF3FA] text-[#174EA6]"}`}
+            >
+              {t === "Flute" ? "🪈 Bansuri" : t}
+            </button>
+          ))}
+        </div>
+        <ul className="mt-2 space-y-2">
+          {PROFILE_SONGS.filter((s) => s.category === tab).map((s) => {
+            const edited = prices[s.id];
+            return (
+              <li key={s.id} className="flex items-center gap-2 rounded-xl border border-[#E1E9F5] p-2.5">
+                <span className="text-2xl">{s.emoji}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{s.name}</span>
+                  <span className="block text-[11px] text-[#5B6B8C]">
+                    🪙 {(edited || s.price).toLocaleString("en-US")}
+                    {edited && edited !== s.price ? ` (was ${s.price.toLocaleString("en-US")})` : ""}
+                  </span>
+                </span>
+                <button type="button" onClick={() => play(s)} className="rounded-lg bg-[#EEF3FA] px-2.5 py-1.5 text-xs font-bold text-[#174EA6]">
+                  {playing === s.id ? "■" : "▶"}
+                </button>
+                <button type="button" onClick={() => editPrice(s)} className="rounded-lg bg-[#EEF3FA] px-2.5 py-1.5 text-xs font-bold text-[#174EA6]">
+                  💲
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        <p className="mt-2 text-[11px] text-[#5B6B8C]">The new price shows in the shop on the web and in the app right away. People who already bought a song keep it.</p>
       </div>
     </FounderShell>
   );
