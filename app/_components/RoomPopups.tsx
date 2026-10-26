@@ -5,7 +5,7 @@
 // gold-framed balance card, the Luxury Bot round result card and the "Send
 // this photo?" confirmation.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const GOLD_FRAME = "linear-gradient(135deg, #F2C94C, #FFE29A, #F2C94C)";
 
@@ -55,16 +55,104 @@ function GoldCard({ children, onClose, bg }: { children: React.ReactNode; onClos
   );
 }
 
-export function BalanceCard({ text, sub, onClose }: { text: string; sub: string; onClose: () => void }) {
-  const isAmount = /^\d/.test(text);
+// 💰 Neon Ring balance card (miglife picked design 4): the ring fills toward the
+// next coin goal; Level · XP · Next goal underneath. Tap the number: full ↔ short.
+const COIN_GOALS = [10_000, 50_000, 100_000, 500_000, 1e6, 5e6, 10e6, 25e6, 50e6, 100e6, 250e6, 500e6, 1e9, 5e9, 10e9];
+const shortCoins = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(n);
+export type BalanceInfo = { balance: number; level: number; xp: number } | "loading" | "error";
+
+export function BalanceCard({ info, onClose }: { info: BalanceInfo; onClose: () => void }) {
+  useCloseKeys(onClose);
+  const [full, setFull] = useState(false);
+  const [shown, setShown] = useState(0);
+  const [fill, setFill] = useState(0);
+  const ok = typeof info === "object";
+  const bal = ok ? info.balance : 0;
+  const goal = COIN_GOALS.find((g) => g > bal) ?? COIN_GOALS[COIN_GOALS.length - 1];
+  const progress = ok ? Math.min(1, bal / goal) : 0;
+  useEffect(() => {
+    if (!ok) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setShown(bal);
+      setFill(progress);
+      return;
+    }
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (t: number) => {
+      const p = Math.min(1, (t - t0) / 900);
+      const e = 1 - Math.pow(1 - p, 3);
+      setShown(bal * e);
+      setFill(progress * e);
+      if (p < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [ok, bal, progress]);
+  const R = 52;
+  const C = 2 * Math.PI * R;
   return (
-    <GoldCard onClose={onClose} bg="linear-gradient(180deg, #1E56A8, #0A2657)">
-      <span className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-[#F2C94C]/70 bg-white/[0.12] text-[22px]">💰</span>
-      <p className="text-[10px] font-bold tracking-[1.6px] text-[#9FB8E6]">YOUR BALANCE</p>
-      <p className={isAmount ? "text-[26px] font-extrabold text-[#FFE29A]" : "text-[13px] font-extrabold"}>{text}</p>
-      {sub && <p className="text-xs font-medium text-white/75">{sub}</p>}
-      <span className="mt-1.5 rounded-full bg-[#F2C94C] px-[26px] py-1.5 text-xs font-extrabold text-[#1A1200]">OK</span>
-    </GoldCard>
+    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45" onClick={onClose}>
+      <div
+        className="w-[224px] cursor-pointer rounded-[22px] border border-[#263257] px-3.5 pb-3 pt-3.5 text-center text-[#EAF2FF] shadow-[0_16px_44px_rgba(0,0,0,.5)]"
+        style={{ background: "linear-gradient(180deg, #0E1630, #0A0F22)" }}
+      >
+        <div className="relative mx-auto h-[128px] w-[128px]">
+          <svg viewBox="0 0 128 128" className="h-full w-full -rotate-90" aria-hidden>
+            <defs>
+              <linearGradient id="balRing" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="#4FE3FF" />
+                <stop offset="1" stopColor="#9B7BFF" />
+              </linearGradient>
+            </defs>
+            <circle cx="64" cy="64" r={R} fill="none" stroke="#1C2850" strokeWidth="9" />
+            <circle cx="64" cy="64" r={R} fill="none" stroke="url(#balRing)" strokeWidth="9" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - fill)} />
+          </svg>
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center"
+            onClick={(e) => {
+              if (!ok) return;
+              e.stopPropagation();
+              setFull((v) => !v);
+            }}
+          >
+            <span className="text-[8.5px] font-extrabold tracking-[2px] text-[#8FA6DA]">BALANCE</span>
+            {info === "loading" ? (
+              <span className="mt-1 text-xs font-bold text-[#8FA6DA]">Checking…</span>
+            ) : info === "error" ? (
+              <span className="mt-1 px-2 text-[11px] font-bold leading-tight text-[#FF8A8A]">Could not load your balance.</span>
+            ) : (
+              <>
+                <span className={`font-black leading-none tabular-nums text-white ${full ? "text-[15px]" : "text-[24px]"}`}>
+                  {full ? Math.round(shown).toLocaleString("en-US") : shortCoins(shown)}
+                </span>
+                <span className="mt-1 text-[10px] tabular-nums text-[#7EE0FF]">{full ? shortCoins(bal) : bal.toLocaleString("en-US")}</span>
+              </>
+            )}
+          </div>
+        </div>
+        {ok && (
+          <div className="mt-2 grid grid-cols-3 gap-1.5">
+            {(
+              [
+                [String(info.level), "Level"],
+                [shortCoins(info.xp), "XP"],
+                [shortCoins(goal), "Next goal"],
+              ] as const
+            ).map(([v, l]) => (
+              <div key={l} className="rounded-[10px] border border-[#263257] bg-[#141E3D] px-1 py-1.5">
+                <b className="block text-[13px] leading-tight tabular-nums">{v}</b>
+                <span className="text-[9px] font-bold text-[#8FA6DA]">{l}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <span className="mt-2.5 block rounded-[12px] py-2 text-xs font-black text-[#06131F]" style={{ background: "linear-gradient(90deg, #4FE3FF, #9B7BFF)" }}>
+          OK
+        </span>
+      </div>
+    </div>
   );
 }
 

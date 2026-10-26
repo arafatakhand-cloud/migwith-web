@@ -152,7 +152,7 @@ import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_comp
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
-import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog } from "../../_components/RoomPopups";
+import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 
@@ -375,7 +375,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🪟 popups like the app's: title + text + OK, the balance card, the Luxury
   // Bot round result and the "Send this photo?" confirmation
   const [popup, setPopup] = useState<{ title: string; text: string } | null>(null);
-  const [balanceCard, setBalanceCard] = useState<{ text: string; sub: string } | null>(null);
+  const [balanceCard, setBalanceCard] = useState<BalanceInfo | null>(null);
   const [roundResult, setRoundResult] = useState<{ round: number; won: number; bet: number } | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const lastResultRound = useRef(0);
@@ -1876,13 +1876,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   // 💰 the compact gold balance card (like the app's)
   const checkBalance = async () => {
-    setBalanceCard({ text: "Checking...", sub: "" });
+    setBalanceCard("loading");
     try {
       const snap = await getDoc(doc(db, "users", user.uid));
-      const bal = Number(snap.get("balance") || 0);
-      setBalanceCard({ text: bal.toLocaleString("en-US"), sub: `${new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(bal)} coins` });
+      setBalanceCard({
+        balance: Number(snap.get("balance") || 0),
+        level: Number(snap.get("level") || 1),
+        xp: Number(snap.get("xp") || 0),
+      });
     } catch {
-      setBalanceCard({ text: "Could not load your balance.", sub: "" });
+      setBalanceCard("error");
     }
   };
 
@@ -2422,7 +2425,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
       {/* ⋮ Room menu */}
       {popup && <SimpleDialog title={popup.title} text={popup.text} onClose={() => setPopup(null)} />}
-      {balanceCard && <BalanceCard text={balanceCard.text} sub={balanceCard.sub} onClose={() => setBalanceCard(null)} />}
+      {balanceCard && <BalanceCard info={balanceCard} onClose={() => setBalanceCard(null)} />}
       {roundResult && <RoundResultCard round={roundResult.round} won={roundResult.won} bet={roundResult.bet} onClose={() => setRoundResult(null)} />}
       {pendingPhoto && (
         <PhotoConfirm
