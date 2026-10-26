@@ -2318,14 +2318,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             <ul className="space-y-1" data-notranslate>
               {roomUsers.map((u) => (
                 <li key={u.uid} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm">
-                  <span>{badgeForLevel(u.level)}</span>
+                  {/* (no 🔥/💎 level icon here — the level number on the right is enough, so the name has room) */}
                   <Link
                     href={`/profile/${encodeURIComponent(u.username)}`}
-                    className="truncate font-semibold text-[#0B2A5B] hover:text-[#2F80ED]"
+                    className="min-w-[3.5rem] truncate font-semibold text-[#0B2A5B] hover:text-[#2F80ED]"
                   >
                     {u.username}
                   </Link>
-                  {cachedRoleOf(u.username) === "country_representative" && <span title="Country Representative">{COUNTRY_REP_BADGE}</span>}
+                  {cachedRoleOf(u.username) === "country_representative" && <span className="shrink-0" title="Country Representative">{COUNTRY_REP_BADGE}</span>}
                   {(() => {
                     const team = supporterTeamOf(u.username);
                     return team ? <SupporterBadge team={team} size={9} /> : null;
@@ -2334,10 +2334,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     const k = u.username.toLowerCase();
                     if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <span title="Room owner">👑</span>;
                     if (roomInfo.superMods.includes(k)) return <span title="Super Mod">🌟</span>;
-                    if (roomInfo.moderators.includes(k)) return <span title="Moderator">⭐</span>;
+                    if (roomInfo.moderators.includes(k))
+                      return (
+                        <span title="Moderator" className="shrink-0 text-[13px] font-black leading-none text-[#F57C00]">
+                          M
+                        </span>
+                      );
                     return null;
                   })()}
-                  <span className="ml-auto text-xs text-[#6B7A99]">{u.level}</span>
+                  <span className="ml-auto shrink-0 text-xs text-[#6B7A99]">{u.level}</span>
                   {u.uid !== user.uid && (perms.canKick || perms.canBan || perms.canMute || perms.canManagePrivate) && (
                     <div className="relative">
                       <button
