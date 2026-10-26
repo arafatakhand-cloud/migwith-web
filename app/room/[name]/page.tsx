@@ -3195,7 +3195,9 @@ function MessageRow({
   // "Bangladesh: imran [25] has entered." — on the left, room name in orange, the rest black.
   if (m.type === "room_entry" || m.type === "room_leave") {
     const colon = m.text.indexOf(": ");
-    const body = brandMiglife(colon > 0 ? m.text.slice(colon + 2) : m.text);
+    let body = brandMiglife(colon > 0 ? m.text.slice(colon + 2) : m.text);
+    // 🚫 a Mentor (💼) is never a Merchant — older lines lose the 🛒 next to 💼
+    if (body.includes("💼")) body = body.replace(/ ?🛒/g, "");
     // ⚽ Supporter Colours: the team badge goes just before "has entered / has left".
     const team = m.sender ? supporterTeamOf(m.sender) : null;
     const cut = team ? body.search(/ has (entered|left)/) : -1;
@@ -3756,6 +3758,8 @@ async function hasRunningMerchantTerm(username: string): Promise<boolean> {
 }
 
 function withMerchantBadge(badges: string[], merchant: boolean): string[] {
+  // 🚫 a Mentor (💼) is never a Merchant — no 🛒 next to a Mentor badge
+  if (badges.includes("💼")) return badges.filter((b) => b !== "🛒");
   if (!merchant || badges.includes("🛒")) return badges;
   // right after the role badge (if any), before the Color Shop badges — like a role badge
   const roleCount = badges.filter((b) => ROLE_BADGES.has(b)).length;
