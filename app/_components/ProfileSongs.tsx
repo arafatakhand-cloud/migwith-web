@@ -5,7 +5,7 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
-import { PROFILE_SONGS, playProfileSong, songSeconds, stopProfileSong, type ProfileSong } from "../../lib/profileSongs";
+import { PROFILE_SONGS, customSong, playProfileSong, songSeconds, stopProfileSong, type ProfileSong } from "../../lib/profileSongs";
 
 // 🎵 Profile Theme Songs (the app's ProfileSongs.kt): buy a 15-second tune for
 // 30 days (buyProfileSong); the one that is on (setProfileSong) plays once when
@@ -14,6 +14,29 @@ import { PROFILE_SONGS, playProfileSong, songSeconds, stopProfileSong, type Prof
 //   entry_fx_public/song_{usernameLower}  { active, expiresAt }
 
 export const songById = (id: string) => PROFILE_SONGS.find((s) => s.id === id) || null;
+
+/** 🎤 miglife's uploaded songs (all of them, hidden ones too — someone may own one). */
+export function useCustomSongs(): ProfileSong[] {
+  const [list, setList] = useState<ProfileSong[]>([]);
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "shop_overrides"),
+        (d) => {
+          const cat = (d.get("songCatalog") || {}) as Record<string, Record<string, unknown>>;
+          setList(
+            Object.entries(cat)
+              .filter(([, v]) => v && v.url)
+              .map(([id, v]) => ({ ...customSong(id, v), hidden: v.on === false }) as ProfileSong & { hidden?: boolean })
+              .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+          );
+        },
+        () => {}
+      ),
+    []
+  );
+  return list;
+}
 const opId = () => "song_" + crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 
 // 🔈 "no profile songs for me" — this device only
@@ -86,7 +109,16 @@ export function ProfileSongChip({ username, classic }: { username: string; class
         if (!alive) return;
         const id = String(d.get("active") || "none");
         const ends = Number(d.get("expiresAt") || 0);
-        setSong(id !== "none" && ends > serverNow() ? songById(id) : null);
+        if (id === "none" || ends <= serverNow()) return setSong(null);
+        const built = songById(id);
+        if (built) return setSong(built);
+        // 🎤 one of miglife's uploaded songs
+        getDoc(doc(db, "app_settings", "shop_overrides"))
+          .then((o) => {
+            const v = ((o.get("songCatalog") || {}) as Record<string, Record<string, unknown>>)[id];
+            if (alive && v && v.url) setSong(customSong(id, v));
+          })
+          .catch(() => {});
       })
       .catch(() => {});
     return () => {
@@ -152,8 +184,11 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ProfileSong | null>(null);
-  const [tab, setTab] = useState<"All" | "Happy" | "Sad" | "Flute">("All");
+  const [tab, setTab] = useState<"All" | "Happy" | "Sad" | "Flute" | "miGlife">("All");
   const { playing, play } = usePlayer();
+  const custom = useCustomSongs() as (ProfileSong & { hidden?: boolean })[];
+  const ALL = [...PROFILE_SONGS, ...custom.filter((s) => !s.hidden)];
+  const byId = (id: string) => songById(id) || custom.find((s) => s.id === id) || null;
   const now = serverNow();
 
   useEffect(
@@ -176,7 +211,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
     try {
       await httpsCallable(functions, "setProfileSong")({ id });
       setActive(id);
-      const s = songById(id);
+      const s = byId(id);
       setMessage(id === "none" || !s ? "Profile song turned off." : `✓ ${s.emoji} ${s.name} plays on your profile now.`);
     } catch (e: any) {
       setMessage(e?.message || "Could not change.");
@@ -197,7 +232,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
     }
   };
 
-  const mine = PROFILE_SONGS.filter((s) => (owned[s.id] || 0) > now);
+  const mine = [...PROFILE_SONGS, ...custom].filter((s) => (owned[s.id] || 0) > now);
   return (
     <div>
       <div className="flex items-center justify-between px-1 text-sm">
@@ -242,20 +277,20 @@ export function ProfileSongShop({ uid }: { uid: string }) {
 
       {/* 😊 / 😢 tabs */}
       <div className="mt-3 flex flex-wrap gap-1.5">
-        {(["All", "Happy", "Sad", "Flute"] as const).map((t) => (
+        {(["All", "Happy", "Sad", "Flute", "miGlife"] as const).filter((t) => t !== "miGlife" || ALL.some((s) => s.category === "miGlife")).map((t) => (
           <button
             key={t}
             type="button"
             onClick={() => setTab(t)}
             className={`rounded-full px-3.5 py-1.5 text-xs font-extrabold ${tab === t ? "bg-[#1E63D6] text-white" : "bg-white text-[#35507E]"}`}
           >
-            {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : t === "Flute" ? "🪈 Bansuri" : "All"} ({t === "All" ? PROFILE_SONGS.length : PROFILE_SONGS.filter((s) => s.category === t).length})
+            {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : t === "Flute" ? "🪈 Bansuri" : t === "miGlife" ? "🎤 miGlife" : "All"} ({t === "All" ? ALL.length : ALL.filter((s) => s.category === t).length})
           </button>
         ))}
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-        {PROFILE_SONGS.filter((s) => tab === "All" || s.category === tab).map((s) => {
+        {ALL.filter((s) => tab === "All" || s.category === tab).map((s) => {
           const on = playing === s.id;
           const have = (owned[s.id] || 0) > now;
           return (

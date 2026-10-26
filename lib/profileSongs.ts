@@ -10,15 +10,36 @@ export type ProfileSong = {
   emoji: string;
   mood: string;
   /** shop tab */
-  category: "Happy" | "Sad" | "Flute";
+  category: "Happy" | "Sad" | "Flute" | "miGlife";
   price: number;
   bpm: number;
-  voice: "trumpet" | "bell" | "soft" | "piano" | "chip" | "pluck" | "flute";
+  voice: "trumpet" | "bell" | "soft" | "piano" | "chip" | "pluck" | "flute" | "file";
   /** a low tanpura-like Sa–Pa that hums under the whole tune */
   drone?: string;
   colors: [string, string];
   notes: SongNote[];
+  /** 🎤 miglife's uploaded songs: a music file instead of notes */
+  url?: string;
+  seconds?: number;
 };
+
+/** 🎤 One of miglife's uploaded songs (app_settings/shop_overrides.songCatalog.{id}). */
+export function customSong(id: string, v: Record<string, unknown>): ProfileSong {
+  return {
+    id,
+    name: String(v.name || "Song"),
+    emoji: String(v.emoji || "🎵"),
+    mood: String(v.mood || ""),
+    category: "miGlife",
+    price: Number(v.price || 0),
+    bpm: 60,
+    voice: "file",
+    colors: ["#F5C542", "#8B4DFF"],
+    notes: [],
+    url: String(v.url || ""),
+    seconds: Number(v.seconds || 0),
+  };
+}
 
 export const PROFILE_SONGS: ProfileSong[] = [
   {
@@ -265,7 +286,8 @@ function freqOf(note: string): number {
 
 let ctx: AudioContext | null = null;
 /** how long a song plays (seconds) */
-export const songSeconds = (s: ProfileSong) => Math.round((s.notes.reduce((a, n) => a + n[1], 0) * 60) / s.bpm);
+export const songSeconds = (s: ProfileSong) =>
+  s.url ? Math.round(s.seconds || 0) : Math.round((s.notes.reduce((a, n) => a + n[1], 0) * 60) / s.bpm);
 
 let stopCurrent: (() => void) | null = null;
 
@@ -273,6 +295,17 @@ let stopCurrent: (() => void) | null = null;
 export function playProfileSong(song: ProfileSong): number {
   if (typeof window === "undefined") return 0;
   stopProfileSong();
+  if (song.url) {
+    // 🎤 an uploaded music file
+    const audio = new Audio(song.url);
+    audio.volume = 0.9;
+    audio.play().catch(() => {});
+    stopCurrent = () => {
+      audio.pause();
+      audio.src = "";
+    };
+    return (song.seconds || 30) * 1000;
+  }
   const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   if (!AC) return 0;
   ctx = ctx || new AC();
