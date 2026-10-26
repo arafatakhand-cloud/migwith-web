@@ -35,6 +35,7 @@ const royaleBetCall = httpsCallable(functions, "royaleBet");
 const tickRoyaleCall = httpsCallable(functions, "tickRoyale");
 
 type HistoryItem = { round: number; winner: string; hand: string };
+export type RoyaleSummary = { round: number; players: number; winningBets: number; paidOut: number; gotBack: number; top: { name: string; profit: number } | null };
 
 export type RoyaleState = {
   running: boolean;
@@ -52,6 +53,8 @@ export type RoyaleState = {
   lastWinner: string;
   lastRound: number;
   history: HistoryItem[];
+  /** The last finished round, for the result card (server: lastSummary). */
+  summary: RoyaleSummary | null;
   busy: boolean;
   /** My last bet this session (for ↻ Same). */
   lastBet: { option: string; amount: number } | null;
@@ -74,6 +77,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [round, setRound] = useState(0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
   const [lastBet, setLastBet] = useState<{ option: string; amount: number } | null>(null);
+  const [summary, setSummary] = useState<RoyaleSummary | null>(null);
   const [pool, setPool] = useState<Record<string, { coins: number; people: number }>>({});
   const [last, setLast] = useState({
     red: [] as string[],
@@ -111,6 +115,19 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
         winner: String(snap.get("lastWinner") || ""),
         round: Number(snap.get("lastRound") || 0),
       });
+      const sm = snap.get("lastSummary") as Record<string, any> | undefined;
+      setSummary(
+        sm && typeof sm === "object"
+          ? {
+              round: Number(sm.round || 0),
+              players: Number(sm.players || 0),
+              winningBets: Number(sm.winningBets || 0),
+              paidOut: Number(sm.paidOut || 0),
+              gotBack: Number(sm.gotBack || 0),
+              top: sm.top && typeof sm.top.name === "string" ? { name: sm.top.name, profit: Number(sm.top.profit || 0) } : null,
+            }
+          : null
+      );
       const h = snap.get("history");
       setHistory(
         Array.isArray(h)
@@ -200,6 +217,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     lastWinner: last.winner,
     lastRound: last.round,
     history,
+    summary,
     busy,
     lastBet,
     start: () => {
@@ -273,7 +291,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   // A new round clears the pick.
   useEffect(() => setSelected(null), [state.round]);
   // folded unless I have a bet in this round (kept open 90 s after, like the app)
-  useGameAutoFold(state.running && Object.values(state.myBets).some((v) => v > 0), setCollapsed, 90_000);
+  // open for the whole round (everyone sees the box while betting), folded 90 s after
+  useGameAutoFold(state.running, setCollapsed, 90_000);
   // ✓ "Bet placed" for a moment whenever my total on the table grows
   const myTotal = Object.values(state.myBets).reduce((a, v) => a + Number(v || 0), 0);
   useEffect(() => {
@@ -285,6 +304,22 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
     }
     prevMine.current = myTotal;
   }, [myTotal]);
+
+  // 🃏 Card reveal: starts when the round turns SETTLING and runs its ~5 s
+  // even if the server already finished paying (the result card follows).
+  const [reveal, setReveal] = useState<{ round: number; start: number } | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (state.running && state.phase === "SETTLING" && state.lastRed.length === 3 && reveal?.round !== state.round) {
+      setReveal({ round: state.round, start: Date.now() });
+    }
+  }, [state.running, state.phase, state.round, state.lastRed.length, reveal?.round]);
+  const revealing = !!reveal && Date.now() - reveal.start < REVEAL_MS;
+  useEffect(() => {
+    if (!revealing) return;
+    const t = setInterval(() => setTick((n) => n + 1), 120);
+    return () => clearInterval(t);
+  }, [revealing]);
 
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
   const opt = ROYALE_OPTIONS.find((o) => o.key === selected);
@@ -350,16 +385,22 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
       {showHistory && <RoyaleHistory history={state.history} />}
 
       {!collapsed &&
-        (!state.running ? (
+        (revealing && reveal ? (
+          <RoyaleReveal state={state} elapsed={Date.now() - reveal.start} />
+        ) : state.running && state.phase === "SETTLING" ? (
+          <p className="py-6 text-center text-sm font-bold text-[#9BA6D6]">🃏 Dealing cards…</p>
+        ) : !state.running ? (
           <>
-            <RoyaleLastResult state={state} />
+            {state.lastRed.length === 3 ? <RoyaleResultCard state={state} /> : <RoyaleLastResult state={state} />}
             <button
               type="button"
               onClick={state.start}
               disabled={state.busy}
-              className="mt-2 w-full rounded-xl bg-gradient-to-r from-violet-500 to-purple-700 py-2.5 text-sm font-black shadow-[0_6px_18px_rgba(124,58,237,.45)] disabled:opacity-50"
+              className={`mt-2 w-full rounded-xl py-2.5 text-sm font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
+                state.lastRed.length === 3 ? "bg-gradient-to-r from-green-500 to-green-700" : "bg-gradient-to-r from-violet-500 to-purple-700"
+              }`}
             >
-              {state.busy ? "Starting…" : "▶ Start MIG Royale"}
+              {state.busy ? "Starting…" : state.lastRed.length === 3 ? "▶ Next round" : "▶ Start MIG Royale"}
             </button>
           </>
         ) : (
@@ -500,6 +541,128 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             <RoyaleStreak history={state.history} />
           </>
         ))}
+    </div>
+  );
+}
+
+const REVEAL_MS = 5200;
+// when each card turns over (ms from the start): Red 1-2-3, then Blue 1-2, then the last card slowly
+const RED_FLIPS = [450, 950, 1450];
+const BLUE_FLIPS = [2350, 2850, 3900];
+
+function CardBack({ size = "md" }: { size?: "md" | "lg" }) {
+  return (
+    <span
+      className={`inline-block rounded-md border-2 border-white/60 ${size === "lg" ? "h-[62px] w-11" : "h-12 w-9"}`}
+      style={{ background: "repeating-linear-gradient(45deg, #5B3FC9 0 4px, #6E54DA 4px 8px)" }}
+    />
+  );
+}
+
+/** 🃏 The reveal: "Revealing Red…" → three red cards turn, then "Blue hand…" →
+ *  two blue cards, then "the last card…" slowly → who won. */
+function RoyaleReveal({ state, elapsed }: { state: RoyaleState; elapsed: number }) {
+  const redShown = RED_FLIPS.filter((t) => elapsed >= t).length;
+  const blueShown = BLUE_FLIPS.filter((t) => elapsed >= t).length;
+  const done = elapsed >= BLUE_FLIPS[2] + 500;
+  const title = done
+    ? state.lastWinner === "tie"
+      ? "🤝 It's a tie!"
+      : `🏆 ${state.lastWinner === "red" ? "Red" : "Blue"} wins!`
+    : elapsed < 2000
+      ? "Revealing Red…"
+      : blueShown >= 2
+        ? "Blue hand — the last card…"
+        : "Revealing Blue…";
+  const side = (key: "red" | "blue", cards: string[], shown: number, hand: string) => {
+    const red = key === "red";
+    const won = done && state.lastWinner === key;
+    return (
+      <div
+        className={`flex flex-col items-center rounded-[14px] border-2 px-1 py-2 transition ${won ? "scale-[1.03]" : ""}`}
+        style={{
+          background: red ? "rgba(239,68,68,.14)" : "rgba(59,130,246,.16)",
+          borderColor: won ? "#FCD34D" : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
+          boxShadow: won ? "0 0 18px rgba(252,211,77,.45)" : undefined,
+        }}
+      >
+        <span className={`text-[11px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red hand" : "🔵 Blue hand"}</span>
+        <span className="mt-1 flex gap-1">
+          {cards.map((c, i) => (i < shown ? <span key={`f${i}`} className="fx-pop inline-block"><MiniCard card={c} size="md" /></span> : <CardBack key={`b${i}`} />))}
+        </span>
+        <span className="mt-1 h-4 text-[10.5px] font-bold text-[#DCE3FF]">{shown === 3 ? hand : ""}</span>
+      </div>
+    );
+  };
+  return (
+    <div className="mt-2">
+      <p className={`text-center text-[13px] font-black ${done ? "text-amber-300" : "text-[#C9D2F2]"}`}>{title}</p>
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+        {side("red", state.lastRed, redShown, state.lastRedHand)}
+        {side("blue", state.lastBlue, blueShown, state.lastBlueHand)}
+      </div>
+    </div>
+  );
+}
+
+/** 🏆 After the round: who won, both hands, and what was paid. */
+function RoyaleResultCard({ state }: { state: RoyaleState }) {
+  const sm = state.summary && (state.summary.round === state.lastRound || state.lastRound === 0) ? state.summary : null;
+  const tie = state.lastWinner === "tie";
+  const winHand = state.lastWinner === "red" ? state.lastRedHand : state.lastBlueHand;
+  return (
+    <div className="mt-2">
+      <p className="text-center text-[13px] font-black text-amber-300">
+        {tie ? "🤝 Tie — Red & Blue bets refunded" : `🏆 ${state.lastWinner === "red" ? "Red" : "Blue"} wins with ${winHand}`}
+      </p>
+      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+        {(["red", "blue"] as const).map((key) => {
+          const red = key === "red";
+          const won = state.lastWinner === key;
+          const cards = red ? state.lastRed : state.lastBlue;
+          return (
+            <div
+              key={key}
+              className="flex flex-col items-center rounded-[14px] border-2 px-1 py-1.5"
+              style={{
+                background: red ? "rgba(239,68,68,.12)" : "rgba(59,130,246,.14)",
+                borderColor: won ? "#FCD34D" : "rgba(255,255,255,.12)",
+                opacity: won || tie ? 1 : 0.75,
+              }}
+            >
+              <span className={`text-[10.5px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red hand" : "🔵 Blue hand"}</span>
+              <span className="mt-1 flex gap-1">
+                {cards.map((c, i) => (
+                  <MiniCard key={i} card={c} size="sm" />
+                ))}
+              </span>
+              <span
+                className={`mt-1 rounded-full px-2 text-[10px] font-black ${won ? "bg-amber-300 text-[#3A2500]" : "text-[#C9D2F2]"}`}
+              >
+                {red ? state.lastRedHand : state.lastBlueHand}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {sm && sm.players > 0 && (
+        <div className="mt-1.5 flex flex-col items-center gap-1 text-[11px] font-bold text-[#C9D2F2]">
+          <span>
+            {sm.winningBets} winning {sm.winningBets === 1 ? "bet" : "bets"} · {shortK(sm.paidOut)} paid out
+          </span>
+          {sm.top && (
+            <span className="rounded-full bg-amber-300/15 px-2 py-0.5 font-black text-amber-300">
+              🥇 {sm.top.name} +{shortK(sm.top.profit)}
+            </span>
+          )}
+          {sm.gotBack > 0 && (
+            <span className="text-[10px] text-[#9BA6D6]">
+              ↩ {sm.gotBack} {sm.gotBack === 1 ? "player" : "players"} got some back
+            </span>
+          )}
+        </div>
+      )}
+      <RoyaleStreak history={state.history} />
     </div>
   );
 }
