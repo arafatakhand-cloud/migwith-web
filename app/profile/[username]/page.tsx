@@ -686,7 +686,7 @@ export default function ProfilePage() {
                 >
                   {roleBadgeUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={roleBadgeUrl} alt="" className="mr-1 inline-block h-5 w-5 object-contain align-[-4px]" />
+                    <img src={roleBadgeUrl} alt="" className="mr-1 inline-block h-5 w-5 rounded-full object-cover align-[-4px]" />
                   ) : (
                     <>{roleEmoji} </>
                   )}
@@ -877,7 +877,7 @@ export default function ProfilePage() {
                 >
                   {roleBadgeUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={roleBadgeUrl} alt="" className="inline-block h-[18px] w-[18px] object-contain" />
+                    <img src={roleBadgeUrl} alt="" className="inline-block h-[18px] w-[18px] rounded-full object-cover" />
                   ) : (
                     <>{roleEmoji}</>
                   )}
