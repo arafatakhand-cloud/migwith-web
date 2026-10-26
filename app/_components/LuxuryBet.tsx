@@ -98,7 +98,8 @@ export type LuxuryBetState = {
   inFlight: number;
   lastBet: { character: string; amount: number } | null;
   start: () => void;
-  bet: (character: string, amount: number) => void;
+  /** typedTries > 0: a typed "!b" — waits its turn (that many tries) instead of being dropped. */
+  bet: (character: string, amount: number, typedTries?: number) => void;
   /** 2x: places my bets of this round again, so every bet is doubled. */
   double: () => void;
   doubling: boolean;
@@ -124,6 +125,7 @@ export function useLuxuryBet(
   const [doubling, setDoubling] = useState(false);
   const doublingRef = useRef(false);
   const doubleDoneAt = useRef(0);
+  const betLatest = useRef<((character: string, amount: number, typedTries?: number) => void) | null>(null);
   const endsAtRef = useRef(0);
   endsAtRef.current = phaseEndsAt;
   const noteRef = useRef(note);
@@ -199,7 +201,7 @@ export function useLuxuryBet(
       .finally(() => setStarting(false));
   };
 
-  const bet = (character: string, amount: number) => {
+  const bet = (character: string, amount: number, typedTries = 0) => {
     if (!running || phase !== "BETTING" || secondsLeft <= 0) {
       noteRef.current(`${LB_BOT}: Betting is closed. Type !start to start a new round.`);
       return;
@@ -209,8 +211,15 @@ export function useLuxuryBet(
       return;
     }
     // Fast taps are dropped silently (the server takes one bet per ~0.8 s).
+    // A TYPED "!b f 12000" is never dropped: it waits its turn and is sent then.
     const t = Date.now();
-    if (inFlight > 0 || t - lastBetSentAt.current < 850) return;
+    if (inFlight > 0 || doublingRef.current || t - lastBetSentAt.current < 850) {
+      if (typedTries > 0) {
+        const wait = Math.max(300, 900 - (t - lastBetSentAt.current));
+        setTimeout(() => betLatest.current?.(character, amount, typedTries - 1), wait);
+      }
+      return;
+    }
     lastBetSentAt.current = t;
     setInFlight((n) => n + 1);
     betCall({
@@ -232,6 +241,8 @@ export function useLuxuryBet(
       })
       .finally(() => setInFlight((n) => Math.max(0, n - 1)));
   };
+
+  betLatest.current = bet;
 
   // 2x — every character I bet on this round gets the same amount again
   // (Prince 36k → 72k), in bids of up to 12,000, one after another (the server
@@ -335,6 +346,15 @@ export function useLuxuryBet(
   };
 }
 
+/** "12000", "12,000", "12k", "1.5k" → coins (null when it isn't a whole number). */
+function parseBetAmount(raw: string): number | null {
+  const t = raw.trim().toLowerCase().replace(/,/g, "");
+  const m = /^(\d+(?:\.\d+)?)(k?)$/.exec(t);
+  if (!m) return null;
+  const n = Number(m[1]) * (m[2] ? 1000 : 1);
+  return Number.isInteger(n) ? n : null;
+}
+
 /** Room commands. Returns true when the text was a Luxury Bet command. */
 export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note: (t: string) => void): boolean {
   const parts = text.trim().split(/\s+/);
@@ -349,11 +369,11 @@ export function luxuryBetHandleCommand(state: LuxuryBetState, text: string, note
     return true;
   }
   const character = parts[1] ? characterFor(parts[1]) : null;
-  const amount = Number(parts[2]);
-  if (!character || !Number.isInteger(amount)) {
-    note(`${LB_BOT}: Usage: !b [k/q/p/f/w/a] [amount] — e.g. !b k 1000 (King, Queen, Prince, Fairy, Wizard, Angel)`);
+  const amount = parseBetAmount(parts[2] || "");
+  if (!character || amount === null) {
+    note(`${LB_BOT}: Usage: !b [k/q/p/f/w/a] [amount] — e.g. !b k 1000 or !b f 12k (King, Queen, Prince, Fairy, Wizard, Angel)`);
   } else {
-    state.bet(character, amount);
+    state.bet(character, amount, 20);
   }
   return true;
 }
