@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
@@ -45,6 +45,9 @@ export type RoyaleState = {
   round: number;
   secondsLeft: number;
   myBets: Record<string, number>;
+  /** Everyone's bets this round, per option: coins in + how many people. */
+  pool: Record<string, { coins: number; people: number }>;
+  poolTotal: number;
   lastRed: string[];
   lastBlue: string[];
   lastRedHand: string;
@@ -71,6 +74,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [phaseEndsAt, setPhaseEndsAt] = useState(0);
   const [round, setRound] = useState(0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
+  const [pool, setPool] = useState<Record<string, { coins: number; people: number }>>({});
   const [last, setLast] = useState({
     red: [] as string[],
     blue: [] as string[],
@@ -131,6 +135,32 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     });
   }, [enabled, uid, round]);
 
+  // 👥 Everyone's bets this round (royale_bets where roundNumber == round): per-option
+  // "coins in · N bettors", so a player can see their bet really landed.
+  useEffect(() => {
+    if (!enabled || !uid || round <= 0) {
+      setPool({});
+      return;
+    }
+    return onSnapshot(
+      query(collection(db, "room_game", ROYALE_ROOM, "royale_bets"), where("roundNumber", "==", round)),
+      (snap) => {
+        const out: Record<string, { coins: number; people: number }> = {};
+        snap.forEach((d) => {
+          const b = (d.get("bets") || {}) as Record<string, number>;
+          for (const [k, v] of Object.entries(b)) {
+            const n = Number(v) || 0;
+            if (n <= 0) continue;
+            const cur = out[k] || { coins: 0, people: 0 };
+            out[k] = { coins: cur.coins + n, people: cur.people + 1 };
+          }
+        });
+        setPool(out);
+      },
+      () => {}
+    );
+  }, [enabled, uid, round]);
+
   // Countdown, and nudge the server once betting time is over (like the app).
   useEffect(() => {
     if (!enabled) return;
@@ -161,6 +191,8 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     round,
     secondsLeft,
     myBets,
+    pool,
+    poolTotal: Object.values(pool).reduce((a, p) => a + p.coins, 0),
     lastRed: last.red,
     lastBlue: last.blue,
     lastRedHand: last.redHand,
@@ -254,6 +286,9 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             {state.phase === "BETTING" && state.secondsLeft > 0 ? `⏱ ${state.secondsLeft}s` : "🃏 Dealing…"}
           </span>
         )}
+        {state.running && state.poolTotal > 0 && (
+          <span className="text-xs font-bold text-white/60">pool {shortK(state.poolTotal)}</span>
+        )}
         <button
           type="button"
           onClick={() => setShowHistory((v) => !v)}
@@ -312,11 +347,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                       }`}
                     >
                       {o.label} <span className="text-xs font-semibold opacity-75">{o.mult}</span>
-                      {(state.myBets[o.key] || 0) > 0 && (
-                        <div className="text-[10px] font-semibold opacity-90">
-                          🪙 {Number(state.myBets[o.key]).toLocaleString()}
-                        </div>
-                      )}
+                      <PoolLine mine={state.myBets[o.key] || 0} pool={state.pool[o.key]} />
                     </button>
                   );
                 })}
@@ -339,9 +370,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                       }`}
                     >
                       {o.label} <span className="opacity-60">{o.mult}</span>
-                      {(state.myBets[o.key] || 0) > 0 && (
-                        <span className="ml-1 text-amber-300">🪙{Number(state.myBets[o.key]).toLocaleString()}</span>
-                      )}
+                      <PoolLine mine={state.myBets[o.key] || 0} pool={state.pool[o.key]} small />
                     </button>
                   );
                 })}
@@ -461,5 +490,22 @@ function RoyaleHistory({ history }: { history: HistoryItem[] }) {
         ))}
       </div>
     </div>
+  );
+}
+
+const shortK = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+
+/** Under an option: a gold "You 100" pill (my bet) and "22.6k in · 2 bettors" (everyone). */
+function PoolLine({ mine, pool, small }: { mine: number; pool?: { coins: number; people: number }; small?: boolean }) {
+  if (mine <= 0 && !pool) return null;
+  return (
+    <span className={`mt-0.5 flex flex-wrap items-center justify-center gap-1 font-semibold ${small ? "text-[9.5px]" : "text-[10.5px]"}`}>
+      {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 py-[1px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
+      {pool && (
+        <span className="opacity-80">
+          {shortK(pool.coins)} in · {pool.people} {pool.people === 1 ? "bettor" : "bettors"}
+        </span>
+      )}
+    </span>
   );
 }
