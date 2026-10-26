@@ -514,11 +514,11 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
     return true;
   }
 
-  // 🏷 /tag username — is this user tagged (Merchant or Mentor)? Only you see the answer.
-  if (command === "/tag") {
+  // 🏷 /checktag username — is this user tagged (Merchant or Mentor)? Only you see the answer.
+  if (command === "/checktag") {
     const who = (parts[1] || "").replace(/^@/, "").trim();
     if (!who) {
-      ctx.note("ℹ Use /tag [username] — e.g. /tag sailor");
+      ctx.note("ℹ Use /checktag [username] — e.g. /checktag sailor");
       return true;
     }
     checkUserTag({ username: who })
@@ -530,7 +530,7 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
         if (ctx.popup) ctx.popup("🏷 Tag Check", text);
         else ctx.note(`🏷 ${text}`);
       })
-      .catch((err: any) => ctx.note(`❌ /tag: ${err?.message || "User not found."}`));
+      .catch((err: any) => ctx.note(`❌ /checktag: ${err?.message || "User not found."}`));
     return true;
   }
 
