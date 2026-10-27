@@ -8,6 +8,7 @@ import { MiniCard } from "./Cards";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { useGameAutoFold } from "../../lib/gameBoxFold";
 import { LiveWatch } from "./LiveWatch";
+import { cricketSoundOn } from "./CricketCelebration";
 
 
 // 👑 MIG Royale — Red vs Blue. Server-driven (startRoyale / royaleBet /
@@ -55,6 +56,12 @@ export type RoyaleState = {
   history: HistoryItem[];
   /** The last finished round, for the result card (server: lastSummary). */
   summary: RoyaleSummary | null;
+  /** The winning hand type of the last dealt round ("Jutt", "Run" …). */
+  lastWinHand: string;
+  /** 🏆 today's biggest winners (server: todayTop). */
+  todayTop: { name: string; profit: number }[];
+  /** 📣 the newest bet in this round, for the live ticker. */
+  ticker: { text: string; at: number } | null;
   busy: boolean;
   /** My last bet this session (for ↻ Same). */
   lastBet: { option: string; amount: number } | null;
@@ -78,6 +85,9 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [myBets, setMyBets] = useState<Record<string, number>>({});
   const [lastBet, setLastBet] = useState<{ option: string; amount: number } | null>(null);
   const [summary, setSummary] = useState<RoyaleSummary | null>(null);
+  const [lastWinHand, setLastWinHand] = useState("");
+  const [todayTop, setTodayTop] = useState<{ name: string; profit: number }[]>([]);
+  const [ticker, setTicker] = useState<{ text: string; at: number } | null>(null);
   const [pool, setPool] = useState<Record<string, { coins: number; people: number }>>({});
   const [last, setLast] = useState({
     red: [] as string[],
@@ -115,6 +125,15 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
         winner: String(snap.get("lastWinner") || ""),
         round: Number(snap.get("lastRound") || 0),
       });
+      setLastWinHand(String(snap.get("lastWinHand") || ""));
+      // 🏆 today's top winners (Bangladesh day) — only today's list counts
+      const tt = snap.get("todayTop") as { day?: string; list?: { name?: string; profit?: number }[] } | undefined;
+      const today = new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
+      setTodayTop(
+        tt && tt.day === today && Array.isArray(tt.list)
+          ? tt.list.filter((x) => x && typeof x.name === "string").map((x) => ({ name: String(x.name), profit: Number(x.profit || 0) }))
+          : []
+      );
       const sm = snap.get("lastSummary") as Record<string, any> | undefined;
       setSummary(
         sm && typeof sm === "object"
@@ -152,6 +171,12 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     });
   }, [enabled, uid, round]);
 
+  const prevBets = useRef<Record<string, Record<string, number>>>({});
+  useEffect(() => {
+    prevBets.current = {};
+    setTicker(null);
+  }, [round]);
+
   // 👥 Everyone's bets this round (royale_bets where roundNumber == round): per-option
   // "coins in · N bettors", so a player can see their bet really landed.
   useEffect(() => {
@@ -162,6 +187,23 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     return onSnapshot(
       query(collection(db, "room_game", ROYALE_ROOM, "royale_bets"), where("roundNumber", "==", round)),
       (snap) => {
+        // 📣 live ticker: what changed in someone's bets ("kirey bet 20k on Run")
+        if (!snap.metadata.hasPendingWrites) {
+          for (const ch of snap.docChanges()) {
+            if (ch.type === "removed") continue;
+            const name = String(ch.doc.get("username") || "Someone");
+            const now = (ch.doc.get("bets") || {}) as Record<string, number>;
+            const before = prevBets.current[ch.doc.id] || {};
+            for (const [k, v] of Object.entries(now)) {
+              const delta = (Number(v) || 0) - (Number(before[k]) || 0);
+              if (delta > 0) {
+                const label = ROYALE_OPTIONS.find((o) => o.key === k)?.label || k;
+                setTicker({ text: `${name} bet ${shortK(delta)} on ${label}`, at: Date.now() });
+              }
+            }
+            prevBets.current[ch.doc.id] = { ...now };
+          }
+        }
         const out: Record<string, { coins: number; people: number }> = {};
         snap.forEach((d) => {
           const b = (d.get("bets") || {}) as Record<string, number>;
@@ -218,6 +260,9 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     lastRound: last.round,
     history,
     summary,
+    lastWinHand,
+    todayTop,
+    ticker,
     busy,
     lastBet,
     start: () => {
@@ -287,6 +332,16 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [showHistory, setShowHistory] = useState(false);
   const [flash, setFlash] = useState(false);
   const prevMine = useRef(0);
+  const boxRef = useRef<HTMLDivElement>(null);
+  // ⭐ My usual: a saved mix of bets, placed with one tap (this device)
+  const [usual, setUsual] = useState<[string, number][] | null>(() => readUsual());
+  const placingUsual = useRef(false);
+  // 🛑 "NO MORE BETS" stamp for a moment when betting closes
+  const [stamp, setStamp] = useState(false);
+  // 👆 squeeze: when (ms into the reveal) I peeked the last card myself
+  const [peekAt, setPeekAt] = useState<number | null>(null);
+  // 🎉 my win of the last round (float + sparks)
+  const [won, setWon] = useState<{ round: number; coins: number } | null>(null);
 
   // A new round clears the pick.
   useEffect(() => setSelected(null), [state.round]);
@@ -298,11 +353,14 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   useEffect(() => {
     if (myTotal > prevMine.current) {
       setFlash(true);
+      royaleSound("chip");
+      if (state.lastBet) flyChip(boxRef.current, state.lastBet.amount, state.lastBet.option);
       const t = setTimeout(() => setFlash(false), 1500);
       prevMine.current = myTotal;
       return () => clearTimeout(t);
     }
     prevMine.current = myTotal;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myTotal]);
 
   // 🃏 Card reveal: starts when the round turns SETTLING and runs its ~5 s
@@ -312,9 +370,11 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   useEffect(() => {
     if (state.running && state.phase === "SETTLING" && state.lastRed.length === 3 && reveal?.round !== state.round) {
       setReveal({ round: state.round, start: Date.now() });
+      setPeekAt(null);
     }
   }, [state.running, state.phase, state.round, state.lastRed.length, reveal?.round]);
-  const revealing = !!reveal && Date.now() - reveal.start < REVEAL_MS;
+  const lastOpen = peekAt ?? BLUE_FLIPS[2];
+  const revealing = !!reveal && Date.now() - reveal.start < lastOpen + 1300;
   useEffect(() => {
     if (!revealing) return;
     const t = setInterval(() => setTick((n) => n + 1), 120);
@@ -322,6 +382,30 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   }, [revealing]);
 
   const canBet = state.running && state.phase === "BETTING" && state.secondsLeft > 0;
+  // 🛑 betting just closed → stamp
+  const wasBetting = useRef(false);
+  useEffect(() => {
+    if (wasBetting.current && !canBet && state.running) {
+      setStamp(true);
+      const t = setTimeout(() => setStamp(false), 1300);
+      wasBetting.current = canBet;
+      return () => clearTimeout(t);
+    }
+    wasBetting.current = canBet;
+  }, [canBet, state.running]);
+  // 🎉 the reveal finished → did I win? (my bets of that round × the result)
+  useEffect(() => {
+    if (revealing || !reveal || won?.round === reveal.round || reveal.round !== state.round) return;
+    const coins = myWinOf(state.myBets, state.lastWinner, state.lastWinHand);
+    setWon({ round: reveal.round, coins });
+    if (coins > 0) {
+      royaleSound("win");
+      try {
+        navigator.vibrate?.(120);
+      } catch {}
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealing, reveal?.round]);
   const opt = ROYALE_OPTIONS.find((o) => o.key === selected);
   const ready = canBet && !!opt && !state.busy;
   const tap = (key: string) => setSelected(key);
@@ -337,9 +421,22 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
   return (
     <div
-      className="m-1.5 rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] shadow-[0_10px_30px_rgba(8,12,30,.35)]"
+      ref={boxRef}
+      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] shadow-[0_10px_30px_rgba(8,12,30,.35)] ${
+        canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
+      }`}
       style={{ background: "radial-gradient(130% 80% at 50% 0%, #26306A 0%, #141A3A 55%, #0D1128 100%)" }}
     >
+      {stamp && (
+        <div className="royale-stamp pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#080A19]/55 text-[22px] font-black tracking-[1px] text-amber-300">
+          NO MORE BETS
+        </div>
+      )}
+      {won && won.coins > 0 && won.round === state.lastRound && !state.running && (
+        <span key={won.round} className="royale-float pointer-events-none absolute right-3 top-9 z-20 text-[15px] font-black text-green-400">
+          +{won.coins.toLocaleString("en-US")} 🎉
+        </span>
+      )}
       {/* Header: ⏱ ring · title / round · pool · 📊 · − */}
       <div className="flex items-center gap-2">
         <div className="relative h-8 w-8 shrink-0">
@@ -384,9 +481,24 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {showHistory && <RoyaleHistory history={state.history} />}
 
+      {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
+      {!collapsed && state.running && state.phase === "BETTING" && (
+        <div className="mt-1.5 flex h-[22px] items-center gap-1.5 overflow-hidden rounded-full bg-black/30 px-2.5 text-[11px] font-bold text-[#C9D2F2]">
+          <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
+          <span key={state.ticker?.at || 0} className="royale-tick truncate">
+            {state.ticker ? state.ticker.text : "Waiting for bets…"}
+          </span>
+        </div>
+      )}
+
       {!collapsed &&
         (revealing && reveal ? (
-          <RoyaleReveal state={state} elapsed={Date.now() - reveal.start} />
+          <RoyaleReveal
+            state={state}
+            elapsed={Date.now() - reveal.start}
+            lastOpen={lastOpen}
+            onPeek={() => reveal && setPeekAt((p) => p ?? Math.max(BLUE_FLIPS[1] + 200, Date.now() - reveal.start))}
+          />
         ) : state.running && state.phase === "SETTLING" ? (
           <p className="py-6 text-center text-sm font-bold text-[#9BA6D6]">🃏 Dealing cards…</p>
         ) : !state.running ? (
@@ -415,6 +527,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 return (
                   <button
                     key={o.key}
+                    data-opt={o.key}
                     type="button"
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
@@ -472,6 +585,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 return (
                   <button
                     key={o.key}
+                    data-opt={o.key}
                     type="button"
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
@@ -483,6 +597,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                     {hot === o.key && <span className="absolute -right-0.5 -top-2 text-[11px]">🔥</span>}
                     <b className="block truncate text-[10.5px] font-black">{o.key === "doublerun" ? "D.Run" : o.label}</b>
                     <em className="block text-[14px] font-black not-italic leading-tight text-amber-300">{o.mult}</em>
+                    <small className="block text-[8px] font-extrabold text-[#C4B5FD]">{HAND_ODDS[o.key]}</small>
                     <small className="block truncate text-[8.5px] font-bold tabular-nums text-[#9BA6D6]">{pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "—"}</small>
                     {mine > 0 && <span className="mt-0.5 inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
                   </button>
@@ -496,6 +611,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               {CHIPS.map((c) => (
                 <button
                   key={c}
+                  data-chip={c}
                   type="button"
                   onClick={() => setAmount(c)}
                   className={`flex-1 rounded-full border py-1 text-[11px] font-black ${
@@ -508,7 +624,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             </div>
 
             {/* ↻ Same + Bet */}
-            <div className="mt-1.5 grid grid-cols-[auto_1fr] gap-1.5">
+            <div className="mt-1.5 grid grid-cols-[auto_auto_1fr] gap-1.5">
               <button
                 type="button"
                 disabled={!canBet || !state.lastBet || state.busy}
@@ -518,6 +634,44 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               >
                 ↻ Same
               </button>
+              {/* ⭐ My usual: save this round's mix once, then one tap places it every round */}
+              <span className="flex">
+                <button
+                  type="button"
+                  disabled={!canBet || state.busy || (!usual && Object.keys(state.myBets).length === 0)}
+                  onClick={() => {
+                    if (!usual) {
+                      const mix = Object.entries(state.myBets).filter(([, v]) => Number(v) > 0).map(([k, v]) => [k, Number(v)] as [string, number]);
+                      if (mix.length) {
+                        saveUsual(mix);
+                        setUsual(mix);
+                      }
+                      return;
+                    }
+                    if (placingUsual.current) return;
+                    placingUsual.current = true;
+                    usual.forEach(([o, a], i) => setTimeout(() => state.bet(o, a), i * 1300));
+                    setTimeout(() => (placingUsual.current = false), usual.length * 1300);
+                  }}
+                  title={usual ? usual.map(([o, a]) => `${shortK(a)} ${o}`).join(" + ") : "Bet first, then tap to save this mix"}
+                  className="rounded-l-xl border border-amber-300/40 bg-amber-300/10 px-2 text-[11px] font-black text-amber-200 disabled:opacity-40"
+                >
+                  {usual ? `⭐ ${usual.map(([o, a]) => `${shortK(a)} ${ROYALE_OPTIONS.find((x) => x.key === o)?.label || o}`).join(" + ").slice(0, 22)}` : "⭐ Save usual"}
+                </button>
+                {usual && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      saveUsual(null);
+                      setUsual(null);
+                    }}
+                    title="Forget my usual"
+                    className="rounded-r-xl border border-l-0 border-amber-300/40 bg-amber-300/10 px-1.5 text-[11px] font-black text-amber-200"
+                  >
+                    ✕
+                  </button>
+                )}
+              </span>
               <button
                 type="button"
                 disabled={!ready}
@@ -538,7 +692,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               </button>
             </div>
 
-            <RoyaleStreak history={state.history} />
+            <RoyaleRoad history={state.history} />
+            <RoyaleTodayTop list={state.todayTop} />
           </>
         ))}
     </div>
@@ -561,18 +716,30 @@ function CardBack({ size = "md" }: { size?: "md" | "lg" }) {
 
 /** 🃏 The reveal: "Revealing Red…" → three red cards turn, then "Blue hand…" →
  *  two blue cards, then "the last card…" slowly → who won. */
-function RoyaleReveal({ state, elapsed }: { state: RoyaleState; elapsed: number }) {
+function RoyaleReveal({ state, elapsed, lastOpen, onPeek }: { state: RoyaleState; elapsed: number; lastOpen: number; onPeek: () => void }) {
+  const flips = [BLUE_FLIPS[0], BLUE_FLIPS[1], lastOpen];
   const redShown = RED_FLIPS.filter((t) => elapsed >= t).length;
-  const blueShown = BLUE_FLIPS.filter((t) => elapsed >= t).length;
-  const done = elapsed >= BLUE_FLIPS[2] + 500;
+  const blueShown = flips.filter((t) => elapsed >= t).length;
+  const done = elapsed >= lastOpen + 500;
+  // 🔊 a soft "flip" each time a card turns
+  const shownNow = redShown + blueShown;
+  const lastShown = useRef(0);
+  useEffect(() => {
+    if (shownNow > lastShown.current) royaleSound("flip");
+    lastShown.current = shownNow;
+  }, [shownNow]);
+  // 👆 squeeze: drag the last Blue card up to peek at it
+  const [lift, setLift] = useState(0);
+  const dragY = useRef<number | null>(null);
+  const canSqueeze = blueShown === 2 && elapsed >= BLUE_FLIPS[1];
   const title = done
     ? state.lastWinner === "tie"
       ? "🤝 It's a tie!"
       : `🏆 ${state.lastWinner === "red" ? "Red" : "Blue"} wins!`
     : elapsed < 2000
       ? "Revealing Red…"
-      : blueShown >= 2
-        ? "Blue hand — the last card…"
+      : canSqueeze
+        ? "Blue's last card — drag it up to peek 👆"
         : "Revealing Blue…";
   const side = (key: "red" | "blue", cards: string[], shown: number, hand: string) => {
     const red = key === "red";
@@ -588,7 +755,39 @@ function RoyaleReveal({ state, elapsed }: { state: RoyaleState; elapsed: number 
       >
         <span className={`text-[11px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red hand" : "🔵 Blue hand"}</span>
         <span className="mt-1 flex gap-1">
-          {cards.map((c, i) => (i < shown ? <span key={`f${i}`} className="fx-pop inline-block"><MiniCard card={c} size="md" /></span> : <CardBack key={`b${i}`} />))}
+          {cards.map((c, i) =>
+            i < shown ? (
+              <span key={`f${i}`} className="fx-pop inline-block">
+                <MiniCard card={c} size="md" />
+              </span>
+            ) : !red && i === 2 && canSqueeze ? (
+              <span
+                key="sq"
+                className="relative inline-block cursor-grab touch-none overflow-hidden rounded-md"
+                onPointerDown={(e) => {
+                  dragY.current = e.clientY;
+                  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                }}
+                onPointerMove={(e) => {
+                  if (dragY.current === null) return;
+                  const d = Math.max(0, dragY.current - e.clientY);
+                  setLift(Math.min(100, d * 2.5));
+                  if (d > 34) onPeek();
+                }}
+                onPointerUp={() => {
+                  dragY.current = null;
+                  setLift(0);
+                }}
+              >
+                <MiniCard card={c} size="md" />
+                <span className="absolute inset-0" style={{ transform: `translateY(${-lift}%)` }}>
+                  <CardBack />
+                </span>
+              </span>
+            ) : (
+              <CardBack key={`b${i}`} />
+            )
+          )}
         </span>
         <span className="mt-1 h-4 text-[10.5px] font-bold text-[#DCE3FF]">{shown === 3 ? hand : ""}</span>
       </div>
@@ -662,15 +861,16 @@ function RoyaleResultCard({ state }: { state: RoyaleState }) {
           )}
         </div>
       )}
-      <RoyaleStreak history={state.history} />
+      <RoyaleRoad history={state.history} />
+      <RoyaleTodayTop list={state.todayTop} />
     </div>
   );
 }
 
-/** The last results as dots, with Red / Blue counts and the current streak. */
-function RoyaleStreak({ history }: { history: HistoryItem[] }) {
+/** 🔵🔴 Bead road: the last 32 results in a 4-row grid (oldest left), with counts and the streak. */
+function RoyaleRoad({ history }: { history: HistoryItem[] }) {
   if (history.length === 0) return null;
-  const list = history.slice(0, 14);
+  const list = history.slice(0, 32).reverse();
   const red = history.filter((h) => h.winner === "red").length;
   const blue = history.filter((h) => h.winner === "blue").length;
   let streak = 0;
@@ -680,22 +880,125 @@ function RoyaleStreak({ history }: { history: HistoryItem[] }) {
   }
   const w = history[0].winner;
   return (
-    <div className="mt-1.5 flex items-center gap-[3px] rounded-[10px] bg-black/25 px-2 py-1">
-      {list
-        .slice()
-        .reverse()
-        .map((h, i) => (
+    <div className="mt-1.5 rounded-[10px] bg-black/25 px-2 py-1.5">
+      <div className="grid grid-flow-col grid-rows-4 justify-start gap-[3px]" style={{ gridAutoColumns: "11px" }}>
+        {list.map((h, i) => (
           <i
             key={i}
             title={`#${h.round} ${h.winner} — ${h.hand}`}
-            className={`h-[11px] w-[11px] shrink-0 rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+            className={`h-[11px] w-[11px] rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
           />
         ))}
-      <span className="ml-auto whitespace-nowrap rounded-full bg-blue-500/20 px-1.5 text-[9.5px] font-black text-[#8DBBFF]">
-        {w === "red" || w === "blue" ? `${w === "red" ? "Red" : "Blue"} ×${streak} · ` : ""}🔴{red} 🔵{blue}
-      </span>
+      </div>
+      <div className="mt-1 flex justify-between text-[9.5px] font-black tabular-nums text-[#9BA6D6]">
+        <span>
+          🔴 {red} · 🔵 {blue}
+        </span>
+        {(w === "red" || w === "blue") && <span className="text-[#8DBBFF]">{`${w === "red" ? "Red" : "Blue"} ×${streak}`}</span>}
+      </div>
     </div>
   );
+}
+
+/** 🏆 Today's three biggest winners (server: todayTop, Bangladesh day). */
+function RoyaleTodayTop({ list }: { list: { name: string; profit: number }[] }) {
+  if (list.length === 0) return null;
+  const medals = ["🥇", "🥈", "🥉"];
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center justify-center gap-1 text-[10px] font-black">
+      <span className="text-[#9BA6D6]">🏆 Today</span>
+      {list.slice(0, 3).map((x, i) => (
+        <span key={x.name} className="rounded-full bg-amber-300/15 px-1.5 text-amber-300">
+          {medals[i]} {x.name} +{shortK(x.profit)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// Real chance of each hand type in a 3-card deal (shown under the hand tiles).
+const HAND_ODDS: Record<string, string> = { jutt: "17%", color: "5%", run: "3%", doublerun: "0.2%", tirel: "0.2%" };
+
+/** My winnings of a round from my bets and the result (same rules as the server). */
+function myWinOf(bets: Record<string, number>, winner: string, winHand: string): number {
+  let win = 0;
+  for (const [k, v] of Object.entries(bets)) {
+    const amt = Number(v) || 0;
+    const o = ROYALE_OPTIONS.find((x) => x.key === k);
+    if (!o || amt <= 0) continue;
+    const mult = parseFloat(o.mult) || 0;
+    if (o.side) win += winner === "tie" ? amt : k === winner ? Math.floor(amt * mult) : 0;
+    else if (o.label === winHand) win += Math.floor(amt * mult);
+  }
+  return win;
+}
+
+const USUAL_KEY = "migwith.royaleUsual";
+function readUsual(): [string, number][] | null {
+  try {
+    const v = JSON.parse(localStorage.getItem(USUAL_KEY) || "null");
+    return Array.isArray(v) && v.length ? (v as [string, number][]) : null;
+  } catch {
+    return null;
+  }
+}
+function saveUsual(v: [string, number][] | null) {
+  try {
+    if (v) localStorage.setItem(USUAL_KEY, JSON.stringify(v));
+    else localStorage.removeItem(USUAL_KEY);
+  } catch {}
+}
+
+/** 🪙 A chip flies from the chip row onto the tile I bet on. */
+function flyChip(box: HTMLElement | null, amount: number, option: string) {
+  if (!box || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  const from = box.querySelector(`[data-chip="${amount}"]`) || box.querySelector("[data-chip]");
+  const to = box.querySelector(`[data-opt="${option}"]`);
+  if (!from || !to) return;
+  const b = box.getBoundingClientRect();
+  const f = from.getBoundingClientRect();
+  const t = to.getBoundingClientRect();
+  const chip = document.createElement("span");
+  chip.className = "royale-chip";
+  chip.style.left = `${f.left - b.left + f.width / 2 - 11}px`;
+  chip.style.top = `${f.top - b.top + f.height / 2 - 11}px`;
+  box.appendChild(chip);
+  chip.animate(
+    [
+      { transform: "translate(0,0) scale(1)", opacity: 1 },
+      { transform: `translate(${t.left - f.left + (t.width - f.width) / 2}px, ${t.top - f.top + (t.height - f.height) / 2}px) scale(.8)`, opacity: 0.9 },
+    ],
+    { duration: 450, easing: "cubic-bezier(.3,.7,.3,1)" }
+  ).onfinish = () => chip.remove();
+}
+
+/** 🔊 Short game sounds made on the phone (no files): chip click, card flip, win jingle. Off with 🔇. */
+let audioCtx: AudioContext | null = null;
+function royaleSound(kind: "chip" | "flip" | "win") {
+  if (typeof window === "undefined" || !cricketSoundOn()) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || (window as any).webkitAudioContext)();
+    const ctx = audioCtx!;
+    const tone = (freq: number, at: number, dur: number, type: OscillatorType, vol: number) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = type;
+      o.frequency.value = freq;
+      g.gain.setValueAtTime(vol, ctx.currentTime + at);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + at);
+      o.stop(ctx.currentTime + at + dur + 0.02);
+    };
+    if (kind === "chip") {
+      tone(2100, 0, 0.05, "square", 0.05);
+      tone(1500, 0.04, 0.06, "square", 0.04);
+    } else if (kind === "flip") {
+      tone(420, 0, 0.07, "triangle", 0.08);
+    } else {
+      [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.09, 0.22, "triangle", 0.12));
+    }
+  } catch {}
 }
 
 function RoyaleLastResult({ state }: { state: RoyaleState }) {

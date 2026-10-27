@@ -1294,3 +1294,15 @@ html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip.mh-role 
    Dark Night turns them light so chat lines stay readable on the dark page. */
 :root { --gift-black: #1F1F24; --room-ink: #0B1F3A; --room-link: #174EA6; --room-bet: #1565E8; --room-red: #B3261E; }
 html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --room-link: #8AB4FF; --room-bet: #6EA8FF; --room-red: #FF8A80; }
+
+/* 👑 MIG Royale: last-5-seconds pulse, "NO MORE BETS" stamp, win float, flying chip, ticker slide */
+.royale-hurry { animation: royale-hb 1s infinite; }
+@keyframes royale-hb { 0%, 100% { box-shadow: 0 10px 30px rgba(8,12,30,.35); } 50% { box-shadow: 0 0 0 2px rgba(239,68,68,.65), 0 10px 30px rgba(8,12,30,.35); } }
+.royale-stamp { animation: royale-pop .3s ease-out; }
+@keyframes royale-pop { from { transform: scale(1.3); opacity: 0; } }
+.royale-float { animation: royale-up 1.8s ease-out forwards; }
+@keyframes royale-up { 0% { opacity: 0; transform: translateY(8px); } 15% { opacity: 1; } 100% { opacity: 0; transform: translateY(-28px); } }
+.royale-chip { position: absolute; z-index: 30; width: 22px; height: 22px; border-radius: 50%; border: 2px dashed #fff; background: #F5C842; pointer-events: none; }
+.royale-tick { animation: royale-slide .35s ease-out; }
+@keyframes royale-slide { from { transform: translateY(12px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .royale-hurry, .royale-stamp, .royale-float, .royale-tick { animation: none; } }

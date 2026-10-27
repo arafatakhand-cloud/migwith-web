@@ -1215,6 +1215,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       if (m.type !== "room_entry" && m.type !== "room_leave" && chatHideBotLine(hideBots, m.text, roomName, myName)) return false;
       // 🔒 MIG Royale's "Fair round — cards were locked before betting." line is hidden (miglife asked)
       if (m.text.includes("Fair round — cards were locked before betting")) return false;
+      // 📣 MIG Royale's "X has N coins on the table — …" bet lines are shown in the box's live ticker instead
+      if (roomName === ROYALE_ROOM && /^MIG Royale Bot: .+ has [\d,]+ coins on the table/.test(m.text)) return false;
       if (tableGame && m.type !== "room_entry" && m.type !== "room_leave" && hideGameTableLine(tableGame, m.text)) return false;
       if (blocked.size && !m.local && m.senderUid !== myUid) {
         const who = (m.sender || (m.text.indexOf(":") > 0 ? m.text.slice(0, m.text.indexOf(":")) : "")).trim().toLowerCase();
