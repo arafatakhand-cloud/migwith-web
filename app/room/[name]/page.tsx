@@ -2345,7 +2345,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     if (roomInfo.superMods.includes(k)) return <span title="Super Mod">🌟</span>;
                     if (roomInfo.moderators.includes(k))
                       return (
-                        <span title="Moderator" className="shrink-0 text-[13px] font-black leading-none text-[#F57C00]">
+                        <span
+                          title="Moderator"
+                          className="pointer-events-none inline-grid h-[18px] min-w-[18px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#FFB74D] to-[#F57C00] px-1.5 text-[10px] font-black leading-none text-white shadow-[0_1px_0_#C25E00,inset_0_1px_0_rgba(255,255,255,.45)]"
+                        >
                           M
                         </span>
                       );
