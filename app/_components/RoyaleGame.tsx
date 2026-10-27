@@ -8,7 +8,6 @@ import { MiniCard } from "./Cards";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { useGameAutoFold } from "../../lib/gameBoxFold";
 import { LiveWatch } from "./LiveWatch";
-import { cricketSoundOn } from "./CricketCelebration";
 
 
 // 👑 MIG Royale — Red vs Blue. Server-driven (startRoyale / royaleBet /
@@ -62,6 +61,8 @@ export type RoyaleState = {
   todayTop: { name: string; profit: number }[];
   /** 📣 the newest bet in this round, for the live ticker. */
   ticker: { text: string; at: number } | null;
+  /** 📊 Live score: everyone's bets this round, biggest first. */
+  bettors: { name: string; options: string[]; total: number }[];
   busy: boolean;
   /** My last bet this session (for ↻ Same). */
   lastBet: { option: string; amount: number } | null;
@@ -88,6 +89,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [lastWinHand, setLastWinHand] = useState("");
   const [todayTop, setTodayTop] = useState<{ name: string; profit: number }[]>([]);
   const [ticker, setTicker] = useState<{ text: string; at: number } | null>(null);
+  const [bettors, setBettors] = useState<{ name: string; options: string[]; total: number }[]>([]);
   const [pool, setPool] = useState<Record<string, { coins: number; people: number }>>({});
   const [last, setLast] = useState({
     red: [] as string[],
@@ -182,6 +184,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   useEffect(() => {
     if (!enabled || !uid || round <= 0) {
       setPool({});
+      setBettors([]);
       return;
     }
     return onSnapshot(
@@ -205,6 +208,18 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
           }
         }
         const out: Record<string, { coins: number; people: number }> = {};
+        const list: { name: string; options: string[]; total: number }[] = [];
+        snap.forEach((d) => {
+          const bb = (d.get("bets") || {}) as Record<string, number>;
+          const opts = Object.entries(bb).filter(([, v]) => Number(v) > 0);
+          if (opts.length)
+            list.push({
+              name: String(d.get("username") || "Player"),
+              options: opts.map(([k]) => ROYALE_OPTIONS.find((o) => o.key === k)?.label || k),
+              total: opts.reduce((a, [, v]) => a + Number(v), 0),
+            });
+        });
+        setBettors(list.sort((a, b) => b.total - a.total));
         snap.forEach((d) => {
           const b = (d.get("bets") || {}) as Record<string, number>;
           for (const [k, v] of Object.entries(b)) {
@@ -263,6 +278,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     lastWinHand,
     todayTop,
     ticker,
+    bettors,
     busy,
     lastBet,
     start: () => {
@@ -330,6 +346,11 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [amount, setAmount] = useRememberedAmount("royale_bet", 500);
   const [collapsed, setCollapsed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  // ⋯ menu (bottom sheet) · 📊 live score panel · ❓ how to play
+  const [menu, setMenu] = useState(false);
+  const [liveScore, setLiveScore] = useState(false);
+  const [help, setHelp] = useState(false);
+  const prefs = useRoyalePrefs();
   const [flash, setFlash] = useState(false);
   const prevMine = useRef(0);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -398,12 +419,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
     if (revealing || !reveal || won?.round === reveal.round || reveal.round !== state.round) return;
     const coins = myWinOf(state.myBets, state.lastWinner, state.lastWinHand);
     setWon({ round: reveal.round, coins });
-    if (coins > 0) {
-      royaleSound("win");
-      try {
-        navigator.vibrate?.(120);
-      } catch {}
-    }
+    if (coins > 0) royaleSound("win");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [revealing, reveal?.round]);
   const opt = ROYALE_OPTIONS.find((o) => o.key === selected);
@@ -465,19 +481,117 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             <span className="text-[8.5px] font-extrabold tracking-[1px] text-[#9BA6D6]">POOL</span>
           </div>
         )}
+        {collapsed && state.running && <LiveWatch onWatch={() => setCollapsed(false)} />}
+        {/* ⋯ = score, help and settings · ⌄ = fold */}
         <button
           type="button"
-          onClick={() => setShowHistory((v) => !v)}
-          title="Last results"
-          className={`${state.running && state.poolTotal > 0 ? "" : "ml-auto"} rounded-lg border border-white/15 px-1.5 text-sm hover:bg-white/10`}
+          onClick={() => setMenu(true)}
+          title="Score, help and settings"
+          className={`${state.running && state.poolTotal > 0 ? "" : "ml-auto"} grid h-7 w-8 place-items-center rounded-lg bg-white/10 text-[15px] font-black leading-none hover:bg-white/15`}
         >
-          📊
+          ⋯
         </button>
-        {collapsed && state.running && <LiveWatch onWatch={() => setCollapsed(false)} />}
-        <button type="button" onClick={() => setCollapsed((v) => !v)} className="rounded-lg border border-white/15 px-2 text-sm text-white/70 hover:bg-white/10">
-          {collapsed ? "+" : "−"}
+        <button
+          type="button"
+          onClick={() => setCollapsed((v) => !v)}
+          title={collapsed ? "Open" : "Fold"}
+          className="grid h-7 w-7 place-items-center rounded-lg border border-white/15 text-[12px] text-white/80 hover:bg-white/10"
+        >
+          {collapsed ? "⌃" : "⌄"}
         </button>
       </div>
+
+      {/* 📊 Live score: who bet what this round */}
+      {liveScore && !collapsed && (
+        <div className="mt-1.5 rounded-[12px] bg-black/30 p-2">
+          <div className="flex items-center text-[11px] font-black">
+            <span>📊 Live score</span>
+            <span className="ml-2 text-[10px] font-bold text-[#9BA6D6]">
+              Pool {shortK(state.poolTotal)} · {state.bettors.length} {state.bettors.length === 1 ? "bettor" : "bettors"}
+            </span>
+            <button type="button" onClick={() => setLiveScore(false)} className="ml-auto rounded-full bg-white/10 px-2 text-[10px]">
+              ✕ Close
+            </button>
+          </div>
+          {state.bettors.length === 0 ? (
+            <p className="py-2 text-center text-[11px] text-[#9BA6D6]">No bets yet this round.</p>
+          ) : (
+            <div className="mt-1 max-h-32 overflow-y-auto">
+              <div className="flex text-[9.5px] font-extrabold uppercase tracking-wide text-[#9BA6D6]">
+                <span className="flex-1">Bettor</span>
+                <span>Stake</span>
+              </div>
+              {state.bettors.map((b) => (
+                <div key={b.name} className="flex items-center gap-2 border-t border-white/5 py-1 text-[11px]">
+                  <span className="min-w-0 flex-1 truncate">
+                    <b>{b.name}</b> <span className="text-[#9BA6D6]">on {b.options.join(", ")}</span>
+                  </span>
+                  <b className="tabular-nums">{b.total.toLocaleString("en-US")}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ⋯ menu: a sheet from the bottom of the box */}
+      {menu && (
+        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-end bg-black/50" onClick={() => setMenu(false)}>
+          <div className="w-full max-w-md rounded-t-[20px] bg-[#F5F7FC] p-2.5 pb-[calc(env(safe-area-inset-bottom)+12px)] text-[#1B2440]" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-1.5 flex items-center gap-2 px-1">
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-100 text-[15px]">👑</span>
+              <span className="leading-tight">
+                <b className="block text-[14px]">MIG Royale</b>
+                <span className="text-[11px] text-[#6B7591]">Score, help and settings</span>
+              </span>
+              <button type="button" onClick={() => setMenu(false)} className="ml-auto px-2 text-[16px] text-[#6B7591]">
+                ✕
+              </button>
+            </div>
+            {(
+              [
+                ["📊", "Live score", liveScore ? "✓" : "", () => (setLiveScore((v) => !v), setMenu(false))],
+                ["🎲", "Last results", "", () => (setShowHistory((v) => !v), setMenu(false))],
+                ["❓", "How to play", "", () => (setHelp(true), setMenu(false))],
+                ["👁", "Show everyone's bets in chat", prefs.betLines ? "✓" : "", () => setRoyalePref("betLines", !prefs.betLines)],
+                ["💬", "Hide game messages in chat", prefs.hideGame ? "✓" : "", () => setRoyalePref("hideGame", !prefs.hideGame)],
+                [prefs.sound === "on" ? "🔊" : prefs.sound === "vibrate" ? "📳" : "🔇", `Sound: ${prefs.sound === "vibrate" ? "vibrate only" : prefs.sound}`, "", () =>
+                  setRoyalePref("sound", prefs.sound === "on" ? "vibrate" : prefs.sound === "vibrate" ? "off" : "on")],
+              ] as [string, string, string, () => void][]
+            ).map(([icon, label, check, run]) => (
+              <button
+                key={label}
+                type="button"
+                onClick={run}
+                className="mb-1 flex w-full items-center gap-3 rounded-xl bg-white px-3 py-2.5 text-left text-[13px] font-bold shadow-[0_1px_2px_rgba(0,0,0,.05)]"
+              >
+                <span className="w-5 text-center">{icon}</span>
+                <span className="flex-1">{label}</span>
+                <span className="font-black text-green-600">{check}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ❓ How to play */}
+      {help && (
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/60 p-4" onClick={() => setHelp(false)}>
+         <div className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-[18px] bg-[#0D1128] p-4 text-[12px] leading-relaxed text-[#EAF0FF]">
+          <p className="text-[14px] font-black text-amber-300">👑 How to play MIG Royale</p>
+          <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[#DCE3FF]">
+            <li>Type !start or tap Start. Betting is open for 45 seconds.</li>
+            <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.9x (your stake included).</li>
+            <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
+            <li>A hand bet pays only when the WINNING side has that hand.</li>
+            <li>Tie: Red and Blue bets come back.</li>
+            <li>Min 100 · max 200,000 per option a round. Double-tap a tile to bet at once.</li>
+            <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
+          </ol>
+          <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
+         </div>
+        </div>
+      )}
 
       {showHistory && <RoyaleHistory history={state.history} />}
 
@@ -992,7 +1106,16 @@ function flyChip(box: HTMLElement | null, amount: number, option: string) {
 /** 🔊 Short game sounds made on the phone (no files): chip click, card flip, win jingle. Off with 🔇. */
 let audioCtx: AudioContext | null = null;
 function royaleSound(kind: "chip" | "flip" | "win") {
-  if (typeof window === "undefined" || !cricketSoundOn()) return;
+  if (typeof window === "undefined") return;
+  const mode = readRoyalePrefs().sound;
+  if (mode !== "on") {
+    if (mode === "vibrate" && kind !== "flip") {
+      try {
+        navigator.vibrate?.(kind === "win" ? 120 : 20);
+      } catch {}
+    }
+    return;
+  }
   try {
     audioCtx = audioCtx || new (window.AudioContext || (window as any).webkitAudioContext)();
     const ctx = audioCtx!;
@@ -1093,3 +1216,39 @@ function RoyaleHistory({ history }: { history: HistoryItem[] }) {
 }
 
 const shortK = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(n);
+
+
+// ⚙ MIG Royale settings on this device (⋯ menu): bet lines in chat, hide game messages, sound.
+type RoyalePrefs = { betLines: boolean; hideGame: boolean; sound: "on" | "vibrate" | "off" };
+const ROYALE_PREFS_KEY = "migwith.royalePrefs";
+const prefsListeners = new Set<() => void>();
+let prefsCache: RoyalePrefs | null = null;
+export function readRoyalePrefs(): RoyalePrefs {
+  if (prefsCache) return prefsCache;
+  let v: Partial<RoyalePrefs> = {};
+  try {
+    v = JSON.parse(localStorage.getItem(ROYALE_PREFS_KEY) || "{}");
+  } catch {}
+  prefsCache = { betLines: v.betLines === true, hideGame: v.hideGame === true, sound: v.sound === "vibrate" || v.sound === "off" ? v.sound : "on" };
+  return prefsCache;
+}
+export function setRoyalePref<K extends keyof RoyalePrefs>(k: K, val: RoyalePrefs[K]) {
+  prefsCache = { ...readRoyalePrefs(), [k]: val };
+  try {
+    localStorage.setItem(ROYALE_PREFS_KEY, JSON.stringify(prefsCache));
+  } catch {}
+  prefsListeners.forEach((f) => f());
+}
+/** Live settings (re-renders when changed from the ⋯ menu). */
+export function useRoyalePrefs(): RoyalePrefs {
+  const [p, setP] = useState<RoyalePrefs>(() => (typeof window === "undefined" ? { betLines: false, hideGame: false, sound: "on" } : readRoyalePrefs()));
+  useEffect(() => {
+    const f = () => setP(readRoyalePrefs());
+    prefsListeners.add(f);
+    f();
+    return () => {
+      prefsListeners.delete(f);
+    };
+  }, []);
+  return p;
+}

@@ -83,7 +83,7 @@ import {
   luxuryBetHandleCommand,
   useLuxuryBet,
 } from "../../_components/LuxuryBet";
-import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale } from "../../_components/RoyaleGame";
+import { ROYALE_ROOM, RoyaleTable, royaleHandleCommand, useRoyale, useRoyalePrefs } from "../../_components/RoyaleGame";
 import {
   TEEN_PATTI_ROOM,
   TeenPattiTable,
@@ -514,6 +514,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [onlyMyBets, onlyMyBetsKey]);
   // 👑 MIG Royale round + bets (only in the MIG Royale room).
   const royale = useRoyale(roomName === ROYALE_ROOM, user?.uid, note);
+  const royalePrefs = useRoyalePrefs();
   // 🎴 Teen Patti table (only in the Teen Patti room).
   const teenPatti = useTeenPatti(roomName === TEEN_PATTI_ROOM, user?.uid, note);
   // 🤖 LowCard / Cricket Bot switched on in THIS room (/bot lowcard,
@@ -1216,7 +1217,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // 🔒 MIG Royale's "Fair round — cards were locked before betting." line is hidden (miglife asked)
       if (m.text.includes("Fair round — cards were locked before betting")) return false;
       // 📣 MIG Royale's "X has N coins on the table — …" bet lines are shown in the box's live ticker instead
-      if (roomName === ROYALE_ROOM && /^MIG Royale Bot: .+ has [\d,]+ coins on the table/.test(m.text)) return false;
+      if (roomName === ROYALE_ROOM && !royalePrefs.betLines && /^MIG Royale Bot: .+ has [\d,]+ coins on the table/.test(m.text)) return false;
+      // 💬 "Hide game messages in chat" (⋯ menu): every MIG Royale Bot line hides (the box shows it all)
+      if (roomName === ROYALE_ROOM && royalePrefs.hideGame && m.text.startsWith("MIG Royale Bot:")) return false;
       if (tableGame && m.type !== "room_entry" && m.type !== "room_leave" && hideGameTableLine(tableGame, m.text)) return false;
       if (blocked.size && !m.local && m.senderUid !== myUid) {
         const who = (m.sender || (m.text.indexOf(":") > 0 ? m.text.slice(0, m.text.indexOf(":")) : "")).trim().toLowerCase();
@@ -1229,7 +1232,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, roomName]);
+  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, roomName, royalePrefs]);
 
   // ✋ New lines never drag you down while you read older ones: they are
   // counted for the "⬇ new messages" pill instead (your own lines don't count).
