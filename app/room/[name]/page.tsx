@@ -1275,8 +1275,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
   // (a room with a game bot on DOES get entry effects now — except while that
   // bot's game is running, like the app)
-  // ✨ Entry Effects now play in EVERY room (the bot's running game still pauses them, below).
-  const entryFxGameRoom = false;
+  const entryFxGameRoom =
+    gameRoom ||
+    [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].some((g) =>
+      roomName.startsWith(`${g} #`)
+    );
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
   const colorOf = useSenderColors(
