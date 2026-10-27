@@ -580,6 +580,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
         <div className="fixed inset-0 z-[90] grid place-items-center bg-black/60 p-4" onClick={() => setHelp(false)}>
          <div className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-[18px] bg-[#0D1128] p-4 text-[12px] leading-relaxed text-[#EAF0FF]">
           <p className="text-[14px] font-black text-amber-300">👑 How to play MIG Royale</p>
+          <RoyaleHowToDemo />
+          <p className="mt-3 text-[12.5px] font-black text-amber-300">📜 Rules</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[#DCE3FF]">
             <li>Type !start or tap Start. Betting is open for 45 seconds.</li>
             <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.9x (your stake included).</li>
@@ -838,10 +840,10 @@ const REVEAL_MS = 5200;
 const RED_FLIPS = [450, 950, 1450];
 const BLUE_FLIPS = [2350, 2850, 3900];
 
-function CardBack({ size = "md" }: { size?: "md" | "lg" }) {
+function CardBack({ size = "md", small }: { size?: "md" | "lg"; small?: boolean }) {
   return (
     <span
-      className={`inline-block rounded-md border-2 border-white/60 ${size === "lg" ? "h-[62px] w-11" : "h-12 w-9"}`}
+      className={`inline-block rounded-md border-2 border-white/60 ${small ? "h-9 w-7" : size === "lg" ? "h-[62px] w-11" : "h-12 w-9"}`}
       style={{ background: "repeating-linear-gradient(45deg, #5B3FC9 0 4px, #6E54DA 4px 8px)" }}
     />
   );
@@ -1335,5 +1337,132 @@ function RoyaleConfetti() {
         />
       ))}
     </span>
+  );
+}
+
+// ▶ "How to play" as a little looping movie: pick a chip → tap Red → betting
+// closes → cards open → Red wins and pays 1.9x. Plays by itself, no video file.
+const DEMO_LEN = 15000;
+const DEMO_STEPS: { at: number; text: string }[] = [
+  { at: 0, text: "1. Pick a chip (or type your own amount)" },
+  { at: 2500, text: "2. Tap a side — 🔴 Red or 🔵 Blue — or a hand" },
+  { at: 5000, text: "3. After 45 seconds betting closes" },
+  { at: 7000, text: "4. Both hands open, card by card" },
+  { at: 11000, text: "5. Red wins with Jutt → 1,000 × 1.9 = 1,900 back" },
+];
+const DEMO_RED = ["K♥", "K♠", "7♦"];
+const DEMO_BLUE = ["9♣", "5♦", "2♠"];
+const DEMO_RED_FLIPS = [7400, 7900, 8400];
+const DEMO_BLUE_FLIPS = [9000, 9500, 10200];
+
+function RoyaleHowToDemo() {
+  const [t, setT] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [loops, setLoops] = useState(0);
+  useEffect(() => {
+    if (paused) return;
+    let last = Date.now();
+    const id = setInterval(() => {
+      const n = Date.now();
+      const dt = n - last;
+      setT((v) => {
+        if (v + dt >= DEMO_LEN) setLoops((l) => l + 1);
+        return (v + dt) % DEMO_LEN;
+      });
+      last = n;
+    }, 100);
+    return () => clearInterval(id);
+  }, [paused]);
+  const step = DEMO_STEPS.reduce((a, st, i) => (t >= st.at ? i : a), 0);
+  const chipOn = t >= 900;
+  const redOn = t >= 3300;
+  const staked = t >= 3600;
+  const secs = t < 5000 ? 45 - Math.floor(t / 1000) * 3 : Math.max(0, 3 - Math.floor((t - 5000) / 500));
+  const closed = t >= 6500;
+  const stamp = t >= 6500 && t < 7600;
+  const redShown = DEMO_RED_FLIPS.filter((x) => t >= x).length;
+  const blueShown = DEMO_BLUE_FLIPS.filter((x) => t >= x).length;
+  const won = t >= 11000;
+  const finger = t < 2500 ? (t > 500 && t < 1300) : t < 5000 ? t > 2900 && t < 3700 : false;
+  const hand = (cards: string[], shown: number, red: boolean, label: string) => (
+    <div
+      className="relative flex flex-col items-center rounded-[12px] border-2 px-1 py-1.5 transition"
+      style={{
+        background: red ? "rgba(239,68,68,.14)" : "rgba(59,130,246,.16)",
+        borderColor: won && red ? "#FCD34D" : redOn && red && !closed ? "#F87171" : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
+        boxShadow: won && red ? "0 0 16px rgba(252,211,77,.45)" : redOn && red && !closed ? "0 0 10px rgba(248,113,113,.5)" : undefined,
+        transform: won && red ? "scale(1.03)" : undefined,
+      }}
+    >
+      <span className={`text-[10.5px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red · 1.9x" : "🔵 Blue · 1.9x"}</span>
+      <span className="mt-1 flex gap-0.5">
+        {cards.map((c, i) =>
+          i < shown ? (
+            <span key={`f${i}`} className="fx-pop inline-block"><MiniCard card={c} size="sm" /></span>
+          ) : (
+            <CardBack key={`b${i}`} small />
+          )
+        )}
+      </span>
+      <span className="mt-0.5 h-3.5 text-[10px] font-bold text-[#DCE3FF]">{shown === 3 ? label : ""}</span>
+      {red && staked && (
+        <span className="absolute -right-1 -top-2 rounded-full border border-white/70 bg-[#F5C842] px-1.5 text-[9.5px] font-black text-[#3A2500] shadow">1K</span>
+      )}
+      {red && finger && t >= 2500 && <span className="absolute bottom-1 right-2 animate-bounce text-[18px]">👆</span>}
+    </div>
+  );
+  return (
+    <div className="mt-2 rounded-[14px] border border-white/10 bg-[#141A3A] p-2" onClick={(e) => e.stopPropagation()}>
+      <div className="relative overflow-hidden rounded-[10px] bg-[#0A0E22] p-2">
+        <div className="flex items-center justify-between text-[10.5px] font-black text-[#C9D2F2]">
+          <span>Round #1 · {closed ? "dealing…" : "bets open"}</span>
+          <span className={`grid h-6 w-6 place-items-center rounded-full border-2 ${secs <= 3 && !closed ? "border-red-400 text-red-300" : "border-amber-300 text-amber-200"}`}>
+            {closed ? "🃏" : secs}
+          </span>
+        </div>
+        <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+          {hand(DEMO_RED, redShown, true, "Jutt (pair)")}
+          {hand(DEMO_BLUE, blueShown, false, "High Card")}
+        </div>
+        <div className="relative mt-1.5 flex justify-center gap-1">
+          {[500, 1000, 2000, 5000].map((c) => {
+            const on = c === 1000 && chipOn;
+            return (
+              <span
+                key={c}
+                className={`rounded-full border px-2 py-0.5 text-[10px] font-black transition ${on ? "scale-110 border-amber-300 bg-[#F5C842] text-[#3A2500]" : "border-white/15 bg-white/5 text-[#DCE3FF]"}`}
+              >
+                {c >= 1000 ? `${c / 1000}K` : c}
+              </span>
+            );
+          })}
+          {finger && t < 2500 && <span className="absolute left-1/2 top-3 -ml-3 animate-bounce text-[18px]">👆</span>}
+        </div>
+        {stamp && (
+          <div className="royale-stamp absolute inset-0 grid place-items-center bg-[#080A19]/60 text-[18px] font-black tracking-[1px] text-amber-300">NO MORE BETS</div>
+        )}
+        {won && (
+          <div className="relative mt-1.5 text-center">
+            <RoyaleConfetti key={loops} />
+            <span className="royale-tick inline-block text-[12px] font-black text-green-400">🏆 Red wins! You +900 (1,900 back)</span>
+          </div>
+        )}
+      </div>
+      <p key={step} className="royale-tick mt-1.5 min-h-[32px] text-center text-[12px] font-bold text-[#EAF0FF]">{DEMO_STEPS[step].text}</p>
+      <div className="mt-1 flex items-center justify-center gap-1.5">
+        <button type="button" onClick={() => setPaused((v) => !v)} className="grid h-6 w-6 place-items-center rounded-full bg-white/10 text-[11px]">
+          {paused ? "▶" : "⏸"}
+        </button>
+        {DEMO_STEPS.map((st, i) => (
+          <button
+            key={i}
+            type="button"
+            aria-label={`Step ${i + 1}`}
+            onClick={() => setT(st.at + 1)}
+            className={`h-2 rounded-full transition-all ${i === step ? "w-5 bg-amber-300" : "w-2 bg-white/25"}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
