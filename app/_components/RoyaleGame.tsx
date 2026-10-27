@@ -733,7 +733,27 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                   {c >= 1000 ? `${c / 1000}k` : c}
                 </button>
               ))}
+              {/* ✎ any amount: type it here */}
+              <input
+                id="royale-custom-amount"
+                type="text"
+                inputMode="numeric"
+                placeholder="✎"
+                value={CHIPS.includes(amount) ? "" : String(amount)}
+                onChange={(e) => {
+                  const n = Number(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  if (n > 0) setAmount(n);
+                  else setAmount(CHIPS[0]);
+                }}
+                className={`w-[52px] rounded-full border px-1 py-[3px] text-center text-[11px] font-black outline-none placeholder:text-[#DCE3FF] ${
+                  CHIPS.includes(amount) ? "border-white/[0.12] bg-white/[0.07] text-[#DCE3FF]" : "border-amber-300 bg-amber-300 text-[#3A2500]"
+                }`}
+                aria-label="Custom amount"
+              />
             </div>
+            {!CHIPS.includes(amount) && (amount < 100 || amount > 200000) && (
+              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Bets are 100 – 200,000</p>
+            )}
 
             {/* ↻ Same + Bet */}
             <div className="mt-1.5 grid grid-cols-[auto_auto_1fr] gap-1.5">
@@ -956,16 +976,46 @@ function RoyaleResultCard({ state }: { state: RoyaleState }) {
           );
         })}
       </div>
+      {(() => {
+        // 👤 my own result of that round
+        const staked = Object.values(state.myBets).reduce((a, v) => a + (Number(v) || 0), 0);
+        if (staked <= 0) return null;
+        const back = myWinOf(state.myBets, state.lastWinner, state.lastWinHand);
+        const profit = back - staked;
+        return (
+          <div className="relative mt-1.5 text-center">
+            {profit > 0 && <RoyaleConfetti />}
+            <p className={`text-[12px] font-black ${profit > 0 ? "text-green-400" : back > 0 ? "text-amber-200" : "text-red-300"}`}>
+              {profit > 0
+                ? `You won ${profit.toLocaleString("en-US")} coins (${back.toLocaleString("en-US")} back on ${staked.toLocaleString("en-US")})`
+                : back > 0
+                  ? `You got ${back.toLocaleString("en-US")} back on ${staked.toLocaleString("en-US")}`
+                  : `You lost ${staked.toLocaleString("en-US")} coins`}
+            </p>
+          </div>
+        );
+      })()}
       {sm && sm.players > 0 && (
         <div className="mt-1.5 flex flex-col items-center gap-1 text-[11px] font-bold text-[#C9D2F2]">
           <span>
             {sm.winningBets} winning {sm.winningBets === 1 ? "bet" : "bets"} · {shortK(sm.paidOut)} paid out
           </span>
-          {sm.top && (
-            <span className="rounded-full bg-amber-300/15 px-2 py-0.5 font-black text-amber-300">
-              🥇 {sm.top.name} +{shortK(sm.top.profit)}
-            </span>
-          )}
+          {(() => {
+            // winners: the top one, and me (if I made a profit)
+            const staked = Object.values(state.myBets).reduce((a, v) => a + (Number(v) || 0), 0);
+            const mine = staked > 0 ? myWinOf(state.myBets, state.lastWinner, state.lastWinHand) - staked : 0;
+            if (!sm.top && mine <= 0) return null;
+            return (
+              <span className="flex flex-wrap justify-center gap-1">
+                {sm.top && (
+                  <span className="rounded-full bg-amber-300/15 px-2 py-0.5 font-black text-amber-300">
+                    🥇 {sm.top.name} +{shortK(sm.top.profit)}
+                  </span>
+                )}
+                {mine > 0 && <span className="rounded-full bg-green-400/15 px-2 py-0.5 font-black text-green-400">🙋 You +{shortK(mine)}</span>}
+              </span>
+            );
+          })()}
           {sm.gotBack > 0 && (
             <span className="text-[10px] text-[#9BA6D6]">
               ↩ {sm.gotBack} {sm.gotBack === 1 ? "player" : "players"} got some back
@@ -995,7 +1045,12 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
           .slice(0, 16)
           .reverse()
           .map((h, i) => (
-            <i key={i} className={`h-[9px] w-[9px] shrink-0 rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`} />
+            <i
+              key={i}
+              className={`grid h-[10px] w-[10px] shrink-0 place-items-center rounded-full text-[6.5px] font-black not-italic leading-none text-white ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+            >
+              {HAND_LETTER[h.hand] || ""}
+            </i>
           ))}
         <span className="ml-auto whitespace-nowrap text-[9px] font-black text-[#8DBBFF]">
           {history[0].winner === "red" || history[0].winner === "blue" ? `${history[0].winner === "red" ? "Red" : "Blue"} ×${st} · ` : ""}🔴{history.filter((h) => h.winner === "red").length} 🔵{history.filter((h) => h.winner === "blue").length}
@@ -1019,8 +1074,10 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
           <i
             key={i}
             title={`#${h.round} ${h.winner} — ${h.hand}`}
-            className={`h-[11px] w-[11px] rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
-          />
+            className={`grid h-[11px] w-[11px] place-items-center rounded-full text-[7px] font-black not-italic leading-none text-white ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+          >
+            {HAND_LETTER[h.hand] || ""}
+          </i>
         ))}
       </div>
       <div className="mt-1 flex justify-between text-[9.5px] font-black tabular-nums text-[#9BA6D6]">
@@ -1254,4 +1311,28 @@ export function useRoyalePrefs(): RoyalePrefs {
     };
   }, []);
   return p;
+}
+
+// a letter on a result bead when the round was won by a big hand (High Card = no letter)
+const HAND_LETTER: Record<string, string> = { Jutt: "J", Color: "C", Run: "R", "Double Run": "D", Tirel: "T" };
+
+/** 🎊 a little confetti burst over my win. */
+function RoyaleConfetti() {
+  const colors = ["#FCD34D", "#F472B6", "#60A5FA", "#34D399", "#F87171", "#A78BFA"];
+  return (
+    <span className="pointer-events-none absolute inset-x-0 -top-6 h-0" aria-hidden>
+      {Array.from({ length: 18 }, (_, i) => (
+        <i
+          key={i}
+          className="royale-confetti absolute block h-[6px] w-[4px] rounded-[1px]"
+          style={{
+            left: `${5 + ((i * 53) % 90)}%`,
+            background: colors[i % colors.length],
+            animationDelay: `${(i % 6) * 0.07}s`,
+            ["--dx" as string]: `${((i * 37) % 40) - 20}px`,
+          }}
+        />
+      ))}
+    </span>
+  );
 }
