@@ -392,6 +392,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
+  const [farUp, setFarUp] = useState(false);
   // what those lines were: people / bots / a mention of me (the smart ⬇ pill)
   const [newBelowStats, setNewBelowStats] = useState<NewBelowStats>(NO_NEW_BELOW);
   // 🤖 "Bot messages: Hide" (room ⋮ menu) — lines that mention you still show
@@ -2035,6 +2036,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 // lines had already been added, so it looked "scrolled up".
                 // Only a real move UP lets go of the bottom now.
                 const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+                // ⬇ the jump button shows whenever the reader is well above the newest line
+                setFarUp(el.scrollHeight - el.scrollTop - el.clientHeight > 300);
                 if (nearBottom) {
                   stickToBottom.current = true;
                   pinnedTopRef.current = el.scrollTop;
@@ -2205,6 +2208,24 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 );
               })}
               </div>
+              {/* ⬇ back to the newest line in one tap, whenever you have scrolled up */}
+              {farUp && newBelow === 0 && (
+                <div className="pointer-events-none sticky bottom-0 flex h-0 justify-end pr-3">
+                  <button
+                    type="button"
+                    aria-label="Jump to newest"
+                    onClick={() => {
+                      const el = listRef.current;
+                      stickToBottom.current = true;
+                      setFarUp(false);
+                      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                    }}
+                    className="pointer-events-auto flex h-10 w-10 -translate-y-14 items-center justify-center rounded-full bg-gradient-to-b from-[#5B8DEF] to-[#833AB4] text-lg font-black text-white shadow-lg"
+                  >
+                    ⬇
+                  </button>
+                </div>
+              )}
               {/* ⬇ NEW MESSAGES: only while you are scrolled up reading older lines */}
               {newBelow > 0 && (
                 <div className="pointer-events-none sticky bottom-0 flex h-0 justify-center">
