@@ -1099,34 +1099,73 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
       </div>
     );
   }
-  const list = history.slice(0, 32).reverse();
-  const red = history.filter((h) => h.winner === "red").length;
-  const blue = history.filter((h) => h.winner === "blue").length;
+  // 🛣 bead road: the last 30 rounds, 3 rows × 10 columns, oldest top-left,
+  // read down then right; the newest bead glows. Letters = big winning hands.
+  const list = history.slice(0, 30).reverse();
+  const red = list.filter((h) => h.winner === "red").length;
+  const blue = list.filter((h) => h.winner === "blue").length;
+  const tie = list.length - red - blue;
   let streak = 0;
   for (const h of history) {
     if (h.winner === history[0].winner) streak++;
     else break;
   }
   const w = history[0].winner;
+  const redPct = red + blue > 0 ? Math.round((red / (red + blue)) * 100) : 50;
+  const bead = (winner: string) =>
+    winner === "red"
+      ? "radial-gradient(circle at 35% 30%, #FF8A8A, #EF4444 55%, #B91C1C)"
+      : winner === "blue"
+        ? "radial-gradient(circle at 35% 30%, #93C5FD, #3B82F6 55%, #1D4ED8)"
+        : "radial-gradient(circle at 35% 30%, #E5E7EB, #9CA3AF 60%, #6B7280)";
   return (
-    <div className="mt-1.5 rounded-[10px] bg-black/25 px-2 py-1.5">
-      <div className="grid grid-flow-col grid-rows-4 justify-start gap-[3px]" style={{ gridAutoColumns: "11px" }}>
-        {list.map((h, i) => (
-          <i
-            key={i}
-            title={`#${h.round} ${h.winner} — ${h.hand}`}
-            className={`grid h-[11px] w-[11px] place-items-center rounded-full text-[7px] font-black not-italic leading-none text-white ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+    <div className="mt-1.5 rounded-[14px] bg-black/25 p-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] font-black text-[#DCE3FF]">🛣 Last {list.length} rounds</span>
+        {(w === "red" || w === "blue") && streak > 1 && (
+          <span
+            className={`ml-auto rounded-full px-2 py-[1px] text-[10px] font-black text-white ${w === "red" ? "bg-red-500" : "bg-blue-500"}`}
           >
-            {HAND_LETTER[h.hand] || ""}
-          </i>
-        ))}
+            {w === "red" ? "Red" : "Blue"} ×{streak} 🔥
+          </span>
+        )}
       </div>
-      <div className="mt-1 flex justify-between text-[9.5px] font-black tabular-nums text-[#9BA6D6]">
-        <span>
-          🔴 {red} · 🔵 {blue}
-        </span>
-        {(w === "red" || w === "blue") && <span className="text-[#8DBBFF]">{`${w === "red" ? "Red" : "Blue"} ×${streak}`}</span>}
+      {/* red vs blue share */}
+      <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-black tabular-nums">
+        <span className="text-[#FF8C8C]">Red {red}</span>
+        <div className="flex h-[6px] flex-1 overflow-hidden rounded-full bg-white/10">
+          <i className="block h-full bg-gradient-to-r from-red-700 to-red-500" style={{ width: `${redPct}%` }} />
+          <i className="block h-full bg-gradient-to-r from-blue-500 to-blue-700" style={{ width: `${100 - redPct}%` }} />
+        </div>
+        <span className="text-[#8DBBFF]">Blue {blue}</span>
+        {tie > 0 && <span className="text-[#9BA6D6]">· Tie {tie}</span>}
       </div>
+      {/* the beads */}
+      <div className="mt-2 grid grid-flow-col grid-rows-3 gap-[5px]" style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}>
+        {Array.from({ length: 30 }, (_, i) => {
+          const h = list[i];
+          if (!h) return <span key={i} className="aspect-square rounded-full bg-white/5" />;
+          const last = i === list.length - 1;
+          const letter = HAND_LETTER[h.hand] || "";
+          const big = letter === "D" || letter === "T";
+          return (
+            <span
+              key={i}
+              title={`#${h.round} · ${h.winner === "tie" ? "Tie" : h.winner === "red" ? "Red" : "Blue"}${h.hand ? ` · ${h.hand}` : ""}`}
+              className={`relative grid aspect-square place-items-center rounded-full text-[10px] font-black leading-none text-white shadow-[0_1px_3px_rgba(0,0,0,.3)] ${
+                last ? "ring-2 ring-amber-300 ring-offset-1 ring-offset-transparent" : big ? "ring-2 ring-amber-300/70" : ""
+              }`}
+              style={{ background: bead(h.winner) }}
+            >
+              {letter}
+              {last && <span className="absolute inset-0 animate-ping rounded-full bg-amber-300/30" />}
+            </span>
+          );
+        })}
+      </div>
+      <p className="mt-1.5 text-center text-[9px] font-bold text-[#9BA6D6]">
+        J Jutt · C Color · R Run · D Double Run · T Tirel · newest has the gold ring
+      </p>
     </div>
   );
 }
