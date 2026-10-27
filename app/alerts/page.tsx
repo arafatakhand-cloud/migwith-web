@@ -29,6 +29,7 @@ import { chatLockedFor, lockedChatText } from "../../lib/privacy";
 import { PageShell } from "../_components/PageShell";
 import { PushToggle } from "../_components/PushToggle";
 import { BackButton } from "../_components/BackButton";
+import { withEmotes } from "../_components/Emote";
 
 // The app's Alerts page (MainActivity.kt AlertsPage): the NEWEST 100 alerts,
 // grouped by day, filter chips on top, a coloured card per type, and the
@@ -247,7 +248,7 @@ function BirthdayCard({ a }: { a: Alert }) {
     >
       <span className="pointer-events-none absolute -right-2 -top-3 text-[86px] opacity-25">🎂</span>
       <p className="relative text-[11px] font-black tracking-[2px]">🎉 BIRTHDAY CARD · miGlife</p>
-      <p className="relative mt-1.5 whitespace-pre-wrap text-[15px] font-semibold leading-[21px]">{a.text}</p>
+      <p className="relative mt-1.5 whitespace-pre-wrap text-[15px] font-semibold leading-[21px]">{withEmotes(a.text, 15)}</p>
       <p className="relative mt-2 text-[11px] opacity-80">{fullTime(a.createdAtMs)}</p>
     </div>
   );
@@ -280,7 +281,7 @@ function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string 
             {isNew && <span className="h-2 w-2 rounded-full" style={{ background: s.bottom }} />}
           </div>
           <p className={`mt-0.5 whitespace-pre-wrap break-words text-sm leading-[19px] text-[#0B1F3A] ${isNew ? "font-semibold" : ""}`}>
-            {a.text}
+            {withEmotes(a.text, 14)}
           </p>
         </div>
       </div>
@@ -322,7 +323,7 @@ function GiftAlertCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string 
       {a.giftMessage && (
         <p className="relative mt-3 whitespace-pre-wrap break-words rounded-[4px_16px_16px_16px] bg-white px-3 py-2.5 text-sm italic leading-5 text-[#0B1F3A]">
           <span className="mr-1.5 not-italic">💬</span>
-          {a.giftMessage}
+          {withEmotes(a.giftMessage, 14)}
         </p>
       )}
       <div className="relative mt-3 flex items-center gap-2">
