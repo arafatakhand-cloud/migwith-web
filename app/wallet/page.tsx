@@ -564,49 +564,53 @@ export default function WalletPage() {
           </button>
           {success && <p className="mt-2 text-sm font-semibold text-emerald-700">{success}</p>}
 
-          <h2 className="mt-3 text-[13px] font-extrabold uppercase tracking-[1px] text-[#64748B]">Activity ({shownItems.length})</h2>
-          {/* 🗂 categories */}
-          <div className="no-scrollbar -mx-1 mt-1.5 flex gap-1.5 overflow-x-auto px-1 pb-1" data-noswipe>
-            {ACT_CATS.map((c) => {
-              const on = cat === c.key;
-              return (
+          {/* 📜 Activity header, like Alerts: dark card, categories inside */}
+          <div className="relative mt-3 overflow-hidden rounded-[26px] bg-gradient-to-br from-[#2B5FD9] via-[#0B1F3A] to-[#5B2A86] px-3 pb-3.5 pt-3 text-white">
+            <span className="pointer-events-none absolute -right-14 -top-16 h-[150px] w-[150px] rounded-full bg-white/[0.07]" />
+            <div className="relative flex items-center gap-2">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[22px] font-extrabold leading-tight">🪙 Activity</h2>
+                <p className="text-xs text-white/80">
+                  {shownItems.length === 0
+                    ? "Nothing here yet"
+                    : `${shownItems.length} ${shownItems.length === 1 ? "entry" : "entries"} · since ${new Date(summary.since).toLocaleDateString([], { day: "numeric", month: "short" })}`}
+                </p>
+              </div>
+              <span className="rounded-full bg-[#FFC94A] px-2.5 py-1 text-xs font-extrabold text-[#14213D]">{shownItems.length}</span>
+            </div>
+            <div className="no-scrollbar relative mt-2.5 flex gap-2 overflow-x-auto" data-noswipe>
+              {ACT_CATS.map((c) => (
                 <button
                   key={c.key}
                   type="button"
+                  aria-pressed={cat === c.key}
                   onClick={() => setCat(c.key)}
-                  aria-pressed={on}
-                  className={`shrink-0 rounded-full border px-3.5 py-[7px] text-[13px] font-extrabold transition ${
-                    on ? "border-[#0E7490] bg-[#0E7490] text-white shadow-[0_3px_10px_rgba(14,116,144,.3)]" : "border-[#DDE3EE] bg-[#EEF2F8] text-[#5B6B8A]"
+                  className={`shrink-0 rounded-full border px-3.5 py-[7px] text-xs ${
+                    cat === c.key ? "border-transparent bg-white font-extrabold text-[#14213D]" : "border-white/25 bg-white/[0.14] font-semibold text-white"
                   }`}
                 >
                   {c.label}
                 </button>
-              );
-            })}
-          </div>
-          {/* 📊 summary of what is shown */}
-          {shownItems.length > 0 && (
-            <div className="mt-1 grid grid-cols-3 gap-1.5 rounded-[14px] border border-[#D3E4F8] bg-[#F6FAFF] p-2 text-center">
-              <div>
-                <p className="text-[10px] font-bold text-[#6B7A90]">In</p>
-                <p className="text-[14px] font-extrabold text-[#14A044]">+{short(summary.inSum)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[#6B7A90]">Out</p>
-                <p className="text-[14px] font-extrabold text-[#E5202E]">−{short(summary.outSum)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-[#6B7A90]">Net</p>
-                <p className={`text-[14px] font-extrabold ${summary.net >= 0 ? "text-[#14A044]" : "text-[#E5202E]"}`}>
-                  {summary.net >= 0 ? "+" : "−"}
-                  {short(Math.abs(summary.net))}
-                </p>
-              </div>
-              <p className="col-span-3 text-[10px] font-semibold text-[#6B7A90]">
-                {shownItems.length} {shownItems.length === 1 ? "entry" : "entries"} · since {new Date(summary.since).toLocaleDateString([], { day: "numeric", month: "short" })}
-              </p>
+              ))}
             </div>
-          )}
+            {/* 📊 what the shown entries add up to */}
+            {shownItems.length > 0 && (
+              <div className="relative mt-2.5 grid grid-cols-3 gap-1.5 text-center">
+                {(
+                  [
+                    ["In", `+${short(summary.inSum)}`, "text-[#5EE08F]"],
+                    ["Out", `−${short(summary.outSum)}`, "text-[#FF8A8A]"],
+                    ["Net", `${summary.net >= 0 ? "+" : "−"}${short(Math.abs(summary.net))}`, summary.net >= 0 ? "text-[#5EE08F]" : "text-[#FF8A8A]"],
+                  ] as const
+                ).map(([l, v, c]) => (
+                  <div key={l} className="rounded-2xl border border-white/15 bg-white/[0.1] py-1.5">
+                    <p className="text-[10px] font-bold text-white/70">{l}</p>
+                    <p className={`text-[15px] font-extrabold ${c}`}>{v}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="h-[7px]" />
 
           {grouped.length === 0 ? (
