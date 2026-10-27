@@ -120,6 +120,7 @@ import {
   type RoomInfo,
 } from "../../../lib/roomModeration";
 import { isMainFounderName, useFounderPerms } from "../../../lib/founder";
+import { shareAllowed, shareKeysOf, type ShareTable } from "../../../lib/sharePerms";
 import { useBadgeImages } from "../../../lib/badgeImages";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
@@ -603,13 +604,23 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const roomInfoRef = useRef(roomInfo);
   roomInfoRef.current = roomInfo;
 
+  // 🔐 Share Permissions table (miglife sets it): who may share pictures / voice.
+  const [shareTable, setShareTable] = useState<ShareTable | null>(null);
+  useEffect(() => {
+    getDoc(doc(db, "app_settings", "media_sharing_permissions"))
+      .then((s) => setShareTable((s.data() as ShareTable) || {}))
+      .catch(() => setShareTable({}));
+  }, []);
+  const shareKeys = useMemo(() => shareKeysOf(profile?.badges || []), [profile?.badges]);
+  const picAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "picture");
+  const voiceAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "voice");
   const perms = useMemo(
     () => {
       const p = roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder);
-      // 🌈 Special Edition Colour holders may always share pictures and voice.
-      return specialHasMe ? { ...p, canShareMedia: true } : p;
+      // Only the Share Permissions table decides who may share (pictures / voice).
+      return { ...p, canShareMedia: picAllowed, canShareVoice: voiceAllowed };
     },
-    [roomInfo, user, profile, founder.isHiddenFounder, specialHasMe]
+    [roomInfo, user, profile, founder.isHiddenFounder, picAllowed, voiceAllowed]
   );
   const permsRef = useRef(perms);
   permsRef.current = perms;
@@ -1365,7 +1376,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 📷 Photo message: same Storage folder and message shape as the app.
   const sendPhoto = async (file: File | undefined) => {
     if (!file || !user || !profile || uploading) return;
-    if (!perms.canShareMedia) return note(`${roomName}: Photos are turned off in this room.`);
+    if (!perms.canShareMedia) return note(`${roomName}: Photos are not allowed for your role.`);
     if (muted || (silenced && !perms.canRoomWide)) {
       return note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
     }
@@ -1392,7 +1403,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎤 Voice message: same Storage folder and message shape as the app.
   const sendVoice = async (audio: Blob) => {
     if (!user || !profile) return;
-    if (!perms.canShareMedia) throw new Error("Voice messages are turned off in this room.");
+    if (!perms.canShareVoice) throw new Error("Voice messages are not allowed for your role.");
     if (muted || (silenced && !perms.canRoomWide)) {
       throw new Error(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
     }
@@ -2294,7 +2305,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 onFile: (f: File | undefined) => f && setPendingPhoto(f),
                 disabled: !perms.canShareMedia,
                 uploading,
-                title: perms.canShareMedia ? "Send a photo" : "Photos are turned off in this room",
+                title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
               }}
               voice={
                 <VoiceRecorder
