@@ -406,14 +406,15 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   // 🛑 betting just closed → stamp
   const wasBetting = useRef(false);
   useEffect(() => {
-    if (wasBetting.current && !canBet && state.running) {
-      setStamp(true);
-      const t = setTimeout(() => setStamp(false), 1300);
-      wasBetting.current = canBet;
-      return () => clearTimeout(t);
-    }
+    if (wasBetting.current && !canBet && state.running) setStamp(true);
     wasBetting.current = canBet;
   }, [canBet, state.running]);
+  // the stamp always goes away on its own (even if the round ends meanwhile)
+  useEffect(() => {
+    if (!stamp) return;
+    const t = setTimeout(() => setStamp(false), 1300);
+    return () => clearTimeout(t);
+  }, [stamp]);
   // 🎉 the reveal finished → did I win? (my bets of that round × the result)
   useEffect(() => {
     if (revealing || !reveal || won?.round === reveal.round || reveal.round !== state.round) return;
