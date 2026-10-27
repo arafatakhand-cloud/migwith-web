@@ -655,7 +655,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               type="button"
               onClick={state.start}
               disabled={state.busy}
-              className={`mt-2 w-full rounded-xl py-2.5 text-sm font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
+              className={`mt-1.5 w-full rounded-xl py-2 text-[13px] font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
                 state.lastRed.length === 3 ? "bg-gradient-to-r from-green-500 to-green-700" : "bg-gradient-to-r from-violet-500 to-purple-700"
               }`}
             >
@@ -973,8 +973,8 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
   const tie = state.lastWinner === "tie";
   const winHand = state.lastWinner === "red" ? state.lastRedHand : state.lastBlueHand;
   return (
-    <div className="mt-2">
-      <p className="text-center text-[13px] font-black text-amber-300">
+    <div className="mt-1">
+      <p className="text-center text-[12.5px] font-black text-amber-300">
         {tie ? "🤝 Tie — Red & Blue bets refunded" : `🏆 ${state.lastWinner === "red" ? "Red" : "Blue"} wins with ${winHand}`}
         {state.lastSeed && (
           <button
@@ -987,7 +987,7 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
           </button>
         )}
       </p>
-      <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+      <div className="mt-1 grid grid-cols-2 gap-1.5">
         {(["red", "blue"] as const).map((key) => {
           const red = key === "red";
           const won = state.lastWinner === key;
@@ -995,21 +995,21 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
           return (
             <div
               key={key}
-              className="flex flex-col items-center rounded-[14px] border-2 px-1 py-1.5"
+              className="flex flex-col items-center rounded-[12px] border-2 px-1 py-1"
               style={{
                 background: red ? "rgba(239,68,68,.12)" : "rgba(59,130,246,.14)",
                 borderColor: won ? "#FCD34D" : "rgba(255,255,255,.12)",
                 opacity: won || tie ? 1 : 0.75,
               }}
             >
-              <span className={`text-[10.5px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red hand" : "🔵 Blue hand"}</span>
-              <span className="mt-1 flex gap-1">
+              <span className={`text-[10px] font-black ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>{red ? "🔴 Red" : "🔵 Blue"}</span>
+              <span className="mt-0.5 flex gap-0.5">
                 {cards.map((c, i) => (
-                  <MiniCard key={i} card={c} size="sm" />
+                  <MiniCard key={i} card={c} size="xs" />
                 ))}
               </span>
               <span
-                className={`mt-1 rounded-full px-2 text-[10px] font-black ${won ? "bg-amber-300 text-[#3A2500]" : "text-[#C9D2F2]"}`}
+                className={`mt-0.5 rounded-full px-2 text-[9.5px] font-black leading-[15px] ${won ? "bg-amber-300 text-[#3A2500]" : "text-[#C9D2F2]"}`}
               >
                 {red ? state.lastRedHand : state.lastBlueHand}
               </span>
@@ -1024,9 +1024,9 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
         const back = myWinOf(state.myBets, state.lastWinner, state.lastWinHand);
         const profit = back - staked;
         return (
-          <div className="relative mt-1.5 text-center">
+          <div className="relative mt-1 text-center">
             {profit > 0 && <RoyaleConfetti />}
-            <p className={`text-[12px] font-black ${profit > 0 ? "text-green-400" : back > 0 ? "text-amber-200" : "text-red-300"}`}>
+            <p className={`text-[11px] font-black ${profit > 0 ? "text-green-400" : back > 0 ? "text-amber-200" : "text-red-300"}`}>
               {profit > 0
                 ? `You won ${profit.toLocaleString("en-US")} coins (${back.toLocaleString("en-US")} back on ${staked.toLocaleString("en-US")})`
                 : back > 0
@@ -1037,7 +1037,7 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
         );
       })()}
       {sm && sm.players > 0 && (
-        <div className="mt-1.5 flex flex-col items-center gap-1 text-[11px] font-bold text-[#C9D2F2]">
+        <div className="mt-0.5 flex flex-col items-center gap-0.5 text-[10px] font-bold text-[#C9D2F2]">
           <span>
             {sm.winningBets} winning {sm.winningBets === 1 ? "bet" : "bets"} · {shortK(sm.paidOut)} paid out
           </span>
@@ -1049,16 +1049,16 @@ function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: (
             return (
               <span className="flex flex-wrap justify-center gap-1">
                 {sm.top && (
-                  <span className="rounded-full bg-amber-300/15 px-2 py-0.5 font-black text-amber-300">
+                  <span className="rounded-full bg-amber-300/15 px-2 font-black text-amber-300">
                     🥇 {sm.top.name} +{shortK(sm.top.profit)}
                   </span>
                 )}
-                {mine > 0 && <span className="rounded-full bg-green-400/15 px-2 py-0.5 font-black text-green-400">🙋 You +{shortK(mine)}</span>}
+                {mine > 0 && <span className="rounded-full bg-green-400/15 px-2 font-black text-green-400">🙋 You +{shortK(mine)}</span>}
               </span>
             );
           })()}
           {sm.gotBack > 0 && (
-            <span className="text-[10px] text-[#9BA6D6]">
+            <span className="text-[9.5px] text-[#9BA6D6]">
               ↩ {sm.gotBack} {sm.gotBack === 1 ? "player" : "players"} got some back
             </span>
           )}
@@ -1099,12 +1099,11 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
       </div>
     );
   }
-  // 🛣 bead road: the last 30 rounds, 3 rows × 10 columns, oldest top-left,
-  // read down then right; the newest bead glows. Letters = big winning hands.
+  // 🛣 bead road: the last 30 rounds, 2 rows × 15 small beads, oldest top-left,
+  // read down then right; the newest bead has a gold ring. Letters = big hands.
   const list = history.slice(0, 30).reverse();
   const red = list.filter((h) => h.winner === "red").length;
   const blue = list.filter((h) => h.winner === "blue").length;
-  const tie = list.length - red - blue;
   let streak = 0;
   for (const h of history) {
     if (h.winner === history[0].winner) streak++;
@@ -1119,32 +1118,22 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
         ? "radial-gradient(circle at 35% 30%, #93C5FD, #3B82F6 55%, #1D4ED8)"
         : "radial-gradient(circle at 35% 30%, #E5E7EB, #9CA3AF 60%, #6B7280)";
   return (
-    <div className="mt-1.5 rounded-[14px] bg-black/25 p-2">
-      <div className="flex items-center gap-1.5">
-        <span className="text-[11px] font-black text-[#DCE3FF]">🛣 Last {list.length} rounds</span>
-        {(w === "red" || w === "blue") && streak > 1 && (
-          <span
-            className={`ml-auto rounded-full px-2 py-[1px] text-[10px] font-black text-white ${w === "red" ? "bg-red-500" : "bg-blue-500"}`}
-          >
-            {w === "red" ? "Red" : "Blue"} ×{streak} 🔥
-          </span>
-        )}
-      </div>
-      {/* red vs blue share */}
-      <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-black tabular-nums">
+    <div className="mt-1 rounded-[12px] bg-black/25 px-2 py-1.5" title="J Jutt · C Color · R Run · D Double Run · T Tirel">
+      <div className="flex items-center gap-1.5 text-[9.5px] font-black tabular-nums">
         <span className="text-[#FF8C8C]">Red {red}</span>
-        <div className="flex h-[6px] flex-1 overflow-hidden rounded-full bg-white/10">
+        <div className="flex h-[4px] flex-1 overflow-hidden rounded-full bg-white/10">
           <i className="block h-full bg-gradient-to-r from-red-700 to-red-500" style={{ width: `${redPct}%` }} />
           <i className="block h-full bg-gradient-to-r from-blue-500 to-blue-700" style={{ width: `${100 - redPct}%` }} />
         </div>
         <span className="text-[#8DBBFF]">Blue {blue}</span>
-        {tie > 0 && <span className="text-[#9BA6D6]">· Tie {tie}</span>}
+        {(w === "red" || w === "blue") && streak > 1 && (
+          <span className={`rounded-full px-1.5 text-[9px] text-white ${w === "red" ? "bg-red-500" : "bg-blue-500"}`}>×{streak}🔥</span>
+        )}
       </div>
-      {/* the beads */}
-      <div className="mt-2 grid grid-flow-col grid-rows-3 gap-[5px]" style={{ gridTemplateColumns: "repeat(10, minmax(0, 1fr))" }}>
+      <div className="mt-1 grid grid-flow-col grid-rows-2 justify-between gap-[3px]" style={{ gridAutoColumns: "15px" }}>
         {Array.from({ length: 30 }, (_, i) => {
           const h = list[i];
-          if (!h) return <span key={i} className="aspect-square rounded-full bg-white/5" />;
+          if (!h) return <span key={i} className="h-[15px] w-[15px] rounded-full bg-white/5" />;
           const last = i === list.length - 1;
           const letter = HAND_LETTER[h.hand] || "";
           const big = letter === "D" || letter === "T";
@@ -1152,20 +1141,16 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
             <span
               key={i}
               title={`#${h.round} · ${h.winner === "tie" ? "Tie" : h.winner === "red" ? "Red" : "Blue"}${h.hand ? ` · ${h.hand}` : ""}`}
-              className={`relative grid aspect-square place-items-center rounded-full text-[10px] font-black leading-none text-white shadow-[0_1px_3px_rgba(0,0,0,.3)] ${
-                last ? "ring-2 ring-amber-300 ring-offset-1 ring-offset-transparent" : big ? "ring-2 ring-amber-300/70" : ""
+              className={`grid h-[15px] w-[15px] place-items-center rounded-full text-[8px] font-black leading-none text-white ${
+                last ? "ring-2 ring-amber-300" : big ? "ring-1 ring-amber-300/80" : ""
               }`}
               style={{ background: bead(h.winner) }}
             >
               {letter}
-              {last && <span className="absolute inset-0 animate-ping rounded-full bg-amber-300/30" />}
             </span>
           );
         })}
       </div>
-      <p className="mt-1.5 text-center text-[9px] font-bold text-[#9BA6D6]">
-        J Jutt · C Color · R Run · D Double Run · T Tirel · newest has the gold ring
-      </p>
     </div>
   );
 }
