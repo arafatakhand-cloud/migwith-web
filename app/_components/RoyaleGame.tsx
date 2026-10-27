@@ -1326,23 +1326,25 @@ const prefsListeners = new Set<() => void>();
 let prefsCache: RoyalePrefs | null = null;
 export function readRoyalePrefs(): RoyalePrefs {
   if (prefsCache) return prefsCache;
-  let v: Partial<RoyalePrefs> = {};
+  let v: Partial<RoyalePrefs> & { bets2?: boolean } = {};
   try {
     v = JSON.parse(localStorage.getItem(ROYALE_PREFS_KEY) || "{}");
   } catch {}
-  prefsCache = { betLines: v.betLines === true, hideGame: v.hideGame === true, sound: v.sound === "vibrate" || v.sound === "off" ? v.sound : "on" };
+  // bet lines show in chat unless I turned them off (saved as "bets2"; the old
+  // "betLines" was off by default, so it is not read any more)
+  prefsCache = { betLines: v.bets2 !== false, hideGame: v.hideGame === true, sound: v.sound === "vibrate" || v.sound === "off" ? v.sound : "on" };
   return prefsCache;
 }
 export function setRoyalePref<K extends keyof RoyalePrefs>(k: K, val: RoyalePrefs[K]) {
   prefsCache = { ...readRoyalePrefs(), [k]: val };
   try {
-    localStorage.setItem(ROYALE_PREFS_KEY, JSON.stringify(prefsCache));
+    localStorage.setItem(ROYALE_PREFS_KEY, JSON.stringify({ ...prefsCache, bets2: prefsCache.betLines }));
   } catch {}
   prefsListeners.forEach((f) => f());
 }
 /** Live settings (re-renders when changed from the ⋯ menu). */
 export function useRoyalePrefs(): RoyalePrefs {
-  const [p, setP] = useState<RoyalePrefs>(() => (typeof window === "undefined" ? { betLines: false, hideGame: false, sound: "on" } : readRoyalePrefs()));
+  const [p, setP] = useState<RoyalePrefs>(() => (typeof window === "undefined" ? { betLines: true, hideGame: false, sound: "on" } : readRoyalePrefs()));
   useEffect(() => {
     const f = () => setP(readRoyalePrefs());
     prefsListeners.add(f);
