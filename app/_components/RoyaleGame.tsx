@@ -463,7 +463,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   return (
     <div
       ref={boxRef}
-      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.light ? "rk-light shadow-[0_10px_26px_rgba(27,36,64,.12)]" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
+      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light ? "rk-light shadow-[0_10px_26px_rgba(27,36,64,.12)]" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
         canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
       }`}
       style={rkBoxStyle(skin)}
@@ -793,6 +793,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 disabled={!canBet || !state.lastBet || state.busy}
                 onClick={() => state.lastBet && state.bet(state.lastBet.option, state.lastBet.amount)}
                 title="Repeat my last bet"
+                data-rk="key"
                 className="rounded-xl border border-white/[0.14] bg-white/[0.08] px-2.5 text-[11px] font-black text-[#DCE3FF] disabled:opacity-40"
               >
                 ↻ Same
@@ -817,6 +818,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                     setTimeout(() => (placingUsual.current = false), usual.length * 1300);
                   }}
                   title={usual ? usual.map(([o, a]) => `${shortK(a)} ${o}`).join(" + ") : "Bet first, then tap to save this mix"}
+                  data-rk="key"
                   className="rounded-l-xl border border-amber-300/40 bg-amber-300/10 px-2 text-[11px] font-black text-amber-200 disabled:opacity-40"
                 >
                   {usual ? `⭐ ${usual.map(([o, a]) => `${shortK(a)} ${ROYALE_OPTIONS.find((x) => x.key === o)?.label || o}`).join(" + ").slice(0, 22)}` : "⭐ Save usual"}
@@ -839,6 +841,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 type="button"
                 disabled={!ready}
                 onClick={() => opt && state.bet(opt.key, amount)}
+                data-rk={flash ? undefined : "bet"}
                 className={`rounded-xl py-1.5 text-[13px] font-black text-white disabled:opacity-60 ${
                   flash ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-violet-500 to-violet-700 shadow-[0_6px_16px_rgba(124,58,237,.4)]"
                 }`}

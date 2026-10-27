@@ -1326,3 +1326,15 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
 .rk-light :is(.border-white\/10, .border-white\/15, .border-white\/5, .border-white\/\[0\.12\], .border-white\/\[0\.14\]):not(.rk-keep *) { border-color: var(--rk-line); }
 .rk-light .placeholder\:text-\[\#DCE3FF\]::placeholder { color: var(--rk-muted); }
 .rk-light .royale-stamp { background: color-mix(in srgb, var(--rk-ring) 78%, transparent) !important; }
+/* 🫧 MIG Royale glass colours: raised 3D keys with a glossy top (vars from rkBoxStyle). */
+.rk-glass :is([data-opt], [data-chip], #royale-custom-amount, [data-rk="key"]) { position: relative; }
+.rk-glass :is([data-opt]:not([data-opt="red"]):not([data-opt="blue"]):not(.border-violet-400), [data-chip]:not(.bg-amber-300), #royale-custom-amount:not(.bg-amber-300), [data-rk="key"]):not(.rk-keep *) {
+  background: var(--rk-keybg) !important; border-color: var(--rk-rim) !important; box-shadow: var(--rk-key); }
+.rk-glass [data-chip].bg-amber-300, .rk-glass #royale-custom-amount.bg-amber-300 { background: linear-gradient(#FFE58A, #F5C842) !important; box-shadow: 0 3px 0 #B8861F; }
+.rk-glass [data-opt].border-violet-400 { box-shadow: 0 3px 0 #6D28D9, 0 0 0 3px rgba(139,92,246,.2) !important; }
+.rk-glass [data-opt="red"] { box-shadow: 0 4px 0 var(--rk-redge), 0 8px 14px rgba(185,28,28,.18); overflow: hidden; position: relative; }
+.rk-glass [data-opt="blue"] { box-shadow: 0 4px 0 var(--rk-uedge), 0 8px 14px rgba(29,78,216,.18); overflow: hidden; position: relative; }
+.rk-glass :is([data-opt], [data-rk="bet"])::after { content: ""; position: absolute; left: 7%; right: 7%; top: 1px; height: 40%; border-radius: 10px 10px 50% 50%;
+  background: linear-gradient(var(--rk-gloss), rgba(255,255,255,0)); pointer-events: none; }
+.rk-glass [data-rk="bet"] { position: relative; overflow: hidden; background: var(--rk-bet) !important; box-shadow: 0 4px 0 var(--rk-betedge), 0 8px 16px rgba(0,0,0,.18) !important; }
+.rk-glass .mt-1.flex.items-center.gap-\[3px\] { box-shadow: inset 0 1px 3px rgba(0,0,0,.12); }
