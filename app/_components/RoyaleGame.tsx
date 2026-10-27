@@ -483,7 +483,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
       {!collapsed && state.running && state.phase === "BETTING" && (
-        <div className="mt-1.5 flex h-[22px] items-center gap-1.5 overflow-hidden rounded-full bg-black/30 px-2.5 text-[11px] font-bold text-[#C9D2F2]">
+        <div className="mt-1 flex h-[20px] items-center gap-1.5 overflow-hidden rounded-full bg-black/30 px-2.5 text-[11px] font-bold text-[#C9D2F2]">
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
           <span key={state.ticker?.at || 0} className="royale-tick truncate">
             {state.ticker ? state.ticker.text : "Waiting for bets…"}
@@ -518,7 +518,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
         ) : (
           <>
             {/* Red VS Blue */}
-            <div className="relative mt-2 grid grid-cols-2 gap-1.5">
+            <div className="relative mt-1.5 grid grid-cols-2 gap-1.5">
               {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
                 const red = o.key === "red";
                 const sel = selected === o.key;
@@ -532,52 +532,44 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
                     onDoubleClick={() => quick(o.key)}
-                    className="rounded-[14px] border-2 px-1 pb-1.5 pt-1.5 text-center transition disabled:opacity-60"
+                    className="rounded-[12px] border-2 px-1 py-1 text-center transition disabled:opacity-60"
                     style={{
                       background: red ? "linear-gradient(160deg, rgba(239,68,68,.32), rgba(239,68,68,.08))" : "linear-gradient(200deg, rgba(59,130,246,.34), rgba(59,130,246,.08))",
                       borderColor: sel ? (red ? "#FF7A7A" : "#7DB2FF") : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
                       boxShadow: sel ? (red ? "0 0 0 3px rgba(239,68,68,.25), 0 0 18px rgba(239,68,68,.35)" : "0 0 0 3px rgba(59,130,246,.25), 0 0 18px rgba(59,130,246,.35)") : undefined,
                     }}
                   >
-                    <span className="flex justify-center gap-[2px]" aria-hidden>
-                      {[0, 1, 2].map((i) => (
-                        <i
-                          key={i}
-                          className="h-[20px] w-[14px] rounded-[3px] border border-white/55"
-                          style={{ background: "repeating-linear-gradient(45deg, #5B3FC9 0 3px, #6E54DA 3px 6px)" }}
-                        />
-                      ))}
-                    </span>
-                    <span className={`mt-0.5 block text-[16px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
+                    <span className={`block text-[15px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
                       {o.label}
                       <span className="ml-1 rounded-full bg-white/[0.12] px-1.5 align-[2px] text-[10px] font-black text-white">{o.mult}</span>
                     </span>
-                    <span className="block text-[10px] font-bold tabular-nums text-[#C9D2F2]">
-                      {pool ? `${shortK(pool.coins)} in · 👥${pool.people}` : "no bets yet"}
+                    {/* one line: coins in · people · my pill */}
+                    <span className="flex items-center justify-center gap-1 text-[10px] font-bold tabular-nums text-[#C9D2F2]">
+                      {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "no bets"}
+                      {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
                     </span>
-                    {mine > 0 && <span className="mt-0.5 inline-block rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
                   </button>
                 );
               })}
               <span
-                className="pointer-events-none absolute left-1/2 top-1/2 grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[10.5px] font-black text-[#1A1200]"
+                className="pointer-events-none absolute left-1/2 top-1/2 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[9.5px] font-black text-[#1A1200]"
                 style={{ background: "radial-gradient(circle at 35% 30%, #FFF0B8, #F5C842 55%, #C8952A)", boxShadow: "0 0 0 3px #141A3A, 0 4px 12px rgba(0,0,0,.5)" }}
               >
                 VS
               </span>
             </div>
             {/* tug bar: which side has more coins */}
-            <div className="mt-1.5 flex h-[6px] overflow-hidden rounded-full bg-[#20284F]">
+            <div className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold tabular-nums text-[#9BA6D6]">
+            <span>{redPct}%</span>
+            <div className="flex h-[5px] flex-1 overflow-hidden rounded-full bg-[#20284F]">
               <i className="block h-full bg-gradient-to-r from-red-700 to-red-500 transition-[width] duration-500" style={{ width: `${redPct}%` }} />
               <i className="block h-full bg-gradient-to-r from-blue-500 to-blue-700 transition-[width] duration-500" style={{ width: `${100 - redPct}%` }} />
             </div>
-            <div className="mt-0.5 flex justify-between text-[9.5px] font-extrabold tabular-nums text-[#9BA6D6]">
-              <span>Red {redPct}%</span>
-              <span>Blue {100 - redPct}%</span>
+            <span>{100 - redPct}%</span>
             </div>
 
             {/* Hands */}
-            <div className="mt-1.5 grid grid-cols-5 gap-1">
+            <div className="mt-1 grid grid-cols-5 gap-1">
               {hands.map((o) => {
                 const sel = selected === o.key;
                 const pool = state.pool[o.key];
@@ -590,21 +582,25 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
                     onDoubleClick={() => quick(o.key)}
-                    className={`relative rounded-[10px] border-[1.5px] px-0.5 pb-1 pt-1 text-center disabled:opacity-60 ${
+                    className={`relative rounded-[10px] border-[1.5px] px-0.5 py-0.5 text-center disabled:opacity-60 ${
                       sel ? "border-violet-400 bg-violet-600/30 shadow-[0_0_14px_rgba(124,58,237,.4)]" : "border-white/10 bg-white/[0.06]"
                     }`}
                   >
                     {hot === o.key && <span className="absolute -right-0.5 -top-2 text-[11px]">🔥</span>}
                     <b className="block truncate text-[10.5px] font-black">{o.key === "doublerun" ? "D.Run" : o.label}</b>
-                    <em className="block text-[14px] font-black not-italic leading-tight text-amber-300">{o.mult}</em>
-                    <small className="block text-[8px] font-extrabold text-[#C4B5FD]">{HAND_ODDS[o.key]}</small>
-                    <small className="block truncate text-[8.5px] font-bold tabular-nums text-[#9BA6D6]">{pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "—"}</small>
-                    {mine > 0 && <span className="mt-0.5 inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
+                    <em className="block text-[13px] font-black not-italic leading-tight text-amber-300">{o.mult}</em>
+                    {/* chance until someone bets, then coins · people; my bet as a pill */}
+                    {mine > 0 ? (
+                      <span className="inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>
+                    ) : (
+                      <small className={`block truncate text-[8.5px] font-bold tabular-nums ${pool ? "text-[#9BA6D6]" : "text-[#C4B5FD]"}`}>
+                        {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : HAND_ODDS[o.key]}
+                      </small>
+                    )}
                   </button>
                 );
               })}
             </div>
-            <p className="mt-1 text-center text-[9px] text-[#8D97C4]">Hand bets pay only when the winning side has that hand · double-tap to bet</p>
 
             {/* Amount chips */}
             <div className="mt-1.5 flex gap-1">
@@ -614,7 +610,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                   data-chip={c}
                   type="button"
                   onClick={() => setAmount(c)}
-                  className={`flex-1 rounded-full border py-1 text-[11px] font-black ${
+                  className={`flex-1 rounded-full border py-[3px] text-[11px] font-black ${
                     amount === c ? "border-amber-300 bg-amber-300 text-[#3A2500]" : "border-white/[0.12] bg-white/[0.07] text-[#DCE3FF]"
                   }`}
                 >
@@ -676,7 +672,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 type="button"
                 disabled={!ready}
                 onClick={() => opt && state.bet(opt.key, amount)}
-                className={`rounded-xl py-2 text-[13px] font-black text-white disabled:opacity-60 ${
+                className={`rounded-xl py-1.5 text-[13px] font-black text-white disabled:opacity-60 ${
                   flash ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-violet-500 to-violet-700 shadow-[0_6px_16px_rgba(124,58,237,.4)]"
                 }`}
               >
@@ -692,7 +688,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               </button>
             </div>
 
-            <RoyaleRoad history={state.history} />
+            <RoyaleRoad history={state.history} compact />
             <RoyaleTodayTop list={state.todayTop} />
           </>
         ))}
@@ -868,8 +864,29 @@ function RoyaleResultCard({ state }: { state: RoyaleState }) {
 }
 
 /** 🔵🔴 Bead road: the last 32 results in a 4-row grid (oldest left), with counts and the streak. */
-function RoyaleRoad({ history }: { history: HistoryItem[] }) {
+function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: boolean }) {
   if (history.length === 0) return null;
+  if (compact) {
+    // while betting: one thin row of the last 16 results
+    let st = 0;
+    for (const h of history) {
+      if (h.winner === history[0].winner) st++;
+      else break;
+    }
+    return (
+      <div className="mt-1 flex items-center gap-[3px] rounded-[9px] bg-black/25 px-2 py-1">
+        {history
+          .slice(0, 16)
+          .reverse()
+          .map((h, i) => (
+            <i key={i} className={`h-[9px] w-[9px] shrink-0 rounded-full ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`} />
+          ))}
+        <span className="ml-auto whitespace-nowrap text-[9px] font-black text-[#8DBBFF]">
+          {history[0].winner === "red" || history[0].winner === "blue" ? `${history[0].winner === "red" ? "Red" : "Blue"} ×${st} · ` : ""}🔴{history.filter((h) => h.winner === "red").length} 🔵{history.filter((h) => h.winner === "blue").length}
+        </span>
+      </div>
+    );
+  }
   const list = history.slice(0, 32).reverse();
   const red = history.filter((h) => h.winner === "red").length;
   const blue = history.filter((h) => h.winner === "blue").length;
