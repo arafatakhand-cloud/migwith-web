@@ -58,6 +58,10 @@ export type RoyaleState = {
   summary: RoyaleSummary | null;
   /** The winning hand type of the last dealt round ("Jutt", "Run" …). */
   lastWinHand: string;
+  /** 🔒 provably fair: this round's sealed hash, and the last round's seed + hash. */
+  seedHash: string;
+  lastSeed: string;
+  lastSeedHash: string;
   /** 🏆 today's biggest winners (server: todayTop). */
   todayTop: { name: string; profit: number }[];
   /** 📣 the newest bet in this round, for the live ticker. */
@@ -88,6 +92,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const [lastBet, setLastBet] = useState<{ option: string; amount: number } | null>(null);
   const [summary, setSummary] = useState<RoyaleSummary | null>(null);
   const [lastWinHand, setLastWinHand] = useState("");
+  const [seeds, setSeeds] = useState({ hash: "", lastSeed: "", lastHash: "" });
   const [todayTop, setTodayTop] = useState<{ name: string; profit: number }[]>([]);
   const [ticker, setTicker] = useState<{ text: string; at: number } | null>(null);
   const [bettors, setBettors] = useState<{ name: string; options: string[]; total: number }[]>([]);
@@ -129,6 +134,11 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
         round: Number(snap.get("lastRound") || 0),
       });
       setLastWinHand(String(snap.get("lastWinHand") || ""));
+      setSeeds({
+        hash: String(snap.get("serverSeedHash") || ""),
+        lastSeed: String(snap.get("lastSeed") || ""),
+        lastHash: String(snap.get("lastSeedHash") || ""),
+      });
       // 🏆 today's top winners (Bangladesh day) — only today's list counts
       const tt = snap.get("todayTop") as { day?: string; list?: { name?: string; profit?: number }[] } | undefined;
       const today = new Date(Date.now() + 6 * 3600_000).toISOString().slice(0, 10);
@@ -277,6 +287,9 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
     history,
     summary,
     lastWinHand,
+    seedHash: seeds.hash,
+    lastSeed: seeds.lastSeed,
+    lastSeedHash: seeds.lastHash,
     todayTop,
     ticker,
     bettors,
@@ -347,6 +360,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [amount, setAmount] = useRememberedAmount("royale_bet", 500);
   const [collapsed, setCollapsed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [verify, setVerify] = useState(false);
   // ⋯ menu (bottom sheet) · 📊 live score panel · ❓ how to play
   const [menu, setMenu] = useState(false);
   const [liveScore, setLiveScore] = useState(false);
@@ -555,6 +569,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                 ["📊", "Live score", liveScore ? "✓" : "", () => (setLiveScore((v) => !v), setMenu(false))],
                 ["🎲", "Last results", "", () => (setShowHistory((v) => !v), setMenu(false))],
                 ["❓", "How to play", "", () => (setHelp(true), setMenu(false))],
+                ["🔒", "Verify last round (fair play)", "", () => (setVerify(true), setMenu(false))],
                 ["👁", "Show everyone's bets in chat", prefs.betLines ? "✓" : "", () => setRoyalePref("betLines", !prefs.betLines)],
                 ["💬", "Hide game messages in chat", prefs.hideGame ? "✓" : "", () => setRoyalePref("hideGame", !prefs.hideGame)],
                 [prefs.sound === "on" ? "🔊" : prefs.sound === "vibrate" ? "📳" : "🔇", `Sound: ${prefs.sound === "vibrate" ? "vibrate only" : prefs.sound}`, "", () =>
@@ -600,6 +615,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
       )}
 
       {showHistory && <RoyaleHistory history={state.history} />}
+      {verify && <RoyaleVerify state={state} onClose={() => setVerify(false)} />}
 
       {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
       {!collapsed && state.running && state.phase === "BETTING" && (
@@ -623,7 +639,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
           <p className="py-6 text-center text-sm font-bold text-[#9BA6D6]">🃏 Dealing cards…</p>
         ) : !state.running ? (
           <>
-            {state.lastRed.length === 3 ? <RoyaleResultCard state={state} /> : <RoyaleLastResult state={state} />}
+            {state.lastRed.length === 3 ? <RoyaleResultCard state={state} onVerify={() => setVerify(true)} /> : <RoyaleLastResult state={state} />}
             <button
               type="button"
               onClick={state.start}
@@ -941,7 +957,7 @@ function RoyaleReveal({ state, elapsed, lastOpen, onPeek }: { state: RoyaleState
 }
 
 /** 🏆 After the round: who won, both hands, and what was paid. */
-function RoyaleResultCard({ state }: { state: RoyaleState }) {
+function RoyaleResultCard({ state, onVerify }: { state: RoyaleState; onVerify: () => void }) {
   const sm = state.summary && (state.summary.round === state.lastRound || state.lastRound === 0) ? state.summary : null;
   const tie = state.lastWinner === "tie";
   const winHand = state.lastWinner === "red" ? state.lastRedHand : state.lastBlueHand;
@@ -949,6 +965,16 @@ function RoyaleResultCard({ state }: { state: RoyaleState }) {
     <div className="mt-2">
       <p className="text-center text-[13px] font-black text-amber-300">
         {tie ? "🤝 Tie — Red & Blue bets refunded" : `🏆 ${state.lastWinner === "red" ? "Red" : "Blue"} wins with ${winHand}`}
+        {state.lastSeed && (
+          <button
+            type="button"
+            onClick={onVerify}
+            title="Verify this deal"
+            className="ml-1.5 inline-grid h-5 w-5 place-items-center rounded-full bg-green-500/20 align-middle text-[10px] ring-1 ring-green-400/60"
+          >
+            🔒
+          </button>
+        )}
       </p>
       <div className="mt-1.5 grid grid-cols-2 gap-1.5">
         {(["red", "blue"] as const).map((key) => {
@@ -1338,5 +1364,120 @@ function RoyaleConfetti() {
         />
       ))}
     </span>
+  );
+}
+
+// 🔒 Provably fair check, right here in the browser: the seed must hash to the
+// hash posted at !start, and the same seed must shuffle into the same cards
+// (server: tpShuffledDeck(seed, "royale:<round>") → Red = cards 1-3, Blue = 4-6).
+const FAIR_RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+const FAIR_SUITS = ["♠", "♥", "♦", "♣"];
+async function fairSha256(text: string): Promise<string> {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
+}
+async function fairDeck(seed: string, round: number): Promise<string[]> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(seed), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const deck: string[] = [];
+  for (const su of FAIR_SUITS) for (const r of FAIR_RANKS) deck.push(r + su);
+  for (let i = deck.length - 1; i > 0; i -= 1) {
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(`teenpatti:royale:${round}:${i}`));
+    const j = new DataView(sig).getUint32(0) % (i + 1);
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+}
+
+function RoyaleVerify({ state, onClose }: { state: RoyaleState; onClose: () => void }) {
+  const [res, setRes] = useState<{ hashOk: boolean; cardsOk: boolean; round: number; red: string[]; blue: string[] } | null>(null);
+  const [err, setErr] = useState("");
+  const [copied, setCopied] = useState("");
+  useEffect(() => {
+    if (!state.lastSeed) return;
+    let dead = false;
+    (async () => {
+      try {
+        const hashOk = (await fairSha256(state.lastSeed)) === state.lastSeedHash.toLowerCase();
+        const want = state.lastRed.join(",") + "|" + state.lastBlue.join(",");
+        const tries = Array.from(new Set([state.lastRound, state.round, state.round - 1].filter((n) => n > 0)));
+        let best: { round: number; red: string[]; blue: string[]; ok: boolean } | null = null;
+        for (const r of tries) {
+          const d = await fairDeck(state.lastSeed, r);
+          const red = d.slice(0, 3);
+          const blue = d.slice(3, 6);
+          const ok = red.join(",") + "|" + blue.join(",") === want;
+          if (!best || ok) best = { round: r, red, blue, ok };
+          if (ok) break;
+        }
+        if (!dead && best) setRes({ hashOk, cardsOk: best.ok, round: best.round, red: best.red, blue: best.blue });
+      } catch {
+        if (!dead) setErr("This browser can't run the check.");
+      }
+    })();
+    return () => {
+      dead = true;
+    };
+  }, [state.lastSeed, state.lastSeedHash, state.lastRound, state.round, state.lastRed, state.lastBlue]);
+  const copy = (label: string, v: string) => {
+    navigator.clipboard?.writeText(v).then(() => setCopied(label), () => {});
+  };
+  const row = (label: string, v: string) => (
+    <div className="mt-1.5">
+      <p className="text-[10px] font-black uppercase tracking-wide text-[#9BA6D6]">{label}</p>
+      <button type="button" onClick={() => copy(label, v)} className="mt-0.5 block w-full break-all rounded-lg bg-black/30 px-2 py-1 text-left font-mono text-[10px] text-[#DCE3FF]">
+        {v || "—"}
+        <span className="ml-1 font-sans text-[9px] font-black text-amber-300">{copied === label ? "✓ copied" : "copy"}</span>
+      </button>
+    </div>
+  );
+  return (
+    <div className="fixed inset-0 z-[95] grid place-items-center bg-black/60 p-4" onClick={onClose}>
+      <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-[18px] border border-green-400/30 bg-[#0D1128] p-4 text-[12px] text-[#EAF0FF]" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <span className="grid h-8 w-8 place-items-center rounded-full bg-green-500/20 text-[15px] ring-1 ring-green-400/60">🔒</span>
+          <span className="leading-tight">
+            <b className="block text-[14px] text-white">Provably fair</b>
+            <span className="text-[11px] text-[#9BA6D6]">{res ? `Round #${res.round}` : "Last round"}</span>
+          </span>
+          <button type="button" onClick={onClose} className="ml-auto px-2 text-[16px] text-[#9BA6D6]">✕</button>
+        </div>
+        <ol className="mt-2 list-decimal space-y-0.5 pl-4 text-[11.5px] text-[#C9D2F2]">
+          <li>The seed's hash is posted at !start — before anyone bets.</li>
+          <li>Both hands come from that seed.</li>
+          <li>The seed is revealed with the result, so anyone can check.</li>
+        </ol>
+        {!state.lastSeed ? (
+          <p className="mt-3 rounded-lg bg-white/5 p-2 text-center text-[11.5px] text-[#C9D2F2]">No finished round to check yet.</p>
+        ) : err ? (
+          <p className="mt-3 text-center text-[11.5px] text-red-300">{err}</p>
+        ) : !res ? (
+          <p className="mt-3 text-center text-[11.5px] text-[#C9D2F2]">Checking…</p>
+        ) : (
+          <>
+            <div className="mt-3 grid grid-cols-2 gap-1.5">
+              {([["🔴 Red", res.red], ["🔵 Blue", res.blue]] as const).map(([l, c]) => (
+                <div key={l} className="flex flex-col items-center rounded-xl bg-white/5 py-1.5">
+                  <span className="text-[10.5px] font-black">{l}</span>
+                  <span className="mt-1 flex gap-0.5">{c.map((x) => <MiniCard key={x} card={x} size="sm" />)}</span>
+                </div>
+              ))}
+            </div>
+            <p className={`mt-2 text-center text-[13px] font-black ${res.hashOk && res.cardsOk ? "text-green-400" : "text-red-400"}`}>
+              Hash {res.hashOk ? "✓" : "✗"} · cards rebuilt {res.cardsOk ? "✓" : "✗"}
+            </p>
+            <p className="text-center text-[10.5px] text-[#9BA6D6]">
+              {res.hashOk && res.cardsOk ? "The deal was fixed before the first bet." : "Something doesn't match — please tell an admin."}
+            </p>
+          </>
+        )}
+        {state.lastSeed && row("Hash posted at start", state.lastSeedHash)}
+        {state.lastSeed && row("Seed revealed after", state.lastSeed)}
+        {state.running && state.seedHash && row(`Round #${state.round} — sealed now`, state.seedHash)}
+        <p className="mt-2 text-[10px] leading-snug text-[#7E89B8]">
+          Check it yourself: SHA-256(seed) = hash. Cards: shuffle 2♠…A♣ with HMAC-SHA256(seed, &quot;teenpatti:royale:ROUND:i&quot;), Red = cards 1-3, Blue = 4-6.
+        </p>
+      </div>
+    </div>
   );
 }

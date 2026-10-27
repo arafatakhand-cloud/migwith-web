@@ -8,7 +8,7 @@ import { MiniCard } from "./Cards";
 
 type Scene = { ch: number; title: string; cap: string; desc: string; len: number; draw: (t: number) => ReactNode };
 
-const CHAPTERS = ["Join a round", "Bets & multipliers", "Reveal & payouts", "Roadmap"];
+const CHAPTERS = ["Join a round", "Bets & multipliers", "Reveal & payouts", "Roadmap", "Fair play"];
 
 /* ---------- small pieces ---------- */
 function Back({ xs }: { xs?: boolean }) {
@@ -551,6 +551,43 @@ const SCENES: Scene[] = [
           </p>
           {at(t, 3800) && <p className="royale-tick mt-1 text-center text-[10px] font-bold text-[#9BA6D6]">History can't predict the next round</p>}
         </>
+      );
+    },
+  },
+  {
+    ch: 4,
+    title: "Sealed before you bet",
+    cap: "The deal is fixed — and published as a hash — before the first bet.",
+    desc: "At !start the bot locks a secret seed and posts its SHA-256 hash. After betting, a deck shuffled from that seed deals both hands, and the seed is revealed with the result. Tap the green 🔒 on the result (or ⋯ → Verify last round): it checks the hash and rebuilds the exact cards.",
+    len: 8000,
+    draw: (t) => {
+      const steps = ["The seed's hash is posted at !start", "Both hands come from that seed", "The seed is revealed with the result"];
+      const tap = t > 3600 && t < 4300;
+      const ok = at(t, 4300);
+      return (
+        <div className="relative rounded-[12px] bg-white/95 p-2 text-[#14183A]">
+          <p className="text-center text-[12.5px] font-black">🔒 Provably fair</p>
+          <ol className="mt-1 space-y-0.5 text-[10.5px] font-bold">
+            {steps.map((x, k) =>
+              at(t, 300 + k * 800) ? (
+                <li key={x} className="royale-tick">
+                  {k + 1}. {x}
+                </li>
+              ) : (
+                <li key={x} className="h-[15px]" />
+              )
+            )}
+          </ol>
+          {at(t, 2800) && (
+            <div className="royale-tick mt-1.5 flex flex-col items-center">
+              <span className={`rounded-full border-2 px-3 py-0.5 text-[10.5px] font-black transition ${tap || ok ? "border-amber-400 bg-amber-100 shadow-[0_0_10px_rgba(245,158,11,.5)]" : "border-[#14183A]/20 bg-white"}`}>
+                Verify this deal
+              </span>
+              {ok && <span className="royale-tick mt-1 text-[13px] font-black text-green-600">Hash ✓ · cards rebuilt ✓</span>}
+            </div>
+          )}
+          {tap && <Finger className="bottom-2 left-[56%]" />}
+        </div>
       );
     },
   },
