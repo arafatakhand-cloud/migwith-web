@@ -94,21 +94,32 @@ function startOfToday(): number {
 // shower's gifts in one transaction, so they share the exact same time (and
 // gift). Single gifts each have their own time.
 function giftItems(gifts: { id: string; data: DocumentData }[]): Item[] {
-  const showers = new Map<string, { id: string; time: number; gift: string; total: number; names: string[] }>();
+  // 🗂 Folded: all gifts to the same person in the same room become ONE line
+  // (count, total coins, the latest time), so a long list stays short.
+  const groups = new Map<string, { id: string; time: number; room: string; to: string; total: number; count: number; names: Set<string> }>();
   for (const g of gifts) {
     const time = ms(g.data.createdAt);
     if (time <= 0) continue;
-    const gift = String(g.data.giftName || "Gift");
-    const k = `${time}|${gift.toLowerCase()}`;
-    const cur = showers.get(k) || { id: g.id, time, gift, total: 0, names: [] as string[] };
+    const room = String(g.data.roomId || "").startsWith("private_") || !g.data.roomId ? "private chat" : String(g.data.roomId);
+    const to = String(g.data.toUsername || "user");
+    const k = `${room}|${to.toLowerCase()}`;
+    const cur = groups.get(k) || { id: g.id, time: 0, room, to, total: 0, count: 0, names: new Set<string>() };
     cur.total += Math.abs(num(g.data.cost));
-    cur.names.push(String(g.data.toUsername || "user"));
-    showers.set(k, cur);
+    cur.count += 1;
+    cur.names.add(String(g.data.giftName || "Gift"));
+    if (time > cur.time) {
+      cur.time = time;
+      cur.id = g.id;
+    }
+    groups.set(k, cur);
   }
-  return Array.from(showers.values()).map((v) => ({
-    key: `gift_${v.id}`,
+  return Array.from(groups.values()).map((v) => ({
+    key: `gift_${v.room}_${v.to}`,
     timeMs: v.time,
-    title: v.names.length > 1 ? `Gift Shower ${v.gift} to ${v.names.length} people` : `Sent ${v.gift} to ${v.names[0]}`,
+    title:
+      v.count === 1
+        ? `Sent ${Array.from(v.names)[0]} to ${v.to} in ${v.room}`
+        : `🎁 ${v.count} gifts to ${v.to} in ${v.room}`,
     amount: -v.total,
     icon: "🎁",
     gift: true,
