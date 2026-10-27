@@ -1084,7 +1084,7 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
       else break;
     }
     return (
-      <div className="mt-1 flex items-center gap-[3px] rounded-[9px] bg-black/25 px-2 py-1">
+      <div className="mt-1 flex items-center gap-[3px] rounded-[9px] px-2 py-1">
         {history
           .slice(0, 16)
           .reverse()
