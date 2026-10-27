@@ -6,6 +6,8 @@ import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { MiniCard } from "./Cards";
 import RoyaleGuide from "./RoyaleGuide";
+import { RkStyleDialog, rkBoxStyle, rkSkin } from "./RoyaleSkins";
+import { LB_KINDS, useInventory } from "./StyleShop";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { useGameAutoFold } from "../../lib/gameBoxFold";
 import { LiveWatch } from "./LiveWatch";
@@ -39,6 +41,8 @@ type HistoryItem = { round: number; winner: string; hand: string };
 export type RoyaleSummary = { round: number; players: number; winningBets: number; paidOut: number; gotBack: number; top: { name: string; profit: number } | null };
 
 export type RoyaleState = {
+  /** my uid (for my box colour) */
+  uid: string | undefined;
   running: boolean;
   phase: string;
   round: number;
@@ -271,6 +275,7 @@ export function useRoyale(enabled: boolean, uid: string | undefined, note: (t: s
   const secondsLeft = running && phaseEndsAt ? Math.max(0, Math.ceil((phaseEndsAt - now) / 1000)) : 0;
 
   return {
+    uid,
     running,
     phase,
     round,
@@ -365,6 +370,10 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [menu, setMenu] = useState(false);
   const [liveScore, setLiveScore] = useState(false);
   const [help, setHelp] = useState(false);
+  // 🎨 my box colour (bought with coins; what I see)
+  const inv = useInventory("lb_inventory", state.uid, LB_KINDS);
+  const skin = rkSkin(inv.active.royale);
+  const [shop, setShop] = useState(false);
   const prefs = useRoyalePrefs();
   const [flash, setFlash] = useState(false);
   const prevMine = useRef(0);
@@ -454,10 +463,10 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   return (
     <div
       ref={boxRef}
-      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] shadow-[0_10px_30px_rgba(8,12,30,.35)] ${
+      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.light ? "rk-light shadow-[0_10px_26px_rgba(27,36,64,.12)]" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
         canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
       }`}
-      style={{ background: "radial-gradient(130% 80% at 50% 0%, #26306A 0%, #141A3A 55%, #0D1128 100%)" }}
+      style={rkBoxStyle(skin)}
     >
       {stamp && (
         <div className="royale-stamp pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#080A19]/55 text-[22px] font-black tracking-[1px] text-amber-300">
@@ -473,7 +482,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
       <div className="flex items-center gap-2">
         <div className="relative h-8 w-8 shrink-0">
           <svg viewBox="0 0 32 32" className="h-full w-full -rotate-90" aria-hidden>
-            <circle cx="16" cy="16" r="14" fill="none" stroke="#2A3366" strokeWidth="3.5" />
+            <circle cx="16" cy="16" r="14" fill="none" stroke="var(--rk-track, #2A3366)" strokeWidth="3.5" />
             {state.running && (
               <circle
                 cx="16" cy="16" r="14" fill="none" stroke={state.secondsLeft <= 5 ? "#EF4444" : "#A78BFA"} strokeWidth="3.5" strokeLinecap="round"
@@ -552,7 +561,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {/* ⋯ menu: a sheet from the bottom of the box */}
       {menu && (
-        <div className="fixed inset-0 z-[90] flex flex-col items-center justify-end bg-black/50" onClick={() => setMenu(false)}>
+        <div className="rk-keep fixed inset-0 z-[90] flex flex-col items-center justify-end bg-black/50" onClick={() => setMenu(false)}>
           <div className="w-full max-w-md rounded-t-[20px] bg-[#F5F7FC] p-2.5 pb-[calc(env(safe-area-inset-bottom)+12px)] text-[#1B2440]" onClick={(e) => e.stopPropagation()}>
             <div className="mb-1.5 flex items-center gap-2 px-1">
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-violet-100 text-[15px]">👑</span>
@@ -568,6 +577,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               [
                 ["📊", "Live score", liveScore ? "✓" : "", () => (setLiveScore((v) => !v), setMenu(false))],
                 ["🎲", "Last results", "", () => (setShowHistory((v) => !v), setMenu(false))],
+                ["🎨", "Box colour", skin.light ? skin.emoji ?? "" : "", () => (setShop(true), setMenu(false))],
                 ["❓", "How to play", "", () => (setHelp(true), setMenu(false))],
                 ["🔒", "Verify last round (fair play)", "", () => (setVerify(true), setMenu(false))],
                 ["👁", "Show everyone's bets in chat", prefs.betLines ? "✓" : "", () => setRoyalePref("betLines", !prefs.betLines)],
@@ -593,7 +603,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {/* ❓ How to play */}
       {help && (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-black/60 p-4" onClick={() => setHelp(false)}>
+        <div className="rk-keep fixed inset-0 z-[90] grid place-items-center bg-black/60 p-4" onClick={() => setHelp(false)}>
          <div className="max-h-[80vh] w-full max-w-sm overflow-y-auto rounded-[18px] bg-[#0D1128] p-4 text-[12px] leading-relaxed text-[#EAF0FF]">
           <p className="text-[14px] font-black text-amber-300">👑 How to play MIG Royale</p>
           <RoyaleGuide />
@@ -616,6 +626,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {showHistory && <RoyaleHistory history={state.history} />}
       {verify && <RoyaleVerify state={state} onClose={() => setVerify(false)} />}
+      {shop && <RkStyleDialog inv={inv} onClose={() => setShop(false)} />}
 
       {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
       {!collapsed && state.running && state.phase === "BETTING" && (
@@ -689,7 +700,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
               })}
               <span
                 className="pointer-events-none absolute left-1/2 top-1/2 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[9.5px] font-black text-[#1A1200]"
-                style={{ background: "radial-gradient(circle at 35% 30%, #FFF0B8, #F5C842 55%, #C8952A)", boxShadow: "0 0 0 3px #141A3A, 0 4px 12px rgba(0,0,0,.5)" }}
+                style={{ background: "radial-gradient(circle at 35% 30%, #FFF0B8, #F5C842 55%, #C8952A)", boxShadow: "0 0 0 3px var(--rk-ring, #141A3A), 0 4px 12px rgba(0,0,0,.3)" }}
               >
                 VS
               </span>
@@ -1432,7 +1443,7 @@ function RoyaleVerify({ state, onClose }: { state: RoyaleState; onClose: () => v
     </div>
   );
   return (
-    <div className="fixed inset-0 z-[95] grid place-items-center bg-black/60 p-4" onClick={onClose}>
+    <div className="rk-keep fixed inset-0 z-[95] grid place-items-center bg-black/60 p-4" onClick={onClose}>
       <div className="max-h-[85vh] w-full max-w-sm overflow-y-auto rounded-[18px] border border-green-400/30 bg-[#0D1128] p-4 text-[12px] text-[#EAF0FF]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-full bg-green-500/20 text-[15px] ring-1 ring-green-400/60">🔒</span>

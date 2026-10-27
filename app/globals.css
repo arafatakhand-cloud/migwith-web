@@ -1309,3 +1309,20 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
 .royale-confetti { animation: royale-confetti 1.4s ease-out forwards; opacity: 0; }
 @keyframes royale-confetti { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), 70px) rotate(300deg); } }
 @media (prefers-reduced-motion: reduce) { .royale-confetti { display: none; } }
+/* 🎨 MIG Royale light box colours: the box is written for a dark background, so
+   in a light colour (.rk-light, variables set on the box by rkBoxStyle) its text
+   and tint classes are mapped to the colour's own ink / tint / line. Dark pop-ups
+   inside the box (.rk-keep) stay as they are. */
+.rk-light :is(.text-\[\#EAF0FF\], .text-\[\#DCE3FF\], .bg-white\/\[0\.12\].text-white):not(.rk-keep *) { color: var(--rk-ink); }
+.rk-light { color: var(--rk-ink) !important; }
+.rk-light :is(.text-\[\#C9D2F2\]):not(.rk-keep *) { color: var(--rk-sub); }
+.rk-light :is(.text-\[\#9BA6D6\], .text-\[\#7E89B8\], .text-white\/80, .text-white\/70, .text-white\/45, .text-white\/40, .text-white\/35):not(.rk-keep *) { color: var(--rk-muted); }
+.rk-light :is(.text-\[\#C4B5FD\]):not(.rk-keep *) { color: var(--rk-odds); }
+.rk-light :is(.text-amber-300, .text-amber-200):not(.rk-keep *) { color: var(--rk-gold); }
+.rk-light :is(.text-\[\#8DBBFF\], .text-blue-300):not(.rk-keep *) { color: #2563EB; }
+.rk-light :is(.text-\[\#FF8C8C\], .text-red-300, .text-red-400):not(.rk-keep *) { color: #DC2626; }
+.rk-light :is(.text-green-400):not(.rk-keep *) { color: #16A34A; }
+.rk-light :is(.bg-white\/10, .bg-white\/5, .bg-white\/\[0\.06\], .bg-white\/\[0\.07\], .bg-white\/\[0\.08\], .bg-white\/\[0\.12\], .bg-black\/30, .bg-black\/25, .bg-\[\#20284F\]):not(.rk-keep *) { background-color: var(--rk-tint); }
+.rk-light :is(.border-white\/10, .border-white\/15, .border-white\/5, .border-white\/\[0\.12\], .border-white\/\[0\.14\]):not(.rk-keep *) { border-color: var(--rk-line); }
+.rk-light .placeholder\:text-\[\#DCE3FF\]::placeholder { color: var(--rk-muted); }
+.rk-light .royale-stamp { background: color-mix(in srgb, var(--rk-ring) 78%, transparent) !important; }

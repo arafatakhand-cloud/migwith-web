@@ -25,6 +25,7 @@ export type ShopKind = {
 export const LB_KINDS: ShopKind[] = [
   { kind: "box", ownedField: "ownedBoxes", free: "royal" },
   { kind: "cricket", ownedField: "ownedCricket", free: "classic" },
+  { kind: "royale", ownedField: "ownedRoyale", free: "classic" },
 ];
 
 export type Inventory = {
