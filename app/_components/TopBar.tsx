@@ -96,6 +96,19 @@ export function TopBar() {
   orderRef.current = { order, here };
   // The tabs next to this one load ahead, so a swipe opens them at once.
   const orderKey = order.join("|");
+  // ⚡ Every open tab is fetched ahead (fully), and again every 4 minutes, so
+  // tapping or swiping to any of them opens at once instead of waiting for
+  // the server.
+  useEffect(() => {
+    const all = () => order.forEach((p) => p !== here && router.prefetch(p, { kind: "full" } as Parameters<typeof router.prefetch>[1]));
+    const t0 = window.setTimeout(all, 1500);
+    const every = window.setInterval(all, 4 * 60_000);
+    return () => {
+      clearTimeout(t0);
+      clearInterval(every);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderKey, here, router]);
   useEffect(() => {
     const i = order.indexOf(here);
     if (i < 0) return;

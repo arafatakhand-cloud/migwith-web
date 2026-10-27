@@ -22,5 +22,12 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Pages only: not Next's own files or anything in public/ (icons, sounds …).
-  matcher: ["/((?!_next/|api/|.*\\.[a-zA-Z0-9]+$).*)"],
+  // ⚡ Only on miglife.app / www.miglife.app — web.miglife.app pages (and every
+  // tab switch there) no longer pass through this extra step.
+  matcher: [
+    {
+      source: "/((?!_next/|api/|.*\\.[a-zA-Z0-9]+$).*)",
+      has: [{ type: "host", value: "(www\\.)?miglife\\.app" }],
+    },
+  ],
 };
