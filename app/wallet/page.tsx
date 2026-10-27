@@ -53,7 +53,24 @@ const transferCoins = httpsCallable<{ toUid: string; amount: number; operationId
 );
 
 
-type Item = { key: string; timeMs: number; title: string; amount: number; icon: string; gift?: boolean };
+type ActCat = "gifts" | "games" | "transfers" | "others";
+type Item = { key: string; timeMs: number; title: string; amount: number; icon: string; gift?: boolean; cat?: ActCat };
+
+// 🗂 Activity categories (the pills above the list)
+const ACT_CATS: { key: "all" | ActCat; label: string }[] = [
+  { key: "all", label: "🪙 All" },
+  { key: "games", label: "🎮 Games" },
+  { key: "gifts", label: "🎁 Gifts" },
+  { key: "transfers", label: "🤝 Transfers" },
+  { key: "others", label: "✨ Other" },
+];
+const GAME_SOURCES = ["lowcard", "royale", "luxury", "luxury_bet", "teenpatti", "teen_patti", "ludo", "cricket", "twentynine", "29", "trivia", "game"];
+function txCat(type: string, source: string): ActCat {
+  if (type.startsWith("transfer")) return "transfers";
+  if (source === "lucky_user" || source === "lucky_voucher") return "others";
+  if (type === "bet" || type.includes("payout") || type.includes("refund") || type.includes("win") || GAME_SOURCES.includes(source)) return "games";
+  return "others";
+}
 
 const num = (v: unknown) => (typeof v === "number" ? Math.trunc(v) : Number(String(v ?? "").trim()) || 0);
 const ms = (v: any) => (v && typeof v.toMillis === "function" ? v.toMillis() : 0);
@@ -95,6 +112,7 @@ function giftItems(gifts: { id: string; data: DocumentData }[]): Item[] {
     amount: -v.total,
     icon: "🎁",
     gift: true,
+    cat: "gifts" as const,
   }));
 }
 
@@ -155,7 +173,7 @@ function txItem(id: string, t: DocumentData): Item | null {
             : amount >= 0
               ? "↙"
               : "↗";
-  return { key: id, timeMs: time, title, amount, icon };
+  return { key: id, timeMs: time, title, amount, icon, cat: txCat(type, source) };
 }
 
 export default function WalletPage() {
@@ -306,6 +324,7 @@ export default function WalletPage() {
         title: `Luxury Bot #${v.round} — winning payout`,
         amount: v.total,
         icon: "🏆",
+        cat: "games" as const,
       }));
 
     // 🎁 Gifts ALWAYS show: lots of bets used to push them out of the 30
@@ -335,16 +354,30 @@ export default function WalletPage() {
   }, [todayTx, todayGifts]);
   const spentOnGifts = todayGifts.reduce((s, g) => s + Math.max(0, num(g.cost)), 0);
 
+  // 🗂 the chosen category, and what it adds up to
+  const [cat, setCat] = useState<"all" | ActCat>("all");
+  const shownItems = useMemo(() => (cat === "all" ? items : items.filter((it) => it.cat === cat)), [items, cat]);
+  const summary = useMemo(() => {
+    let inSum = 0;
+    let outSum = 0;
+    let since = Date.now();
+    for (const it of shownItems) {
+      if (it.amount >= 0) inSum += it.amount;
+      else outSum += -it.amount;
+      since = Math.min(since, it.timeMs);
+    }
+    return { inSum, outSum, net: inSum - outSum, since };
+  }, [shownItems]);
   const grouped = useMemo(() => {
     const out: [string, Item[]][] = [];
-    for (const it of items) {
+    for (const it of shownItems) {
       const day = dayLabel(it.timeMs);
       const last = out[out.length - 1];
       if (last && last[0] === day) last[1].push(it);
       else out.push([day, [it]]);
     }
     return out;
-  }, [items]);
+  }, [shownItems]);
 
   useEffect(() => {
     const to = receiver.trim().replace(/^@/, "");
@@ -531,14 +564,53 @@ export default function WalletPage() {
           </button>
           {success && <p className="mt-2 text-sm font-semibold text-emerald-700">{success}</p>}
 
-          <div className="mt-2 flex items-center gap-[7px]">
-            <h2 className="text-[17px] font-bold text-[#0E1B3D]">Activity</h2>
-            <span className="wl-count rounded-full bg-[#65DDF1] px-2 py-[3px] text-[10px] font-bold leading-none text-[#16315F]">{items.length}</span>
+          <h2 className="mt-3 text-[13px] font-extrabold uppercase tracking-[1px] text-[#64748B]">Activity ({shownItems.length})</h2>
+          {/* 🗂 categories */}
+          <div className="no-scrollbar -mx-1 mt-1.5 flex gap-1.5 overflow-x-auto px-1 pb-1" data-noswipe>
+            {ACT_CATS.map((c) => {
+              const on = cat === c.key;
+              return (
+                <button
+                  key={c.key}
+                  type="button"
+                  onClick={() => setCat(c.key)}
+                  aria-pressed={on}
+                  className={`shrink-0 rounded-full border px-3.5 py-[7px] text-[13px] font-extrabold transition ${
+                    on ? "border-[#0E7490] bg-[#0E7490] text-white shadow-[0_3px_10px_rgba(14,116,144,.3)]" : "border-[#DDE3EE] bg-[#EEF2F8] text-[#5B6B8A]"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
           </div>
+          {/* 📊 summary of what is shown */}
+          {shownItems.length > 0 && (
+            <div className="mt-1 grid grid-cols-3 gap-1.5 rounded-[14px] border border-[#D3E4F8] bg-[#F6FAFF] p-2 text-center">
+              <div>
+                <p className="text-[10px] font-bold text-[#6B7A90]">In</p>
+                <p className="text-[14px] font-extrabold text-[#14A044]">+{short(summary.inSum)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[#6B7A90]">Out</p>
+                <p className="text-[14px] font-extrabold text-[#E5202E]">−{short(summary.outSum)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-[#6B7A90]">Net</p>
+                <p className={`text-[14px] font-extrabold ${summary.net >= 0 ? "text-[#14A044]" : "text-[#E5202E]"}`}>
+                  {summary.net >= 0 ? "+" : "−"}
+                  {short(Math.abs(summary.net))}
+                </p>
+              </div>
+              <p className="col-span-3 text-[10px] font-semibold text-[#6B7A90]">
+                {shownItems.length} {shownItems.length === 1 ? "entry" : "entries"} · since {new Date(summary.since).toLocaleDateString([], { day: "numeric", month: "short" })}
+              </p>
+            </div>
+          )}
           <div className="h-[7px]" />
 
           {grouped.length === 0 ? (
-            <p className="p-2.5 text-[13px] text-[#35507E]">No activity yet.</p>
+            <p className="p-2.5 text-[13px] text-[#35507E]">{cat === "all" ? "No activity yet." : "Nothing in this category yet."}</p>
           ) : (
             grouped.map(([day, list]) => (
               <div key={day}>
