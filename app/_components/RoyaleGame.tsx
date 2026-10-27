@@ -584,8 +584,10 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.9x (your stake included).</li>
             <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
             <li>A hand bet pays only when the WINNING side has that hand.</li>
-            <li>Tie: Red and Blue bets come back.</li>
-            <li>Min 100 · max 200,000 per option a round. Double-tap a tile to bet at once.</li>
+            <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
+            <li>Tie: Red and Blue bets come back; a hand bet on that hand still wins.</li>
+            <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
+            <li>Min 100 · max 200,000 per option a round · biggest win 5,000,000 a round. Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
@@ -1047,8 +1049,9 @@ function RoyaleTodayTop({ list }: { list: { name: string; profit: number }[] }) 
   );
 }
 
-// Real chance of each hand type in a 3-card deal (shown under the hand tiles).
-const HAND_ODDS: Record<string, string> = { jutt: "17%", color: "5%", run: "3%", doublerun: "0.2%", tirel: "0.2%" };
+// Real chance that the WINNING side has this hand (what a hand bet needs) —
+// the better of two 3-card hands, so higher than one hand's chance.
+const HAND_ODDS: Record<string, string> = { jutt: "28%", color: "9%", run: "6%", doublerun: "0.4%", tirel: "0.5%" };
 
 /** My winnings of a round from my bets and the result (same rules as the server). */
 function myWinOf(bets: Record<string, number>, winner: string, winHand: string): number {
