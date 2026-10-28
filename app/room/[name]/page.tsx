@@ -2213,7 +2213,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               })}
               </div>
               {/* ⬇ back to the newest line in one tap, whenever you have scrolled up */}
-              {farUp && newBelow === 0 && (
+              {/* 🔢 the number of new lines is written on the pill (30 new → "30") */}
+              {(farUp || newBelow > 0) && (
                 <div className="pointer-events-none sticky bottom-0 flex h-0 justify-end pr-3">
                   <button
                     type="button"
@@ -2222,11 +2223,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                       const el = listRef.current;
                       stickToBottom.current = true;
                       setFarUp(false);
+                      setNewBelow(0);
+                      setNewBelowStats(NO_NEW_BELOW);
                       el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
                     }}
-                    className="pointer-events-auto flex h-8 w-12 -translate-y-12 items-center justify-center rounded-full border border-[#D5E3F5] bg-white text-[18px] font-black leading-none text-[#2B5FD9] shadow-md"
+                    className="pointer-events-auto flex h-8 min-w-12 px-2.5 -translate-y-12 items-center justify-center rounded-full border border-[#D5E3F5] bg-white text-[18px] font-black leading-none text-[#2B5FD9] shadow-md"
                   >
-                    ⌄
+                    ⌄{newBelow > 0 ? ` ${newBelow > 99 ? "99+" : newBelow}` : ""}
                   </button>
                 </div>
               )}
