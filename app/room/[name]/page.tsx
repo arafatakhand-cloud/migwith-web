@@ -1223,12 +1223,30 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎴 Many tables at once: only the bot lines of the table this phone shows.
   const tablesVersion = useGameTablesVersion();
   const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : roomName === TN_ROOM || roomName === TN_FREE_ROOM ? "tn" : roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? "ludo" : null;
+  // 🚫 the newest "Bet rejected" line of MIG Royale, as a short toast over the box
+  const [rejectToast, setRejectToast] = useState<{ id: string; text: string } | null>(null);
+  useEffect(() => {
+    if (roomName !== ROYALE_ROOM) return;
+    for (let i = shown.length - 1; i >= 0; i--) {
+      const m = shown[i];
+      if (!m.text.startsWith("MIG Royale Bot: Bet rejected")) continue;
+      if (rejectToast?.id === m.id) return;
+      const text = m.text.replace(/^MIG Royale Bot: /, "");
+      setRejectToast({ id: m.id, text });
+      const t = setTimeout(() => setRejectToast(null), 2800);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shown, roomName]);
+
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
     return shown.filter((m) => {
       if (m.type !== "room_entry" && m.type !== "room_leave" && chatHideBotLine(hideBots, m.text, roomName, myName)) return false;
       // 🔒 MIG Royale's "Fair round — cards were locked before betting." line is hidden (miglife asked)
       if (m.text.includes("Fair round — cards were locked before betting")) return false;
+      // 🚫 MIG Royale's "Bet rejected…" lines show as a toast over the box, not in the chat
+      if (roomName === ROYALE_ROOM && m.text.startsWith("MIG Royale Bot: Bet rejected")) return false;
       // 📣 MIG Royale's "X has N coins on the table — …" bet lines are shown in the box's live ticker instead
       if (roomName === ROYALE_ROOM && !royalePrefs.betLines && /^MIG Royale Bot: .+ has [\d,]+ coins on the table/.test(m.text)) return false;
       // 💬 "Hide game messages in chat" (⋯ menu): every MIG Royale Bot line hides (the box shows it all)
@@ -2268,6 +2286,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {luxury && <LuxuryBetBox state={luxury} uid={user.uid} note={note} />}
                 {luxuryBet && (
                   <LuxuryBetTable state={luxuryBet} uid={user.uid} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
+                )}
+                {rejectToast && (
+                  <div key={rejectToast.id} className="royale-float mx-2 mt-1 rounded-full bg-gradient-to-r from-[#FF5A3C] to-[#E8343E] px-3.5 py-1.5 text-center text-[12px] font-black text-white shadow-[0_6px_16px_rgba(232,52,62,.35)]">
+                    🚫 {rejectToast.text}
+                  </div>
                 )}
                 {royale && <RoyaleTable state={royale} footer={<ChatBar
                   text={text}
