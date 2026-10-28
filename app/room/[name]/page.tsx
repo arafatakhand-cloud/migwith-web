@@ -3105,7 +3105,7 @@ function luxuryBetLine(text: string): ReactNode | null {
 // 🎁 Gift Showers go out at least 2 s apart (the app does the same): one sent
 // sooner waits until 2 s after the last one, then goes. Its room line is
 // posted when the server answers, so the lines come 2 s apart too.
-const GIFT_SHOWER_GAP_MS = 2_000;
+const GIFT_SHOWER_GAP_MS = 500;
 let giftShowerChain: Promise<unknown> = Promise.resolve();
 let lastGiftShowerAt = 0;
 function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
