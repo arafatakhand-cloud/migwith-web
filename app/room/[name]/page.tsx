@@ -630,6 +630,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   permsRef.current = perms;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
+  // 🔒 I was in the room before it got locked (the server showed it unlocked
+  // while it was open here, or this tab already had a visit): a lock only stops
+  // new people coming in, it never sends me out (miglife asked).
+  const insideBeforeLockRef = useRef(false);
+  const sinceMsRef = useRef(sinceMs);
+  sinceMsRef.current = sinceMs;
 
   // Kicked, banned, full or not allowed in: the tab closes.
   useEffect(() => {
@@ -647,10 +653,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (!profile || !roomLoaded || !modLoaded) return;
     if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel) {
       setBlocked(`This room needs level ${roomInfo.lockLevel}. You are level ${profile.level}.`);
-    } else if (locked) {
+    } else if (locked && !insideBeforeLockRef.current && sinceMs === null) {
       setBlocked("🔒 This room is locked. Only admins and mods can enter right now.");
     }
-  }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked]);
+  }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked, sinceMs]);
 
   // Live chat — the latest 150 messages, same collection the app uses.
   // 🔒 The server lets only people IN the room read its chat: opening a room,
@@ -767,6 +773,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       (snap) => {
         setSilenced(snap.get("silenced") === true);
         setLocked(snap.get("locked") === true);
+        if (!snap.metadata.fromCache && snap.get("locked") !== true) insideBeforeLockRef.current = true;
         setAnnouncement(String(snap.get("announcement") || "").trim());
         setModLoaded(true);
       },
@@ -790,7 +797,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const info = roomInfoRef.current;
     if (
       !permsRef.current.bypassesEntry &&
-      ((info.lockLevel > 0 && profile.level < info.lockLevel) || lockedRef.current)
+      ((info.lockLevel > 0 && profile.level < info.lockLevel) ||
+        (lockedRef.current && !insideBeforeLockRef.current && sinceMsRef.current === null))
     ) {
       return;
     }
