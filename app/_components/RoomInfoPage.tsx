@@ -363,11 +363,19 @@ export function RoomInfoPage({
           ←
         </button>
         <h2 className="flex-1 truncate text-lg font-bold text-white">{editing ? "Edit Room Info" : "Room Info"}</h2>
-        {/* Everyone sees the pencil; only people allowed to update the room get their change saved. */}
+        {/* Everyone sees the pencil; only people who may change something here
+            (room admins / private-room managers, a public room's mods for the
+            entry level) get into Edit Room Info — others just get the toast. */}
         <button
           type="button"
           aria-label={editing ? "Save" : "Edit"}
-          onClick={() => (editing ? save() : setEditing(true))}
+          onClick={() =>
+            editing
+              ? save()
+              : canManage || (!perms.isUserRoom && perms.isRoomMod)
+                ? setEditing(true)
+                : say("You are not authorized to update this room!")
+          }
           className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-white/50 bg-white/20 text-xl font-bold text-white"
         >
           {editing ? "✓" : "✎"}
