@@ -2288,7 +2288,42 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {luxuryBet && (
                   <LuxuryBetTable state={luxuryBet} uid={user.uid} onlyMine={onlyMyBets} onToggleOnlyMine={() => setOnlyMyBets((v) => !v)} />
                 )}
-                {royale && <RoyaleTable state={royale} />}
+                {royale && <RoyaleTable state={royale} footer={<ChatBar
+                  text={text}
+                  setText={setText}
+                  inputRef={inputRef}
+                  onSend={send}
+                  canSend={!sending && !!text.trim() && !!profile}
+                  placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message…"}
+                  maxLength={1000}
+                  disabled={!profile}
+                  onGift={() => setGiftTarget("")}
+                  onMore={(r) => {
+                    setMenuAnchor(r ? { left: Math.max(8, Math.min(r.left, window.innerWidth - 196)), bottom: Math.max(8, window.innerHeight - r.top + 8) } : null);
+                    setMenuOpen(true);
+                  }}
+                  photo={{
+                    // picking a photo never posts it straight away: "Send this photo?" first
+                    onFile: (f: File | undefined) => f && setPendingPhoto(f),
+                    disabled: !perms.canShareMedia,
+                    uploading,
+                    title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
+                  }}
+                  voice={
+                    <VoiceRecorder
+                      size="md"
+                      disabled={!profile || !perms.canShareMedia}
+                      onSend={sendVoice}
+                      onError={(m) => note(`${roomName}: ${m}`)}
+                      onActive={setVoiceActive}
+                    />
+                  }
+                  // ▶ next to ⋮, like the app (hidden while recording)
+                  extra={luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
+                  voiceActive={voiceActive}
+                  reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
+                        />
+} />}
                 {teenPatti && profile && <TeenPattiTable state={teenPatti} uid={user.uid} myUsername={profile.username} roomUsers={roomUsers.map((u) => u.username)} />}
                 {cricket && <CricketBox state={cricket} uid={user.uid} />}
                 {/* 🎉 SIX/FOUR clapping, OUT finger, DRS third-umpire pop-ups */}
@@ -2306,7 +2341,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               </div>
             )}
 
-            {/* Text bar, like the app's */}
+            {/* Text bar, like the app's (in the MIG Royale room it sits inside the box) */}
+            {!royale && (
             <ChatBar
               text={text}
               setText={setText}
@@ -2342,6 +2378,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               voiceActive={voiceActive}
               reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
             />
+            )}
           </div>
 
           {/* People in the room */}

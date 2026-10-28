@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
@@ -360,7 +360,7 @@ export function royaleHandleCommand(state: RoyaleState, text: string, note: (t: 
 // ⚔ ARENA bet box (miglife picked design 1, compact): Red VS Blue face-off with a
 // tug bar of the coins on each side, five hand tiles (🔥 = most coins), amount
 // chips, ↻ Same + Bet, and the last results with the current streak.
-export function RoyaleTable({ state }: { state: RoyaleState }) {
+export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: ReactNode }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [amount, setAmount] = useRememberedAmount("royale_bet", 500);
   const [collapsed, setCollapsed] = useState(false);
@@ -882,6 +882,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
             <RoyaleTodayTop list={state.todayTop} />
           </>
         ))}
+      {/* the chat input sits inside the box, like the reference */}
+      {footer && <div className="mt-2" data-noswipe>{footer}</div>}
     </div>
   );
 }
