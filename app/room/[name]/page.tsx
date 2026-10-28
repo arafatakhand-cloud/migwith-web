@@ -3036,7 +3036,7 @@ const loadedBadgeUrls = new Set<string>();
 function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
   const [failed, setFailed] = useState(() => failedBadgeUrls.has(src));
   const [loaded, setLoaded] = useState(() => loadedBadgeUrls.has(src));
-  if (failed || failedBadgeUrls.has(src)) return <>{emoji}</>;
+  if (failed || failedBadgeUrls.has(src)) return <BadgeEmoji emoji={emoji} />;
   return (
     // 🔍 bigger (1.5 × the text), a small gap on each side; ⭕ round (miglife's
     // choice): the picture fills a circle — like the app
@@ -3069,27 +3069,39 @@ function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
 }
 
 // The badges in "name [12] 🎓 💎 has entered." drawn as miglife's uploaded
-// pictures when there are any (the app's badge_images swap).
+// pictures when there are any (the app's badge_images swap). Every badge —
+// picture or plain emoji — sits in the same 1.5 × text box, so they are all
+// one size (miglife asked). Badges are the emoji between "[level]" and
+// " has entered / has left".
+const BADGE_EMOJI_RE = /\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic}\uFE0F?)*/gu;
 function withBadgeImages(text: string, images: Record<string, string>): ReactNode[] {
-  const emojis = Object.keys(images);
-  if (emojis.length === 0) return [text];
-  const out: ReactNode[] = [];
-  let plain = "";
-  let i = 0;
-  while (i < text.length) {
-    const hit = emojis.find((e) => text.startsWith(e, i));
-    if (hit) {
-      if (plain) out.push(plain);
-      plain = "";
-      out.push(<BadgeImg key={i} src={images[hit]} emoji={hit} />);
-      i += hit.length;
-    } else {
-      plain += text[i];
-      i += 1;
-    }
+  const lv = text.indexOf("]");
+  const end = text.search(/ has (entered|left)/);
+  const from = lv >= 0 ? lv + 1 : 0;
+  const to = end >= 0 ? end : text.length;
+  if (to <= from) return [text];
+  const out: ReactNode[] = [text.slice(0, from)];
+  const region = text.slice(from, to);
+  let last = 0;
+  for (const m of region.matchAll(BADGE_EMOJI_RE)) {
+    const at = m.index ?? 0;
+    if (at > last) out.push(region.slice(last, at));
+    const e = m[0];
+    const src = images[e] ?? images[e.replace(/\uFE0F/g, "")];
+    out.push(src ? <BadgeImg key={from + at} src={src} emoji={e} /> : <BadgeEmoji key={from + at} emoji={e} />);
+    last = at + e.length;
   }
-  if (plain) out.push(plain);
+  out.push(region.slice(last), text.slice(to));
   return out;
+}
+
+// A badge with no uploaded picture: the emoji in the same box as BadgeImg.
+function BadgeEmoji({ emoji }: { emoji: string }) {
+  return (
+    <span className="mx-[2px] inline-flex h-[1.5em] w-[1.5em] shrink-0 items-center justify-center align-middle leading-none">
+      <span style={{ fontSize: "1.2em" }}>{emoji}</span>
+    </span>
+  );
 }
 
 // "🎰 Luxury Bet: …" — the bot name in orange, the rest in blue. In the
@@ -3365,7 +3377,8 @@ function MessageRow({
         {team && cut > 0 ? (
           <span className="text-black">
             {withBadgeImages(body.slice(0, cut), badgeImages)}{" "}
-            <SupporterBadge team={team} size={9} />
+            {/* jersey as tall as the other badges (1.5 × the 13 px text) */}
+            <SupporterBadge team={team} size={11} />
             {withBadgeImages(body.slice(cut), badgeImages)}
           </span>
         ) : (
