@@ -465,7 +465,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
     <div
       ref={boxRef}
       className={`relative m-1.5 overflow-hidden rounded-[18px] px-2 pb-1.5 pt-1.5 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light || collapsed || skin.id === "classic" ? "rk-light " : ""}${skin.light ? "shadow-[0_10px_26px_rgba(27,36,64,.12)]" : collapsed || skin.id === "classic" ? "" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
-        canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
+        canBet ? "royale-hurry" : ""
       }`}
       style={
         skin.id === "classic" && !collapsed
