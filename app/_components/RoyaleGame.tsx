@@ -372,7 +372,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   const [help, setHelp] = useState(false);
   // 🎨 my box colour (bought with coins; what I see)
   const inv = useInventory("lb_inventory", state.uid, LB_KINDS);
-  const skin = rkSkin(inv.active.royale);
+  // one box for everyone, like the reference: plain white card (skins removed)
+  const skin = rkSkin("classic");
   const [shop, setShop] = useState(false);
   const prefs = useRoyalePrefs();
   const [flash, setFlash] = useState(false);
@@ -656,14 +657,6 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
       {shop && <RkStyleDialog inv={inv} onClose={() => setShop(false)} />}
 
       {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
-      {!collapsed && state.running && state.phase === "BETTING" && (
-        <div className="mt-1 flex h-[20px] items-center gap-1.5 overflow-hidden rounded-full px-2.5 text-[11px] font-bold text-[#C9D2F2]">
-          <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
-          <span key={state.ticker?.at || 0} className="royale-tick truncate">
-            {state.ticker ? state.ticker.text : "Waiting for bets…"}
-          </span>
-        </div>
-      )}
 
       {!collapsed &&
         (revealing && reveal ? (
@@ -768,7 +761,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                       <span className="inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>
                     ) : (
                       <small className={`block truncate text-[8.5px] font-bold tabular-nums ${pool ? "text-[#9BA6D6]" : "text-[#C4B5FD]"}`}>
-                        {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : HAND_ODDS[o.key]}
+                        {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : ""}
                       </small>
                     )}
                   </button>
