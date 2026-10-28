@@ -3706,8 +3706,10 @@ const REACTION_EMOJIS: [string, string][] = [
   ["😢", "Sad"],
 ];
 
-// The long-press menu over a room message: 5 reactions (a dot under the one
-// you gave) and Copy, like the app. Tap outside to close.
+// The long-press menu over a room message — ONE dark pill like the app (demo D):
+// 5 reactions (a dot under the one you gave), a thin line, then small round
+// 📋 Copy / 🌐 Translate / 🚩 Report buttons. Hover or hold one to see its name.
+// Tap outside to close.
 function ReactionPicker({
   mineSide,
   reactions,
@@ -3729,78 +3731,65 @@ function ReactionPicker({
   onPick: (emoji: string) => void;
   onClose: () => void;
 }) {
-  const [hovered, setHovered] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
+  const copy = copyText.trim()
+    ? () => {
+        const plain = copyText.startsWith("↩ ") && copyText.includes("\n") ? copyText.slice(copyText.indexOf("\n") + 1) : copyText;
+        navigator.clipboard?.writeText(plain).catch(() => {});
+        onClose();
+      }
+    : undefined;
+  const actions: [string, string, string, (() => void) | undefined][] = [
+    ["📋", "Copy text", "#5AA2FF", copy],
+    ["🌐", "Translate", "#4CD38A", onTranslate],
+    ["🚩", "Report", "#FF7A7A", onReport],
+  ];
+  const shown = actions.filter((a) => a[3]);
+  const hintProps = (label: string) => ({
+    onMouseEnter: () => setHint(label),
+    onMouseLeave: () => setHint(null),
+    onTouchStart: () => setHint(label),
+    onTouchEnd: () => setHint(null),
+  });
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => (e.preventDefault(), onClose())} />
-      <div className={`absolute bottom-full z-50 mb-2 flex flex-col gap-2 ${mineSide ? "right-0 items-end" : "left-0 items-start"}`}>
+      <div className={`absolute bottom-full z-50 mb-2 flex flex-col gap-1 ${mineSide ? "right-0 items-end" : "left-0 items-start"}`}>
         <div className="flex h-7 items-end">
-          {hovered && (
-            <span className="rounded-[10px] bg-[#1A1A2E]/90 px-2.5 py-1 text-xs font-bold text-white">
-              {REACTION_EMOJIS.find(([e]) => e === hovered)?.[1]}
-            </span>
-          )}
+          {hint && <span className="rounded-[10px] bg-[#161E34]/95 px-2.5 py-1 text-xs font-bold text-white">{hint}</span>}
         </div>
-        <div className="reaction-pop flex gap-0.5 rounded-[30px] border border-white/70 bg-white/70 px-2 py-1.5 shadow-[0_8px_24px_rgba(11,31,58,.18)] backdrop-blur-md">
-          {REACTION_EMOJIS.map(([e], i) => {
+        <div className="reaction-pop flex items-center rounded-[30px] border border-white/10 bg-[#161E34]/[0.93] px-1 py-0.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
+          {REACTION_EMOJIS.map(([e, name], i) => {
             const byMe = reactions[e]?.includes(myUid);
             return (
-              <button
-                key={e}
-                type="button"
-                onClick={() => onPick(e)}
-                onMouseEnter={() => setHovered(e)}
-                onMouseLeave={() => setHovered(null)}
-                className="flex flex-col items-center"
-                style={{ animationDelay: `${i * 40}ms` }}
-              >
+              <button key={e} type="button" onClick={() => onPick(e)} {...hintProps(name)} className="flex flex-col items-center">
                 <span
-                  className={`reaction-emoji flex h-[42px] w-[42px] items-center justify-center rounded-full text-[25px] transition-transform hover:-translate-y-2 hover:scale-[1.45] ${
-                    byMe ? "bg-[#2F80ED]/15" : ""
+                  className={`reaction-emoji flex h-7 w-7 items-center justify-center rounded-full text-[18px] transition-transform hover:-translate-y-2 hover:scale-[1.45] ${
+                    byMe ? "bg-white/15" : ""
                   }`}
                   style={{ animationDelay: `${i * 40}ms` }}
                 >
                   {e}
                 </span>
-                <span className={`h-1 w-1 rounded-full ${byMe ? "bg-[#2F80ED]" : ""}`} />
+                <span className={`h-1 w-1 rounded-full ${byMe ? "bg-[#7FB2FF]" : ""}`} />
               </button>
             );
           })}
+          {shown.length > 0 && <span className="mx-1 h-5 w-px bg-white/20" />}
+          {shown.map(([icon, label, tint, run]) => (
+            <button
+              key={label}
+              type="button"
+              aria-label={label}
+              onClick={run}
+              {...hintProps(label)}
+              className="mx-0.5 flex h-[26px] w-[26px] items-center justify-center rounded-full border text-[12px]"
+              style={{ background: `${tint}38`, borderColor: `${tint}73` }}
+            >
+              {icon}
+            </button>
+          ))}
         </div>
-        {copyText.trim() && (
-          <button
-            type="button"
-            onClick={() => {
-              const plain = copyText.startsWith("↩ ") && copyText.includes("\n") ? copyText.slice(copyText.indexOf("\n") + 1) : copyText;
-              navigator.clipboard?.writeText(plain).catch(() => {});
-              onClose();
-            }}
-            className="flex items-center gap-2 rounded-[18px] border border-white/70 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#0B1F3A] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
-          >
-            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">📋</span>
-            Copy
-          </button>
-        )}
-        {onTranslate && (
-          <button
-            type="button"
-            onClick={onTranslate}
-            className="flex items-center gap-2 rounded-[18px] border border-white/70 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#0B1F3A] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
-          >
-            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">🌐</span>
-            Translate
-          </button>
-        )}
-        {onReport && (
-          <button
-            type="button"
-            onClick={onReport}
-            className="flex items-center gap-2 rounded-[18px] border border-[#D93025]/30 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#B3261E] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
-          >
-            <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#D93025]/10 text-[13px]">🚩</span>
-            Report
-          </button>
-        )}
       </div>
     </>
   );
