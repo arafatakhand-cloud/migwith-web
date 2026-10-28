@@ -122,6 +122,9 @@ export default function LoginPage() {
         err?.code === "auth/user-not-found"
       ) {
         setError("Incorrect MIG ID or password.");
+      } else if (err?.code === "auth/too-many-requests") {
+        // Firebase stopped logins from this device for a while (too many tries)
+        setError("Too many login attempts from this device. Please wait 30–60 minutes and try again.");
       } else {
         setError(err?.message || "Login failed.");
       }
