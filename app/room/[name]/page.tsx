@@ -1597,13 +1597,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (everyone.length === 0) return note("🎁 There is nobody else in this room right now.");
         if (gifts.length && !giftByName.has(giftName.toLowerCase())) return note(`🎁 No active gift named "${giftName}".`);
         const sendShower = httpsCallable<
-          { roomId: string; targets: string[]; giftName: string; message: string; postRoomLine: boolean },
+          { roomId: string; targets: string[]; giftName: string; message: string; postRoomLine: boolean; clientAt: number },
           { sentTo?: string[]; giftName?: string; giftIcon?: string; failed?: { target?: string; reason?: string }[]; roomLinePosted?: boolean }
         >(functions, "sendGiftShower");
         // at least 2 s between two Gift Showers (a quick second one waits its turn)
         // ⚡ postRoomLine: the server writes the room line together with the payment
         stickToBottom.current = true;
-        queueGiftShower(() => sendShower({ roomId: roomName, targets: everyone, giftName, message, postRoomLine: true }))
+        queueGiftShower(() => sendShower({ roomId: roomName, targets: everyone, giftName, message, postRoomLine: true, clientAt: Date.now() }))
           .then(({ data }) => {
             const sent = data?.sentTo || [];
             const shownGift = data?.giftName || giftName;
