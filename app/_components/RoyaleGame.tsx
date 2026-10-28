@@ -470,8 +470,8 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
       style={
         skin.id === "classic" && !collapsed
           ? {
-              // plain white card like the reference: no dark background, no dark border
-              background: "#FFFFFF",
+              // blends into the room's light chat background: no fill, no border, dark ink
+              background: "transparent",
               border: "none",
               boxShadow: "none",
               ["--rk-ink" as string]: "#1B2440",
