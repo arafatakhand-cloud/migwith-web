@@ -2191,7 +2191,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ) : (
                   rowAt(fontPx)
                 );
-                if (!bot) return row;
+                // MIG Royale lines read directly on the chat, like the reference: no tinted panel
+                if (!bot || roomName === ROYALE_ROOM) return row;
                 return (
                   <div
                     key={m.id}
