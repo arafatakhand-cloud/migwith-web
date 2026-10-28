@@ -463,11 +463,25 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
   return (
     <div
       ref={boxRef}
-      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light || collapsed ? "rk-light " : ""}${skin.light ? "shadow-[0_10px_26px_rgba(27,36,64,.12)]" : collapsed ? "" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
+      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light || collapsed || skin.id === "classic" ? "rk-light " : ""}${skin.light ? "shadow-[0_10px_26px_rgba(27,36,64,.12)]" : collapsed || skin.id === "classic" ? "" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
         canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
       }`}
       style={
-        collapsed
+        skin.id === "classic" && !collapsed
+          ? {
+              // plain white card like the reference: no dark background, no dark border
+              background: "#FFFFFF",
+              border: "none",
+              boxShadow: "none",
+              ["--rk-ink" as string]: "#1B2440",
+              ["--rk-sub" as string]: "#3D4766",
+              ["--rk-muted" as string]: "#5B6585",
+              ["--rk-tint" as string]: "rgba(27,36,64,.06)",
+              ["--rk-line" as string]: "rgba(27,36,64,.13)",
+              ["--rk-odds" as string]: "#7C6BD6",
+              ["--rk-gold" as string]: "#B7791F",
+            }
+          : collapsed
           ? {
               ...rkBoxStyle(skin),
               // folded: sits on the chat's light background, so the text uses dark inks
