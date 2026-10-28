@@ -640,6 +640,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // while it was open here, or this tab already had a visit): a lock only stops
   // new people coming in, it never sends me out (miglife asked).
   const insideBeforeLockRef = useRef(false);
+  // 🔁 Rejoin (after an auto left): a NEW visit with its own "has entered",
+  // even though this tab is still open with the old visit's chat.
+  const rejoinRef = useRef(false);
   const sinceMsRef = useRef(sinceMs);
   sinceMsRef.current = sinceMs;
 
@@ -885,7 +888,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       }
       // An open tab that already has this visit's session is the same visit
       // (the app keeps roomEntryAt for as long as the tab is open).
-      const tabSession = isRoomOpen(uid, roomName) ? readRoomSession(uid, roomName) : null;
+      const rejoining = rejoinRef.current;
+      rejoinRef.current = false;
+      const tabSession = isRoomOpen(uid, roomName) && !rejoining ? readRoomSession(uid, roomName) : null;
       let alreadyHere = resumed || !!tabSession;
       let existingMarkerMs = 0;
       // Like the app: asked from the server up to 5 times. If it still can't be
@@ -2742,6 +2747,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             autoLeft
               ? () => {
                   if (user) clearAutoLeft(user.uid, roomName);
+                  rejoinRef.current = true;
+                  // a new entry: a lock / entry level applies to it again
+                  insideBeforeLockRef.current = false;
+                  setSinceMs(null);
                   setAutoLeft(false);
                 }
               : undefined
