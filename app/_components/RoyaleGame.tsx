@@ -630,7 +630,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
 
       {/* 📣 live bet ticker (the bet lines no longer fill the chat) */}
       {!collapsed && state.running && state.phase === "BETTING" && (
-        <div className="mt-1 flex h-[20px] items-center gap-1.5 overflow-hidden rounded-full bg-black/30 px-2.5 text-[11px] font-bold text-[#C9D2F2]">
+        <div className="mt-1 flex h-[20px] items-center gap-1.5 overflow-hidden rounded-full px-2.5 text-[11px] font-bold text-[#C9D2F2]">
           <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-green-500" />
           <span key={state.ticker?.at || 0} className="royale-tick truncate">
             {state.ticker ? state.ticker.text : "Waiting for bets…"}
