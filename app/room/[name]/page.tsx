@@ -2230,35 +2230,6 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   </button>
                 </div>
               )}
-              {/* ⬇ NEW MESSAGES: only while you are scrolled up reading older lines */}
-              {newBelow > 0 && (
-                <div className="pointer-events-none sticky bottom-0 flex h-0 justify-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const el = listRef.current;
-                      stickToBottom.current = true;
-                      setNewBelow(0);
-                      setNewBelowStats(NO_NEW_BELOW);
-                      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-                    }}
-                    // ⬇ people's messages and bot lines counted apart ("2 messages · 5 bot");
-                    // gold with an @ when someone mentions you (like the app)
-                    className={`pointer-events-auto flex h-fit -translate-y-11 items-center gap-[7px] rounded-full py-[5px] pl-1.5 pr-3.5 text-[13px] font-bold text-white shadow-lg ${
-                      newBelowStats.mention
-                        ? "bg-gradient-to-r from-[#FFB300] to-[#FF7A00]"
-                        : classic
-                          ? "bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]"
-                          : "bg-gradient-to-r from-[#833AB4] via-[#5B5BF0] to-[#0072FF]"
-                    }`}
-                  >
-                    <span className="rounded-full bg-white/[0.22] px-[7px] py-0.5 text-[13px] font-black leading-none">
-                      {newBelowStats.mention ? "@" : "⬇"}
-                    </span>
-                    <span className="whitespace-nowrap">{newBelowLabel(newBelowStats, newBelow)}</span>
-                  </button>
-                </div>
-              )}
             </div>
             </div>
 
