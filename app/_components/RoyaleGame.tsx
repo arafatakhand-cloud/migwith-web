@@ -464,7 +464,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
   return (
     <div
       ref={boxRef}
-      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light || collapsed || skin.id === "classic" ? "rk-light " : ""}${skin.light ? "shadow-[0_10px_26px_rgba(27,36,64,.12)]" : collapsed || skin.id === "classic" ? "" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
+      className={`relative m-1.5 overflow-hidden rounded-[18px] px-2 pb-1.5 pt-1.5 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light || collapsed || skin.id === "classic" ? "rk-light " : ""}${skin.light ? "shadow-[0_10px_26px_rgba(27,36,64,.12)]" : collapsed || skin.id === "classic" ? "" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
         canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
       }`}
       style={
@@ -675,7 +675,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
               type="button"
               onClick={state.start}
               disabled={state.busy}
-              className={`mt-1.5 w-full rounded-xl py-2 text-[13px] font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
+              className={`mt-1 w-full rounded-xl py-2 text-[13px] font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
                 state.lastRed.length === 3 ? "bg-gradient-to-r from-green-500 to-green-700" : "bg-gradient-to-r from-violet-500 to-purple-700"
               }`}
             >
@@ -685,7 +685,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
         ) : (
           <>
             {/* Red VS Blue */}
-            <div className="relative mt-1.5 grid grid-cols-2 gap-1.5">
+            <div className="relative mt-1 grid grid-cols-2 gap-1.5">
               {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
                 const red = o.key === "red";
                 const sel = selected === o.key;
@@ -770,7 +770,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             </div>
 
             {/* Amount chips */}
-            <div className="mt-1.5 flex gap-1">
+            <div className="mt-1 flex gap-1">
               {CHIPS.map((c) => (
                 <button
                   key={c}
@@ -807,7 +807,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             )}
 
             {/* ↻ Same + Bet */}
-            <div className="mt-1.5 grid grid-cols-[auto_auto_1fr] gap-1.5">
+            <div className="mt-1 grid grid-cols-[auto_auto_1fr] gap-1.5">
               <button
                 type="button"
                 disabled={!canBet || !state.lastBet || state.busy}
