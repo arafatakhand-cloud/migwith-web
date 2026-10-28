@@ -3675,7 +3675,7 @@ function ReactionPicker({
             </span>
           )}
         </div>
-        <div className="reaction-pop flex gap-0.5 rounded-[30px] border border-[#2F80ED]/20 bg-white px-2 py-1.5 shadow-xl">
+        <div className="reaction-pop flex gap-0.5 rounded-[30px] border border-white/70 bg-white/70 px-2 py-1.5 shadow-[0_8px_24px_rgba(11,31,58,.18)] backdrop-blur-md">
           {REACTION_EMOJIS.map(([e], i) => {
             const byMe = reactions[e]?.includes(myUid);
             return (
@@ -3709,7 +3709,7 @@ function ReactionPicker({
               navigator.clipboard?.writeText(plain).catch(() => {});
               onClose();
             }}
-            className="flex items-center gap-2 rounded-[18px] border border-[#2F80ED]/20 bg-white px-4 py-2 text-sm font-bold text-[#0B1F3A] shadow-lg"
+            className="flex items-center gap-2 rounded-[18px] border border-white/70 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#0B1F3A] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
           >
             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">📋</span>
             Copy
@@ -3719,7 +3719,7 @@ function ReactionPicker({
           <button
             type="button"
             onClick={onTranslate}
-            className="flex items-center gap-2 rounded-[18px] border border-[#2F80ED]/20 bg-white px-4 py-2 text-sm font-bold text-[#0B1F3A] shadow-lg"
+            className="flex items-center gap-2 rounded-[18px] border border-white/70 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#0B1F3A] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
           >
             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#2F80ED]/10 text-[13px]">🌐</span>
             Translate
@@ -3729,7 +3729,7 @@ function ReactionPicker({
           <button
             type="button"
             onClick={onReport}
-            className="flex items-center gap-2 rounded-[18px] border border-[#D93025]/20 bg-white px-4 py-2 text-sm font-bold text-[#B3261E] shadow-lg"
+            className="flex items-center gap-2 rounded-[18px] border border-[#D93025]/30 bg-white/70 px-4 py-2.5 text-[15px] font-bold text-[#B3261E] shadow-[0_6px_18px_rgba(11,31,58,.16)] backdrop-blur-md"
           >
             <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#D93025]/10 text-[13px]">🚩</span>
             Report
