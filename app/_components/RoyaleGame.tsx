@@ -664,8 +664,8 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
           </>
         ) : (
           <>
-            {/* Red VS Blue */}
-            <div className="relative mt-1.5 grid grid-cols-2 gap-1.5">
+            {/* Red VS Blue — big side cards like the reference: card backs, "coins in · bettors" */}
+            <div className="relative mt-1.5 grid grid-cols-2 gap-2">
               {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
                 const red = o.key === "red";
                 const sel = selected === o.key;
@@ -679,22 +679,27 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
                     onDoubleClick={() => quick(o.key)}
-                    className="rounded-[12px] border-2 px-1 py-1 text-center transition disabled:opacity-60"
+                    className="flex flex-col items-center rounded-[14px] border-2 px-1 py-2 text-center transition disabled:opacity-60"
                     style={{
-                      background: red ? "linear-gradient(160deg, rgba(239,68,68,.32), rgba(239,68,68,.08))" : "linear-gradient(200deg, rgba(59,130,246,.34), rgba(59,130,246,.08))",
+                      background: red ? "linear-gradient(160deg, rgba(239,68,68,.22), rgba(239,68,68,.06))" : "linear-gradient(200deg, rgba(59,130,246,.24), rgba(59,130,246,.06))",
                       borderColor: sel ? (red ? "#FF7A7A" : "#7DB2FF") : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
-                      boxShadow: sel ? (red ? "0 0 0 3px rgba(239,68,68,.25), 0 0 18px rgba(239,68,68,.35)" : "0 0 0 3px rgba(59,130,246,.25), 0 0 18px rgba(59,130,246,.35)") : undefined,
+                      boxShadow: sel ? (red ? "0 0 0 3px rgba(239,68,68,.25)" : "0 0 0 3px rgba(59,130,246,.25)") : undefined,
                     }}
                   >
-                    <span className={`block text-[15px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
+                    {/* the hand's card backs (like the reference's purple backs) */}
+                    <span className="flex gap-0.5">
+                      {[0, 1, 2].map((k) => (
+                        <span key={k} className="h-6 w-4 rounded-[4px] border border-white/60" style={{ background: "repeating-linear-gradient(45deg,#5B3FC9 0 3px,#6E54DA 3px 6px)" }} />
+                      ))}
+                    </span>
+                    <span className={`mt-1 text-[14px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
                       {o.label}
-                      <span className="ml-1 rounded-full bg-white/[0.12] px-1.5 align-[2px] text-[10px] font-black text-white">{o.mult}</span>
+                      <span className="ml-1 rounded-full bg-white/[0.14] px-1.5 align-[1px] text-[10px] font-black text-white">{o.mult}</span>
                     </span>
-                    {/* one line: coins in · people · my pill */}
-                    <span className="flex items-center justify-center gap-1 text-[10px] font-bold tabular-nums text-[#C9D2F2]">
-                      {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "no bets"}
-                      {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
+                    <span className="mt-0.5 text-[10px] font-bold tabular-nums text-[#C9D2F2]">
+                      {pool ? `${shortK(pool.coins)} in · ${pool.people} ${pool.people === 1 ? "bettor" : "bettors"}` : "no bets yet"}
                     </span>
+                    {mine > 0 && <span className="mt-0.5 rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
                   </button>
                 );
               })}
