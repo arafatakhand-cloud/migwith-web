@@ -200,6 +200,7 @@ export const BN: Record<string, string> = {
   "You are banned from this room.": "আপনি এই রুম থেকে ব্যান।",
   "You were kicked from this room.": "আপনাকে এই রুম থেকে কিক করা হয়েছে।",
   "🔒 This room is locked. Only admins and mods can enter right now.": "🔒 রুমটা লক করা। এখন শুধু অ্যাডমিন আর মড ঢুকতে পারবে।",
+  "This room is locked by an admin/mod.": "রুমটা অ্যাডমিন/মড লক করেছেন।",
   "Unknown command. Type /help to see the commands.": "এই কমান্ড নেই। সব কমান্ড দেখতে /help লিখুন।",
   "Message could not be sent. Please try again.": "মেসেজ পাঠানো যায়নি। আবার চেষ্টা করুন।",
   "🔇 You are muted in this room.": "🔇 এই রুমে আপনি মিউট আছেন।",
