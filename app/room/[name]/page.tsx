@@ -1981,8 +1981,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     ],
   ];
 
-  // only the MIG Royale table is open: its strip takes the chat's light background
-  const royaleOnly = !!royale && !luxury && !luxuryBet && !teenPatti && !cricket && !twentyNine && !lowCard && !ludo;
+  // the MIG Royale room's table strip takes the chat's light background
+  // (useLuxuryBot & co. always return an object, so check the room instead)
+  const royaleOnly = !!royale && roomName === ROYALE_ROOM;
 
   return (
     <PageShell light bottomNav={false}>
