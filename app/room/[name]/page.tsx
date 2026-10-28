@@ -158,6 +158,8 @@ import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 
 type ChatMessage = SessionMessage;
+// 🚫 the reject toasts already shown (kept across tab switches, so a tab coming back never repeats one)
+const shownRejectIds = new Set<string>();
 
 type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number; parkedUntil?: number };
 
@@ -1226,24 +1228,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🚫 a NEW "Bet rejected" line of MIG Royale shows as a short toast over the box, once.
   // The lines already in the chat (history, or the one shown before) never pop up again.
   const [rejectToast, setRejectToast] = useState<{ id: string; text: string } | null>(null);
-  const rejectSeen = useRef<string | null>(null);
   useEffect(() => {
-    if (roomName !== ROYALE_ROOM || shown.length === 0) return;
-    let newest: ChatMessage | null = null;
+    if (roomName !== ROYALE_ROOM) return;
+    // only MY failed bet (a local line made just now) — never the history, the chat or a tab coming back
     for (let i = shown.length - 1; i >= 0; i--) {
-      if (shown[i].text.startsWith("MIG Royale Bot: Bet rejected")) {
-        newest = shown[i];
-        break;
-      }
-    }
-    if (rejectSeen.current === null) {
-      // first look: remember what is already there, show nothing for it
-      rejectSeen.current = newest ? newest.id : "";
+      const m = shown[i];
+      if (!m.text.startsWith("MIG Royale Bot: Bet rejected")) continue;
+      if (m.type !== "local" || shownRejectIds.has(m.id)) return;
+      shownRejectIds.add(m.id);
+      setRejectToast({ id: m.id, text: m.text.replace(/^MIG Royale Bot: /, "") });
       return;
     }
-    if (!newest || newest.id === rejectSeen.current) return;
-    rejectSeen.current = newest.id;
-    setRejectToast({ id: newest.id, text: newest.text.replace(/^MIG Royale Bot: /, "") });
   }, [shown, roomName]);
   useEffect(() => {
     if (!rejectToast) return;
