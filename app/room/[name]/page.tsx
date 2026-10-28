@@ -2220,9 +2220,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                       setFarUp(false);
                       el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
                     }}
-                    className="pointer-events-auto flex h-10 w-10 -translate-y-14 items-center justify-center rounded-full bg-gradient-to-b from-[#5B8DEF] to-[#833AB4] text-lg font-black text-white shadow-lg"
+                    className="pointer-events-auto flex h-8 w-12 -translate-y-12 items-center justify-center rounded-full border border-[#D5E3F5] bg-white text-[18px] font-black leading-none text-[#2B5FD9] shadow-md"
                   >
-                    ⬇
+                    ⌄
                   </button>
                 </div>
               )}
