@@ -662,7 +662,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return;
     }
     if (!profile || !roomLoaded || !modLoaded) return;
-    if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel) {
+    // Already inside (this visit started) → a lock or a higher level keeps me in;
+    // they only stop people coming in (like the app).
+    if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel && sinceMs === null) {
       setBlocked(`This room needs level ${roomInfo.lockLevel} or higher.`);
     } else if (locked && !insideBeforeLockRef.current && sinceMs === null) {
       setBlocked(ROOM_LOCKED_MSG);
@@ -808,7 +810,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const info = roomInfoRef.current;
     if (
       !permsRef.current.bypassesEntry &&
-      ((info.lockLevel > 0 && profile.level < info.lockLevel) ||
+      ((info.lockLevel > 0 && profile.level < info.lockLevel && sinceMsRef.current === null) ||
         (lockedRef.current && !insideBeforeLockRef.current && sinceMsRef.current === null))
     ) {
       return;
