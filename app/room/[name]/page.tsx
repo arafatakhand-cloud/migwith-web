@@ -3758,13 +3758,13 @@ function ReactionPicker({
         <div className="flex h-7 items-end">
           {hint && <span className="rounded-[10px] bg-[#161E34]/95 px-2.5 py-1 text-xs font-bold text-white">{hint}</span>}
         </div>
-        <div className="reaction-pop flex items-center rounded-[30px] border border-white/10 bg-[#161E34]/[0.93] px-1.5 py-1 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
+        <div className="reaction-pop flex items-center rounded-[30px] border border-white/10 bg-[#161E34]/[0.93] px-1 py-0.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
           {REACTION_EMOJIS.map(([e, name], i) => {
             const byMe = reactions[e]?.includes(myUid);
             return (
               <button key={e} type="button" onClick={() => onPick(e)} {...hintProps(name)} className="flex flex-col items-center">
                 <span
-                  className={`reaction-emoji flex h-[34px] w-[34px] items-center justify-center rounded-full text-[21px] transition-transform hover:-translate-y-2 hover:scale-[1.45] ${
+                  className={`reaction-emoji flex h-7 w-7 items-center justify-center rounded-full text-[18px] transition-transform hover:-translate-y-2 hover:scale-[1.45] ${
                     byMe ? "bg-white/15" : ""
                   }`}
                   style={{ animationDelay: `${i * 40}ms` }}
@@ -3775,7 +3775,7 @@ function ReactionPicker({
               </button>
             );
           })}
-          {shown.length > 0 && <span className="mx-1.5 h-[26px] w-px bg-white/20" />}
+          {shown.length > 0 && <span className="mx-1 h-5 w-px bg-white/20" />}
           {shown.map(([icon, label, tint, run]) => (
             <button
               key={label}
@@ -3783,7 +3783,7 @@ function ReactionPicker({
               aria-label={label}
               onClick={run}
               {...hintProps(label)}
-              className="mx-[2.5px] flex h-8 w-8 items-center justify-center rounded-full border text-[14px]"
+              className="mx-0.5 flex h-[26px] w-[26px] items-center justify-center rounded-full border text-[12px]"
               style={{ background: `${tint}38`, borderColor: `${tint}73` }}
             >
               {icon}
