@@ -466,7 +466,7 @@ export function RoyaleTable({ state }: { state: RoyaleState }) {
       className={`relative m-1.5 overflow-hidden rounded-[18px] px-2.5 pb-2.5 pt-2 text-[#EAF0FF] ${skin.glass ? "rk-glass " : ""}${skin.light ? "rk-light shadow-[0_10px_26px_rgba(27,36,64,.12)]" : "shadow-[0_10px_30px_rgba(8,12,30,.35)]"} ${
         canBet && state.secondsLeft <= 5 ? "royale-hurry" : ""
       }`}
-      style={rkBoxStyle(skin)}
+      style={collapsed ? { ...rkBoxStyle(skin), background: "transparent", boxShadow: "none", border: "none" } : rkBoxStyle(skin)}
     >
       {stamp && (
         <div className="royale-stamp pointer-events-none absolute inset-0 z-20 grid place-items-center bg-[#080A19]/55 text-[22px] font-black tracking-[1px] text-amber-300">
