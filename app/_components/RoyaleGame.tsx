@@ -472,8 +472,9 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           ? {
               // blends into the room's light chat background: no fill, no border, dark ink
               background: "transparent",
-              border: "none",
-              boxShadow: "none",
+              border: "2px solid rgba(27,36,64,.16)",
+              boxShadow:
+                "inset 0 2px 0 rgba(255,255,255,.85), inset 0 -3px 0 rgba(27,36,64,.14), 0 4px 0 rgba(27,36,64,.12), 0 10px 18px rgba(27,36,64,.12)",
               ["--rk-ink" as string]: "#1B2440",
               ["--rk-sub" as string]: "#3D4766",
               ["--rk-muted" as string]: "#5B6585",

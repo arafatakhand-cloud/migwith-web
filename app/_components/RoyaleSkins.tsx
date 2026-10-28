@@ -69,10 +69,16 @@ export function rkSkin(id: string | undefined): RkSkin {
 }
 
 /** Style for the box root: background + the colour variables. */
+// 3D bevel for every bet box: a light top edge, a shaded bottom edge and a soft drop
+export const RK_BEVEL =
+  "inset 0 2px 0 rgba(255,255,255,.55), inset 0 -3px 0 rgba(0,0,0,.22), 0 4px 0 rgba(0,0,0,.2), 0 10px 18px rgba(0,0,0,.2)";
+export const RK_BEVEL_SM = "inset 0 1px 0 rgba(255,255,255,.5), inset 0 -2px 0 rgba(0,0,0,.2), 0 2px 0 rgba(0,0,0,.15)";
+
 export function rkBoxStyle(s: RkSkin): CSSProperties {
   return {
     background: s.bg,
-    ...(s.light ? { border: `1px solid ${s.frame}` } : {}),
+    border: s.light ? `2px solid ${s.frame}` : "2px solid rgba(255,255,255,.18)",
+    boxShadow: RK_BEVEL,
     ["--rk-ink" as string]: s.ink,
     ["--rk-sub" as string]: s.sub,
     ["--rk-muted" as string]: s.muted,
@@ -84,8 +90,8 @@ export function rkBoxStyle(s: RkSkin): CSSProperties {
     ["--rk-track" as string]: s.track,
     ...(s.glass
       ? {
-          border: `1px solid ${s.glass.rim}`,
-          boxShadow: s.glass.shadow,
+          border: `2px solid ${s.glass.rim}`,
+          boxShadow: `${RK_BEVEL}, ${s.glass.shadow}`,
           ["--rk-key" as string]: s.glass.key,
           ["--rk-keybg" as string]: s.glass.keyBg,
           ["--rk-rim" as string]: s.glass.rim,
@@ -101,7 +107,7 @@ export function rkBoxStyle(s: RkSkin): CSSProperties {
 
 function RkPreview({ s }: { s: RkSkin }) {
   return (
-    <div className="rounded-xl p-1.5" style={{ background: s.bg, border: `1px solid ${s.light ? s.frame : "rgba(255,255,255,.15)"}`, color: s.ink }}>
+    <div className="rounded-xl p-1.5" style={{ background: s.bg, border: `2px solid ${s.light ? s.frame : "rgba(255,255,255,.15)"}`, boxShadow: RK_BEVEL_SM, color: s.ink }}>
       <div className="flex items-center gap-1">
         <span className="grid h-3.5 w-3.5 place-items-center rounded-full border-2 text-[6px] font-black" style={{ borderColor: s.odds }}>32</span>
         <span className="text-[8px] font-black">MIG Royale</span>
