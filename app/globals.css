@@ -585,7 +585,9 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
     linear-gradient(180deg, #9fd0ff, #d7ecff 60%, #ffe6f1) !important;
   background-attachment: fixed !important;
 }
-html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .bg-white:not(header):not(header *):not(.fixed *):not(input):not(textarea) {
+/* not a full-screen page (fixed inset-0, e.g. classic Footprints / Votes, the
+   Command list): see-through, it showed the blurred page underneath */
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .bg-white:not(header):not(header *):not(.fixed *):not(.fixed.inset-0):not(input):not(textarea) {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
   border-color: rgba(255, 255, 255, 0.92) !important;
   box-shadow:
