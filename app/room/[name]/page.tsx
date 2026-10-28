@@ -156,6 +156,11 @@ import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
+import { flashToast } from "../../../lib/flashToast";
+
+// 🔒 Same words as the app's toasts for a locked room / a level too low.
+const ROOM_LOCKED_MSG = "This room is locked by an admin/mod.";
+const isEntryBlock = (b: string) => b === ROOM_LOCKED_MSG || /^This room needs level \d+ or higher\.$/.test(b);
 
 type ChatMessage = SessionMessage;
 // 🚫 the reject toasts already shown (kept across tab switches, so a tab coming back never repeats one)
@@ -630,27 +635,41 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   permsRef.current = perms;
   const lockedRef = useRef(locked);
   lockedRef.current = locked;
+  // 🔒 I was in the room before it got locked (the server showed it unlocked
+  // while it was open here, or this tab already had a visit): a lock only stops
+  // new people coming in, it never sends me out (miglife asked).
+  const insideBeforeLockRef = useRef(false);
+  const sinceMsRef = useRef(sinceMs);
+  sinceMsRef.current = sinceMs;
 
   // Kicked, banned, full or not allowed in: the tab closes.
   useEffect(() => {
     if (blocked && user) removeOpenRoom(user.uid, roomName);
   }, [blocked, user, roomName]);
+  // 🔒 Locked / level too low: a toast and back to the rooms list (like the app).
+  useEffect(() => {
+    if (!isEntryBlock(blocked)) return;
+    flashToast(blocked);
+    router.replace("/rooms");
+  }, [blocked, router]);
 
   // Entry level and room lock — admins / mods of this room are not held back.
   useEffect(() => {
     if (perms.bypassesEntry) {
       // Their rights arrived after the level / lock message (e.g. a hidden
       // founder whose founder record loaded late): let them in after all.
-      setBlocked((b) => (b.startsWith("This room needs level") || b.startsWith("🔒 This room is locked") ? "" : b));
+      setBlocked((b) => (b === ROOM_LOCKED_MSG || b.startsWith("This room needs level") ? "" : b));
       return;
     }
     if (!profile || !roomLoaded || !modLoaded) return;
-    if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel) {
-      setBlocked(`This room needs level ${roomInfo.lockLevel}. You are level ${profile.level}.`);
-    } else if (locked) {
-      setBlocked("🔒 This room is locked. Only admins and mods can enter right now.");
+    // Already inside (this visit started) → a lock or a higher level keeps me in;
+    // they only stop people coming in (like the app).
+    if (roomInfo.lockLevel > 0 && profile.level < roomInfo.lockLevel && sinceMs === null) {
+      setBlocked(`This room needs level ${roomInfo.lockLevel} or higher.`);
+    } else if (locked && !insideBeforeLockRef.current && sinceMs === null) {
+      setBlocked(ROOM_LOCKED_MSG);
     }
-  }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked]);
+  }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked, sinceMs]);
 
   // Live chat — the latest 150 messages, same collection the app uses.
   // 🔒 The server lets only people IN the room read its chat: opening a room,
@@ -767,6 +786,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       (snap) => {
         setSilenced(snap.get("silenced") === true);
         setLocked(snap.get("locked") === true);
+        if (!snap.metadata.fromCache && snap.get("locked") !== true) insideBeforeLockRef.current = true;
         setAnnouncement(String(snap.get("announcement") || "").trim());
         setModLoaded(true);
       },
@@ -790,7 +810,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const info = roomInfoRef.current;
     if (
       !permsRef.current.bypassesEntry &&
-      ((info.lockLevel > 0 && profile.level < info.lockLevel) || lockedRef.current)
+      ((info.lockLevel > 0 && profile.level < info.lockLevel && sinceMsRef.current === null) ||
+        (lockedRef.current && !insideBeforeLockRef.current && sinceMsRef.current === null))
     ) {
       return;
     }
@@ -1888,6 +1909,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     );
   }
   if (blocked) {
+    // 🔒 Locked / level too low: like the app — a toast and straight back out
+    // (the effect below), no page of its own.
+    if (isEntryBlock(blocked)) return null;
     return (
       <PageShell light>
         <div className="mx-auto max-w-md px-4 py-20 text-center">
