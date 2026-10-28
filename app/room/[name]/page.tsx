@@ -158,6 +158,8 @@ import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 
 type ChatMessage = SessionMessage;
+// 🚫 the reject toasts already shown (kept across tab switches, so a tab coming back never repeats one)
+const shownRejectIds = new Set<string>();
 
 type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number; parkedUntil?: number };
 
@@ -1223,21 +1225,26 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎴 Many tables at once: only the bot lines of the table this phone shows.
   const tablesVersion = useGameTablesVersion();
   const tableGame = roomName === TEEN_PATTI_ROOM ? "tp" : roomName === TN_ROOM || roomName === TN_FREE_ROOM ? "tn" : roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? "ludo" : null;
-  // 🚫 the newest "Bet rejected" line of MIG Royale, as a short toast over the box
+  // 🚫 a NEW "Bet rejected" line of MIG Royale shows as a short toast over the box, once.
+  // The lines already in the chat (history, or the one shown before) never pop up again.
   const [rejectToast, setRejectToast] = useState<{ id: string; text: string } | null>(null);
   useEffect(() => {
     if (roomName !== ROYALE_ROOM) return;
+    // only MY failed bet (a local line made just now) — never the history, the chat or a tab coming back
     for (let i = shown.length - 1; i >= 0; i--) {
       const m = shown[i];
       if (!m.text.startsWith("MIG Royale Bot: Bet rejected")) continue;
-      if (rejectToast?.id === m.id) return;
-      const text = m.text.replace(/^MIG Royale Bot: /, "");
-      setRejectToast({ id: m.id, text });
-      const t = setTimeout(() => setRejectToast(null), 2800);
-      return () => clearTimeout(t);
+      if (m.type !== "local" || shownRejectIds.has(m.id)) return;
+      shownRejectIds.add(m.id);
+      setRejectToast({ id: m.id, text: m.text.replace(/^MIG Royale Bot: /, "") });
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown, roomName]);
+  useEffect(() => {
+    if (!rejectToast) return;
+    const t = setTimeout(() => setRejectToast(null), 2800);
+    return () => clearTimeout(t);
+  }, [rejectToast]);
 
   const visible = useMemo(() => {
     const blocked = new Set(blockedNames);
