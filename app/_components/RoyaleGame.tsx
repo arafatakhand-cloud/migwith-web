@@ -678,7 +678,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
               type="button"
               onClick={state.start}
               disabled={state.busy}
-              className={`mt-1 w-full rounded-xl py-2 text-[13px] font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
+              className={`mt-1 w-full rounded-xl py-1.5 text-[13px] font-black shadow-[0_6px_18px_rgba(0,0,0,.3)] disabled:opacity-50 ${
                 state.lastRed.length === 3 ? "bg-gradient-to-r from-green-500 to-green-700" : "bg-gradient-to-r from-violet-500 to-purple-700"
               }`}
             >
