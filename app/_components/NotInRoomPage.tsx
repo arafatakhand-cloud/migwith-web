@@ -17,7 +17,18 @@ function roomLook(room: string) {
   return { icon: "💬", name, bg: "#EEF4FF", ink: "#1565D8", line: "#B8D0F0" };
 }
 
-export function NotInRoomPage({ room, onClose, onRooms }: { room: string; onClose: () => void; onRooms: () => void }) {
+export function NotInRoomPage({
+  room,
+  onClose,
+  onRooms,
+  onRejoin,
+}: {
+  room: string;
+  onClose: () => void;
+  onRooms: () => void;
+  /** only after an inactivity auto left: a Rejoin button puts me back in the room */
+  onRejoin?: () => void;
+}) {
   const look = roomLook(room);
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-gradient-to-b from-[#D6ECFB] via-[#BFE0F7] to-[#E8DEF3] p-6">
@@ -67,6 +78,19 @@ export function NotInRoomPage({ room, onClose, onRooms }: { room: string; onClos
           >
             Close
           </button>
+          {onRejoin && (
+            <button
+              type="button"
+              onClick={onRejoin}
+              className="h-12 flex-1 rounded-3xl border-[1.5px] border-white/85 text-[15px] font-black text-white active:scale-[.97]"
+              style={{
+                background: "linear-gradient(180deg,rgba(255,255,255,.35),transparent 48%), linear-gradient(90deg,#FF5A3C,#E8343E)",
+                boxShadow: "inset 0 -3px 5px rgba(0,0,0,.12), 0 4px 0 #a82030, 0 10px 18px rgba(232,52,62,.35)",
+              }}
+            >
+              Rejoin
+            </button>
+          )}
           <button
             type="button"
             onClick={onRooms}
