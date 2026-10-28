@@ -3448,7 +3448,7 @@ function MessageRow({
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
   // the text to translate: without a "↩ quote" line in front
   const plainBody = body.startsWith("↩ ") && body.includes("\n") ? body.slice(body.indexOf("\n") + 1) : body;
-  const canReply = !mine && !gameRoom && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
+  const canReply = !mine && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
       ? "📷 Photo"
