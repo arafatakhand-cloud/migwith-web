@@ -388,10 +388,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
-  // Puts my presence doc back QUIETLY (no "has entered") when it went missing
-  // while I'm still here — e.g. the same account closed this room on another
-  // phone / tab, which deleted the shared spot. Set by the presence effect.
-  const restorePresenceRef = useRef<(() => void) | null>(null);
+  // Called before each message I send. If my spot went missing while this tab
+  // stayed open (the same account left on another phone / tab, which posted
+  // "has left"), I come back in first — new visit + "has entered" — so the
+  // chat never shows "has left" followed by my message. Set by the presence effect.
+  const restorePresenceRef = useRef<(() => Promise<void>) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
@@ -816,6 +817,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     // leave waits for it, so the spot can't be written again AFTER it was
     // deleted and its "has left" posted (a ghost in "Currently in this room").
     let presenceWrite: Promise<unknown> = Promise.resolve();
+    // my spot here is gone (removed from another phone / tab) while this tab stays open
+    let spotGone = false;
+    let goneWhileHere = false;
 
     const pending = pendingLeaves.get(leaveKey);
     const resumed = pending !== undefined;
@@ -1037,6 +1041,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       unwatchSpot = onSnapshot(
         presenceRef,
         (snap) => {
+          spotGone = !snap.exists();
           const other = snap.exists() ? String(snap.get("deviceId") || "") : "";
           if (!other || other === deviceId || left || disposed) return;
           left = true;
@@ -1047,32 +1052,52 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         () => {}
       );
       let lastBeatOk = Date.now();
-      const restoreQuietly = () => {
+      // Back in after my spot was removed from elsewhere: a new visit (its own
+      // "has left" id later) and a "has entered" line, like opening the room again.
+      let reEntering: Promise<void> | null = null;
+      const reEnter = () =>
+        (reEntering ??= (async () => {
+          if (left || disposed) return;
+          visitId = newVisitId();
+          await (presenceWrite = setDoc(presenceRef, {
+            uid,
+            username: profile.username,
+            activity: "",
+            level: profile.level,
+            levelBadgeIcon: profile.badge,
+            shopBadges: profile.badges, // like the app: the "has left" line (server / other phones) shows the same badges as "has entered"
+            presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
+            lastSeen: serverTimestamp(),
+            visitId,
+            deviceId,
+            entryMarker: serverTimestamp(),
+          }).catch((err) => console.error("presence write failed", err)));
+          spotGone = false;
+          goneWhileHere = false;
+          lastBeatOk = Date.now();
+          // keep this tab's chat as it is, only the visit id is new
+          saveEntry(uid, roomName, { visitId, at: savedEntry(uid, roomName)?.at ?? Date.now() - 30_000 });
+          if (!quietMe) {
+            await addDoc(collection(db, "room_messages", roomName, "messages"), {
+              text: presenceLine(roomName, profile.username, profile.level, true, profile.badges),
+              sender: profile.username,
+              senderUid: uid,
+              type: "room_entry",
+              createdAt: serverTimestamp(),
+            }).catch((err) => console.error("entry message failed", err));
+          }
+        })().finally(() => {
+          reEntering = null;
+        }));
+      restorePresenceRef.current = async () => {
         if (left || disposed) return;
-        presenceWrite = setDoc(presenceRef, {
-          uid,
-          username: profile.username,
-          activity: "",
-          level: profile.level,
-          levelBadgeIcon: profile.badge,
-          shopBadges: profile.badges, // like the app: the "has left" line (server / other phones) shows the same badges as "has entered"
-          presenceStatus: quietMe ? "INVISIBLE" : "ONLINE",
-          lastSeen: serverTimestamp(),
-          visitId: visitId || newVisitId(),
-          deviceId,
-        })
-          .then(() => {
-            lastBeatOk = Date.now();
-          })
-          .catch(() => {});
-      };
-      restorePresenceRef.current = () => {
+        if (spotGone || goneWhileHere) return reEnter();
         updateDoc(presenceRef, { lastSeen: serverTimestamp() })
           .then(() => {
             lastBeatOk = Date.now();
           })
           .catch((err) => {
-            if (err?.code === "not-found") restoreQuietly();
+            if (err?.code === "not-found") reEnter();
           });
       };
       heartbeat = setInterval(() => {
@@ -1086,10 +1111,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           if (err?.code !== "not-found" || left || disposed) return;
           if (isAutoLeft(uid, roomName)) return; // left on purpose (minimised too long)
           // Still beating a moment ago → the spot was removed from elsewhere
-          // (the same account left on another phone / tab), not a 3 h timeout.
-          // I never left, so put it back without a "has entered" line.
-          if (Date.now() - lastBeatOk < PRESENCE_HEARTBEAT_MS * 4) {
-            restoreQuietly();
+          // (the same account left on another phone / tab, which posted "has
+          // left"), not a 3 h timeout. Stay out of the list until I chat again:
+          // then I come back in with a "has entered" (restorePresenceRef).
+          if (goneWhileHere || Date.now() - lastBeatOk < PRESENCE_HEARTBEAT_MS * 4) {
+            goneWhileHere = true;
             return;
           }
           // Away too long (sleeping laptop, closed lid…), or taken out of the
@@ -1796,6 +1822,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     awardUserXp(user.uid, 2, "chat_message", 15_000); // like the app
     setSending(true);
     try {
+      // back in first ("has entered") if I was taken out from another phone / tab
+      await restorePresenceRef.current?.();
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
         text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet}\n` : ""}${clean}`,
         sender: profile.username,
@@ -1808,8 +1836,6 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       setText("");
       setReplyTo(null);
       stickToBottom.current = true;
-      // chatting means I'm here: my spot comes back if it went missing
-      restorePresenceRef.current?.();
     } catch (err) {
       console.error(err);
       note("Message could not be sent. Please try again.");
