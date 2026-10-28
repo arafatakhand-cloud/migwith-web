@@ -1298,6 +1298,16 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
 /* 👑 MIG Royale: last-5-seconds pulse, "NO MORE BETS" stamp, win float, flying chip, ticker slide */
 .royale-hurry { animation: royale-hb 1s infinite; }
 @keyframes royale-hb { 0%, 100% { box-shadow: 0 10px 30px rgba(8,12,30,.35); } 50% { box-shadow: 0 0 0 2px rgba(239,68,68,.65), 0 10px 30px rgba(8,12,30,.35); } }
+/* 🎰 Luxury Bet box: while bets are open its border cycles through colours */
+.lb-flash { animation: lb-flash 2s infinite; }
+@keyframes lb-flash {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(239,68,68,.75); }
+  20% { box-shadow: 0 0 0 2px rgba(245,158,11,.8); }
+  40% { box-shadow: 0 0 0 2px rgba(34,197,94,.75); }
+  60% { box-shadow: 0 0 0 2px rgba(59,130,246,.8); }
+  80% { box-shadow: 0 0 0 2px rgba(168,85,247,.8); }
+}
+@media (prefers-reduced-motion: reduce) { .lb-flash { animation: none; } }
 .royale-stamp { animation: royale-pop .3s ease-out; }
 @keyframes royale-pop { from { transform: scale(1.3); opacity: 0; } }
 .royale-float { animation: royale-up 1.8s ease-out forwards; }

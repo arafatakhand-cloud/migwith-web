@@ -505,7 +505,7 @@ export function LuxuryBetTable({
 
   return (
     <div
-      className={`m-1.5 rounded-2xl px-2 py-1.5${lbIsGlass(skin) ? " lb-glass" : ""}`}
+      className={`m-1.5 rounded-2xl px-2 py-1.5${lbIsGlass(skin) ? " lb-glass" : ""}${open ? " lb-flash" : ""}`}
       style={lbBoxStyle(skin, 1.5)}
     >
       <div className="flex items-center gap-1.5">
