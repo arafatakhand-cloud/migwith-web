@@ -5,7 +5,7 @@ export const OFFICIAL_COUNTRY_ROOMS = [
   "Bangladesh", "India", "Pakistan", "Nepal", "Bhutan", "Maldives",
   "Qatar", "Kuwait", "Oman", "Malaysia", "Singapore", "Indonesia",
   "Thailand", "Canada", "Australia", "Germany", "France", "Italy",
-  "Spain", "Russia", "Brazil",
+  "Spain", "Russia", "Brazil", "Sudan",
 ];
 
 // The old Luxury Bot room — removed from the app (no list, no tab, no bot).
