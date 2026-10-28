@@ -53,6 +53,7 @@ import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import {
   addOpenRoom,
   deletePresenceUnlessParked,
+  clearAutoLeft,
   isAutoLeft,
   isRoomOpen,
   onAutoLeft,
@@ -2657,6 +2658,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             if (user) removeOpenRoom(user.uid, roomName);
             router.replace("/rooms");
           }}
+          onRejoin={
+            autoLeft
+              ? () => {
+                  if (user) clearAutoLeft(user.uid, roomName);
+                  setAutoLeft(false);
+                }
+              : undefined
+          }
         />
       )}
 

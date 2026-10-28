@@ -63,6 +63,11 @@ export function isAutoLeft(uid: string, name: string): boolean {
   }
 }
 
+/** Rejoin after an auto left: the flag goes, so the room joins again like a fresh open. */
+export function clearAutoLeft(uid: string, name: string) {
+  setAutoLeftFlag(uid, name, false);
+}
+
 function setAutoLeftFlag(uid: string, name: string, on: boolean) {
   try {
     if (on) localStorage.setItem(autoLeftKey(uid, name), "1");
