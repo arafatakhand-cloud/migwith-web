@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
+import { HorseRaceScene } from "./HorseRaceScene";
 
 // 🎯 NUMBER GUESS + 🐎 HORSE RACE — two quick game rooms, run entirely by the
 // server (numGuessStart / numGuessGuess / numGuessTick, horseStart / horseBet /
@@ -769,73 +770,26 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
         </button>
         <span>{betting ? `⏱ ${state.secondsLeft}s` : racing ? "🏁 racing…" : state.phase === "SETTLING" ? "🏆 result…" : ""}</span>
       </div>
-      {[1, 2, 3, 4, 5].map((h) => {
-        const picked = betting && state.pickHorse === h;
-        const place = showLast ? state.lastOrder.indexOf(h) : -1;
-        const mine = state.myBets[h] || 0;
-        // the gallop: a quick up-and-down with a little rock, only while racing
-        const ph = state.now / 90 + h * 1.7;
-        const bob = racing ? -Math.abs(Math.sin(ph)) * 3 : 0;
-        const tilt = racing ? Math.sin(ph) * 4 : 0;
-        let right: string = HR_MULT;
-        if (showLast && mine) right = h === winner ? `✅ +${fmt(Math.floor(mine * 4.5))}` : "❌";
-        else if (mine) right = fmt(mine);
-        else if (place >= 0 && place < 3) right = MEDALS[place];
-        return (
-          <button
-            key={h}
-            type="button"
-            disabled={!betting || locked(h)}
-            onClick={() => state.setPickHorse(h)}
-            className={`mt-[5px] flex w-full items-center rounded-xl text-left ${picked ? "ring-2 ring-[#FFD54A]" : ""}`}
-          >
-            <span
-              className="flex h-5 w-[48px] shrink-0 items-center justify-center rounded-full border border-white/50 text-[10.5px] font-black shadow"
-              style={{ background: HORSE_COLORS[h - 1], color: h === 3 ? "#333" : "#fff" }}
-            >
-              {hn(h)}
-            </span>
-            <span
-              className="relative mx-1.5 h-[26px] flex-1 overflow-hidden rounded-[8px] shadow-[inset_0_-2px_0_rgba(0,0,0,.18)]"
-              style={{ background: "repeating-linear-gradient(90deg,#4CAF50 0 26px,#43A047 26px 52px)" }}
-            >
-              {/* white rail */}
-              <span
-                className="absolute inset-x-0 top-0 h-[2px] opacity-80"
-                style={{ background: "repeating-linear-gradient(90deg,#fff 0 10px,transparent 10px 18px)" }}
-              />
-              {/* checkered finish line */}
-              <span
-                className="absolute inset-y-0 right-[10px] w-[5px]"
-                style={{ background: "repeating-linear-gradient(0deg,#fff 0 4px,#111 4px 8px)" }}
-              />
-              {(() => {
-                const left = `calc((100% - 40px) * ${state.positions[h - 1] / 100})`;
-                return (
-                  <>
-                    {racing &&
-                      [0, 0.2, 0.4].map((d) => (
-                        <span
-                          key={d}
-                          className="hr-dust absolute top-[16px] h-[6px] w-[6px] rounded-full bg-[#DEC496]"
-                          style={{ left, animationDelay: `${d}s` }}
-                        />
-                      ))}
-                    {/* 🐎 faces left — flipped so it runs to the finish */}
-                    <span
-                      className="absolute top-[1px] text-[19px] leading-[24px]"
-                      style={{ left, transform: `translateY(${bob}px) rotate(${tilt}deg) scaleX(-1)` }}
-                    >
-                      🐎
-                    </span>
-                  </>
-                );
-              })()}
-            </span>
-            <span className={`w-[74px] shrink-0 whitespace-nowrap text-right font-black ${!mine && place >= 0 && place < 3 ? "text-[16px]" : "text-[11px]"}`}>{right}</span>
-          </button>
-        );
-      })}
+      {/* 🐎 the race, TV style (miglife picked design B): the camera follows the leader */}
+      <div className="mt-[6px]">
+        <HorseRaceScene
+          positions={state.positions}
+          running={racing}
+          names={HORSE_NAMES}
+          colors={HORSE_COLORS}
+          picked={betting ? state.pickHorse : 0}
+          onPick={betting ? (h) => !locked(h) && state.setPickHorse(h) : undefined}
+          tags={[1, 2, 3, 4, 5].map((h) => {
+            const place = showLast ? state.lastOrder.indexOf(h) : -1;
+            const mine = state.myBets[h] || 0;
+            if (showLast && mine) return h === winner ? `✅ +${short(Math.floor(mine * 4.5))}` : "❌";
+            if (place >= 0 && place < 3) return MEDALS[place];
+            if (mine) return short(mine);
+            if (betting && locked(h)) return "🔒";
+            return "";
+          })}
+        />
+      </div>
       <p className="mt-2 truncate rounded-[10px] bg-black/25 px-2.5 py-1.5 text-[12.5px] font-extrabold">{raceTicker(state, betting)}</p>
       {/* 👥 everyone's bets — and after the race, everyone's result */}
       {players.length > 0 && (
