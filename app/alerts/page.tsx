@@ -144,6 +144,8 @@ function styleFor(type: string): Style {
       return { icon: "🤝", title: "Friend request", top: "#6FA8FF", bottom: "#2F63D6", group: "social" };
     case "friend_request_accepted":
       return { icon: "💙", title: "New friend", top: "#6FA8FF", bottom: "#2F63D6", group: "social" };
+    case "friend_removed":
+      return { icon: "💔", title: "Friend removed", top: "#FF8A9A", bottom: "#D6336C", group: "social" };
     case "mention":
       return { icon: "💬", title: "Mention", top: "#B57BFF", bottom: "#7443D1", group: "social" };
     case "game_invite":
@@ -933,7 +935,7 @@ export default function AlertsPage() {
               } else {
                 const mentionRoom = a.type === "mention" ? inviteRoom(a) : "";
                 const href =
-                  a.type === "friend_request" || a.type === "friend_request_accepted"
+                  a.type === "friend_request" || a.type === "friend_request_accepted" || a.type === "friend_removed"
                     ? "/friends"
                     : a.type === "report"
                       ? "/secret/reports"
