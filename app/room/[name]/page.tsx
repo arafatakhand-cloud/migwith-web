@@ -165,7 +165,7 @@ import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_comp
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
-import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, type BalanceInfo } from "../../_components/RoomPopups";
+import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
@@ -325,7 +325,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [muted, setMuted] = useState(false);
   const [silenced, setSilenced] = useState(false);
   const [locked, setLocked] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
+  // 📢 the announcement as it was when I came in (like the reference app): it is pinned
+  // under "Currently in this room" for this visit; a change while I'm here only shows
+  // as a pink line in the chat.
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   const [roomInfo, setRoomInfo] = useState<RoomInfo>(EMPTY_ROOM);
   const [roomLoaded, setRoomLoaded] = useState(false);
   const [modLoaded, setModLoaded] = useState(false);
@@ -803,7 +806,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         setSilenced(snap.get("silenced") === true);
         setLocked(snap.get("locked") === true);
         if (!snap.metadata.fromCache && snap.get("locked") !== true) insideBeforeLockRef.current = true;
-        setAnnouncement(String(snap.get("announcement") || "").trim());
+        setAnnouncement((a) => (a === null ? String(snap.get("announcement") || "").trim() : a));
         setModLoaded(true);
       },
       () => setModLoaded(true)
@@ -1456,7 +1459,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       modName: perms.isHiddenFounder || isMainFounderName(profile.username) ? "administrator" : profile.username,
       room: roomInfo,
       perms,
-      people: roomUsers.map((u) => ({ uid: u.uid, username: u.username })),
+      modLevel: profile.level,
+      people: roomUsers.map((u) => ({ uid: u.uid, username: u.username, level: u.level })),
       note,
       post: (t, type = "chat") => write({ text: t, type, giftName: "", clientCreatedAt: Date.now() }),
       postModeration: (t, color) => write({ text: t, type: "moderation", moderationColor: color }),
@@ -1949,14 +1953,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const banned = blocked.startsWith("You are banned");
     return (
       <PageShell light>
-        <SimpleDialog
-          title={banned ? "🚫 Room Access Denied" : bumped ? "👋 Bumped from Room" : "👢 Removed from Room"}
+        <WarningDialog
+          title="Chat Room"
           text={
             banned
-              ? "🚫 You are banned from this room. Please contact the room Admin."
+              ? "Unable to join chat room. You were recently banned from this chat room."
               : bumped
-                ? "👋 You were bumped from this room. You can come back in right away."
-                : `👢 You have been kicked from this room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
+                ? "You were bumped from this chat room. You can come back in right away."
+                : `Unable to join chat room. You were recently kicked from this chat room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
           }
           onClose={() => router.push("/rooms")}
         />
@@ -2216,21 +2220,24 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   />
                 )}
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
+                {/* 📢 a pink card "<< text >>", like the reference app (miglife) */}
                 {announcement && (
-                  <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5">
-                    {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
-                    <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
+                  <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#800020] [overflow-wrap:anywhere]">
+                    <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-[#2B2F38] [overflow-wrap:anywhere]">
+                      {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
+                      <span className="mr-1 inline-block -scale-x-100 text-[18px] leading-none">📢</span>
+                      {"<< "}
                       {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
                         /^https?:\/\//.test(part) ? (
-                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#800020]/50 underline-offset-2">
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#2B2F38]/50 underline-offset-2">
                             {part}
                           </a>
                         ) : (
                           part
                         )
                       )}
+                      {" >>"}
                     </p>
                   </div>
                 )}
@@ -2858,6 +2865,7 @@ const LINK_BLUE = "var(--room-link, #174EA6)";
 const BET_BLUE = "var(--room-bet, #1565E8)";
 const APP_RED = "var(--room-red, #B3261E)";
 const ROOM_ORANGE = "#E6731E";
+const ANNOUNCE_PINK = "#FDDCDC";
 // 🎨 Every gift line gets one of these colours (miglife's list) — the SAME gift
 // shows in a different colour each time. Picked from the message id, so everyone
 // sees the same colour and it never changes on reload. (Same list as RoomPage.kt.)
@@ -3433,13 +3441,30 @@ function MessageRow({
     );
   }
 
+  // 🛡 Kick / ban / mute / lock / silence, like mig33 (miglife):
+  // "Bangladesh : mental[23] has been banned by life[51]" — room name in the room's own orange (bold), the rest black.
   if (m.type === "moderation") {
-    const color = m.moderationColor === "red" ? "#D32F2F" : m.moderationColor === "green" ? "#2E7D32" : LINK_BLUE;
     return (
-      <p className="whitespace-pre-wrap px-1 text-left text-[13px] font-semibold leading-snug" style={{ color }}>
-        {brandMiglife(m.text)}
+      <p className="whitespace-pre-wrap px-1 text-left leading-snug" style={{ fontSize: fontPx }}>
+        <span className="font-bold" style={{ color: ROOM_ORANGE }}>
+          {roomName} :{" "}
+        </span>
+        <span className="text-black">{brandMiglife(m.text)}</span>
         {stamp}
       </p>
+    );
+  }
+
+  // 📢 "<< life has set the announcement to … >>": a pink card across the chat, like the reference app.
+  if (m.type === "announcement") {
+    return (
+      <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
+        {/* the icon sits in the text, so a long line wraps under it — no time, like the reference app */}
+        <p className="whitespace-pre-wrap leading-snug text-[#2B2F38] [overflow-wrap:anywhere]" style={{ fontSize: fontPx }}>
+          <span className="mr-1 inline-block -scale-x-100 text-[1.2em] leading-none">📢</span>
+          {brandMiglife(m.text)}
+        </p>
+      </div>
     );
   }
 

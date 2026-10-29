@@ -137,8 +137,10 @@ export type ModContext = {
   modName: string;
   room: RoomInfo;
   perms: RoomPerms;
+  /** My level, shown next to my name in moderation lines ("life[51]"). */
+  modLevel?: number;
   /** People in the room right now. */
-  people: { uid: string; username: string }[];
+  people: { uid: string; username: string; level?: number }[];
   note: (text: string) => void;
   /** A line everyone sees (type "chat" by default). */
   post: (text: string, type?: string) => void;
@@ -163,8 +165,8 @@ async function setAppRole(ctx: ModContext, name: string, role: "staff" | "user")
       role,
       operationId: "role_" + crypto.randomUUID().replace(/-/g, ""),
     });
-    if (role === "staff") ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
+    if (role === "staff") ctx.postModeration(`${target.username} is now a moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e: any) {
     ctx.note(`${ctx.roomName}: Role update failed. ${e?.message || "Permission denied."}`);
   }
@@ -194,7 +196,7 @@ async function removePresence(roomName: string, name: string) {
 }
 
 // The person, from the room when they are here, else from users/.
-async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; username: string } | null> {
+async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; username: string; level?: number } | null> {
   const clean = name.trim().replace(/^@/, "");
   const here = ctx.people.find((p) => key(p.username) === key(clean));
   if (here) return here;
@@ -205,7 +207,7 @@ async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; use
   ]) {
     const snap = await getDocs(q);
     const d = snap.docs[0];
-    if (d) return { uid: d.id, username: String(d.get("username") || clean).trim() };
+    if (d) return { uid: d.id, username: String(d.get("username") || clean).trim(), level: Number(d.get("level") || 1) };
   }
   return null;
 }
@@ -241,6 +243,12 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
   );
 }
 
+// 🛡 mig33-style moderation lines (miglife): "mental[23] has been banned by life[51]",
+// shown as "RoomName : …" (room name in the room's orange, bold). "administrator" has no level.
+const tag = (name: string, level?: number) => (level && level > 0 ? `${name}[${level}]` : name);
+const byMod = (ctx: ModContext, official = false) =>
+  official || ctx.modName === "administrator" ? "administrator" : tag(ctx.modName, ctx.modLevel);
+
 const fail = (ctx: ModContext, what: string) => (e: any) =>
   ctx.note(`${ctx.roomName}: ${what} failed. ${e?.message || "Permission denied."}`);
 
@@ -257,11 +265,7 @@ export async function kickUser(ctx: ModContext, name: string) {
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
-    ctx.post(
-      ctx.perms.isUserRoom
-        ? `👢 ${row.username} kicked by ${ctx.modName} (30 min).`
-        : `👢 ${row.username} kicked (30 min).`
-    );
+    ctx.postModeration(`${tag(row.username, row.level)} has been kicked by ${byMod(ctx, !ctx.perms.isUserRoom)}`, "red");
   } catch (e) {
     fail(ctx, "Kick")(e);
   }
@@ -281,7 +285,7 @@ export async function bumpUser(ctx: ModContext, name: string) {
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
-    ctx.post(`👋 ${row.username} bumped by ${ctx.modName}.`);
+    ctx.postModeration(`${tag(row.username, row.level)} has been bumped by ${byMod(ctx)}`, "red");
   } catch (e) {
     fail(ctx, "Bump")(e);
   }
@@ -299,12 +303,13 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
       { uid: target.uid, username: target.username, banned: ban, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    const by = ctx.perms.isUserRoom ? ctx.modName : "administrator";
+    const by = byMod(ctx, !ctx.perms.isUserRoom);
+    const who = tag(target.username, target.level);
     if (ban) {
       removePresence(ctx.roomName, target.username).catch(() => {});
-      ctx.postModeration(`🚫 ${target.username} banned by ${by}.`, "red");
+      ctx.postModeration(`${who} has been banned by ${by}`, "red");
     } else {
-      ctx.postModeration(`🔓 ${target.username} unbanned by ${by}.`, "green");
+      ctx.postModeration(`${who} has been unbanned by ${by}`, "green");
     }
   } catch (e) {
     fail(ctx, "Moderation")(e);
@@ -322,7 +327,7 @@ export async function muteUser(ctx: ModContext, name: string, mute: boolean) {
       { uid: target.uid, username: target.username, muted: mute, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    ctx.post(mute ? `🔇 ${target.username} is muted in this room.` : `🔊 ${target.username} is unmuted in this room.`);
+    ctx.postModeration(`${tag(target.username, target.level)} has been ${mute ? "muted" : "unmuted"} by ${byMod(ctx)}`, mute ? "red" : "green");
   } catch (e) {
     fail(ctx, "Moderation")(e);
   }
@@ -343,14 +348,15 @@ async function setRoomFlag(ctx: ModContext, field: "silenced" | "locked", on: bo
       { merge: true }
     );
     const u = ctx.modName;
-    ctx.post(
+    ctx.postModeration(
       field === "silenced"
         ? on
-          ? `🔇 ${u} silenced the room. All users are muted.`
-          : `🔊 ${u} unsilenced the room. Chat is enabled again.`
+          ? `This chat room has been silenced by ${u}. Only moderators/admins can chat in this chat room.`
+          : `This chat room has been unsilenced by ${u}`
         : on
-          ? `🔒 ${u} locked the room. Only admins/mods can enter.`
-          : `🔓 ${u} unlocked the room. Everyone can enter again.`
+          ? `This chat room has been locked by ${u}. Only moderators/admins can enter/unlock this chat room.`
+          : `This chat room has been unlocked by ${u}`,
+      on ? "red" : "green"
     );
   } catch (e) {
     fail(ctx, "Room update")(e);
@@ -398,8 +404,8 @@ export async function setModerator(ctx: ModContext, name: string, add: boolean) 
       updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
+    if (add) ctx.postModeration(`${target.username} is now a moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e) {
     fail(ctx, "Moderator update")(e);
   }
@@ -424,8 +430,8 @@ export async function setSuperMod(ctx: ModContext, name: string, add: boolean) {
       updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`🌟 ${target.username} was made a Super Mod by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a Super Mod.`, "red");
+    if (add) ctx.postModeration(`${target.username} is now a super moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a super moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e) {
     fail(ctx, "Super Mod update")(e);
   }
@@ -453,15 +459,10 @@ async function setAnnouncement(ctx: ModContext, message: string, minutes?: numbe
       },
       { merge: true }
     );
-    // Only the person who turned it off sees who made it.
-    if (!message && prevText && prevBy) ctx.note(`📢 Previous announcement made by ${prevBy}`);
-    ctx.post(
-      !message
-        ? `📢 ${ctx.modName} stopped the room announcement.`
-        : minutes
-          ? `📢 ${ctx.modName} set a room announcement for ${minutes} minute(s).`
-          : `📢 ${ctx.modName} set a room announcement.`
-    );
+    // 📢 a pink card in the chat, like the reference app (miglife):
+    // "<< life has set the announcement to … >>" / "<< life has turned off the announcement made previously by life >>"
+    if (message) ctx.post(`<< ${ctx.modName} has set the announcement to ${message} >>`, "announcement");
+    else if (prevText) ctx.post(`<< ${ctx.modName} has turned off the announcement made previously by ${prevBy || ctx.modName} >>`, "announcement");
     if (message && minutes) {
       // This device clears it again when the time is up — unless someone set a newer one.
       setTimeout(async () => {
@@ -486,7 +487,7 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
   if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
-  if (p.canRoomWide) lines.push("/announcement text   /announcement stop");
+  if (p.canRoomWide) lines.push("/announcement text   /announcement_off");
   if (p.canBroadcast) lines.push("/broadcast text");
   if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
   if (p.canAssignSuperMod) lines.push("/smod name   /dsmod name");
@@ -558,11 +559,15 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
       return true;
     // 📌 /announcement text | stop — the pinned banner under "Currently in this
     // room". /announce text [minutes] — the same, optionally timed.
+    case "/announcement_off":
+    case "/announce_off":
+      setAnnouncement(ctx, "");
+      return true;
     case "/announcement":
     case "/announce": {
       const rest = clean.trim().slice(parts[0].length).trim();
       if (!rest) {
-        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (${cmd} stop to remove it)`);
+        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (/announcement_off to remove it)`);
         return true;
       }
       if (["off", "stop", "clear"].includes(rest.toLowerCase())) {
