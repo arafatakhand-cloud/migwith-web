@@ -24,6 +24,7 @@ export const OFFICIAL_GAME_ROOMS = [
   "🧠 Trivia Official",
   "🎯 Number Guess Official",
   "🐎 Horse Race Official",
+  "🎲 Liar's Dice Official",
 ];
 
 // A presence doc older than this no longer counts as "in the room".
@@ -201,6 +202,8 @@ export function officialRoomDefaultDescription(roomName: string): string {
       return "🎯 Welcome to Number Guess! 🎉\n\nType !start (or !start 500) — a number 1–100 is hidden for 60 seconds. Guess with !g 45: the bot says higher or lower. Your first guess takes the entry; the right number wins the pot. Nobody right → everyone gets the entry back. Play responsibly! ✨";
     case "🐎 Horse Race Official":
       return "🐎 Welcome to Horse Race! 🎉\n\nType !start — 45 seconds to bet on one of 5 horses (!b 3 500, or tap a lane and Bet), then watch the race. The winning horse pays 4.5x. Play responsibly! ✨";
+    case "🎲 Liar's Dice Official":
+      return "🎲 Welcome to Liar's Dice (ধাপ্পাবাজি)! 🎉\n\nType !start to open a table, !j to sit down (2–6 players). Everyone gets 3 secret dice — bid how many of a face the whole table has, or call LIAR! The last player with dice wins the pot. Bluff well and play responsibly! ✨";
     case "👑 MIG Royale Official":
       return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
     case "🎲 Ludo Bot Free":
