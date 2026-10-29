@@ -167,7 +167,7 @@ const NG_RULES: [string, string][] = [
 ];
 const HR_RULES: [string, string][] = [
   ["🐎 The horses", "1 Blaze 🔴 · 2 Tiger 🟠 · 3 Sunny 🟡 · 4 Lucky 🟢 · 5 Storm 🔵"],
-  ["▶ Start", "Anyone taps Start race (or types !start). Then there are 45 seconds to bet."],
+  ["▶ Start", "Anyone taps Start race (or types !start). Then there are 20 seconds to bet."],
   ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b lucky 500 — the name or its number 1–5). You can bet on up to 2 horses in a race. Minimum 100, maximum 200,000 per horse."],
   ["🏇 The race", "When betting closes, the 8-second race starts. The result is decided by the server at random — nobody can change it."],
   ["🏆 Winning", "Only bets on the 1st-place horse 🥇 win: they pay 4.5× the bet (1,000 → 4,500). Bets on the 2nd–5th horses lose."],
@@ -556,7 +556,7 @@ export function horseHandleCommand(state: HorseRaceState, clean: string, note: (
     return true;
   }
   if (cmd === "!help") {
-    note(`${HR_BOT}: !start · !b [horse name or 1-5] [amount] · 45 s betting, then the race · the winning horse pays ${HR_MULT}`);
+    note(`${HR_BOT}: !start · !b [horse name or 1-5] [amount] · 20 s betting, then the race · the winning horse pays ${HR_MULT}`);
     return true;
   }
   return false;
