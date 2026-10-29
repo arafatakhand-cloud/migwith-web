@@ -233,6 +233,11 @@ export function Die({ n, size = 30, tone = "plain" }: { n: number; size?: number
 
 const SEAT_COLORS = ["#7B5CF0", "#E53935", "#FB8C00", "#1E88E5", "#43A047", "#D81B60"];
 
+const FOLD_KEY = "migwith.liarDiceFolded";
+
+// Compact box (miglife: "the room's chat must stay visible"): the players as one
+// row of chips instead of a big table, the bid / result on one line, my dice and
+// my move in a slim strip — and ▾ folds it all to a single line.
 export function LiarDicePanel({ state }: { state: LiarDiceState }) {
   const me = state.players.find((p) => p.uid === state.uid);
   const seated = !!me;
@@ -250,221 +255,204 @@ export function LiarDicePanel({ state }: { state: LiarDiceState }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bidKey]);
   const legal = q >= 1 && q <= totalDice && (!state.bid || q > state.bid.q || (q === state.bid.q && f > state.bid.f));
-
-  // seats around the table, me at the bottom
-  const order = [...state.players];
-  const myIdx = order.findIndex((p) => p.uid === state.uid);
-  const seats = myIdx > 0 ? [...order.slice(myIdx), ...order.slice(0, myIdx)] : order;
+  const [folded, setFolded] = useState(() => {
+    try {
+      return localStorage.getItem(FOLD_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const fold = (v: boolean) => {
+    setFolded(v);
+    try {
+      localStorage.setItem(FOLD_KEY, v ? "1" : "0");
+    } catch {
+      // storage blocked
+    }
+  };
+  // my turn always opens the box
+  const open = !folded || myTurn;
   const revealing = state.phase === "REVEAL" && state.reveal;
   const turnName = state.players.find((p) => p.uid === state.turnUid)?.name || "";
+  const gameOver = state.phase === "OVER" || (!state.running && !!state.winner);
+  const status =
+    state.phase === "JOINING"
+      ? `Table open · ${state.players.length}/6 · ${state.secondsLeft}s`
+      : state.phase === "BIDDING"
+        ? `R${state.roundNo} · ${myTurn ? "your turn" : `${turnName}'s turn`} · ${state.secondsLeft}s`
+        : state.phase === "REVEAL"
+          ? "🔓 Cups up!"
+          : gameOver
+            ? "🏁 Game over"
+            : "bluff and catch the liars";
+
+  // the one line in the middle: the bid, what the cups showed, or the winner
+  const middle = (() => {
+    if (state.phase === "JOINING") return <span>🎟 {fmt(state.entry)} · waiting for players…</span>;
+    if (state.phase === "BIDDING")
+      return state.bid ? (
+        <span className="inline-flex items-center gap-1">
+          {state.bid.name}: at least <b className="text-[14px]">{state.bid.q} ×</b> <Die n={state.bid.f} size={18} />
+        </span>
+      ) : (
+        <span>{turnName} makes the first bid…</span>
+      );
+    if (revealing && !state.reveal!.timeout) {
+      const r = state.reveal!;
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          🤥 {r.caller} called {r.bidder}: found <b>{r.count} ×</b> <Die n={r.face} size={16} /> of {r.q} →{" "}
+          <b className={r.count >= r.q ? "text-[#9FF5B5]" : "text-[#FF8A80]"}>{r.count >= r.q ? "TRUE" : "LIE!"}</b> · {r.loser} −1 🎲
+        </span>
+      );
+    }
+    if (revealing) return <span>⏰ {state.reveal!.loser} ran out of time · −1 🎲</span>;
+    if (gameOver && state.winner)
+      return (
+        <span>
+          🏆 <b className="text-[#FFD54A]">{state.winner.name}</b> wins {fmt(state.winner.win)} coins
+        </span>
+      );
+    return <span>🎲 2–6 players · 3 secret dice each · last one standing wins</span>;
+  })();
 
   return (
     <div
-      className="relative mx-2.5 my-1.5 overflow-hidden rounded-[22px] border border-[#FFD678]/25 px-3 py-3 text-white shadow-[0_12px_28px_rgba(40,20,80,.35)]"
-      style={{ background: "radial-gradient(120% 80% at 50% 0%,#5A2D82,#24123F 60%,#160B28)" }}
+      className="relative mx-2.5 my-1 overflow-hidden rounded-[18px] border border-[#FFD678]/25 px-2.5 py-2 text-white shadow-[0_8px_20px_rgba(40,20,80,.3)]"
+      style={{ background: "radial-gradient(120% 90% at 50% 0%,#5A2D82,#24123F 65%,#160B28)" }}
     >
-      <div className="flex items-center text-[12.5px] font-black tracking-wide">
-        <span className="flex-1">🎲 LIAR&apos;S DICE{state.gameNo ? ` · #${state.gameNo}` : ""}</span>
+      <div className="flex items-center gap-1.5 text-[12px] font-black">
+        <span className="shrink-0">{state.running ? `🎲 #${state.gameNo}` : "🎲 LIAR'S DICE"}</span>
+        <span className="min-w-0 flex-1 truncate text-[11px] font-extrabold text-[#CDB8FF]">· {status}</span>
+        {state.running && <span className="shrink-0 rounded-[9px] bg-white/[0.14] px-1.5 py-[2px] text-[11px]">💰 {fmt(state.pot)}</span>}
         <RulesButton title="🎲 Liar's Dice — Rules" rules={LD_RULES} />
-        {state.running && <span className="rounded-[10px] bg-white/[0.14] px-2 py-[3px] text-[11.5px]">💰 {fmt(state.pot)}</span>}
+        <button type="button" onClick={() => fold(!folded)} aria-label={folded ? "Open" : "Fold"} className="shrink-0 rounded-lg bg-white/[0.14] px-1.5 text-[13px] leading-[20px]">
+          {open ? "▾" : "▴"}
+        </button>
       </div>
-      <p className="mt-0.5 text-[11px] font-extrabold text-[#CDB8FF]">
-        {state.phase === "JOINING"
-          ? `Table open · ${state.players.length}/6 seats · starts in ${state.secondsLeft}s`
-          : state.phase === "BIDDING"
-            ? `Round ${state.roundNo} · ${myTurn ? "your turn" : `${turnName}'s turn`} · ${state.secondsLeft}s`
-            : state.phase === "REVEAL"
-              ? "🔓 Cups up!"
-              : state.phase === "OVER" || (!state.running && state.winner)
-                ? "🏁 Game over"
-                : "ধাপ্পাবাজি — bluff and catch the liars"}
-      </p>
 
-      {/* the table */}
-      <div
-        className="relative mt-2.5 h-[240px] rounded-[50%/40%] border-[6px] border-[#6B3E1F] shadow-[inset_0_0_30px_rgba(0,0,0,.45),0_6px_0_#3E220F]"
-        style={{ background: "radial-gradient(ellipse at center,#1F7A4D,#145C39 70%,#0E4229)" }}
-      >
-        {seats.map((p, i) => {
-          const a = Math.PI / 2 + (i * 2 * Math.PI) / Math.max(seats.length, 2);
-          const x = 50 + 40 * Math.cos(a);
-          const y = 47 + 33 * Math.sin(a);
-          const out = state.running && state.phase !== "JOINING" && p.dice === 0;
-          const turn = state.phase === "BIDDING" && p.uid === state.turnUid;
-          const shown = revealing ? state.reveal!.dice[p.name] || [] : null;
-          const color = SEAT_COLORS[state.players.findIndex((x) => x.uid === p.uid) % SEAT_COLORS.length];
-          return (
-            <div key={p.uid} className={`absolute w-[104px] -translate-x-1/2 -translate-y-1/2 text-center ${out ? "opacity-35 grayscale" : ""}`} style={{ left: `${x}%`, top: `${y}%` }}>
-              <div
-                className="mx-auto flex h-[34px] w-[34px] items-center justify-center rounded-full border-2 border-white/70 text-[14px] font-black"
-                style={{ background: color, boxShadow: turn ? "0 0 0 3px #FFD54A,0 0 14px #FFD54A" : undefined }}
-              >
-                {p.name.slice(0, 1).toUpperCase()}
-              </div>
-              <div className="truncate text-[11px] font-black [text-shadow:0_1px_2px_#000]">
-                {p.uid === state.uid ? "you" : p.name}
-                {turn ? " 🎯" : ""}
-              </div>
-              {state.phase !== "JOINING" && (
-                <div className="mt-0.5 flex justify-center gap-[2px]">
-                  {shown
-                    ? shown.map((n, k) => <Die key={k} n={n} size={18} tone={state.reveal!.timeout ? "plain" : n === state.reveal!.face ? "hit" : "dim"} />)
-                    : Array.from({ length: p.dice }, (_, k) => (
-                        <span key={k} className="h-[16px] w-[14px] rounded-[4px_4px_6px_6px] shadow-[inset_0_2px_0_rgba(255,255,255,.3)]" style={{ background: "linear-gradient(180deg,#B5651D,#7A3E12)" }} />
-                      ))}
-                </div>
+      {!open ? (
+        // folded: one line — the bid / result and my dice
+        <div className="mt-1 flex items-center gap-2 text-[11.5px] font-bold">
+          <span className="min-w-0 flex-1 truncate">{middle}</span>
+          {seated && state.myDice.length > 0 && (
+            <span className="flex shrink-0 gap-[3px]">
+              🔒{state.myDice.map((n, i) => <Die key={i} n={n} size={16} />)}
+            </span>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* the players, one row of chips (whose turn glows) */}
+          {state.players.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {state.players.map((p, i) => {
+                const out = state.running && state.phase !== "JOINING" && p.dice === 0;
+                const turn = state.phase === "BIDDING" && p.uid === state.turnUid;
+                const shown = revealing ? state.reveal!.dice[p.name] || [] : null;
+                return (
+                  <span
+                    key={p.uid}
+                    className={`inline-flex items-center gap-1 rounded-full py-[2px] pl-[2px] pr-2 text-[11px] font-black ${out ? "opacity-35 grayscale" : ""}`}
+                    style={{ background: turn ? "rgba(255,213,74,.22)" : "rgba(255,255,255,.1)", boxShadow: turn ? "0 0 0 1.5px #FFD54A" : undefined }}
+                  >
+                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full text-[10px]" style={{ background: SEAT_COLORS[i % SEAT_COLORS.length] }}>
+                      {p.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    {p.uid === state.uid ? "you" : p.name}
+                    {state.phase !== "JOINING" &&
+                      (shown
+                        ? shown.map((n, k) => <Die key={k} n={n} size={14} tone={state.reveal!.timeout ? "plain" : n === state.reveal!.face ? "hit" : "dim"} />)
+                        : Array.from({ length: p.dice }, (_, k) => (
+                            <span key={k} className="h-[11px] w-[9px] rounded-[3px_3px_4px_4px]" style={{ background: "linear-gradient(180deg,#B5651D,#7A3E12)" }} />
+                          )))}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* the bid / result line */}
+          <div className="mt-1.5 rounded-xl bg-black/30 px-2.5 py-1.5 text-[12px] font-bold">{middle}</div>
+
+          {/* my dice + my move */}
+          {seated && state.running && state.phase !== "JOINING" && (
+            <div className="mt-1.5 flex items-center gap-1.5">
+              <span className="text-[10.5px] font-black text-[#CDB8FF]">🔒</span>
+              {state.myDice.length ? (
+                state.myDice.map((n, i) => <Die key={i} n={n} size={24} tone={revealing && !state.reveal!.timeout && n === state.reveal!.face ? "hit" : "plain"} />)
+              ) : (
+                <span className="text-[11px] font-black text-[#CDB8FF]">{me && me.dice === 0 ? "you are out" : "…"}</span>
+              )}
+              {myTurn && (
+                <>
+                  <span className="flex-1" />
+                  <button type="button" onClick={() => setQ((x) => Math.max(1, x - 1))} className="h-8 w-8 rounded-lg bg-white/15 text-[15px] font-black">
+                    −
+                  </button>
+                  <span className="flex h-8 items-center gap-1 rounded-lg bg-[#fff] px-2 text-[15px] font-black text-[#4A2A7A]">
+                    {q}× <Die n={f} size={18} />
+                  </span>
+                  <button type="button" onClick={() => setQ((x) => Math.min(totalDice, x + 1))} className="h-8 w-8 rounded-lg bg-white/15 text-[15px] font-black">
+                    +
+                  </button>
+                </>
               )}
             </div>
-          );
-        })}
-        <div className="absolute left-1/2 top-1/2 w-[190px] -translate-x-1/2 -translate-y-1/2 text-center">
-          {state.phase === "JOINING" && (
-            <>
-              <p className="text-[15px] font-black">Waiting for players…</p>
-              <p className="mt-1 text-[12px] text-[#DCEFDC]">🎟 {fmt(state.entry)} · 💰 {fmt(state.pot)}</p>
-            </>
           )}
-          {state.phase === "BIDDING" &&
-            (state.bid ? (
-              <>
-                <p className="mb-1 text-[11px] text-[#DCEFDC]">{state.bid.name} says the table has at least</p>
-                <span className="inline-flex items-center gap-1.5 rounded-[14px] border-[1.5px] border-[#FFD54A] bg-black/45 px-3 py-1.5 text-[16px] font-black">
-                  {state.bid.q} × <Die n={state.bid.f} size={22} />
-                </span>
-              </>
-            ) : (
-              <p className="text-[13px] font-black">{turnName} makes the first bid…</p>
-            ))}
-          {revealing && !state.reveal!.timeout && (
-            <>
-              <span className="inline-flex items-center gap-1.5 rounded-[14px] border-[1.5px] border-[#FFD54A] bg-black/45 px-3 py-1.5 text-[15px] font-black">
-                found {state.reveal!.count} × <Die n={state.reveal!.face} size={20} />
-              </span>
-              <p className="mt-1.5 text-[13px] font-black">
-                {state.reveal!.bidder} said {state.reveal!.q} →{" "}
-                {state.reveal!.count >= state.reveal!.q ? <span className="text-[#9FF5B5]">TRUE</span> : <span className="text-[#FF8A80]">LIE!</span>}
-              </p>
-            </>
-          )}
-          {revealing && state.reveal!.timeout && <p className="text-[13px] font-black">⏰ {state.reveal!.loser} ran out of time</p>}
-          {(state.phase === "OVER" || (!state.running && state.winner)) && state.winner && (
-            <>
-              <p className="text-[26px] font-black text-[#FFD54A]">🏆 {state.winner.name}</p>
-              <p className="font-black">wins {fmt(state.winner.win)} coins</p>
-            </>
-          )}
-          {!state.running && !state.winner && <p className="text-[14px] font-black">🎲 Open a table and bluff!</p>}
-        </div>
-      </div>
-
-      {/* 📣 the call, big */}
-      {revealing && (
-        <div className="mt-2 rounded-2xl border-2 border-[#FFD54A] bg-[#0F051E]/90 px-3 py-2 text-center">
-          {state.reveal!.timeout ? (
-            <p className="text-[14px] font-black">⏰ {state.reveal!.loser} loses a die</p>
-          ) : (
-            <>
-              <p className="text-[22px] font-black tracking-wider text-[#FF5252]">🤥 LIAR!</p>
-              <p className="text-[13px] font-black">
-                {state.reveal!.caller} called {state.reveal!.bidder} · {state.reveal!.loser} loses a die 🎲➖
-              </p>
-            </>
-          )}
-        </div>
-      )}
-
-      {/* 🔒 my dice */}
-      {seated && state.running && state.phase !== "JOINING" && (
-        <div className="mt-2.5 rounded-2xl border border-white/[0.12] bg-white/[0.08] p-2.5">
-          <p className="mb-1.5 text-[11px] font-black text-[#CDB8FF]">🔒 YOUR DICE{me && me.dice === 0 ? " · you are out" : " (secret)"}</p>
-          <div className="flex gap-1.5">
-            {state.myDice.map((n, i) => (
-              <Die key={i} n={n} size={32} tone={revealing && !state.reveal!.timeout && n === state.reveal!.face ? "hit" : "plain"} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 🗣 my move */}
-      {myTurn && (
-        <div className="mt-2 rounded-2xl bg-black/25 p-2.5">
-          <div className="flex items-center gap-1.5">
-            <button type="button" onClick={() => setQ((x) => Math.max(1, x - 1))} className="h-9 w-9 rounded-xl bg-white/15 text-[17px] font-black">
-              −
-            </button>
-            <span className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#fff] text-[19px] font-black text-[#4A2A7A]">
-              {q} × <Die n={f} size={22} />
-            </span>
-            <button type="button" onClick={() => setQ((x) => Math.min(totalDice, x + 1))} className="h-9 w-9 rounded-xl bg-white/15 text-[17px] font-black">
-              +
-            </button>
-          </div>
-          <div className="mt-2 flex justify-between gap-1">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <button key={n} type="button" onClick={() => setF(n)} className={`rounded-[10px] p-[3px] ${f === n ? "bg-[#FFD54A]" : "bg-white/[0.08]"}`}>
-                <Die n={n} size={24} />
-              </button>
-            ))}
-          </div>
-          <div className="mt-2 flex gap-2">
-            <button
-              type="button"
-              disabled={!legal || state.busy}
-              onClick={() => state.bidMove(q, f)}
-              className="h-11 flex-1 rounded-[13px] text-[14.5px] font-black disabled:opacity-40"
-              style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}
-            >
-              ⬆ Bid {q} × {f}
-            </button>
-            {state.bid && (
+          {myTurn && (
+            <div className="mt-1.5 flex items-center gap-1">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <button key={n} type="button" onClick={() => setF(n)} className={`rounded-lg p-[2px] ${f === n ? "bg-[#FFD54A]" : "bg-white/[0.08]"}`}>
+                  <Die n={n} size={20} />
+                </button>
+              ))}
               <button
                 type="button"
-                disabled={state.busy}
-                onClick={state.callLiar}
-                className="h-11 flex-1 rounded-[13px] text-[15px] font-black shadow-[0_4px_14px_rgba(213,0,0,.45)]"
-                style={{ background: "linear-gradient(90deg,#FF5252,#D50000)" }}
+                disabled={!legal || state.busy}
+                onClick={() => state.bidMove(q, f)}
+                className="ml-1 h-9 flex-1 rounded-[11px] text-[13px] font-black disabled:opacity-40"
+                style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}
               >
-                🤥 LIAR!
+                ⬆ Bid
               </button>
-            )}
-          </div>
-          {!legal && <p className="mt-1.5 text-[11px] font-bold text-[#FFB4AB]">Bid higher: more dice, or the same number of a higher face.</p>}
-        </div>
-      )}
+              {state.bid && (
+                <button
+                  type="button"
+                  disabled={state.busy}
+                  onClick={state.callLiar}
+                  className="h-9 flex-1 rounded-[11px] text-[13px] font-black"
+                  style={{ background: "linear-gradient(90deg,#FF5252,#D50000)" }}
+                >
+                  🤥 LIAR!
+                </button>
+              )}
+            </div>
+          )}
 
-      {/* bid history */}
-      {state.phase === "BIDDING" && state.bids.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {state.bids.map((b, i) => (
-            <span key={i} className={`rounded-lg px-[7px] py-[2px] text-[10.5px] font-extrabold ${i === state.bids.length - 1 ? "bg-[#7B5CF0]" : "bg-white/10"}`}>
-              {b.name}: {b.q}×{b.f}
-            </span>
-          ))}
-        </div>
-      )}
+          {/* results */}
+          {!state.running && state.winner && state.players.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {state.players.map((p) => (
+                <span key={p.uid} className={`rounded-lg px-[7px] py-[2px] text-[10.5px] font-black ${p.name === state.winner!.name ? "bg-[#2ECC71]" : "bg-[#E53935]"}`}>
+                  {p.name === state.winner!.name ? `🏆 ${p.name} +${fmt(state.winner!.win)}` : `${p.name} −${fmt(state.entry)}`}
+                </span>
+              ))}
+            </div>
+          )}
 
-      {/* results */}
-      {!state.running && state.winner && state.players.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {state.players.map((p) => (
-            <span key={p.uid} className={`rounded-lg px-[7px] py-[2px] text-[11px] font-black ${p.name === state.winner!.name ? "bg-[#2ECC71]" : "bg-[#E53935]"}`}>
-              {p.name === state.winner!.name ? `🏆 ${p.name} +${fmt(state.winner!.win)}` : `${p.name} −${fmt(state.entry)}`}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* join / open */}
-      {state.phase === "JOINING" && !seated && (
-        <button type="button" onClick={state.join} className="mt-2.5 h-11 w-full rounded-[13px] text-[15px] font-black" style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}>
-          {state.busy ? "…" : `🪑 Join (${fmt(state.entry)})`}
-        </button>
-      )}
-      {state.phase === "JOINING" && seated && <p className="mt-2 text-center text-[12px] font-black text-[#CDB8FF]">✅ You are seated — waiting for players…</p>}
-      {!state.running && (
-        <button type="button" onClick={() => state.start()} className="mt-2.5 h-11 w-full rounded-[13px] text-[15px] font-black" style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}>
-          {state.busy ? "…" : state.winner ? "🔁 Play again (1,000)" : "🎲 Open a table (1,000)"}
-        </button>
+          {/* join / open */}
+          {state.phase === "JOINING" && !seated && (
+            <button type="button" onClick={state.join} className="mt-1.5 h-9 w-full rounded-[11px] text-[13.5px] font-black" style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}>
+              {state.busy ? "…" : `🪑 Join (${fmt(state.entry)})`}
+            </button>
+          )}
+          {!state.running && (
+            <button type="button" onClick={() => state.start()} className="mt-1.5 h-9 w-full rounded-[11px] text-[13.5px] font-black" style={{ background: "linear-gradient(90deg,#7B5CF0,#5AA2FF)" }}>
+              {state.busy ? "…" : state.winner ? "🔁 Play again (1,000)" : "🎲 Open a table (1,000)"}
+            </button>
+          )}
+        </>
       )}
     </div>
   );
