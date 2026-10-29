@@ -66,6 +66,8 @@ export type NumGuessState = {
   entry: number;
   secondsLeft: number;
   lastGuess: { name: string; n: number; dir: string } | null;
+  /** this round's guesses (last 12), for the markers on the bar */
+  guesses: { name: string; n: number; dir: string }[];
   winner: { name: string; win: number } | null;
   answer: number;
   busy: boolean;
@@ -76,7 +78,8 @@ export type NumGuessState = {
 export function useNumGuess(roomId: string | null, uid: string | undefined, note: (t: string) => void): NumGuessState | null {
   const [g, setG] = useState({
     running: false, round: 0, lo: 1, hi: 100, pot: 0, players: 0, entry: 1000, phaseEndsAt: 0,
-    lastGuess: null as NumGuessState["lastGuess"], winner: null as NumGuessState["winner"], answer: 0,
+    lastGuess: null as NumGuessState["lastGuess"], guesses: [] as NumGuessState["guesses"],
+    winner: null as NumGuessState["winner"], answer: 0,
   });
   const [busy, setBusy] = useState(false);
   const noteRef = useRef(note);
@@ -98,6 +101,9 @@ export function useNumGuess(roomId: string | null, uid: string | undefined, note
         entry: Number(d.get("entry") || 1000),
         phaseEndsAt: Number(d.get("phaseEndsAt") || 0),
         lastGuess: lg && typeof lg.name === "string" ? { name: lg.name, n: Number(lg.n) || 0, dir: String(lg.dir || "") } : null,
+        guesses: (Array.isArray(d.get("guesses")) ? d.get("guesses") : [])
+          .filter((x: any) => x && typeof x.name === "string")
+          .map((x: any) => ({ name: String(x.name), n: Number(x.n) || 0, dir: String(x.dir || "") })),
         winner: w && typeof w.name === "string" ? { name: w.name, win: Number(w.win) || 0 } : null,
         answer: Number(d.get("answer") || 0),
       });
@@ -158,52 +164,169 @@ function WhiteButton({ children, onClick, className = "" }: { children: React.Re
   );
 }
 
+// How "hot" the round is: the smaller the open range, the more bars light up
+// (public information — it never hints at the hidden number itself).
+function ngHeat(lo: number, hi: number): number {
+  const w = hi - lo + 1;
+  return w >= 80 ? 1 : w >= 50 ? 2 : w >= 25 ? 3 : w >= 12 ? 4 : w >= 5 ? 5 : 6;
+}
+const NG_HEAT = ["#5AA2FF", "#7FD4FF", "#FFE082", "#FFB74D", "#FF7043", "#E53935"];
+
+// 🎯 design A + C (miglife's pick): the neon card (C) with the guess markers,
+// the ❄️→🔥 meter and the −10/−1/+1/+10 buttons (A); the bar is also a slider
+// that only moves inside the open range. One tap → 🎯 Guess.
 export function NumGuessPanel({ state }: { state: NumGuessState }) {
-  const from = (state.lo - 1) / 100;
-  const span = Math.min(1, Math.max(0.02, (state.hi - state.lo + 1) / 100));
+  const [pick, setPick] = useState(50);
+  const barRef = useRef<HTMLDivElement>(null);
+  const lo = state.lo;
+  const hi = Math.max(state.lo, state.hi);
+  // keep my number inside the open range (start in its middle)
+  useEffect(() => {
+    setPick((p) => (p < lo || p > hi ? Math.round((lo + hi) / 2) : p));
+  }, [lo, hi]);
+  const clamp = (n: number) => Math.min(hi, Math.max(lo, n));
+  const fromPointer = (clientX: number) => {
+    const r = barRef.current?.getBoundingClientRect();
+    if (!r) return;
+    setPick(clamp(Math.round(1 + ((clientX - r.left) / r.width) * 99)));
+  };
+  const pct = (n: number) => `${((n - 1) / 99) * 100}%`;
+  const heat = ngHeat(lo, hi);
+  const ringDeg = Math.max(0, Math.min(360, (state.secondsLeft / 60) * 360));
   return (
-    <div className="mx-2.5 my-1.5 rounded-2xl bg-gradient-to-br from-[#FF7A59] to-[#F0457B] px-3 py-2.5 text-white">
-      <div className="flex items-center text-xs font-black">
-        <span className="flex-1">🎯 NUMBER GUESS{state.running ? ` · #${state.round}` : ""}</span>
-        {state.running && <span>⏱ {state.secondsLeft}s</span>}
+    <div
+      className="relative mx-2.5 my-1.5 overflow-hidden rounded-[22px] border border-[#A078FF]/35 px-3.5 py-3 text-white shadow-[0_10px_26px_rgba(40,20,90,.35)]"
+      style={{ background: "radial-gradient(130% 100% at 10% 0%,#3B1D7A,#140A33)" }}
+    >
+      <div className="flex items-center text-[12.5px] font-black tracking-wide">
+        <span className="flex-1">🎯 NUMBER GUESS{state.round ? ` · #${state.round}` : ""}</span>
+        {state.running && (
+          <span
+            className="relative flex h-[46px] w-[46px] items-center justify-center rounded-full"
+            style={{ background: `conic-gradient(#FF7AB6 0 ${ringDeg}deg, rgba(255,255,255,.12) ${ringDeg}deg)` }}
+          >
+            <span className="absolute inset-[4px] flex items-center justify-center rounded-full bg-[#1d0f45] text-[16px] text-[#FFD54A]">
+              {state.secondsLeft}
+            </span>
+          </span>
+        )}
       </div>
       {state.running ? (
         <>
-          <p className="mt-1 text-sm font-bold">
-            The number is between {state.lo} and {state.hi}
+          <p className="-mt-1 text-[11.5px] font-extrabold text-[#C9B8FF]">The hidden number is between</p>
+          <p
+            className="bg-clip-text text-[32px] font-black leading-tight text-transparent"
+            style={{ backgroundImage: "linear-gradient(90deg,#FF7AB6,#FFD54A,#5AE3FF)" }}
+          >
+            {lo} – {hi}
           </p>
-          <div className="relative mt-1.5 h-[9px] overflow-hidden rounded-[5px] bg-white/25">
-            <i className="absolute inset-y-0 rounded-[5px] bg-[#FFD54A]" style={{ left: `${from * 100}%`, width: `${span * 100}%` }} />
+          {/* the 1–100 bar: open range lit, everyone's guesses marked above it, my pick as a slider */}
+          <div className="relative mx-1 mb-1 mt-7">
+            {state.guesses.map((g, i) => (
+              <span
+                key={i}
+                className="absolute -top-[22px] -translate-x-1/2 whitespace-nowrap rounded-md bg-white/90 px-1 text-[10px] font-black text-[#3B1D7A]"
+                style={{ left: pct(g.n) }}
+                title={g.name}
+              >
+                {g.n}
+                {g.dir === "up" ? "⬆" : g.dir === "down" ? "⬇" : "✅"}
+              </span>
+            ))}
+            <div
+              ref={barRef}
+              className="relative h-[12px] cursor-pointer touch-none rounded-[7px] bg-white/[0.12]"
+              onPointerDown={(e) => {
+                (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                fromPointer(e.clientX);
+              }}
+              onPointerMove={(e) => e.buttons && fromPointer(e.clientX)}
+            >
+              <span
+                className="absolute inset-y-0 rounded-[7px] shadow-[0_0_14px_rgba(255,122,182,.7)]"
+                style={{ left: pct(lo), width: `${((hi - lo + 1) / 100) * 100}%`, background: "linear-gradient(90deg,#FF7AB6,#7B5CF0)" }}
+              />
+              <span
+                className="absolute top-1/2 h-[24px] w-[24px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#fff] shadow-[0_0_0_5px_rgba(255,122,182,.35)]"
+                style={{ left: pct(pick) }}
+              />
+            </div>
           </div>
-          <div className="mt-0.5 flex justify-between text-[10px] text-white/85">
+          <div className="flex justify-between text-[10px] font-extrabold text-[#9F8FD6]">
             <span>1</span>
             <span>100</span>
           </div>
-          <div className="mt-1 flex flex-wrap gap-[5px]">
+          {/* ❄️ → 🔥: how small the open range has got */}
+          <div className="mt-2 flex gap-[3px]">
+            {NG_HEAT.map((c, i) => (
+              <i
+                key={c}
+                className="h-[6px] flex-1 rounded-[3px]"
+                style={{ background: i < heat ? c : "rgba(255,255,255,.12)", boxShadow: i === heat - 1 && heat === 6 ? "0 0 8px #ff8a80" : undefined }}
+              />
+            ))}
+          </div>
+          <div className="mt-[3px] flex justify-between text-[10.5px] font-extrabold text-[#C9B8FF]">
+            <span>❄️ wide open</span>
+            <span>🔥 very close!</span>
+          </div>
+          {/* −10 / −1 · my number · +1 / +10 */}
+          <div className="mt-2.5 flex items-center gap-1.5">
+            {[-10, -1].map((d) => (
+              <button key={d} type="button" onClick={() => setPick((p) => clamp(p + d))} className="h-10 w-10 rounded-xl bg-white/[0.12] text-[13px] font-black">
+                {d}
+              </button>
+            ))}
+            <span className="flex h-11 flex-1 items-center justify-center rounded-[14px] bg-[#fff] text-[24px] font-black text-[#7B5CF0]">{pick}</span>
+            {[1, 10].map((d) => (
+              <button key={d} type="button" onClick={() => setPick((p) => clamp(p + d))} className="h-10 w-10 rounded-xl bg-white/[0.12] text-[13px] font-black">
+                +{d}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => state.guess(pick)}
+            className="mt-2.5 flex h-11 w-full items-center justify-center rounded-[14px] text-[15px] font-black shadow-[0_6px_16px_rgba(123,92,240,.5)]"
+            style={{ background: "linear-gradient(90deg,#FF7AB6,#7B5CF0)" }}
+          >
+            🎯 Guess {pick}
+          </button>
+          <div className="mt-2 flex flex-wrap gap-[5px]">
             <Chip>💰 Pot {fmt(state.pot)}</Chip>
             <Chip>👥 {state.players}</Chip>
             <Chip>🎟 {fmt(state.entry)}</Chip>
+            {state.lastGuess && (
+              <Chip>
+                {state.lastGuess.name}: {state.lastGuess.n}{" "}
+                {state.lastGuess.dir === "up" ? "⬆️ higher" : state.lastGuess.dir === "down" ? "⬇️ lower" : "✅"}
+              </Chip>
+            )}
           </div>
-          {state.lastGuess && (
-            <p className="mt-1 truncate text-xs font-bold">
-              {state.lastGuess.name}: {state.lastGuess.n} →{" "}
-              {state.lastGuess.dir === "up" ? "⬆️ higher" : state.lastGuess.dir === "down" ? "⬇️ lower" : "✅"}
-            </p>
-          )}
-          <p className="text-[11px] text-white/85">Type !g [number] to guess</p>
         </>
       ) : (
         <>
-          <p className="mt-1 text-[13px] font-bold">
+          <p
+            className="mb-1 mt-1 bg-clip-text text-center text-[44px] font-black tracking-[.12em] text-transparent"
+            style={{ backgroundImage: "linear-gradient(90deg,#FF7AB6,#FFD54A,#5AE3FF)" }}
+          >
+            {state.answer > 0 ? state.answer : "? ?"}
+          </p>
+          <p className="text-center text-[13px] font-extrabold text-[#E9E1FF]">
             {state.winner
               ? `🏆 ${state.winner.name} won ${fmt(state.winner.win)} coins · the number was ${state.answer}`
               : state.answer > 0
-                ? `⏰ Last number was ${state.answer} — nobody got it`
+                ? `⏰ Nobody got ${state.answer} — entries refunded`
                 : "Guess the hidden number (1–100) and win the pot!"}
           </p>
-          <WhiteButton className="mt-2" onClick={() => state.start()}>
-            {state.busy ? "…" : "▶ Start (1,000)"}
-          </WhiteButton>
+          <button
+            type="button"
+            onClick={() => state.start()}
+            className="mt-3 flex h-11 w-full items-center justify-center rounded-[14px] text-[15px] font-black shadow-[0_6px_16px_rgba(123,92,240,.5)]"
+            style={{ background: "linear-gradient(90deg,#FF7AB6,#7B5CF0)" }}
+          >
+            {state.busy ? "…" : "▶ Start a round · 🎟 1,000"}
+          </button>
         </>
       )}
     </div>
