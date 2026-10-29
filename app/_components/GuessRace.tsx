@@ -165,8 +165,9 @@ const NG_RULES: [string, string][] = [
   ["💡 Tip", "More players = a bigger pot. Playing alone, a win gives back 90% of your own entry."],
 ];
 const HR_RULES: [string, string][] = [
+  ["🐎 The horses", "1 Blaze 🔴 · 2 Tiger 🟠 · 3 Sunny 🟡 · 4 Lucky 🟢 · 5 Storm 🔵"],
   ["▶ Start", "Anyone taps Start race (or types !start). Then there are 45 seconds to bet."],
-  ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b 3 500). You can bet on more than one horse. Minimum 100, maximum 200,000 per horse."],
+  ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b lucky 500 — the name or its number 1–5). You can bet on more than one horse. Minimum 100, maximum 200,000 per horse."],
   ["🏇 The race", "When betting closes, the 8-second race starts. The result is decided by the server at random — nobody can change it."],
   ["🏆 Winning", "Only bets on the 1st-place horse 🥇 win: they pay 4.5× the bet (1,000 → 4,500). Bets on the 2nd–5th horses lose."],
   ["📊 Max win", "The most one player can win in a race is 200,000 × 4.5 = 900,000 coins."],
@@ -547,20 +548,30 @@ export function horseHandleCommand(state: HorseRaceState, clean: string, note: (
     return true;
   }
   if (cmd === "!b" || cmd === "!bet") {
-    const horse = Number((parts[1] || "").replace(/^#/, ""));
+    const horse = horseOf(parts[1] || "");
     const amount = amountOf(parts[2]);
-    if (!Number.isInteger(horse) || horse < 1 || horse > 5 || !amount) note(`${HR_BOT}: Use !b [horse 1-5] [amount] — e.g. !b 3 500`);
+    if (!horse || !amount) note(`${HR_BOT}: Use !b [horse] [amount] — e.g. !b lucky 500 · horses: ${HORSE_NAMES.map((n, i) => `${i + 1} ${n}`).join(", ")}`);
     else state.bet(horse, amount);
     return true;
   }
   if (cmd === "!help") {
-    note(`${HR_BOT}: !start · !b [horse 1-5] [amount] · 45 s betting, then the race · the winning horse pays ${HR_MULT}`);
+    note(`${HR_BOT}: !start · !b [horse name or 1-5] [amount] · 45 s betting, then the race · the winning horse pays ${HR_MULT}`);
     return true;
   }
   return false;
 }
 
 const HORSE_COLORS = ["#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5"];
+// every horse has a name (same list as the server's HR_NAMES and the app's);
+// the server still counts them 1–5
+export const HORSE_NAMES = ["Blaze", "Tiger", "Sunny", "Lucky", "Storm"];
+const hn = (h: number) => HORSE_NAMES[h - 1] || `#${h}`;
+/** "3", "#3" or a name ("lucky") → 1–5, or 0 */
+function horseOf(t: string): number {
+  const n = Number(t.replace(/^#/, ""));
+  if (Number.isInteger(n) && n >= 1 && n <= 5) return n;
+  return HORSE_NAMES.findIndex((x) => x.toLowerCase() === t.toLowerCase()) + 1;
+}
 const HR_MIN_BET = 100;
 const HR_MAX_PER_HORSE = 200_000;
 /** a bet amount kept between 100 and 200,000 */
@@ -696,10 +707,10 @@ function raceTicker(state: HorseRaceState, betting: boolean): string {
   if (state.phase === "RACING") {
     const ranks = [0, 1, 2, 3, 4].sort((a, b) => state.positions[b] - state.positions[a]);
     if (state.raceT < 0.12) return "🔔 And they're off!";
-    if (state.raceT > 0.82) return `🔥 Final stretch — #${ranks[0] + 1} in front!`;
-    return `🏇 #${ranks[0] + 1} leads · #${ranks[1] + 1} close behind`;
+    if (state.raceT > 0.82) return `🔥 Final stretch — ${hn(ranks[0] + 1)} in front!`;
+    return `🏇 ${hn(ranks[0] + 1)} leads · ${hn(ranks[1] + 1)} close behind`;
   }
-  if (state.lastOrder.length) return `🏁 ${state.lastOrder.slice(0, 3).map((h, i) => `${MEDALS[i]} #${h}`).join("  ")}`;
+  if (state.lastOrder.length) return `🏁 ${state.lastOrder.slice(0, 3).map((h, i) => `${MEDALS[i]} ${hn(h)}`).join("  ")}`;
   return "🐎 5 horses · the winning horse pays 4.5x";
 }
 
@@ -776,10 +787,10 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
             className={`mt-[5px] flex w-full items-center rounded-xl text-left ${picked ? "ring-2 ring-[#FFD54A]" : ""}`}
           >
             <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-black shadow"
+              className="flex h-5 w-[48px] shrink-0 items-center justify-center rounded-full border border-white/50 text-[10.5px] font-black shadow"
               style={{ background: HORSE_COLORS[h - 1], color: h === 3 ? "#333" : "#fff" }}
             >
-              {h}
+              {hn(h)}
             </span>
             <span
               className="relative mx-1.5 h-[26px] flex-1 overflow-hidden rounded-[8px] shadow-[inset_0_-2px_0_rgba(0,0,0,.18)]"
@@ -846,9 +857,9 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
       {showLast && myHorses.length > 0 && (
         <p className={`mt-1.5 rounded-[10px] px-2.5 py-1.5 text-[13px] font-extrabold leading-snug ${myWin ? "bg-[#2ECC71]/90" : "bg-[#E53935]/85"}`}>
           {myWin
-            ? `🎉 You won +${fmt(myWin)} coins (${fmt(state.myBets[winner])} on #${winner})` +
-              (myLost ? ` · lost ${fmt(myLost)} on ${lostHorses.map((h) => `#${h}`).join(", ")}` : "")
-            : `😢 You lost ${fmt(myStake)} on ${myHorses.map((h) => `#${h}`).join(", ")}`}
+            ? `🎉 You won +${fmt(myWin)} coins (${fmt(state.myBets[winner])} on ${hn(winner)})` +
+              (myLost ? ` · lost ${fmt(myLost)} on ${lostHorses.map(hn).join(", ")}` : "")
+            : `😢 You lost ${fmt(myStake)} on ${myHorses.map(hn).join(", ")}`}
         </p>
       )}
       {betting ? (
@@ -868,7 +879,7 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                   <span className="block text-[15px] leading-none" style={{ color: HORSE_COLORS[h - 1] }}>
                     ●
                   </span>
-                  <span className="block text-[13px] font-black">#{h}</span>
+                  <span className="block truncate text-[12px] font-black">{hn(h)}</span>
                   <span className="block truncate text-[9.5px] font-extrabold opacity-85">
                     {pool[h] ? `👥${pool[h].n} · ${short(pool[h].amt)}` : "—"}
                   </span>
@@ -920,7 +931,7 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
             className="mt-2.5 flex h-12 w-full items-center justify-between rounded-[14px] px-3.5 font-black text-[#1B2440] shadow-[0_5px_14px_rgba(255,152,0,.45)]"
             style={{ background: "linear-gradient(90deg,#FFC107,#FF9800)" }}
           >
-            <span className="text-[15px]">{state.busy ? "…" : `🎯 Bet on #${state.pickHorse}`}</span>
+            <span className="text-[15px]">{state.busy ? "…" : `🎯 Bet on ${hn(state.pickHorse)}`}</span>
             <span className="text-[12.5px]">🏆 → {fmt(Math.floor(state.pickAmount * 4.5))}</span>
           </button>
         </div>
