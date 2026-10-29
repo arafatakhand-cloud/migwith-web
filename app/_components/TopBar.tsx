@@ -130,12 +130,14 @@ export function TopBar() {
       t: number;
       reply: boolean;
       mode: "" | "drag" | "scroll";
-      // the last finger positions, for how fast it was moving when let go
-      lastX: number;
-      lastT: number;
-      prevX: number;
-      prevT: number;
+      // the finger's recent positions (last ~100 ms), for how fast it was moving when let go
+      samples: { x: number; t: number }[];
     };
+    // ⚡ smoother swipes (miglife): while a page is being dragged the Glass
+    // theme's blur is switched off — re-blurring the whole page every frame
+    // was the main stutter on phones.
+    const swiping = (on: boolean) => document.documentElement.classList.toggle("is-swiping", on);
+    let unswipeTimer = 0;
     let start: Start | null = null;
     let frame = 0;
     let pendingDx = 0;
@@ -182,11 +184,9 @@ export function TopBar() {
         // On a full-width line only the message itself replies; empty space slides rooms.
         reply: !!replyLine && isOnSwipeContent(replyLine, x, e.touches[0].clientY),
         mode: "",
-        lastX: x,
-        lastT: now,
-        prevX: x,
-        prevT: now,
+        samples: [{ x, t: now }],
       };
+      swipeState.touchedAt = Date.now();
     };
     const onMove = (e: TouchEvent) => {
       if (!start || start.mode === "scroll" || orderRef.current.order.indexOf(orderRef.current.here) < 0) return;
@@ -194,16 +194,16 @@ export function TopBar() {
       const dx = cx - start.x;
       const dy = e.touches[0].clientY - start.y;
       const now = performance.now();
-      start.prevX = start.lastX;
-      start.prevT = start.lastT;
-      start.lastX = cx;
-      start.lastT = now;
+      start.samples.push({ x: cx, t: now });
+      while (start.samples.length > 2 && now - start.samples[0].t > 100) start.samples.shift();
       if (!start.mode) {
-        if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+        if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
         // On a message the right drag is swipe-to-reply: the page stays put.
         start.mode = Math.abs(dx) > Math.abs(dy) * 1.3 && !(start.reply && dx > 0) ? "drag" : "scroll";
         if (start.mode === "scroll") return;
         swipeState.dragging = true;
+        clearTimeout(unswipeTimer);
+        swiping(true);
         const el = body();
         if (el) el.style.willChange = "transform";
         // From where the finger is now: no jump at the start.
@@ -222,19 +222,27 @@ export function TopBar() {
       const s = start;
       start = null;
       swipeState.dragging = false;
+      // the blur comes back once the page has settled
+      const unswipe = (ms: number) => {
+        clearTimeout(unswipeTimer);
+        unswipeTimer = window.setTimeout(() => swiping(false), ms);
+      };
+
       const dx = e.changedTouches[0].clientX - s.x;
       const dy = e.changedTouches[0].clientY - s.y;
       const quick = Date.now() - s.t < 700;
       const el = body();
       const next = neighbour(dx);
       if (s.mode === "drag") {
-        // px per ms over the last bit of the drag
-        const dt = Math.max(1, s.lastT - s.prevT);
-        const v = performance.now() - s.lastT > 90 ? 0 : (s.lastX - s.prevX) / dt;
+        // px per ms over the last ~100 ms of the drag (steadier than the last two touches)
+        const first = s.samples[0];
+        const last = s.samples[s.samples.length - 1];
+        const v = performance.now() - last.t > 90 ? 0 : (last.x - first.x) / Math.max(16, last.t - first.t);
         const width = window.innerWidth;
-        const flick = Math.abs(v) > 0.35 && Math.sign(v) === Math.sign(dx) && Math.abs(dx) > 24;
+        const flick = Math.abs(v) > 0.3 && Math.sign(v) === Math.sign(dx) && Math.abs(dx) > 20;
         const go = !!next && (Math.abs(dx) > width * 0.25 || flick);
         if (!el) {
+          unswipe(300);
           if (go && next) router.push(next);
           return;
         }
@@ -245,6 +253,7 @@ export function TopBar() {
           const left = width - Math.abs(dx);
           const ms = Math.round(Math.min(340, Math.max(210, left / Math.max(Math.abs(v), 1.2))));
           slideAway(el, side, ms);
+          unswipe(ms + 260);
           // No copy of that tab yet: it slides in by itself once it opens.
           if (!withCopy) {
             swipeEnter.dir = side;
@@ -263,6 +272,7 @@ export function TopBar() {
           }, withCopy ? ms - 10 : Math.min(ms, 180));
         } else {
           slideBack(el, 260);
+          unswipe(300);
         }
         return;
       }
@@ -282,6 +292,8 @@ export function TopBar() {
       }
       const el = body();
       if (wasDrag && el) slideBack(el, 220);
+      clearTimeout(unswipeTimer);
+      unswipeTimer = window.setTimeout(() => swiping(false), 260);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchmove", onMove, { passive: true });
@@ -289,6 +301,8 @@ export function TopBar() {
     window.addEventListener("touchcancel", onCancel, { passive: true });
     return () => {
       if (frame) cancelAnimationFrame(frame);
+      clearTimeout(unswipeTimer);
+      swiping(false);
       window.removeEventListener("touchstart", onStart);
       window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
