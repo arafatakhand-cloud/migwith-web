@@ -96,6 +96,16 @@ import { CRICKET_ROOM, CricketBox, cricketHandleCommand, useCricket } from "../.
 import { TN_FREE_ROOM, TN_ROOM, TwentyNineTable, twentyNineHandleCommand, useTwentyNine } from "../../_components/TwentyNine";
 import { CricketCelebrationHost } from "../../_components/CricketCelebration";
 import { TRIVIA_ROOM, TriviaPanel, triviaHandleCommand, useTrivia } from "../../_components/Trivia";
+import {
+  HORSE_RACE_ROOM,
+  HorseRacePanel,
+  NUMBER_GUESS_ROOM,
+  NumGuessPanel,
+  horseHandleCommand,
+  numGuessHandleCommand,
+  useHorseRace,
+  useNumGuess,
+} from "../../_components/GuessRace";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_FREE_ROOM, LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { NotInRoomPage } from "../../_components/NotInRoomPage";
@@ -549,6 +559,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const lowCard = useLowCard(roomName === LOWCARD_ROOM || roomActiveBot === "lowcard" ? roomName : null, user?.uid, note);
   // 🧠 Trivia (the Trivia room, or a chat room where /bot trivia is on).
   const trivia = useTrivia(roomName === TRIVIA_ROOM || roomActiveBot === "trivia" ? roomName : null, user?.uid, note);
+  // 🎯 Number Guess / 🐎 Horse Race (null in every other room)
+  const numGuess = useNumGuess(roomName, user?.uid, note);
+  const horseRace = useHorseRace(roomName, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
   const ludo = useLudo(roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? roomName : null, user?.uid, note);
 
@@ -1350,7 +1363,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM].includes(roomName);
   // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
   // (a room with a game bot on DOES get entry effects now — except while that
   // bot's game is running, like the app)
@@ -1757,6 +1770,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     }
 
     if (trivia && triviaHandleCommand(trivia, clean, note)) {
+      setText("");
+      return;
+    }
+    if (numGuess && numGuessHandleCommand(numGuess, clean, note)) {
+      setText("");
+      return;
+    }
+    if (horseRace && horseHandleCommand(horseRace, clean, note)) {
       setText("");
       return;
     }
@@ -2404,6 +2425,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             {trivia && (
               <div data-noswipe>
                 <TriviaPanel state={trivia} uid={user.uid} isStaff={perms.isAppStaffHere} />
+              </div>
+            )}
+            {numGuess && (
+              <div data-noswipe>
+                <NumGuessPanel state={numGuess} />
+              </div>
+            )}
+            {horseRace && (
+              <div data-noswipe>
+                <HorseRacePanel state={horseRace} />
               </div>
             )}
 

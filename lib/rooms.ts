@@ -22,6 +22,8 @@ export const OFFICIAL_GAME_ROOMS = [
   "🃏 29 Card Free",
   "🎁 Gift Official",
   "🧠 Trivia Official",
+  "🎯 Number Guess Official",
+  "🐎 Horse Race Official",
 ];
 
 // A presence doc older than this no longer counts as "in the room".
@@ -195,6 +197,10 @@ export function officialRoomDefaultDescription(roomName: string): string {
       return "🆓 Welcome to 29 Card Free! 🎉\n\nSame 29 game — no coins needed. 4 players, 2 teams, empty seats get bots. Type !start to open a table and play for fun! ✨";
     case "🧠 Trivia Official":
       return "🧠 Welcome to Trivia! 🎉\n\nPick বাংলা or English and type !start (in any chat room: /bot trivia, then !start bn / !start en) — 10 questions, tap A · B · C · D. Faster right answer = more points. !top shows the leaderboard. Have fun! ✨";
+    case "🎯 Number Guess Official":
+      return "🎯 Welcome to Number Guess! 🎉\n\nType !start (or !start 500) — a number 1–100 is hidden for 60 seconds. Guess with !g 45: the bot says higher or lower. Your first guess takes the entry; the right number wins the pot. Nobody right → everyone gets the entry back. Play responsibly! ✨";
+    case "🐎 Horse Race Official":
+      return "🐎 Welcome to Horse Race! 🎉\n\nType !start — 45 seconds to bet on one of 5 horses (!b 3 500, or tap a lane and Bet), then watch the race. The winning horse pays 4.5x. Play responsibly! ✨";
     case "👑 MIG Royale Official":
       return "👑 Welcome to MIG Royale! 🎉\n\nRed vs Blue — bet on a side or a hand type, the better Teen Patti hand wins. Type !start to play. Play responsibly! ✨";
     case "🎲 Ludo Bot Free":
