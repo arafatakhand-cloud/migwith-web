@@ -14,6 +14,7 @@ import { ROYALE_ROOM } from "../_components/RoyaleGame";
 import { TN_FREE_ROOM, TN_ROOM } from "../_components/TwentyNine";
 import { TRIVIA_ROOM } from "../_components/Trivia";
 import { HORSE_RACE_ROOM, NUMBER_GUESS_ROOM } from "../_components/GuessRace";
+import { LIAR_DICE_ROOM } from "../_components/LiarDice";
 import { BackButton } from "../_components/BackButton";
 import { PastelCard } from "../_components/LightCards";
 import { ClassicListRow, ClassicTitleBar, useIsClassic } from "../_components/Classic";
@@ -34,6 +35,7 @@ const RUNNING: [string, string, string, string, string][] = [
   ["🧠", "Trivia", "Quiz in বাংলা / English — points & leaderboard", "#6A4BD8", TRIVIA_ROOM],
   ["🎯", "Number Guess", "Guess 1–100 — right number wins the pot", "#F0457B", NUMBER_GUESS_ROOM],
   ["🐎", "Horse Race", "Bet on 5 horses — the winner pays 4.5x", "#3B5BDB", HORSE_RACE_ROOM],
+  ["🎲", "Liar's Dice", "Bluff, bid and catch the liars — 2–6 players", "#5A2D82", LIAR_DICE_ROOM],
 ];
 
 const SOON: [string, string, string][] = [

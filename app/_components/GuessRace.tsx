@@ -173,7 +173,7 @@ const HR_RULES: [string, string][] = [
   ["💳 Payouts", "Winnings are added to your balance automatically a few seconds after the race. Everything shows in your Activity."],
 ];
 
-function RulesButton({ title, rules }: { title: string; rules: [string, string][] }) {
+export function RulesButton({ title, rules }: { title: string; rules: [string, string][] }) {
   const [open, setOpen] = useState(false);
   return (
     <>

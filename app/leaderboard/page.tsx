@@ -30,6 +30,7 @@ const RANKINGS: Ranking[] = [
   { id: "twentynine", title: "29", icon: "🃏", gameKey: "twentynine", color: "#12AFC7" },
   { id: "numguess", title: "Number Guess", icon: "🎯", gameKey: "numguess", color: "#F0457B" },
   { id: "horserace", title: "Horse Race", icon: "🐎", gameKey: "horserace", color: "#3B5BDB" },
+  { id: "liardice", title: "Liar's Dice", icon: "🎲", gameKey: "liardice", color: "#5A2D82" },
   { id: "lowcard", title: "LowCard", icon: "🪙", gameKey: "lowcard", color: "#D9A400" },
   { id: "luxury", title: "Luxury", icon: "💎", gameKey: "luxury", color: "#E12A6B" },
   { id: "gift_sent", title: "Gift Sent", icon: "🎁", gifts: "sent", color: "#E5484D" },
@@ -37,7 +38,7 @@ const RANKINGS: Ranking[] = [
   { id: "level", title: "Top Level", icon: "⭐", color: "#D9A400" },
 ];
 
-const ALL_GAMES_LINE = "Cricket, Teen Patti, Ludo, MIG Royale, 29, Number Guess, Horse Race, LowCard and Luxury";
+const ALL_GAMES_LINE = "Cricket, Teen Patti, Ludo, MIG Royale, 29, Number Guess, Horse Race, Liar's Dice, LowCard and Luxury";
 
 const PERIODS = ["Today", "Yesterday", "This Week", "This Month"];
 

@@ -106,6 +106,7 @@ import {
   useHorseRace,
   useNumGuess,
 } from "../../_components/GuessRace";
+import { LIAR_DICE_ROOM, LiarDicePanel, liarDiceHandleCommand, useLiarDice } from "../../_components/LiarDice";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_FREE_ROOM, LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { NotInRoomPage } from "../../_components/NotInRoomPage";
@@ -562,6 +563,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎯 Number Guess / 🐎 Horse Race (null in every other room)
   const numGuess = useNumGuess(roomName, user?.uid, note);
   const horseRace = useHorseRace(roomName, user?.uid, note);
+  // 🎲 Liar's Dice (null in every other room)
+  const liarDice = useLiarDice(roomName, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
   const ludo = useLudo(roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? roomName : null, user?.uid, note);
 
@@ -1363,7 +1366,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM, LIAR_DICE_ROOM].includes(roomName);
   // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
   // (a room with a game bot on DOES get entry effects now — except while that
   // bot's game is running, like the app)
@@ -1778,6 +1781,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return;
     }
     if (horseRace && horseHandleCommand(horseRace, clean, note)) {
+      setText("");
+      return;
+    }
+    if (liarDice && liarDiceHandleCommand(liarDice, clean, note)) {
       setText("");
       return;
     }
@@ -2435,6 +2442,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             {horseRace && (
               <div data-noswipe>
                 <HorseRacePanel state={horseRace} />
+              </div>
+            )}
+            {liarDice && (
+              <div data-noswipe>
+                <LiarDicePanel state={liarDice} />
               </div>
             )}
 
