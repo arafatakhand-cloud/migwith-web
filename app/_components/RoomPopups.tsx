@@ -41,6 +41,28 @@ export function SimpleDialog({ title, text, onClose, okLabel = "OK" }: { title: 
   );
 }
 
+/** ⚠️ "Chat Room — Unable to join chat room …" (miglife: like the reference app):
+ * a big yellow warning sign, a bold title, grey text and one wide dark Ok button. */
+export function WarningDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+  useCloseKeys(onClose);
+  return (
+    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6">
+      <div className="w-full max-w-[300px] rounded-[18px] bg-white px-5 pb-5 pt-6 text-center shadow-2xl">
+        <svg viewBox="0 0 64 58" className="mx-auto h-[62px] w-[68px]" aria-hidden>
+          <path d="M28.5 4.5a4 4 0 0 1 7 0l26 46a4 4 0 0 1-3.5 6H6a4 4 0 0 1-3.5-6z" fill="#F7C744" />
+          <rect x="29" y="17" width="6" height="22" rx="3" fill="#1F2430" />
+          <circle cx="32" cy="46" r="3.6" fill="#1F2430" />
+        </svg>
+        <p className="mt-3 text-[15px] font-extrabold text-[#14213D]">{title}</p>
+        <p className="mt-1.5 whitespace-pre-line text-[13px] leading-5 text-[#8A94A6]">{text}</p>
+        <button type="button" onClick={onClose} className="mt-5 h-10 w-full rounded-[8px] bg-[#132F4C] text-[14px] font-bold text-white">
+          Ok
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Tap-anywhere-to-close card with a gold frame (balance, round result). */
 function GoldCard({ children, onClose, bg }: { children: React.ReactNode; onClose: () => void; bg: string }) {
   useCloseKeys(onClose);

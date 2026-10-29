@@ -165,7 +165,7 @@ import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_comp
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
-import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, type BalanceInfo } from "../../_components/RoomPopups";
+import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
@@ -1456,7 +1456,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       modName: perms.isHiddenFounder || isMainFounderName(profile.username) ? "administrator" : profile.username,
       room: roomInfo,
       perms,
-      people: roomUsers.map((u) => ({ uid: u.uid, username: u.username })),
+      modLevel: profile.level,
+      people: roomUsers.map((u) => ({ uid: u.uid, username: u.username, level: u.level })),
       note,
       post: (t, type = "chat") => write({ text: t, type, giftName: "", clientCreatedAt: Date.now() }),
       postModeration: (t, color) => write({ text: t, type: "moderation", moderationColor: color }),
@@ -1949,14 +1950,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const banned = blocked.startsWith("You are banned");
     return (
       <PageShell light>
-        <SimpleDialog
-          title={banned ? "🚫 Room Access Denied" : bumped ? "👋 Bumped from Room" : "👢 Removed from Room"}
+        <WarningDialog
+          title="Chat Room"
           text={
             banned
-              ? "🚫 You are banned from this room. Please contact the room Admin."
+              ? "Unable to join chat room. You were recently banned from this chat room."
               : bumped
-                ? "👋 You were bumped from this room. You can come back in right away."
-                : `👢 You have been kicked from this room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
+                ? "You were bumped from this chat room. You can come back in right away."
+                : `Unable to join chat room. You were recently kicked from this chat room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
           }
           onClose={() => router.push("/rooms")}
         />
@@ -3433,11 +3434,15 @@ function MessageRow({
     );
   }
 
+  // 🛡 Kick / ban / mute / lock / silence, like mig33 (miglife):
+  // "Bangladesh : mental[23] has been banned by life[51]" — room name red & bold, the rest black.
   if (m.type === "moderation") {
-    const color = m.moderationColor === "red" ? "#D32F2F" : m.moderationColor === "green" ? "#2E7D32" : LINK_BLUE;
     return (
-      <p className="whitespace-pre-wrap px-1 text-left text-[13px] font-semibold leading-snug" style={{ color }}>
-        {brandMiglife(m.text)}
+      <p className="whitespace-pre-wrap px-1 text-left leading-snug" style={{ fontSize: fontPx }}>
+        <span className="font-bold" style={{ color: APP_RED }}>
+          {roomName} :{" "}
+        </span>
+        <span className="text-black">{brandMiglife(m.text)}</span>
         {stamp}
       </p>
     );

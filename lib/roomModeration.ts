@@ -137,8 +137,10 @@ export type ModContext = {
   modName: string;
   room: RoomInfo;
   perms: RoomPerms;
+  /** My level, shown next to my name in moderation lines ("life[51]"). */
+  modLevel?: number;
   /** People in the room right now. */
-  people: { uid: string; username: string }[];
+  people: { uid: string; username: string; level?: number }[];
   note: (text: string) => void;
   /** A line everyone sees (type "chat" by default). */
   post: (text: string, type?: string) => void;
@@ -194,7 +196,7 @@ async function removePresence(roomName: string, name: string) {
 }
 
 // The person, from the room when they are here, else from users/.
-async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; username: string } | null> {
+async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; username: string; level?: number } | null> {
   const clean = name.trim().replace(/^@/, "");
   const here = ctx.people.find((p) => key(p.username) === key(clean));
   if (here) return here;
@@ -205,7 +207,7 @@ async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; use
   ]) {
     const snap = await getDocs(q);
     const d = snap.docs[0];
-    if (d) return { uid: d.id, username: String(d.get("username") || clean).trim() };
+    if (d) return { uid: d.id, username: String(d.get("username") || clean).trim(), level: Number(d.get("level") || 1) };
   }
   return null;
 }
@@ -241,6 +243,12 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
   );
 }
 
+// 🛡 mig33-style moderation lines (miglife): "mental[23] has been banned by life[51]",
+// shown as "RoomName : …" (room name red & bold). "administrator" has no level.
+const tag = (name: string, level?: number) => (level && level > 0 ? `${name}[${level}]` : name);
+const byMod = (ctx: ModContext, official = false) =>
+  official || ctx.modName === "administrator" ? "administrator" : tag(ctx.modName, ctx.modLevel);
+
 const fail = (ctx: ModContext, what: string) => (e: any) =>
   ctx.note(`${ctx.roomName}: ${what} failed. ${e?.message || "Permission denied."}`);
 
@@ -257,11 +265,7 @@ export async function kickUser(ctx: ModContext, name: string) {
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
-    ctx.post(
-      ctx.perms.isUserRoom
-        ? `👢 ${row.username} kicked by ${ctx.modName} (30 min).`
-        : `👢 ${row.username} kicked (30 min).`
-    );
+    ctx.postModeration(`${tag(row.username, row.level)} has been kicked by ${byMod(ctx, !ctx.perms.isUserRoom)}`, "red");
   } catch (e) {
     fail(ctx, "Kick")(e);
   }
@@ -281,7 +285,7 @@ export async function bumpUser(ctx: ModContext, name: string) {
       { merge: true }
     );
     removePresence(ctx.roomName, row.username).catch(() => {});
-    ctx.post(`👋 ${row.username} bumped by ${ctx.modName}.`);
+    ctx.postModeration(`${tag(row.username, row.level)} has been bumped by ${byMod(ctx)}`, "red");
   } catch (e) {
     fail(ctx, "Bump")(e);
   }
@@ -299,12 +303,13 @@ export async function banUser(ctx: ModContext, name: string, ban: boolean) {
       { uid: target.uid, username: target.username, banned: ban, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    const by = ctx.perms.isUserRoom ? ctx.modName : "administrator";
+    const by = byMod(ctx, !ctx.perms.isUserRoom);
+    const who = tag(target.username, target.level);
     if (ban) {
       removePresence(ctx.roomName, target.username).catch(() => {});
-      ctx.postModeration(`🚫 ${target.username} banned by ${by}.`, "red");
+      ctx.postModeration(`${who} has been banned by ${by}`, "red");
     } else {
-      ctx.postModeration(`🔓 ${target.username} unbanned by ${by}.`, "green");
+      ctx.postModeration(`${who} has been unbanned by ${by}`, "green");
     }
   } catch (e) {
     fail(ctx, "Moderation")(e);
@@ -322,7 +327,7 @@ export async function muteUser(ctx: ModContext, name: string, mute: boolean) {
       { uid: target.uid, username: target.username, muted: mute, updatedBy: ctx.modName, updatedAt: serverTimestamp() },
       { merge: true }
     );
-    ctx.post(mute ? `🔇 ${target.username} is muted in this room.` : `🔊 ${target.username} is unmuted in this room.`);
+    ctx.postModeration(`${tag(target.username, target.level)} has been ${mute ? "muted" : "unmuted"} by ${byMod(ctx)}`, mute ? "red" : "green");
   } catch (e) {
     fail(ctx, "Moderation")(e);
   }
@@ -343,14 +348,15 @@ async function setRoomFlag(ctx: ModContext, field: "silenced" | "locked", on: bo
       { merge: true }
     );
     const u = ctx.modName;
-    ctx.post(
+    ctx.postModeration(
       field === "silenced"
         ? on
-          ? `🔇 ${u} silenced the room. All users are muted.`
-          : `🔊 ${u} unsilenced the room. Chat is enabled again.`
+          ? `This chat room has been silenced by ${u}. Only moderators/admins can chat in this chat room.`
+          : `This chat room has been unsilenced by ${u}`
         : on
-          ? `🔒 ${u} locked the room. Only admins/mods can enter.`
-          : `🔓 ${u} unlocked the room. Everyone can enter again.`
+          ? `This chat room has been locked by ${u}. Only moderators/admins can enter/unlock this chat room.`
+          : `This chat room has been unlocked by ${u}`,
+      on ? "red" : "green"
     );
   } catch (e) {
     fail(ctx, "Room update")(e);
