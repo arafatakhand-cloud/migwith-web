@@ -1,6 +1,7 @@
 "use client";
 
 import { BirthdayPopup } from "./BirthdayPopup";
+import { DailySpinPopup } from "./DailySpinPopup";
 import { AnnouncementPopup } from "./AnnouncementPopup";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -76,9 +77,11 @@ export function HomeGate() {
   return (
     <PageShell light>
       <Dashboard />
-      {/* 🎉 the newest announcement once per visit, then 🎂 today's birthdays */}
+      {/* 🎉 the newest announcement once per visit, then 🎂 today's birthdays, then 🎡 the daily spin */}
       <AnnouncementPopup username={username} onDone={() => setAnnouncementDone(true)} />
       {announcementDone && <BirthdayPopup username={username} />}
+      {/* 🎡 today's free spin (under the birthday popup, so it shows after it) */}
+      {announcementDone && <DailySpinPopup uid={user.uid} />}
     </PageShell>
   );
 }
