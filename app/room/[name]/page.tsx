@@ -3599,12 +3599,17 @@ function MessageRow({
     );
   }
 
+  // 📏 Full-width chat (miglife): every room's lines run across the whole chat
+  // like the game rooms' (your own lines stay on the right). It used to be only
+  // the game rooms and the Classic style.
+  const fullWidthLines = true;
+
   return (
-    <SwipeToReply enabled={canReply} fullWidth={(gameRoom || classic) && !rightSide} onReply={() => onReply(senderName, snippet)}>
+    <SwipeToReply enabled={canReply} fullWidth={fullWidthLines && !rightSide} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
-          className={`relative ${(gameRoom || classic) && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
+          className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
             mentionsMe ? "rounded-md border-l-[3px] border-[#FF8A00] px-1.5 py-0.5" : ""
           }`}
           style={{
