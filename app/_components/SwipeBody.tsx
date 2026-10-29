@@ -17,8 +17,8 @@ export const swipeEnter = { dir: 0, at: 0 };
 
 export const SWIPE_BODY = "[data-swipe-body]";
 
-/** A finger is dragging a page: no idle copying meanwhile. */
-export const swipeState = { dragging: false };
+/** A finger is dragging a page: no idle copying meanwhile (nor right after a touch). */
+export const swipeState = { dragging: false, touchedAt: 0 };
 
 // Like the app pager's settle: quick to start, long soft stop.
 const EASE = "cubic-bezier(.22,.9,.3,1)";
@@ -257,9 +257,12 @@ export function SwipeBody({ children }: { children: React.ReactNode }) {
     if (handOver()) swipeEnter.dir = 0;
 
     // A fresh copy of this page now and then, while idle.
-    const snap = () => idle(() => !swipeState.dragging && el.isConnected && keepCopy(el, pathRef.current));
+    // (never while a finger is on the screen or just was — copying a big room
+    // takes a moment, and a swipe starting meanwhile would stutter)
+    const snap = () =>
+      idle(() => !swipeState.dragging && Date.now() - swipeState.touchedAt > 1500 && el.isConnected && keepCopy(el, pathRef.current));
     const first = window.setTimeout(snap, 700);
-    const every = window.setInterval(snap, 2500);
+    const every = window.setInterval(snap, 4000);
     const leave = () => {
       clearTimeout(first);
       clearInterval(every);

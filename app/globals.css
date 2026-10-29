@@ -1379,3 +1379,12 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
   0% { opacity: 0.85; transform: translate(0, 0) scale(1); }
   100% { opacity: 0; transform: translate(-14px, -5px) scale(2.2); }
 }
+
+/* ⚡ While a page is dragged sideways between tabs, no blur: the Glass theme's
+   backdrop blur had to be worked out again for the whole page on every frame
+   (the main stutter on phones). It comes back once the page has settled. */
+html.is-swiping :is([data-swipe-body], [data-shell-copy]),
+html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
