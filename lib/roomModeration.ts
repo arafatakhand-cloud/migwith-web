@@ -244,7 +244,7 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
 }
 
 // 🛡 mig33-style moderation lines (miglife): "mental[23] has been banned by life[51]",
-// shown as "RoomName : …" (room name red & bold). "administrator" has no level.
+// shown as "RoomName : …" (room name in the room's orange, bold). "administrator" has no level.
 const tag = (name: string, level?: number) => (level && level > 0 ? `${name}[${level}]` : name);
 const byMod = (ctx: ModContext, official = false) =>
   official || ctx.modName === "administrator" ? "administrator" : tag(ctx.modName, ctx.modLevel);

@@ -3435,11 +3435,11 @@ function MessageRow({
   }
 
   // 🛡 Kick / ban / mute / lock / silence, like mig33 (miglife):
-  // "Bangladesh : mental[23] has been banned by life[51]" — room name red & bold, the rest black.
+  // "Bangladesh : mental[23] has been banned by life[51]" — room name in the room's own orange (bold), the rest black.
   if (m.type === "moderation") {
     return (
       <p className="whitespace-pre-wrap px-1 text-left leading-snug" style={{ fontSize: fontPx }}>
-        <span className="font-bold" style={{ color: APP_RED }}>
+        <span className="font-bold" style={{ color: ROOM_ORANGE }}>
           {roomName} :{" "}
         </span>
         <span className="text-black">{brandMiglife(m.text)}</span>
