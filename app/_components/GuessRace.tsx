@@ -561,6 +561,12 @@ export function horseHandleCommand(state: HorseRaceState, clean: string, note: (
 }
 
 const HORSE_COLORS = ["#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5"];
+const HR_MIN_BET = 100;
+const HR_MAX_PER_HORSE = 200_000;
+/** a bet amount kept between 100 and 200,000 */
+const betAmount = (n: number) => Math.min(HR_MAX_PER_HORSE, Math.max(HR_MIN_BET, Math.round(n)));
+/** − / + step: 100 under 1k, 1,000 under 10k, 10,000 above */
+const betStep = (n: number) => (n < 1000 ? 100 : n < 10000 ? 1000 : 10000);
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 // 🔊 Race sounds (public/sounds): a starting bell, galloping hooves during the
@@ -789,12 +795,6 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                 className="absolute inset-y-0 right-[10px] w-[5px]"
                 style={{ background: "repeating-linear-gradient(0deg,#fff 0 4px,#111 4px 8px)" }}
               />
-              {/* 👥 everyone's bets on this horse */}
-              {betting && pool[h] && (
-                <span className="absolute right-[20px] top-1/2 -translate-y-1/2 rounded-md bg-black/35 px-1.5 text-[10px] font-black leading-[16px]">
-                  👥{pool[h].n} · {short(pool[h].amt)}
-                </span>
-              )}
               {(() => {
                 const left = `calc((100% - 40px) * ${state.positions[h - 1] / 100})`;
                 return (
@@ -852,19 +852,77 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
         </p>
       )}
       {betting ? (
-        <div className="mt-2 flex items-center gap-[5px]">
-          {[100, 500, 1000, 5000].map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => state.setPickAmount(a)}
-              className={`rounded-[10px] px-2.5 py-[5px] text-xs font-black ${state.pickAmount === a ? "bg-[#fff] text-[#1B5E20]" : "bg-white/20 text-white"}`}
-            >
-              {a >= 1000 ? `${a / 1000}k` : a}
-            </button>
-          ))}
-          <span className="flex-1" />
-          <WhiteButton onClick={() => state.bet(state.pickHorse, state.pickAmount)}>{state.busy ? "…" : `Bet #${state.pickHorse}`}</WhiteButton>
+        // 🎯 bet box (miglife picked design B): horse cards with everyone's bets,
+        // ½ / − / amount / + / ×2, quick amounts, and what a win would pay
+        <div className="mt-2.5 rounded-2xl border border-white/[0.12] bg-black/[0.22] p-2.5">
+          <div className="grid grid-cols-5 gap-[5px]">
+            {[1, 2, 3, 4, 5].map((h) => {
+              const on = state.pickHorse === h;
+              return (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => state.setPickHorse(h)}
+                  className={`rounded-xl border-[1.5px] px-0.5 py-1.5 text-center ${on ? "border-[#FFD54A] bg-[#FFD54A]/[0.18]" : "border-transparent bg-white/10"}`}
+                >
+                  <span className="block text-[15px] leading-none" style={{ color: HORSE_COLORS[h - 1] }}>
+                    ●
+                  </span>
+                  <span className="block text-[13px] font-black">#{h}</span>
+                  <span className="block truncate text-[9.5px] font-extrabold opacity-85">
+                    {pool[h] ? `👥${pool[h].n} · ${short(pool[h].amt)}` : "—"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            {[
+              ["½", () => state.setPickAmount(betAmount(Math.floor(state.pickAmount / 2)))],
+              ["−", () => state.setPickAmount(betAmount(state.pickAmount - betStep(state.pickAmount - 1)))],
+            ].map(([t, f]) => (
+              <button key={t as string} type="button" onClick={f as () => void} className="h-[38px] w-[38px] rounded-xl bg-white/[0.16] text-[16px] font-black">
+                {t as string}
+              </button>
+            ))}
+            <span className="flex h-[42px] flex-1 items-center justify-center rounded-[13px] bg-[#fff] text-[21px] font-black text-[#1B5E20]">
+              {fmt(state.pickAmount)}
+            </span>
+            {[
+              ["+", () => state.setPickAmount(betAmount(state.pickAmount + betStep(state.pickAmount)))],
+              ["×2", () => state.setPickAmount(betAmount(state.pickAmount * 2))],
+            ].map(([t, f]) => (
+              <button key={t as string} type="button" onClick={f as () => void} className="h-[38px] w-[38px] rounded-xl bg-white/[0.16] text-[14px] font-black">
+                {t as string}
+              </button>
+            ))}
+          </div>
+          <div className="mt-[7px] flex gap-[5px]">
+            {[100, 500, 1000, 5000, 10000, -1].map((a) => {
+              const room = HR_MAX_PER_HORSE - (state.myBets[state.pickHorse] || 0);
+              const value = a === -1 ? Math.max(HR_MIN_BET, room) : a;
+              const on = state.pickAmount === value;
+              return (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => state.setPickAmount(betAmount(value))}
+                  className={`flex-1 rounded-[9px] py-[5px] text-[11.5px] font-black ${on ? "bg-[#fff] text-[#1B5E20]" : "bg-white/[0.14] text-white"}`}
+                >
+                  {a === -1 ? "MAX" : a >= 1000 ? `${a / 1000}k` : a}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => state.bet(state.pickHorse, state.pickAmount)}
+            className="mt-2.5 flex h-12 w-full items-center justify-between rounded-[14px] px-3.5 font-black text-[#1B2440] shadow-[0_5px_14px_rgba(255,152,0,.45)]"
+            style={{ background: "linear-gradient(90deg,#FFC107,#FF9800)" }}
+          >
+            <span className="text-[15px]">{state.busy ? "…" : `🎯 Bet on #${state.pickHorse}`}</span>
+            <span className="text-[12.5px]">🏆 → {fmt(Math.floor(state.pickAmount * 4.5))}</span>
+          </button>
         </div>
       ) : (
         !state.running && (
