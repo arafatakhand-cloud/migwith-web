@@ -2217,21 +2217,24 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   />
                 )}
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
+                {/* 📢 a pink card "<< text >>", like the reference app (miglife) */}
                 {announcement && (
-                  <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5">
+                  <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5" style={{ background: ANNOUNCE_PINK }}>
                     {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
                     <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#800020] [overflow-wrap:anywhere]">
+                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#2B2F38] [overflow-wrap:anywhere]">
+                      {"<< "}
                       {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
                         /^https?:\/\//.test(part) ? (
-                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#800020]/50 underline-offset-2">
+                          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline decoration-[#2B2F38]/50 underline-offset-2">
                             {part}
                           </a>
                         ) : (
                           part
                         )
                       )}
+                      {" >>"}
                     </p>
                   </div>
                 )}
@@ -2859,6 +2862,7 @@ const LINK_BLUE = "var(--room-link, #174EA6)";
 const BET_BLUE = "var(--room-bet, #1565E8)";
 const APP_RED = "var(--room-red, #B3261E)";
 const ROOM_ORANGE = "#E6731E";
+const ANNOUNCE_PINK = "#FDDCDC";
 // 🎨 Every gift line gets one of these colours (miglife's list) — the SAME gift
 // shows in a different colour each time. Picked from the message id, so everyone
 // sees the same colour and it never changes on reload. (Same list as RoomPage.kt.)
@@ -3445,6 +3449,19 @@ function MessageRow({
         <span className="text-black">{brandMiglife(m.text)}</span>
         {stamp}
       </p>
+    );
+  }
+
+  // 📢 "<< life has set the announcement to … >>": a pink card across the chat, like the reference app.
+  if (m.type === "announcement") {
+    return (
+      <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5" style={{ background: ANNOUNCE_PINK }}>
+        <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
+        <p className="min-w-0 flex-1 whitespace-pre-wrap leading-snug text-[#2B2F38] [overflow-wrap:anywhere]" style={{ fontSize: fontPx }}>
+          {brandMiglife(m.text)}
+          {stamp}
+        </p>
+      </div>
     );
   }
 

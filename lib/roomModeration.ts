@@ -459,15 +459,10 @@ async function setAnnouncement(ctx: ModContext, message: string, minutes?: numbe
       },
       { merge: true }
     );
-    // Only the person who turned it off sees who made it.
-    if (!message && prevText && prevBy) ctx.note(`📢 Previous announcement made by ${prevBy}`);
-    ctx.post(
-      !message
-        ? `📢 ${ctx.modName} stopped the room announcement.`
-        : minutes
-          ? `📢 ${ctx.modName} set a room announcement for ${minutes} minute(s).`
-          : `📢 ${ctx.modName} set a room announcement.`
-    );
+    // 📢 a pink card in the chat, like the reference app (miglife):
+    // "<< life has set the announcement to … >>" / "<< life has turned off the announcement made previously by life >>"
+    if (message) ctx.post(`<< ${ctx.modName} has set the announcement to ${message} >>`, "announcement");
+    else if (prevText) ctx.post(`<< ${ctx.modName} has turned off the announcement made previously by ${prevBy || ctx.modName} >>`, "announcement");
     if (message && minutes) {
       // This device clears it again when the time is up — unless someone set a newer one.
       setTimeout(async () => {
@@ -492,7 +487,7 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
   if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
-  if (p.canRoomWide) lines.push("/announcement text   /announcement stop");
+  if (p.canRoomWide) lines.push("/announcement text   /announcement_off");
   if (p.canBroadcast) lines.push("/broadcast text");
   if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
   if (p.canAssignSuperMod) lines.push("/smod name   /dsmod name");
@@ -564,11 +559,15 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
       return true;
     // 📌 /announcement text | stop — the pinned banner under "Currently in this
     // room". /announce text [minutes] — the same, optionally timed.
+    case "/announcement_off":
+    case "/announce_off":
+      setAnnouncement(ctx, "");
+      return true;
     case "/announcement":
     case "/announce": {
       const rest = clean.trim().slice(parts[0].length).trim();
       if (!rest) {
-        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (${cmd} stop to remove it)`);
+        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (/announcement_off to remove it)`);
         return true;
       }
       if (["off", "stop", "clear"].includes(rest.toLowerCase())) {
