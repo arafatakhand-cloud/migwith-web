@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
@@ -151,6 +152,67 @@ export function numGuessHandleCommand(state: NumGuessState, clean: string, note:
   return false;
 }
 
+// 📖 The rules of each game (the "📖 Rules" button in its box) — same text as the app.
+const NG_RULES: [string, string][] = [
+  ["▶ Start", "Anyone taps Start (or types !start). A secret number from 1 to 100 is picked by the server — nobody can see it. One round lasts 60 seconds. The entry is 1,000 coins (or set your own: !start 500, from 100 to 50,000)."],
+  ["🎯 Guess", "Drag the slider or use −10 / −1 / +1 / +10, then tap 🎯 Guess (or type !g 45). Your first guess of the round takes the entry; every guess after it is free. One guess every 3 seconds."],
+  ["⬆️⬇️ Clues", "After each guess the bot says ⬆️ higher or ⬇️ lower, and the range shrinks for everyone — other players' guesses help you too."],
+  ["🏆 Winning", "The first player to guess the exact number wins 90% of the pot (all entries together, yours included). The round ends at once."],
+  ["⏰ Time up", "If nobody gets it in 60 seconds, every entry is refunded in full."],
+  ["💡 Tip", "More players = a bigger pot. Playing alone, a win gives back 90% of your own entry."],
+];
+const HR_RULES: [string, string][] = [
+  ["▶ Start", "Anyone taps Start race (or types !start). Then there are 45 seconds to bet."],
+  ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b 3 500). You can bet on more than one horse. Minimum 100, maximum 200,000 per horse."],
+  ["🏇 The race", "When betting closes, the 8-second race starts. The result is decided by the server at random — nobody can change it."],
+  ["🏆 Winning", "Only bets on the 1st-place horse 🥇 win: they pay 4.5× the bet (1,000 → 4,500). Bets on the 2nd–5th horses lose."],
+  ["📊 Max win", "The most one player can win in a race is 200,000 × 4.5 = 900,000 coins."],
+  ["💳 Payouts", "Winnings are added to your balance automatically a few seconds after the race. Everything shows in your Activity."],
+];
+
+function RulesButton({ title, rules }: { title: string; rules: [string, string][] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mr-2 rounded-[10px] bg-white/[0.16] px-2 py-[3px] text-[11px] font-black tracking-normal text-white"
+      >
+        📖 Rules
+      </button>
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+            <div
+              className="max-h-[80vh] w-full max-w-[360px] overflow-y-auto rounded-[20px] bg-[#fff] p-4 text-[#1B2440] shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <p className="text-[17px] font-black">{title}</p>
+              <ul className="mt-2 space-y-2.5">
+                {rules.map(([h, t]) => (
+                  <li key={h}>
+                    <p className="text-[13.5px] font-black">{h}</p>
+                    <p className="text-[13px] leading-snug text-[#4A5672]">{t}</p>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="mt-4 w-full rounded-xl bg-[#2F80ED] py-2.5 text-[14px] font-black text-white"
+              >
+                Got it
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+    </>
+  );
+}
+
 function Chip({ children }: { children: React.ReactNode }) {
   return <span className="rounded-[9px] bg-white/20 px-[7px] py-[2px] text-[11px] font-black text-white">{children}</span>;
 }
@@ -200,6 +262,7 @@ export function NumGuessPanel({ state }: { state: NumGuessState }) {
     >
       <div className="flex items-center text-[12.5px] font-black tracking-wide">
         <span className="flex-1">🎯 NUMBER GUESS{state.round ? ` · #${state.round}` : ""}</span>
+        <RulesButton title="🎯 Number Guess — Rules" rules={NG_RULES} />
         {state.running && (
           <span
             className="relative flex h-[46px] w-[46px] items-center justify-center rounded-full"
@@ -626,6 +689,7 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
     >
       <div className="flex items-center text-xs font-black">
         <span className="flex-1">🐎 HORSE RACE{state.round ? ` · #${state.round}` : ""}</span>
+        <RulesButton title="🐎 Horse Race — Rules" rules={HR_RULES} />
         <button
           type="button"
           aria-label={soundOn ? "Sound off" : "Sound on"}
