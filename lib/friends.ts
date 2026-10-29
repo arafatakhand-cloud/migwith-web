@@ -12,12 +12,28 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 
 // Friend requests in the same flat friend_requests shape as the app's
 // FriendsPage: {fromUsername, toUsername, status, createdAt}, with status
 // pending → accepted / rejected / cancelled. Removing a friend deletes the
 // accepted doc. The other person is told through an "alerts" doc.
+
+const unfriendUserFn = httpsCallable<{ username: string; via: string }, { ok: boolean; username: string }>(functions, "unfriendUser");
+
+/** 💔 Ends a friendship on the server, which logs who did it and tells the
+ * other person. False = the server function isn't there yet (not deployed),
+ * so the caller removes it the old way. */
+export async function unfriendViaServer(username: string, via: string): Promise<boolean> {
+  try {
+    await unfriendUserFn({ username, via });
+    return true;
+  } catch (e: any) {
+    if (e?.code === "functions/not-found" || e?.code === "functions/unimplemented") return false;
+    throw e;
+  }
+}
 
 export type FriendRequest = { id: string; from: string; to: string; createdAtMs: number };
 
@@ -176,6 +192,7 @@ export function useFriendRequests(username: string) {
     },
 
     async remove(friend: string) {
+      if (await unfriendViaServer(friend, "web")) return;
       const k = key(friend);
       const docs = [
         ...acceptedFromMe.filter((r) => key(r.to) === k),

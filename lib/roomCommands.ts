@@ -4,6 +4,7 @@ import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, serverTimest
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 import { extraSocialMessage } from "./socialExtra";
+import { unfriendViaServer } from "./friends";
 
 // Room chat "/" commands, with the same texts and message types as the app's
 // RoomPage.kt so web and app users see identical lines.
@@ -261,7 +262,8 @@ async function unfriend(ctx: CommandContext, name: string) {
     ]);
     const docs = snaps.flatMap((s) => s.docs);
     if (docs.length === 0) return ctx.note(`💔 ${target.username} is not in your friends list.`);
-    await Promise.all(docs.map((d) => deleteDoc(d.ref)));
+    // the server logs who ended it and tells the other person (old way if it isn't deployed yet)
+    if (!(await unfriendViaServer(target.username, "web /uf"))) await Promise.all(docs.map((d) => deleteDoc(d.ref)));
     ctx.note(`💔 ${target.username} removed from your friends.`);
   } catch (e: any) {
     ctx.note(`💔 Unfriend failed. ${e?.message || "Please try again."}`);
