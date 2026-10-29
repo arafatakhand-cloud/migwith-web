@@ -40,6 +40,7 @@ import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
 import { ZoomImageViewer } from "../../_components/ImageViewer";
+import { MORE_REACTIONS, QUICK_REACTIONS } from "../../../lib/reactions";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -64,7 +65,7 @@ type PrivateMessage = {
   createdAtMs: number;
 };
 
-const REACTIONS = ["😂", "❤️", "👍", "😮", "😢"];
+const REACTIONS = QUICK_REACTIONS.map(([e]) => e);
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const BLOCKED_EXT = new Set(["apk", "apks", "xapk", "exe", "msi", "bat", "cmd", "scr", "vbs", "jar", "sh", "dex"]);
 
@@ -104,6 +105,8 @@ export default function PrivateChatPage() {
   const [uploading, setUploading] = useState(false);
   const [reply, setReply] = useState<{ label: string; snippet: string } | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
+  // ＋ more reactions open above the quick ones for this message
+  const [moreFor, setMoreFor] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [voiceActive, setVoiceActive] = useState(false);
   const [clearedAt, setClearedAt] = useState(0);
@@ -513,6 +516,23 @@ export default function PrivateChatPage() {
             const sub = mineRight ? "text-white/75" : "text-[#6D7A90]";
             return (
               <div key={m.id} className={`flex flex-col ${mineRight ? "items-end" : "items-start"}`}>
+                {pickerFor === m.id && moreFor === m.id && (
+                  <div className="mb-1 grid w-[248px] grid-cols-8 gap-0.5 rounded-[18px] bg-[#1E2A47] p-1.5">
+                    {MORE_REACTIONS.map((e) => (
+                      <button
+                        key={e}
+                        type="button"
+                        onClick={() => {
+                          react(m, e);
+                          setPickerFor(null);
+                        }}
+                        className={`flex h-[28px] w-[28px] items-center justify-center rounded-full text-[18px] ${m.reactions[e]?.includes(user.uid) ? "bg-[#3984D9]/40" : ""}`}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {pickerFor === m.id && (
                   <div className="mb-1.5 flex items-center gap-2 rounded-full bg-[#1E2A47] px-2.5 py-1.5">
                     {REACTIONS.map((e) => (
@@ -528,6 +548,14 @@ export default function PrivateChatPage() {
                         {e}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      aria-label="More reactions"
+                      onClick={() => setMoreFor((v) => (v === m.id ? null : m.id))}
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-[17px] font-black text-white"
+                    >
+                      {moreFor === m.id ? "×" : "+"}
+                    </button>
                     <button
                       type="button"
                       onClick={() => {
