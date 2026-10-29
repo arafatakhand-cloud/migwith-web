@@ -303,6 +303,7 @@ export function NumGuessPanel({ state }: { state: NumGuessState }) {
             ))}
             <div
               ref={barRef}
+              data-noswipe
               className="relative h-[12px] cursor-pointer touch-none rounded-[7px] bg-white/[0.12]"
               onPointerDown={(e) => {
                 (e.target as HTMLElement).setPointerCapture?.(e.pointerId);

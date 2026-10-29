@@ -2429,24 +2429,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               </div>
             )}
 
+            {/* These game boxes have no sideways controls (Number Guess's slider keeps its
+                own data-noswipe), so a sideways swipe on them slides the
+                room tabs like anywhere else (miglife: "swiping on the race didn't work"). */}
             {/* 🧠 Trivia panel above the input bar (light, like the app) */}
             {trivia && (
-              <div data-noswipe>
+              <div>
                 <TriviaPanel state={trivia} uid={user.uid} isStaff={perms.isAppStaffHere} />
               </div>
             )}
             {numGuess && (
-              <div data-noswipe>
+              <div>
                 <NumGuessPanel state={numGuess} />
               </div>
             )}
             {horseRace && (
-              <div data-noswipe>
+              <div>
                 <HorseRacePanel state={horseRace} />
               </div>
             )}
             {liarDice && (
-              <div data-noswipe>
+              <div>
                 <LiarDicePanel state={liarDice} />
               </div>
             )}
