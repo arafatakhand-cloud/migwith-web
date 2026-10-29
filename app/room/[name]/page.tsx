@@ -232,11 +232,6 @@ function saveEntry(uid: string, room: string, mark: EntryMark) {
 const KICK_MINUTES = 30;
 
 // 👢👋🚫🔓🔇🔊 kick / bump / ban / unban / mute lines (like the app)
-const MODERATION_LINE_PREFIXES = ["👢 ", "👋 ", "🚫 ", "🔓 ", "🔇 ", "🔊 "];
-function isModerationLine(text: string) {
-  return MODERATION_LINE_PREFIXES.some((p) => text.startsWith(p));
-}
-
 /** Shrinks its line's text (down to 4 px smaller) until it fits on ONE line,
  *  instead of breaking in two on a phone. If even 4 px smaller is still more
  *  than one line (a long Gift Shower), it goes back to the normal size.
@@ -2293,9 +2288,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   }}
                 />
                 );
-                // 👢👋🚫 kick / bump / ban lines and 🎁 gift / Gift Shower lines shrink a
-                // little to fit on one line (when a little is enough)
-                const row = isModerationLine(m.text) || m.type === "gift" ? (
+                // 🎁 gift / Gift Shower lines shrink a little to fit on one line (when a
+                // little is enough). Kick / ban / lock … lines no longer do: they are at
+                // the chat's own size like every other line (miglife: "why two font
+                // sizes?" — 🔓 unlocked shrank, 🔒 locked did not).
+                const row = m.type === "gift" ? (
                   <FitOneLine key={m.id} base={fontPx}>
                     {rowAt}
                   </FitOneLine>
