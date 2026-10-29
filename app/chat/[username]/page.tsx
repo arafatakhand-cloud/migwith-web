@@ -39,6 +39,7 @@ import { openReport } from "../../_components/ReportDialog";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
+import { ZoomImageViewer } from "../../_components/ImageViewer";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
 // white), tap a message to reply, long-press for reactions, ⋮ menu with
@@ -797,12 +798,8 @@ export default function PrivateChatPage() {
         <div ref={setEmoteSlot} />
       </div>
 
-      {viewImage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3" onClick={() => setViewImage(null)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={viewImage} alt="Photo" className="max-h-full max-w-full object-contain" />
-        </div>
-      )}
+      {/* 🔍 pinch / double-tap zoom, like the room photos */}
+      {viewImage && <ZoomImageViewer url={viewImage} onClose={() => setViewImage(null)} zIndex={50} />}
 
       {giftOpen && (
         <GiftPanel
