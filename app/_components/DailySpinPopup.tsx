@@ -5,8 +5,8 @@ import { createPortal } from "react-dom";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../lib/firebase";
 
-// 🎡 Daily Free Spin (miglife: "like the video", in clear glass): one free spin a Bangladesh day.
-// The wheel pops up when the Lobby opens, until today's spin is used ("Later"
+// 🎡 Daily Free Spin (miglife: "like the video", in clear glass): one free spin every 24 hours (from the last spin).
+// The wheel pops up when the Lobby opens, while a spin is waiting ("Later"
 // closes it for this visit). The server (dailySpin) picks the slice and an
 // amount inside its range and pays it — the wheel only shows where it landed.
 
@@ -188,7 +188,7 @@ export function DailySpinPopup({ uid }: { uid: string }) {
         <div className="text-[30px] leading-none">🎲</div>
         <h2 className="mt-2 text-[19px] font-black">Daily Lucky Spin</h2>
         <p className="mx-auto mt-1 max-w-[290px] text-[12px] font-semibold leading-snug text-[#35507E]">
-          Spin once during today&apos;s Bangladesh day. Each slice pays a random amount in its range.
+          One free spin every 24 hours. Each slice pays a random amount in its range.
         </p>
         <div className="mt-3">
           <Wheel slices={slices} rotation={rotation} spinning={spinning} />
@@ -203,7 +203,7 @@ export function DailySpinPopup({ uid }: { uid: string }) {
           </div>
         ) : (
           <p className="mt-2 text-[11px] font-semibold text-[#35507E]/80">
-            {spinning ? "The wheel is choosing today's reward…" : "A missed spin expires at midnight (Bangladesh time) and can't be reclaimed."}
+            {spinning ? "The wheel is choosing your reward…" : "Your next free spin opens 24 hours after this one."}
           </p>
         )}
         {error && <p className="mt-2 text-[12px] font-bold text-[#D32F2F]">{error}</p>}
