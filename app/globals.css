@@ -732,10 +732,14 @@ html[data-theme="glass"]:not([data-ui="classic"]) .stat-glass {
 /* the profile tiles: the glass shine replaces the old gloss */
 html[data-theme="glass"]:not([data-ui="classic"]) .pf-tile .tile-gloss { display: none; }
 
-/* 🫧 Glass theme: the message box is clear WHITE glass — the coloured edge stays
-   only a rim (a see-through inside showed the colour under it). */
-html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .chat-field.chat-field.chat-field {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78)) !important;
+/* 🫧 Glass theme: the message box is plain WHITE (miglife: easier to read) — the
+   coloured edge stays only a rim. Repeated class: it has to beat the glass
+   .bg-white rule above, which otherwise made it see-through (the rim's
+   colour showed under the writing). */
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .chat-field.chat-field.chat-field.chat-field.chat-field.chat-field.chat-field {
+  background: #fff !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
   box-shadow: inset 0 1px 1px #fff !important;
 }
 
