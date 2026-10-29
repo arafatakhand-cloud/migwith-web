@@ -96,6 +96,9 @@ const TRIGGER_RE: RegExp = (() => {
       if ((t.codePointAt(0) || 0) >= 0x2600) return `(?<!\\u200D)${escapeRe(t)}(?![\\u{1F3FB}-\\u{1F3FF}\\u200D])`;
       // "8-*", "8-)", "8-|" right after a word ("kaka8-*") still count — only not
       // after another digit ("18-)").
+      // A code made only of MIG ID letters ("-_-", "x_x") can be part of a name —
+      // "d-_-b" must stay a name — so it counts only when it stands on its own.
+      if (/^[A-Za-z0-9._-]+$/.test(t)) return `(?<![A-Za-z0-9._-])${escapeRe(t)}(?![A-Za-z0-9._-])`;
       const head = /[0-9]/.test(t[0]) && t.length > 1 && !isAlnum(t[1])
         ? "(?<![0-9])"
         : isAlnum(t[0]) || (t.length > 1 && (t[0] === ":" || t[0] === "<") && /[0-9]/.test(t[1]))
