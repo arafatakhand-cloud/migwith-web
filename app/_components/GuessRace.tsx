@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
@@ -29,6 +29,9 @@ const hrTick = httpsCallable(functions, "horseTick");
 
 const errText = (e: any) => e?.message || "Something went wrong.";
 const fmt = (n: number) => Math.floor(n || 0).toLocaleString("en-US");
+/** 1200 → 1.2k, 215000 → 215k, 1500000 → 1.5M */
+const short = (n: number) =>
+  n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1000 ? `${+(n / 1000).toFixed(n >= 1e5 ? 0 : 1)}k` : String(Math.floor(n));
 const opId = (p: string) => `${p}_${crypto.randomUUID().replace(/-/g, "")}`;
 /** "500", "1,000", "2k", "1.5k" → coins */
 function amountOf(raw: string | undefined): number | null {
@@ -411,6 +414,8 @@ export type HorseRaceState = {
   now: number;
   lastOrder: number[];
   myBets: Record<number, number>;
+  /** everyone's bets this race (room_game/…/hr_bets) — shown to everyone */
+  bettors: { uid: string; name: string; bets: Record<number, number>; total: number }[];
   busy: boolean;
   pickHorse: number;
   setPickHorse: (h: number) => void;
@@ -427,6 +432,7 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
   });
   const [busy, setBusy] = useState(false);
   const [mine, setMine] = useState<{ round: number; bets: Record<number, number> }>({ round: 0, bets: {} });
+  const [bettors, setBettors] = useState<{ round: number; list: HorseRaceState["bettors"] }>({ round: 0, list: [] });
   const [pickHorse, setPickHorse] = useState(1);
   const [pickAmount, setPickAmount] = useState(500);
   const noteRef = useRef(note);
@@ -449,6 +455,24 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
       });
     });
   }, [on, uid]);
+  // 👥 everyone's bets for this race (also after it — for the results list)
+  useEffect(() => {
+    if (!on || !uid || !g.round) return;
+    const round = g.round;
+    return onSnapshot(
+      query(collection(db, "room_game", HORSE_RACE_ROOM, "hr_bets"), where("roundNumber", "==", round)),
+      (snap) => {
+        const list = snap.docs.map((d) => {
+          const raw = (d.get("bets") || {}) as Record<string, unknown>;
+          const bets: Record<number, number> = {};
+          Object.entries(raw).forEach(([k, v]) => (bets[Number(k)] = Number(v) || 0));
+          return { uid: String(d.get("uid") || d.id), name: String(d.get("username") || "Player"), bets, total: Number(d.get("total") || 0) };
+        });
+        setBettors({ round, list });
+      },
+      () => {}
+    );
+  }, [on, uid, g.round]);
   const now = useTicker(g.running, g.phaseEndsAt, () => hrTick({}), g.phase === "RACING");
   if (!on) return null;
 
@@ -479,7 +503,13 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
     finishedAgo: g.phase !== "BETTING" && ended >= 0 && ended < 2500 ? ended : -1,
     now,
     lastOrder: g.lastOrder,
-    myBets: mine.round === g.round ? mine.bets : {},
+    myBets:
+      mine.round === g.round
+        ? mine.bets
+        : bettors.round === g.round
+          ? bettors.list.find((b) => b.uid === uid)?.bets || {}
+          : {},
+    bettors: bettors.round === g.round ? bettors.list : [],
     busy,
     pickHorse,
     setPickHorse,
@@ -679,6 +709,21 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
   const myStake = myHorses.reduce((a, h) => a + state.myBets[h], 0);
   const myWin = showLast && winner && state.myBets[winner] ? Math.floor(state.myBets[winner] * 4.5) : 0;
   const lostHorses = myHorses.filter((h) => h !== winner);
+  // everyone's bets: per horse (👥 players · coins) and per player (after the race: won / lost)
+  const pool: Record<number, { n: number; amt: number }> = {};
+  state.bettors.forEach((b) =>
+    Object.entries(b.bets).forEach(([k, v]) => {
+      if (!(v > 0)) return;
+      const h = Number(k);
+      pool[h] = { n: (pool[h]?.n || 0) + 1, amt: (pool[h]?.amt || 0) + v };
+    })
+  );
+  const players = state.bettors
+    .map((b) => {
+      const win = showLast && winner ? Math.floor((b.bets[winner] || 0) * 4.5) : 0;
+      return { ...b, win, net: showLast ? win - b.total : null };
+    })
+    .sort((a, b) => (a.net !== null && b.net !== null ? b.net - a.net : b.total - a.total));
   const myLost = lostHorses.reduce((a, h) => a + state.myBets[h], 0);
   const [soundOn, setSoundOn] = useState(() => hrSound.enabled());
   useRaceSounds(state, myWin);
@@ -744,6 +789,12 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                 className="absolute inset-y-0 right-[10px] w-[5px]"
                 style={{ background: "repeating-linear-gradient(0deg,#fff 0 4px,#111 4px 8px)" }}
               />
+              {/* 👥 everyone's bets on this horse */}
+              {betting && pool[h] && (
+                <span className="absolute right-[20px] top-1/2 -translate-y-1/2 rounded-md bg-black/35 px-1.5 text-[10px] font-black leading-[16px]">
+                  👥{pool[h].n} · {short(pool[h].amt)}
+                </span>
+              )}
               {(() => {
                 const left = `calc((100% - 40px) * ${state.positions[h - 1] / 100})`;
                 return (
@@ -767,11 +818,31 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                 );
               })()}
             </span>
-            <span className={`w-[66px] shrink-0 whitespace-nowrap text-right font-black ${!mine && place >= 0 && place < 3 ? "text-[16px]" : "text-[11px]"}`}>{right}</span>
+            <span className={`w-[74px] shrink-0 whitespace-nowrap text-right font-black ${!mine && place >= 0 && place < 3 ? "text-[16px]" : "text-[11px]"}`}>{right}</span>
           </button>
         );
       })}
       <p className="mt-2 truncate rounded-[10px] bg-black/25 px-2.5 py-1.5 text-[12.5px] font-extrabold">{raceTicker(state, betting)}</p>
+      {/* 👥 everyone's bets — and after the race, everyone's result */}
+      {players.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-[5px]">
+          {players.slice(0, 10).map((p) => (
+            <span
+              key={p.uid}
+              className={`rounded-[9px] px-[7px] py-[2px] text-[11px] font-black ${
+                p.net === null ? "bg-white/[0.16]" : p.win > 0 ? "bg-[#2ECC71]/90" : "bg-[#E53935]/80"
+              }`}
+            >
+              {p.net === null
+                ? `${p.name} ${short(p.total)}`
+                : p.win > 0
+                  ? `🏆 ${p.name} +${fmt(p.win)}`
+                  : `${p.name} −${fmt(p.total)}`}
+            </span>
+          ))}
+          {players.length > 10 && <span className="px-1 text-[11px] font-black text-white/80">+{players.length - 10} more</span>}
+        </div>
+      )}
       {showLast && myHorses.length > 0 && (
         <p className={`mt-1.5 rounded-[10px] px-2.5 py-1.5 text-[13px] font-extrabold leading-snug ${myWin ? "bg-[#2ECC71]/90" : "bg-[#E53935]/85"}`}>
           {myWin
