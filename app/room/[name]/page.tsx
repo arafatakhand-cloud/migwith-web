@@ -138,6 +138,7 @@ import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
 import { BackPill } from "../../_components/BackButton";
 import { RoomInfoPage } from "../../_components/RoomInfoPage";
+import { MORE_REACTIONS, QUICK_REACTIONS } from "../../../lib/reactions";
 import { RainbowName } from "../../_components/RainbowName";
 import { RoomLinkDialog, YouTubePreviewCard, withLinks } from "../../_components/RoomLinks";
 import { findRoomLinks, firstYouTubeLink } from "../../../lib/roomLinks";
@@ -3754,16 +3755,10 @@ function MessageRow({
   );
 }
 
-const REACTION_EMOJIS: [string, string][] = [
-  ["😂", "Haha"],
-  ["❤️", "Love"],
-  ["👍", "Like"],
-  ["😮", "Wow"],
-  ["😢", "Sad"],
-];
+const REACTION_EMOJIS = QUICK_REACTIONS;
 
 // The long-press menu over a room message — ONE dark pill like the app (demo D):
-// 5 reactions (a dot under the one you gave), a thin line, then small round
+// 6 reactions (a dot under the one you gave) and ＋ for more (like WhatsApp), a thin line, then small round
 // 📋 Copy / 🌐 Translate / 🚩 Report buttons. Hover or hold one to see its name.
 // Tap outside to close.
 function ReactionPicker({
@@ -3788,6 +3783,7 @@ function ReactionPicker({
   onClose: () => void;
 }) {
   const [hint, setHint] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
   const copy = copyText.trim()
     ? () => {
         const plain = copyText.startsWith("↩ ") && copyText.includes("\n") ? copyText.slice(copyText.indexOf("\n") + 1) : copyText;
@@ -3814,6 +3810,21 @@ function ReactionPicker({
         <div className="flex h-7 items-end">
           {hint && <span className="rounded-[10px] bg-[#161E34]/95 px-2.5 py-1 text-xs font-bold text-white">{hint}</span>}
         </div>
+        {/* ＋ more reactions */}
+        {more && (
+          <div className="reaction-pop grid w-[248px] grid-cols-8 gap-0.5 rounded-[18px] border border-white/10 bg-[#161E34]/[0.95] p-1.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
+            {MORE_REACTIONS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => onPick(e)}
+                className={`flex h-[28px] w-[28px] items-center justify-center rounded-full text-[18px] transition-transform hover:scale-125 ${reactions[e]?.includes(myUid) ? "bg-white/15" : ""}`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="reaction-pop flex items-center rounded-[30px] border border-white/10 bg-[#161E34]/[0.93] px-1 py-0.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
           {REACTION_EMOJIS.map(([e, name], i) => {
             const byMe = reactions[e]?.includes(myUid);
@@ -3831,6 +3842,15 @@ function ReactionPicker({
               </button>
             );
           })}
+          <button
+            type="button"
+            aria-label="More reactions"
+            onClick={() => setMore((v) => !v)}
+            {...hintProps("More")}
+            className={`mx-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[17px] font-black text-white ${more ? "bg-white/25" : "bg-white/10"}`}
+          >
+            {more ? "×" : "+"}
+          </button>
           {shown.length > 0 && <span className="mx-1 h-5 w-px bg-white/20" />}
           {shown.map(([icon, label, tint, run]) => (
             <button
