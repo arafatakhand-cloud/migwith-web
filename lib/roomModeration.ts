@@ -487,7 +487,7 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
   if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
-  if (p.canRoomWide) lines.push("/announcement text   /announce off");
+  if (p.canRoomWide) lines.push("/announcement text   /announcement_off   /announce off");
   if (p.canBroadcast) lines.push("/broadcast text");
   if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
   if (p.canAssignSuperMod) lines.push("/smod name   /dsmod name");
@@ -559,11 +559,15 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
       return true;
     // 📌 /announcement text | stop — the pinned banner under "Currently in this
     // room". /announce text [minutes] — the same, optionally timed.
+    // 📢 /announcement_off and /announce off both turn it off
+    case "/announcement_off":
+      setAnnouncement(ctx, "");
+      return true;
     case "/announcement":
     case "/announce": {
       const rest = clean.trim().slice(parts[0].length).trim();
       if (!rest) {
-        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (/announce off to remove it)`);
+        ctx.note(`${ctx.roomName}: Usage: ${cmd} message` + (cmd === "/announce" ? " [minutes]" : "") + `   (/announcement_off or /announce off to remove it)`);
         return true;
       }
       if (["off", "stop", "clear"].includes(rest.toLowerCase())) {
