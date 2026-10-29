@@ -347,6 +347,127 @@ export function horseHandleCommand(state: HorseRaceState, clean: string, note: (
 const HORSE_COLORS = ["#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5"];
 const MEDALS = ["🥇", "🥈", "🥉"];
 
+// 🔊 Race sounds (public/sounds): a starting bell, galloping hooves during the
+// race (a seamless loop, louder near the finish), a crowd cheer at the finish
+// and a fanfare when I won. On / off is remembered on this device.
+const HR_SOUND_KEY = "migwith.horseSound";
+const hrSound = {
+  ctx: null as AudioContext | null,
+  bufs: {} as Record<string, AudioBuffer>,
+  loop: null as { src: AudioBufferSourceNode; gain: GainNode } | null,
+  enabled() {
+    try {
+      return localStorage.getItem(HR_SOUND_KEY) !== "0";
+    } catch {
+      return true;
+    }
+  },
+  setEnabled(on: boolean) {
+    try {
+      localStorage.setItem(HR_SOUND_KEY, on ? "1" : "0");
+    } catch {
+      // storage blocked
+    }
+    if (!on) this.stopLoop();
+  },
+  // Browsers only allow sound after a tap: called from the box's taps too.
+  unlock() {
+    if (typeof window === "undefined") return;
+    if (!this.ctx) {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      for (const f of ["hr_bell.mp3", "hr_cheer.mp3", "hr_win.mp3", "hr_gallop.wav"]) {
+        fetch(`/sounds/${f}`)
+          .then((r) => r.arrayBuffer())
+          .then((b) => this.ctx!.decodeAudioData(b))
+          .then((buf) => (this.bufs[f.split(".")[0]] = buf))
+          .catch(() => {});
+      }
+    }
+    if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+  },
+  play(name: string, volume = 1) {
+    if (!this.enabled() || document.visibilityState !== "visible") return;
+    this.unlock();
+    const buf = this.bufs[name];
+    if (!this.ctx || !buf) return;
+    const src = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    gain.gain.value = volume;
+    src.buffer = buf;
+    src.connect(gain).connect(this.ctx.destination);
+    src.start();
+  },
+  startLoop() {
+    if (this.loop || !this.enabled() || document.visibilityState !== "visible") return;
+    this.unlock();
+    const buf = this.bufs.hr_gallop;
+    if (!this.ctx || !buf) return;
+    const src = this.ctx.createBufferSource();
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.45;
+    src.buffer = buf;
+    src.loop = true;
+    src.connect(gain).connect(this.ctx.destination);
+    src.start();
+    this.loop = { src, gain };
+  },
+  loopVolume(v: number) {
+    if (this.loop) this.loop.gain.gain.value = v;
+  },
+  stopLoop() {
+    try {
+      this.loop?.src.stop();
+    } catch {
+      // already stopped
+    }
+    this.loop = null;
+  },
+};
+
+// Plays the race sounds as the race goes along (only for what happens while
+// the room is open — reopening a finished race stays quiet).
+function useRaceSounds(state: HorseRaceState, myWin: number) {
+  const seen = useRef<{ phase: string; round: number; cheered: number; won: number } | null>(null);
+  useEffect(() => {
+    const prev = seen.current;
+    seen.current = { phase: state.phase, round: state.round, cheered: prev?.cheered ?? 0, won: prev?.won ?? 0 };
+    if (!prev) {
+      // opened mid-race: just the hooves
+      if (state.phase === "RACING") hrSound.startLoop();
+      return;
+    }
+    if (state.phase === "RACING" && prev.phase !== "RACING") {
+      hrSound.play("hr_bell", 0.7);
+      hrSound.startLoop();
+    }
+    if (state.phase !== "RACING" && prev.phase === "RACING") {
+      hrSound.stopLoop();
+      if (seen.current.cheered !== state.round) {
+        seen.current.cheered = state.round;
+        hrSound.play("hr_cheer", 0.9);
+      }
+    }
+  }, [state.phase, state.round]);
+  // louder as they reach the finish
+  useEffect(() => {
+    if (state.phase === "RACING") hrSound.loopVolume(0.45 + 0.55 * state.raceT);
+  }, [state.phase, state.raceT]);
+  // 🎉 my win, once per race
+  useEffect(() => {
+    if (!myWin || !seen.current || seen.current.won === state.round || seen.current.cheered !== state.round) return;
+    seen.current.won = state.round;
+    const t = setTimeout(() => hrSound.play("hr_win", 0.9), 900);
+    return () => clearTimeout(t);
+  }, [myWin, state.round]);
+  // load the sounds as soon as the box shows (they play after the first tap)
+  useEffect(() => {
+    hrSound.unlock();
+    return () => hrSound.stopLoop();
+  }, []);
+}
+
 // The live commentary line under the track.
 function raceTicker(state: HorseRaceState, betting: boolean): string {
   if (betting) return `⏱ Place your bets — ${state.secondsLeft}s · the winner pays ${HR_MULT}`;
@@ -373,10 +494,27 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
   const myWin = showLast && winner && state.myBets[winner] ? Math.floor(state.myBets[winner] * 4.5) : 0;
   const lostHorses = myHorses.filter((h) => h !== winner);
   const myLost = lostHorses.reduce((a, h) => a + state.myBets[h], 0);
+  const [soundOn, setSoundOn] = useState(() => hrSound.enabled());
+  useRaceSounds(state, myWin);
   return (
-    <div className="relative mx-2.5 my-1.5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#2E7D32] to-[#1B5E20] px-3 py-2.5 text-white shadow-[0_8px_20px_rgba(20,60,20,.25)]">
+    <div
+      onPointerDown={() => hrSound.unlock()}
+      className="relative mx-2.5 my-1.5 overflow-hidden rounded-2xl bg-gradient-to-br from-[#2E7D32] to-[#1B5E20] px-3 py-2.5 text-white shadow-[0_8px_20px_rgba(20,60,20,.25)]"
+    >
       <div className="flex items-center text-xs font-black">
         <span className="flex-1">🐎 HORSE RACE{state.round ? ` · #${state.round}` : ""}</span>
+        <button
+          type="button"
+          aria-label={soundOn ? "Sound off" : "Sound on"}
+          onClick={() => {
+            hrSound.setEnabled(!soundOn);
+            setSoundOn(!soundOn);
+            if (!soundOn && state.phase === "RACING") hrSound.startLoop();
+          }}
+          className="mr-2 text-[14px] leading-none"
+        >
+          {soundOn ? "🔊" : "🔇"}
+        </button>
         <span>{betting ? `⏱ ${state.secondsLeft}s` : racing ? "🏁 racing…" : state.phase === "SETTLING" ? "🏆 result…" : ""}</span>
       </div>
       {[1, 2, 3, 4, 5].map((h) => {
