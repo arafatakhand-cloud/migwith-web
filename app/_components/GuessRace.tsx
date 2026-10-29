@@ -167,7 +167,7 @@ const NG_RULES: [string, string][] = [
 const HR_RULES: [string, string][] = [
   ["🐎 The horses", "1 Blaze 🔴 · 2 Tiger 🟠 · 3 Sunny 🟡 · 4 Lucky 🟢 · 5 Storm 🔵"],
   ["▶ Start", "Anyone taps Start race (or types !start). Then there are 45 seconds to bet."],
-  ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b lucky 500 — the name or its number 1–5). You can bet on more than one horse. Minimum 100, maximum 200,000 per horse."],
+  ["💰 Betting", "Tap a lane, pick 100 / 500 / 1k / 5k and tap Bet (or type !b lucky 500 — the name or its number 1–5). You can bet on up to 2 horses in a race. Minimum 100, maximum 200,000 per horse."],
   ["🏇 The race", "When betting closes, the 8-second race starts. The result is decided by the server at random — nobody can change it."],
   ["🏆 Winning", "Only bets on the 1st-place horse 🥇 win: they pay 4.5× the bet (1,000 → 4,500). Bets on the 2nd–5th horses lose."],
   ["📊 Max win", "The most one player can win in a race is 200,000 × 4.5 = 900,000 coins."],
@@ -565,6 +565,7 @@ const HORSE_COLORS = ["#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5"];
 // every horse has a name (same list as the server's HR_NAMES and the app's);
 // the server still counts them 1–5
 export const HORSE_NAMES = ["Blaze", "Tiger", "Sunny", "Lucky", "Storm"];
+const HR_MAX_HORSES = 2;
 const hn = (h: number) => HORSE_NAMES[h - 1] || `#${h}`;
 /** "3", "#3" or a name ("lucky") → 1–5, or 0 */
 function horseOf(t: string): number {
@@ -726,6 +727,8 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
   const myStake = myHorses.reduce((a, h) => a + state.myBets[h], 0);
   const myWin = showLast && winner && state.myBets[winner] ? Math.floor(state.myBets[winner] * 4.5) : 0;
   const lostHorses = myHorses.filter((h) => h !== winner);
+  // one player may bet on at most HR_MAX_HORSES horses a race (the server checks it too)
+  const locked = (h: number) => myHorses.length >= HR_MAX_HORSES && !(state.myBets[h] > 0);
   // everyone's bets: per horse (👥 players · coins) and per player (after the race: won / lost)
   const pool: Record<number, { n: number; amt: number }> = {};
   state.bettors.forEach((b) =>
@@ -782,7 +785,7 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
           <button
             key={h}
             type="button"
-            disabled={!betting}
+            disabled={!betting || locked(h)}
             onClick={() => state.setPickHorse(h)}
             className={`mt-[5px] flex w-full items-center rounded-xl text-left ${picked ? "ring-2 ring-[#FFD54A]" : ""}`}
           >
@@ -873,11 +876,12 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                 <button
                   key={h}
                   type="button"
+                  disabled={locked(h)}
                   onClick={() => state.setPickHorse(h)}
-                  className={`rounded-xl border-[1.5px] px-0.5 py-1.5 text-center ${on ? "border-[#FFD54A] bg-[#FFD54A]/[0.18]" : "border-transparent bg-white/10"}`}
+                  className={`rounded-xl border-[1.5px] px-0.5 py-1.5 text-center ${on ? "border-[#FFD54A] bg-[#FFD54A]/[0.18]" : "border-transparent bg-white/10"} ${locked(h) ? "opacity-40" : ""}`}
                 >
                   <span className="block text-[15px] leading-none" style={{ color: HORSE_COLORS[h - 1] }}>
-                    ●
+                    {locked(h) ? "🔒" : "●"}
                   </span>
                   <span className="block truncate text-[12px] font-black">{hn(h)}</span>
                   <span className="block truncate text-[9.5px] font-extrabold opacity-85">
@@ -887,7 +891,12 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
               );
             })}
           </div>
-          <div className="mt-2.5 flex items-center gap-1.5">
+          <p className="mt-1.5 text-center text-[10.5px] font-extrabold text-white/80">
+            {myHorses.length
+              ? `🐎 Your horses: ${myHorses.map(hn).join(" & ")} · max ${HR_MAX_HORSES} per race`
+              : `🐎 Bet on up to ${HR_MAX_HORSES} horses per race`}
+          </p>
+          <div className="mt-2 flex items-center gap-1.5">
             {[
               ["½", () => state.setPickAmount(betAmount(Math.floor(state.pickAmount / 2)))],
               ["−", () => state.setPickAmount(betAmount(state.pickAmount - betStep(state.pickAmount - 1)))],
@@ -927,11 +936,12 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
           </div>
           <button
             type="button"
+            disabled={locked(state.pickHorse)}
             onClick={() => state.bet(state.pickHorse, state.pickAmount)}
-            className="mt-2.5 flex h-12 w-full items-center justify-between rounded-[14px] px-3.5 font-black text-[#1B2440] shadow-[0_5px_14px_rgba(255,152,0,.45)]"
+            className="mt-2.5 flex h-12 w-full items-center justify-between rounded-[14px] px-3.5 font-black text-[#1B2440] shadow-[0_5px_14px_rgba(255,152,0,.45)] disabled:opacity-50"
             style={{ background: "linear-gradient(90deg,#FFC107,#FF9800)" }}
           >
-            <span className="text-[15px]">{state.busy ? "…" : `🎯 Bet on ${hn(state.pickHorse)}`}</span>
+            <span className="text-[15px]">{state.busy ? "…" : locked(state.pickHorse) ? `🔒 Max ${HR_MAX_HORSES} horses` : `🎯 Bet on ${hn(state.pickHorse)}`}</span>
             <span className="text-[12.5px]">🏆 → {fmt(Math.floor(state.pickAmount * 4.5))}</span>
           </button>
         </div>
