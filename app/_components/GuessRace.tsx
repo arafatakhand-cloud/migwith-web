@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
@@ -29,6 +29,9 @@ const hrTick = httpsCallable(functions, "horseTick");
 
 const errText = (e: any) => e?.message || "Something went wrong.";
 const fmt = (n: number) => Math.floor(n || 0).toLocaleString("en-US");
+/** 1200 → 1.2k, 215000 → 215k, 1500000 → 1.5M */
+const short = (n: number) =>
+  n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1000 ? `${+(n / 1000).toFixed(n >= 1e5 ? 0 : 1)}k` : String(Math.floor(n));
 const opId = (p: string) => `${p}_${crypto.randomUUID().replace(/-/g, "")}`;
 /** "500", "1,000", "2k", "1.5k" → coins */
 function amountOf(raw: string | undefined): number | null {
@@ -411,6 +414,8 @@ export type HorseRaceState = {
   now: number;
   lastOrder: number[];
   myBets: Record<number, number>;
+  /** everyone's bets this race (room_game/…/hr_bets) — shown to everyone */
+  bettors: { uid: string; name: string; bets: Record<number, number>; total: number }[];
   busy: boolean;
   pickHorse: number;
   setPickHorse: (h: number) => void;
@@ -427,6 +432,7 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
   });
   const [busy, setBusy] = useState(false);
   const [mine, setMine] = useState<{ round: number; bets: Record<number, number> }>({ round: 0, bets: {} });
+  const [bettors, setBettors] = useState<{ round: number; list: HorseRaceState["bettors"] }>({ round: 0, list: [] });
   const [pickHorse, setPickHorse] = useState(1);
   const [pickAmount, setPickAmount] = useState(500);
   const noteRef = useRef(note);
@@ -449,6 +455,24 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
       });
     });
   }, [on, uid]);
+  // 👥 everyone's bets for this race (also after it — for the results list)
+  useEffect(() => {
+    if (!on || !uid || !g.round) return;
+    const round = g.round;
+    return onSnapshot(
+      query(collection(db, "room_game", HORSE_RACE_ROOM, "hr_bets"), where("roundNumber", "==", round)),
+      (snap) => {
+        const list = snap.docs.map((d) => {
+          const raw = (d.get("bets") || {}) as Record<string, unknown>;
+          const bets: Record<number, number> = {};
+          Object.entries(raw).forEach(([k, v]) => (bets[Number(k)] = Number(v) || 0));
+          return { uid: String(d.get("uid") || d.id), name: String(d.get("username") || "Player"), bets, total: Number(d.get("total") || 0) };
+        });
+        setBettors({ round, list });
+      },
+      () => {}
+    );
+  }, [on, uid, g.round]);
   const now = useTicker(g.running, g.phaseEndsAt, () => hrTick({}), g.phase === "RACING");
   if (!on) return null;
 
@@ -479,7 +503,13 @@ export function useHorseRace(roomId: string | null, uid: string | undefined, not
     finishedAgo: g.phase !== "BETTING" && ended >= 0 && ended < 2500 ? ended : -1,
     now,
     lastOrder: g.lastOrder,
-    myBets: mine.round === g.round ? mine.bets : {},
+    myBets:
+      mine.round === g.round
+        ? mine.bets
+        : bettors.round === g.round
+          ? bettors.list.find((b) => b.uid === uid)?.bets || {}
+          : {},
+    bettors: bettors.round === g.round ? bettors.list : [],
     busy,
     pickHorse,
     setPickHorse,
@@ -531,6 +561,12 @@ export function horseHandleCommand(state: HorseRaceState, clean: string, note: (
 }
 
 const HORSE_COLORS = ["#E53935", "#FB8C00", "#FDD835", "#43A047", "#1E88E5"];
+const HR_MIN_BET = 100;
+const HR_MAX_PER_HORSE = 200_000;
+/** a bet amount kept between 100 and 200,000 */
+const betAmount = (n: number) => Math.min(HR_MAX_PER_HORSE, Math.max(HR_MIN_BET, Math.round(n)));
+/** − / + step: 100 under 1k, 1,000 under 10k, 10,000 above */
+const betStep = (n: number) => (n < 1000 ? 100 : n < 10000 ? 1000 : 10000);
 const MEDALS = ["🥇", "🥈", "🥉"];
 
 // 🔊 Race sounds (public/sounds): a starting bell, galloping hooves during the
@@ -679,6 +715,21 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
   const myStake = myHorses.reduce((a, h) => a + state.myBets[h], 0);
   const myWin = showLast && winner && state.myBets[winner] ? Math.floor(state.myBets[winner] * 4.5) : 0;
   const lostHorses = myHorses.filter((h) => h !== winner);
+  // everyone's bets: per horse (👥 players · coins) and per player (after the race: won / lost)
+  const pool: Record<number, { n: number; amt: number }> = {};
+  state.bettors.forEach((b) =>
+    Object.entries(b.bets).forEach(([k, v]) => {
+      if (!(v > 0)) return;
+      const h = Number(k);
+      pool[h] = { n: (pool[h]?.n || 0) + 1, amt: (pool[h]?.amt || 0) + v };
+    })
+  );
+  const players = state.bettors
+    .map((b) => {
+      const win = showLast && winner ? Math.floor((b.bets[winner] || 0) * 4.5) : 0;
+      return { ...b, win, net: showLast ? win - b.total : null };
+    })
+    .sort((a, b) => (a.net !== null && b.net !== null ? b.net - a.net : b.total - a.total));
   const myLost = lostHorses.reduce((a, h) => a + state.myBets[h], 0);
   const [soundOn, setSoundOn] = useState(() => hrSound.enabled());
   useRaceSounds(state, myWin);
@@ -767,11 +818,31 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
                 );
               })()}
             </span>
-            <span className={`w-[66px] shrink-0 whitespace-nowrap text-right font-black ${!mine && place >= 0 && place < 3 ? "text-[16px]" : "text-[11px]"}`}>{right}</span>
+            <span className={`w-[74px] shrink-0 whitespace-nowrap text-right font-black ${!mine && place >= 0 && place < 3 ? "text-[16px]" : "text-[11px]"}`}>{right}</span>
           </button>
         );
       })}
       <p className="mt-2 truncate rounded-[10px] bg-black/25 px-2.5 py-1.5 text-[12.5px] font-extrabold">{raceTicker(state, betting)}</p>
+      {/* 👥 everyone's bets — and after the race, everyone's result */}
+      {players.length > 0 && (
+        <div className="mt-1.5 flex flex-wrap gap-[5px]">
+          {players.slice(0, 10).map((p) => (
+            <span
+              key={p.uid}
+              className={`rounded-[9px] px-[7px] py-[2px] text-[11px] font-black ${
+                p.net === null ? "bg-white/[0.16]" : p.win > 0 ? "bg-[#2ECC71]/90" : "bg-[#E53935]/80"
+              }`}
+            >
+              {p.net === null
+                ? `${p.name} ${short(p.total)}`
+                : p.win > 0
+                  ? `🏆 ${p.name} +${fmt(p.win)}`
+                  : `${p.name} −${fmt(p.total)}`}
+            </span>
+          ))}
+          {players.length > 10 && <span className="px-1 text-[11px] font-black text-white/80">+{players.length - 10} more</span>}
+        </div>
+      )}
       {showLast && myHorses.length > 0 && (
         <p className={`mt-1.5 rounded-[10px] px-2.5 py-1.5 text-[13px] font-extrabold leading-snug ${myWin ? "bg-[#2ECC71]/90" : "bg-[#E53935]/85"}`}>
           {myWin
@@ -781,19 +852,77 @@ export function HorseRacePanel({ state }: { state: HorseRaceState }) {
         </p>
       )}
       {betting ? (
-        <div className="mt-2 flex items-center gap-[5px]">
-          {[100, 500, 1000, 5000].map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => state.setPickAmount(a)}
-              className={`rounded-[10px] px-2.5 py-[5px] text-xs font-black ${state.pickAmount === a ? "bg-[#fff] text-[#1B5E20]" : "bg-white/20 text-white"}`}
-            >
-              {a >= 1000 ? `${a / 1000}k` : a}
-            </button>
-          ))}
-          <span className="flex-1" />
-          <WhiteButton onClick={() => state.bet(state.pickHorse, state.pickAmount)}>{state.busy ? "…" : `Bet #${state.pickHorse}`}</WhiteButton>
+        // 🎯 bet box (miglife picked design B): horse cards with everyone's bets,
+        // ½ / − / amount / + / ×2, quick amounts, and what a win would pay
+        <div className="mt-2.5 rounded-2xl border border-white/[0.12] bg-black/[0.22] p-2.5">
+          <div className="grid grid-cols-5 gap-[5px]">
+            {[1, 2, 3, 4, 5].map((h) => {
+              const on = state.pickHorse === h;
+              return (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => state.setPickHorse(h)}
+                  className={`rounded-xl border-[1.5px] px-0.5 py-1.5 text-center ${on ? "border-[#FFD54A] bg-[#FFD54A]/[0.18]" : "border-transparent bg-white/10"}`}
+                >
+                  <span className="block text-[15px] leading-none" style={{ color: HORSE_COLORS[h - 1] }}>
+                    ●
+                  </span>
+                  <span className="block text-[13px] font-black">#{h}</span>
+                  <span className="block truncate text-[9.5px] font-extrabold opacity-85">
+                    {pool[h] ? `👥${pool[h].n} · ${short(pool[h].amt)}` : "—"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2.5 flex items-center gap-1.5">
+            {[
+              ["½", () => state.setPickAmount(betAmount(Math.floor(state.pickAmount / 2)))],
+              ["−", () => state.setPickAmount(betAmount(state.pickAmount - betStep(state.pickAmount - 1)))],
+            ].map(([t, f]) => (
+              <button key={t as string} type="button" onClick={f as () => void} className="h-[38px] w-[38px] rounded-xl bg-white/[0.16] text-[16px] font-black">
+                {t as string}
+              </button>
+            ))}
+            <span className="flex h-[42px] flex-1 items-center justify-center rounded-[13px] bg-[#fff] text-[21px] font-black text-[#1B5E20]">
+              {fmt(state.pickAmount)}
+            </span>
+            {[
+              ["+", () => state.setPickAmount(betAmount(state.pickAmount + betStep(state.pickAmount)))],
+              ["×2", () => state.setPickAmount(betAmount(state.pickAmount * 2))],
+            ].map(([t, f]) => (
+              <button key={t as string} type="button" onClick={f as () => void} className="h-[38px] w-[38px] rounded-xl bg-white/[0.16] text-[14px] font-black">
+                {t as string}
+              </button>
+            ))}
+          </div>
+          <div className="mt-[7px] flex gap-[5px]">
+            {[100, 500, 1000, 5000, 10000, -1].map((a) => {
+              const room = HR_MAX_PER_HORSE - (state.myBets[state.pickHorse] || 0);
+              const value = a === -1 ? Math.max(HR_MIN_BET, room) : a;
+              const on = state.pickAmount === value;
+              return (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => state.setPickAmount(betAmount(value))}
+                  className={`flex-1 rounded-[9px] py-[5px] text-[11.5px] font-black ${on ? "bg-[#fff] text-[#1B5E20]" : "bg-white/[0.14] text-white"}`}
+                >
+                  {a === -1 ? "MAX" : a >= 1000 ? `${a / 1000}k` : a}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => state.bet(state.pickHorse, state.pickAmount)}
+            className="mt-2.5 flex h-12 w-full items-center justify-between rounded-[14px] px-3.5 font-black text-[#1B2440] shadow-[0_5px_14px_rgba(255,152,0,.45)]"
+            style={{ background: "linear-gradient(90deg,#FFC107,#FF9800)" }}
+          >
+            <span className="text-[15px]">{state.busy ? "…" : `🎯 Bet on #${state.pickHorse}`}</span>
+            <span className="text-[12.5px]">🏆 → {fmt(Math.floor(state.pickAmount * 4.5))}</span>
+          </button>
         </div>
       ) : (
         !state.running && (
