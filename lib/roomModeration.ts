@@ -165,8 +165,8 @@ async function setAppRole(ctx: ModContext, name: string, role: "staff" | "user")
       role,
       operationId: "role_" + crypto.randomUUID().replace(/-/g, ""),
     });
-    if (role === "staff") ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
+    if (role === "staff") ctx.postModeration(`${target.username} is now a moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e: any) {
     ctx.note(`${ctx.roomName}: Role update failed. ${e?.message || "Permission denied."}`);
   }
@@ -404,8 +404,8 @@ export async function setModerator(ctx: ModContext, name: string, add: boolean) 
       updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`⭐ ${target.username} was made a room moderator by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a room moderator.`, "red");
+    if (add) ctx.postModeration(`${target.username} is now a moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e) {
     fail(ctx, "Moderator update")(e);
   }
@@ -430,8 +430,8 @@ export async function setSuperMod(ctx: ModContext, name: string, add: boolean) {
       updatedBy: ctx.modName,
       updatedAt: serverTimestamp(),
     });
-    if (add) ctx.postModeration(`🌟 ${target.username} was made a Super Mod by ${ctx.modName}.`, "green");
-    else ctx.postModeration(`🛑 ${target.username} is no longer a Super Mod.`, "red");
+    if (add) ctx.postModeration(`${target.username} is now a super moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${target.username} is no longer a super moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e) {
     fail(ctx, "Super Mod update")(e);
   }
