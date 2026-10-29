@@ -325,7 +325,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [muted, setMuted] = useState(false);
   const [silenced, setSilenced] = useState(false);
   const [locked, setLocked] = useState(false);
-  const [announcement, setAnnouncement] = useState("");
+  // 📢 the announcement as it was when I came in (like the reference app): it is pinned
+  // under "Currently in this room" for this visit; a change while I'm here only shows
+  // as a pink line in the chat.
+  const [announcement, setAnnouncement] = useState<string | null>(null);
   const [roomInfo, setRoomInfo] = useState<RoomInfo>(EMPTY_ROOM);
   const [roomLoaded, setRoomLoaded] = useState(false);
   const [modLoaded, setModLoaded] = useState(false);
@@ -803,7 +806,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         setSilenced(snap.get("silenced") === true);
         setLocked(snap.get("locked") === true);
         if (!snap.metadata.fromCache && snap.get("locked") !== true) insideBeforeLockRef.current = true;
-        setAnnouncement(String(snap.get("announcement") || "").trim());
+        setAnnouncement((a) => (a === null ? String(snap.get("announcement") || "").trim() : a));
         setModLoaded(true);
       },
       () => setModLoaded(true)
@@ -2219,11 +2222,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {/* 📢 a pink card "<< text >>", like the reference app (miglife) */}
                 {announcement && (
-                  <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5" style={{ background: ANNOUNCE_PINK }}>
-                    {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
-                    <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
+                  <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap text-[17px] leading-[23px] text-[#2B2F38] [overflow-wrap:anywhere]">
+                    <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-[#2B2F38] [overflow-wrap:anywhere]">
+                      {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
+                      <span className="mr-1 inline-block -scale-x-100 text-[18px] leading-none">📢</span>
                       {"<< "}
                       {announcement.split(/(https?:\/\/\S+)/g).map((part, i) =>
                         /^https?:\/\//.test(part) ? (
@@ -3455,11 +3458,11 @@ function MessageRow({
   // 📢 "<< life has set the announcement to … >>": a pink card across the chat, like the reference app.
   if (m.type === "announcement") {
     return (
-      <div className="flex items-start gap-2 rounded-[14px] px-3.5 py-2.5" style={{ background: ANNOUNCE_PINK }}>
-        <span className="inline-block -scale-x-100 text-[20px] leading-none">📢</span>
-        <p className="min-w-0 flex-1 whitespace-pre-wrap leading-snug text-[#2B2F38] [overflow-wrap:anywhere]" style={{ fontSize: fontPx }}>
+      <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
+        {/* the icon sits in the text, so a long line wraps under it — no time, like the reference app */}
+        <p className="whitespace-pre-wrap leading-snug text-[#2B2F38] [overflow-wrap:anywhere]" style={{ fontSize: fontPx }}>
+          <span className="mr-1 inline-block -scale-x-100 text-[1.2em] leading-none">📢</span>
           {brandMiglife(m.text)}
-          {stamp}
         </p>
       </div>
     );
