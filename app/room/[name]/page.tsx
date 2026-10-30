@@ -166,6 +166,7 @@ import { EntryEffectHost, claimOwnEntryFx, requestOwnEntryFx } from "../../_comp
 import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
+import { PhotoEditor } from "../../_components/PhotoEditor";
 import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
@@ -397,6 +398,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [balanceCard, setBalanceCard] = useState<BalanceInfo | null>(null);
   const [roundResult, setRoundResult] = useState<{ round: number; won: number; bet: number } | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState<File | null>(null);
   const lastResultRound = useRef(0);
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -2658,6 +2660,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           onSend={() => {
             const f = pendingPhoto;
             setPendingPhoto(null);
+            void sendPhoto(f);
+          }}
+          // GIFs stay as they are (editing would stop the animation)
+          onEdit={pendingPhoto.type === "image/gif" ? undefined : () => (setEditingPhoto(pendingPhoto), setPendingPhoto(null))}
+        />
+      )}
+      {/* ✏️ edit the photo before it goes to the room */}
+      {editingPhoto && (
+        <PhotoEditor
+          file={editingPhoto}
+          onCancel={() => setEditingPhoto(null)}
+          onSend={(f) => {
+            setEditingPhoto(null);
             void sendPhoto(f);
           }}
         />
