@@ -787,7 +787,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (snap.get("banned") === true) {
           setBlocked("You are banned from this room.");
         } else if (kickedNow) {
-          setKickMinutesLeft(kickLeftMs > 0 ? Math.max(1, Math.ceil(kickLeftMs / 60_000)) : KICK_MINUTES);
+          setKickMinutesLeft(kickLeftMs > 0 ? Math.min(KICK_MINUTES, Math.max(1, Math.ceil(kickLeftMs / 60_000))) : KICK_MINUTES);
           setBumped(snap.get("bumped") === true && snap.get("kicked") === true && kickLeftMs <= 0);
           setBlocked("You were kicked from this room.");
           // The kicked person clears their own flag (kickedAt stays and keeps
