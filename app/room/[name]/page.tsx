@@ -114,6 +114,7 @@ import { handleRoomCommand } from "../../../lib/roomCommands";
 import { handleExtraCommand } from "../../../lib/extraCommands";
 import { rememberRecentRoom, useRoomPrefs } from "../../../lib/roomPrefs";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
+import type { PickedSticker } from "../../../lib/stickers";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import {
@@ -1477,6 +1478,29 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     };
   };
 
+  // 🎨 Sticker: a picture from a pack I own (the rules check it), sent at once.
+  const sendSticker = async (st: PickedSticker) => {
+    if (!user || !profile) return;
+    if (muted || (silenced && !perms.canRoomWide)) {
+      return note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
+    }
+    try {
+      await addDoc(collection(db, "room_messages", roomName, "messages"), {
+        text: `${profile.username}: 🎨 Sticker`,
+        sender: profile.username,
+        senderUid: user.uid,
+        type: "sticker",
+        imageUrl: st.url,
+        stickerPack: st.packId,
+        createdAt: serverTimestamp(),
+      });
+      stickToBottom.current = true;
+    } catch (err: any) {
+      console.error(err);
+      note(`${roomName}: Sticker could not be sent.`);
+    }
+  };
+
   // 📷 Photo message: same Storage folder and message shape as the app.
   const sendPhoto = async (file: File | undefined) => {
     if (!file || !user || !profile || uploading) return;
@@ -2402,6 +2426,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   maxLength={1000}
                   disabled={!profile}
                   onGift={() => setGiftTarget("")}
+                  onSticker={sendSticker}
                   onMore={(r) => {
                     setMenuAnchor(r ? { left: Math.max(8, Math.min(r.left, window.innerWidth - 196)), bottom: Math.max(8, window.innerHeight - r.top + 8) } : null);
                     setMenuOpen(true);
@@ -2475,6 +2500,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               maxLength={1000}
               disabled={!profile}
               onGift={() => setGiftTarget("")}
+              onSticker={sendSticker}
               onMore={(r) => {
                 setMenuAnchor(r ? { left: Math.max(8, Math.min(r.left, window.innerWidth - 196)), bottom: Math.max(8, window.innerHeight - r.top + 8) } : null);
                 setMenuOpen(true);
@@ -3620,6 +3646,8 @@ function MessageRow({
   const snippet =
     m.type === "image" && m.imageUrl
       ? "📷 Photo"
+      : m.type === "sticker" && m.imageUrl
+        ? "🎨 Sticker"
       : m.type === "voice" && m.audioUrl
         ? "🎤 Voice message"
         : body.length > 60
@@ -3627,7 +3655,7 @@ function MessageRow({
           : body;
 
   // Reactions work on real chat lines only (not local notices or the room's own lines).
-  const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice");
+  const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice" || m.type === "sticker");
   const holdHandlers = holdFor(canReact);
 
   // ⏰ "Room : You have been auto left …" / "Room : You are not in Room chat room":
@@ -3752,6 +3780,18 @@ function MessageRow({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
               </button>
+              {stamp}
+            </>
+          ) : m.type === "sticker" && m.imageUrl ? (
+            <>
+              {/* 🎨 a sticker: big, no frame */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={m.imageUrl}
+                alt="Sticker"
+                loading="lazy"
+                className={`mt-1 block h-28 w-28 object-contain ${rightSide ? "ml-auto" : ""}`}
+              />
               {stamp}
             </>
           ) : m.type === "voice" && m.audioUrl ? (

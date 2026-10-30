@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { EmotePanel } from "./Emote";
+import { StickerPanel } from "./StickerPanel";
+import type { PickedSticker } from "../../lib/stickers";
 import { removeLastEmoteOrChar } from "../../lib/emotes";
 
 // 🙂 button (⌨️ while open, like the app) that opens the miglife emote panel (the app's emoji panel); a tap
@@ -16,6 +18,7 @@ export function EmojiPicker({
   disabled,
   inline = false,
   dockTo,
+  onSticker,
 }: {
   inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   value: string;
@@ -25,8 +28,11 @@ export function EmojiPicker({
   inline?: boolean;
   /** Element under the chat bar the panel opens in (the app's place for it). */
   dockTo?: HTMLElement | null;
+  /** 🎨 With this, the panel gets "Emoji | Stickers" tabs; a sticker tap sends it. */
+  onSticker?: (s: PickedSticker) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"emoji" | "stickers">("emoji");
   const boxRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +65,26 @@ export function EmojiPicker({
       el?.setSelectionRange(caret, caret);
     });
   };
+
+  // 🎨 a sticker goes straight out, and the panel closes (like the video)
+  const pickSticker = (st: PickedSticker) => {
+    setOpen(false);
+    onSticker?.(st);
+  };
+  const tabs = onSticker ? (
+    <div className="flex gap-1.5 bg-white px-2 pb-1 pt-2">
+      {(["emoji", "stickers"] as const).map((t) => (
+        <button
+          key={t}
+          type="button"
+          onClick={() => setTab(t)}
+          className={`flex-1 rounded-full py-1.5 text-[13px] font-bold ${tab === t ? "bg-[#1565D8] text-white" : "bg-[#EEF3FB] text-[#1565D8]"}`}
+        >
+          {t === "emoji" ? "😊 Emoji" : "🎨 Stickers"}
+        </button>
+      ))}
+    </div>
+  ) : null;
 
   return (
     <div ref={boxRef} className="relative flex">
@@ -93,13 +119,23 @@ export function EmojiPicker({
         dockTo &&
         createPortal(
           <div ref={panelRef}>
-            <EmotePanel docked onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
+            {tabs}
+            {tab === "stickers" && onSticker ? (
+              <StickerPanel docked onPick={pickSticker} />
+            ) : (
+              <EmotePanel docked onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
+            )}
           </div>,
           dockTo
         )}
       {open && !dockTo && (
         <div ref={panelRef} className={`absolute bottom-full ${inline ? "right-0" : "left-0"} z-40 mb-3 w-[min(360px,calc(100vw-16px))]`}>
-          <EmotePanel onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
+          {tabs}
+          {tab === "stickers" && onSticker ? (
+            <StickerPanel onPick={pickSticker} />
+          ) : (
+            <EmotePanel onPick={insert} onBackspace={() => onChange(removeLastEmoteOrChar(value))} />
+          )}
         </div>
       )}
     </div>

@@ -40,6 +40,7 @@ const PAGE_NAMES: [string, string][] = [
   ["/lucky", "Lucky User"],
   ["/style-studio", "Style Studio"],
   ["/supporter-colours", "Supporters Badge"],
+  ["/stickers", "Sticker Store"],
   ["/merchant", "miGlife Partner"],
   ["/mentor", "Mentor"],
   ["/leaderboard", "Leader Board"],
