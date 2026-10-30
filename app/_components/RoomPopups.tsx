@@ -254,7 +254,18 @@ export function RoundResultCard({ round, won, bet, onClose }: { round: number; w
   );
 }
 
-export function PhotoConfirm({ file, onSend, onCancel }: { file: File; onSend: () => void; onCancel: () => void }) {
+export function PhotoConfirm({
+  file,
+  onSend,
+  onCancel,
+  onEdit,
+}: {
+  file: File;
+  onSend: () => void;
+  onCancel: () => void;
+  /** ✏️ opens the photo editor (crop, filters, draw, text). */
+  onEdit?: () => void;
+}) {
   const url = URL.createObjectURL(file);
   return (
     <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6" onClick={onCancel}>
@@ -263,7 +274,12 @@ export function PhotoConfirm({ file, onSend, onCancel }: { file: File; onSend: (
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt="" onLoad={() => URL.revokeObjectURL(url)} className="mx-auto mt-3 max-h-64 rounded-xl object-contain" />
         <p className="mt-2 text-center text-xs text-[#7A8599]">Everyone in this room will see it.</p>
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-4 flex items-center justify-end gap-2">
+          {onEdit && (
+            <button type="button" onClick={onEdit} className="mr-auto rounded-full bg-[#EEF3FB] px-4 py-2 text-sm font-bold text-[#1565D8]">
+              ✏️ Edit
+            </button>
+          )}
           <button type="button" onClick={onCancel} className="rounded-full px-4 py-2 text-sm font-bold text-[#5B6478]">
             Cancel
           </button>
