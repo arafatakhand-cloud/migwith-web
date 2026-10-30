@@ -41,21 +41,78 @@ export function SimpleDialog({ title, text, onClose, okLabel = "OK" }: { title: 
   );
 }
 
-/** ⚠️ "Chat Room — Unable to join chat room …" (miglife: like the reference app):
- * a big yellow warning sign, a bold title, grey text and one wide dark Ok button. */
-export function WarningDialog({ title, text, onClose }: { title: string; text: string; onClose: () => void }) {
+/** ⚠️ "Chat Room — Unable to join chat room …" (miglife picked design C, on a
+ * light card like the other popups): a glowing ring icon, the room's name in
+ * bold, and for a kick a bar with the minutes left. */
+const WARN_TONES = {
+  kick: { ring: "#FFB020", glow: "rgba(255,176,32,.5)", icon: "⚠️", btn: "linear-gradient(90deg,#FFC23D,#FF8A00)", btnInk: "#1B1300" },
+  ban: { ring: "#E53935", glow: "rgba(229,57,53,.45)", icon: "🚫", btn: "linear-gradient(90deg,#FF5A5F,#D32F2F)", btnInk: "#fff" },
+  bump: { ring: "#3B82F6", glow: "rgba(59,130,246,.45)", icon: "👋", btn: "linear-gradient(90deg,#3B82F6,#8B5CF6)", btnInk: "#fff" },
+} as const;
+
+export function WarningDialog({
+  tone,
+  roomName,
+  minutesLeft = 0,
+  totalMinutes = 30,
+  onClose,
+}: {
+  tone: keyof typeof WARN_TONES;
+  roomName: string;
+  /** kick: minutes until they may come back */
+  minutesLeft?: number;
+  totalMinutes?: number;
+  onClose: () => void;
+}) {
   useCloseKeys(onClose);
+  const t = WARN_TONES[tone];
+  const room = <b className="text-[#0F1C33]">{roomName}</b>;
   return (
-    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/45 px-6">
-      <div className="w-full max-w-[300px] rounded-[18px] bg-white px-5 pb-5 pt-6 text-center shadow-2xl">
-        <svg viewBox="0 0 64 58" className="mx-auto h-[62px] w-[68px]" aria-hidden>
-          <path d="M28.5 4.5a4 4 0 0 1 7 0l26 46a4 4 0 0 1-3.5 6H6a4 4 0 0 1-3.5-6z" fill="#F7C744" />
-          <rect x="29" y="17" width="6" height="22" rx="3" fill="#1F2430" />
-          <circle cx="32" cy="46" r="3.6" fill="#1F2430" />
-        </svg>
-        <p className="mt-3 text-[15px] font-extrabold text-[#14213D]">{title}</p>
-        <p className="mt-1.5 whitespace-pre-line text-[13px] leading-5 text-[#8A94A6]">{text}</p>
-        <button type="button" onClick={onClose} className="mt-5 h-10 w-full rounded-[8px] bg-[#132F4C] text-[14px] font-bold text-white">
+    <div className="fixed inset-0 z-[85] flex items-center justify-center bg-[#0B1F3A]/40 px-6 backdrop-blur-[3px]">
+      <div
+        className="w-full max-w-[300px] rounded-[24px] border-[1.5px] border-white/90 px-5 pb-5 pt-6 text-center shadow-[0_20px_50px_rgba(10,30,60,.35)]"
+        style={{ background: "linear-gradient(160deg,rgba(255,255,255,.96),rgba(255,255,255,.84))" }}
+      >
+        <div
+          className="mx-auto flex h-[70px] w-[70px] items-center justify-center rounded-full border-[3px] bg-white text-[32px]"
+          style={{ borderColor: t.ring, boxShadow: `0 0 22px ${t.glow}, inset 0 0 14px ${t.glow}` }}
+        >
+          {t.icon}
+        </div>
+        <p className="mt-3.5 text-[17px] font-black text-[#0F1C33]">Chat Room</p>
+        <p className="mt-1.5 text-[13px] leading-[19px] text-[#6B778C]">
+          {tone === "ban" ? (
+            <>Unable to join chat room. You were recently banned from {room}.</>
+          ) : tone === "bump" ? (
+            <>You were bumped from {room}. You can come back in right away.</>
+          ) : (
+            <>Unable to join chat room. You were recently kicked from {room}.</>
+          )}
+        </p>
+        {tone === "kick" && (
+          <>
+            <div className="mt-3.5 h-1.5 overflow-hidden rounded-full bg-[#EEF1F6]">
+              <div
+                className="h-full rounded-full"
+                style={{ width: `${Math.max(4, Math.min(100, (minutesLeft / totalMinutes) * 100))}%`, background: "linear-gradient(90deg,#FFC23D,#FF8A00)" }}
+              />
+            </div>
+            <p className="mt-1.5 text-[12px] font-extrabold text-[#B7791F]">
+              ⏱ {minutesLeft} min left
+            </p>
+          </>
+        )}
+        {tone === "ban" && (
+          <p className="mt-3 inline-flex rounded-full bg-[#FFE3E3] px-3 py-1 text-[12px] font-extrabold text-[#B3261E]">
+            🛡 Ask the room admin to unban you
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 h-11 w-full rounded-[12px] text-[14px] font-extrabold shadow-[0_8px_18px_rgba(10,30,60,.18)]"
+          style={{ background: t.btn, color: t.btnInk }}
+        >
           Ok
         </button>
       </div>
