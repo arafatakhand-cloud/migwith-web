@@ -11,8 +11,8 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
-import { db, storage } from "../../lib/firebase";
+import { uploadIcon } from "../../lib/iconUpload";
+import { db } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
@@ -271,9 +271,9 @@ function GiftEditor({
     setUploading(true);
     setUploadError("");
     try {
-      const r = storageRef(storage, `gift_images/${id}.jpg`);
-      await uploadBytes(r, file, { contentType: file.type || "image/jpeg" });
-      setImageUrl(await getDownloadURL(r));
+      // 512 × 512 PNG, right way up, fresh link (see lib/iconUpload)
+      setImageUrl(await uploadIcon(`gift_images/${id}.jpg`, file));
+      setPictureFailed(false);
     } catch (e: any) {
       setUploadError(e?.message || "Image upload failed.");
     } finally {

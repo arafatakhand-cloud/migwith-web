@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
-import { functions, storage } from "../../../lib/firebase";
+import { uploadIcon } from "../../../lib/iconUpload";
+import { functions } from "../../../lib/firebase";
 
 // Saved by the server (not straight into Firestore), so a rules hiccup can't block miglife.
 const ceoSetMediaPermission = httpsCallable<{ roleKey: string; picture: boolean; voice: boolean; video: boolean }, { ok: boolean }>(
@@ -91,9 +91,8 @@ export default function SharePermissionsPage() {
     setUploading(`${docId}/${key}`);
     setStatus("");
     try {
-      const r = storageRef(storage, `${docId}/${key}.jpg`);
-      await uploadBytes(r, file, { contentType: file.type || "image/jpeg" });
-      await ceoSetBadgeImage({ docId, key, url: await getDownloadURL(r) });
+      // 512 × 512 PNG, right way up, fresh link (see lib/iconUpload)
+      await ceoSetBadgeImage({ docId, key, url: await uploadIcon(`${docId}/${key}.jpg`, file) });
       await load();
     } catch (e: any) {
       setStatus(e?.message || "Badge image upload failed.");
