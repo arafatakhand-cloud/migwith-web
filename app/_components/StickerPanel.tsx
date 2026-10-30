@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { auth } from "../../lib/firebase";
+import { StickerImg } from "./StickerImg";
 import {
   readRecentStickers,
   rememberRecentSticker,
@@ -57,8 +58,7 @@ export function StickerPanel({ onPick, docked = false }: { onPick: (s: PickedSti
                 onClick={() => pick(s)}
                 className="flex aspect-square items-center justify-center rounded-xl p-1 active:scale-95 active:bg-[#EEF3FB]"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={s.url} alt="Sticker" loading="lazy" className="h-full w-full object-contain" />
+                <StickerImg url={s.url} className="h-full w-full object-contain" />
               </button>
             ))}
           </div>

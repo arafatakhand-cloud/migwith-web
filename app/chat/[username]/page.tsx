@@ -41,6 +41,7 @@ import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
 import { ZoomImageViewer } from "../../_components/ImageViewer";
+import { StickerImg } from "../../_components/StickerImg";
 import { MORE_REACTIONS, QUICK_REACTIONS } from "../../../lib/reactions";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
@@ -648,8 +649,7 @@ export default function PrivateChatPage() {
                     />
                   ) : m.type === "sticker" && m.imageUrl ? (
                     // 🎨 a sticker: big, no frame
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.imageUrl} alt="Sticker" loading="lazy" className="h-28 w-28 object-contain" />
+                    <StickerImg url={m.imageUrl} className="h-28 w-28 object-contain" />
                   ) : m.type === "voice" && m.audioUrl ? (
                     <div className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
                       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${mineRight ? "bg-white/20" : "bg-[#1F63C4]/10"}`}>

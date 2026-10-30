@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
@@ -9,7 +9,20 @@ import { db, functions } from "./firebase";
 // the packs someone owns (forever) in users/{uid}/sticker_packs/ — both are
 // written only by the server (getStickerPack / founderStickerPack).
 
-export type Sticker = { id: string; url: string };
+export type Sticker = { id: string; url: string; motion: StickerMotion };
+/** ✨ how a sticker moves ("" = still) — the page animates the PNG. */
+export type StickerMotion = "" | "BOUNCE" | "BEAT" | "SWAY" | "POP" | "FLOAT" | "SHAKE" | "WOBBLE";
+export const STICKER_MOTIONS: { key: StickerMotion; label: string }[] = [
+  { key: "", label: "Still" },
+  { key: "BOUNCE", label: "Bounce" },
+  { key: "BEAT", label: "Heartbeat" },
+  { key: "SWAY", label: "Wave" },
+  { key: "POP", label: "Pop" },
+  { key: "FLOAT", label: "Float" },
+  { key: "SHAKE", label: "Shake" },
+  { key: "WOBBLE", label: "Wobble" },
+];
+const asMotion = (v: unknown): StickerMotion => (STICKER_MOTIONS.some((m) => m.key === v) ? (v as StickerMotion) : "");
 export type StickerPack = {
   id: string;
   name: string;
@@ -30,7 +43,7 @@ const toPack = (id: string, d: Record<string, unknown>): StickerPack => ({
   active: d.active !== false,
   sortOrder: Number(d.sortOrder) || 0,
   stickers: (Array.isArray(d.stickers) ? d.stickers : [])
-    .map((s: any) => ({ id: String(s?.id || ""), url: String(s?.url || "") }))
+    .map((s: any) => ({ id: String(s?.id || ""), url: String(s?.url || ""), motion: asMotion(s?.motion) }))
     .filter((s) => s.url),
   cover: String(d.cover || ""),
 });
@@ -54,6 +67,33 @@ export function useStickerPacks(includeOff = false): StickerPack[] | null {
     [includeOff]
   );
   return packs;
+}
+
+// ✨ every sticker's motion by its picture link — one shared listener, so a
+// sticker moves the same everywhere (chat, panel, store), old messages too.
+let motionMap = new Map<string, StickerMotion>();
+const motionSubs = new Set<() => void>();
+let motionStop: (() => void) | null = null;
+function subscribeMotions(cb: () => void) {
+  motionSubs.add(cb);
+  if (!motionStop) {
+    motionStop = onSnapshot(
+      collection(db, "sticker_packs"),
+      (snap) => {
+        const next = new Map<string, StickerMotion>();
+        snap.docs.forEach((d) => toPack(d.id, d.data()).stickers.forEach((s) => s.motion && next.set(s.url, s.motion)));
+        motionMap = next;
+        motionSubs.forEach((f) => f());
+      },
+      () => {}
+    );
+  }
+  return () => {
+    motionSubs.delete(cb);
+  };
+}
+export function useStickerMotion(url: string): StickerMotion {
+  return useSyncExternalStore(subscribeMotions, () => motionMap.get(url) || "", () => "");
 }
 
 /** The ids of the packs this person owns. */
