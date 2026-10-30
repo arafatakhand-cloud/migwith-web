@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // ✏️ Photo editor (miglife: "edit the picture before sharing it in a room"):
 // ✂️ crop (free / original / 1:1 / 4:5 / 16:9), ⟳ turn, ⇋ mirror, 🎨 filters,
@@ -143,7 +144,16 @@ export function PhotoEditor({
     | { kind: "crop"; handle: "move" | "tl" | "tr" | "bl" | "br"; start: Pt; rect: Rect }
     | null
   >(null);
+  const textInput = useRef<HTMLTextAreaElement>(null);
   const textBoxes = useRef<{ id: number; x: number; y: number; w: number; h: number }[]>([]);
+
+  // the text box gets the keyboard as soon as it opens
+  const editingId = editing?.id;
+  useEffect(() => {
+    if (editingId === undefined) return;
+    const t = setTimeout(() => textInput.current?.focus(), 30);
+    return () => clearTimeout(t);
+  }, [editingId]);
 
   useEffect(() => {
     let alive = true;
@@ -387,6 +397,8 @@ export function PhotoEditor({
         return;
       }
       if (tool === "text") {
+        // keep the tap from taking the focus away from the new text box
+        e.preventDefault();
         const tp = toPhoto(p);
         setEditing({ id: nextId.current++, text: "", color, x: tp.x, y: tp.y, size: 0.07, bg: false });
       }
@@ -544,8 +556,9 @@ export function PhotoEditor({
     </label>
   );
 
-  return (
-    <div className="fixed inset-0 z-[120] flex flex-col bg-[#0B0F1A] text-white">
+  // on <body>, above the room's top bar (the room page is its own layer)
+  return createPortal(
+    <div className="fixed inset-0 z-[400] flex flex-col bg-[#0B0F1A] text-white">
       {/* top bar */}
       <div className="flex shrink-0 items-center gap-2 px-3 pb-2 pt-[calc(env(safe-area-inset-top)+10px)]">
         <button type="button" onClick={onCancel} aria-label="Cancel" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[18px]">
@@ -584,6 +597,7 @@ export function PhotoEditor({
         {editing && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-black/55 px-5" onClick={finishText}>
             <textarea
+              ref={textInput}
               autoFocus
               value={editing.text}
               onClick={(e) => e.stopPropagation()}
@@ -717,6 +731,7 @@ export function PhotoEditor({
           {saving ? "…" : `${sendLabel} ➤`}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
