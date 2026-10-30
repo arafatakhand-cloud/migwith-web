@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useRequireLogin } from "../../../lib/useRequireLogin";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { PageShell } from "../../_components/PageShell";
@@ -25,6 +26,7 @@ const toBase64 = (b: Blob) =>
 export default function StickerAdminPage() {
   useRequireLogin();
   const { username } = useCurrentUser();
+  const router = useRouter();
   const packs = useStickerPacks(true);
   const [edit, setEdit] = useState<Partial<StickerPack> | null>(null);
   const [busy, setBusy] = useState("");
@@ -65,7 +67,14 @@ export default function StickerAdminPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
-        <PageTitle title="Manage Stickers" subtitle="Packs, prices and pictures" icon="⚙️" backHref="/stickers" />
+        <PageTitle
+          title="Manage Stickers"
+          subtitle="Packs, prices and pictures"
+          icon="⚙️"
+          // ← goes BACK to the store (not a new visit to it): pushing /stickers
+          // here made the store's own ← return to this page, round and round.
+          onBack={() => (window.history.length > 1 ? router.back() : router.push("/stickers"))}
+        />
         {msg && <p className="mt-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
         <div className="mt-3 flex gap-2">
           <button
