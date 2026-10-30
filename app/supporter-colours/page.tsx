@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
-import { db, functions, storage } from "../../lib/firebase";
+import { uploadIcon } from "../../lib/iconUpload";
+import { db, functions } from "../../lib/firebase";
 import { useSupporterImages } from "../../lib/supporterImages";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
@@ -75,10 +75,8 @@ export default function SupporterColoursPage() {
       let url = "";
       if (file) {
         if (!file.type.startsWith("image/")) throw new Error("Pick a picture (JPG / PNG).");
-        if (file.size >= 5 * 1024 * 1024) throw new Error("The picture must be under 5 MB.");
-        const r = storageRef(storage, `supporter_badges/${team.id}.jpg`);
-        await uploadBytes(r, file, { contentType: file.type });
-        url = await getDownloadURL(r);
+        // 512 × 512 PNG, right way up, fresh link (see lib/iconUpload)
+        url = await uploadIcon(`supporter_badges/${team.id}.jpg`, file);
       }
       await setPriceCall({ team: team.id, image: url });
       setMessage(file ? `📷 ${team.name}: picture saved` : `✅ ${team.name}: back to the crest`);
