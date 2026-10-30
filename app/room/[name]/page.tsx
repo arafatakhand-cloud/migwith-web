@@ -1366,6 +1366,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   // Game rooms read as a plain running log: every line on the left.
   const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM, LIAR_DICE_ROOM].includes(roomName);
+  // ✨ Only entries made AFTER I came in (and not older than a minute) can play an
+  // effect. Before, when the chat loaded late (it can only be read once my spot is
+  // written), the "has entered" lines of people who came in before me looked new
+  // and their effects played again for me.
+  const entryFxLines = useMemo(
+    () => messages.filter((m) => sinceMs !== null && m.createdAtMs > sinceMs && serverNow() - m.createdAtMs < 60_000),
+    [messages, sinceMs]
+  );
+
   // Game rooms get no Entry Effects (like the app's isEntryFxGameRoom).
   // (a room with a game bot on DOES get entry effects now — except while that
   // bot's game is running, like the app)
@@ -2359,7 +2368,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 game rooms, their extra "#2" tables, or any room with a game bot on). */}
             {!entryFxGameRoom && (
               <EntryEffectHost
-                messages={messages}
+                messages={entryFxLines}
                 roomKey={roomName}
                 myName={profile?.username || ""}
                 blocked={
