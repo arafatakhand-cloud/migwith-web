@@ -2994,17 +2994,32 @@ function CricketBadge({ token }: { token: string }) {
   );
 }
 
-// "@name" mentions in link blue, bold.
+// "@name" mentions in link blue, bold — a tap opens that person's profile (miglife).
 function withMentions(text: string, keyPrefix = "m"): ReactNode[] {
   const out: ReactNode[] = [];
   let last = 0;
   for (const match of text.matchAll(/@[A-Za-z0-9_.-]+/g)) {
     const i = match.index ?? 0;
     if (i > last) out.push(text.slice(last, i));
+    // "@muri." at the end of a sentence: the dot is not part of the name
+    const name = match[0].slice(1).replace(/[.-]+$/, "");
     out.push(
-      <span key={`${keyPrefix}${i}`} className="font-bold" style={{ color: LINK_BLUE }}>
-        {match[0]}
-      </span>
+      name ? (
+        <Link
+          key={`${keyPrefix}${i}`}
+          href={`/profile/${encodeURIComponent(name)}`}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="font-bold hover:underline"
+          style={{ color: LINK_BLUE }}
+        >
+          {match[0]}
+        </Link>
+      ) : (
+        <span key={`${keyPrefix}${i}`} className="font-bold" style={{ color: LINK_BLUE }}>
+          {match[0]}
+        </span>
+      )
     );
     last = i + match[0].length;
   }
