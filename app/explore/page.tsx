@@ -23,6 +23,7 @@ const ITEMS: Item[] = [
   { icon: "👑", title: "VIP Subscription", subtitle: "Rainbow name · picture & voice share", color: "#B04BD6", tint: "#FFF1C9", href: "/special-colour", tab: "shop" },
   { icon: "🎨", title: "Style Studio", subtitle: "Premium username colors", color: "#12AFC7", tint: "#FFE9DE", href: "/style-studio", tab: "shop" },
   { icon: "⚽", title: "Supporters Badge", subtitle: "Your football team's badge", color: "#1B9E4B", tint: "#E3F7F0", href: "/supporter-colours", tab: "shop" },
+  { icon: "🎨", title: "Sticker Store", subtitle: "Free and paid sticker packs", color: "#7C3AED", tint: "#F1E8FB", href: "/stickers", tab: "shop" },
   { icon: "✨", title: "Entry Effects", subtitle: "Everyone sees it when you enter a room · 30 days", color: "#FF6F00", tint: "#F3E8FF", href: "/entry-effects", tab: "shop" },
   { icon: "🎵", title: "Profile Songs", subtitle: "A tune plays on your profile · 30 days", color: "#8B4DFF", tint: "#EDE6FF", href: "/profile-songs", tab: "shop" },
   { icon: "🏪", title: "miGlife Partner", subtitle: "Become or manage a Merchant", color: "#7B3FC7", tint: "#E6F0FC", href: "/merchant", tab: "community" },

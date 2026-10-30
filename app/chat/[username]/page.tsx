@@ -28,6 +28,7 @@ import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
 import { withEmotes } from "../../_components/Emote";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
+import type { PickedSticker } from "../../../lib/stickers";
 import { GiftPanel, loadGiftCatalog, type Gift } from "../../_components/GiftPanel";
 import { previousPath } from "../../../lib/navHistory";
 import { BackButton } from "../../_components/BackButton";
@@ -303,6 +304,17 @@ export default function PrivateChatPage() {
     stickToBottom.current = true;
     addDoc(collection(db, "private_messages"), { ...base(), text: finalText.slice(0, 2000) }).catch((err) =>
       setError(err?.message || "Could not send message.")
+    );
+  };
+
+  // 🎨 Sticker: from a pack I own (the rules check it), sent at once.
+  const sendSticker = (st: PickedSticker) => {
+    if (!user || !username || self) return;
+    if (lockedOut) return setError(lockedChatText(friend));
+    setError("");
+    stickToBottom.current = true;
+    addDoc(collection(db, "private_messages"), { ...base(), text: "🎨 Sticker", messageType: "sticker", imageUrl: st.url, stickerPack: st.packId }).catch(
+      (err) => setError(err?.message || "Sticker could not be sent.")
     );
   };
 
@@ -634,6 +646,10 @@ export default function PrivateChatPage() {
                       }}
                       className="max-h-64 max-w-full rounded-xl"
                     />
+                  ) : m.type === "sticker" && m.imageUrl ? (
+                    // 🎨 a sticker: big, no frame
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.imageUrl} alt="Sticker" loading="lazy" className="h-28 w-28 object-contain" />
                   ) : m.type === "voice" && m.audioUrl ? (
                     <div className="flex items-center gap-2 py-0.5" onClick={(e) => e.stopPropagation()}>
                       <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-base ${mineRight ? "bg-white/20" : "bg-[#1F63C4]/10"}`}>
@@ -803,7 +819,7 @@ export default function PrivateChatPage() {
                   className="my-[5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[13px] placeholder:text-[#8A9BB5]"
                 />
                 <span className="flex h-[32px] shrink-0 items-center">
-                  <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} />
+                  <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} onSticker={sendSticker} />
                 </span>
               </div>
             </div>

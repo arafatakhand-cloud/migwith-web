@@ -81,6 +81,7 @@ export function ChatBar({
   voiceActive,
   extra,
   reply,
+  onSticker,
 }: {
   text: string;
   setText: (v: string) => void;
@@ -103,6 +104,8 @@ export function ChatBar({
   extra?: React.ReactNode;
   /** Replying to someone (swipe right on their message): shown above the bar. */
   reply?: { sender: string; snippet: string; color?: string; onCancel: () => void } | null;
+  /** 🎨 send a sticker (the emoji panel gets a Stickers tab) */
+  onSticker?: (s: import("../../lib/stickers").PickedSticker) => void;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const classic = useIsClassic();
@@ -254,6 +257,7 @@ export function ChatBar({
                   disabled={disabled}
                   inline
                   dockTo={emoteSlot}
+                  onSticker={onSticker}
                 />
               </span>
             </div>
