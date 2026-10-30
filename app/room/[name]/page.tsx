@@ -1954,14 +1954,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     return (
       <PageShell light>
         <WarningDialog
-          title="Chat Room"
-          text={
-            banned
-              ? "Unable to join chat room. You were recently banned from this chat room."
-              : bumped
-                ? "You were bumped from this chat room. You can come back in right away."
-                : `Unable to join chat room. You were recently kicked from this chat room. You can come back in ${kickMinutesLeft} minute${kickMinutesLeft === 1 ? "" : "s"}.`
-          }
+          tone={banned ? "ban" : bumped ? "bump" : "kick"}
+          roomName={roomName}
+          minutesLeft={kickMinutesLeft}
+          totalMinutes={KICK_MINUTES}
           onClose={() => router.push("/rooms")}
         />
       </PageShell>
