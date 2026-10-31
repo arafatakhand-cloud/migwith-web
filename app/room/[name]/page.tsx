@@ -107,6 +107,7 @@ import {
   useNumGuess,
 } from "../../_components/GuessRace";
 import { LIAR_DICE_ROOM, LiarDicePanel, liarDiceHandleCommand, useLiarDice } from "../../_components/LiarDice";
+import { ROYAL_TREASURE_ROOM, RoyalTreasurePanel, royalTreasureHandleCommand, useRoyalTreasure } from "../../_components/RoyalTreasure";
 import { LOWCARD_ROOM, LowCardBox, lowCardHandleCommand, useLowCard } from "../../_components/LowCard";
 import { LUDO_FREE_ROOM, LUDO_ROOM, LudoTable, ludoHandleCommand, useLudo } from "../../_components/Ludo";
 import { NotInRoomPage } from "../../_components/NotInRoomPage";
@@ -568,6 +569,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const horseRace = useHorseRace(roomName, user?.uid, note);
   // 🎲 Liar's Dice (null in every other room)
   const liarDice = useLiarDice(roomName, user?.uid, note);
+  const royalTreasure = useRoyalTreasure(roomName, user?.uid, note);
   // 🎲 Ludo (only in the Ludo room).
   const ludo = useLudo(roomName === LUDO_ROOM || roomName === LUDO_FREE_ROOM ? roomName : null, user?.uid, note);
 
@@ -1369,7 +1371,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const fontPx = chatPx(useChatTextSize());
 
   // Game rooms read as a plain running log: every line on the left.
-  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM, LIAR_DICE_ROOM].includes(roomName);
+  const gameRoom = [LUXURY_ROOM, LUXURY_BET_ROOM, LOWCARD_ROOM, TEEN_PATTI_ROOM, LUDO_ROOM, LUDO_FREE_ROOM, CRICKET_ROOM, ROYALE_ROOM, TN_ROOM, TN_FREE_ROOM, TRIVIA_ROOM, NUMBER_GUESS_ROOM, HORSE_RACE_ROOM, LIAR_DICE_ROOM, ROYAL_TREASURE_ROOM].includes(roomName);
   // ✨ Only entries made AFTER I came in (and not older than a minute) can play an
   // effect. Before, when the chat loaded late (it can only be read once my spot is
   // written), the "has entered" lines of people who came in before me looked new
@@ -1817,6 +1819,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return;
     }
     if (horseRace && horseHandleCommand(horseRace, clean, note)) {
+      setText("");
+      return;
+    }
+    if (royalTreasure && royalTreasureHandleCommand(royalTreasure, clean, note)) {
       setText("");
       return;
     }
@@ -2488,6 +2494,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             {liarDice && (
               <div>
                 <LiarDicePanel state={liarDice} />
+              </div>
+            )}
+            {royalTreasure && (
+              <div>
+                <RoyalTreasurePanel state={royalTreasure} />
               </div>
             )}
 
