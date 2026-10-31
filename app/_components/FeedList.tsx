@@ -1,15 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
 import { useSenderColors } from "../../lib/senderColors";
-import { PageShell } from "../_components/PageShell";
-import { PageTitle } from "../_components/LightCards";
+import { PageTitle } from "./LightCards";
 import {
   BLOG_CATEGORIES,
   blogAgo,
@@ -18,9 +16,9 @@ import {
   blogShort,
   toBlogPost,
   type BlogPost,
-} from "../../lib/blog";
+} from "../../lib/feed";
 
-// 📝 Blog list: 🔥 Popular · 🆕 New · 👥 Friends · ✍️ Mine (or one writer's
+// 📰 Feed list: 🔥 Popular · 🆕 New · 👥 Friends · ✍️ Mine (or one writer's
 // posts with ?author=name, from their profile). Anyone can read; writing needs
 // a login. Read once per tab (no live listener), pull the tab again to refresh.
 
@@ -32,17 +30,7 @@ const TABS: [Tab, string][] = [
   ["mine", "✍️ Mine"],
 ];
 
-export default function BlogPage() {
-  return (
-    <Suspense>
-      <BlogList />
-    </Suspense>
-  );
-}
-
-function BlogList() {
-  const params = useSearchParams();
-  const author = (params.get("author") || "").trim();
+export function FeedList({ author = "", embedded = false }: { author?: string; embedded?: boolean }) {
   const { user, username } = useCurrentUser();
   const friends = useFriends(username);
   const [tab, setTab] = useState<Tab>("popular");
@@ -76,7 +64,7 @@ function BlogList() {
     };
     load()
       .then((p) => alive && setPosts(p))
-      .catch(() => alive && (setError("Couldn't load the blog. Please try again."), setPosts([])));
+      .catch(() => alive && (setError("Couldn't load the Feed. Please try again."), setPosts([])));
     return () => {
       alive = false;
     };
@@ -86,14 +74,24 @@ function BlogList() {
   const colorOf = useSenderColors(useMemo(() => Array.from(new Set((posts || []).map((p) => p.author))), [posts]));
 
   return (
-    <PageShell light>
+    <>
       <section className="mx-auto max-w-2xl px-3 pb-28 sm:px-6">
+        {embedded ? (
+          <div className="flex items-center gap-2 px-1 pb-1 pt-3">
+            <span className="text-2xl">📰</span>
+            <div>
+              <h1 className="text-[20px] font-extrabold leading-tight text-[#0F1D3A]">Feed</h1>
+              <p className="text-[12px] text-[#5A6F93]">Stories, tips and news from miGlife people</p>
+            </div>
+          </div>
+        ) : (
         <PageTitle
-          title={author ? `${author}'s Blog` : "Blog"}
+          title={author ? `${author}'s Feed` : "Feed"}
           subtitle={author ? "Every post by this writer" : "Stories, tips and news from miGlife people"}
-          icon="📝"
+          icon="📰"
           backHref={author ? `/profile/${encodeURIComponent(author)}` : undefined}
         />
+        )}
 
         {!author && (
           <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 pt-1">
@@ -136,7 +134,7 @@ function BlogList() {
           </div>
         ) : shown.length === 0 ? (
           <div className="mt-10 text-center text-[#5A6F93]">
-            <div className="text-4xl">📝</div>
+            <div className="text-4xl">📰</div>
             <p className="mt-2 font-semibold">
               {tab === "mine" && !author
                 ? user
@@ -160,12 +158,12 @@ function BlogList() {
       </section>
 
       <Link
-        href={user ? "/blog/write" : "/login"}
+        href={user ? "/feed/write" : "/login"}
         className="fixed bottom-6 right-5 z-30 flex h-[50px] items-center gap-2 rounded-full bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] px-5 font-bold text-white shadow-[0_10px_22px_-8px_rgba(29,78,216,.8)] transition active:scale-95"
       >
         ✍️ Write
       </Link>
-    </PageShell>
+    </>
   );
 }
 
@@ -173,7 +171,7 @@ function BlogCard({ p, color }: { p: BlogPost; color: string }) {
   const pic = p.cover || p.firstImage;
   return (
     <Link
-      href={`/blog/${p.id}`}
+      href={`/feed/${p.id}`}
       className="block overflow-hidden rounded-2xl bg-white/90 shadow-[0_4px_14px_-6px_rgba(30,60,120,.3)] transition active:scale-[.99]"
     >
       <div

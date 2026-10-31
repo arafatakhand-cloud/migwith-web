@@ -69,7 +69,7 @@ function ReportDialog({ target, onClose }: { target: ReportTarget; onClose: () =
       : target.kind === "room"
         ? `room ${target.roomId}`
         : target.kind === "blog_post"
-          ? `${target.targetUsername}'s blog post`
+          ? `${target.targetUsername}'s Feed post`
           : `${target.targetUsername}'s message`;
   const preview = target.kind === "room_message" || target.kind === "private_message" || target.kind === "blog_post" ? target.preview : "";
 

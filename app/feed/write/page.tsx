@@ -8,9 +8,9 @@ import { useRequireLogin } from "../../../lib/useRequireLogin";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { uploadChatImage } from "../../../lib/imageUpload";
 import { PageShell } from "../../_components/PageShell";
-import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/blog";
+import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 
-// ✍️ Write (or ?edit=<id>: edit) a blog post: cover photo (optional), title,
+// ✍️ Write (or ?edit=<id>: edit) a Feed post: cover photo (optional), title,
 // the writing with **bold**, photos, emoji and @mentions, a category → Publish.
 // 5 posts a day (the server counts).
 
@@ -44,7 +44,7 @@ function BlogWrite() {
   useEffect(() => {
     if (!editId || !user) return;
     getDoc(doc(db, "blog_posts", editId)).then((s) => {
-      if (!s.exists() || s.get("authorUid") !== user.uid) return router.replace("/blog");
+      if (!s.exists() || s.get("authorUid") !== user.uid) return router.replace("/feed");
       setTitle(String(s.get("title") || ""));
       setBody(String(s.get("body") || ""));
       setCover(String(s.get("cover") || ""));
@@ -72,7 +72,7 @@ function BlogWrite() {
     setError("");
     setBusy(kind === "cover" ? "Uploading cover…" : "Uploading photo…");
     try {
-      const url = await uploadChatImage(`room_images/blog_${user.uid}`, file);
+      const url = await uploadChatImage(`room_images/feed_${user.uid}`, file);
       if (kind === "cover") setCover(url);
       else insert(`\n![](${url})\n`);
     } catch (e) {
@@ -91,10 +91,10 @@ function BlogWrite() {
       const data = { title: title.trim(), body: body.trim(), cover, category };
       if (editId) {
         await blogCall("edit", { postId: editId, ...data });
-        router.replace(`/blog/${editId}`);
+        router.replace(`/feed/${editId}`);
       } else {
         const r = await blogCall("create", data);
-        router.replace(`/blog/${String(r.postId || "")}`);
+        router.replace(`/feed/${String(r.postId || "")}`);
       }
     } catch (e) {
       setError(blogError(e));
@@ -109,7 +109,7 @@ function BlogWrite() {
         <div className="mb-3 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => (window.history.length > 1 ? router.back() : router.push("/blog"))}
+            onClick={() => (window.history.length > 1 ? router.back() : router.push("/feed"))}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/70 text-lg text-[#0F1D3A]"
             aria-label="Close"
           >

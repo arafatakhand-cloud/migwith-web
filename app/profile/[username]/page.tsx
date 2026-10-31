@@ -1043,14 +1043,14 @@ export default function ProfilePage() {
           {error && <p className="text-center text-sm text-rose-600">{error}</p>}
         </div>
 
-        {/* 📝 this person's blog posts */}
+        {/* 📰 this person's Feed posts */}
         <Link
-          href={`/blog?author=${encodeURIComponent(username)}`}
+          href={`/feed?author=${encodeURIComponent(username)}`}
           className="mt-2 flex items-center gap-3 bg-white px-3.5 py-[11px] text-[15px] font-semibold text-[#0B2A5B]"
         >
           <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FC] text-lg">📝</span>
           <span data-notranslate className="min-w-0 flex-1 truncate">
-            {isOwn ? "My Blog" : `${username}'s Blog`} <span className="text-[#6B7FA6]">({blogCount})</span>
+            {isOwn ? "My Feed" : `${username}'s Feed`} <span className="text-[#6B7FA6]">({blogCount})</span>
           </span>
           <span className="text-xl text-[#A9B4C2]">›</span>
         </Link>

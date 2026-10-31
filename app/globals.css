@@ -1457,3 +1457,32 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 .rt-mybet { background: linear-gradient(#FFF1B8, #F3C14B); animation: rt-banner 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
 .rt-confetti { background-image: radial-gradient(circle, #FFD25A 0 3px, transparent 4px), radial-gradient(circle, #8FF0FF 0 3px, transparent 4px), radial-gradient(circle, #FF6FB1 0 3px, transparent 4px), radial-gradient(circle, #7CFF8A 0 3px, transparent 4px); background-size: 47px 61px, 59px 43px, 71px 53px, 53px 67px; background-position: 0 0, 20px 10px, 35px 30px, 10px 40px; animation: rt-fall 1.4s linear infinite; }
 @keyframes rt-fall { from { background-position: 0 -120px, 20px -90px, 35px -150px, 10px -60px; } to { background-position: 0 600px, 20px 640px, 35px 580px, 10px 660px; } }
+
+/* 📰 Lobby ⇄ Feed: the page turns over like a card (Dashboard.tsx) */
+.feed-flip {
+  transform-origin: 50% 40%;
+}
+.feed-flip-out {
+  animation: feedFlipOut 0.34s cubic-bezier(0.55, 0, 0.9, 0.45) forwards;
+}
+.feed-flip-in {
+  animation: feedFlipIn 0.36s cubic-bezier(0.1, 0.55, 0.45, 1) both;
+}
+@keyframes feedFlipOut {
+  to {
+    transform: perspective(1400px) rotateY(90deg) scale(0.94);
+    opacity: 0.6;
+  }
+}
+@keyframes feedFlipIn {
+  from {
+    transform: perspective(1400px) rotateY(-90deg) scale(0.94);
+    opacity: 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-flip-out,
+  .feed-flip-in {
+    animation-duration: 0.01s;
+  }
+}

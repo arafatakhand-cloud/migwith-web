@@ -20,9 +20,9 @@ import {
   toBlogPost,
   type BlogComment,
   type BlogPost,
-} from "../../../lib/blog";
+} from "../../../lib/feed";
 
-// 📝 One blog post: cover, title, the writing (with its photos), ❤️ like,
+// 📰 One Feed post: cover, title, the writing (with its photos), ❤️ like,
 // 💬 comments, ↗ share, 🚩 report. The writer can edit / delete; the miGlife
 // team can delete any post or comment.
 
@@ -116,9 +116,9 @@ export default function BlogPostPage() {
   };
   const share = async () => {
     if (!post) return;
-    const url = `${window.location.origin}/blog/${post.id}`;
+    const url = `${window.location.origin}/feed/${post.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: post.title, text: `📝 ${post.title} — by ${post.author} on miGlife`, url });
+      if (navigator.share) await navigator.share({ title: post.title, text: `📰 ${post.title} — by ${post.author} on miGlife`, url });
       else {
         await navigator.clipboard.writeText(url);
         setToast("Link copied ✓");
@@ -131,7 +131,7 @@ export default function BlogPostPage() {
     if (!post || !confirm(mine ? "Delete this post?" : `Delete ${post.author}'s post?`)) return;
     try {
       await blogCall("delete", { postId: post.id });
-      router.replace("/blog");
+      router.replace("/feed");
     } catch (e) {
       setToast(blogError(e));
     }
@@ -161,8 +161,8 @@ export default function BlogPostPage() {
         <div className="mx-auto max-w-2xl px-3 pt-16 text-center text-[#5A6F93]">
           <div className="text-4xl">📝</div>
           <p className="mt-2 font-semibold">This post is gone.</p>
-          <Link href="/blog" className="mt-4 inline-block rounded-xl bg-[#2563EB] px-4 py-2 font-bold text-white">
-            Back to Blog
+          <Link href="/feed" className="mt-4 inline-block rounded-xl bg-[#2563EB] px-4 py-2 font-bold text-white">
+            Back to Feed
           </Link>
         </div>
       </PageShell>
@@ -177,7 +177,7 @@ export default function BlogPostPage() {
           <div className="bg-cover bg-center sm:mt-3 sm:rounded-2xl" style={{ backgroundImage: pic ? `url("${pic}")` : blogCoverFallback(post.id), height: pic ? 220 : 110 }} />
           <button
             type="button"
-            onClick={() => (window.history.length > 1 ? router.back() : router.push("/blog"))}
+            onClick={() => (window.history.length > 1 ? router.back() : router.push("/feed"))}
             className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/35 text-xl text-white backdrop-blur"
             aria-label="Back"
           >
@@ -194,7 +194,7 @@ export default function BlogPostPage() {
           {menu && (
             <div className="absolute right-3 top-14 z-20 w-44 overflow-hidden rounded-xl bg-white text-[14px] font-semibold text-[#0F1D3A] shadow-xl" onClick={() => setMenu(false)}>
               {mine && (
-                <Link href={`/blog/write?edit=${post.id}`} className="block px-4 py-2.5 hover:bg-[#F1F5FB]">
+                <Link href={`/feed/write?edit=${post.id}`} className="block px-4 py-2.5 hover:bg-[#F1F5FB]">
                   ✏️ Edit
                 </Link>
               )}

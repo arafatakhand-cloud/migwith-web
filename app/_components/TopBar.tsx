@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { toggleFeedFlip, useFeedFlip } from "../../lib/feedFlip";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,7 +35,7 @@ import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "
 // Page name shown in the pill, by path.
 const PAGE_NAMES: [string, string][] = [
   ["/explore", "Discover"],
-  ["/blog", "Blog"],
+  ["/feed", "Feed"],
   ["/members", "Community"],
   ["/gifts", "Gift Gallery"],
   ["/gift-contest", "Gift Contest"],
@@ -55,6 +56,27 @@ const PAGE_NAMES: [string, string][] = [
   ["/profile/edit", "Edit Profile"],
   ["/profile", "Profile"],
 ];
+
+// 📰 Lobby ⇄ Feed: tap to turn the Lobby over to the Feed, tap again to turn it back.
+function FeedFlipButton({ classic }: { classic: boolean }) {
+  const on = useFeedFlip();
+  return (
+    <button
+      type="button"
+      onClick={toggleFeedFlip}
+      aria-pressed={on}
+      className={`ml-1.5 flex h-[34px] shrink-0 items-center gap-1 rounded-full px-3 text-[13.5px] font-bold transition active:scale-95 ${
+        on
+          ? classic
+            ? "bg-white text-[#E06C00] shadow-[0_2px_6px_rgba(0,0,0,.18)]"
+            : "bg-white text-[#1565D8] shadow-[0_2px_6px_rgba(0,0,0,.18)]"
+          : "border border-white/40 bg-white/20 text-white"
+      }`}
+    >
+      📰 Feed{on ? " ✕" : ""}
+    </button>
+  );
+}
 
 export function TopBar() {
   const pathname = usePathname() || "/";
@@ -474,7 +496,8 @@ export function TopBar() {
           >
             <span className={hasUnread ? "pill-alert-blink" : undefined}>☰</span>
           </button>
-          <PillTabStrip items={pillTabs("Rooms")} colors={colors} className="flex-1" />
+          <PillTabStrip items={pillTabs("Rooms")} colors={colors} className="min-w-0 flex-1" />
+          {onHome && uid && <FeedFlipButton classic />}
         </div>
         {menu}
       </>
@@ -507,7 +530,8 @@ export function TopBar() {
         >
           <PillGlyphIcon glyph="menu" selected={false} tile="#FFFFFF" />
         </button>
-        <PillTabStrip items={pillTabs("Chat Rooms")} colors={colors} className="flex-1" />
+        <PillTabStrip items={pillTabs("Chat Rooms")} colors={colors} className="min-w-0 flex-1" />
+        {onHome && uid && <FeedFlipButton classic={false} />}
         {/* No 🔔 / বাংলা here, like the app (alerts: the ☰ glows; language: Settings). */}
       </div>
 

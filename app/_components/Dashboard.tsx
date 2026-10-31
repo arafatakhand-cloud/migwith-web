@@ -1,6 +1,8 @@
 "use client";
 
 import { openPresencePopup } from "./PresencePopup";
+import { setFeedFlip, useFeedFlip } from "../../lib/feedFlip";
+import { FeedList } from "./FeedList";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
@@ -71,7 +73,36 @@ function Avatar({ name, photo, size = "h-11 w-11" }: { name: string; photo: stri
 let lastMe: { uid: string; me: Me } | null = null;
 let lastInfo: { uid: string; info: Record<string, Friend> } | null = null;
 
+// 📰 Lobby ⇄ Feed: the 📰 Feed button (top bar) turns the Lobby over like a
+// card — the Feed is on its back; tap again and it turns back. Leaving the
+// Lobby turns it back too.
 export function Dashboard() {
+  const want = useFeedFlip();
+  const [shown, setShown] = useState(want);
+  const [phase, setPhase] = useState<"" | "out" | "in">("");
+  useEffect(() => () => setFeedFlip(false), []);
+  useEffect(() => {
+    if (want === shown) return;
+    setPhase("out");
+    const t1 = window.setTimeout(() => {
+      setShown(want);
+      window.scrollTo(0, 0);
+      setPhase("in");
+    }, 340);
+    const t2 = window.setTimeout(() => setPhase(""), 700);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [want, shown]);
+  return (
+    <div className={`feed-flip ${phase === "out" ? "feed-flip-out" : phase === "in" ? "feed-flip-in" : ""}`}>
+      {shown ? <FeedList embedded /> : <LobbyContent />}
+    </div>
+  );
+}
+
+function LobbyContent() {
   const { user, username, badges } = useSession();
   const [me, setMeState] = useState<Me | null>(() => (lastMe && lastMe.uid === user?.uid ? lastMe.me : null));
   const setMe = (m: Me) => {

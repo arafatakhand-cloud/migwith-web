@@ -13,7 +13,7 @@ type Item = { icon: string; title: string; subtitle: string; color: string; tint
 const LIVE = new Set(["Luxury Festival", "Gift Contest", "Lucky User"]);
 type Tab = "events" | "shop" | "community";
 const ITEMS: Item[] = [
-  { icon: "📝", title: "Blog", subtitle: "Read and write stories", color: "#2563EB", tint: "#E6F0FC", href: "/blog", tab: "community" },
+  { icon: "📰", title: "Feed", subtitle: "Read and share stories", color: "#2563EB", tint: "#E6F0FC", href: "/feed", tab: "community" },
   { icon: "📢", title: "Announcements", subtitle: "miGlife news & updates", color: "#3984D9", tint: "#FFF3D6", href: "/announcements", tab: "community" },
   { icon: "🎁", title: "Gift Gallery", subtitle: "Send gifts to your friends", color: "#E5484D", tint: "#FFE6F2", href: "/gifts", tab: "shop" },
   { icon: "👥", title: "Community", subtitle: "Staff, Mentors & Merchants", color: "#7B3FC7", tint: "#EDE6FF", href: "/members", tab: "community" },
