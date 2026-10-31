@@ -1399,6 +1399,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         ...presence.map((p) => p.username),
       ],
       [shown, presence]
+    ),
+    // looked up again soon: the last people who talked, and a new 🍀 Lucky User
+    useMemo(
+      () =>
+        shown.slice(-6).map((m) => {
+          // "!name" = look up now, whatever the time (the pink starts at once)
+          if (m.text.startsWith("🍀 Lucky Bot:")) return `!${/Congratulations (.+?)! You are/i.exec(m.text)?.[1]?.trim() || ""}`;
+          return (m.sender ? m.sender : m.text.slice(0, Math.max(0, m.text.indexOf(":")))).trim();
+        }),
+      [shown]
     )
   );
 
