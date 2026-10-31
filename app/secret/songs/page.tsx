@@ -17,21 +17,44 @@ const editBuiltIn = httpsCallable<{ kind: "song"; id: string; name: string; pric
 const MAX_SECONDS = 300;
 const MAX_BYTES = 7 * 1024 * 1024;
 
+// The song's length. Some phones never finish reading it (the page used to wait
+// for ever and nothing happened), and some files report "Infinity" — then it is
+// worked out from the file size (a 128 kbps MP3 is ~16 KB a second).
+// -1 = the phone can't play this file at all.
 function audioSeconds(file: File): Promise<number> {
+  const guess = () => Math.max(1, Math.round(file.size / 16_000));
   return new Promise((resolve) => {
     const url = URL.createObjectURL(file);
     const a = new Audio();
+    let done = false;
+    const finish = (v: number) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      URL.revokeObjectURL(url);
+      resolve(v);
+    };
+    const timer = setTimeout(() => finish(guess()), 6000);
     a.preload = "metadata";
-    a.onloadedmetadata = () => {
-      URL.revokeObjectURL(url);
-      resolve(Number.isFinite(a.duration) ? a.duration : 0);
-    };
-    a.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(0);
-    };
+    a.onloadedmetadata = () => finish(Number.isFinite(a.duration) && a.duration > 0 ? a.duration : guess());
+    a.onerror = () => finish(-1);
     a.src = url;
+    a.load();
   });
+}
+
+// The type the server accepts, from the file's own type or its name
+// (phones often give "audio/x-wav", "audio/opus" … or nothing at all).
+function audioType(file: File): string | null {
+  const t = (file.type || "").toLowerCase();
+  const ext = (file.name.split(".").pop() || "").toLowerCase();
+  if (t === "audio/mpeg" || t === "audio/mp3" || ext === "mp3") return "audio/mpeg";
+  if (t === "audio/mp4" || t === "audio/x-m4a" || t === "audio/m4a" || ext === "m4a" || ext === "mp4") return "audio/mp4";
+  if (t === "audio/aac" || t === "audio/x-aac" || ext === "aac") return "audio/aac";
+  if (t === "audio/ogg" || t === "audio/opus" || ext === "ogg" || ext === "oga" || ext === "opus") return "audio/ogg";
+  if (t === "audio/wav" || t === "audio/x-wav" || t === "audio/wave" || t === "audio/vnd.wave" || ext === "wav") return "audio/wav";
+  if (t === "audio/webm" || ext === "webm") return "audio/webm";
+  return null;
 }
 
 function toBase64(file: File): Promise<string> {
@@ -67,8 +90,11 @@ export default function SongsPage() {
     setSecs(0);
     if (!fl) return;
     if (fl.size > MAX_BYTES) return setMsg({ text: `The file is ${(fl.size / 1048576).toFixed(1)} MB — the most is 7 MB. Save it as a 128 kbps MP3.`, bad: true });
+    if (!audioType(fl)) return setMsg({ text: `"${fl.name}" is not a music file this can use — please choose an MP3, M4A, AAC, OGG or WAV.`, bad: true });
+    setMsg({ text: "⏳ Reading the song…", bad: false });
     const d = await audioSeconds(fl);
-    if (!d) return setMsg({ text: "This doesn't look like a music file (MP3, M4A, AAC, OGG or WAV).", bad: true });
+    setMsg(null);
+    if (d < 0) return setMsg({ text: "This file can't be played — please choose an MP3 or M4A song.", bad: true });
     if (d > MAX_SECONDS + 0.5) return setMsg({ text: `The song is ${mmss(d)} long — the most is 5:00. Cut it shorter and try again.`, bad: true });
     setFile(fl);
     setSecs(d);
@@ -89,7 +115,7 @@ export default function SongsPage() {
         mood: mood.trim(),
         price: Math.floor(Number(price)),
         seconds: Math.round(secs),
-        contentType: file.type || "audio/mpeg",
+        contentType: audioType(file) || "audio/mpeg",
         fileBase64,
       });
       setMsg({ text: `✅ "${name.trim()}" is in the shop now (Profile Songs › 🎤 miGlife).`, bad: false });
@@ -145,7 +171,13 @@ export default function SongsPage() {
         </p>
         <label className="block">
           <span className="text-sm font-bold">Music file</span>
-          <input type="file" accept="audio/*" onChange={(e) => pick(e.target.files?.[0] || null)} className="mt-1 block w-full text-sm" />
+          {/* the file types too, not only audio/*: some phones' pickers hide songs saved by other apps */}
+          <input
+            type="file"
+            accept="audio/*,.mp3,.m4a,.aac,.ogg,.opus,.wav,.webm"
+            onChange={(e) => pick(e.target.files?.[0] || null)}
+            className="mt-1 block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-[#8B4DFF] file:px-4 file:py-2 file:text-sm file:font-black file:text-white"
+          />
         </label>
         {file && (
           <p className="text-xs font-bold text-[#1E8C4E]">
@@ -164,6 +196,7 @@ export default function SongsPage() {
         <button type="button" onClick={upload} disabled={busy || !file} className="w-full rounded-xl bg-[#8B4DFF] py-3 text-sm font-black text-white disabled:opacity-50">
           {busy ? "Uploading…" : "⬆ Upload song"}
         </button>
+        {!file && !busy && !msg && <p className="text-center text-xs text-[#5B6B8C]">Choose a music file first — the button turns on after that.</p>}
         {msg && <p className={`text-sm font-bold ${msg.bad ? "text-rose-600" : "text-[#1E8C4E]"}`}>{msg.text}</p>}
       </div>
 
