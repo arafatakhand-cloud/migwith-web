@@ -122,8 +122,17 @@ export function cachedRoleOf(name: string): string {
   return cache.get(name.trim().toLowerCase())?.role || "";
 }
 
-/** lowercase name → CSS colour, for everyone named in `names`. */
-export function useSenderColors(names: string[]): (name: string, atMs?: number) => string {
+// when each name was last looked up (this page load)
+const lookedUpAt = new Map<string, number>();
+// 🍀 Lucky Users already looked up again
+const forced = new Set<string>();
+
+/** lowercase name → CSS colour, for everyone named in `names`.
+ *  `hot`: names to look up again when their last lookup is over a minute old —
+ *  the people who just talked and a new 🍀 Lucky User (miglife: "anima became
+ *  Lucky User but stayed blue", "a new Style Studio colour didn't show") —
+ *  instead of waiting for the 5-minute refresh. */
+export function useSenderColors(names: string[], hot: string[] = []): (name: string, atMs?: number) => string {
   const [, setTick] = useState(0);
   // Bumped to try again after a failed lookup (5 s) and to refresh everyone
   // every 5 minutes, so a new role / colour shows without reopening (like the app).
@@ -133,6 +142,39 @@ export function useSenderColors(names: string[]): (name: string, atMs?: number) 
   const key = Array.from(new Set(names.map((n) => n.trim()).filter((n) => n && n.length <= 30)))
     .sort()
     .join("|");
+  const hotKey = hot.map((n) => n.trim().toLowerCase()).filter((n) => n && n.length <= 31).join("|");
+  useEffect(() => {
+    if (!hotKey) return;
+    const now = Date.now();
+    let stale = false;
+    for (const raw of hotKey.split("|")) {
+      const force = raw.startsWith("!");
+      const n = force ? raw.slice(1) : raw;
+      if (!n) continue;
+      if (force) {
+        if (forced.has(n)) continue;
+        forced.add(n);
+        fresh.delete(n);
+        asked.current.delete(n);
+        stale = true;
+        // once more a few seconds later, in case the pink time was written just after the line
+        setTimeout(() => {
+          fresh.delete(n);
+          asked.current.delete(n);
+          setRound((r) => r + 1);
+        }, 5000);
+        continue;
+      }
+      const at = lookedUpAt.get(n);
+      if (at !== undefined && now - at > 60_000) {
+        fresh.delete(n);
+        asked.current.delete(n);
+        lookedUpAt.set(n, now); // once a minute at most
+        stale = true;
+      }
+    }
+    if (stale) setRound((r) => r + 1);
+  }, [hotKey]);
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -188,6 +230,7 @@ export function useSenderColors(names: string[]): (name: string, atMs?: number) 
               supporterUntil: Number(d.get("supporterUntil") || 0),
             });
             savedAt.set(name.toLowerCase(), now);
+            lookedUpAt.set(name.toLowerCase(), now);
             fresh.add(name.toLowerCase());
           });
         } catch {
