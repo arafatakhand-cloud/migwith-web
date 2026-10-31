@@ -64,7 +64,7 @@ const ACT_CATS: { key: "all" | ActCat; label: string }[] = [
   { key: "transfers", label: "🤝 Transfers" },
   { key: "others", label: "✨ Other" },
 ];
-const GAME_SOURCES = ["lowcard", "royale", "luxury", "luxury_bet", "teenpatti", "teen_patti", "ludo", "cricket", "twentynine", "29", "trivia", "numguess", "horserace", "liardice", "game"];
+const GAME_SOURCES = ["lowcard", "royale", "luxury", "luxury_bet", "teenpatti", "teen_patti", "ludo", "cricket", "twentynine", "29", "trivia", "numguess", "horserace", "liardice", "royaltreasure", "game"];
 function txCat(type: string, source: string): ActCat {
   if (type.startsWith("transfer")) return "transfers";
   if (source === "lucky_user" || source === "lucky_voucher") return "others";
