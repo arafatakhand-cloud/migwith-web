@@ -17,7 +17,7 @@ import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
 import { totalXpForLevel } from "../../lib/level";
 import { activeSupporterTeam, type SupporterTeam } from "../../lib/supporterTeams";
-import { SupporterBadge } from "./SupporterBadge";
+import { SupporterJersey } from "./SupporterBadge";
 
 // Signed-in home, like the app's Home tab. Modern: the hero card, quick buttons,
 // friend search, online strip and friend cards (ModernHome.tsx). Classic: the
@@ -274,7 +274,13 @@ export function Dashboard() {
   const levelBadgeImages = useLevelBadgeImages(true);
   const levelBadgeUrl = levelBadgeImages[badgeNameForLevel(me?.level ?? 1)] || "";
   const classicStrip = (
-    <div className="border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] text-[#16315F]">
+    <div className="relative isolate overflow-hidden border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] text-[#16315F]">
+    {/* ⚽ my Supporters Badge team (while it lasts): its crest, faint, behind the strip */}
+    {me?.supporter && (
+      <span aria-hidden className="pointer-events-none absolute -top-3.5 right-16 -z-10 rotate-12 opacity-[0.15]">
+        <SupporterJersey team={me.supporter} size={130} />
+      </span>
+    )}
     <div className="flex items-center px-2.5 pb-1.5 pt-2">
       <Link href="/profile/me" className="flex h-[46px] w-[46px] shrink-0 items-center justify-center overflow-hidden rounded border border-[#B9C4D2] bg-[#FFE0B8] text-xl font-bold text-[#F07A00]">
         {me?.photoUrl ? (
@@ -294,12 +300,6 @@ export function Dashboard() {
           </span>
           {/* presence dot AFTER the role (tap = change presence) */}
           <button type="button" onClick={openPresencePopup} aria-label="Presence status" className="ml-[7px] h-3 w-3 shrink-0 rounded-full border border-white" style={{ background: presenceDot }} />
-          {/* ⚽ my Supporters Badge (team crest + letters), while it lasts — tap = Supporters Badge page */}
-          {me?.supporter && (
-            <Link href="/supporter-colours" className="ml-2 shrink-0" aria-label={`${me.supporter.name} supporter`}>
-              <SupporterBadge team={me.supporter} size={12} />
-            </Link>
-          )}
         </div>
       </div>
       {/* 🏅 level badge in the top-right corner, the level under it (square box, like the app) */}
