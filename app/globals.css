@@ -797,24 +797,49 @@ html[data-theme="glass"] .login-page .login-box:not(.bg-white) {
 }
 html[data-theme="glass"] .login-page .login-field,
 html[data-theme="glass"] .login-page .login-alt {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.45), rgba(255, 255, 255, 0.15)) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
-  box-shadow:
-    inset 0 1px 1px #fff,
-    0 6px 16px rgba(40, 80, 140, 0.14) !important;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.62)) !important;
+  border: 1px solid rgba(37, 99, 235, 0.16) !important;
+  box-shadow: 0 2px 10px -4px rgba(30, 60, 120, 0.2) !important;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   color: #0b2a5b;
 }
+html[data-theme="glass"] .login-page .login-field:focus-within {
+  border: 1.5px solid #2563eb !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.13) !important;
+}
+html[data-theme="glass"] .login-page .login-alt {
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.26) !important;
+}
 html[data-theme="glass"] .login-page .login-main {
-  background: linear-gradient(180deg, #3b82f6, #1e4fa8) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.7),
-    0 8px 18px rgba(30, 79, 168, 0.35) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 22px -10px rgba(29, 78, 216, 0.8) !important;
 }
 html[data-theme="glass"] .login-page .login-link {
-  color: #2f63d6;
+  color: #2563eb;
+}
+html[data-theme="glass"] .login-page .login-sub {
+  color: #5a6f93;
+}
+html[data-theme="glass"] .login-page .login-rule {
+  background: rgba(60, 90, 140, 0.18);
+}
+html[data-theme="glass"] .login-page .login-sw:not(.login-sw-on) {
+  background: #c4d2e8;
+}
+html[data-theme="glass"] .login-page .login-sw-on {
+  background: #2563eb;
+}
+html[data-theme="glass"] .login-page .login-seg {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(60, 90, 140, 0.12);
+}
+html[data-theme="glass"] .login-page .login-seg .login-ink {
+  color: #4a5f85;
 }
 html[data-theme="glass"] .login-page .ml-word .text-white {
   color: #1e63d6;
