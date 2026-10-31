@@ -23,6 +23,9 @@ export type CommandContext = {
   showWhois?: (info: Record<string, unknown>) => void;
   /** A title + text + OK popup (like the app's AlertDialog). */
   popup?: (title: string, text: string) => void;
+  /** Who is in the room now — a social line (/hug, /agree …) to a name must
+   *  be to someone here (miglife: "/agree sabuuj" went out with a typo). */
+  roomUsers?: string[];
 };
 
 // Short forms people actually type: /gn = /goodnight, /gm = /goodmorning, …
@@ -403,8 +406,19 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
   const parts = clean.trim().split(/\s+/);
   const typed = (parts[0] || "").toLowerCase();
   const command = SOCIAL_ALIASES[typed] ?? typed;
-  const target = (parts[1] || "").replace(/^@/, "").trim() || "everyone";
+  const typedTarget = (parts[1] || "").replace(/^@/, "").trim();
+  // the name as it is written in the room (sabuj, not SABUJ); "" = not here
+  const inRoom =
+    !typedTarget || typedTarget.toLowerCase() === "everyone" || !ctx.roomUsers?.length
+      ? typedTarget
+      : ctx.roomUsers.find((n) => n.toLowerCase() === typedTarget.toLowerCase()) || "";
+  const target = inRoom || typedTarget || "everyone";
   const { username: u } = ctx;
+  const isSocial = !!(STATUS[command] || SOCIAL[command] || command === "/sing" || extraSocialMessage(command, u, "x"));
+  if (isSocial && typedTarget && !inRoom) {
+    ctx.note(`${typedTarget} is not in the room.`);
+    return true;
+  }
 
   if (command === "/commands" || command === "/command" || command === "/help") {
     if (ctx.openCommands) ctx.openCommands();
