@@ -1415,3 +1415,20 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 @keyframes rt-sparkle { from { opacity: 1; transform: scale(0.8) rotate(0); } to { opacity: 0; transform: scale(1.5) rotate(40deg); } }
 .rt-banner { animation: rt-banner 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
 @keyframes rt-banner { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
+
+/* 👑 Royal Treasure v2: light beams, gold lettering, jackpot shine, chest rays */
+.rt-beams { background: conic-gradient(from 0deg at 50% 50%, transparent 0 20deg, rgba(255, 215, 120, 0.07) 20deg 30deg, transparent 30deg 60deg, rgba(255, 215, 120, 0.06) 60deg 70deg, transparent 70deg); animation: rt-spin 18s linear infinite; }
+@keyframes rt-spin { to { transform: rotate(360deg); } }
+.rt-gold-text { background: linear-gradient(180deg, #FFFBE6, #FFD25A 55%, #E39A12); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.35)); }
+.rt-jack { box-shadow: 0 0 18px rgba(255, 200, 60, 0.35); }
+.rt-jack::after { content: ""; position: absolute; top: 0; bottom: 0; width: 60px; left: -80px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent); transform: skewX(-20deg); animation: rt-shine 2.6s ease-in-out infinite; }
+@keyframes rt-shine { 0% { left: -80px; } 60%, 100% { left: 110%; } }
+.rt-lid { transform-origin: 31px 21px; transition: transform 0.5s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.rt-rays { position: absolute; left: 50%; top: 22px; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none; background: repeating-conic-gradient(from 0deg, rgba(160, 240, 255, 0.55) 0 8deg, transparent 8deg 45deg); -webkit-mask: radial-gradient(circle, #000 20%, transparent 70%); mask: radial-gradient(circle, #000 20%, transparent 70%); animation: rt-spin 6s linear infinite; }
+.rt-rays-gold { background: repeating-conic-gradient(from 0deg, rgba(255, 230, 150, 0.65) 0 8deg, transparent 8deg 45deg); }
+.rt-dia { border-color: #8FF0FF !important; box-shadow: 0 0 0 1.5px #8FF0FF, 0 0 26px 6px rgba(120, 230, 255, 0.6) !important; }
+.rt-crown { border-color: #FFD25A !important; box-shadow: 0 0 0 2px #FFD25A, 0 0 34px 10px rgba(255, 200, 60, 0.75) !important; animation: rt-pulse 0.9s ease-in-out infinite; }
+@keyframes rt-pulse { 50% { transform: scale(1.04); } }
+.rt-mybet { background: linear-gradient(#FFF1B8, #F3C14B); animation: rt-banner 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.rt-confetti { background-image: radial-gradient(circle, #FFD25A 0 3px, transparent 4px), radial-gradient(circle, #8FF0FF 0 3px, transparent 4px), radial-gradient(circle, #FF6FB1 0 3px, transparent 4px), radial-gradient(circle, #7CFF8A 0 3px, transparent 4px); background-size: 47px 61px, 59px 43px, 71px 53px, 53px 67px; background-position: 0 0, 20px 10px, 35px 30px, 10px 40px; animation: rt-fall 1.4s linear infinite; }
+@keyframes rt-fall { from { background-position: 0 -120px, 20px -90px, 35px -150px, 10px -60px; } to { background-position: 0 600px, 20px 640px, 35px 580px, 10px 660px; } }
