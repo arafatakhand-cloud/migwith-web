@@ -142,7 +142,8 @@ export default function LoginPage() {
           <MigLoginLogo />
         </Link>
 
-        <p className="login-ink mt-5 text-[22px] tracking-wide text-white/95">Join the Fun!</p>
+        <p className="login-ink mt-5 text-[24px] font-extrabold tracking-tight text-white">Join the Fun!</p>
+        <p className="login-sub mt-1 text-[13px] text-white/75">Log in to continue chatting</p>
 
         {/* the app's five chat bubbles */}
         <LoginBubbles />
@@ -150,13 +151,13 @@ export default function LoginPage() {
         {/* clean white fields with an icon, like a modern login form */}
         {/* a real form, so the browser recognises the ID + password and offers to save / fill them */}
         <form
-          className="mt-6 w-full space-y-3.5"
+          className="mt-6 w-full space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
             handleLogin();
           }}
         >
-          <label className="login-field flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+          <label className="login-field flex items-center gap-3 rounded-[14px] border border-white/70 bg-white/95 px-4 shadow-sm transition focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-[#2563EB]/15">
             <PersonIcon />
             <input
               id="identifier"
@@ -166,10 +167,10 @@ export default function LoginPage() {
               placeholder="Username"
               autoComplete="username"
               aria-label="Username"
-              className="min-w-0 flex-1 bg-transparent py-3.5 text-lg text-[#17375A] outline-none placeholder:text-[#9FB3C8]"
+              className="min-w-0 flex-1 bg-transparent py-3.5 text-[16px] text-[#0F1D3A] caret-[#2563EB] outline-none placeholder:text-[#8494B2]"
             />
           </label>
-          <label className="login-field flex items-center gap-3 rounded-2xl border border-white/70 bg-white/95 px-4 shadow-sm focus-within:border-[#17375A]">
+          <label className="login-field flex items-center gap-3 rounded-[14px] border border-white/70 bg-white/95 px-4 shadow-sm transition focus-within:border-[#2563EB] focus-within:ring-4 focus-within:ring-[#2563EB]/15">
             <LockIcon />
             <input
               id="password"
@@ -179,13 +180,13 @@ export default function LoginPage() {
               placeholder="Password"
               autoComplete="current-password"
               aria-label="Password"
-              className="min-w-0 flex-1 bg-transparent py-3.5 text-lg text-[#17375A] outline-none placeholder:text-[#9FB3C8]"
+              className="min-w-0 flex-1 bg-transparent py-3.5 text-[16px] text-[#0F1D3A] caret-[#2563EB] outline-none placeholder:text-[#8494B2]"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               aria-label={showPassword ? "Hide password" : "Show password"}
-              className="shrink-0 p-1 text-[#9FB3C8]"
+              className="shrink-0 p-1 text-[#8494B2]"
             >
               <EyeIcon open={showPassword} />
             </button>
@@ -193,9 +194,9 @@ export default function LoginPage() {
           <button type="submit" hidden aria-hidden tabIndex={-1} />
         </form>
 
-        <div className="mt-5 flex w-full items-center justify-between gap-3">
-          <AppCheck checked={rememberMe} onChange={setRememberMe} label="Remember Me" />
-          <AppCheck checked={offline} onChange={setOffline} label="Login as Offline" />
+        <div className="mt-4 flex w-full items-center justify-between gap-3 px-0.5">
+          <AppSwitch checked={rememberMe} onChange={setRememberMe} label="Remember me" />
+          <AppSwitch checked={offline} onChange={setOffline} label="Login as offline" right />
         </div>
 
         {error && (
@@ -206,20 +207,26 @@ export default function LoginPage() {
           type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="login-main mt-6 w-full rounded-2xl bg-[#17375A] py-3.5 text-xl font-bold text-white shadow-[0_6px_14px_rgba(23,55,90,.35)] transition active:scale-[.98] disabled:opacity-60"
+          className="login-main mt-5 w-full rounded-[14px] border border-white/20 bg-gradient-to-b from-[#24508C] to-[#14325C] py-3.5 text-[17px] font-bold tracking-wide text-white shadow-[0_10px_22px_-10px_rgba(20,50,92,.9)] transition active:scale-[.98] disabled:opacity-60"
         >
           {loading ? "…" : "Login"}
         </button>
         <Link
           href="/register"
-          className="login-alt mt-3.5 block w-full rounded-2xl border border-white bg-white py-3.5 text-center text-xl font-bold text-[#111827] shadow-[0_4px_10px_rgba(0,0,0,.12)] transition active:scale-[.98]"
+          className="login-alt mt-3 block w-full rounded-[14px] border border-white bg-white py-3.5 text-center text-[17px] font-bold text-[#1D4ED8] shadow-[0_4px_10px_rgba(0,0,0,.10)] transition active:scale-[.98]"
         >
           Create Account
         </Link>
-        <Link href="/forgot-password" className="login-link mt-5 text-[17px] text-white/90 underline underline-offset-4">
-          Forgot Password?
+        <Link href="/forgot-password" className="login-link mt-4 text-[15px] font-semibold text-white">
+          Forgot password?
         </Link>
-        {/* ✨ / 📟 The site opens in whichever style is ticked here (same switch as Settings › Appearance). */}
+        {/* ── APPEARANCE ── */}
+        <div className="login-sub mb-3 mt-6 flex w-full items-center gap-2.5 text-[11px] font-bold tracking-[0.16em] text-white/65">
+          <span className="login-rule h-px flex-1 bg-white/25" />
+          APPEARANCE
+          <span className="login-rule h-px flex-1 bg-white/25" />
+        </div>
+        {/* ✨ / 📟 The site opens in whichever style is chosen here (same switch as Settings › Appearance). */}
         <LoginStyleChoice />
         {/* 🫧 Glass / 🔵 Blue: pick the look before signing in (it is the theme too) */}
         <LoginThemeChoice />
@@ -233,23 +240,31 @@ export default function LoginPage() {
 function LoginStyleChoice() {
   const style = useUiStyle();
   return (
-    <div className="mt-5 flex w-full items-center justify-evenly gap-2 px-2">
-      {(
-        [
-          ["modern", "✨ Modern mode"],
-          ["classic", "📟 Classic mode"],
-        ] as const
-      ).map(([id, label]) => (
+    <LoginSegment
+      options={[
+        ["modern", "✨ Modern"],
+        ["classic", "📟 Classic"],
+      ]}
+      value={style === "classic" ? "classic" : "modern"}
+      onPick={(id) => setUiStyle(id as "modern" | "classic")}
+    />
+  );
+}
+
+/** Two-part picker (Modern | Classic, Glass | Blue): the chosen half is a white pill. */
+function LoginSegment({ options, value, onPick }: { options: [string, string][]; value: string; onPick: (id: string) => void }) {
+  return (
+    <div className="login-seg mb-2 flex w-full rounded-xl border border-white/25 bg-white/15 p-[3px]">
+      {options.map(([id, label]) => (
         <button
           key={id}
           type="button"
-          onClick={() => setUiStyle(id)}
-          className="login-ink flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white"
+          onClick={() => onPick(id)}
+          className={`flex-1 whitespace-nowrap rounded-[9px] py-2 text-[14px] transition ${
+            value === id ? "login-seg-on bg-white font-bold text-[#1D4ED8] shadow-[0_2px_6px_-2px_rgba(30,60,120,.35)]" : "login-ink font-medium text-white/90"
+          }`}
         >
-          <span className="flex h-[26px] w-[26px] items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-lg font-bold text-[#2B2B2B]">
-            {style === id ? "✓" : ""}
-          </span>
-          <span className={`whitespace-nowrap ${style === id ? "font-bold" : ""}`}>{label}</span>
+          {label}
         </button>
       ))}
     </div>
@@ -317,43 +332,47 @@ function LoginThemeChoice() {
     else delete document.documentElement.dataset.theme;
   };
   return (
-    <div className="mt-3 flex w-full items-center justify-evenly gap-2 px-2">
-      {(
-        [
-          [true, "🫧 Glass"],
-          [false, "🔵 Blue"],
-        ] as const
-      ).map(([g, label]) => (
-        <button key={label} type="button" onClick={() => pick(g)} className="login-ink flex items-center gap-2 rounded-md px-1 py-1 text-[15px] text-white">
-          <span className="flex h-[26px] w-[26px] items-center justify-center rounded border border-[#9C9C9C] bg-[#D5D5D5] text-lg font-bold text-[#2B2B2B]">
-            {glass === g ? "✓" : ""}
-          </span>
-          <span className={`whitespace-nowrap ${glass === g ? "font-bold" : ""}`}>{label}</span>
-        </button>
-      ))}
-    </div>
+    <LoginSegment
+      options={[
+        ["glass", "🫧 Glass"],
+        ["blue", "🔵 Blue"],
+      ]}
+      value={glass ? "glass" : "blue"}
+      onPick={(id) => pick(id === "glass")}
+    />
   );
 }
 
-function AppCheck({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
-  return (
-    <button type="button" onClick={() => onChange(!checked)} className="login-ink flex items-center gap-3 text-left text-base text-white">
+/** A small on/off switch with its label (Remember me / Login as offline). */
+function AppSwitch({ checked, onChange, label, right }: { checked: boolean; onChange: (v: boolean) => void; label: string; right?: boolean }) {
+  const sw = (
+    <span
+      className={`login-sw relative h-[21px] w-9 shrink-0 rounded-full transition-colors ${checked ? "login-sw-on bg-[#1D4ED8]" : "bg-white/35"}`}
+    >
       <span
-        className={`login-box flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 text-sm font-black ${
-          checked ? "border-white bg-white text-[#17375A]" : "border-white/80"
-        }`}
-      >
-        {checked ? "✓" : ""}
-      </span>
+        className={`absolute top-[2.5px] h-4 w-4 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,.3)] transition-all ${checked ? "left-[17.5px]" : "left-[2.5px]"}`}
+      />
+    </span>
+  );
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="login-ink flex items-center gap-2.5 text-left text-[14.5px] text-white"
+    >
+      {!right && sw}
       {label}
+      {right && sw}
     </button>
   );
 }
 
-const ICON = "h-6 w-6 shrink-0 text-[#9FB3C8]";
+const ICON = "h-[22px] w-[22px] shrink-0 text-[#6B7FA6]";
 function PersonIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={ICON} aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ICON} aria-hidden>
       <circle cx="12" cy="8" r="4" />
       <path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1Z" />
     </svg>
@@ -361,7 +380,7 @@ function PersonIcon() {
 }
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className={ICON} aria-hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={ICON} aria-hidden>
       <rect x="5" y="10" width="14" height="11" rx="3" />
       <path d="M8 10V7a4 4 0 0 1 8 0v3M12 14.5v2" />
     </svg>
@@ -380,17 +399,17 @@ function EyeIcon({ open }: { open: boolean }) {
 function LoginBubbles() {
   const bubbles: [string, string, string, number][] = [
     ["💬", "#5AB2FF", "#2F80ED", 0],
-    ["😄", "#FFB15C", "#F07A1A", 1],
-    ["👥", "#5FD47A", "#22A447", 2],
-    ["💝", "#B98BFF", "#7B4BE0", 1],
+    ["😄", "#FFB15C", "#F07A1A", 0],
+    ["👥", "#5FD47A", "#22A447", 0],
+    ["💝", "#B98BFF", "#7B4BE0", 0],
     ["❤️", "#FF8DB8", "#E8457E", 0],
   ];
   return (
-    <div className="mt-6 flex w-full items-end justify-center gap-2.5">
+    <div className="mt-5 flex w-full items-end justify-center gap-3">
       {bubbles.map(([e, a, b, lift], i) => (
         <span key={i} className="relative" style={{ marginBottom: lift * 5 }}>
           <span
-            className="relative z-10 flex h-[46px] w-[52px] items-center justify-center rounded-[14px] border-[2.5px] border-white text-[22px] shadow-[0_4px_8px_rgba(0,0,0,.18)]"
+            className="relative z-10 flex h-[42px] w-[48px] items-center justify-center rounded-[14px] border-2 border-white/90 text-[20px] shadow-[0_6px_14px_-6px_rgba(20,40,90,.5)]"
             style={{ background: `linear-gradient(180deg, ${a}, ${b})` }}
           >
             <span className="absolute left-1.5 right-1.5 top-1 h-2.5 rounded-full bg-white/35" />
@@ -398,7 +417,7 @@ function LoginBubbles() {
           </span>
           {/* the bubble's little tail */}
           <span
-            className={`absolute -bottom-[7px] h-3.5 w-3.5 rotate-45 border-b-[2.5px] border-r-[2.5px] border-white ${i % 2 ? "right-3" : "left-3"}`}
+            className={`absolute -bottom-[6px] h-3 w-3 rotate-45 border-b-2 border-r-2 border-white/90 ${i % 2 ? "right-3" : "left-3"}`}
             style={{ background: b }}
           />
         </span>
