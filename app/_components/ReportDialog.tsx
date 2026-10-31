@@ -12,7 +12,8 @@ export type ReportTarget =
   | { kind: "user"; targetUsername: string }
   | { kind: "room_message"; targetUsername: string; roomId: string; messageId: string; preview?: string }
   | { kind: "private_message"; targetUsername: string; messageId: string; preview?: string }
-  | { kind: "room"; roomId: string };
+  | { kind: "room"; roomId: string }
+  | { kind: "blog_post"; targetUsername: string; messageId: string; preview?: string };
 
 export const REPORT_REASONS: [string, string][] = [
   ["spam", "Spam or advertising"],
@@ -67,8 +68,10 @@ function ReportDialog({ target, onClose }: { target: ReportTarget; onClose: () =
       ? target.targetUsername
       : target.kind === "room"
         ? `room ${target.roomId}`
-        : `${target.targetUsername}'s message`;
-  const preview = target.kind === "room_message" || target.kind === "private_message" ? target.preview : "";
+        : target.kind === "blog_post"
+          ? `${target.targetUsername}'s blog post`
+          : `${target.targetUsername}'s message`;
+  const preview = target.kind === "room_message" || target.kind === "private_message" || target.kind === "blog_post" ? target.preview : "";
 
   const send = async () => {
     if (!reason) return setError("Choose a reason.");

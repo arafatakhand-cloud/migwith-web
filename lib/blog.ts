@@ -1,0 +1,101 @@
+"use client";
+
+import { httpsCallable } from "firebase/functions";
+import { functions } from "./firebase";
+
+// 📝 Blog: every user may write. Posts live in blog_posts/{id}; the server
+// (the `blog` function) does every write — create / edit / delete / like /
+// comment / view. Same in the app (Blog.kt).
+
+export type BlogPost = {
+  id: string;
+  authorUid: string;
+  author: string;
+  title: string;
+  body: string;
+  excerpt: string;
+  cover: string;
+  firstImage: string;
+  category: string;
+  likes: number;
+  comments: number;
+  views: number;
+  createdMs: number;
+  edited: boolean;
+};
+
+export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number };
+
+export const BLOG_CATEGORIES: [string, string][] = [
+  ["life", "💬 Life"],
+  ["games", "🎮 Games"],
+  ["music", "🎵 Music"],
+  ["fun", "😂 Fun"],
+  ["news", "📢 News"],
+  ["love", "❤️ Love"],
+  ["tips", "💡 Tips"],
+  ["other", "✨ Other"],
+];
+export const blogCategoryLabel = (id: string) => BLOG_CATEGORIES.find(([k]) => k === id)?.[1] || "✨ Other";
+
+// Cover colours when a post has no photo (picked by the post id, so it stays the same).
+const COVERS = [
+  "linear-gradient(135deg,#ff9a8b,#ff6a88 50%,#ff99ac)",
+  "linear-gradient(135deg,#43cea2,#185a9d)",
+  "linear-gradient(135deg,#f6d365,#fda085)",
+  "linear-gradient(135deg,#a18cd1,#fbc2eb)",
+  "linear-gradient(135deg,#4facfe,#00f2fe)",
+  "linear-gradient(135deg,#667eea,#764ba2)",
+];
+export function blogCoverFallback(id: string): string {
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return COVERS[h % COVERS.length];
+}
+
+const ms = (t: unknown): number =>
+  t && typeof (t as { toMillis?: () => number }).toMillis === "function" ? (t as { toMillis: () => number }).toMillis() : 0;
+
+export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
+  return {
+    id,
+    authorUid: String(d.authorUid || ""),
+    author: String(d.author || ""),
+    title: String(d.title || ""),
+    body: String(d.body || ""),
+    excerpt: String(d.excerpt || ""),
+    cover: String(d.cover || ""),
+    firstImage: String(d.firstImage || ""),
+    category: String(d.category || "other"),
+    likes: Number(d.likes || 0),
+    comments: Number(d.comments || 0),
+    views: Number(d.views || 0),
+    createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
+    edited: d.edited === true,
+  };
+}
+export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
+  return { id, authorUid: String(d.authorUid || ""), author: String(d.author || ""), text: String(d.text || ""), createdMs: ms(d.createdAt) };
+}
+
+export const blogShort = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
+
+export function blogAgo(t: number): string {
+  if (!t) return "now";
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "now";
+  if (m < 60) return `${m}m`;
+  if (m < 1440) return `${Math.floor(m / 60)}h`;
+  if (m < 43200) return `${Math.floor(m / 1440)}d`;
+  return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+const call = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "blog");
+export async function blogCall(action: string, data: Record<string, unknown> = {}) {
+  const r = await call({ action, ...data });
+  return r.data;
+}
+export function blogError(e: unknown): string {
+  const m = (e as { message?: string })?.message || "";
+  return m.replace(/^FirebaseError:\s*/, "") || "Something went wrong. Please try again.";
+}

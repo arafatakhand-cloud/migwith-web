@@ -215,6 +215,7 @@ export default function ProfilePage() {
   const [voters, setVoters] = useState(0);
   const [hasVoted, setHasVoted] = useState(false);
   const [giftCount, setGiftCount] = useState(0);
+  const [blogCount, setBlogCount] = useState(0);
   const [peopleList, setPeopleList] = useState<"footprints" | "votes" | null>(null);
   // Days left on an active mentor tag (0 = no end date), or null when not tagged.
   const [taggedDays, setTaggedDays] = useState<number | null>(null);
@@ -319,6 +320,10 @@ export default function ProfilePage() {
     // Gifts really received (gift_activity), as the app counts them.
     getCountFromServer(query(collection(db, "gift_activity"), where("toUsername", "==", username)))
       .then((s) => setGiftCount(s.data().count))
+      .catch(() => {});
+    // 📝 how many blog posts
+    getCountFromServer(query(collection(db, "blog_posts"), where("author", "==", username)))
+      .then((s) => setBlogCount(s.data().count))
       .catch(() => {});
 
     // 🔒 friend lists are private: the server sends only the number
@@ -1037,6 +1042,18 @@ export default function ProfilePage() {
           </div>
           {error && <p className="text-center text-sm text-rose-600">{error}</p>}
         </div>
+
+        {/* 📝 this person's blog posts */}
+        <Link
+          href={`/blog?author=${encodeURIComponent(username)}`}
+          className="mt-2 flex items-center gap-3 bg-white px-3.5 py-[11px] text-[15px] font-semibold text-[#0B2A5B]"
+        >
+          <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FC] text-lg">📝</span>
+          <span data-notranslate className="min-w-0 flex-1 truncate">
+            {isOwn ? "My Blog" : `${username}'s Blog`} <span className="text-[#6B7FA6]">({blogCount})</span>
+          </span>
+          <span className="text-xl text-[#A9B4C2]">›</span>
+        </Link>
 
         {/* Gift history, under a dark section bar */}
         <h2 data-notranslate className="pf-bar mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
