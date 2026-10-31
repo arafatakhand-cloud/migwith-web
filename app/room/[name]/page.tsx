@@ -1879,6 +1879,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         roomName,
         note,
         openCommands: () => setCommandsOpen(true),
+        roomUsers: roomUsers.map((p) => p.username),
         showWhois: setWhoisInfo,
         popup: (title, text) => setPopup({ title, text }),
         post: (t, type) => {
