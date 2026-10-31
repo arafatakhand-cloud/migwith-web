@@ -115,6 +115,7 @@ import { handleExtraCommand } from "../../../lib/extraCommands";
 import { rememberRecentRoom, useRoomPrefs } from "../../../lib/roomPrefs";
 import { storageSafeSegment, uploadChatImage } from "../../../lib/imageUpload";
 import type { PickedSticker } from "../../../lib/stickers";
+import { StickerImg } from "../../_components/StickerImg";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
 import {
@@ -3800,13 +3801,7 @@ function MessageRow({
           ) : m.type === "sticker" && m.imageUrl ? (
             <>
               {/* 🎨 a sticker: big, no frame */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={m.imageUrl}
-                alt="Sticker"
-                loading="lazy"
-                className={`mt-1 block h-28 w-28 object-contain ${rightSide ? "ml-auto" : ""}`}
-              />
+              <StickerImg url={m.imageUrl} className={`mt-1 block h-28 w-28 object-contain ${rightSide ? "ml-auto" : ""}`} />
               {stamp}
             </>
           ) : m.type === "voice" && m.audioUrl ? (

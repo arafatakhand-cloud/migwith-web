@@ -8,7 +8,8 @@ import { PageShell } from "../../_components/PageShell";
 import { PageTitle } from "../../_components/LightCards";
 import { isMainFounderName } from "../../../lib/founder";
 import { prepareIcon } from "../../../lib/iconUpload";
-import { founderStickerPack, useStickerPacks, type StickerPack } from "../../../lib/stickers";
+import { founderStickerPack, STICKER_MOTIONS, useStickerPacks, type StickerMotion, type StickerPack } from "../../../lib/stickers";
+import { StickerImg } from "../../_components/StickerImg";
 
 // ⚙️ miglife's sticker admin: put in the starter packs, make a pack (name, kind,
 // price — 0 = free, on/off, order), and add / remove its stickers. Every
@@ -114,8 +115,23 @@ export default function StickerAdminPage() {
               <div className="mt-2 grid grid-cols-6 gap-1.5">
                 {p.stickers.map((s) => (
                   <div key={s.id || s.url} className="relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={s.url} alt="" className="aspect-square w-full rounded-lg bg-[#F6F9FE] object-contain" />
+                    <span className="block overflow-hidden rounded-lg bg-[#F6F9FE]">
+                      <StickerImg url={s.url} alt="" className="aspect-square w-full object-contain" />
+                    </span>
+                    {/* ✨ how it moves */}
+                    <select
+                      aria-label="Motion"
+                      value={s.motion}
+                      disabled={!!busy}
+                      onChange={(e) => run("motion", () => founderStickerPack({ action: "setMotion", packId: p.id, stickerId: s.id, motion: e.target.value as StickerMotion }))}
+                      className="mt-0.5 w-full rounded-md border border-[#D4DDEB] bg-white px-0.5 py-0.5 text-[9px] font-bold text-[#35507E]"
+                    >
+                      {STICKER_MOTIONS.map((m) => (
+                        <option key={m.key} value={m.key}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       type="button"
                       aria-label="Remove sticker"

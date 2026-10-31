@@ -1388,3 +1388,23 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* ✨ animated stickers: the picture stays a PNG, the page moves it (same
+   motions and timings as the app's StickerStore.kt). */
+.stk-BOUNCE { animation: stk-bounce 0.81s linear infinite; }
+@keyframes stk-bounce { 0%, 50%, 100% { transform: translateY(0) scale(1.03, 0.96); } 25%, 75% { transform: translateY(-8%) scale(1, 1); } }
+.stk-SHAKE { animation: stk-shake 0.36s linear infinite; }
+@keyframes stk-shake { 0%, 50%, 100% { transform: translateX(0) rotate(0); } 25% { transform: translateX(4%) rotate(4deg); } 75% { transform: translateX(-4%) rotate(-4deg); } }
+.stk-BEAT { animation: stk-beat 0.9s linear infinite; }
+@keyframes stk-beat { 0% { transform: scale(1); } 12% { transform: scale(1.12); } 24% { transform: scale(1); } 36% { transform: scale(1.07); } 48%, 100% { transform: scale(1); } }
+.stk-SWAY { animation: stk-sway 1.62s ease-in-out infinite; transform-origin: 50% 92%; }
+@keyframes stk-sway { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(7deg); } 75% { transform: rotate(-7deg); } }
+.stk-FLOAT { animation: stk-float 1.62s ease-in-out infinite; }
+@keyframes stk-float { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(4.5%); } 75% { transform: translateY(-4.5%); } }
+.stk-WOBBLE { animation: stk-wobble 1.08s ease-in-out infinite; }
+@keyframes stk-wobble { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(14deg); } 75% { transform: rotate(-14deg); } }
+.stk-POP { animation: stk-pop 1.2s linear infinite; }
+@keyframes stk-pop { 0% { transform: scale(1) rotate(0); } 10% { transform: scale(1.14) rotate(-4deg); } 20% { transform: scale(0.96) rotate(3deg); } 30% { transform: scale(1.04) rotate(0); } 40%, 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .stk-BOUNCE, .stk-SHAKE, .stk-BEAT, .stk-SWAY, .stk-FLOAT, .stk-WOBBLE, .stk-POP { animation: none; }
+}

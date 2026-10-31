@@ -9,6 +9,7 @@ import { useSession } from "../_components/AppSession";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle } from "../_components/LightCards";
+import { StickerImg } from "../_components/StickerImg";
 import { isMainFounderName } from "../../lib/founder";
 import { formatStickerPrice, getStickerPack, useOwnedStickerPacks, useStickerPacks, type StickerPack } from "../../lib/stickers";
 
@@ -115,8 +116,7 @@ export default function StickerStorePage() {
                 <div key={p.id} className="overflow-hidden rounded-[18px] border border-[#E3EAF5] bg-white shadow-[0_6px_16px_rgba(40,80,160,.10)]">
                   <button type="button" onClick={() => setView(p)} className="grid w-full grid-cols-3 gap-0.5 bg-[#F6F9FE] p-2" aria-label={`See ${p.name}`}>
                     {p.stickers.slice(0, 9).map((s) => (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img key={s.id || s.url} src={s.url} alt="" loading="lazy" className="aspect-square w-full object-contain" />
+                      <StickerImg key={s.id || s.url} url={s.url} alt="" className="aspect-square w-full object-contain" />
                     ))}
                   </button>
                   <div className="px-2.5 pb-2.5 pt-2">
@@ -154,24 +154,65 @@ export default function StickerStorePage() {
         )}
       </section>
 
-      {/* all the stickers of one pack */}
+      {/* 📦 one pack (like the video): picture, name, kind · count, ✕ — all its
+          stickers moving — price and Get / Buy / ✓ In Collection */}
       {view && (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-black/45 sm:items-center" onClick={() => setView(null)}>
-          <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white p-4 sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-            <p className="text-[17px] font-black text-[#0B2A5B]">{view.name}</p>
-            <p className="text-[12px] text-[#7A8599]">
-              {view.category ? `${view.category} · ` : ""}
-              {view.stickers.length} stickers · {view.price ? `🪙 ${formatStickerPrice(view.price)}` : "Free"}
-            </p>
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {view.stickers.map((s) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={s.id || s.url} src={s.url} alt="" loading="lazy" className="aspect-square w-full object-contain" />
-              ))}
+          <div
+            className="flex max-h-[82vh] w-full max-w-md flex-col overflow-hidden rounded-t-[26px] bg-white shadow-2xl sm:rounded-[26px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 px-4 pb-3 pt-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#F3F6FB] p-1">
+                <StickerImg url={view.cover || view.stickers[0]?.url || ""} alt={view.name} className="h-full w-full object-contain" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[17px] font-black text-[#0B2A5B]">{view.name}</p>
+                <p className="truncate text-[12px] text-[#7A8599]">
+                  {view.category ? `${view.category} · ` : ""}
+                  {view.stickers.length} stickers
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setView(null)}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F1F4F9] text-[16px] text-[#5B6478] shadow-sm"
+              >
+                ✕
+              </button>
             </div>
-            <button type="button" onClick={() => setView(null)} className="mt-4 h-11 w-full rounded-xl bg-[#EEF3FB] text-[14px] font-bold text-[#1565D8]">
-              Close
-            </button>
+            <div className="min-h-0 flex-1 overflow-y-auto border-t border-[#EEF1F6] px-3 py-3">
+              <div className="grid grid-cols-5 gap-2">
+                {view.stickers.map((s) => (
+                  <span key={s.id || s.url} className="flex aspect-square items-center justify-center rounded-xl bg-[#F6F8FC] p-1">
+                    <StickerImg url={s.url} alt="" className="h-full w-full object-contain" />
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center gap-3 border-t border-[#EEF1F6] px-4 pb-[calc(env(safe-area-inset-bottom)+12px)] pt-3">
+              <span
+                className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-black ${view.price ? "bg-[#FFF3D1] text-[#9A6A00]" : "bg-[#E3F7EA] text-[#178A43]"}`}
+              >
+                {view.price ? `🪙 ${formatStickerPrice(view.price)}` : "Free"}
+              </span>
+              <span className="flex-1" />
+              {owned?.has(view.id) ? (
+                <span className="flex h-10 items-center rounded-full bg-[#22C55E] px-5 text-[13px] font-extrabold text-white">✓ In Collection</span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy || owned === null}
+                  onClick={() => setConfirm(view)}
+                  className={`h-10 rounded-full px-5 text-[13px] font-extrabold text-white disabled:opacity-50 ${
+                    view.price ? "bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9]" : "bg-gradient-to-r from-[#3B82F6] to-[#1D4ED8]"
+                  }`}
+                >
+                  {view.price ? "🛒 Buy Pack" : "⬇ Get Free"}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
