@@ -1458,3 +1458,29 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 .rt-confetti { background-image: radial-gradient(circle, #FFD25A 0 3px, transparent 4px), radial-gradient(circle, #8FF0FF 0 3px, transparent 4px), radial-gradient(circle, #FF6FB1 0 3px, transparent 4px), radial-gradient(circle, #7CFF8A 0 3px, transparent 4px); background-size: 47px 61px, 59px 43px, 71px 53px, 53px 67px; background-position: 0 0, 20px 10px, 35px 30px, 10px 40px; animation: rt-fall 1.4s linear infinite; }
 @keyframes rt-fall { from { background-position: 0 -120px, 20px -90px, 35px -150px, 10px -60px; } to { background-position: 0 600px, 20px 640px, 35px 580px, 10px 660px; } }
 
+
+/* ✍️ New post sheet (Feed › write): soft lavender, slides up */
+.np-sheet {
+  background: linear-gradient(180deg, #eef0ff, #e6e9ff 55%, #efe7ff);
+  animation: npUp 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.np-chip {
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+}
+.np-bar {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow: 0 10px 24px -14px rgba(40, 50, 110, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.np-pop {
+  animation: npUp 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes npUp {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
