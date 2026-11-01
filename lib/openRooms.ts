@@ -11,7 +11,8 @@ import {
   updateDoc,
   type DocumentReference,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { LUXURY_BOT_REMOVED_ROOM, leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
 import { serverNow } from "./serverTime";
@@ -233,6 +234,9 @@ export function forgetOpenRooms(uid: string) {
 export async function leaveAllOpenRooms(uid: string) {
   const rooms = readOpenRooms(uid);
   forgetOpenRooms(uid);
+  // 🚪 logout: a /parked spot is left too (the server ends the park and
+  // refunds the whole hours left) — a parked room is not kept after logout
+  await httpsCallable(functions, "leaveParkedRoomsOnLogout")({}).catch(() => {});
   await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
 }
 
