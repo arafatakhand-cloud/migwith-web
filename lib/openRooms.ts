@@ -11,7 +11,8 @@ import {
   updateDoc,
   type DocumentReference,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { LUXURY_BOT_REMOVED_ROOM, leaveDocId, presenceLine, presenceBadgesForDoc } from "./rooms";
 import { dropRoomSession } from "./roomSession";
 import { serverNow } from "./serverTime";
@@ -179,6 +180,17 @@ export async function deletePresenceUnlessParked(ref: DocumentReference): Promis
   }
 }
 
+// 🚪 Leave beats a park: leaving ends my /park first (the hours left come back as
+// coins, like /unpark), then my spot goes. Used by every leave: the Leave button,
+// leaving in the background, and logging out.
+export async function leaveRoomNow(ref: DocumentReference): Promise<boolean> {
+  const roomId = ref.parent.parent?.id || "";
+  if (roomId) {
+    await httpsCallable<{ roomId: string }, unknown>(functions, "unparkRoomPresence")({ roomId }).catch(() => {});
+  }
+  return deletePresenceUnlessParked(ref);
+}
+
 // Leave a room you are not currently looking at: remove the presence doc and
 // post "has left" (skipped when invisible / Presence Status INVISIBLE).
 /** Leaves quietly in the background. true = out of the room now (or never in);
@@ -196,7 +208,7 @@ export async function leaveRoomInBackground(uid: string, name: string): Promise<
   const quiet = String(presence.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
   const visitId = String(presence.get("visitId") || "") || null;
   // "has left" only once the delete really went through (a /parked spot stays).
-  if (!(await deletePresenceUnlessParked(presenceRef))) return false;
+  if (!(await leaveRoomNow(presenceRef))) return false;
   if (quiet || !username) return true;
   await setDoc(doc(db, "room_messages", name, "messages", leaveDocId(uid, visitId)), {
     text: presenceLine(name, username, level, false, presenceBadgesForDoc(me?.data())),

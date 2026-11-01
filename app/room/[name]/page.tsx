@@ -53,6 +53,7 @@ import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import {
   addOpenRoom,
   deletePresenceUnlessParked,
+  leaveRoomNow,
   clearAutoLeft,
   isAutoLeft,
   isRoomOpen,
@@ -880,7 +881,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       const leftVisit = visitId;
       // "has left" only once the delete really went through: a /parked spot
       // stays in the room and gets no line (like the app).
-      presenceWrite.then(() => deletePresenceUnlessParked(presenceRef)).then((deleted) => {
+      presenceWrite.then(() => leaveRoomNow(presenceRef)).then((deleted) => {
         if (!deleted || quietMe) return;
         setDoc(doc(db, "room_messages", roomName, "messages", leaveDocId(uid, leftVisit)), {
           text: presenceLine(roomName, profile.username, profile.level, false, profile.badges),

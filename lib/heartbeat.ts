@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { deleteField, doc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
 import { db } from "./firebase";
 import { canBeInvisible } from "./invisible";
+import { leaveRoomInBackground, readOpenRooms } from "./openRooms";
 
 // Online heartbeat, like the app: users/{uid}.lastActiveAt is refreshed every
 // 30 s while this tab is open and visible, so friends and profiles show
@@ -59,5 +60,9 @@ export function isOnlineNow(data: { lastActiveAt?: unknown } | undefined): boole
 /** Logout: offline at once for friends (like the app). Never touches the app's fcmToken. */
 export async function markOfflineForLogout(uid: string | undefined) {
   if (!uid) return;
+  // 🚪 Logging out leaves every open room (a parked ID too), like the app.
+  for (const name of readOpenRooms(uid)) {
+    await leaveRoomInBackground(uid, name).catch(() => {});
+  }
   await updateDoc(doc(db, "users", uid), { lastActiveAt: deleteField(), presenceStatus: "OFFLINE" }).catch(() => {});
 }
