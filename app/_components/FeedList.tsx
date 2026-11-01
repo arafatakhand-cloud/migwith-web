@@ -175,7 +175,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             className="flex items-center gap-3 border-b border-[#0F1D3A]/[0.08] bg-white/75 px-4 py-3"
           >
             {user ? <Avatar name={username} color={meColor} size={40} /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E6F0FC] text-lg">✍️</span>}
-            <span className="min-w-0 flex-1 truncate text-[15px] text-[#5A6F93]">{user ? `কী হচ্ছে, ${username}?` : "Log in to write a post"}</span>
+            <span className="min-w-0 flex-1 truncate text-[15px] text-[#5A6F93]">{user ? `What's on your mind, ${username}?` : "Log in to write a post"}</span>
             <span className="rounded-full bg-[#2563EB] px-4 py-1.5 text-[13px] font-extrabold text-white">Post</span>
           </Link>
         )}
