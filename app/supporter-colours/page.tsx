@@ -33,6 +33,7 @@ import {
 // (buySupporterColour). Fan colours only.
 
 const buyCall = httpsCallable<{ team: string; operationId: string }, { until?: number }>(functions, "buySupporterColour");
+const toggleCall = httpsCallable<{ on: boolean }, { ok: boolean }>(functions, "toggleSupporterBadge");
 const setPriceCall = httpsCallable<{ price?: number; days?: number; team?: string; reset?: boolean; image?: string }, { ok?: boolean }>(
   functions,
   "founderSetSupporterPrice"
@@ -52,6 +53,8 @@ export default function SupporterColoursPage() {
   const uid = user?.uid;
   const [balance, setBalance] = useState<number | null>(null);
   const [mine, setMine] = useState<{ team: string; until: number }>({ team: "", until: 0 });
+  const [badgeOn, setBadgeOn] = useState(true);
+  const [toggling, setToggling] = useState(false);
   const [league, setLeague] = useState("all");
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState<SupporterTeam | null>(null);
@@ -125,11 +128,28 @@ export default function SupporterColoursPage() {
     if (!uid) return;
     return onSnapshot(doc(db, "users", uid), (snap) => {
       setBalance(Number(snap.get("balance") || 0));
-      setMine({ team: String(snap.get("supporterTeam") || ""), until: Number(snap.get("supporterUntil") || 0) });
+      const on = String(snap.get("supporterTeam") || "");
+      setMine({ team: on || String(snap.get("supporterPaused") || ""), until: Number(snap.get("supporterUntil") || 0) });
+      setBadgeOn(!!on);
     });
   }, [uid]);
 
   const current = activeSupporterTeam(mine.team, mine.until);
+  // ⚽ ON / OFF (the days keep running while it's off)
+  const toggleBadge = async () => {
+    const next = !badgeOn;
+    setBadgeOn(next);
+    setToggling(true);
+    try {
+      await toggleCall({ on: next });
+      setMessage(next ? "⚽ Your Supporters Badge is ON." : "Your Supporters Badge is OFF — your days keep running.");
+    } catch (e: any) {
+      setBadgeOn(!next);
+      setMessage(e?.message || "Could not change the badge.");
+    } finally {
+      setToggling(false);
+    }
+  };
   const daysLeft = current ? Math.ceil((mine.until - Date.now()) / 86_400_000) : 0;
 
   const buy = async (t: SupporterTeam) => {
@@ -175,7 +195,7 @@ export default function SupporterColoursPage() {
 
         {/* my team: a hero card in the team's colours */}
         {current ? (
-          <div className="relative mt-3 overflow-hidden rounded-[22px] p-4 text-white shadow-lg" style={{ background: supporterBackground(current) }}>
+          <div className={`relative mt-3 overflow-hidden rounded-[22px] p-4 text-white shadow-lg transition ${badgeOn ? "" : "grayscale-[.65]"}`} style={{ background: supporterBackground(current) }}>
             <span className="pointer-events-none absolute -right-2 -top-6 select-none text-[86px] font-black leading-none text-white/10">{current.mark}</span>
             <div className="relative flex items-center gap-3">
               <span className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-white/95 shadow-md">
@@ -188,17 +208,33 @@ export default function SupporterColoursPage() {
                   {daysLeft} day{daysLeft === 1 ? "" : "s"} left · until {fmtDate(mine.until)}
                 </p>
               </div>
+              {/* ON / OFF */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={badgeOn}
+                aria-label="Show my Supporters Badge"
+                disabled={toggling}
+                onClick={toggleBadge}
+                className="flex shrink-0 flex-col items-center gap-1 self-start disabled:opacity-70"
+              >
+                <span className={`relative h-[30px] w-[54px] rounded-full shadow-inner transition ${badgeOn ? "bg-[#22C55E]" : "bg-white/35"}`}>
+                  <span className={`absolute top-[3px] h-6 w-6 rounded-full bg-white shadow transition-all ${badgeOn ? "left-[27px]" : "left-[3px]"}`} />
+                </span>
+                <span className="text-[10px] font-black tracking-wider text-white/90">{badgeOn ? "ON" : "OFF"}</span>
+              </button>
             </div>
             {/* how the name looks in a room */}
             <div className="relative mt-3 flex items-center gap-1 rounded-xl bg-white px-3 py-2 text-sm">
               <span className="font-bold" style={{ color: current.text }}>
                 {username || "you"}
               </span>
-              <SupporterBadge team={current} size={9} />
+              {badgeOn && <SupporterBadge team={current} size={9} />}
               <span className="font-bold" style={{ color: current.text }}>
                 :
               </span>
               <span className="text-[#222]">Come on! ⚽🔥</span>
+              {!badgeOn && <span className="ml-auto text-[11px] font-semibold text-[#8A93A8]">Badge hidden</span>}
             </div>
           </div>
         ) : (
