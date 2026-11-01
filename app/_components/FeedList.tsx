@@ -132,71 +132,69 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     }
   };
 
-  const meColor = colorOf(username) || "#F59F00";
+  const meColor = colorOf(username) || "#2563EB";
   return (
-    <>
-      <section className="mx-auto max-w-2xl pb-28">
-        {embedded || !author ? (
-          <div className="flex items-center gap-2.5 px-4 pb-1 pt-3">
-            {user ? <Avatar name={username} color={meColor} size={32} /> : <span className="text-2xl">📰</span>}
-            <h1 className="text-[22px] font-black text-[#0F1D3A]">Feed</h1>
+    <div className="feed-lav relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden">
+      <span aria-hidden className="pointer-events-none absolute -right-44 -top-28 h-[420px] w-[420px] rounded-full bg-[radial-gradient(rgba(167,139,250,.40),transparent_65%)]" />
+      <span aria-hidden className="pointer-events-none fixed -bottom-36 -left-40 h-[380px] w-[380px] rounded-full bg-[radial-gradient(rgba(96,165,250,.40),transparent_65%)]" />
+      <section className="relative mx-auto max-w-2xl pb-10">
+        {author ? (
+          <div className="px-3 sm:px-6">
+            <PageTitle title={`${author}'s Feed`} subtitle="Every post by this writer" icon="📰" backHref={`/profile/${encodeURIComponent(author)}`} />
           </div>
         ) : (
-          <div className="px-3 sm:px-6">
-            <PageTitle
-              title={`${author}'s Feed`}
-              subtitle="Every post by this writer"
-              icon="📰"
-              backHref={`/profile/${encodeURIComponent(author)}`}
-            />
+          <div className="flex items-center justify-between px-4 pb-1 pt-3.5">
+            <h1 className="text-[26px] font-black tracking-tight text-[#1E1B4B]">Feed</h1>
+            {user && (
+              <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
+                <Avatar name={username} color={meColor} size={34} ring />
+              </Link>
+            )}
           </div>
         )}
 
         {!author && (
-          <div className="flex border-b border-[#0F1D3A]/10 px-1.5 pt-1">
+          <div className="mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/55 p-1">
             {TABS.map(([k, label]) => (
               <button
                 key={k}
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
-                className={`relative flex-1 pb-2.5 pt-2 text-[14.5px] font-bold transition ${tab === k ? "text-[#0F1D3A]" : "text-[#6B7FA6]"}`}
+                className={`flex-1 rounded-xl py-2 text-[13px] font-extrabold transition ${
+                  tab === k
+                    ? "bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
+                    : "text-[#6B6F9A]"
+                }`}
               >
+                {k === "popular" && tab === k ? "🔥 " : ""}
                 {label}
-                {tab === k && <span className="absolute inset-x-[30%] bottom-0 h-[3.5px] rounded-full bg-[#2563EB]" />}
               </button>
             ))}
           </div>
         )}
 
-        {/* ✍️ "What's happening?" — opens the writer */}
+        {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && (
           <Link
             href={user ? "/feed/write" : "/login"}
-            className="flex items-center gap-3 border-b border-[#0F1D3A]/[0.08] bg-white/75 px-4 py-3"
+            className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 shadow-[0_8px_20px_-14px_rgba(40,50,110,.5)] transition active:scale-[.99]"
           >
-            {user ? <Avatar name={username} color={meColor} size={40} /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E6F0FC] text-lg">✍️</span>}
-            <span className="min-w-0 flex-1 truncate text-[15px] text-[#5A6F93]">{user ? `What's on your mind, ${username}?` : "Log in to write a post"}</span>
-            <span className="rounded-full bg-[#2563EB] px-4 py-1.5 text-[13px] font-extrabold text-white">Post</span>
+            {user ? <Avatar name={username} color={meColor} size={40} ring /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>}
+            <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{user ? `What's on your mind, ${username}?` : "Log in to write a post"}</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px]">🖼</span>
           </Link>
         )}
 
-        {error && <p className="mx-3 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mx-3.5 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
         {posts === null ? (
-          <div>
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="flex animate-pulse gap-2.5 border-b border-[#0F1D3A]/[0.08] px-4 py-3">
-                <div className="h-10 w-10 shrink-0 rounded-full bg-white/70" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3 w-1/3 rounded bg-white/70" />
-                  <div className="h-4 w-2/3 rounded bg-white/70" />
-                  <div className="h-24 rounded-2xl bg-white/60" />
-                </div>
-              </div>
+          <div className="space-y-3 px-3.5">
+            {[0, 1].map((i) => (
+              <div key={i} className="h-[300px] animate-pulse rounded-[22px] bg-white/60" />
             ))}
           </div>
         ) : posts.length === 0 ? (
-          <div className="mt-10 text-center text-[#5A6F93]">
+          <div className="mt-10 text-center text-[#6B6F9A]">
             <div className="text-4xl">📰</div>
             <p className="mt-2 font-semibold">
               {tab === "mine" && !author
@@ -209,45 +207,46 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     : "Log in to see your friends' posts."
                   : "No posts here yet."}
             </p>
-            {user && <p className="mt-1 text-sm">Be the first — tap Post.</p>}
+            {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
-          <div>
+          <div className="space-y-3 px-3.5">
             {posts.map((p) => (
-              <ThreadPost key={p.id} p={p} color={colorOf(p.author)} liked={liked.has(p.id)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} color={colorOf(p.author)} liked={liked.has(p.id)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
           </div>
         )}
       </section>
 
-      <Link
-        href={user ? "/feed/write" : "/login"}
-        aria-label="Write a post"
-        className="fixed bottom-6 right-5 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] text-[24px] shadow-[0_12px_24px_-8px_rgba(29,78,216,.8)] transition active:scale-95"
-      >
-        ✍️
-      </Link>
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#0F1D3A]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
+        <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
       )}
-    </>
+    </div>
   );
 }
 
-function Avatar({ name, color, size }: { name: string; color: string; size: number }) {
-  return (
+function Avatar({ name, color, size, ring = false }: { name: string; color: string; size: number; ring?: boolean }) {
+  const face = (
     <span
-      className="flex shrink-0 items-center justify-center rounded-full font-extrabold text-white shadow-[0_2px_6px_-2px_rgba(0,0,0,.25)]"
-      style={{ width: size, height: size, fontSize: size * 0.42, background: `linear-gradient(135deg, ${color}CC, ${color})` }}
+      className="flex shrink-0 items-center justify-center rounded-full font-black text-white"
+      style={{
+        width: size,
+        height: size,
+        fontSize: size * 0.42,
+        background: `linear-gradient(135deg, ${color}B3, ${color})`,
+        border: ring ? "2.5px solid #EEF0FF" : undefined,
+      }}
     >
       {name.slice(0, 1).toUpperCase() || "?"}
     </span>
   );
+  if (!ring) return face;
+  return <span className="flex shrink-0 rounded-full bg-[conic-gradient(#38BDF8,#6366F1,#A855F7,#EC4899,#38BDF8)] p-[2.5px]">{face}</span>;
 }
 
-/** One post, Thread style: photo-circle on the left; name · time · category,
- *  title, text, the photo, then 💬 ❤️ 👁 ↗ (❤️ likes right here). */
-function ThreadPost({ p, color, liked, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; onLike: () => void; onShare: () => void }) {
+/** One post as a soft white card: photo-ring, name · time · 👁, category chip,
+ *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
+function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; onLike: () => void; onShare: () => void }) {
   const router = useRouter();
   const pic = p.cover || p.firstImage;
   const c = color || "#2563EB";
@@ -255,38 +254,44 @@ function ThreadPost({ p, color, liked, onLike, onShare }: { p: BlogPost; color: 
   return (
     <article
       onClick={open}
-      className="flex cursor-pointer gap-2.5 border-b border-[#0F1D3A]/[0.08] bg-white/55 px-4 py-3 transition hover:bg-white/70 active:bg-white/80"
+      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 bg-white/85 p-3 shadow-[0_10px_24px_-16px_rgba(40,50,110,.55)] transition active:scale-[.995]"
     >
-      <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="h-fit">
-        <Avatar name={p.author} color={c} size={40} />
-      </Link>
-      <div className="min-w-0 flex-1">
-        <div className="flex min-w-0 items-center gap-1 text-[13.5px]">
-          <span data-notranslate className="truncate font-extrabold" style={{ color: c }}>
+      <div className="flex items-center gap-2.5">
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()}>
+          <Avatar name={p.author} color={c} size={40} ring />
+        </Link>
+        <div className="min-w-0">
+          <div data-notranslate className="truncate text-[14px] font-extrabold" style={{ color: c }}>
             {p.author}
-          </span>
-          <span className="shrink-0 text-[#7D8CAB]">
-            · {blogAgo(p.createdMs)} · {blogCategoryLabel(p.category)}
-          </span>
+          </div>
+          <div className="text-[11.5px] text-[#7A7FA6]">
+            {blogAgo(p.createdMs)} · 👁 {blogShort(p.views)}
+          </div>
         </div>
-        <h2 className="mt-0.5 text-[15.5px] font-bold leading-snug text-[#0F1D3A]">{p.title}</h2>
-        {p.excerpt && <p className="mt-0.5 line-clamp-3 text-[14px] leading-relaxed text-[#33476B]">{p.excerpt}</p>}
-        {pic && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={pic} alt="" loading="lazy" className="mt-2 max-h-[300px] w-full rounded-2xl border border-black/[0.06] object-cover" />
-        )}
-        <div className="mt-1.5 flex items-center justify-between pr-2 text-[13px] font-semibold text-[#6B7FA6]" onClick={(e) => e.stopPropagation()}>
-          <button type="button" onClick={open} className="flex items-center gap-1 py-1.5">
-            💬 {blogShort(p.comments)}
-          </button>
-          <button type="button" onClick={onLike} className={`flex items-center gap-1 py-1.5 transition active:scale-125 ${liked ? "text-[#E2366F]" : ""}`}>
-            {liked ? "❤️" : "🤍"} {blogShort(p.likes)}
-          </button>
-          <span className="flex items-center gap-1 py-1.5">👁 {blogShort(p.views)}</span>
-          <button type="button" onClick={onShare} className="py-1.5 pl-2" aria-label="Share">
-            ↗
-          </button>
-        </div>
+        <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>
+      </div>
+      <h2 className="mx-0.5 mt-2.5 text-[16.5px] font-black leading-snug text-[#1E1B4B]">{p.title}</h2>
+      {p.excerpt && <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">{p.excerpt}</p>}
+      {pic && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={pic} alt="" loading="lazy" className="mt-2.5 max-h-[320px] w-full rounded-2xl object-cover" />
+      )}
+      <div className="mt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={onLike}
+          className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
+            liked ? "bg-[#FFE8F1] text-[#DB2777]" : "bg-[#F3F2FF] text-[#4F46E5]"
+          }`}
+        >
+          {liked ? "❤️" : "🤍"} {blogShort(p.likes)}
+        </button>
+        <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
+          💬 {blogShort(p.comments)}
+        </button>
+        <button type="button" onClick={onShare} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
+          ↗ Share
+        </button>
       </div>
     </article>
   );
