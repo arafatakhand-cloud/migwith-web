@@ -72,7 +72,9 @@ export default function AppearancePage() {
             <div className="rounded-2xl bg-white p-3.5 shadow-sm">
               <p className="font-extrabold text-[#0B2A5B]">Choose your theme</p>
               <p className="text-xs text-[#5B6B8C]">Changes the colours of the whole site — buttons, bars and accents. Applies instantly.</p>
+              <p className="mt-2 text-xs text-[#5B6B8C]">Pick one and the whole app changes to it.</p>
             </div>
+            <p className="mt-3 text-[11px] font-black tracking-widest text-[#5B6B8C]">APP THEMES</p>
             <div className="mt-3 grid gap-3 lg:grid-cols-2">
               {THEMES.map(([id, name, line, bg, primary, secondary]) => {
                 const on = theme === id;
