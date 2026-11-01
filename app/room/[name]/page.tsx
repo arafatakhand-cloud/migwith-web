@@ -1933,7 +1933,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // back in first ("has entered") if I was taken out from another phone / tab
       await restorePresenceRef.current?.();
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
-        text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet}\n` : ""}${clean}`,
+        // the quote keeps only the replied line: an older "↩ name: …" quote line is dropped, so replies never nest
+        text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet.replace(/^↩ [^\n]*\n/, "")}\n` : ""}${clean}`,
         sender: profile.username,
         senderUid: user.uid,
         type: "chat",
