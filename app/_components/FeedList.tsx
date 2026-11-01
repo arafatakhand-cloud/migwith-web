@@ -7,7 +7,7 @@ import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
-import { useSenderColors } from "../../lib/senderColors";
+import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { PageTitle } from "./LightCards";
 import {
   blogAgo,
@@ -226,7 +226,17 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 }
 
 function Avatar({ name, color, size, ring = false }: { name: string; color: string; size: number; ring?: boolean }) {
-  const face = (
+  // 📷 the person's profile photo when they have one, else their first letter
+  const photo = cachedPhotoOf(name);
+  const face = photo ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={photo}
+      alt=""
+      className="shrink-0 rounded-full bg-white object-cover"
+      style={{ width: size, height: size, border: ring ? "2.5px solid #EEF0FF" : undefined }}
+    />
+  ) : (
     <span
       className="flex shrink-0 items-center justify-center rounded-full font-black text-white"
       style={{

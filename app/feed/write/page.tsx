@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { uploadChatImage } from "../../../lib/imageUpload";
 import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
+import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
 
 // ✍️ New post (or ?edit=<id>): a soft lavender sheet that slides up — who you
 // are + the category ("💬 Life ▾" opens the category picker), a big title, the
@@ -59,6 +60,9 @@ function BlogWrite() {
   const coverInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const draftKey = user ? `migwith.feedDraft.${user.uid}` : "";
+  // 📷 my profile photo (looked up with the name colours)
+  useSenderColors(username ? [username] : []);
+  const myPhoto = cachedPhotoOf(username);
 
   // editing: load the post (its photo lines become the photo list);
   // a new post: bring back the draft kept on this phone
@@ -198,9 +202,14 @@ function BlogWrite() {
 
         <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto px-[18px] pb-28">
           <div className="flex items-center gap-2.5 pt-[18px]">
-            <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4DABF7] to-[#1D4ED8] text-[17px] font-black text-white shadow-[0_4px_10px_-4px_rgba(29,78,216,.6)]">
-              {username.slice(0, 1).toUpperCase() || "?"}
-            </span>
+            {myPhoto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={myPhoto} alt="" className="h-[42px] w-[42px] shrink-0 rounded-full object-cover shadow-[0_4px_10px_-4px_rgba(29,78,216,.6)]" />
+            ) : (
+              <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4DABF7] to-[#1D4ED8] text-[17px] font-black text-white shadow-[0_4px_10px_-4px_rgba(29,78,216,.6)]">
+                {username.slice(0, 1).toUpperCase() || "?"}
+              </span>
+            )}
             <div className="min-w-0">
               <b data-notranslate className="block truncate text-[15px]">
                 {username}

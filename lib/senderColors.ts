@@ -53,7 +53,7 @@ function roleColor(role: string): string {
   }
 }
 
-type Profile = { role: string; shopColor: string | null; luckyUntil: number; supporter?: string; supporterUntil?: number };
+type Profile = { role: string; shopColor: string | null; luckyUntil: number; supporter?: string; supporterUntil?: number; photo?: string };
 
 // Shared by every room, so switching rooms shows the right colours at once.
 const cache = new Map<string, Profile>();
@@ -70,7 +70,7 @@ const savedAt = new Map<string, number>();
     const now = Date.now();
     for (const [k, v] of Object.entries(saved)) {
       if (!v || now - (v.at || 0) >= STORE_MAX_AGE) continue;
-      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil, supporter: v.supporter, supporterUntil: v.supporterUntil });
+      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil, supporter: v.supporter, supporterUntil: v.supporterUntil, photo: v.photo });
       savedAt.set(k, v.at);
     }
   } catch {}
@@ -118,6 +118,11 @@ export function supporterTeamOf(name: string): SupporterTeam | null {
 }
 
 /** The role looked up for a name (after useSenderColors fetched it), or "". */
+/** 📷 The profile photo of a name (after useSenderColors looked it up), or "". */
+export function cachedPhotoOf(name: string): string {
+  return cache.get(name.trim().toLowerCase())?.photo || "";
+}
+
 export function cachedRoleOf(name: string): string {
   return cache.get(name.trim().toLowerCase())?.role || "";
 }
@@ -228,6 +233,7 @@ export function useSenderColors(names: string[], hot: string[] = []): (name: str
               luckyUntil: Number(d.get("luckyUntil") || 0),
               supporter: String(d.get("supporterTeam") || ""),
               supporterUntil: Number(d.get("supporterUntil") || 0),
+              photo: String(d.get("photoUrl") || ""),
             });
             savedAt.set(name.toLowerCase(), now);
             lookedUpAt.set(name.toLowerCase(), now);
