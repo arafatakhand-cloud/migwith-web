@@ -237,7 +237,7 @@ export default function BlogPostPage() {
             </span>
           </div>
           <h1 className="mt-2 text-[22px] font-extrabold leading-tight text-[#0F1D3A]">{post.title}</h1>
-          <BlogBody body={post.body} />
+          <BlogBody body={post.body} mentions={post.mentions} />
 
           <div className="mt-3 flex gap-2.5">
             <button
@@ -337,7 +337,7 @@ export default function BlogPostPage() {
 }
 
 /** The writing: paragraphs, **bold**, @names and ![](photo) lines. */
-function BlogBody({ body }: { body: string }) {
+function BlogBody({ body, mentions }: { body: string; mentions: string[] }) {
   const blocks = body.split(/\n/);
   return (
     <div className="mt-3 text-[15px] leading-[1.65] text-[#253A5E]">
@@ -351,20 +351,28 @@ function BlogBody({ body }: { body: string }) {
         if (!line.trim()) return <div key={i} className="h-3" />;
         return (
           <p key={i} className="break-words">
-            {inline(line)}
+            {inline(line, mentions)}
           </p>
         );
       })}
     </div>
   );
 }
-function inline(line: string): React.ReactNode[] {
-  // **bold** and @mentions
+function inline(line: string, mentions: string[] = []): React.ReactNode[] {
+  // **bold** and @mentions (a tagged friend = a soft purple pill)
   return line.split(/(\*\*[^*]+\*\*|@[A-Za-z0-9_.-]{2,30})/g).map((part, i) => {
     if (/^\*\*[^*]+\*\*$/.test(part)) return <b key={i}>{part.slice(2, -2)}</b>;
     if (/^@[A-Za-z0-9_.-]{2,30}$/.test(part))
       return (
-        <Link key={i} href={`/profile/${encodeURIComponent(part.slice(1))}`} className="font-semibold text-[#2563EB]">
+        <Link
+          key={i}
+          href={`/profile/${encodeURIComponent(part.slice(1))}`}
+          className={
+            mentions.includes(part.slice(1).toLowerCase())
+              ? "rounded-md bg-[#EFEAFF] px-1.5 py-[1px] font-bold text-[#4C3FB0]"
+              : "font-semibold text-[#2563EB]"
+          }
+        >
           {part}
         </Link>
       );

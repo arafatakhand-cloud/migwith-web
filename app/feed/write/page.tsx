@@ -10,6 +10,7 @@ import { uploadChatImage } from "../../../lib/imageUpload";
 import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
+import { useFriendRequests } from "../../../lib/friends";
 
 // ✍️ New post (or ?edit=<id>), the "N3" look: a soft lavender sheet — who you
 // are, the categories as coloured chips, the title + story in one white card,
@@ -60,8 +61,51 @@ function BlogWrite() {
   const photoInput = useRef<HTMLInputElement>(null);
   const draftKey = user ? `migwith.feedDraft.${user.uid}` : "";
   // 📷 my profile photo (looked up with the name colours)
-  useSenderColors(username ? [username] : []);
+  // @mention (M1): typing @ + letters shows matching friends under the text
+  const { friends } = useFriendRequests(username);
+  const [caret, setCaret] = useState(0);
+  const [pick, setPick] = useState(0);
+  const [mentionOff, setMentionOff] = useState("");
+  const typed = text.slice(0, caret).match(/(^|\s)@([A-Za-z0-9_.\-]{0,30})$/);
+  const mq = typed ? typed[2].toLowerCase() : null;
+  const mentionKey = typed ? `${caret - typed[2].length}` : "";
+  const matches =
+    mq === null || mentionOff === mentionKey
+      ? []
+      : friends
+          .filter((f) => f.toLowerCase().includes(mq))
+          .sort((a, b) => Number(!a.toLowerCase().startsWith(mq)) - Number(!b.toLowerCase().startsWith(mq)))
+          .slice(0, 5);
+  useSenderColors(username ? [username, ...matches] : matches);
   const myPhoto = cachedPhotoOf(username);
+  const choose = (name: string) => {
+    if (!typed) return;
+    const start = caret - typed[2].length - 1;
+    const rest = text.slice(caret).replace(/^[A-Za-z0-9_.\-]*/, "");
+    const add = `@${name} `;
+    setText(text.slice(0, start) + add + rest.replace(/^ /, ""));
+    const pos = start + add.length;
+    setCaret(pos);
+    setPick(0);
+    requestAnimationFrame(() => {
+      const el = area.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  };
+  const onMentionKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!matches.length) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      setPick((p) => (p + (e.key === "ArrowDown" ? 1 : matches.length - 1)) % matches.length);
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault();
+      choose(matches[Math.min(pick, matches.length - 1)]);
+    } else if (e.key === "Escape") {
+      setMentionOff(mentionKey);
+    }
+  };
 
   // editing: load the post (cover first, then the photos in the story);
   // a new post: bring back the draft kept on this phone
@@ -249,11 +293,48 @@ function BlogWrite() {
             <textarea
               ref={area}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                setCaret(e.target.selectionStart ?? e.target.value.length);
+                setPick(0);
+              }}
+              onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
+              onKeyDown={onMentionKey}
               maxLength={19000}
               placeholder="What's on your mind? Share a story, a tip or a moment…"
               className="block h-[150px] w-full resize-none bg-transparent px-4 py-3 text-[15px] leading-[1.6] text-[#3F4373] outline-none placeholder:text-[#3F4373]/45"
             />
+            {matches.length > 0 && (
+              <div className="mention-pop mx-2.5 mb-2.5 rounded-2xl bg-white p-1.5 shadow-[0_14px_30px_-12px_rgba(76,63,176,.45)] ring-1 ring-[#6366F1]/10">
+                {matches.map((f, i) => {
+                  const ph = cachedPhotoOf(f);
+                  const on = i === Math.min(pick, matches.length - 1);
+                  return (
+                    <button
+                      key={f}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => choose(f)}
+                      onMouseEnter={() => setPick(i)}
+                      className={`flex w-full items-center gap-2.5 rounded-xl px-2 py-1.5 text-left ${on ? "bg-[#EFEAFF]" : ""}`}
+                    >
+                      {ph ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={ph} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
+                      ) : (
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F472B6] to-[#8B5CF6] text-[13px] font-black text-white">
+                          {f.slice(0, 1).toUpperCase()}
+                        </span>
+                      )}
+                      <span className="min-w-0">
+                        <span className={`block truncate text-[14px] font-bold ${on ? "text-[#4C3FB0]" : "text-[#1E1B4B]"}`}>{f}</span>
+                        <span className="block text-[11px] text-[#9AA0C4]">Friend · gets a notification</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* photos: the first one is the cover */}
@@ -337,7 +418,17 @@ function BlogWrite() {
             <Tool label="Emoji" onClick={() => setEmoji(!emoji)}>
               😀
             </Tool>
-            <Tool label="Mention" onClick={() => insert("@")}>
+            <Tool
+              label="Mention"
+              onClick={() => {
+                const el = area.current;
+                const at = el?.selectionStart ?? text.length;
+                const needSpace = at > 0 && !/\s/.test(text[at - 1]);
+                insert(needSpace ? " @" : "@");
+                setCaret(at + (needSpace ? 2 : 1));
+                setMentionOff("");
+              }}
+            >
               <b>@</b>
             </Tool>
             <span className="ml-auto pr-2 text-[11px] text-[#9AA0C4]">{text.length} / 19000</span>

@@ -22,6 +22,8 @@ export type BlogPost = {
   views: number;
   createdMs: number;
   edited: boolean;
+  /** friends tagged with @ (they were notified) — shown as a pill */
+  mentions: string[];
 };
 
 export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number };
@@ -72,6 +74,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     views: Number(d.views || 0),
     createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
     edited: d.edited === true,
+    mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {

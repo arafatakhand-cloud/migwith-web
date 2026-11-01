@@ -1475,6 +1475,9 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
 }
+.mention-pop {
+  animation: npUp 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
 .np-pop {
   animation: npUp 0.26s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
