@@ -11,14 +11,14 @@ import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
 
-// ✍️ New post (or ?edit=<id>): a soft lavender sheet that slides up — who you
-// are + the category ("💬 Life ▾" opens the category picker), a big title, the
-// story, the cover and photos, and a floating bar (🖼 photos · 🌄 cover · B ·
-// 😀 · @ · Publish). A new post is kept on this phone as you type ("✓ Saved")
-// and comes back if the page is closed by mistake. 5 posts a day (server).
+// ✍️ New post (or ?edit=<id>), the "N3" look: a soft lavender sheet — who you
+// are, the categories as coloured chips, the title + story in one white card,
+// the photos as squares (the FIRST one is the cover, "★ COVER"), a big
+// Publish button and a small tool bar (📷 · B · 😀 · @). A new post is kept on
+// this phone as you type ("✓ Saved"). 5 posts a day (the server counts).
 
 const EMOJIS = ["😀", "😂", "😍", "🥰", "😎", "😢", "😡", "👍", "🙏", "🔥", "❤️", "🎉", "☕", "🌧️", "🎮", "🎵", "⚽", "✨"];
-// the category picker's colours
+// each category's chip colours (background, ink)
 const CAT_COLORS: Record<string, [string, string]> = {
   life: ["#EEF4FF", "#1D4ED8"],
   games: ["#F3EDFF", "#6D28D9"],
@@ -30,7 +30,8 @@ const CAT_COLORS: Record<string, [string, string]> = {
   other: ["#F8FAFC", "#475569"],
 };
 const IMG_LINE = /^!\[\]\((https:\/\/[^)\s]+)\)$/;
-type Draft = { title: string; text: string; cover: string; photos: string[]; category: string };
+const MAX_PHOTOS = 10;
+type Draft = { title: string; text: string; cover?: string; photos: string[]; category: string };
 
 export default function BlogWritePage() {
   return (
@@ -47,24 +48,22 @@ function BlogWrite() {
   const { user, username } = useCurrentUser();
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
-  const [cover, setCover] = useState("");
+  // all photos; photos[0] is the cover
   const [photos, setPhotos] = useState<string[]>([]);
   const [category, setCategory] = useState("life");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [emoji, setEmoji] = useState(false);
-  const [picker, setPicker] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const area = useRef<HTMLTextAreaElement>(null);
-  const coverInput = useRef<HTMLInputElement>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const draftKey = user ? `migwith.feedDraft.${user.uid}` : "";
   // 📷 my profile photo (looked up with the name colours)
   useSenderColors(username ? [username] : []);
   const myPhoto = cachedPhotoOf(username);
 
-  // editing: load the post (its photo lines become the photo list);
+  // editing: load the post (cover first, then the photos in the story);
   // a new post: bring back the draft kept on this phone
   useEffect(() => {
     if (!user) return;
@@ -72,10 +71,11 @@ function BlogWrite() {
       getDoc(doc(db, "blog_posts", editId)).then((s) => {
         if (!s.exists() || s.get("authorUid") !== user.uid) return router.replace("/feed");
         const lines = String(s.get("body") || "").split("\n");
+        const inBody = lines.map((l) => l.trim().match(IMG_LINE)?.[1] || "").filter(Boolean);
+        const cover = String(s.get("cover") || "");
         setTitle(String(s.get("title") || ""));
-        setPhotos(lines.map((l) => l.trim().match(IMG_LINE)?.[1] || "").filter(Boolean));
+        setPhotos([...(cover ? [cover] : []), ...inBody].slice(0, MAX_PHOTOS));
         setText(lines.filter((l) => !IMG_LINE.test(l.trim())).join("\n").trim());
-        setCover(String(s.get("cover") || ""));
         setCategory(String(s.get("category") || "other"));
         setLoaded(true);
       });
@@ -86,8 +86,7 @@ function BlogWrite() {
       if (d) {
         setTitle(d.title || "");
         setText(d.text || "");
-        setCover(d.cover || "");
-        setPhotos(Array.isArray(d.photos) ? d.photos : []);
+        setPhotos([...(d.cover ? [d.cover] : []), ...(Array.isArray(d.photos) ? d.photos : [])].slice(0, MAX_PHOTOS));
         setCategory(d.category || "life");
       }
     } catch {
@@ -102,24 +101,16 @@ function BlogWrite() {
     setSaved(false);
     const t = setTimeout(() => {
       try {
-        const empty = !title.trim() && !text.trim() && !cover && photos.length === 0;
+        const empty = !title.trim() && !text.trim() && photos.length === 0;
         if (empty) localStorage.removeItem(draftKey);
-        else localStorage.setItem(draftKey, JSON.stringify({ title, text, cover, photos, category } satisfies Draft));
+        else localStorage.setItem(draftKey, JSON.stringify({ title, text, photos, category } satisfies Draft));
         setSaved(!empty);
       } catch {
         // storage blocked
       }
     }, 600);
     return () => clearTimeout(t);
-  }, [title, text, cover, photos, category, loaded, editId, draftKey]);
-
-  // the story box grows with the text
-  useEffect(() => {
-    const el = area.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.max(120, el.scrollHeight)}px`;
-  }, [text]);
+  }, [title, text, photos, category, loaded, editId, draftKey]);
 
   const insert = (before: string, after = "") => {
     const el = area.current;
@@ -134,15 +125,17 @@ function BlogWrite() {
     });
   };
 
-  const upload = async (file: File | undefined, kind: "cover" | "photo") => {
-    if (!file || !user) return;
-    if (kind === "photo" && photos.length >= 10) return setError("At most 10 photos in one post.");
+  const upload = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) return setError(`At most ${MAX_PHOTOS} photos in one post.`);
     setError("");
-    setBusy(kind === "cover" ? "Uploading…" : "Uploading…");
+    setBusy("Uploading…");
     try {
-      const url = await uploadChatImage(`room_images/blog_${user.uid}`, file);
-      if (kind === "cover") setCover(url);
-      else setPhotos((p) => [...p, url]);
+      for (const f of Array.from(files).slice(0, room)) {
+        const url = await uploadChatImage(`room_images/blog_${user.uid}`, f);
+        setPhotos((p) => [...p, url].slice(0, MAX_PHOTOS));
+      }
     } catch (e) {
       setError(blogError(e));
     } finally {
@@ -157,7 +150,9 @@ function BlogWrite() {
     if (!text.trim() && photos.length === 0) return setError("Please write something.");
     setBusy(editId ? "Saving…" : "Publishing…");
     try {
-      const body = [text.trim(), ...photos.map((u) => `![](${u})`)].filter(Boolean).join("\n\n");
+      // the first photo is the cover; the rest go after the story
+      const [cover = "", ...rest] = photos;
+      const body = [text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
       const data = { title: title.trim(), body, cover, category };
       if (editId) {
         await blogCall("edit", { postId: editId, ...data });
@@ -179,11 +174,11 @@ function BlogWrite() {
   const close = () => (window.history.length > 1 ? router.back() : router.push("/feed"));
 
   if (!ready) return null;
-  const cat = BLOG_CATEGORIES.find(([k]) => k === category) || BLOG_CATEGORIES[0];
+  // the photo squares: the photos, then "+" squares (at least 3 squares in all)
+  const plusSquares = photos.length >= MAX_PHOTOS ? 0 : Math.max(1, 3 - photos.length);
   return (
     <PageShell light>
-      <input ref={coverInput} type="file" accept="image/*" hidden onChange={(e) => (upload(e.target.files?.[0], "cover"), (e.target.value = ""))} />
-      <input ref={photoInput} type="file" accept="image/*" hidden onChange={(e) => (upload(e.target.files?.[0], "photo"), (e.target.value = ""))} />
+      <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => (upload(e.target.files), (e.target.value = ""))} />
 
       {/* dimmed backdrop + the sheet */}
       <div className="fixed inset-0 z-40 bg-[#0F1D3A]/30 backdrop-blur-[3px]" onClick={close} />
@@ -200,84 +195,113 @@ function BlogWrite() {
           <span className={`w-[64px] text-right text-[12px] font-bold text-[#16A34A] transition-opacity ${saved ? "opacity-100" : "opacity-0"}`}>✓ Saved</span>
         </div>
 
-        <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto px-[18px] pb-28">
-          <div className="flex items-center gap-2.5 pt-[18px]">
-            {myPhoto ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={myPhoto} alt="" className="h-[42px] w-[42px] shrink-0 rounded-full object-cover shadow-[0_4px_10px_-4px_rgba(29,78,216,.6)]" />
-            ) : (
-              <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#4DABF7] to-[#1D4ED8] text-[17px] font-black text-white shadow-[0_4px_10px_-4px_rgba(29,78,216,.6)]">
-                {username.slice(0, 1).toUpperCase() || "?"}
-              </span>
-            )}
+        <div className="relative z-[1] min-h-0 flex-1 overflow-y-auto pb-44">
+          {/* who */}
+          <div className="flex items-center gap-2.5 px-[18px] pt-4">
+            <span className="flex shrink-0 rounded-full bg-[conic-gradient(#38BDF8,#6366F1,#A855F7,#EC4899,#38BDF8)] p-[2.5px]">
+              {myPhoto ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={myPhoto} alt="" className="h-[42px] w-[42px] rounded-full border-[2.5px] border-[#EEF0FF] object-cover" />
+              ) : (
+                <span className="flex h-[42px] w-[42px] items-center justify-center rounded-full border-[2.5px] border-[#EEF0FF] bg-gradient-to-br from-[#4DABF7] to-[#1D4ED8] text-[17px] font-black text-white">
+                  {username.slice(0, 1).toUpperCase() || "?"}
+                </span>
+              )}
+            </span>
             <div className="min-w-0">
               <b data-notranslate className="block truncate text-[15px]">
                 {username}
               </b>
               <span className="text-[11.5px] text-[#6B6F9A]">Posting to everyone 🌍</span>
             </div>
-            <button type="button" onClick={() => setPicker(true)} className="np-chip ml-auto shrink-0 rounded-[14px] px-3 py-2 text-[13px] font-extrabold text-[#4F46E5]">
-              {cat[1]} ▾
-            </button>
           </div>
 
-          {cover && (
-            <div className="relative mt-4 h-[160px] overflow-hidden rounded-[20px] border border-[#6366F1]/20 shadow-[0_12px_26px_-16px_rgba(30,40,90,.6)]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={cover} alt="" className="h-full w-full object-cover" />
-              <span className="absolute left-2.5 top-2.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-extrabold tracking-wider text-white">COVER</span>
-              <button type="button" onClick={() => setCover("")} aria-label="Remove cover" className="absolute right-2.5 top-2.5 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-[13px] text-white">
-                ✕
-              </button>
-            </div>
-          )}
-
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={120}
-            placeholder="Give it a title…"
-            className="mt-[18px] w-full bg-transparent text-[25px] font-black tracking-tight text-[#1E1B4B] outline-none placeholder:text-[#1E1B4B]/30"
-          />
-          <textarea
-            ref={area}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            maxLength={19000}
-            placeholder="What's on your mind? Share a story, a tip or a moment…"
-            className="mt-2 w-full resize-none bg-transparent text-[15px] leading-[1.6] text-[#3F4373] outline-none placeholder:text-[#3F4373]/45"
-          />
-
-          {photos.length > 0 && (
-            <div className={`mt-3 ${photos.length === 1 ? "" : "no-scrollbar -mx-[18px] flex gap-2.5 overflow-x-auto px-[18px]"}`}>
-              {photos.map((u, i) => (
-                <div
-                  key={u + i}
-                  className={`relative shrink-0 overflow-hidden rounded-[20px] border border-[#6366F1]/20 shadow-[0_12px_26px_-16px_rgba(30,40,90,.6)] ${
-                    photos.length === 1 ? "h-[160px] w-full" : "h-[140px] w-[140px]"
+          {/* categories */}
+          <div className="no-scrollbar flex gap-[7px] overflow-x-auto px-4 pt-3.5">
+            {BLOG_CATEGORIES.map(([k, label]) => {
+              const [bg, fg] = CAT_COLORS[k] || CAT_COLORS.other;
+              const on = k === category;
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setCategory(k)}
+                  className={`shrink-0 rounded-full px-3 py-2 text-[12.5px] font-extrabold transition active:scale-95 ${
+                    on ? "bg-gradient-to-br from-[#38BDF8] to-[#6366F1] text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]" : ""
                   }`}
+                  style={on ? undefined : { background: bg, color: fg }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={u} alt="" className="h-full w-full object-cover" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* title + story in one white card */}
+          <div className="mx-3.5 mt-3 overflow-hidden rounded-3xl border border-[#6366F1]/15 bg-white/85 shadow-[0_12px_26px_-16px_rgba(40,50,110,.5)]">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={120}
+              placeholder="Give it a title…"
+              className="w-full border-b border-[#ECEAFD] bg-transparent px-4 pb-3 pt-4 text-[22px] font-black tracking-tight text-[#1E1B4B] outline-none placeholder:text-[#1E1B4B]/30"
+            />
+            <textarea
+              ref={area}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              maxLength={19000}
+              placeholder="What's on your mind? Share a story, a tip or a moment…"
+              className="block h-[150px] w-full resize-none bg-transparent px-4 py-3 text-[15px] leading-[1.6] text-[#3F4373] outline-none placeholder:text-[#3F4373]/45"
+            />
+          </div>
+
+          {/* photos: the first one is the cover */}
+          <div className="no-scrollbar flex gap-2.5 overflow-x-auto px-4 pt-3">
+            {photos.map((u, i) => (
+              <div key={u + i} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px] shadow-[0_8px_18px_-10px_rgba(30,40,90,.6)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={u} alt="" className="h-full w-full object-cover" />
+                {i === 0 && <span className="absolute left-1.5 top-1.5 rounded-full bg-black/50 px-[7px] py-0.5 text-[9.5px] font-black text-white">★ COVER</span>}
+                <button
+                  type="button"
+                  onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
+                  aria-label="Remove photo"
+                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/55 text-[11px] text-white"
+                >
+                  ✕
+                </button>
+                {i > 0 && (
                   <button
                     type="button"
-                    onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
-                    aria-label="Remove photo"
-                    className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 text-[13px] text-white"
+                    onClick={() => setPhotos((p) => [p[i], ...p.filter((_, j) => j !== i)])}
+                    className="absolute inset-x-1.5 bottom-1.5 rounded-full bg-white/85 py-0.5 text-[9.5px] font-extrabold text-[#4F46E5]"
                   >
-                    ✕
+                    Make cover
                   </button>
-                </div>
-              ))}
-            </div>
-          )}
+                )}
+              </div>
+            ))}
+            {Array.from({ length: plusSquares }).map((_, i) => (
+              <button
+                key={`plus${i}`}
+                type="button"
+                onClick={() => photoInput.current?.click()}
+                aria-label="Add photos"
+                className="flex h-24 w-24 shrink-0 items-center justify-center rounded-[18px] border-2 border-dashed border-[#C4C2F3] bg-white/45 text-[22px] text-[#8B8FD6]"
+              >
+                {photos.length === 0 && i === 0 ? "📷" : "+"}
+              </button>
+            ))}
+          </div>
+          {photos.length === 0 && <p className="px-[18px] pt-1.5 text-[11.5px] text-[#8B8FD6]">The first photo is the cover · up to {MAX_PHOTOS}</p>}
 
-          {error && <p className="mt-3 rounded-xl bg-red-50/90 px-3 py-2 text-[13px] text-red-700">{error}</p>}
+          {error && <p className="mx-4 mt-3 rounded-xl bg-red-50/90 px-3 py-2 text-[13px] text-red-700">{error}</p>}
           {!editId && <p className="mt-3 text-center text-[11.5px] text-[#6B6F9A]/80">You can write 5 posts a day.</p>}
         </div>
 
-        {/* floating bar */}
-        <div className="absolute inset-x-3 bottom-4 z-[2]">
+        {/* big Publish + the tool bar */}
+        <div className="absolute inset-x-3.5 bottom-4 z-[2]">
           {emoji && (
             <div className="np-bar mb-2 grid grid-cols-9 gap-1 rounded-[18px] p-2">
               {EMOJIS.map((e) => (
@@ -295,12 +319,17 @@ function BlogWrite() {
               ))}
             </div>
           )}
-          <div className="np-bar flex h-[62px] items-center gap-0.5 rounded-[22px] px-2">
-            <Tool label="Add photo" onClick={() => photoInput.current?.click()}>
-              🖼
-            </Tool>
-            <Tool label="Cover photo" onClick={() => coverInput.current?.click()}>
-              🌄
+          <button
+            type="button"
+            onClick={publish}
+            disabled={!canPublish}
+            className="mb-2.5 h-[52px] w-full rounded-[18px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[16px] font-black text-white shadow-[0_12px_24px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98] disabled:from-[#C7CCE6] disabled:via-[#C7CCE6] disabled:to-[#C7CCE6] disabled:shadow-none"
+          >
+            {busy || (editId ? "Save ➤" : "Publish ➤")}
+          </button>
+          <div className="np-bar flex h-[58px] items-center gap-0.5 rounded-[22px] px-2">
+            <Tool label="Add photos" onClick={() => photoInput.current?.click()}>
+              📷
             </Tool>
             <Tool label="Bold" onClick={() => insert("**", "**")}>
               <b>B</b>
@@ -311,51 +340,9 @@ function BlogWrite() {
             <Tool label="Mention" onClick={() => insert("@")}>
               <b>@</b>
             </Tool>
-            <button
-              type="button"
-              onClick={publish}
-              disabled={!canPublish}
-              className="ml-auto flex h-[46px] items-center gap-1.5 rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-5 text-[15px] font-black text-white shadow-[0_10px_20px_-8px_rgba(99,102,241,.7)] transition active:scale-95 disabled:from-[#C7CCE6] disabled:via-[#C7CCE6] disabled:to-[#C7CCE6] disabled:shadow-none"
-            >
-              {busy || (editId ? "Save ➤" : "Publish ➤")}
-            </button>
+            <span className="ml-auto pr-2 text-[11px] text-[#9AA0C4]">{text.length} / 19000</span>
           </div>
         </div>
-
-        {/* category picker */}
-        {picker && (
-          <>
-            <div className="absolute inset-0 z-[3] bg-[#0F1D3A]/35" onClick={() => setPicker(false)} />
-            <div className="np-pop absolute inset-x-0 bottom-0 z-[4] rounded-t-[28px] bg-white px-4 pb-6 pt-3.5 shadow-[0_-12px_40px_-8px_rgba(10,20,50,.5)]">
-              <span aria-hidden className="mx-auto block h-[5px] w-10 rounded-full bg-[#D3DCEA]" />
-              <h3 className="mx-1 mb-3 mt-3 text-[16px] font-black">Choose a category</h3>
-              <div className="grid grid-cols-2 gap-2.5">
-                {BLOG_CATEGORIES.map(([k, label]) => {
-                  const [bg, fg] = CAT_COLORS[k] || CAT_COLORS.other;
-                  const on = k === category;
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => {
-                        setCategory(k);
-                        setPicker(false);
-                      }}
-                      className={`flex h-[60px] items-center gap-2.5 rounded-[18px] border-[1.5px] px-3.5 text-left text-[14.5px] font-extrabold ${
-                        on ? "border-[#2563EB] shadow-[0_0_0_4px_rgba(37,99,235,.12)]" : "border-transparent"
-                      }`}
-                      style={{ background: bg, color: fg }}
-                    >
-                      <span className="text-[22px]">{label.split(" ")[0]}</span>
-                      {label.split(" ").slice(1).join(" ")}
-                      {on && <span className="ml-auto flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[#2563EB] text-[12px] text-white">✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </>
-        )}
       </section>
     </PageShell>
   );
