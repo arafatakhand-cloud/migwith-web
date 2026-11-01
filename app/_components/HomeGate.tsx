@@ -1,8 +1,6 @@
 "use client";
 
-import { BirthdayPopup } from "./BirthdayPopup";
-import { DailySpinPopup } from "./DailySpinPopup";
-import { AnnouncementPopup } from "./AnnouncementPopup";
+import { StartupPopups } from "./StartupPopups";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "./AppSession";
@@ -12,6 +10,8 @@ import { PageShell } from "./PageShell";
 // Shown once per browser tab, like the app's splash when it starts.
 const SPLASH_KEY = "migwith.splashShown";
 const SPLASH_MS = 1400;
+// set once the visit has started (the first stop is 📰 Feed)
+const START_KEY = "migwith.startedOnFeed";
 
 export function Splash() {
   return (
@@ -42,8 +42,7 @@ export function Splash() {
 
 /* "/" — splash, then the signed-in home (Dashboard) or, signed out, the login screen. */
 export function HomeGate() {
-  const { user, loading, username } = useSession();
-  const [announcementDone, setAnnouncementDone] = useState(false);
+  const { user, loading } = useSession();
   const router = useRouter();
   const [splashDone, setSplashDone] = useState(false);
 
@@ -73,15 +72,28 @@ export function HomeGate() {
     if (splashDone && !loading && !user) router.replace("/login");
   }, [splashDone, loading, user, router]);
 
-  if (!splashDone || loading || !user) return <Splash />;
+  // 📰 The site opens on the Feed tab (once per visit; tapping Lobby later stays here)
+  const [toFeed, setToFeed] = useState(false);
+  useEffect(() => {
+    if (!splashDone || loading || !user) return;
+    let started = true;
+    try {
+      started = sessionStorage.getItem(START_KEY) === "1";
+      sessionStorage.setItem(START_KEY, "1");
+    } catch {
+      // storage blocked: just stay on the Lobby
+    }
+    if (!started) {
+      setToFeed(true);
+      router.replace("/feed");
+    }
+  }, [splashDone, loading, user, router]);
+
+  if (!splashDone || loading || !user || toFeed) return <Splash />;
   return (
     <PageShell light>
       <Dashboard />
-      {/* 🎉 the newest announcement once per visit, then 🎂 today's birthdays, then 🎡 the daily spin */}
-      <AnnouncementPopup username={username} onDone={() => setAnnouncementDone(true)} />
-      {announcementDone && <BirthdayPopup username={username} />}
-      {/* 🎡 today's free spin (under the birthday popup, so it shows after it) */}
-      {announcementDone && <DailySpinPopup uid={user.uid} />}
+      <StartupPopups />
     </PageShell>
   );
 }

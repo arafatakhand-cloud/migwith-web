@@ -14,7 +14,7 @@ import Link from "next/link";
 // Every page has its own top bar, so the last pill spot is remembered here and
 // the glide starts from it on the next page.
 
-export type PillGlyph = "menu" | "friends" | "chat" | "list";
+export type PillGlyph = "menu" | "friends" | "chat" | "list" | "news";
 
 export type PillTabItem = {
   key: string;
@@ -138,6 +138,27 @@ export function PillGlyphIcon({
             dots="#FFFFFF"
           />
           <Bubble left={w * 0.38} top={h * 0.4} bw={w * 0.6} bh={h * 0.4} tailX={w * 0.52} color={BUBBLE_CYAN} dots="#FFFFFF" outline={tile} />
+        </>
+      )}
+      {glyph === "news" && (
+        // 📰 a little newspaper: a page with a picture block and lines
+        <>
+          <rect x={w * 0.12} y={h * 0.16} width={w * 0.76} height={h * 0.68} rx={w * 0.1} fill={main} />
+          {(() => {
+            const ink = selected ? (activeIcon ? "#FFFFFF" : BUBBLE_BLUE) : tile;
+            const l = w * 0.12, t = h * 0.16, pw = w * 0.76, ph = h * 0.68;
+            return (
+              <>
+                <rect x={l + pw * 0.14} y={t + ph * 0.18} width={pw * 0.3} height={ph * 0.3} rx={w * 0.03} fill={ink} />
+                {[0.22, 0.4].map((fy) => (
+                  <line key={fy} x1={l + pw * 0.54} y1={t + ph * fy} x2={l + pw * 0.86} y2={t + ph * fy} stroke={ink} strokeWidth={h * 0.06} strokeLinecap="round" />
+                ))}
+                {[0.64, 0.8].map((fy) => (
+                  <line key={fy} x1={l + pw * 0.14} y1={t + ph * fy} x2={l + pw * 0.86} y2={t + ph * fy} stroke={ink} strokeWidth={h * 0.06} strokeLinecap="round" />
+                ))}
+              </>
+            );
+          })()}
         </>
       )}
       {glyph === "list" && (

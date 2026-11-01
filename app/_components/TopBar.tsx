@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { toggleFeedFlip, useFeedFlip } from "../../lib/feedFlip";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -35,7 +34,6 @@ import { PillGlyphIcon, PillTabStrip, type PillColors, type PillTabItem } from "
 // Page name shown in the pill, by path.
 const PAGE_NAMES: [string, string][] = [
   ["/explore", "Discover"],
-  ["/feed", "Feed"],
   ["/members", "Community"],
   ["/gifts", "Gift Gallery"],
   ["/gift-contest", "Gift Contest"],
@@ -56,27 +54,6 @@ const PAGE_NAMES: [string, string][] = [
   ["/profile/edit", "Edit Profile"],
   ["/profile", "Profile"],
 ];
-
-// 📰 Lobby ⇄ Feed: tap to turn the Lobby over to the Feed, tap again to turn it back.
-function FeedFlipButton({ classic }: { classic: boolean }) {
-  const on = useFeedFlip();
-  return (
-    <button
-      type="button"
-      onClick={toggleFeedFlip}
-      aria-pressed={on}
-      className={`ml-1.5 flex h-[34px] shrink-0 items-center gap-1 rounded-full px-3 text-[13.5px] font-bold transition active:scale-95 ${
-        on
-          ? classic
-            ? "bg-white text-[#E06C00] shadow-[0_2px_6px_rgba(0,0,0,.18)]"
-            : "bg-white text-[#1565D8] shadow-[0_2px_6px_rgba(0,0,0,.18)]"
-          : "border border-white/40 bg-white/20 text-white"
-      }`}
-    >
-      📰 Feed{on ? " ✕" : ""}
-    </button>
-  );
-}
 
 export function TopBar() {
   const pathname = usePathname() || "/";
@@ -105,10 +82,12 @@ export function TopBar() {
   const router = useRouter();
   const swipeChat = pathname.startsWith("/chat/") ? pathname : null;
   const swipePage =
-    !swipeChat && !pathname.startsWith("/room/") && pathname !== "/" && pathname !== "/rooms" && PAGE_NAMES.some(([p]) => pathname.startsWith(p))
+    !swipeChat && !pathname.startsWith("/room/") && pathname !== "/" && pathname !== "/rooms" && pathname !== "/feed" && PAGE_NAMES.some(([p]) => pathname.startsWith(p))
       ? pathname
       : null;
   const order = [
+    // 📰 Feed is the first tab, before Lobby
+    ...(uid ? ["/feed"] : []),
     "/",
     "/rooms",
     ...(swipePage ? [swipePage] : []),
@@ -450,8 +429,11 @@ export function TopBar() {
 
   // ⚡ The tabs, in swipe order (the app's buildPillTabs). Room names are shown
   // without the icon in front of them.
-  const title = currentRoom || chatWith || onHome || onRooms ? null : pageName ?? null;
+  // 📰 the Feed tab (first): /feed itself, not a writer's ?author= list or a post
+  const onFeed = pathname === "/feed";
+  const title = currentRoom || chatWith || onHome || onRooms || onFeed ? null : pageName ?? null;
   const pillTabs = (roomsLabel: string): PillTabItem[] => [
+    ...(uid ? [{ key: "feed", glyph: "news" as const, label: "Feed", selected: onFeed, href: "/feed" }] : []),
     { key: "home", glyph: "friends", label: "Lobby", selected: onHome, href: "/" },
     { key: "rooms", glyph: "chat", label: roomsLabel, selected: onRooms, href: "/rooms" },
     ...(title ? [{ key: "page", glyph: "list" as const, label: title, selected: true }] : []),
@@ -497,7 +479,6 @@ export function TopBar() {
             <span className={hasUnread ? "pill-alert-blink" : undefined}>☰</span>
           </button>
           <PillTabStrip items={pillTabs("Rooms")} colors={colors} className="min-w-0 flex-1" />
-          {onHome && uid && <FeedFlipButton classic />}
         </div>
         {menu}
       </>
@@ -531,7 +512,6 @@ export function TopBar() {
           <PillGlyphIcon glyph="menu" selected={false} tile="#FFFFFF" />
         </button>
         <PillTabStrip items={pillTabs("Chat Rooms")} colors={colors} className="min-w-0 flex-1" />
-        {onHome && uid && <FeedFlipButton classic={false} />}
         {/* No 🔔 / বাংলা here, like the app (alerts: the ☰ glows; language: Settings). */}
       </div>
 
