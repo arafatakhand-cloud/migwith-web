@@ -213,13 +213,19 @@ export default function SupporterColoursPage() {
                 <p className="text-xs text-white/85">
                   {daysLeft} day{daysLeft === 1 ? "" : "s"} left · until {fmtDate(mine.until)}
                 </p>
+                {/* ⚽ Active switch: turns the badge on / off (the days keep running) */}
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={badgeOn}
                   disabled={toggling}
                   onClick={toggleBadge}
-                  className="mt-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white disabled:opacity-50"
+                  className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/20 py-1 pl-1 pr-3 text-xs font-bold text-white disabled:opacity-50"
                 >
-                  ⚽ Badge {badgeOn ? "ON" : "OFF"}
+                  <span className={`relative h-5 w-9 rounded-full transition-colors ${badgeOn ? "bg-[#22C55E]" : "bg-white/40"}`}>
+                    <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${badgeOn ? "left-[18px]" : "left-0.5"}`} />
+                  </span>
+                  Active: {badgeOn ? "ON" : "OFF"}
                 </button>
               </div>
             </div>
