@@ -2032,8 +2032,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }
 
   // Leave: close this room's tab, leave it and go to another open room.
-  const leaveRoom = () => {
+  // 🚪 "Leave Room" wins over everything: a /park here ends first (the whole
+  // hours left come back as coins), so the spot really goes and "has left" shows.
+  const leaveRoom = async () => {
     removeOpenRoom(user.uid, roomName);
+    try {
+      const { data } = await httpsCallable<{ roomId: string }, { wasParked?: boolean; refund?: number }>(functions, "unparkRoomPresence")({ roomId: roomName });
+      if (data?.wasParked && data.refund) flashToast(`🅿️ Park ended — ${data.refund} coins refunded`);
+    } catch {
+      // can't reach the server: leave the normal way
+    }
     leaveRef.current?.();
     const next = readOpenRooms(user.uid).slice(-1)[0];
     router.push(next ? roomHref(next) : "/rooms");
