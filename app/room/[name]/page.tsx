@@ -4014,6 +4014,7 @@ function ReactorsDialog({ emoji, uids, onClose }: { emoji: string; uids: string[
           {emoji} {uids.length}
         </p>
         <ul className="mt-2 max-h-72 space-y-1.5 overflow-y-auto">
+          {uids.length === 0 && <li className="text-sm text-[#8A96AB]">Nobody has this reaction now.</li>}
           {uids.map((u) => (
             <li key={u} className="text-[15px] font-semibold">
               {names[u] || "…"}

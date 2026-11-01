@@ -243,6 +243,7 @@ export default function GiftContestPage() {
               {prize && (
                 <div className="mt-2.5 rounded-[18px] border border-[#FFD36E55] p-3" style={{ background: "linear-gradient(135deg,rgba(255,211,110,.22),rgba(255,211,110,.06))" }}>
                   <p className="text-[12px] font-black tracking-wider text-[#FFD36E]">🏆 PRIZE</p>
+                  <p className="mt-1 text-[11px] font-bold text-white/70">Prizes by place</p>
                   <p className="mt-1 whitespace-pre-wrap text-[13px] leading-5">{prize}</p>
                 </div>
               )}
