@@ -129,8 +129,8 @@ export default function StyleStudioPage() {
 
         {mine.length > 0 && (
           <div className="mt-3 rounded-2xl border border-[#F5D77A] bg-[#FFF8E1] p-3">
-            <p className="text-sm font-bold text-[#7A5B00]">🏅 My Owned Colors</p>
-            <p className="text-[11px] text-[#8A8060]">Toggle each color on/off. When OFF, your role color (mod/user) shows.</p>
+            <p className="text-sm font-bold text-[#7A5B00]">🏅 My Color</p>
+            <p className="text-[11px] text-[#8A8060]">You can have one color at a time. When OFF, your role color (mod/user) shows.</p>
             <ul className="mt-2 space-y-2">
               {mine.map((c) => {
                 const on = owned[c.id]?.active === true;
@@ -235,6 +235,14 @@ export default function StyleStudioPage() {
             <p className="text-sm text-[#5B6B8C]">
               🪙 {priceOf(confirming).toLocaleString()} for {confirming.days} days. The coins are held now, and the color is yours once an admin approves the request.
             </p>
+            {mine.filter((m) => m.id !== confirming.id).map((m) => {
+              const left = Math.max(1, Math.ceil((Number(owned[m.id]?.expiresAt || 0) - now) / 86400000));
+              return (
+                <p key={m.id} className="rounded-xl bg-[#FFF1E6] px-3 py-2 text-[13px] font-semibold text-[#B45309]">
+                  ⚠️ You can have only one color. Your {m.badge} {nameOf(m)} ({left} {left === 1 ? "day" : "days"} left) will be removed — the days left are not refunded.
+                </p>
+              );
+            })}
             <div className="flex gap-2">
               <button type="button" onClick={() => setConfirmId(null)} className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]">
                 Cancel

@@ -488,6 +488,7 @@ export const BN: Record<string, string> = {
   "Style Studio": "স্টাইল স্টুডিও",
   "Premium username colors": "প্রিমিয়াম নামের রং",
   "🏅 My Owned Colors": "🏅 আমার কেনা রং",
+  "🏅 My Color": "🏅 আমার রং",
   "Shop": "শপ",
   "WHAT YOU GET": "যা পাবেন",
   "Not enough coins": "যথেষ্ট কয়েন নেই",
