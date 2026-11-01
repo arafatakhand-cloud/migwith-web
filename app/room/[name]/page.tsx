@@ -3712,7 +3712,7 @@ function MessageRow({
   // 📏 Full-width chat (miglife): every room's lines run across the whole chat
   // like the game rooms' (your own lines stay on the right). It used to be only
   // the game rooms and the Classic style.
-  const fullWidthLines = true;
+  const fullWidthLines = false;
 
   return (
     <SwipeToReply enabled={canReply} fullWidth={fullWidthLines && !rightSide} onReply={() => onReply(senderName, snippet)}>
@@ -3721,6 +3721,12 @@ function MessageRow({
         <div
           className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
             mentionsMe ? "rounded-md border-l-[3px] border-[#FF8A00] px-1.5 py-0.5" : ""
+          } ${
+            !isRoomLine && m.type !== "sticker" && m.type !== "gift"
+              ? rightSide
+                ? "rounded-[14px] rounded-br-[4px] bg-[#133552] px-2.5 py-1.5 text-white"
+                : "rounded-[14px] rounded-bl-[4px] bg-[#e7eff4] px-2.5 py-1.5"
+              : ""
           }`}
           style={{
             fontSize: fontPx,
@@ -3780,8 +3786,8 @@ function MessageRow({
               const qColor = author ? colorOf(author) : "#2F80ED";
               return (
                 <span
-                  className={`mb-0.5 block w-fit max-w-full truncate border-l-2 px-2 py-0.5 text-left text-xs text-[#6B7A99] ${rightSide ? "ml-auto" : ""}`}
-                  style={{ borderColor: qColor, background: `color-mix(in srgb, ${qColor} 6%, transparent)` }}
+                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-[#336491] text-white"}`}
+                  style={{ borderLeft: "none" }}
                 >
                   ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
                   {withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}
@@ -3839,7 +3845,7 @@ function MessageRow({
               <span
                 ref={rightSide ? ownBodyRef : undefined}
                 className="whitespace-pre-wrap break-words"
-                style={{ color: INK }}
+                style={{ color: rightSide && !isRoomLine ? "#ffffff" : INK }}
                 onClick={(e) => {
                   // Missed the exact letters? A tap anywhere on a message that
                   // holds ONE link still opens it (like the app).
