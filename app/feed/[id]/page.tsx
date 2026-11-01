@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { useSenderColors } from "../../../lib/senderColors";
 import { PageShell } from "../../_components/PageShell";
 import { openReport } from "../../_components/ReportDialog";
+import { TranslateChip, feedPlainText, useFeedTranslation } from "../../_components/FeedTranslate";
 import {
   blogAgo,
   blogCall,
@@ -31,6 +32,7 @@ export default function BlogPostPage() {
   const router = useRouter();
   const { user, username } = useCurrentUser();
   const [post, setPost] = useState<BlogPost | null | undefined>(undefined);
+  const tr = useFeedTranslation(String(id || ""));
   const [comments, setComments] = useState<BlogComment[]>([]);
   const [liked, setLiked] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
@@ -236,7 +238,16 @@ export default function BlogPostPage() {
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
             </span>
           </div>
-          <h1 className="mt-2 text-[22px] font-extrabold leading-tight text-[#0F1D3A]">{post.title}</h1>
+          <div className="mt-2 flex items-start gap-2">
+            <h1 className="min-w-0 flex-1 text-[22px] font-extrabold leading-tight text-[#0F1D3A]">{tr?.title || post.title}</h1>
+            <TranslateChip postId={post.id} title={post.title} text={feedPlainText(post.body)} />
+          </div>
+          {tr?.text && (
+            <div className="mt-3 whitespace-pre-line rounded-2xl border border-[#6366F1]/15 bg-[#EEF2FF] px-3.5 py-3 text-[15px] leading-[1.65] text-[#253A5E]">
+              <div className="mb-1 text-[11px] font-extrabold text-[#4F46E5]">🌐 English</div>
+              {tr.text}
+            </div>
+          )}
           <BlogBody body={post.body} mentions={post.mentions} />
 
           <div className="mt-3 flex gap-2.5">

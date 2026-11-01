@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { PageTitle } from "./LightCards";
+import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgo,
   blogCall,
@@ -260,6 +261,7 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
   const router = useRouter();
   const pic = p.cover || p.firstImage;
   const c = color || "#2563EB";
+  const tr = useFeedTranslation(p.id);
   const open = () => router.push(`/feed/${p.id}`);
   return (
     <article
@@ -280,8 +282,11 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
         </div>
         <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>
       </div>
-      <h2 className="mx-0.5 mt-2.5 text-[16.5px] font-black leading-snug text-[#1E1B4B]">{p.title}</h2>
-      {p.excerpt && <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">{p.excerpt}</p>}
+      <div className="mx-0.5 mt-2.5 flex items-start gap-2">
+        <h2 className="min-w-0 flex-1 text-[16.5px] font-black leading-snug text-[#1E1B4B]">{tr?.title || p.title}</h2>
+        <TranslateChip postId={p.id} title={p.title} text={p.excerpt} />
+      </div>
+      {(tr?.text || p.excerpt) && <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">{tr?.text || p.excerpt}</p>}
       {pic && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={pic} alt="" loading="lazy" className="mt-2.5 max-h-[320px] w-full rounded-2xl object-cover" />

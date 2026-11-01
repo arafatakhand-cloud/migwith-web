@@ -72,7 +72,9 @@ export const expandChatSlang = (text: string) => text.replace(/[A-Za-z]+/g, (w) 
 // one translator per language pair, reused
 const translators = new Map<string, any>();
 
-export async function requestRoomTranslation(id: string, text: string) {
+/** `to` = a fixed language (the Feed's Translate button uses "en");
+ * otherwise this browser's language. */
+export async function requestRoomTranslation(id: string, text: string, to?: string, maxLen = 1000) {
   if (!id || !text.trim()) return;
   const now = map[id];
   if (now && now.kind !== "failed") return;
@@ -82,8 +84,8 @@ export async function requestRoomTranslation(id: string, text: string) {
     return;
   }
   set(id, { kind: "loading" });
-  const target = targetLang();
-  const input = text.slice(0, 1000);
+  const target = to || targetLang();
+  const input = text.slice(0, maxLen);
   const expanded = expandChatSlang(input);
   const latinOnly = ![...expanded].some((c) => /\p{L}/u.test(c) && c.codePointAt(0)! > 0x24f);
   try {
