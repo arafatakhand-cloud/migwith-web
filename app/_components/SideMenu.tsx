@@ -173,6 +173,7 @@ export function MenuPanel() {
             </Link>
           );
         })}
+        <FacebookGroupButton />
         {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom, no
             colour, no card (a bright red button invites taps), like the app */}
         <button
@@ -282,6 +283,7 @@ export function MenuPanel() {
       })}
     </ul>
 
+    <FacebookGroupButton />
     {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom (like the app) */}
     <button
       type="button"
@@ -303,5 +305,33 @@ export function DesktopSidebar() {
     <aside className="sticky top-[53px] hidden h-[calc(100vh-53px)] w-72 shrink-0 overflow-y-auto border-r border-[#BFD7F2] bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] lg:flex lg:flex-col">
       <MenuPanel />
     </aside>
+  );
+}
+
+// 👥 miGlife's Facebook group: a round button with the Facebook "f", just
+// above Log out (same link as Settings › Join our Facebook Group). Same in the app.
+export const FACEBOOK_GROUP_URL = "https://www.facebook.com/share/g/1BRd2amXTK/";
+function FacebookGroupButton() {
+  return (
+    <div className="mt-5 flex justify-center">
+      <a
+        href={FACEBOOK_GROUP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Join our Facebook Group"
+        className="flex flex-col items-center gap-1 transition active:scale-95"
+      >
+        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FBE9E3] shadow-[0_2px_8px_-3px_rgba(0,0,0,.2)]">
+          <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden>
+            <circle cx="12" cy="12" r="12" fill="#1877F2" />
+            <path
+              fill="#fff"
+              d="M15.1 12.6h-2.2V20h-3v-7.4H8.4V10h1.5V8.4c0-2 .9-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1V10h2.4l-.2 2.6Z"
+            />
+          </svg>
+        </span>
+        <span className="text-[11px] font-semibold text-[#5A6B82]">Facebook Group</span>
+      </a>
+    </div>
   );
 }
