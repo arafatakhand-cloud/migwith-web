@@ -3714,9 +3714,29 @@ function MessageRow({
   // the game rooms and the Classic style.
   const fullWidthLines = false;
 
+  // ↩ the replied line: above the bubble for my own line, inside it for others
+  const quoteNode = quote
+    ? (() => {
+              // The quote shows its author in the SAME colour as their chat name.
+              const qc = quote.indexOf(":");
+              const qName = qc > 0 ? quote.slice(0, qc).trim() : "";
+              const author = qName.toLowerCase() === "you" ? senderName : qName;
+              const qColor = author ? colorOf(author) : "#2F80ED";
+              return (
+                <span
+                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-[#336491] text-white"}`}
+                  style={{ borderLeft: "none" }}
+                >
+                  ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
+                  {withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}
+                </span>
+              );
+    })()
+    : null;
   return (
     <SwipeToReply enabled={canReply} fullWidth={fullWidthLines && !rightSide} onReply={() => onReply(senderName, snippet)}>
-      <div className={`flex px-1 ${rightSide ? "justify-end" : "justify-start"}`}>
+      <div className={`flex flex-col px-1 ${rightSide ? "items-end" : "items-start"}`}>
+        {rightSide && quoteNode}
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
           className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
@@ -3777,23 +3797,7 @@ function MessageRow({
           )}
           {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
           {reactionRow(rightSide)}
-          {quote &&
-            (() => {
-              // The quote shows its author in the SAME colour as their chat name.
-              const qc = quote.indexOf(":");
-              const qName = qc > 0 ? quote.slice(0, qc).trim() : "";
-              const author = qName.toLowerCase() === "you" ? senderName : qName;
-              const qColor = author ? colorOf(author) : "#2F80ED";
-              return (
-                <span
-                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-[#336491] text-white"}`}
-                  style={{ borderLeft: "none" }}
-                >
-                  ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
-                  {withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}
-                </span>
-              );
-            })()}
+          {!rightSide && quoteNode}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
               and the Classic style, which shows your own name ("legend: hi"). */}
           {/* own line WITH the name (miglife / VIP / birthday colour): the time
