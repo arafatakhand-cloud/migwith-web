@@ -3724,7 +3724,7 @@ function MessageRow({
               const qColor = author ? colorOf(author) : "#2F80ED";
               return (
                 <span
-                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-[#336491] text-white"}`}
+                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-[#eef3f9] text-[#1b2430]"}`}
                   style={{ borderLeft: "none" }}
                 >
                   ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
