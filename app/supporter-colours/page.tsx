@@ -52,6 +52,9 @@ export default function SupporterColoursPage() {
   const uid = user?.uid;
   const [balance, setBalance] = useState<number | null>(null);
   const [mine, setMine] = useState<{ team: string; until: number }>({ team: "", until: 0 });
+  // ⚽ ON / OFF: OFF = the team waits in supporterPaused (the days keep running)
+  const [badgeOn, setBadgeOn] = useState(true);
+  const [toggling, setToggling] = useState(false);
   const [league, setLeague] = useState("all");
   const [search, setSearch] = useState("");
   const [confirm, setConfirm] = useState<SupporterTeam | null>(null);
@@ -125,11 +128,34 @@ export default function SupporterColoursPage() {
     if (!uid) return;
     return onSnapshot(doc(db, "users", uid), (snap) => {
       setBalance(Number(snap.get("balance") || 0));
-      setMine({ team: String(snap.get("supporterTeam") || ""), until: Number(snap.get("supporterUntil") || 0) });
+      const onTeam = String(snap.get("supporterTeam") || "");
+      setMine({
+        team: onTeam || String(snap.get("supporterPaused") || ""),
+        until: Number(snap.get("supporterUntil") || 0),
+      });
+      if (!toggling) setBadgeOn(onTeam !== "");
     });
   }, [uid]);
 
   const current = activeSupporterTeam(mine.team, mine.until);
+
+  // ⚽ Badge ON / OFF — the same texts as the app
+  const toggleBadge = async () => {
+    if (toggling) return;
+    const next = !badgeOn;
+    setBadgeOn(next);
+    setToggling(true);
+    setMessage("");
+    try {
+      await httpsCallable<{ on: boolean }, unknown>(functions, "toggleSupporterBadge")({ on: next });
+      setMessage(next ? "⚽ Your Supporters Badge is ON." : "Supporters Badge OFF — your days keep running.");
+    } catch (e: any) {
+      setBadgeOn(!next);
+      setMessage(e?.message || "Could not change the badge.");
+    } finally {
+      setToggling(false);
+    }
+  };
   const daysLeft = current ? Math.ceil((mine.until - Date.now()) / 86_400_000) : 0;
 
   const buy = async (t: SupporterTeam) => {
@@ -187,6 +213,14 @@ export default function SupporterColoursPage() {
                 <p className="text-xs text-white/85">
                   {daysLeft} day{daysLeft === 1 ? "" : "s"} left · until {fmtDate(mine.until)}
                 </p>
+                <button
+                  type="button"
+                  disabled={toggling}
+                  onClick={toggleBadge}
+                  className="mt-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white disabled:opacity-50"
+                >
+                  ⚽ Badge {badgeOn ? "ON" : "OFF"}
+                </button>
               </div>
             </div>
             {/* how the name looks in a room */}
@@ -194,7 +228,8 @@ export default function SupporterColoursPage() {
               <span className="font-bold" style={{ color: current.text }}>
                 {username || "you"}
               </span>
-              <SupporterBadge team={current} size={9} />
+              {badgeOn && <SupporterBadge team={current} size={9} />}
+              {!badgeOn && <span className="text-[11px] font-semibold text-[#8A93A8]">Badge hidden</span>}
               <span className="font-bold" style={{ color: current.text }}>
                 :
               </span>
