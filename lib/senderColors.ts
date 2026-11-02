@@ -25,6 +25,8 @@ export const SHOP_TEXT_COLORS: Record<string, string> = {
 };
 
 const LUCKY_PINK = "#FF4FA3";
+/** 🍀 Lucky User who is a Male: orange (Female stays pink). */
+const LUCKY_MALE_ORANGE = "#FB8C00";
 /** 🌍 Country Representative: brown-gold name + a 🌍 badge (like the app). */
 export const COUNTRY_REP_COLOR = "#B58A70";
 export const COUNTRY_REP_BADGE = "🌍";
@@ -53,7 +55,7 @@ function roleColor(role: string): string {
   }
 }
 
-type Profile = { role: string; shopColor: string | null; luckyUntil: number; supporter?: string; supporterUntil?: number; photo?: string };
+type Profile = { role: string; shopColor: string | null; luckyUntil: number; supporter?: string; supporterUntil?: number; photo?: string; gender?: string };
 
 // Shared by every room, so switching rooms shows the right colours at once.
 const cache = new Map<string, Profile>();
@@ -70,7 +72,7 @@ const savedAt = new Map<string, number>();
     const now = Date.now();
     for (const [k, v] of Object.entries(saved)) {
       if (!v || now - (v.at || 0) >= STORE_MAX_AGE) continue;
-      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil, supporter: v.supporter, supporterUntil: v.supporterUntil, photo: v.photo });
+      cache.set(k, { role: v.role, shopColor: v.shopColor, luckyUntil: v.luckyUntil, supporter: v.supporter, supporterUntil: v.supporterUntil, photo: v.photo, gender: v.gender });
       savedAt.set(k, v.at);
     }
   } catch {}
@@ -95,7 +97,8 @@ function colorFor(name: string, p: Profile | undefined, atMs?: number): string {
   // a line written BEFORE the person became Lucky User keeps the old colour;
   // only lines from the lucky moment on turn pink
   const luckyFrom = p.luckyUntil - LUCKY_PINK_MS;
-  if (p.luckyUntil > Date.now() && !(atMs && atMs < luckyFrom)) return LUCKY_PINK;
+  if (p.luckyUntil > Date.now() && !(atMs && atMs < luckyFrom))
+    return (p.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
   if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
   }
@@ -234,6 +237,7 @@ export function useSenderColors(names: string[], hot: string[] = []): (name: str
               supporter: String(d.get("supporterTeam") || ""),
               supporterUntil: Number(d.get("supporterUntil") || 0),
               photo: String(d.get("photoUrl") || ""),
+              gender: String(d.get("gender") || ""),
             });
             savedAt.set(name.toLowerCase(), now);
             lookedUpAt.set(name.toLowerCase(), now);
