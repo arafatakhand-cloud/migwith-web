@@ -22,6 +22,7 @@ import {
 } from "./_MainFounderCards";
 import { LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
 import { AccountDeleteCard } from "./_AccountDeleteCard";
+import { WatchdogSpeedCard } from "./_WatchdogSpeedCard";
 import { DailyGameRewardsCard } from "./_DailyGameRewardsCard";
 import { FounderAchievementsCard } from "../_components/Achievements";
 
@@ -222,6 +223,7 @@ export default function SecretPage() {
         [
           { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
           { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
+          { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
@@ -355,6 +357,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
       {f.isMigwith && tool === "daily_rewards" && <DailyGameRewardsCard />}
       {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}
+      {f.isMigwith && tool === "watchdog_speed" && <WatchdogSpeedCard />}
       {f.isMigwith && tool === "delete_account" && <AccountDeleteCard />}
 
       {status && <p className="text-xs font-bold text-[#B3261E]">{status}</p>}
