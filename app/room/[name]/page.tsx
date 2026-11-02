@@ -2601,6 +2601,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     {u.username}
                   </Link>
                   {cachedRoleOf(u.username) === "country_representative" && <span className="shrink-0" title="Country Representative">{COUNTRY_REP_BADGE}</span>}
+                  {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && (
+                    <span className="shrink-0" title="Administrator">⚙️</span>
+                  )}
                   {(() => {
                     const team = supporterTeamOf(u.username);
                     return team ? <SupporterBadge team={team} size={9} /> : null;
