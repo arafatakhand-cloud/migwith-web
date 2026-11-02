@@ -287,6 +287,17 @@ function giftErrorText(e: any): string {
 }
 
 export default function RoomPage() {
+  // 📱 The phone's top status bar takes this room's blue header colour (it was
+  // white from the site's theme colour). Put back when leaving the room.
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    const before = meta.getAttribute("content");
+    meta.setAttribute("content", "#3B6FEA");
+    return () => {
+      if (before !== null) meta.setAttribute("content", before);
+    };
+  }, []);
   const params = useParams<{ name: string }>();
   const roomName = decodeURIComponent(params.name);
   const { user, loading } = useCurrentUser();
