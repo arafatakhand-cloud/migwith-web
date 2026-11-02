@@ -3856,7 +3856,7 @@ function MessageRow({
           {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
-              style={{ color: isRoomLine ? ROOM_ORANGE : colorOf(senderName, m.createdAtMs) }}
+              style={{ color: isRoomLine ? ROOM_ORANGE : inkOnWhite(colorOf(senderName, m.createdAtMs)) }}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
               {!isRoomLine && special.has(senderName) ? (
