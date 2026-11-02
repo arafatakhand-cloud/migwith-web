@@ -75,6 +75,7 @@ import {
   type GiftResult,
 } from "../../_components/GiftPanel";
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
+import { isGiftShowerLine, toggleHideGiftShower, useHideGiftShower } from "../../../lib/giftShowerPref";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ART_BY_EMOJI,
@@ -422,6 +423,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [newBelowStats, setNewBelowStats] = useState<NewBelowStats>(NO_NEW_BELOW);
   // 🤖 "Bot messages: Hide" (room ⋮ menu) — lines that mention you still show
   const hideBots = useHideBots();
+  // 🎁 "Hide Gift Showers" (⋮ menu): the Gift Shower lines are not shown in this browser
+  const hideGiftShower = useHideGiftShower();
   const lastSeenIdRef = useRef<string | null>(null);
   // Clear Chat for this device (set once the page has rendered; used by /cc).
   const clearChatRef = useRef<(() => void) | null>(null);
@@ -1326,6 +1329,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       if (m.type !== "room_entry" && m.type !== "room_leave" && chatHideBotLine(hideBots, m.text, roomName, myName)) return false;
       // 🔒 MIG Royale's "Fair round — cards were locked before betting." line is hidden (miglife asked)
       if (m.text.includes("Fair round — cards were locked before betting")) return false;
+      // 🎁 Gift Shower lines hidden (⋮ menu → Hide Gift Showers); the gift still goes
+      if (hideGiftShower && m.type !== "room_entry" && m.type !== "room_leave" && isGiftShowerLine(m.text)) return false;
       // 🚫 MIG Royale's "Bet rejected…" lines show as a toast over the box, not in the chat
       if (roomName === ROYALE_ROOM && m.text.startsWith("MIG Royale Bot: Bet rejected")) return false;
       // 📣 MIG Royale's "X has N coins on the table — …" bet lines are shown in the box's live ticker instead
@@ -1344,7 +1349,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return true;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, roomName, royalePrefs]);
+  }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, hideGiftShower, roomName, royalePrefs]);
 
   // ✋ New lines never drag you down while you read older ones: they are
   // counted for the "⬇ new messages" pill instead (your own lines don't count).
@@ -2719,6 +2724,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["info", "Room Info", () => (closeMenu(), setInfoOpen(true))],
                 [favorite ? "heartOn" : "heart", favorite ? "Remove favorite" : "Add as favorite", () => (closeMenu(), toggleFavorite(roomName))],
                 ["clear", "Clear Chat", () => (closeMenu(), clearChat())],
+                ["info", hideGiftShower ? "Show Gift Showers" : "Hide Gift Showers", () => (closeMenu(), toggleHideGiftShower())],
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
