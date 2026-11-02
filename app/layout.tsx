@@ -26,8 +26,9 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  // Matches the white top bar (iPhone Safari tints its bar with this).
-  themeColor: "#FFFFFF",
+  // The phone's top status bar on every page: the blue header colour (iPhone Safari
+  // and Android Chrome tint their bar with this).
+  themeColor: "#3B6FEA",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
