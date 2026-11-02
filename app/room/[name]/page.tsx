@@ -1937,6 +1937,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     try {
       // back in first ("has entered") if I was taken out from another phone / tab
       await restorePresenceRef.current?.();
+      // 🚪 Not in the room (my spot is gone and I could not come back in): nothing is
+      // sent — the same "You are not in this room" as the app. Checked on the server.
+      const mySpot = await getDocFromServer(doc(db, "room_presence", roomName, "users", user.uid)).catch(() => null);
+      if (!mySpot || !mySpot.exists()) {
+        note(`${roomName} : You are not in ${roomName} chat room`);
+        setNotInRoomOpen(true);
+        return;
+      }
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
         // the quote keeps only the replied line: an older "↩ name: …" quote line is dropped, so replies never nest
         text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet.replace(/^↩ [^\n]*\n/, "")}\n` : ""}${clean}`,
