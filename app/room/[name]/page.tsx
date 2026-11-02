@@ -2579,7 +2579,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   {/* (no 🔥/💎 level icon here — the level number on the right is enough, so the name has room) */}
                   <Link
                     href={`/profile/${encodeURIComponent(u.username)}`}
-                    className="min-w-[3.5rem] truncate font-semibold text-[#0B2A5B] hover:text-[#2F80ED]"
+                    className="min-w-0 shrink truncate font-semibold text-[#0B2A5B] hover:text-[#2F80ED]"
                   >
                     {u.username}
                   </Link>
