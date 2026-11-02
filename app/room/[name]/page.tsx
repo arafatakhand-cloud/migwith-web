@@ -272,11 +272,9 @@ function FitOneLine({ base, grow = false, children }: { base: number; grow?: boo
 // A name colour readable on a white card: very light ones (admin yellow, staff
 // neon green, cyan…) get a little darker; the rest stay as they are.
 function inkOnWhite(c: string): string {
-  const m = /^#([0-9a-f]{6})$/i.exec(c);
-  if (!m) return c;
-  const n = parseInt(m[1], 16);
-  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
-  return lum > 0.6 ? `color-mix(in srgb, ${c} 65%, black)` : c;
+  // Only the Staff neon green is deepened (the other colours stay as they are).
+  if (c.toUpperCase() === "#39FF14") return "color-mix(in srgb, #39FF14 65%, black)";
+  return c;
 }
 
 // 🎁 A failed gift, said plainly for people: the server's reason without the
