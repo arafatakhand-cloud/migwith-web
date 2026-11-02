@@ -1366,6 +1366,10 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
 @keyframes royale-slide { from { transform: translateY(12px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .royale-hurry, .royale-stamp, .royale-float, .royale-tick { animation: none; } }
 .royale-confetti { animation: royale-confetti 1.4s ease-out forwards; opacity: 0; }
+/* 🎉 chat confetti pop: a few bits burst out from the bubble once, then fade */
+.confetti-piece { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 2px; opacity: 0; animation: confetti-pop 1.6s ease-out 1 forwards; }
+@keyframes confetti-pop { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.4); } 100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(200deg); } }
+@media (prefers-reduced-motion: reduce) { .confetti-piece { display: none; } }
 @keyframes royale-confetti { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), 70px) rotate(300deg); } }
 @media (prefers-reduced-motion: reduce) { .royale-confetti { display: none; } }
 /* 🎨 MIG Royale light box colours: the box is written for a dark background, so

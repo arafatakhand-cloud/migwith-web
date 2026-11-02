@@ -3363,6 +3363,31 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
   return out;
 }
 
+// 🎉 Confetti pop: a "Welcome", "Thanks", "Congratulations" or "Congrats" line
+// bursts a few coloured bits round its bubble, ONE time, only for a line that
+// was just posted (not history).
+const confettiSeen = new Set<string>();
+const CONFETTI_WORDS = /\b(welcome|thanks|thank you|congratulations|congrats)\b/i;
+function ConfettiPop() {
+  const colors = ["#f59e0b", "#ef4444", "#22c55e", "#3b82f6", "#a855f7", "#ec4899"];
+  const pieces = Array.from({ length: 12 }, (_, i) => {
+    const a = (i / 12) * Math.PI * 2;
+    const r = 34 + (i % 3) * 8;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r - 6, c: colors[i % colors.length], d: (i % 4) * 0.05 };
+  });
+  return (
+    <span className="pointer-events-none absolute inset-0 overflow-visible" aria-hidden>
+      {pieces.map((p, i) => (
+        <i
+          key={i}
+          className="confetti-piece"
+          style={{ background: p.c, ["--x" as string]: `${p.x}px`, ["--y" as string]: `${p.y}px`, animationDelay: `${p.d}s` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function MessageRow({
   m,
   mine,
@@ -3682,6 +3707,13 @@ function MessageRow({
   // Swipe right on someone else's message (not bots, not in game rooms) to reply to it.
   // the text to translate: without a "↩ quote" line in front
   const plainBody = body.startsWith("↩ ") && body.includes("\n") ? body.slice(body.indexOf("\n") + 1) : body;
+  // 🎉 only a line posted in the last 8 s, with a trigger word, and only once
+  const confettiNow =
+    !!m.id &&
+    m.createdAtMs > Date.now() - 8000 &&
+    CONFETTI_WORDS.test(plainBody) &&
+    !confettiSeen.has(m.id);
+  if (confettiNow) confettiSeen.add(m.id);
   const canReply = !mine && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
@@ -3795,6 +3827,7 @@ function MessageRow({
               onClose={() => setPicker(false)}
             />
           )}
+          {confettiNow && <ConfettiPop />}
           {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
           {reactionRow(rightSide)}
           {!rightSide && quoteNode}
