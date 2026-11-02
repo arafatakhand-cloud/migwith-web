@@ -1366,6 +1366,13 @@ html[data-theme="dark_night"] { --gift-black: #D9DEE8; --room-ink: #E8EEF9; --ro
 @keyframes royale-slide { from { transform: translateY(12px); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .royale-hurry, .royale-stamp, .royale-float, .royale-tick { animation: none; } }
 .royale-confetti { animation: royale-confetti 1.4s ease-out forwards; opacity: 0; }
+/* 🌧 rain drops fall once inside a sad bubble */
+.rain-drop { position: absolute; top: -8px; width: 2px; height: 12px; border-radius: 2px; background: #5b8fd1; opacity: 0; animation: rain-fall 1.4s linear 1 forwards; }
+@keyframes rain-fall { 0% { opacity: .9; transform: translateY(0); } 100% { opacity: 0; transform: translateY(120px); } }
+/* 🌅 a small sun rises once above the bubble */
+.sunrise-glow { font-size: 18px; opacity: 0; animation: sunrise-up 2.2s ease-in-out 1 forwards; }
+@keyframes sunrise-up { 0% { opacity: 0; transform: translateY(10px); } 30% { opacity: 1; transform: translateY(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .rain-drop, .sunrise-glow { display: none; } }
 /* 🎉 chat confetti pop: a few bits burst out from the bubble once, then fade */
 .confetti-piece { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; border-radius: 2px; opacity: 0; animation: confetti-pop 1.6s ease-out 1 forwards; }
 @keyframes confetti-pop { 0% { opacity: 1; transform: translate(-50%,-50%) scale(.4); } 100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) scale(1) rotate(200deg); } }

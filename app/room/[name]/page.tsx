@@ -3363,6 +3363,28 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
   return out;
 }
 
+// 🌧 Rain on a sad line: a few drops fall once inside the bubble (😢 or "sad").
+const rainSeen = new Set<string>();
+const SAD_WORDS = /(😢|😭|\bsad\b)/i;
+function RainDrops() {
+  const drops = Array.from({ length: 14 }, (_, i) => ({ left: `${(i * 37) % 100}%`, d: (i % 5) * 0.08 }));
+  return (
+    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-[14px]" aria-hidden>
+      {drops.map((d, i) => (
+        <i key={i} className="rain-drop" style={{ left: d.left, animationDelay: `${d.d}s` }} />
+      ))}
+    </span>
+  );
+}
+
+// 🌅 Sunrise: the first message of the day from 5 to 7 AM gets a small sun
+// that rises once above the bubble. Once per person per day (kept in this browser).
+function SunriseGlow() {
+  return (
+    <span className="sunrise-glow pointer-events-none absolute -top-5 right-2" aria-hidden>🌅</span>
+  );
+}
+
 // 🎉 Confetti pop: a "Welcome", "Thanks", "Congratulations" or "Congrats" line
 // bursts a few coloured bits round its bubble, ONE time, only for a line that
 // was just posted (not history).
@@ -3714,6 +3736,24 @@ function MessageRow({
     CONFETTI_WORDS.test(plainBody) &&
     !confettiSeen.has(m.id);
   if (confettiNow) confettiSeen.add(m.id);
+  // 🌧 a sad line rains once (only a line posted in the last 8 s)
+  const rainNow =
+    !!m.id && m.createdAtMs > Date.now() - 8000 && SAD_WORDS.test(plainBody) && !rainSeen.has(m.id);
+  if (rainNow) rainSeen.add(m.id);
+  // 🌅 my first line today between 5 and 7 AM
+  let sunriseNow = false;
+  if (mine && m.createdAtMs > 0 && !m.local) {
+    const dt = new Date(m.createdAtMs);
+    const day = `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()}`;
+    const key = `migwith.sunrise.${day}`;
+    const hour = dt.getHours();
+    try {
+      if (hour >= 5 && hour < 7 && localStorage.getItem(key) !== "1") {
+        localStorage.setItem(key, "1");
+        sunriseNow = true;
+      }
+    } catch {}
+  }
   const canReply = !mine && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
@@ -3828,6 +3868,8 @@ function MessageRow({
             />
           )}
           {confettiNow && <ConfettiPop />}
+          {rainNow && <RainDrops />}
+          {sunriseNow && <SunriseGlow />}
           {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
           {reactionRow(rightSide)}
           {!rightSide && quoteNode}
