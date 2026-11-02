@@ -1501,3 +1501,17 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
    on the light chat backgrounds (where a neon / pale name is hard to read). */
 .chat-name { color: var(--name-dark); }
 html:not([data-theme="dark_night"]) .chat-name { color: var(--name-light); }
+
+/* 🌙 Dark Night: the profile page is a lighter slate (not near-black), and its
+   details box is a light glass with dark text, so the words can be read. */
+html[data-theme="dark_night"] main[data-shell] .page-bg {
+  background-color: #2F4262 !important;
+}
+html[data-theme="dark_night"] .pf-info-glass {
+  background: linear-gradient(160deg, rgba(236, 243, 252, 0.97), rgba(214, 226, 242, 0.94)) !important;
+  border-color: rgba(255, 255, 255, 0.9);
+}
+html[data-theme="dark_night"] .pf-info-glass,
+html[data-theme="dark_night"] .pf-info-glass * {
+  color: #0B2A5B !important;
+}
