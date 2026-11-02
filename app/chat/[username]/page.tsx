@@ -23,6 +23,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
+import { clearTyping, markTyping, watchPartnerTyping } from "../../../lib/privateTyping";
 import { chatLockedFor, lockedChatText } from "../../../lib/privacy";
 import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
@@ -131,6 +132,13 @@ export default function PrivateChatPage() {
 
   const chatId = useMemo(() => (username && friend ? privateChatId(username, friend) : ""), [username, friend]);
   const self = !!username && friend.toLowerCase() === username.toLowerCase();
+  // ✍️ the other person is typing (three bouncing dots)
+  const [partnerTyping, setPartnerTyping] = useState(false);
+  useEffect(() => {
+    if (!chatId || !user?.uid || self) return;
+    setPartnerTyping(false);
+    return watchPartnerTyping(chatId, user.uid, setPartnerTyping);
+  }, [chatId, user?.uid, self]);
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -300,6 +308,7 @@ export default function PrivateChatPage() {
     }
     const finalText = reply ? `↩ ${reply.snippet}\n${clean}` : clean;
     setText("");
+    clearTyping(chatId, user.uid);
     setReply(null);
     setError("");
     stickToBottom.current = true;
@@ -716,6 +725,19 @@ export default function PrivateChatPage() {
               </div>
             );
           })}
+          {partnerTyping && (
+            <div className="flex justify-start px-1 pt-1" aria-label={`${friend} is typing`}>
+              <div className="flex items-center gap-1 rounded-2xl bg-[#E7EFF4] px-3 py-2">
+                {[0, 1, 2].map((i) => (
+                  <span
+                    key={i}
+                    className="block h-1.5 w-1.5 animate-bounce rounded-full bg-[#5B6B8C]"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {error && <p className="px-3.5 py-1 text-xs text-[#B3261E]">{error}</p>}
@@ -801,7 +823,11 @@ export default function PrivateChatPage() {
                   ref={inputRef}
                   rows={1}
                   value={text}
-                  onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000))}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000);
+                    setText(v);
+                    if (v.trim() && user) markTyping(chatId, user.uid, username);
+                  }}
                   autoComplete="off"
                   autoCorrect="on"
                   name="migwith-chat-message"
