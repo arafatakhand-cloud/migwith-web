@@ -1449,7 +1449,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (p.uid === user?.uid) return true;
         const left = leftAt.get(p.uid);
         if (!left) return true;
-        return (enteredAt.get(p.uid) || 0) > left || p.lastSeenMs > left + 5 * 60_000;
+        // back in after the "has left" (a fresh presence doc, heartbeat after the leave) counts
+        // as here again — even if I have not typed anything yet (like the app).
+        return (enteredAt.get(p.uid) || 0) > left || (p.lastSeenMs || 0) > left;
       })
       .sort((a, b) => a.username.localeCompare(b.username));
   }, [presence, messages, user]);
