@@ -3855,8 +3855,8 @@ function MessageRow({
           {rightSide && !ownWraps && ownNameShown && m.type !== "image" && m.type !== "voice" && stampFront}
           {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
-              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"}`}
-              style={{ color: isRoomLine ? ROOM_ORANGE : inkOnWhite(colorOf(senderName, m.createdAtMs)) }}
+              className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"} ${isRoomLine ? "" : "chat-name"}`}
+              style={isRoomLine ? { color: ROOM_ORANGE } : ({ "--name-dark": colorOf(senderName, m.createdAtMs), "--name-light": inkOnWhite(colorOf(senderName, m.createdAtMs)) } as React.CSSProperties)}
               onClick={isRoomLine || m.local ? undefined : () => onMention(senderName)}
             >
               {!isRoomLine && special.has(senderName) ? (

@@ -1496,3 +1496,8 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 .feed-lav {
   background: linear-gradient(180deg, #eef0ff, #e8ebff 50%, #f1e9ff);
 }
+
+/* 🎨 Chat name colours: the true colour on the dark chat background, a darker one
+   on the light chat backgrounds (where a neon / pale name is hard to read). */
+.chat-name { color: var(--name-dark); }
+html:not([data-theme="dark_night"]) .chat-name { color: var(--name-light); }
