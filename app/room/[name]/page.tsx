@@ -3689,12 +3689,15 @@ function MessageRow({
   // Bot and game lines (also this device's own game notices).
   const bot = gameBotLine(m.text) ?? luxuryLine(m.text) ?? luxuryBetLine(m.text);
   if (bot) {
-    return (
+    // 🎰 Luxury Bet lines: a light bubble across the full chat width (like the app)
+    const betBubble = m.text.startsWith("🎰 Luxury Bet: ");
+    const botP = (
       <p className="whitespace-pre-wrap break-words px-1 text-left leading-snug" style={{ fontSize: fontPx }}>
         {bot}
         {stamp}
       </p>
     );
+    return betBubble ? <div className="w-full rounded-[14px] bg-[#e7eff4] px-2.5 py-1.5">{botP}</div> : botP;
   }
 
   // "name: message" — the sender is whatever comes before the first colon,
