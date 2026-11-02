@@ -3714,7 +3714,8 @@ function MessageRow({
     CONFETTI_WORDS.test(plainBody) &&
     !confettiSeen.has(m.id);
   if (confettiNow) confettiSeen.add(m.id);
-  const canReply = !mine && !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
+  // your own text can be replied to too (a reply to yourself is allowed)
+  const canReply = !m.local && !!senderName && !/ Bot$/.test(senderName) && !isRoomLine;
   const snippet =
     m.type === "image" && m.imageUrl
       ? "📷 Photo"
