@@ -588,17 +588,21 @@ export default function RoomsPage() {
                       <div key={name} className="px-2 py-[3px]">
                         {/* 🫧 every room is its own clear glass card, like the app */}
                         <div
-                          className="flex items-center rounded-[14px] border border-white/90 py-2 pl-2.5 pr-1 backdrop-blur-sm"
+                          className="mb-1 flex items-center rounded-[16px] border border-white/90 py-2 pl-2.5 pr-1 backdrop-blur-sm"
                           style={{
-                            background: "linear-gradient(135deg, rgba(255,255,255,0.55), rgba(255,255,255,0.18))",
-                            boxShadow: `0 1px 2px ${accent}2E`,
+                            background: "linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.45))",
+                            // 🫧 6D: stacked depth layers in the room's colour, a top shine
+                            boxShadow: `inset 0 2px 0 rgba(255,255,255,.95), 0 2px 0 ${accent}40, 0 4px 0 ${accent}2E, 0 7px 0 ${accent}1F, 0 12px 16px ${accent}2E`,
                           }}
                         >
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
                             <span className="relative h-10 w-10 shrink-0">
                               <span
                                 className="glass-shine flex h-10 w-10 items-center justify-center rounded-[13px] text-[17px] font-extrabold text-white"
-                                style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent}8C)` }}
+                                style={{
+                                  background: `linear-gradient(180deg, ${accent}F2, ${accent}B3)`,
+                                  boxShadow: `inset 0 2px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.15), 0 3px 0 ${accent}99, 0 5px 0 ${accent}66, 0 8px 12px ${accent}55`,
+                                }}
                               >
                                 {letter}
                               </span>
