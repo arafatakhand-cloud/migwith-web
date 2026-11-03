@@ -1515,3 +1515,9 @@ html[data-theme="dark_night"] .pf-info-glass,
 html[data-theme="dark_night"] .pf-info-glass * {
   color: #0B2A5B !important;
 }
+
+/* 🫧 The blue behind the page's bottom edge (when the page is pulled or ends
+   short of the phone's bottom bar) matches the top bar. */
+html {
+  background-color: #3B6FEA;
+}
