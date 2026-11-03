@@ -251,17 +251,18 @@ export function MenuPanel() {
             {/* 🎨 the Community page's card: white → own colour, colour icon tile, › chip */}
             <Link
               href={href}
-              className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] ${active ? "font-extrabold" : "font-bold"}`}
+              className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] active:translate-y-[3px] ${active ? "font-extrabold" : "font-bold"}`}
               style={{
                 borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
                 borderWidth: active ? 1.6 : 1,
                 background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${MENU_COLORS[label] || "#3984D9"}${active ? "2E" : "1A"})`,
-                boxShadow: `0 3px 10px ${MENU_COLORS[label] || "#3984D9"}${active ? "40" : "1F"}`,
+                // 🫧 6D: stacked depth layers in the row's colour, a top shine
+                boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "55" : "3D"}, 0 6px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "40" : "2A"}, 0 9px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "2E" : "1A"}, 0 14px 18px ${MENU_COLORS[label] || "#3984D9"}${active ? "4D" : "2E"}`,
               }}
             >
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[19px]"
-                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, borderColor: `${MENU_COLORS[label] || "#3984D9"}4D` }}
+                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, borderColor: `${MENU_COLORS[label] || "#3984D9"}4D`, boxShadow: `inset 0 2px 0 #fff, 0 2px 0 ${MENU_COLORS[label] || "#3984D9"}40, 0 4px 6px ${MENU_COLORS[label] || "#3984D9"}2E` }}
               >
                 {icon}
               </span>
