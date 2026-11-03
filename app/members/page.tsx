@@ -327,7 +327,7 @@ export default function MembersPage() {
                   <li key={m.uid} className={podium && i === 0 ? "md:col-span-2" : ""}>
                     <Link
                       href={`/profile/${encodeURIComponent(m.name)}`}
-                      className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-md hover:brightness-110 ${
+                      className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-[0_3px_0_#C9D8EA,0_6px_0_#B7C9E0,0_10px_14px_rgba(11,31,58,.16)] hover:brightness-110 active:translate-y-[2px] ${
                         lightCard ? "" : "border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656]"
                       }`}
                       style={
@@ -391,7 +391,7 @@ export default function MembersPage() {
                       </span>
                       {/* 🏅 the level, on the right */}
                       <span
-                        className="shrink-0 rounded-xl border px-[9px] py-1 text-[13px] font-extrabold"
+                        className="shrink-0 rounded-xl border px-[9px] py-1 text-[13px] font-extrabold shadow-[inset_0_1px_0_#fff,0_2px_0_rgba(11,31,58,.16),0_4px_6px_rgba(11,31,58,.12)]"
                         style={{
                           color: podium ? podium.ink : lightCard ? rowColor : "#fff",
                           background: `${podium ? podium.line : rowColor}24`,
@@ -413,7 +413,7 @@ export default function MembersPage() {
                                 e.preventDefault();
                                 setCountryPickFor(m);
                               }}
-                              className="flex max-w-[150px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-[7px] text-[13px] font-bold disabled:cursor-default"
+                              className="flex max-w-[150px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-[7px] text-[13px] font-bold shadow-[inset_0_1px_0_#fff,0_2px_0_rgba(11,31,58,.16),0_4px_6px_rgba(11,31,58,.12)] active:translate-y-[2px] disabled:cursor-default"
                               style={{ background: `${accent}24`, borderColor: `${accent}8C`, color: m.repCountry ? "#fff" : "#CBD5E8" }}
                             >
                               <span className="text-lg leading-none">{info ? countryFlag(info.iso) : "🌍"}</span>
@@ -540,7 +540,7 @@ function NumberedCard({ n, c, onClick }: { n: number; c: Category; onClick: () =
         background: "linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.72))",
         border: "2px solid",
         borderColor: `#fff color-mix(in srgb, ${deep} 55%, #fff) ${deep} color-mix(in srgb, ${deep} 55%, #fff)`,
-        boxShadow: `inset 0 2px 1px #fff, 0 3px 0 ${deep}, 0 6px 12px rgba(40,80,160,.14)`,
+        boxShadow: `inset 0 2px 1px #fff, 0 3px 0 ${deep}, 0 6px 0 color-mix(in srgb, ${deep} 55%, #fff), 0 10px 16px rgba(40,80,160,.18)`,
       }}
     >
       <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-xs font-black text-white" style={ball}>
@@ -548,7 +548,7 @@ function NumberedCard({ n, c, onClick }: { n: number; c: Category; onClick: () =
       </span>
       <span
         className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-2xl"
-        style={{ background: `linear-gradient(#fff, color-mix(in srgb, ${deep} 14%, #fff))`, border: "1.5px solid #fff", boxShadow: `0 2px 0 ${deep}` }}
+        style={{ background: `linear-gradient(#fff, color-mix(in srgb, ${deep} 14%, #fff))`, border: "1.5px solid #fff", boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${deep}, 0 5px 0 color-mix(in srgb, ${deep} 55%, #fff), 0 8px 10px rgba(40,80,160,.18)` }}
       >
         {c.icon}
       </span>
