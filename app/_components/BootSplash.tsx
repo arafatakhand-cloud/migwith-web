@@ -29,15 +29,19 @@ export function BootSplash() {
       id="boot-splash"
       aria-hidden
       onClick={() => setPhase("gone")}
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-[#6CCFF6] via-[#36B1EC] to-[#1A8FD6] text-white transition-opacity duration-300 ${
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center bg-gradient-to-b from-[#0B1E3F] via-[#0A1E3E] to-[#03101F] text-white transition-opacity duration-300 ${
         phase === "fade" ? "opacity-0" : "opacity-100"
       }`}
     >
-      <div className="boot-splash-pop">
+      {/* 🌌 6D neon: a glowing cyan halo and stacked dark depth under the logo */}
+      <div
+        className="boot-splash-pop"
+        style={{ filter: "drop-shadow(0 0 14px rgba(77,208,255,.75)) drop-shadow(0 6px 0 #03101F) drop-shadow(0 10px 0 #020B17)" }}
+      >
         <MigLoginLogo />
       </div>
-      <p className="mt-8 px-4 text-center text-xs font-semibold tracking-[0.3em] text-white/90 sm:text-sm">CHAT · PLAY · MAKE FRIENDS</p>
-      <span className="mt-10 h-7 w-7 animate-spin rounded-full border-[3px] border-white/30 border-t-white" />
+      <p className="mt-8 px-4 text-center text-xs font-semibold tracking-[0.3em] text-[#7FE3FF] sm:text-sm">CHAT · PLAY · MAKE FRIENDS</p>
+      <span className="mt-10 h-7 w-7 animate-spin rounded-full border-[3px] border-[#4DD0FF]/30 border-t-[#7FE3FF]" />
     </div>
   );
 }
