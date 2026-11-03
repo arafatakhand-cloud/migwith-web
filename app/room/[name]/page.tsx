@@ -2733,7 +2733,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {menuOpen && (
         <div className="fixed inset-0 z-50" onClick={closeMenu}>
           <div
-            className={`room-sky-card absolute w-[188px] overflow-hidden rounded-[18px] border border-[#E3ECF7] bg-white py-1.5 shadow-[0_8px_28px_rgba(11,31,58,.22)] ${
+            className={`room-sky-card absolute w-[188px] overflow-hidden rounded-[18px] border border-[#E3ECF7] bg-white py-1.5 shadow-[0_3px_0_#C9D8EA,0_6px_0_#B7C9E0,0_10px_0_rgba(184,200,226,.5),0_16px_24px_rgba(11,31,58,.22)] ${
               menuAnchor ? "" : "bottom-[calc(env(safe-area-inset-bottom)+60px)] left-2"
             }`}
             style={menuAnchor ? { left: menuAnchor.left, bottom: menuAnchor.bottom } : undefined}
