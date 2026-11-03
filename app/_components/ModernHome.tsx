@@ -93,7 +93,7 @@ function StatTile({
   return (
     <Link
       href={href}
-      className={`relative flex min-w-0 flex-1 flex-col items-center overflow-hidden rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
+      className={`relative flex min-w-0 flex-1 flex-col items-center overflow-hidden rounded-[14px] pb-2 pt-2 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
       style={{
         // (the Glass theme's .stat-glass washes the tile with this colour)
         ["--accent" as string]: accent,
@@ -109,20 +109,20 @@ function StatTile({
           : {}),
       }}
     >
-      <span aria-hidden className="absolute inset-x-0 top-0 h-[5px]" style={{ background: `linear-gradient(90deg, ${accent}, ${accent2})` }} />
-      <span className="relative flex h-[30px] w-[30px] items-center justify-center">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, ${accent2})` }} />
+      <span className="relative flex h-[22px] w-[22px] items-center justify-center">
         {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
-        <span className="relative flex h-[30px] w-[30px] items-center justify-center" style={{ color: accent }} aria-label={icon}>
-          <svg viewBox="0 0 24 24" className="h-[28px] w-[28px]" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+        <span className="relative flex h-[22px] w-[22px] items-center justify-center" style={{ color: accent }} aria-label={icon}>
+          <svg viewBox="0 0 24 24" className="h-[20px] w-[20px]" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
             {STAT_GLYPHS[glyph]}
           </svg>
         </span>
         {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
       </span>
-      <span className="mt-1.5 text-[19px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
+      <span className="mt-1 text-[14px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
         {value > 999 ? "999+" : value}
       </span>
-      <span className={`mt-0.5 max-w-full truncate px-0.5 text-[11.5px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
+      <span className={`mt-0.5 max-w-full truncate px-0.5 text-[10px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
         {label}
       </span>
     </Link>
