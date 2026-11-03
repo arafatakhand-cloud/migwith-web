@@ -2914,8 +2914,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             </div>
           )}
           <div
-            // 📜 the sheet is at most 60% of the screen; the list scrolls inside it (with a visible scrollbar)
-            className="room-sky-card flex max-h-[60dvh] w-full flex-col rounded-t-[22px] border-t border-[#E3ECF7] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
+            // 📜 the sheet is at most 40% of the screen; the list scrolls inside it (with a visible scrollbar)
+            className="room-sky-card flex max-h-[40dvh] w-full flex-col rounded-t-[22px] border-t border-[#E3ECF7] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="shrink-0 py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
