@@ -569,7 +569,8 @@ export default function WalletPage() {
               setSuccess("");
               setError("");
             }}
-            className="wl-transfer h-[46px] w-full rounded-[15px] bg-[#70B6FF] text-sm font-bold text-white shadow-sm active:scale-[.99]"
+            className="wl-transfer h-[46px] w-full rounded-[15px] bg-[#70B6FF] text-sm font-bold text-white transition-transform active:translate-y-[3px]"
+            style={{ boxShadow: "inset 0 2px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.14), 0 3px 0 #3F86D6, 0 5px 0 #2F6FC0, 0 9px 14px rgba(47,111,192,.35)" }}
           >
             ➤&nbsp;&nbsp;Transfer Coins
           </button>
@@ -925,7 +926,8 @@ function StatMiniCard({
       style={
         classic
           ? { background: "#FFFFFF", border: `1px solid color-mix(in srgb, ${tint} 45%, transparent)` }
-          : { background: `color-mix(in srgb, ${top} 92%, transparent)`, boxShadow: `0 1px 4px color-mix(in srgb, ${tint} 30%, transparent)` }
+          // 🫧 6D: stacked depth in the card's tint, a top shine
+          : { background: `linear-gradient(180deg, color-mix(in srgb, ${top} 96%, white), color-mix(in srgb, ${top} 86%, transparent))`, boxShadow: `inset 0 2px 0 rgba(255,255,255,.9), 0 2px 0 color-mix(in srgb, ${tint} 35%, transparent), 0 4px 0 color-mix(in srgb, ${tint} 25%, transparent), 0 7px 0 color-mix(in srgb, ${tint} 16%, transparent), 0 10px 14px color-mix(in srgb, ${tint} 24%, transparent)` }
       }
     >
       {/* lower wave in the card's tint (Modern only) */}
