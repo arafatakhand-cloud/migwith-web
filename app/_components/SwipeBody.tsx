@@ -22,7 +22,7 @@ export const swipeState = { dragging: false, touchedAt: 0 };
 
 // Like the app pager's settle: quick to start, long soft stop.
 // 🫧 Softer landing: a gentle ease (no hard start, no shove), so a swipe glides in and settles.
-const EASE = "cubic-bezier(.25,.1,.25,1)";
+const EASE = "cubic-bezier(.33,0,.2,1)";
 
 const key = (path: string) => {
   try {
