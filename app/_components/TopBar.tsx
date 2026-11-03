@@ -254,7 +254,7 @@ export function TopBar() {
           const withCopy = peekHasCopy();
           // A faster flick finishes faster, like the app.
           const left = width - Math.abs(dx);
-          const ms = Math.round(Math.min(340, Math.max(210, left / Math.max(Math.abs(v), 1.2))));
+          const ms = Math.round(Math.min(400, Math.max(260, left / Math.max(Math.abs(v), 1.2))));
           slideAway(el, side, ms);
           unswipe(ms + 260);
           // No copy of that tab yet: it slides in by itself once it opens.
