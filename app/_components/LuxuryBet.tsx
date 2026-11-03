@@ -231,6 +231,9 @@ export function useLuxuryBet(
       .then(({ data }) => {
         if (data?.bets) setMyBets(data.bets);
         setLastBet({ character, amount });
+        // 🎰 Show my own bet in the chat straight away; the server's bet line replaces it
+        // when it arrives (the chat is rebuilt from the server), so it never shows twice.
+        noteRef.current(`🎰 Luxury Bet: You placed ${amount} coins on ${character}.`);
         // ⭐ +3 XP for a successful bet (15 s cooldown), like the app's LuxuryBetGame.kt
         awardUserXp(uid, 3, "luxury_bot_bet", 15_000);
       })
