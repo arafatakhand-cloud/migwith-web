@@ -266,3 +266,16 @@ export function useSenderColors(names: string[], hot: string[] = []): (name: str
     return colorFor(k, cache.get(k), atMs);
   };
 }
+
+/** 🍀 The Lucky User's name colour: orange for a male, pink for a female. */
+export function luckyColorOf(name: string): string {
+  const p = cache.get(name.trim().toLowerCase());
+  return (p?.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
+}
+
+/** A name's own colour WITHOUT the Lucky User rule (for a reply quote of an older line). */
+export function nameColorWithoutLucky(name: string): string {
+  const p = cache.get(name.trim().toLowerCase());
+  return colorFor(name, p ? { ...p, luckyUntil: 0 } : undefined);
+}
+

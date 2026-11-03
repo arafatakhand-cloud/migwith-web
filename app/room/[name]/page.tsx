@@ -63,7 +63,7 @@ import {
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
-import { COUNTRY_REP_BADGE, cachedRoleOf, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
+import { COUNTRY_REP_BADGE, cachedRoleOf, luckyColorOf, nameColorWithoutLucky, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
 import { SupporterBadge } from "../../_components/SupporterBadge";
 import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
@@ -3784,7 +3784,7 @@ function MessageRow({
               const qc = quote.indexOf(":");
               const qName = qc > 0 ? quote.slice(0, qc).trim() : "";
               const author = qName.toLowerCase() === "you" ? senderName : qName;
-              const qColor = author ? colorOf(author) : "#2F80ED";
+              const qColor = author ? nameColorWithoutLucky(author) : "#2F80ED";
               return (
                 <span
                   className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-white text-[#1b2430]"}`}
@@ -4119,7 +4119,7 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
           <span className="text-sm">✨🎉✨</span>
         </div>
         <p className="mt-2 text-xs font-semibold text-[#7A6A88]">Congratulations</p>
-        <p data-notranslate className="truncate text-2xl font-black text-[#E8327E]">
+        <p data-notranslate className="truncate text-2xl font-black" style={{ color: luckyColorOf(winner) }}>
           {winner}
         </p>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
