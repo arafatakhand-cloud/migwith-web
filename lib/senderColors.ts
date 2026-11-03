@@ -92,13 +92,32 @@ function persist() {
 // 🍀 Lucky User pink lasts 3 hours (LUCKY_PINK_MS on the server), so it began 3 h before luckyUntil.
 const LUCKY_PINK_MS = 3 * 60 * 60 * 1000;
 
+// 🍀 Every Lucky User announcement in the room's chat (name → start times). A line
+// written inside one of those 3-hour windows stays pink, even after someone else
+// becomes Lucky User; lines outside them are the person's normal colour.
+const luckyHistory = new Map<string, number[]>();
+export function noteLuckyAnnouncements(lines: { text: string; createdAtMs: number }[]) {
+  for (const l of lines) {
+    const m = /Congratulations (.+?)! You are the Lucky User/i.exec(l.text);
+    if (!m || !l.createdAtMs) continue;
+    const k = m[1].trim().toLowerCase();
+    const starts = luckyHistory.get(k) ?? [];
+    if (!starts.includes(l.createdAtMs)) starts.push(l.createdAtMs);
+    luckyHistory.set(k, starts);
+  }
+}
+function wasLuckyAt(name: string, atMs: number): boolean {
+  const starts = luckyHistory.get(name.trim().toLowerCase());
+  return !!starts && starts.some((s) => atMs >= s && atMs < s + LUCKY_PINK_MS);
+}
+
 function colorFor(name: string, p: Profile | undefined, atMs?: number): string {
+  // a line inside one of this person's lucky windows is pink (orange for a male);
+  // with no line time, pink only while they are Lucky User now
+  const lucky = atMs !== undefined ? wasLuckyAt(name, atMs) : !!p && p.luckyUntil > Date.now();
+  if (lucky)
+    return (p?.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
   if (!p) return USER_BLUE;
-  // a line written BEFORE the person became Lucky User keeps the old colour;
-  // only lines from the lucky moment on turn pink
-  const luckyFrom = p.luckyUntil - LUCKY_PINK_MS;
-  if (p.luckyUntil > Date.now() && !(atMs && atMs < luckyFrom))
-    return (p.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
   if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
   }

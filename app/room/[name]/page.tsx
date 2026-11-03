@@ -63,7 +63,7 @@ import {
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
-import { COUNTRY_REP_BADGE, cachedRoleOf, luckyColorOf, nameColorWithoutLucky, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
+import { COUNTRY_REP_BADGE, cachedRoleOf, luckyColorOf, nameColorWithoutLucky, noteLuckyAnnouncements, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
 import { SupporterBadge } from "../../_components/SupporterBadge";
 import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
@@ -1406,6 +1406,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     );
 
   // Name colours (role / Color Shop / Lucky pink) for everyone in the chat.
+  // 🍀 remember every Lucky User announcement in this chat, so old lucky lines stay pink
+  useMemo(() => noteLuckyAnnouncements(messages.map((m) => ({ text: m.text, createdAtMs: m.createdAtMs }))), [messages]);
   const colorOf = useSenderColors(
     useMemo(
       () => [
