@@ -167,7 +167,7 @@ export default function GiftShopsPage() {
               <li key={g.id} className="relative py-1">
                 <div
                   // 🫧 6D: stacked depth under each gift card, a top shine
-                  className={`flex flex-col items-center rounded-[18px] bg-white px-2 pb-2.5 pt-3 text-center shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_8px_12px_rgba(11,31,58,.16)] ${
+                  className={`flex flex-col items-center rounded-[20px] bg-white px-2 pb-2.5 pt-3 text-center shadow-[inset_0_2px_0_#fff,0_3px_0_#BFD0E8,0_6px_0_#AFC2DE,0_9px_0_#9FB4D4,0_14px_18px_rgba(11,31,58,.22)] ${
                     g.featured
                       ? "border-[1.5px] border-[#D4AF37]/80 shadow-[inset_0_2px_0_#fff,0_2px_0_#E6CB7A,0_4px_0_#D4AF37,0_8px_14px_rgba(212,175,55,.4)]"
                       : g.limited
