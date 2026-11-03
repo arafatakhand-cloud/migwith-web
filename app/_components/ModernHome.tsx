@@ -93,12 +93,14 @@ function StatTile({
   return (
     <Link
       href={href}
-      className={`relative flex min-w-0 flex-1 flex-col items-center overflow-hidden rounded-[14px] pb-2 pt-2 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
+      className={`relative flex min-w-0 flex-1 flex-col items-center rounded-full py-2 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
       style={{
         // (the Glass theme's .stat-glass washes the tile with this colour)
         ["--accent" as string]: accent,
-        background: `linear-gradient(${accent}1A, ${accent2}0A)`,
-        border: highlight ? "1.6px solid transparent" : `1px solid ${accent}38`,
+        // 🫧 5D: white to pale blue, with a stacked depth shadow under the pill
+        background: highlight ? `linear-gradient(${accent}1A, ${accent2}0A)` : "linear-gradient(180deg, #FFFFFF, #EAF2FB)",
+        border: highlight ? "1.6px solid transparent" : "1px solid #E3ECF7",
+        boxShadow: highlight ? undefined : `0 2px 0 #C9D8EA, 0 4px 0 #B7C9E0, 0 8px 12px ${accent}33`,
         ...(highlight
           ? {
               backgroundImage: `linear-gradient(rgba(255,255,255,.6), rgba(255,255,255,.6)), linear-gradient(${accent}1A, ${accent2}0A), linear-gradient(135deg, ${accent}, ${accent2})`,
@@ -109,10 +111,9 @@ function StatTile({
           : {}),
       }}
     >
-      <span aria-hidden className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${accent}, ${accent2})` }} />
-      <span className="relative flex h-[22px] w-[22px] items-center justify-center">
+      <span className="relative flex h-[24px] w-[24px] items-center justify-center">
         {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
-        <span className="relative flex h-[22px] w-[22px] items-center justify-center" style={{ color: accent }} aria-label={icon}>
+        <span className="relative flex h-[24px] w-[24px] items-center justify-center" style={{ color: accent, filter: `drop-shadow(0 2px 1px ${accent}55)` }} aria-label={icon}>
           <svg viewBox="0 0 24 24" className="h-[20px] w-[20px]" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
             {STAT_GLYPHS[glyph]}
           </svg>
