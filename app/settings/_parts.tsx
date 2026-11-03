@@ -73,7 +73,8 @@ export function Row({
   // 🎨 the Community page's card: white → the row's colour
   const style = classic
     ? undefined
-    : { borderColor: `${tint}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${tint}1A)`, boxShadow: `0 3px 10px ${tint}1F` };
+    : { borderColor: `${tint}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${tint}1A)`, // 🫧 subtle 6D (option C): two stacked layers in the row's colour
+    boxShadow: `inset 0 2px 0 #fff, 0 2px 0 ${tint}3D, 0 4px 0 ${tint}24` };
   if (href) return <Link href={href} className={cls} style={style}>{body}</Link>;
   if (onClick) return <button type="button" onClick={onClick} className={cls} style={style}>{body}</button>;
   return <div className={cls} style={style}>{body}</div>;
