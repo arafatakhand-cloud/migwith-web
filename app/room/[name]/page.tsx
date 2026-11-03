@@ -2492,7 +2492,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   // ▶ next to ⋮, like the app (hidden while recording)
                   extra={luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
                   voiceActive={voiceActive}
-                  reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
+                  reply={replyTo && { ...replyTo, color: nameColorWithoutLucky(replyTo.sender), onCancel: () => setReplyTo(null) }}
                         />
 } />}
                 {teenPatti && profile && <TeenPattiTable state={teenPatti} uid={user.uid} myUsername={profile.username} roomUsers={roomUsers.map((u) => u.username)} />}
@@ -2571,7 +2571,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               // ▶ next to ⋮, like the app (hidden while recording)
               extra={luxuryBet && <LuxuryBetStartButton state={luxuryBet} />}
               voiceActive={voiceActive}
-              reply={replyTo && { ...replyTo, color: colorOf(replyTo.sender), onCancel: () => setReplyTo(null) }}
+              reply={replyTo && { ...replyTo, color: nameColorWithoutLucky(replyTo.sender), onCancel: () => setReplyTo(null) }}
             />
             )}
           </div>
