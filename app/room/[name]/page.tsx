@@ -4110,6 +4110,7 @@ function ReactorsDialog({ emoji, uids, onClose }: { emoji: string; uids: string[
 function LuckyCard({ text, time }: { text: string; time: string }) {
   const winner = /Congratulations (.+?)! You are/i.exec(text)?.[1]?.trim() || "Lucky User";
   const coins = Number(/and (\d+) coins/i.exec(text)?.[1] || 5000);
+  const isMaleLucky = luckyColorOf(winner) === "#FB8C00";
   return (
     <div className="rounded-[20px] bg-gradient-to-r from-[#43C77A] via-[#FF6FB1] to-[#F2B53A] p-[1.5px] shadow-[0_6px_18px_rgba(255,111,177,0.35)]">
       <div className="lucky-shimmer relative overflow-hidden rounded-[19px] bg-gradient-to-br from-[#E8FFF3] via-[#FFEEF7] to-[#FFF6DC] px-3.5 py-3">
@@ -4124,7 +4125,10 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
         </p>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {[
-            ["💗", "Pink ID 3h", "#FF6FB1", "#B2477F"],
+            // 🧡 a male Lucky User gets an Orange ID, a female one a Pink ID
+            isMaleLucky
+              ? ["🧡", "Orange ID 3h", "#FB8C00", "#A35A00"]
+              : ["💗", "Pink ID 3h", "#FF6FB1", "#B2477F"],
             ["⬆️", "+1 Level", "#3B8BF0", "#2D5FA6"],
             ["🪙", `+${coins.toLocaleString()}`, "#E0A21B", "#96701E"],
           ].map(([icon, label, accent, ink]) => (
