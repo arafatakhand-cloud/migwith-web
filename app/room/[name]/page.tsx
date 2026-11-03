@@ -2374,13 +2374,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 // little is enough). Kick / ban / lock … lines no longer do: they are at
                 // the chat's own size like every other line (miglife: "why two font
                 // sizes?" — 🔓 unlocked shrank, 🔒 locked did not).
-                const row = m.type === "gift" ? (
-                  <FitOneLine key={m.id} base={fontPx}>
-                    {rowAt}
-                  </FitOneLine>
-                ) : (
-                  rowAt(fontPx)
-                );
+                // 🎁 every gift line (and Gift Shower) is the same size as the chat text now,
+                // in every room — no growing / shrinking to fit a line.
+                const row = rowAt(fontPx);
                 // MIG Royale lines read directly on the chat, like the reference: no tinted panel
                 if (!bot || roomName === ROYALE_ROOM) return row;
                 return (
