@@ -3100,13 +3100,13 @@ function withMentions(text: string, keyPrefix = "m"): ReactNode[] {
           href={`/profile/${encodeURIComponent(name)}`}
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
-          className="font-bold hover:underline"
+          className="mention-link font-bold hover:underline"
           style={{ color: LINK_BLUE }}
         >
           {match[0]}
         </Link>
       ) : (
-        <span key={`${keyPrefix}${i}`} className="font-bold" style={{ color: LINK_BLUE }}>
+        <span key={`${keyPrefix}${i}`} className="mention-link font-bold" style={{ color: LINK_BLUE }}>
           {match[0]}
         </span>
       )

@@ -1536,3 +1536,6 @@ html[data-theme="dark_night"] .pf-info-glass * {
 html {
   background-color: #3B6FEA;
 }
+
+/* 🎨 An @mention inside my own dark bubble: a light blue, so the name can be read. */
+.bg-\[\#133552\] .mention-link { color: #9FD2FF !important; }
