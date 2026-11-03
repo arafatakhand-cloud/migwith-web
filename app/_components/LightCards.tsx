@@ -128,8 +128,13 @@ export function PastelCard({
       )}
     </>
   );
-  const cls = "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left shadow-sm transition";
-  const style = { background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`, borderColor: `${color}40` };
+  // 🫧 6D: stacked depth in the card's colour under it, a top shine
+  const cls = "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition active:translate-y-[2px]";
+  const style = {
+    background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`,
+    borderColor: `${color}40`,
+    boxShadow: `inset 0 2px 0 rgba(255,255,255,.9), 0 2px 0 ${color}40, 0 4px 0 ${color}2E, 0 7px 0 ${color}1F, 0 10px 14px ${color}2E`,
+  };
   // A `right` with nothing to open (a switch, say) stays a plain row; with an
   // href / onClick the whole card still opens it (Discover's LIVE, Play Zone).
   if (right && !href && !onClick)

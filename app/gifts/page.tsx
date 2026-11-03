@@ -166,12 +166,13 @@ export default function GiftShopsPage() {
             {shown.map((g) => (
               <li key={g.id} className="relative py-1">
                 <div
-                  className={`flex flex-col items-center rounded-[18px] bg-white px-2 pb-2.5 pt-3 text-center ${
+                  // 🫧 6D: stacked depth under each gift card, a top shine
+                  className={`flex flex-col items-center rounded-[18px] bg-white px-2 pb-2.5 pt-3 text-center shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_8px_12px_rgba(11,31,58,.16)] ${
                     g.featured
-                      ? "border-[1.5px] border-[#D4AF37]/80 shadow-[0_6px_14px_rgba(212,175,55,.35)]"
+                      ? "border-[1.5px] border-[#D4AF37]/80 shadow-[inset_0_2px_0_#fff,0_2px_0_#E6CB7A,0_4px_0_#D4AF37,0_8px_14px_rgba(212,175,55,.4)]"
                       : g.limited
-                        ? "border border-[#E1A9A9] shadow"
-                        : "border border-[#D4DDEB] shadow"
+                        ? "border border-[#E1A9A9] shadow-[inset_0_2px_0_#fff,0_2px_0_#F0C4C4,0_4px_0_#E1A9A9,0_8px_12px_rgba(225,169,169,.4)]"
+                        : "border border-[#D4DDEB]"
                   } ${g.active ? "" : "opacity-55"}`}
                 >
                   <span
