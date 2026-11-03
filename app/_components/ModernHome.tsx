@@ -39,9 +39,40 @@ function Avatar({ name, photo, size, ring }: { name: string; photo: string; size
 }
 
 /** One stats tile (the app's HomeStatTile). */
+// Style E: a plain line glyph (no coloured disc) with a coloured bar on the top edge.
+const STAT_GLYPHS: Record<string, React.ReactNode> = {
+  mail: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="3" />
+      <path d="M4 7l8 6 8-6" />
+    </>
+  ),
+  bell: (
+    <>
+      <path d="M6 16V11a6 6 0 0112 0v5l1.5 2h-15z" />
+      <path d="M10 20a2 2 0 004 0" />
+    </>
+  ),
+  users: (
+    <>
+      <circle cx="9" cy="9" r="3.2" />
+      <path d="M3.5 19c.6-3 2.9-4.8 5.5-4.8s4.9 1.8 5.5 4.8" />
+      <circle cx="16.5" cy="8.5" r="2.6" />
+      <path d="M16 13.6c2.4.1 4.1 1.8 4.6 4.4" />
+    </>
+  ),
+  online: (
+    <>
+      <circle cx="12" cy="12" r="5" fill="currentColor" />
+      <circle cx="12" cy="12" r="9" opacity=".4" />
+    </>
+  ),
+};
+
 function StatTile({
   href,
   icon,
+  glyph,
   value,
   label,
   accent,
@@ -51,6 +82,7 @@ function StatTile({
 }: {
   href: string;
   icon: string;
+  glyph: keyof typeof STAT_GLYPHS;
   value: number;
   label: string;
   accent: string;
@@ -61,7 +93,7 @@ function StatTile({
   return (
     <Link
       href={href}
-      className={`flex min-w-0 flex-1 flex-col items-center rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
+      className={`relative flex min-w-0 flex-1 flex-col items-center overflow-hidden rounded-[16px] pb-2.5 pt-3 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
       style={{
         // (the Glass theme's .stat-glass washes the tile with this colour)
         ["--accent" as string]: accent,
@@ -77,10 +109,13 @@ function StatTile({
           : {}),
       }}
     >
+      <span aria-hidden className="absolute inset-x-0 top-0 h-[5px]" style={{ background: `linear-gradient(90deg, ${accent}, ${accent2})` }} />
       <span className="relative flex h-[30px] w-[30px] items-center justify-center">
         {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
-        <span className="glass-shine relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-sm" style={{ background: `linear-gradient(135deg, ${accent}, ${accent2})` }}>
-          {icon}
+        <span className="relative flex h-[30px] w-[30px] items-center justify-center" style={{ color: accent }} aria-label={icon}>
+          <svg viewBox="0 0 24 24" className="h-[28px] w-[28px]" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+            {STAT_GLYPHS[glyph]}
+          </svg>
         </span>
         {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
       </span>
@@ -255,10 +290,10 @@ export function ModernHomeTop({
           its tile up with a glowing border and a pulsing dot; Online pulses
           while friends are online (the app's HomeStatTile). */}
       <div className="mh-stats glass-card mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
-        <StatTile href="/mail" icon="✉️" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
-        <StatTile href="/alerts" icon="🔔" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
-        <StatTile href="/friends" icon="👥" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
-        <StatTile href="/friends" icon="🟢" value={online.length} label="Online" accent="#16A34A" accent2="#14B8A6" live={online.length > 0} />
+        <StatTile href="/mail" icon="✉️" glyph="mail" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
+        <StatTile href="/alerts" icon="🔔" glyph="bell" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
+        <StatTile href="/friends" icon="👥" glyph="users" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
+        <StatTile href="/friends" icon="🟢" glyph="online" value={online.length} label="Online" accent="#16A34A" accent2="#14B8A6" live={online.length > 0} />
       </div>
 
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games
