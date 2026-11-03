@@ -925,6 +925,21 @@ html[data-theme="glass"]:not([data-ui="classic"]) .room-chat-bg {
   filter: brightness(1.1);
 }
 .lb-chip { transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.14s ease, background 0.2s ease, color 0.2s ease; }
+/* 🎲 Bet buttons 6D (style 5): stacked depth under each amount / character button, a
+   top shine, and a pressed state that drops the button onto its lower layers. */
+.lb-chip,
+.lb-press {
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.85), inset 0 -3px 0 rgba(42, 27, 92, 0.14),
+    0 2px 0 #C7B8F0, 0 4px 0 #B6A3E6, 0 6px 0 #A590DB, 0 12px 18px rgba(42, 27, 92, 0.28) !important;
+}
+.lb-chip:active:not(:disabled),
+.lb-press:active:not(:disabled) {
+  transform: translateY(3px) !important;
+  box-shadow: inset 0 3px 6px rgba(42, 27, 92, 0.25), 0 1px 0 #B6A3E6, 0 2px 4px rgba(42, 27, 92, 0.2) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lb-chip:active:not(:disabled), .lb-press:active:not(:disabled) { transform: none !important; }
+}
 .lb-armed {
   box-shadow: 0 0 0 2px #fff, 0 0 14px 3px rgba(255, 213, 79, 0.9);
   animation: lb-armed 0.5s ease-out;
