@@ -79,7 +79,7 @@ export default function ExplorePage() {
                   type="button"
                   onClick={() => setTab(id)}
                   className={`shrink-0 rounded-full px-4 py-1.5 text-[13px] font-bold transition ${
-                    tab === id ? "bg-gradient-to-r from-[#5A8FD6] to-[#8B5CFF] text-white shadow-[0_4px_12px_rgba(90,143,214,.35)]" : "border border-[#D5E3F5] bg-white text-[#5B6B8C]"
+                    tab === id ? "bg-gradient-to-b from-[#7FA6E6] to-[#8B5CFF] text-white shadow-[inset_0_2px_0_rgba(255,255,255,.45),0_3px_0_#5A6FC4,0_5px_0_#4A5BB0,0_9px_12px_rgba(90,111,196,.35)] active:translate-y-[2px]" : "border border-[#D5E3F5] bg-white text-[#5B6B8C] shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_7px_10px_rgba(11,31,58,.12)] active:translate-y-[2px]"
                   }`}
                 >
                   {label}

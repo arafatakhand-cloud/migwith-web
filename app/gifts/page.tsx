@@ -125,7 +125,7 @@ export default function GiftShopsPage() {
             <button
               type="button"
               onClick={() => setEditing({ id: `gift_${Date.now()}`, initial: null })}
-              className="rounded-full bg-[#0B1F3A] px-3 py-2 text-xs font-semibold text-white"
+              className="rounded-full bg-[#0B1F3A] px-3 py-2 text-xs font-semibold text-white shadow-[inset_0_2px_0_rgba(255,255,255,.2),0_3px_0_#050F1F,0_5px_0_#03080F,0_8px_10px_rgba(11,31,58,.3)] active:translate-y-[2px]"
             >
               ＋ Add Gift
             </button>
@@ -138,7 +138,7 @@ export default function GiftShopsPage() {
             Admin mode: Add, edit or delete gifts. Normal users can only browse the catalog.
           </p>
         )}
-        <label className="mt-3 flex items-center gap-2 rounded-[14px] border border-[#D4DDEB] bg-white px-3 py-2.5">
+        <label className="mt-3 flex items-center gap-2 rounded-[14px] border border-[#D4DDEB] bg-white px-3 py-2.5 shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_7px_10px_rgba(11,31,58,.12)]">
           <span>🔍</span>
           <input
             value={search}
@@ -191,7 +191,7 @@ export default function GiftShopsPage() {
                   </span>
                   <span
                     className={`mt-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                      g.active ? "bg-[#FFF1D0] text-[#B17A00]" : "bg-[#EDEFF3] text-[#8A9AB2]"
+                      g.active ? "bg-[#FFF1D0] text-[#B17A00] shadow-[inset_0_1px_0_#fff,0_2px_0_#E6CB7A,0_3px_0_#D4AF37]" : "bg-[#EDEFF3] text-[#8A9AB2] shadow-[0_2px_0_#D2D8E2]"
                     }`}
                   >
                     💰 {g.price}
