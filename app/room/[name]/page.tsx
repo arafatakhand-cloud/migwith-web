@@ -2753,7 +2753,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 key={label}
                 type="button"
                 onClick={act}
-                className="flex w-full items-center gap-3 px-4 py-[10px] text-left text-[14px] text-[#1E2A3B] active:bg-black/5"
+                // 🫧 each item is its own 6D button: a light tile with stacked depth under it
+                className="mx-2 my-[3px] flex w-[calc(100%-16px)] items-center gap-3 rounded-[12px] bg-gradient-to-b from-white/95 to-white/70 px-3 py-[9px] text-left text-[14px] text-[#1E2A3B] shadow-[inset_0_2px_0_#fff,0_2px_0_rgba(40,80,160,.22),0_4px_0_rgba(40,80,160,.16),0_7px_10px_rgba(40,80,160,.14)] transition active:translate-y-[2px] active:shadow-[inset_0_2px_4px_rgba(11,31,58,.18)]"
               >
                 <MenuIcon name={icon} />
                 <span className="truncate">{label}</span>
