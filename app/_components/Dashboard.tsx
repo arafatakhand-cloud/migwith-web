@@ -398,6 +398,7 @@ export function Dashboard() {
           friends={friends.filter((f) => !friendSearch.trim() || f.name.toLowerCase().includes(friendSearch.trim().toLowerCase()))}
           unreadEmails={badges.emails}
           unreadAlerts={badges.alerts}
+          unreadChats={badges.messages}
           search={friendSearch}
           onSearch={setFriendSearch}
           onStatus={() => {

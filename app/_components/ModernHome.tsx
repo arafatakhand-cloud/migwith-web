@@ -53,6 +53,11 @@ const STAT_GLYPHS: Record<string, React.ReactNode> = {
       <path d="M10 20a2 2 0 004 0" />
     </>
   ),
+  chat: (
+    <>
+      <path d="M5 6h14a2 2 0 012 2v7a2 2 0 01-2 2h-7l-4 3v-3H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+    </>
+  ),
   users: (
     <>
       <circle cx="9" cy="9" r="3.2" />
@@ -158,6 +163,7 @@ export function ModernHomeTop({
   friends,
   unreadEmails,
   unreadAlerts,
+  unreadChats = 0,
   search,
   onSearch,
   onStatus,
@@ -177,6 +183,8 @@ export function ModernHomeTop({
   friends: HomeFriend[];
   unreadEmails: number;
   unreadAlerts: number;
+  /** Unread private messages (the 4th tile: Chat). */
+  unreadChats?: number;
   search: string;
   onSearch: (v: string) => void;
   onStatus: () => void;
@@ -294,7 +302,7 @@ export function ModernHomeTop({
         <StatTile href="/mail" icon="✉️" glyph="mail" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
         <StatTile href="/alerts" icon="🔔" glyph="bell" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
         <StatTile href="/friends" icon="👥" glyph="users" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
-        <StatTile href="/friends" icon="🟢" glyph="online" value={online.length} label="Online" accent="#16A34A" accent2="#14B8A6" live={online.length > 0} />
+        <StatTile href="/messages" icon="💬" glyph="chat" value={unreadChats} label={unreadChats > 0 ? "New chat" : "Chat"} accent="#0EA5E9" accent2="#2563EB" highlight={unreadChats > 0} />
       </div>
 
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games
