@@ -2914,11 +2914,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             </div>
           )}
           <div
-            className="room-sky-card w-full rounded-t-[22px] border-t border-[#E3ECF7] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
+            // 📜 the sheet is at most 60% of the screen; the list scrolls inside it (with a visible scrollbar)
+            className="room-sky-card flex max-h-[60dvh] w-full flex-col rounded-t-[22px] border-t border-[#E3ECF7] bg-white pb-safe shadow-[0_-8px_24px_rgba(11,31,58,.18)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
-            <ul data-notranslate className="max-h-[50vh] overflow-y-auto px-5 pb-2">
+            <p className="shrink-0 py-3.5 text-center text-[14px] font-bold text-[#1E2A3B]">Kick user</p>
+            <ul
+              data-notranslate
+              className="min-h-0 flex-1 overflow-y-scroll overscroll-contain px-5 pb-2 [scrollbar-width:thin] [scrollbar-color:#9FB3D9_transparent]"
+            >
               {roomUsers.filter((u) => u.uid !== user.uid).length === 0 && (
                 <li className="border-t border-black/[0.06] py-3 text-center text-sm text-[#8A96AB]">No one else is here.</li>
               )}
