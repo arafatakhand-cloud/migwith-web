@@ -372,6 +372,46 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           )
         )}
 
+        {/* 🧱 My wall (Mine tab): cover, my picture, my numbers, and the two buttons */}
+        {!author && tab === "mine" && user && posts && (
+          <section className="mx-3.5 mb-2 mt-2 overflow-hidden rounded-[22px] bg-white/95 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+            <div className="h-[84px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7]" />
+            <div className="px-4 pb-4">
+              <div className="-mt-9 inline-block rounded-full bg-gradient-to-br from-[#2F6FD6] to-[#8B5CFF] p-[3px]">
+                <div className="rounded-full bg-white p-0.5">
+                  <Avatar name={username} color={meColor} size={68} />
+                </div>
+              </div>
+              <div className="mt-1.5 text-[18px] font-black text-[#1E1B4B]">{username}</div>
+              <div className="mt-2 grid grid-cols-3 rounded-2xl bg-[#F4F6FD] py-2 text-center">
+                <div>
+                  <b className="block text-[15px] text-[#1E1B4B]">{toBnDigits(posts.length)}</b>
+                  <small className="text-[10.5px] text-[#7A7FA6]">পোস্ট</small>
+                </div>
+                <div>
+                  <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.likes, 0))}</b>
+                  <small className="text-[10.5px] text-[#7A7FA6]">❤️ লাইক</small>
+                </div>
+                <div>
+                  <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.views, 0))}</b>
+                  <small className="text-[10.5px] text-[#7A7FA6]">👁 দেখা</small>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setComposing(true)}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
+                >
+                  ✍️ নতুন post
+                </button>
+                <Link href={`/profile/${encodeURIComponent(username)}`} className="flex-1 rounded-xl bg-[#F1EFFF] py-2 text-center text-[13px] font-extrabold text-[#4F46E5]">
+                  ✏️ প্রোফাইল
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
         {error && <p className="mx-3.5 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
         {fresh > 0 && (
