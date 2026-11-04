@@ -3922,7 +3922,7 @@ function MessageRow({
               <span
                 ref={rightSide ? ownBodyRef : undefined}
                 className="whitespace-pre-wrap break-words"
-                style={{ color: rightSide && !isRoomLine ? "#ffffff" : INK }}
+                style={{ color: rightSide && !isRoomLine ? "#000000" : INK }}
                 onClick={(e) => {
                   // Missed the exact letters? A tap anywhere on a message that
                   // holds ONE link still opens it (like the app).
