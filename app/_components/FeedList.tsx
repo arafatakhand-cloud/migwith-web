@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -43,6 +43,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [ind, setInd] = useState<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = tabRefs.current[tab];
+    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [tab]);
   const friendsKey = friends.join(",");
 
   useEffect(() => {
@@ -155,16 +161,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {!author && (
-          <div className="mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/55 p-1">
+          <div className="relative mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/55 p-1">
+            {/* 🫧 one gradient pill that slides under the chosen tab */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)] transition-[left,width] duration-300 ease-out"
+              style={ind ? { left: ind.left, width: ind.width } : { opacity: 0 }}
+            />
             {TABS.map(([k, label]) => (
               <button
                 key={k}
+                ref={(el) => {
+                  tabRefs.current[k] = el;
+                }}
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
-                className={`flex-1 rounded-xl py-2 text-[13px] font-extrabold transition ${
-                  tab === k
-                    ? "bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
-                    : "text-[#6B6F9A]"
+                className={`relative z-10 flex-1 rounded-xl py-2 text-[13px] font-extrabold transition-colors ${
+                  tab === k ? "text-white" : "text-[#6B6F9A]"
                 }`}
               >
                 {k === "popular" && tab === k ? "🔥 " : ""}
@@ -191,7 +204,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         {posts === null ? (
           <div className="space-y-3 px-3.5">
             {[0, 1].map((i) => (
-              <div key={i} className="h-[300px] animate-pulse rounded-[22px] bg-white/60" />
+              <div key={i} className="feed-shimmer h-[300px] rounded-[22px]" />
             ))}
           </div>
         ) : posts.length === 0 ? (
@@ -259,6 +272,12 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
 function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; onLike: () => void; onShare: () => void }) {
   const router = useRouter();
+  // ❤️ each new like: the heart pops and a few hearts float up
+  const [burst, setBurst] = useState(0);
+  const likeTap = () => {
+    if (!liked) setBurst((n) => n + 1);
+    onLike();
+  };
   const pic = p.cover || p.firstImage;
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
@@ -266,7 +285,7 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
   return (
     <article
       onClick={open}
-      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 bg-white/85 p-3 shadow-[0_10px_24px_-16px_rgba(40,50,110,.55)] transition active:scale-[.995]"
+      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 bg-white/85 p-3 shadow-[inset_0_2px_0_#fff,0_2px_0_rgba(99,102,241,.24),0_4px_0_rgba(99,102,241,.14)] transition active:scale-[.995]"
     >
       <div className="flex items-center gap-2.5">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()}>
@@ -294,12 +313,25 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
       <div className="mt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
-          onClick={onLike}
-          className={`flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
+          onClick={likeTap}
+          className={`relative flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
             liked ? "bg-[#FFE8F1] text-[#DB2777]" : "bg-[#F3F2FF] text-[#4F46E5]"
           }`}
         >
-          {liked ? "❤️" : "🤍"} {blogShort(p.likes)}
+          {burst > 0 &&
+            ["❤️", "💖", "✨", "💕"].map((h, i) => (
+              <span
+                key={`${burst}-${i}`}
+                aria-hidden
+                className="feed-burst"
+                style={{ ["--x" as string]: `${(i - 1.5) * 26}px` }}
+              >
+                {h}
+              </span>
+            ))}
+          <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
+            {liked ? "❤️" : "🤍"} {blogShort(p.likes)}
+          </span>
         </button>
         <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
           💬 {blogShort(p.comments)}

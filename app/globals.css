@@ -1539,3 +1539,22 @@ html {
 
 /* 🎨 An @mention inside my own dark bubble: a light blue, so the name can be read. */
 .bg-\[\#133552\] .mention-link { color: #9FD2FF !important; }
+
+/* 📰 Feed polish: the like burst, the heart pop, and the loading shimmer */
+@keyframes feedBurst {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.6); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% - 46px)) scale(1.3); }
+}
+.feed-burst { position: absolute; left: 50%; top: 50%; pointer-events: none; font-size: 15px; animation: feedBurst 0.7s ease-out forwards; }
+@keyframes feedPop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+.feed-pop { animation: feedPop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1); }
+@keyframes feedShimmer { to { background-position: -200% 0; } }
+.feed-shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.5) 25%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0.5) 75%);
+  background-size: 200% 100%;
+  animation: feedShimmer 1.2s infinite;
+}
