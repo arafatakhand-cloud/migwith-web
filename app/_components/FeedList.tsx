@@ -191,11 +191,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         {!author && (
           <Link
             href={user ? "/feed/write" : "/login"}
-            className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 shadow-[0_8px_20px_-14px_rgba(40,50,110,.5)] transition active:scale-[.99]"
+            className="group mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.24),0_6px_0_rgba(99,102,241,.15),0_10px_16px_-8px_rgba(99,102,241,.35)] transition duration-200 hover:-translate-y-px hover:shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.3),0_7px_0_rgba(99,102,241,.2),0_12px_20px_-8px_rgba(99,102,241,.45)] active:translate-y-[2px] active:scale-[.99]"
           >
             {user ? <Avatar name={username} color={meColor} size={40} ring /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>}
             <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{user ? `What's on your mind, ${username}?` : "Log in to write a post"}</span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px]">🖼</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px] transition group-hover:scale-110">🖼</span>
           </Link>
         )}
 
