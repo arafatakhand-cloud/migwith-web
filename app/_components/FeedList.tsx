@@ -8,6 +8,7 @@ import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
+import { uploadChatImage } from "../../lib/imageUpload";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -81,20 +82,42 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 🔔 "৩টি নতুন post": every 90 s, while the page is open on Popular / New
   // ✍️ the composer opens right here in the feed (Facebook style), no new page
   const [composing, setComposing] = useState(false);
-  const [ctitle, setCtitle] = useState("");
   const [ctext, setCtext] = useState("");
+  const [cphotos, setCphotos] = useState<string[]>([]);
   const [ccat, setCcat] = useState("life");
   const [cbusy, setCbusy] = useState(false);
   const [cerr, setCerr] = useState("");
-  const publishInline = async () => {
+  const cfileRef = useRef<HTMLInputElement>(null);
+  const cupload = async (files: FileList | null) => {
+    if (!files?.length || !user) return;
+    const room = 10 - cphotos.length;
+    if (room <= 0) return setCerr("একটা post-এ সর্বোচ্চ ১০টি ছবি।");
     setCerr("");
-    if (ctitle.trim().length < 3) return setCerr("শিরোনাম কমপক্ষে ৩ অক্ষরের হতে হবে।");
-    if (!ctext.trim()) return setCerr("কিছু লিখুন।");
     setCbusy(true);
     try {
-      await blogCall("create", { title: ctitle.trim(), body: ctext.trim(), cover: "", category: ccat });
-      setCtitle("");
+      for (const f of Array.from(files).slice(0, room)) {
+        const url = await uploadChatImage(`room_images/blog_${user.uid}`, f);
+        setCphotos((p) => [...p, url].slice(0, 10));
+      }
+    } catch (e) {
+      setCerr(blogError(e));
+    } finally {
+      setCbusy(false);
+    }
+  };
+  const publishInline = async () => {
+    setCerr("");
+    if (!ctext.trim() && cphotos.length === 0) return setCerr("কিছু লিখুন বা ছবি যোগ করুন।");
+    // no title box: the title is the first line of the text
+    const first = ctext.trim().split("\n")[0].slice(0, 60);
+    const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
+    const [cover = "", ...rest] = cphotos;
+    const body = [ctext.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
+    setCbusy(true);
+    try {
+      await blogCall("create", { title, body, cover, category: ccat });
       setCtext("");
+      setCphotos([]);
       setComposing(false);
       setToast("পোস্ট হয়েছে ✓");
       setReload((n) => n + 1);
@@ -274,20 +297,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 ✕
               </button>
             </div>
-            <input
-              value={ctitle}
-              onChange={(e) => setCtitle(e.target.value)}
-              placeholder="শিরোনাম (কমপক্ষে ৩ অক্ষর)"
-              className="mt-2.5 w-full border-b border-[#E3E8F3] bg-transparent px-1 pb-1.5 text-[16px] font-bold text-[#1E1B4B] outline-none placeholder:font-normal placeholder:text-[#9AA3BD]"
-            />
+            <input ref={cfileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (cupload(e.target.files), (e.target.value = ""))} />
             <textarea
               autoFocus
               value={ctext}
               onChange={(e) => setCtext(e.target.value)}
-              placeholder="What's on your mind? Share a story, a tip or a moment…"
+              placeholder={`What's on your mind, ${username}?`}
               rows={3}
               className="mt-1 w-full resize-none bg-transparent px-1 py-1 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
             />
+            {cphotos.length > 0 && (
+              <div className="mt-2 flex gap-1.5 overflow-x-auto">
+                {cphotos.map((u) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={u} src={u} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+                ))}
+              </div>
+            )}
             <div className="mt-1 flex gap-1.5 overflow-x-auto">
               {BLOG_CATEGORIES.map(([k, label]) => (
                 <button
@@ -304,15 +330,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             </div>
             {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
             <div className="mt-2.5 flex items-center gap-2 border-t border-[#EEF2F8] pt-2.5">
-              <Link href="/feed/write" className="flex h-9 items-center gap-1.5 rounded-full bg-[#F1EFFF] px-3 text-[12.5px] font-bold text-[#4F46E5]">
+              <button
+                type="button"
+                disabled={cbusy || cphotos.length >= 10}
+                onClick={() => cfileRef.current?.click()}
+                className="flex h-9 items-center gap-1.5 rounded-full bg-[#F1EFFF] px-3 text-[12.5px] font-bold text-[#4F46E5] disabled:opacity-50"
+              >
                 🖼 ছবি যোগ
-              </Link>
+              </button>
               <button
                 type="button"
                 onClick={publishInline}
-                disabled={cbusy || ctitle.trim().length < 3 || !ctext.trim()}
+                disabled={cbusy || (!ctext.trim() && cphotos.length === 0)}
                 className={`ml-auto rounded-full px-5 py-2 text-[13px] font-extrabold transition ${
-                  cbusy || ctitle.trim().length < 3 || !ctext.trim()
+                  cbusy || (!ctext.trim() && cphotos.length === 0)
                     ? "bg-[#E5EAF5] text-[#8A97A8]"
                     : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
                 }`}
