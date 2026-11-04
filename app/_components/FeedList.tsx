@@ -14,6 +14,7 @@ import {
   blogAgoBn,
   blogCall,
   blogError,
+  BLOG_CATEGORIES,
   blogCategoryLabel,
   blogShort,
   toBnDigits,
@@ -78,6 +79,33 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const friendsKey = friends.join(",");
 
   // 🔔 "৩টি নতুন post": every 90 s, while the page is open on Popular / New
+  // ✍️ the composer opens right here in the feed (Facebook style), no new page
+  const [composing, setComposing] = useState(false);
+  const [ctitle, setCtitle] = useState("");
+  const [ctext, setCtext] = useState("");
+  const [ccat, setCcat] = useState("life");
+  const [cbusy, setCbusy] = useState(false);
+  const [cerr, setCerr] = useState("");
+  const publishInline = async () => {
+    setCerr("");
+    if (ctitle.trim().length < 3) return setCerr("শিরোনাম কমপক্ষে ৩ অক্ষরের হতে হবে।");
+    if (!ctext.trim()) return setCerr("কিছু লিখুন।");
+    setCbusy(true);
+    try {
+      await blogCall("create", { title: ctitle.trim(), body: ctext.trim(), cover: "", category: ccat });
+      setCtitle("");
+      setCtext("");
+      setComposing(false);
+      setToast("পোস্ট হয়েছে ✓");
+      setReload((n) => n + 1);
+      window.setTimeout(() => setToast(""), 2200);
+    } catch (e) {
+      setCerr(blogError(e));
+    } finally {
+      setCbusy(false);
+    }
+  };
+
   const [fresh, setFresh] = useState(0);
   const newestKnown = useMemo(() => (posts && posts.length ? Math.max(...posts.map((p) => p.createdMs)) : 0), [posts]);
   useEffect(() => {
@@ -234,15 +262,83 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
-        {!author && (
-          <Link
-            href={user ? "/feed/write" : "/login"}
-            className="group mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.24),0_6px_0_rgba(99,102,241,.15),0_10px_16px_-8px_rgba(99,102,241,.35)] transition duration-200 hover:-translate-y-px hover:shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.3),0_7px_0_rgba(99,102,241,.2),0_12px_20px_-8px_rgba(99,102,241,.45)] active:translate-y-[2px] active:scale-[.99]"
-          >
-            {user ? <Avatar name={username} color={meColor} size={40} ring /> : <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>}
-            <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{user ? `What's on your mind, ${username}?` : "Log in to write a post"}</span>
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px] transition group-hover:scale-110">🖼</span>
-          </Link>
+        {!author && user && composing && (
+          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+            <div className="flex items-center gap-2.5">
+              <Avatar name={username} color={meColor} size={38} ring />
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-extrabold text-[#1E1B4B]">{username}</div>
+                <div className="text-[11px] text-[#7A7FA6]">Posting to everyone</div>
+              </div>
+              <button type="button" onClick={() => setComposing(false)} aria-label="বন্ধ করুন" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]">
+                ✕
+              </button>
+            </div>
+            <input
+              value={ctitle}
+              onChange={(e) => setCtitle(e.target.value)}
+              placeholder="শিরোনাম (কমপক্ষে ৩ অক্ষর)"
+              className="mt-2.5 w-full border-b border-[#E3E8F3] bg-transparent px-1 pb-1.5 text-[16px] font-bold text-[#1E1B4B] outline-none placeholder:font-normal placeholder:text-[#9AA3BD]"
+            />
+            <textarea
+              autoFocus
+              value={ctext}
+              onChange={(e) => setCtext(e.target.value)}
+              placeholder="What's on your mind? Share a story, a tip or a moment…"
+              rows={3}
+              className="mt-1 w-full resize-none bg-transparent px-1 py-1 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
+            />
+            <div className="mt-1 flex gap-1.5 overflow-x-auto">
+              {BLOG_CATEGORIES.map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setCcat(k)}
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${
+                    ccat === k ? "bg-gradient-to-r from-[#38BDF8] to-[#8B5CFF] text-white" : "bg-[#EEF4FF] text-[#1D4ED8]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
+            <div className="mt-2.5 flex items-center gap-2 border-t border-[#EEF2F8] pt-2.5">
+              <Link href="/feed/write" className="flex h-9 items-center gap-1.5 rounded-full bg-[#F1EFFF] px-3 text-[12.5px] font-bold text-[#4F46E5]">
+                🖼 ছবি যোগ
+              </Link>
+              <button
+                type="button"
+                onClick={publishInline}
+                disabled={cbusy || ctitle.trim().length < 3 || !ctext.trim()}
+                className={`ml-auto rounded-full px-5 py-2 text-[13px] font-extrabold transition ${
+                  cbusy || ctitle.trim().length < 3 || !ctext.trim()
+                    ? "bg-[#E5EAF5] text-[#8A97A8]"
+                    : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
+                }`}
+              >
+                {cbusy ? "পোস্ট হচ্ছে…" : "Post"}
+              </button>
+            </div>
+          </div>
+        )}
+        {!author && (!user || !composing) && (
+          user ? (
+            <button
+              type="button"
+              onClick={() => setComposing(true)}
+              className="group mx-3.5 my-2.5 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 text-left shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.24),0_6px_0_rgba(99,102,241,.15),0_10px_16px_-8px_rgba(99,102,241,.35)] transition duration-200 hover:-translate-y-px active:translate-y-[2px] active:scale-[.99]"
+            >
+              <Avatar name={username} color={meColor} size={40} ring />
+              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px] transition group-hover:scale-110">🖼</span>
+            </button>
+          ) : (
+            <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>
+              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">Log in to write a post</span>
+            </Link>
+          )
         )}
 
         {error && <p className="mx-3.5 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
