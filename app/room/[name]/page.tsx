@@ -3791,7 +3791,7 @@ function MessageRow({
               const qColor = author ? nameColorWithoutLucky(author) : "#2F80ED";
               return (
                 <span
-                  className={`mb-0.5 block w-fit max-w-full truncate rounded-[10px] px-2 py-1 text-left text-xs ${rightSide ? "ml-auto bg-[#efeff2] text-[#1b2430]" : "bg-white text-[#1b2430]"}`}
+                  className={`block w-fit max-w-[88%] truncate rounded-t-[12px] px-2.5 py-1 text-left text-xs text-[#1b2430] shadow-[0_-1px_0_#D5DEEC] ${rightSide ? "ml-auto mr-2.5 bg-[#f4fbf8]" : "ml-2.5 bg-white"}`}
                   style={{ borderLeft: "none" }}
                 >
                   ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
@@ -3803,12 +3803,12 @@ function MessageRow({
   return (
     <SwipeToReply enabled={canReply} fullWidth={fullWidthLines && !rightSide} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex flex-col px-1 ${rightSide ? "items-end" : "items-start"}`}>
-        {rightSide && quoteNode}
+        {quoteNode}
         {/* Reaction emotes sit OUTSIDE the bubble, right above it (this used to be inside the bubble's box). */}
         {reactionRow(rightSide)}
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
-          className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
+          className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${quoteNode ? (rightSide ? "rounded-tr-[4px]" : "rounded-tl-[4px]") : ""} ${
             mentionsMe ? "rounded-md border-l-[3px] border-[#FF8A00] px-1.5 py-0.5" : ""
           } ${
             !isRoomLine && m.type !== "sticker" && m.type !== "gift"
@@ -3866,7 +3866,6 @@ function MessageRow({
             />
           )}
           {confettiNow && <ConfettiPop />}
-          {!rightSide && quoteNode}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
               and the Classic style, which shows your own name ("legend: hi"). */}
           {/* own line WITH the name (miglife / VIP / birthday colour): the time
