@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { EmoteEditorHandle } from "./EmoteEditor";
 import { createPortal } from "react-dom";
 import { EmotePanel } from "./Emote";
 import { StickerPanel } from "./StickerPanel";
@@ -20,7 +21,7 @@ export function EmojiPicker({
   dockTo,
   onSticker,
 }: {
-  inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  inputRef: React.RefObject<EmoteEditorHandle | null>;
   value: string;
   onChange: (next: string) => void;
   disabled?: boolean;
@@ -54,15 +55,15 @@ export function EmojiPicker({
   // Like the app: the code goes in with a space after it, at the cursor.
   const insert = (code: string) => {
     const el = inputRef.current;
-    const start = el?.selectionStart ?? value.length;
-    const end = el?.selectionEnd ?? value.length;
+    const start = el?.getCaret() ?? value.length;
+    const end = start;
     const before = value.slice(0, start);
     const piece = (before && !/\s$/.test(before) ? " " : "") + code + " ";
     const next = (before + piece + value.slice(end)).slice(0, 1000);
     onChange(next);
     const caret = Math.min(start + piece.length, next.length);
     requestAnimationFrame(() => {
-      el?.setSelectionRange(caret, caret);
+      el?.setCaret(caret);
     });
   };
 

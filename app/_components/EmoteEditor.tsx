@@ -7,6 +7,8 @@ import { emoteSrc, splitEmotes } from "../../lib/emotes";
 // The value is still the codes (":)", ";m18" …), so what is saved and sent is unchanged.
 
 export type EmoteEditorHandle = {
+  el: () => HTMLDivElement | null;
+  blur: () => void;
   focus: () => void;
   getCaret: () => number;
   setCaret: (pos: number) => void;
@@ -19,6 +21,7 @@ type Props = {
   onKeyDown?: (e: KeyboardEvent<HTMLElement>) => void;
   placeholder: string;
   className?: string;
+  disabled?: boolean;
 };
 
 // value (codes) -> the box's content: text, and a picture for every emote code
@@ -95,12 +98,14 @@ function setCaretAt(el: HTMLElement, pos: number) {
 }
 
 export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEditor(
-  { value, onChange, onCaret, onKeyDown, placeholder, className },
+  { value, onChange, onCaret, onKeyDown, placeholder, className, disabled },
   ref
 ) {
   const box = useRef<HTMLDivElement>(null);
 
   useImperativeHandle(ref, () => ({
+    el: () => box.current,
+    blur: () => box.current?.blur(),
     focus: () => box.current?.focus(),
     getCaret: () => (box.current ? caretOffset(box.current) : 0),
     setCaret: (pos: number) => {
@@ -128,7 +133,7 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
       ref={box}
       role="textbox"
       aria-multiline="true"
-      contentEditable
+      contentEditable={!disabled}
       suppressContentEditableWarning
       data-placeholder={placeholder}
       className={`emote-editor ${className ?? ""}`}

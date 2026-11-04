@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { EmoteEditor, type EmoteEditorHandle } from "./EmoteEditor";
 import { EmojiPicker } from "./EmojiPicker";
 import { withEmotes } from "./Emote";
 import { useIsClassic } from "../../lib/uiStyle";
@@ -85,7 +86,7 @@ export function ChatBar({
 }: {
   text: string;
   setText: (v: string) => void;
-  inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  inputRef: React.RefObject<EmoteEditorHandle | null>;
   onSend: () => void;
   canSend: boolean;
   placeholder: string;
@@ -118,7 +119,7 @@ export function ChatBar({
   const moreRef = useRef<HTMLDivElement>(null);
   // The message box grows with the text, up to 4 lines.
   useLayoutEffect(() => {
-    const el = inputRef.current;
+    const el = inputRef.current?.el();
     if (!el) return;
     // Empty: one line, whatever the hint text does in a narrow box.
     if (!text) {
@@ -224,27 +225,17 @@ export function ChatBar({
                   }}
                 />
               </label>
-              {/* A textarea, not an input: Chrome and Safari show no password /
-                  card / address AutoFill bar above the keyboard for it. Enter sends. */}
-              <textarea
+              {/* 🙂 the box shows emotes as pictures (EmoteEditor); Enter sends. */}
+              <EmoteEditor
                 ref={inputRef}
-                rows={1}
                 value={text}
-                onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " "))}
-                autoComplete="off"
-                autoCorrect="on"
-                name="migwith-chat-message"
-                enterKeyHint="send"
-                data-1p-ignore
-                data-lpignore="true"
-                data-form-type="other"
+                onChange={(v) => setText(v.replace(/[\r\n]+/g, " ").slice(0, maxLength))}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
                     if (canSend) send();
                   }
                 }}
-                maxLength={maxLength}
                 disabled={disabled}
                 placeholder={placeholder}
                 className="my-[4px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"

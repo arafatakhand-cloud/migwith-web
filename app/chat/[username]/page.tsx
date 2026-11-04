@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { EmoteEditor, type EmoteEditorHandle } from "../../_components/EmoteEditor";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -121,7 +122,7 @@ export default function PrivateChatPage() {
   const [lockedOut, setLockedOut] = useState<boolean | null>(null);
 
   const listRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<EmoteEditorHandle>(null);
   const photoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const stickToBottom = useRef(true);
@@ -272,7 +273,7 @@ export default function PrivateChatPage() {
 
   // The message box grows with the text, up to 4 lines.
   useLayoutEffect(() => {
-    const el = inputRef.current;
+    const el = inputRef.current?.el();
     if (!el) return;
     // Empty: one line, whatever the hint text does in a narrow box.
     if (!text) {
@@ -797,18 +798,11 @@ export default function PrivateChatPage() {
                   {uploading ? "⏳" : <PhotoGlyph />}
                 </button>
                 {/* Wraps onto up to 4 lines; Enter still sends (no AutoFill bar, see ChatBar). */}
-                <textarea
+                {/* 🙂 the box shows emotes as pictures (EmoteEditor); Enter sends. */}
+                <EmoteEditor
                   ref={inputRef}
-                  rows={1}
                   value={text}
-                  onChange={(e) => setText(e.target.value.replace(/[\r\n]+/g, " ").slice(0, 2000))}
-                  autoComplete="off"
-                  autoCorrect="on"
-                  name="migwith-chat-message"
-                  enterKeyHint="send"
-                  data-1p-ignore
-                  data-lpignore="true"
-                  data-form-type="other"
+                  onChange={(v) => setText(v.replace(/[\r\n]+/g, " ").slice(0, 2000))}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

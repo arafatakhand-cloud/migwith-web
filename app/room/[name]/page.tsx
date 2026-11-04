@@ -1,6 +1,7 @@
 "use client";
 
 import type { User } from "firebase/auth";
+import type { EmoteEditorHandle } from "../../_components/EmoteEditor";
 import { createPortal } from "react-dom";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { awardUserXp } from "../../../lib/xp";
@@ -416,7 +417,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = useRef<EmoteEditorHandle>(null);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
   // Called before each message I send. If my spot went missing while this tab
