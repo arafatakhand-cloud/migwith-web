@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useRef, useState } from "react";
+import { EmoteEditor, type EmoteEditorHandle } from "../../_components/EmoteEditor";
 import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -57,7 +58,7 @@ function BlogWrite() {
   const [emoji, setEmoji] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const area = useRef<HTMLTextAreaElement>(null);
+  const area = useRef<EmoteEditorHandle>(null);
   const photoInput = useRef<HTMLInputElement>(null);
   const draftKey = user ? `migwith.feedDraft.${user.uid}` : "";
   // 📷 my profile photo (looked up with the name colours)
@@ -91,10 +92,10 @@ function BlogWrite() {
       const el = area.current;
       if (!el) return;
       el.focus();
-      el.setSelectionRange(pos, pos);
+      el.setCaret(pos);
     });
   };
-  const onMentionKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const onMentionKey = (e: React.KeyboardEvent<HTMLElement>) => {
     if (!matches.length) return;
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
@@ -158,14 +159,14 @@ function BlogWrite() {
 
   const insert = (before: string, after = "") => {
     const el = area.current;
-    const start = el?.selectionStart ?? text.length;
-    const end = el?.selectionEnd ?? text.length;
+    const start = el?.getCaret() ?? text.length;
+    const end = start;
     setText(text.slice(0, start) + before + text.slice(start, end) + after + text.slice(end));
     requestAnimationFrame(() => {
       if (!el) return;
       el.focus();
       const pos = start + before.length + (end - start);
-      el.setSelectionRange(pos, pos);
+      el.setCaret(pos);
     });
   };
 
@@ -290,19 +291,17 @@ function BlogWrite() {
               placeholder="Give it a title…"
               className="w-full border-b border-[#ECEAFD] bg-transparent px-4 pb-3 pt-4 text-[22px] font-black tracking-tight text-[#1E1B4B] outline-none placeholder:text-[#1E1B4B]/30"
             />
-            <textarea
+            <EmoteEditor
               ref={area}
               value={text}
-              onChange={(e) => {
-                setText(e.target.value);
-                setCaret(e.target.selectionStart ?? e.target.value.length);
+              onChange={(v) => {
+                setText(v);
                 setPick(0);
               }}
-              onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
+              onCaret={setCaret}
               onKeyDown={onMentionKey}
-              maxLength={19000}
               placeholder="What's on your mind? Share a story, a tip or a moment…"
-              className="block h-[150px] w-full resize-none bg-transparent px-4 py-3 text-[15px] leading-[1.6] text-[#3F4373] outline-none placeholder:text-[#3F4373]/45"
+              className="block h-[150px] w-full overflow-y-auto whitespace-pre-wrap bg-transparent px-4 py-3 text-[15px] leading-[1.6] text-[#3F4373] outline-none"
             />
             {matches.length > 0 && (
               <div className="mention-pop mx-2.5 mb-2.5 rounded-2xl bg-white p-1.5 shadow-[0_14px_30px_-12px_rgba(76,63,176,.45)] ring-1 ring-[#6366F1]/10">
@@ -422,7 +421,7 @@ function BlogWrite() {
               label="Mention"
               onClick={() => {
                 const el = area.current;
-                const at = el?.selectionStart ?? text.length;
+                const at = el?.getCaret() ?? text.length;
                 const needSpace = at > 0 && !/\s/.test(text[at - 1]);
                 insert(needSpace ? " @" : "@");
                 setCaret(at + (needSpace ? 2 : 1));
