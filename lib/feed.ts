@@ -93,6 +93,20 @@ export function blogAgo(t: number): string {
   return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
+/** 0-9 → ০-৯ */
+export const toBnDigits = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
+
+/** "৫ মিনিট আগে", "২ ঘণ্টা আগে", "৩ দিন আগে" — the Bangla time for a post card. */
+export function blogAgoBn(t: number): string {
+  if (!t) return "এখনই";
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "এখনই";
+  if (m < 60) return `${toBnDigits(m)} মিনিট আগে`;
+  if (m < 1440) return `${toBnDigits(Math.floor(m / 60))} ঘণ্টা আগে`;
+  if (m < 43200) return `${toBnDigits(Math.floor(m / 1440))} দিন আগে`;
+  return new Date(t).toLocaleDateString("bn-BD", { day: "numeric", month: "short", year: "numeric" });
+}
+
 const call = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "blog");
 export async function blogCall(action: string, data: Record<string, unknown> = {}) {
   const r = await call({ action, ...data });

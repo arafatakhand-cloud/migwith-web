@@ -11,11 +11,12 @@ import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
 import {
-  blogAgo,
+  blogAgoBn,
   blogCall,
   blogError,
   blogCategoryLabel,
   blogShort,
+  toBnDigits,
   toBlogPost,
   type BlogPost,
 } from "../../lib/feed";
@@ -25,6 +26,31 @@ import {
 // a login. Read once per tab (no live listener), pull the tab again to refresh.
 
 type Tab = "popular" | "new" | "friends" | "mine";
+
+// 🎨 each category's colour: the card's corner glows in it
+const CAT_TINT: Record<string, string> = {
+  life: "#8B5CFF", games: "#10B981", music: "#EC4899", fun: "#F59E0B",
+  news: "#3B82F6", love: "#E11D48", tips: "#14B8A6", other: "#6366F1",
+};
+
+// #hashtag (purple) and @mention (a profile link) inside a post's text
+const TOKEN_SPLIT = /(#[^\s#@.,!?;:()"'“”।]+|@[^\s#@.,!?;:()"'“”।]+)/;
+function RichText({ text, className }: { text: string; className?: string }) {
+  return (
+    <span className={className}>
+      {text.split(TOKEN_SPLIT).map((part, i) => {
+        if (part.length > 1 && part[0] === "#") return <span key={i} className="font-extrabold text-[#8B5CFF]">{part}</span>;
+        if (part.length > 1 && part[0] === "@")
+          return (
+            <Link key={i} href={`/profile/${encodeURIComponent(part.slice(1))}`} onClick={(e) => e.stopPropagation()} className="font-extrabold text-[#2563EB] hover:underline">
+              {part}
+            </Link>
+          );
+        return <span key={i}>{part}</span>;
+      })}
+    </span>
+  );
+}
 const TABS: [Tab, string][] = [
   ["popular", "Popular"],
   ["new", "New"],
@@ -51,10 +77,30 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   }, [tab]);
   const friendsKey = friends.join(",");
 
+  // 🔔 "৩টি নতুন post": every 90 s, while the page is open on Popular / New
+  const [fresh, setFresh] = useState(0);
+  const newestKnown = useMemo(() => (posts && posts.length ? Math.max(...posts.map((p) => p.createdMs)) : 0), [posts]);
+  useEffect(() => {
+    if (author || !newestKnown || (tab !== "popular" && tab !== "new")) return;
+    const col = collection(db, "blog_posts");
+    const tick = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const snap = await getDocs(query(col, where("createdMs", ">", newestKnown), limit(20)));
+        setFresh(snap.size);
+      } catch {
+        // quiet: the banner is only a nicety
+      }
+    };
+    const id = window.setInterval(tick, 90_000);
+    return () => window.clearInterval(id);
+  }, [author, newestKnown, tab]);
+
   useEffect(() => {
     let alive = true;
     setPosts(null);
     setError("");
+    setFresh(0);
     const col = collection(db, "blog_posts");
     const load = async (): Promise<BlogPost[]> => {
       const map = (s: Awaited<ReturnType<typeof getDocs>>) => s.docs.map((d) => toBlogPost(d.id, d.data() as Record<string, unknown>));
@@ -201,6 +247,19 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {error && <p className="mx-3.5 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
+        {fresh > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setFresh(0);
+              setReload((n) => n + 1);
+            }}
+            className="feed-pop mx-3.5 mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
+          >
+            ↑ {fresh >= 20 ? "২০+" : toBnDigits(fresh)}টি নতুন post — দেখুন
+          </button>
+        )}
+
         {posts === null ? (
           <div className="space-y-3 px-3.5">
             {[0, 1].map((i) => (
@@ -222,6 +281,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   : "No posts here yet."}
             </p>
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
+            {user && !author && (tab === "popular" || tab === "new") && (
+              <Link href="/feed/write" className="mt-4 inline-block rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]">
+                ✍️ প্রথম post লিখুন
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3 px-3.5">
@@ -282,10 +346,13 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
   const open = () => router.push(`/feed/${p.id}`);
+  const tint = CAT_TINT[p.category] || "#6366F1";
+  const [viewing, setViewing] = useState(false);
   return (
     <article
       onClick={open}
-      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 bg-white/85 p-3 shadow-[inset_0_2px_0_#fff,0_2px_0_rgba(99,102,241,.24),0_4px_0_rgba(99,102,241,.14)] transition active:scale-[.995]"
+      style={{ background: `linear-gradient(160deg, ${tint}1F, rgba(255,255,255,.92) 45%)` }}
+      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 p-3 shadow-[inset_0_2px_0_#fff,0_2px_0_rgba(99,102,241,.24),0_4px_0_rgba(99,102,241,.14)] transition active:scale-[.995]"
     >
       <div className="flex items-center gap-2.5">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()}>
@@ -296,19 +363,48 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
             {p.author}
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
-            {blogAgo(p.createdMs)} · 👁 {blogShort(p.views)}
+            {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
           </div>
         </div>
         <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>
       </div>
       <div className="mx-0.5 mt-2.5 flex items-start gap-2">
-        <h2 className="min-w-0 flex-1 text-[16.5px] font-black leading-snug text-[#1E1B4B]">{tr?.title || p.title}</h2>
+        <h2 className="min-w-0 flex-1 text-[16.5px] font-black leading-snug text-[#1E1B4B]">
+          <RichText text={tr?.title || p.title} />
+        </h2>
         <TranslateChip postId={p.id} title={p.title} text={p.excerpt} />
       </div>
-      {(tr?.text || p.excerpt) && <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">{tr?.text || p.excerpt}</p>}
+      {(tr?.text || p.excerpt) && (
+        <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">
+          <RichText text={tr?.text || p.excerpt} />
+        </p>
+      )}
       {pic && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={pic} alt="" loading="lazy" className="mt-2.5 max-h-[320px] w-full rounded-2xl object-cover" />
+        <img
+          src={pic}
+          alt=""
+          loading="lazy"
+          onClick={(e) => {
+            e.stopPropagation();
+            setViewing(true);
+          }}
+          className="mt-2.5 max-h-[320px] w-full cursor-zoom-in rounded-2xl object-cover"
+        />
+      )}
+      {viewing && pic && (
+        // 🔍 full-screen picture: tap anywhere to close
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-3"
+          onClick={(e) => {
+            e.stopPropagation();
+            setViewing(false);
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={pic} alt="" className="max-h-full max-w-full rounded-xl object-contain" />
+          <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white">✕</span>
+        </div>
       )}
       <div className="mt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
         <button
