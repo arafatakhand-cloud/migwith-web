@@ -3803,6 +3803,8 @@ function MessageRow({
     <SwipeToReply enabled={canReply} fullWidth={fullWidthLines && !rightSide} onReply={() => onReply(senderName, snippet)}>
       <div className={`flex flex-col px-1 ${rightSide ? "items-end" : "items-start"}`}>
         {rightSide && quoteNode}
+        {/* Reaction emotes sit OUTSIDE the bubble, right above it (this used to be inside the bubble's box). */}
+        {reactionRow(rightSide)}
         {/* Own lines sit on the right, but a long one reads left to right: every line starts at the same left edge, like the app. */}
         <div
           className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${
@@ -3863,8 +3865,6 @@ function MessageRow({
             />
           )}
           {confettiNow && <ConfettiPop />}
-          {/* Reaction emotes sit OUTSIDE the bubble, right above it, as plain emoji + count. */}
-          {reactionRow(rightSide)}
           {!rightSide && quoteNode}
           {/* Own lines hide your own ID — except miglife, who sees their rainbow ID too,
               and the Classic style, which shows your own name ("legend: hi"). */}
