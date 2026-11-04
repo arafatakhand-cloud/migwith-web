@@ -3814,7 +3814,7 @@ function MessageRow({
             !isRoomLine && m.type !== "sticker" && m.type !== "gift"
               ? rightSide
                 // 🫧 6D bubbles: stacked depth layers under each bubble, a top shine
-                ? "rounded-[14px] rounded-br-[4px] bg-[#133552] px-2.5 py-1.5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,.2),0_2px_0_#0B2A4A,0_4px_0_#081F38,0_8px_12px_rgba(11,31,58,.3)]"
+                ? "rounded-[14px] rounded-br-[4px] bg-[#E3F8F0] px-2.5 py-1.5 text-[#0B3B2B] shadow-[inset_0_1px_0_#fff,0_2px_0_#B8E6D3,0_4px_0_#A3DBC4,0_8px_12px_rgba(11,59,43,.14)]"
                 : "rounded-[14px] rounded-bl-[4px] bg-[#e7eff4] px-2.5 py-1.5 shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_8px_12px_rgba(11,31,58,.14)]"
               : ""
           }`}
