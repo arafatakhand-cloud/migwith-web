@@ -3791,11 +3791,16 @@ function MessageRow({
               const qColor = author ? nameColorWithoutLucky(author) : "#2F80ED";
               return (
                 <span
-                  className={`block w-fit max-w-[88%] truncate rounded-t-[12px] px-2.5 py-1 text-left text-xs text-[#1b2430] shadow-[0_-1px_0_#D5DEEC] ${rightSide ? "ml-auto mr-2.5 bg-[#f4fbf8]" : "ml-2.5 bg-white"}`}
-                  style={{ borderLeft: "none" }}
+                  className={`mb-[-1px] flex w-fit max-w-[88%] items-center gap-1.5 truncate rounded-t-[12px] border border-b-0 px-2.5 py-1 text-left text-xs text-[#1b2430] backdrop-blur-[2px] ${rightSide ? "ml-auto mr-2.5" : "ml-2.5"}`}
+                  style={{
+                    borderColor: `${qColor}33`,
+                    background: `linear-gradient(90deg, ${qColor}1F, rgba(255,255,255,.92) 70%)`,
+                    boxShadow: `inset 3px 0 0 ${qColor}, 0 -2px 6px -2px ${qColor}55`,
+                  }}
                 >
-                  ↩ {qName ? <b style={{ color: qColor }}>{qName}:</b> : null}
-                  {withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}
+                  <span className="text-[11px] opacity-60">↩</span>
+                  {qName ? <b className="font-extrabold" style={{ color: qColor }}>{qName}</b> : null}
+                  <span className="truncate opacity-80">{withEmotes(qName ? quote.slice(qc + 1) : quote, 12)}</span>
                 </span>
               );
     })()
