@@ -8,7 +8,7 @@ import { loadStories, type Story } from "../../lib/stories";
 // 📸 The story row above the feed: "Your story" adds one (photo, caption, who sees it).
 // Tap a ring to watch (5 s each). The writer can edit the caption / audience or delete it.
 
-type Audience = "everyone" | "friends";
+type Audience = "everyone" | "friends" | "only_me";
 
 export function StoryRow({
   myUid,
@@ -39,7 +39,11 @@ export function StoryRow({
   // 👥 friends-only stories show to the writer and their friends
   const visible = useMemo(() => {
     const mine = new Set(friends);
-    return (stories || []).filter((s) => s.privacy !== "friends" || s.author === myName || mine.has(s.author));
+    return (stories || []).filter((s) => {
+      if (s.privacy === "only_me") return s.author === myName;
+      if (s.privacy === "friends") return s.author === myName || mine.has(s.author);
+      return true;
+    });
   }, [stories, friends, myName]);
 
   const byAuthor = useMemo(() => {
@@ -156,6 +160,7 @@ export function StoryRow({
           <div className="absolute left-0 right-0 top-0 flex items-center gap-2 px-4 pt-4 text-white">
             <span className="font-extrabold">{current.author}</span>
             {current.privacy === "friends" && <span className="text-[12px] opacity-80">👥</span>}
+            {current.privacy === "only_me" && <span className="text-[12px] opacity-80">🔒</span>}
             <span className="text-[12px] opacity-80">{blogAgoBn(current.createdMs)}</span>
             {mine && (
               <button type="button" onClick={() => setMenu(true)} aria-label="Story options" className="ml-auto rounded-full bg-white/20 px-3 py-1 font-black">
@@ -241,7 +246,7 @@ function StoryDialog({
           className="mt-3 h-20 w-full resize-none rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-[14px] outline-none focus:border-[#6366F1]"
         />
         <div className="mt-3 flex gap-2">
-          {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"]] as const).map(([k, label]) => (
+          {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
             <button
               key={k}
               type="button"
