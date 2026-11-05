@@ -75,6 +75,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ❤️ which of these posts I liked (read once per list), and a short message
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState("");
+  // 👥 the post whose reactions I am looking at (null = closed)
+  const [reactorsOf, setReactorsOf] = useState<BlogPost | null>(null);
   // ↗ the post I am sharing to my wall (null = closed)
   const [sharing, setSharing] = useState<BlogPost | null>(null);
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
@@ -572,7 +574,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} />
+              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -580,6 +582,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
       </section>
+
+      {reactorsOf && <ReactorsSheet post={reactorsOf} onClose={() => setReactorsOf(null)} />}
 
       {sharing && (
         <ShareSheet
@@ -597,6 +601,61 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
       )}
+    </div>
+  );
+}
+
+// 👥 Who reacted: everyone who reacted to a post, with their reaction, newest first.
+// Tabs filter by reaction (All, then each emoji that is used).
+function ReactorsSheet({ post, onClose }: { post: BlogPost; onClose: () => void }) {
+  const [list, setList] = useState<{ username: string; type: string }[] | null>(null);
+  const [err, setErr] = useState("");
+  const [tab, setTab] = useState("all");
+  useEffect(() => {
+    blogCall("reactors", { postId: post.id })
+      .then((r) => setList((r.reactors as { username: string; type: string }[]) || []))
+      .catch((e) => setErr(blogError(e)));
+  }, [post.id]);
+  const kinds = useMemo(() => [...new Set((list || []).map((r) => r.type))], [list]);
+  const shown = (list || []).filter((r) => tab === "all" || r.type === tab);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
+      <div className="flex max-h-[80vh] w-full max-w-md flex-col rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[16px] font-black text-[#1E1B4B]">Reactions · {list ? list.length : "…"}</h3>
+          <button type="button" onClick={onClose} className="text-[#8494B2]" aria-label="Close">✕</button>
+        </div>
+        {list && list.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {["all", ...kinds].map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setTab(k)}
+                className={`rounded-full px-3 py-1.5 text-[13px] font-extrabold ${tab === k ? "bg-[#1D4ED8] text-white" : "bg-[#F1F4FB] text-[#4F46E5]"}`}
+              >
+                {k === "all" ? `All ${list.length}` : `${k} ${list.filter((r) => r.type === k).length}`}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="mt-3 flex-1 overflow-y-auto">
+          {err && <p className="text-[13px] text-[#B91C1C]">{err}</p>}
+          {list === null && !err && <p className="text-[13px] text-[#6B6F9A]">Loading…</p>}
+          {list && list.length === 0 && <p className="py-6 text-center text-[13px] text-[#6B6F9A]">No reactions yet.</p>}
+          {shown.map((r, i) => (
+            <div key={`${r.username}-${i}`} className="flex items-center gap-3 border-b border-[#EEF2FA] py-2.5 last:border-0">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#6366F1] text-[13px] font-bold text-white">
+                {r.username.slice(0, 1).toUpperCase()}
+              </span>
+              <Link href={`/profile/${encodeURIComponent(r.username)}`} className="min-w-0 flex-1 truncate text-[14px] font-bold text-[#1E1B4B]">
+                {r.username}
+              </Link>
+              <span className="text-[18px]">{r.type}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -694,7 +753,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -799,7 +858,17 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
         </div>
       )}
       <div className="mt-2.5 flex items-center text-[11.5px] text-[#718096]">
-        <span className="font-bold text-[#1458C8]">👍 {blogShort(p.likes)}</span>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onReactors();
+          }}
+          className="font-bold text-[#1458C8] underline-offset-2 hover:underline"
+          aria-label="See who reacted"
+        >
+          👍 {blogShort(p.likes)}
+        </button>
         <span className="ml-auto">{blogShort(p.comments)} Comments · {blogShort(p.views)} Views</span>
       </div>
       <div className="mt-2 border-t border-[#DDE8F7] pt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
