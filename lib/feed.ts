@@ -26,6 +26,10 @@ export type BlogPost = {
   mentions: string[];
   /** a feed video's download URL ('' = none) */
   video: string;
+  /** a shared post: the original's id, author and title ('' = not a share) */
+  sharedId: string;
+  sharedAuthor: string;
+  sharedTitle: string;
 };
 
 export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
@@ -78,6 +82,9 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     edited: d.edited === true,
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
     video: String(d.video || ""),
+    sharedId: String(d.sharedId || ""),
+    sharedAuthor: String(d.sharedAuthor || ""),
+    sharedTitle: String(d.sharedTitle || ""),
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {

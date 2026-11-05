@@ -73,6 +73,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ❤️ which of these posts I liked (read once per list), and a short message
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState("");
+  // ↗ the post I am sharing to my wall (null = closed)
+  const [sharing, setSharing] = useState<BlogPost | null>(null);
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
   // ✔ authors whose users document says verified (read-only; miGlife sets it)
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set());
@@ -577,7 +579,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             );
           })()}
             {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
-              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -586,9 +588,84 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
       </section>
 
+      {sharing && (
+        <ShareSheet
+          post={sharing}
+          onClose={() => setSharing(null)}
+          onLink={() => share(sharing)}
+          onDone={(msg) => {
+            setSharing(null);
+            setToast(msg);
+            setReload((n) => n + 1);
+          }}
+        />
+      )}
+
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
       )}
+    </div>
+  );
+}
+
+// ↗ Share to my wall: a short note (optional) and the post it shares. The post
+// appears on my wall and in the feed, with the original inside it.
+function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose: () => void; onDone: (msg: string) => void; onLink: () => void }) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const origin = post.sharedId ? { id: post.sharedId, author: post.sharedAuthor, title: post.sharedTitle } : { id: post.id, author: post.author, title: post.title };
+  const send = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      await blogCall("create", {
+        title: `↗ ${origin.title}`.slice(0, 60),
+        body: text.trim() || "↗ Shared a post",
+        category: post.category,
+        cover: "",
+        sharedId: origin.id,
+      });
+      onDone("Shared to your wall ✓");
+    } catch (e) {
+      setErr(blogError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
+      <div className="w-full max-w-md rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-[16px] font-black text-[#1E1B4B]">Share to your wall</h3>
+          <button type="button" onClick={onClose} className="text-[#8494B2]" aria-label="Close">✕</button>
+        </div>
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          maxLength={500}
+          placeholder="Say something about this… (optional)"
+          className="mt-3 h-20 w-full resize-none rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-[14px] outline-none focus:border-[#6366F1]"
+        />
+        <div className="mt-3 rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3">
+          <div className="text-[12px] font-bold text-[#6366F1]">↗ {origin.author}</div>
+          <div className="mt-0.5 line-clamp-2 text-[13.5px] font-bold text-[#1E1B4B]">{origin.title}</div>
+        </div>
+        {err && <p className="mt-2 text-[12.5px] text-[#B91C1C]">{err}</p>}
+        <div className="mt-3 flex gap-2">
+          <button type="button" onClick={onLink} className="rounded-full border border-[#DDE8F7] px-4 py-2.5 text-[13px] font-bold text-[#4F46E5]">
+            🔗 Copy link
+          </button>
+          <button
+            type="button"
+            onClick={send}
+            disabled={busy}
+            className="flex-1 rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] py-2.5 text-[14px] font-extrabold text-white disabled:opacity-60"
+          >
+            {busy ? "Sharing…" : "Share to my wall"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -682,6 +759,19 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
         <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">
           <RichText text={tr?.text || p.excerpt} />
         </p>
+      )}
+      {p.sharedId && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            router.push(`/feed/${p.sharedId}`);
+          }}
+          className="mt-2.5 block w-full rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-left"
+        >
+          <span className="block text-[12px] font-bold text-[#6366F1]">↗ {p.sharedAuthor}</span>
+          <span className="mt-0.5 line-clamp-2 block text-[13.5px] font-bold text-[#1E1B4B]">{p.sharedTitle}</span>
+        </button>
       )}
       {p.video && (
         <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="mt-2.5 max-h-[320px] w-full rounded-2xl bg-black" />
