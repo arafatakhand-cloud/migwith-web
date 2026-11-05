@@ -61,6 +61,13 @@ function BlogWrite() {
   const [feel, setFeel] = useState(false);
   // 🎬 one optional video (uploaded to Storage; its URL goes with the post)
   const [video, setVideo] = useState("");
+  // 🎬 miGlife can switch video posts off; then the Video button is hidden
+  const [videoOn, setVideoOn] = useState(true);
+  useEffect(() => {
+    blogCall("videoStatus")
+      .then((r) => setVideoOn(r.videoEnabled !== false))
+      .catch(() => {});
+  }, []);
   const videoInput = useRef<HTMLInputElement>(null);
   // 🏷 hashtag ideas for the words in the post (not yet in the text)
   const hashSuggest = useMemo(() => {
@@ -475,9 +482,11 @@ function BlogWrite() {
             <Tool label="Add photos" onClick={() => photoInput.current?.click()}>
               📷
             </Tool>
-            <Tool label="Add video" onClick={() => videoInput.current?.click()}>
-              🎬
-            </Tool>
+            {videoOn && (
+              <Tool label="Add video" onClick={() => videoInput.current?.click()}>
+                🎬
+              </Tool>
+            )}
             <Tool label="Feeling" onClick={() => setFeel(!feel)}>
               😊
             </Tool>
