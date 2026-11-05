@@ -351,7 +351,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {!author && <StoryRow myUid={user?.uid} myName={username} colorOf={colorOf} />}
+        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
 
         {!author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
