@@ -69,6 +69,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [tab, setTab] = useState<Tab>("popular");
   // 📷 show all posts, or only the ones with a photo
   const [media, setMedia] = useState<"all" | "photos">("all");
+  // 🏷 one category, or "all"
+  const [cat, setCat] = useState("all");
   const router = useRouter();
   // ❤️ which of these posts I liked (read once per list), and a short message
   const [liked, setLiked] = useState<Set<string>>(new Set());
@@ -323,7 +325,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {!author && (
-          <div className="relative mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/55 p-1">
+          <div className="sticky top-0 z-30 mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/70 p-1 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
               aria-hidden
@@ -367,6 +369,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             ))}
             {/* 🎬 video posts need the backend (storage + rules) — coming soon */}
             <span className="shrink-0 rounded-full bg-white/60 px-3.5 py-1.5 text-[12.5px] font-bold text-[#9AA0C4]">🎬 Videos · soon</span>
+            {BLOG_CATEGORIES.map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setCat(cat === k ? "all" : k)}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-extrabold transition ${
+                  cat === k ? "bg-[#1D4ED8] text-white" : "bg-white text-[#4F46E5] shadow-[0_1px_0_#C9D8EA]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         )}
 
@@ -578,7 +592,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </section>
             );
           })()}
-            {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
+            {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
               <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
@@ -703,6 +717,8 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
 function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
   const [pick, setPick] = useState(false);
+  // ✨ the picked reaction flies up once
+  const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
   const holdRef = useRef<number | null>(null);
   const router = useRouter();
   // ❤️ each new like: the heart pops and a few hearts float up
@@ -809,6 +825,11 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
       </div>
       <div className="mt-2 border-t border-[#DDE8F7] pt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
         <div className="relative flex-1">
+        {fly && (
+          <span key={fly.k} className="feed-fly pointer-events-none absolute bottom-12 left-3 z-30 text-[24px]">
+            {fly.e}
+          </span>
+        )}
         {pick && (
           // 😀 the six reactions: tap one (tap the same again to take it back)
           <div className="absolute bottom-11 left-0 z-20 flex gap-1 rounded-full bg-white px-2 py-1 shadow-[0_8px_20px_-6px_rgba(16,63,145,.35)] ring-1 ring-[#DDE8F7]">
@@ -818,6 +839,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
                 type="button"
                 onClick={() => {
                   setPick(false);
+                  setFly({ e, k: Date.now() });
                   onReact(e);
                 }}
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-[20px] transition hover:-translate-y-0.5 hover:scale-125 ${reaction === e ? "bg-[#E6F0FF]" : ""}`}

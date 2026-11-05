@@ -1562,3 +1562,11 @@ html {
 /* ✍️ emote writing box: the placeholder shows only while the box is empty */
 .emote-editor:empty::before { content: attr(data-placeholder); color: rgba(63, 67, 115, 0.45); pointer-events: none; }
 .emote-editor:focus { outline: none; }
+
+/* ✨ a picked reaction floats up and fades (the feed's reaction picker) */
+@keyframes feed-fly {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-64px) scale(.5); opacity: 0; }
+}
+.feed-fly { animation: feed-fly .9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .feed-fly { animation: none; opacity: 0; } }
