@@ -403,6 +403,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
+        {/* 📸 stories sit right under the Feed title */}
+        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
+
         {!author && (
           <div className="sticky top-0 z-30 mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/70 p-1 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
@@ -742,8 +745,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {/* 📸 stories sit under the feed */}
-        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
       </section>
 
       {reactorsOf && <ReactorsSheet post={reactorsOf} onClose={() => setReactorsOf(null)} />}
