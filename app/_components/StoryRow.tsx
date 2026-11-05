@@ -311,18 +311,24 @@ function StoryDialog({
   const [showLib, setShowLib] = useState(false);
   const songInput = useRef<HTMLInputElement>(null);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
-      <div className="w-full max-w-md rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/35 p-3 backdrop-blur-[2px]" onClick={onClose}>
+      <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-[0_24px_60px_-20px_rgba(11,31,58,.45)]" onClick={(e) => e.stopPropagation()}>
+        {/* 🌿 a thin mint → sky strip, the Feed's colours */}
+        <div className="h-1.5 w-full bg-gradient-to-r from-[#14B88F] to-[#2C9BEA]" />
+        <div className="p-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-[16px] font-black text-[#1E1B4B]">{title}</h3>
-          <button type="button" onClick={onClose} className="text-[#8494B2]" aria-label="Close">✕</button>
+          <h3 className="text-[17px] font-black tracking-tight text-[#0F2F2A]">{title}</h3>
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F5F9] text-[13px] font-bold text-[#64748B] hover:bg-[#E2E8F0]">✕</button>
         </div>
-        <textarea
-          value={caption}
-          onChange={(e) => setCaption(e.target.value.slice(0, maxLen))}
-          placeholder={placeholder}
-          className="mt-3 h-20 w-full resize-none rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-[14px] outline-none focus:border-[#6366F1]"
-        />
+        <div className="relative mt-3">
+          <textarea
+            value={caption}
+            onChange={(e) => setCaption(e.target.value.slice(0, maxLen))}
+            placeholder={placeholder}
+            className="h-24 w-full resize-none rounded-2xl border border-[#D7EFE7] bg-gradient-to-b from-[#F6FFFC] to-[#EEF9FF] p-3 pb-6 text-[15px] leading-6 text-[#0F2F2A] outline-none transition placeholder:text-[#8AA79F] focus:border-[#14B88F] focus:ring-4 focus:ring-[#14B88F]/15"
+          />
+          <span className="pointer-events-none absolute bottom-2 right-3 text-[11px] font-bold tabular-nums text-[#8AA79F]">{caption.length}/{maxLen}</span>
+        </div>
         {allowPhoto && (
           <div className="mt-3">
             <input
@@ -344,23 +350,40 @@ function StoryDialog({
                 }
               }}
             />
-            <button
-              type="button"
-              disabled={photoBusy}
-              onClick={() => (photoUrl ? setPhotoUrl(null) : photoInput.current?.click())}
-              className="rounded-full bg-[#EEF0FF] px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#4F46E5] disabled:opacity-50"
-            >
-              {photoBusy ? "📷 Adding photo…" : photoUrl ? "📷 Photo added ✕" : "📷 Add photo"}
-            </button>
+            {photoUrl ? (
+              <div className="relative overflow-hidden rounded-2xl">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photoUrl} alt="Story photo" className="h-36 w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setPhotoUrl(null)}
+                  aria-label="Remove photo"
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-[13px] font-bold text-white backdrop-blur"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                disabled={photoBusy}
+                onClick={() => photoInput.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#14B88F]/60 bg-[#F3FFFA] py-3 text-[13px] font-extrabold text-[#0E7A62] transition hover:bg-[#E8FBF4] disabled:opacity-50"
+              >
+                <span aria-hidden>📷</span>
+                {photoBusy ? "Adding photo…" : "Add a photo"}
+              </button>
+            )}
           </div>
         )}
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-[#F1F6F4] p-1">
           {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
             <button
               key={k}
               type="button"
               onClick={() => setAudience(k)}
-              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-extrabold ${audience === k ? "bg-[#6366F1] text-white" : "bg-[#EEF0FF] text-[#4F46E5]"}`}
+              aria-pressed={audience === k}
+              className={`rounded-xl py-2 text-[12.5px] font-extrabold transition ${audience === k ? "bg-white text-[#0E7A62] shadow-[0_2px_8px_-2px_rgba(14,122,98,.35)]" : "text-[#6B7B76] hover:text-[#0F2F2A]"}`}
             >
               {label}
             </button>
@@ -445,10 +468,11 @@ function StoryDialog({
             type="button"
             disabled={!canShare || photoBusy}
             onClick={() => onConfirm(caption.trim(), audience, song, photoUrl)}
-            className="rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 font-extrabold text-white disabled:opacity-40"
+            className="rounded-full bg-gradient-to-r from-[#14B88F] to-[#2C9BEA] px-6 py-2.5 font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(20,184,143,.8)] transition enabled:hover:brightness-105 disabled:cursor-not-allowed disabled:bg-none disabled:bg-[#D9E2E0] disabled:text-[#8AA79F] disabled:shadow-none"
           >
             {confirmText}
           </button>
+        </div>
         </div>
       </div>
     </div>
