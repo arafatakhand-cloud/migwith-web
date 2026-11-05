@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { blogAgoBn, blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
 import { loadStories, type Story } from "../../lib/stories";
-import { STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
+import { loadSongLibrary, type LibrarySong, STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
 
 export type StorySong = { url: string; title: string; startSec: number };
 
@@ -307,6 +307,8 @@ function StoryDialog({
   const [song, setSong] = useState<StorySong | null>(null);
   const [songBusy, setSongBusy] = useState(false);
   const [songErr, setSongErr] = useState("");
+  const [library, setLibrary] = useState<LibrarySong[] | null>(null);
+  const [showLib, setShowLib] = useState(false);
   const songInput = useRef<HTMLInputElement>(null);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
@@ -371,6 +373,38 @@ function StoryDialog({
             >
               {songBusy ? "🎵 Adding song…" : "🎵 Add a song"}
             </button>
+          )}
+          {!song && (
+            <button
+              type="button"
+              onClick={async () => {
+                setShowLib((v) => !v);
+                if (library === null) setLibrary(await loadSongLibrary().catch(() => []));
+              }}
+              className="ml-2 rounded-full bg-[#F1EFFF] px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#4F46E5]"
+            >
+              🎼 Library
+            </button>
+          )}
+          {showLib && !song && (
+            <div className="mt-2 max-h-44 overflow-y-auto rounded-2xl border border-[#E5EAF5] bg-white p-1.5">
+              {library === null && <p className="px-2 py-2 text-[12.5px] text-[#6B6F9A]">Loading…</p>}
+              {library !== null && library.length === 0 && <p className="px-2 py-2 text-[12.5px] text-[#6B6F9A]">No songs in the library yet.</p>}
+              {(library || []).map((x) => (
+                <button
+                  key={x.id}
+                  type="button"
+                  onClick={() => {
+                    setSong({ url: x.url, title: x.artist ? `${x.title} · ${x.artist}` : x.title, startSec: 0 });
+                    setShowLib(false);
+                  }}
+                  className="block w-full rounded-xl px-3 py-2 text-left hover:bg-[#F4F6FD]"
+                >
+                  <span className="block text-[13.5px] font-bold text-[#1E1B4B]">🎵 {x.title}</span>
+                  <span className="block text-[11.5px] text-[#6B6F9A]">{[x.artist, x.category].filter(Boolean).join(" · ")}</span>
+                </button>
+              ))}
+            </div>
           )}
           {songErr && <p className="mt-1 text-[12px] text-[#B91C1C]">{songErr}</p>}
         </div>

@@ -2,6 +2,7 @@
 
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "./firebase";
+import { blogCall } from "./feed";
 
 // 🎵 A story song: a short audio file the writer chooses (their own, or one they have the right to use).
 // It goes to blog_music/<uid>/…; the story plays its first 30 seconds.
@@ -19,4 +20,12 @@ export async function uploadStorySong(uid: string, file: File): Promise<{ url: s
   await uploadBytes(r, file, { contentType: file.type });
   const title = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Song";
   return { url: await getDownloadURL(r), title };
+}
+
+// 🎼 The song library: songs miGlife added (licensed or royalty-free). Anyone can pick one.
+export type LibrarySong = { id: string; title: string; artist: string; category: string; url: string };
+
+export async function loadSongLibrary(): Promise<LibrarySong[]> {
+  const r = await blogCall("songs");
+  return (Array.isArray(r.songs) ? r.songs : []) as LibrarySong[];
 }
