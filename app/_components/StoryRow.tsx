@@ -26,6 +26,7 @@ export function StoryRow({
   const [error, setError] = useState("");
   const [viewer, setViewer] = useState<Story[] | null>(null);
   const [draft, setDraft] = useState<string | null>(null); // a photo waiting for its caption
+  const [textDraft, setTextDraft] = useState(false); // a text-only story being written
   const fileInput = useRef<HTMLInputElement>(null);
 
   const reload = () =>
@@ -80,10 +81,10 @@ export function StoryRow({
     }
   };
 
-  const publish = async (url: string, caption: string, privacy: Audience) => {
+  const publish = async (data: { url?: string; caption?: string; text?: string }, privacy: Audience) => {
     setError("");
     try {
-      await blogCall("story", { url, caption, privacy });
+      await blogCall("story", { ...data, privacy });
       await reload();
     } catch (e) {
       setError(blogError(e));
@@ -126,6 +127,10 @@ export function StoryRow({
               <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full border-2 border-dashed border-[#6366F1] bg-white text-[24px] font-black text-[#6366F1]">{busy ? "…" : "+"}</span>
               <span className="w-full truncate text-[11.5px] font-bold text-[#1E1B4B]">Your story</span>
             </button>
+            <button type="button" onClick={() => setTextDraft(true)} className="flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
+              <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#A855F7] text-[17px] font-black text-white">Aa</span>
+              <span className="w-full truncate text-[11.5px] font-bold text-[#1E1B4B]">Text</span>
+            </button>
           </>
         )}
         {byAuthor.map(([name, items]) => ring(name, name.slice(0, 1).toUpperCase(), () => { setIndex(0); setViewer(items); }))}
@@ -138,18 +143,42 @@ export function StoryRow({
           caption=""
           audience="everyone"
           confirmText="Share story"
+          maxLen={140}
+          placeholder="Write a caption… (optional)"
           onClose={() => setDraft(null)}
           onConfirm={(caption, audience) => {
             const url = draft;
             setDraft(null);
-            publish(url, caption, audience);
+            publish({ url, caption }, audience);
+          }}
+        />
+      )}
+
+      {textDraft && (
+        <StoryDialog
+          title="New text story"
+          caption=""
+          audience="everyone"
+          confirmText="Share story"
+          maxLen={280}
+          placeholder="What's on your mind?"
+          onClose={() => setTextDraft(false)}
+          onConfirm={(text, audience) => {
+            setTextDraft(false);
+            publish({ text }, audience);
           }}
         />
       )}
 
       {viewer && current && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" role="dialog" aria-label="Story">
-          <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
+          {current.url ? (
+            <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
+              {current.text}
+            </div>
+          )}
           <button type="button" aria-label="Previous" onClick={() => setIndex((i) => Math.max(0, i - 1))} className="absolute bottom-0 left-0 top-0 w-1/3" />
           <button
             type="button"
@@ -171,14 +200,16 @@ export function StoryRow({
               ✕
             </button>
           </div>
-          {current.caption && (
+          {current.url && current.caption && (
             <p className="absolute bottom-10 left-6 right-6 rounded-xl bg-black/45 px-3 py-2 text-center text-[15px] font-bold text-white">{current.caption}</p>
           )}
           {menu && (
             <div className="absolute inset-x-6 bottom-24 z-10 rounded-2xl bg-white p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <button type="button" onClick={() => { setMenu(false); setEditing(current); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
-                ✏️ Edit caption and audience
-              </button>
+              {current.url && (
+                <button type="button" onClick={() => { setMenu(false); setEditing(current); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
+                  ✏️ Edit caption and audience
+                </button>
+              )}
               <button type="button" onClick={() => { setMenu(false); removeCurrent(); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#DC2626] hover:bg-[#FFF1F2]">
                 🗑 Delete story
               </button>
@@ -220,6 +251,8 @@ function StoryDialog({
   caption: caption0,
   audience: audience0,
   confirmText,
+  maxLen = 140,
+  placeholder = "Write a caption… (optional)",
   onClose,
   onConfirm,
 }: {
@@ -227,6 +260,8 @@ function StoryDialog({
   caption: string;
   audience: Audience;
   confirmText: string;
+  maxLen?: number;
+  placeholder?: string;
   onClose: () => void;
   onConfirm: (caption: string, audience: Audience) => void;
 }) {
@@ -241,8 +276,8 @@ function StoryDialog({
         </div>
         <textarea
           value={caption}
-          onChange={(e) => setCaption(e.target.value.slice(0, 140))}
-          placeholder="Write a caption… (optional)"
+          onChange={(e) => setCaption(e.target.value.slice(0, maxLen))}
+          placeholder={placeholder}
           className="mt-3 h-20 w-full resize-none rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-[14px] outline-none focus:border-[#6366F1]"
         />
         <div className="mt-3 flex gap-2">

@@ -15,6 +15,8 @@ export type Story = {
   expiresAt: number;
   caption: string;
   privacy: "everyone" | "friends" | "only_me";
+  /** a text-only story (no photo) */
+  text: string;
 };
 
 /** Stories still inside their 24 hours, newest first. Friends-only stories are kept for the caller to filter. */
@@ -34,7 +36,8 @@ export async function loadStories(): Promise<Story[]> {
         expiresAt: Number(x.expiresAt || 0),
         caption: String(x.caption || ""),
         privacy: x.privacy === "friends" || x.privacy === "only_me" ? x.privacy : "everyone",
+        text: String(x.text || ""),
       } as Story;
     })
-    .filter((s) => s.author && s.url);
+    .filter((s) => s.author && (s.url || s.text));
 }
