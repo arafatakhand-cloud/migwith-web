@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
+import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage } from "../../lib/imageUpload";
 import { PageTitle } from "./LightCards";
@@ -346,6 +347,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
+        {!author && <StoryRow myUid={user?.uid} myName={username} colorOf={colorOf} />}
+
         {!author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
             {([["all", "All"], ["photos", "📷 Photos"]] as const).map(([k, label]) => (
@@ -680,7 +683,10 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
           <RichText text={tr?.text || p.excerpt} />
         </p>
       )}
-      {pic && (
+      {p.video && (
+        <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="mt-2.5 max-h-[320px] w-full rounded-2xl bg-black" />
+      )}
+      {pic && !p.video && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={pic}

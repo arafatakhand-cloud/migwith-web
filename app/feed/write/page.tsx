@@ -8,6 +8,7 @@ import { db } from "../../../lib/firebase";
 import { useRequireLogin } from "../../../lib/useRequireLogin";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { uploadChatImage } from "../../../lib/imageUpload";
+import { uploadBlogVideo } from "../../../lib/videoUpload";
 import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
@@ -58,6 +59,9 @@ function BlogWrite() {
   const [emoji, setEmoji] = useState(false);
   // 😊 the feeling chips (text only: saved as a line in the post)
   const [feel, setFeel] = useState(false);
+  // 🎬 one optional video (uploaded to Storage; its URL goes with the post)
+  const [video, setVideo] = useState("");
+  const videoInput = useRef<HTMLInputElement>(null);
   // 🏷 hashtag ideas for the words in the post (not yet in the text)
   const hashSuggest = useMemo(() => {
     const t = text.toLowerCase();
@@ -177,6 +181,20 @@ function BlogWrite() {
     });
   };
 
+  const uploadVideo = async (files: FileList | null) => {
+    const f = files?.[0];
+    if (!f || !user) return;
+    setError("");
+    setBusy("Uploading video…");
+    try {
+      setVideo(await uploadBlogVideo(user.uid, f));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : blogError(e));
+    } finally {
+      setBusy("");
+    }
+  };
+
   const upload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = MAX_PHOTOS - photos.length;
@@ -195,17 +213,17 @@ function BlogWrite() {
     }
   };
 
-  const canPublish = title.trim().length >= 3 && (text.trim().length > 0 || photos.length > 0) && !busy;
+  const canPublish = title.trim().length >= 3 && (text.trim().length > 0 || photos.length > 0 || !!video) && !busy;
   const publish = async () => {
     setError("");
     if (title.trim().length < 3) return setError("Please write a title (at least 3 letters).");
-    if (!text.trim() && photos.length === 0) return setError("Please write something.");
+    if (!text.trim() && photos.length === 0 && !video) return setError("Please write something.");
     setBusy(editId ? "Saving…" : "Publishing…");
     try {
       // the first photo is the cover; the rest go after the story
       const [cover = "", ...rest] = photos;
       const body = [text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
-      const data = { title: title.trim(), body, cover, category };
+      const data = { title: title.trim(), body, cover, category, video };
       if (editId) {
         await blogCall("edit", { postId: editId, ...data });
         router.replace(`/feed/${editId}`);
@@ -231,6 +249,7 @@ function BlogWrite() {
   return (
     <PageShell light>
       <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => (upload(e.target.files), (e.target.value = ""))} />
+      <input ref={videoInput} type="file" accept="video/mp4,video/webm,video/quicktime" hidden onChange={(e) => (uploadVideo(e.target.files), (e.target.value = ""))} />
 
       {/* dimmed backdrop + the sheet */}
       <div className="fixed inset-0 z-40 bg-[#0F1D3A]/30 backdrop-blur-[3px]" onClick={close} />
@@ -414,6 +433,12 @@ function BlogWrite() {
           >
             {busy || (editId ? "Save ➤" : "Publish ➤")}
           </button>
+          {video && (
+            <div className="mb-2 flex items-center justify-between rounded-[16px] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#4F46E5] shadow-[0_1px_0_#C9D8EA]">
+              <span>🎬 Video attached</span>
+              <button type="button" onClick={() => setVideo("")} className="text-[#8494B2]">✕</button>
+            </div>
+          )}
           {/* 🏷 hashtag ideas from what you write (tap to add) */}
           {hashSuggest.length > 0 && (
             <div className="mb-2 flex flex-wrap gap-1.5 px-1">
@@ -449,6 +474,9 @@ function BlogWrite() {
           <div className="np-bar flex h-[58px] items-center gap-0.5 rounded-[22px] px-2">
             <Tool label="Add photos" onClick={() => photoInput.current?.click()}>
               📷
+            </Tool>
+            <Tool label="Add video" onClick={() => videoInput.current?.click()}>
+              🎬
             </Tool>
             <Tool label="Feeling" onClick={() => setFeel(!feel)}>
               😊

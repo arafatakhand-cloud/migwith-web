@@ -24,6 +24,8 @@ export type BlogPost = {
   edited: boolean;
   /** friends tagged with @ (they were notified) — shown as a pill */
   mentions: string[];
+  /** a feed video's download URL ('' = none) */
+  video: string;
 };
 
 export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
@@ -75,6 +77,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
     edited: d.edited === true,
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
+    video: String(d.video || ""),
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
