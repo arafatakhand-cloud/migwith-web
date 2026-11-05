@@ -64,6 +64,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const { user, username } = useCurrentUser();
   const friends = useFriends(username);
   const [tab, setTab] = useState<Tab>("popular");
+  // 📷 show all posts, or only the ones with a photo
+  const [media, setMedia] = useState<"all" | "photos">("all");
   const router = useRouter();
   // ❤️ which of these posts I liked (read once per list), and a short message
   const [liked, setLiked] = useState<Set<string>>(new Set());
@@ -332,6 +334,25 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
+        {!author && (
+          <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
+            {([["all", "সব"], ["photos", "📷 ছবি"]] as const).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setMedia(k)}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-extrabold transition ${
+                  media === k ? "bg-[#1D4ED8] text-white" : "bg-white text-[#4F46E5] shadow-[0_1px_0_#C9D8EA]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {/* 🎬 video posts need the backend (storage + rules) — coming soon */}
+            <span className="shrink-0 rounded-full bg-white/60 px-3.5 py-1.5 text-[12.5px] font-bold text-[#9AA0C4]">🎬 ভিডিও · শীঘ্রই</span>
+          </div>
+        )}
+
         {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && user && composing && (
           <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
@@ -504,9 +525,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-3 px-3.5">
-            {posts.map((p) => (
+            {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
               <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
+            {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
+              <p className="py-6 text-center text-sm text-[#6B6F9A]">এই tab-এ এখনো ছবির post নেই।</p>
+            )}
           </div>
         )}
       </section>

@@ -56,6 +56,8 @@ function BlogWrite() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [emoji, setEmoji] = useState(false);
+  // 😊 the feeling chips (text only: saved as a line in the post)
+  const [feel, setFeel] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const area = useRef<EmoteEditorHandle>(null);
@@ -407,9 +409,32 @@ function BlogWrite() {
           >
             {busy || (editId ? "Save ➤" : "Publish ➤")}
           </button>
+          {feel && (
+            <div className="np-bar mb-2 flex flex-wrap gap-1.5 rounded-[18px] p-2">
+              {FEELINGS.map(([e, l]) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    insert(`${e} ${l} · `);
+                    setFeel(false);
+                  }}
+                  className="rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#4F46E5] shadow-[0_1px_0_#C9D8EA]"
+                >
+                  {e} {l}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="np-bar flex h-[58px] items-center gap-0.5 rounded-[22px] px-2">
             <Tool label="Add photos" onClick={() => photoInput.current?.click()}>
               📷
+            </Tool>
+            <Tool label="Feeling" onClick={() => setFeel(!feel)}>
+              😊
+            </Tool>
+            <Tool label="Check in" onClick={() => insert("📍 ")}>
+              📍
             </Tool>
             <Tool label="Bold" onClick={() => insert("**", "**")}>
               <b>B</b>
@@ -437,6 +462,15 @@ function BlogWrite() {
     </PageShell>
   );
 }
+
+const FEELINGS: [string, string][] = [
+  ["😊", "খুশি"],
+  ["😍", "ভালোবাসা"],
+  ["😢", "মন খারাপ"],
+  ["🤩", "উত্তেজিত"],
+  ["😴", "ক্লান্ত"],
+  ["🙏", "কৃতজ্ঞ"],
+];
 
 function Tool({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
   return (

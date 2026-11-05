@@ -295,6 +295,19 @@ export default function BlogPostPage() {
                     <span className="break-words">{c.text}</span>
                     <div className="mt-0.5 flex gap-3 text-[11px] text-[#8494B2]">
                       <span>{blogAgo(c.createdMs)}</span>
+                      {user && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // ↩ reply: the box starts with @name
+                            setText(`@${c.author} `);
+                            document.getElementById("blog-comment")?.focus();
+                          }}
+                          className="font-semibold text-[#2563EB]"
+                        >
+                          Reply
+                        </button>
+                      )}
                       {canDel && (
                         <button type="button" onClick={() => removeComment(c)} className="font-semibold text-[#DC2626]/80">
                           Delete
