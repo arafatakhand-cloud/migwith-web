@@ -226,6 +226,30 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   const colorOf = useSenderColors(useMemo(() => Array.from(new Set([username, ...(posts || []).map((p) => p.author)].filter(Boolean))), [posts, username]));
 
+  // 😀 my reaction per post (👍 when I liked it and the type is not known yet)
+  const [reactOf, setReactOf] = useState<Record<string, string>>({});
+  const REACTION_LIST = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+  // pick one of the six (tap the same one again to take it back)
+  const react = async (p: BlogPost, emoji: string) => {
+    if (!user) return router.push("/login");
+    const before = reactOf[p.id] ?? (liked.has(p.id) ? "👍" : null);
+    const next = before === emoji ? null : emoji;
+    setReactOf((m) => ({ ...m, [p.id]: next ?? "" }));
+    setLiked((s) => {
+      const x = new Set(s);
+      if (next) x.add(p.id);
+      else x.delete(p.id);
+      return x;
+    });
+    try {
+      const r = await blogCall("react", { postId: p.id, reaction: next ?? "" });
+      setReactOf((m) => ({ ...m, [p.id]: String(r.reaction || "") }));
+      setPosts((list) => (list || []).map((q) => (q.id === p.id ? { ...q, likes: Number(r.likes ?? q.likes) } : q)));
+    } catch (e) {
+      setReactOf((m) => ({ ...m, [p.id]: before ?? "" }));
+      setToast(blogError(e));
+    }
+  };
   const like = async (p: BlogPost) => {
     if (!user) return router.push("/login");
     const was = liked.has(p.id);
@@ -481,7 +505,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {posts.map((p) => (
-              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
           </div>
         )}
@@ -525,7 +549,9 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
+  const [pick, setPick] = useState(false);
+  const holdRef = useRef<number | null>(null);
   const router = useRouter();
   // ❤️ each new like: the heart pops and a few hearts float up
   const [burst, setBurst] = useState(0);
@@ -607,10 +633,43 @@ function FeedCard({ p, color, liked, verified, onLike, onShare }: { p: BlogPost;
         <span className="ml-auto">{blogShort(p.comments)} Comments · {blogShort(p.views)} Views</span>
       </div>
       <div className="mt-2 border-t border-[#DDE8F7] pt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="relative flex-1">
+        {pick && (
+          // 😀 the six reactions: tap one (tap the same again to take it back)
+          <div className="absolute bottom-11 left-0 z-20 flex gap-1 rounded-full bg-white px-2 py-1 shadow-[0_8px_20px_-6px_rgba(16,63,145,.35)] ring-1 ring-[#DDE8F7]">
+            {["👍", "❤️", "😂", "😮", "😢", "😡"].map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => {
+                  setPick(false);
+                  onReact(e);
+                }}
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-[20px] transition hover:-translate-y-0.5 hover:scale-125 ${reaction === e ? "bg-[#E6F0FF]" : ""}`}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           type="button"
           onClick={likeTap}
-          className={`relative flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
+          onPointerDown={() => {
+            // a long press (½ second) opens the reaction picker
+            holdRef.current = window.setTimeout(() => setPick(true), 500);
+          }}
+          onPointerUp={() => {
+            if (holdRef.current) window.clearTimeout(holdRef.current);
+          }}
+          onPointerLeave={() => {
+            if (holdRef.current) window.clearTimeout(holdRef.current);
+          }}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setPick(true);
+          }}
+          className={`relative flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
             liked ? "bg-[#E6F0FF] text-[#1D4ED8]" : "bg-[#F3F2FF] text-[#4F46E5]"
           }`}
         >
@@ -626,10 +685,16 @@ function FeedCard({ p, color, liked, verified, onLike, onShare }: { p: BlogPost;
               </span>
             ))}
           <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-            {/* 👍 the miGlife thumbs icon (public/icons/miglife-like.svg) */}
-            <img src="/icons/miglife-like.svg" alt="" className="h-[18px] w-[18px]" /> {blogShort(p.likes)}
+            {/* 👍 the miGlife thumbs icon, or the reaction I picked */}
+            {liked && reaction && reaction !== "👍" ? (
+              <span className="text-[17px] leading-none">{reaction}</span>
+            ) : (
+              <img src="/icons/miglife-like.svg" alt="" className="h-[18px] w-[18px]" />
+            )}{" "}
+            {blogShort(p.likes)}
           </span>
         </button>
+        </div>
         <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
           💬 {blogShort(p.comments)}
         </button>
