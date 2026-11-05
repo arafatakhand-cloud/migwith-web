@@ -94,16 +94,16 @@ export function blogAgo(t: number): string {
 }
 
 /** 0-9 → ০-৯ */
-export const toBnDigits = (n: number) => String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
+export const toBnDigits = (n: number) => String(n);
 
-/** "৫ মিনিট আগে", "২ ঘণ্টা আগে", "৩ দিন আগে" — the Bangla time for a post card. */
+/** "5 min ago", "2 h ago", "3 d ago" — the time on a post card. */
 export function blogAgoBn(t: number): string {
-  if (!t) return "এখনই";
+  if (!t) return "just now";
   const m = Math.floor((Date.now() - t) / 60000);
-  if (m < 1) return "এখনই";
-  if (m < 60) return `${toBnDigits(m)} মিনিট আগে`;
-  if (m < 1440) return `${toBnDigits(Math.floor(m / 60))} ঘণ্টা আগে`;
-  if (m < 43200) return `${toBnDigits(Math.floor(m / 1440))} দিন আগে`;
+  if (m < 1) return "just now";
+  if (m < 60) return `${m} min ago`;
+  if (m < 1440) return `${Math.floor(m / 60)} h ago`;
+  if (m < 43200) return `${Math.floor(m / 1440)} d ago`;
   return new Date(t).toLocaleDateString("bn-BD", { day: "numeric", month: "short", year: "numeric" });
 }
 

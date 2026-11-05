@@ -117,7 +117,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const cupload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = 10 - cphotos.length;
-    if (room <= 0) return setCerr("একটা post-এ সর্বোচ্চ ১০টি ছবি।");
+    if (room <= 0) return setCerr("A post can have up to 10 photos.");
     setCerr("");
     setCbusy(true);
     try {
@@ -133,7 +133,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   const publishInline = async () => {
     setCerr("");
-    if (!ctext.trim() && cphotos.length === 0) return setCerr("কিছু লিখুন বা ছবি যোগ করুন।");
+    if (!ctext.trim() && cphotos.length === 0) return setCerr("Write something or add a photo.");
     // no title box: the title is the first line of the text
     const first = ctext.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -145,7 +145,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCtext("");
       setCphotos([]);
       setComposing(false);
-      setToast("পোস্ট হয়েছে ✓");
+      setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
     } catch (e) {
@@ -336,7 +336,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {!author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
-            {([["all", "সব"], ["photos", "📷 ছবি"]] as const).map(([k, label]) => (
+            {([["all", "All"], ["photos", "📷 Photos"]] as const).map(([k, label]) => (
               <button
                 key={k}
                 type="button"
@@ -349,7 +349,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </button>
             ))}
             {/* 🎬 video posts need the backend (storage + rules) — coming soon */}
-            <span className="shrink-0 rounded-full bg-white/60 px-3.5 py-1.5 text-[12.5px] font-bold text-[#9AA0C4]">🎬 ভিডিও · শীঘ্রই</span>
+            <span className="shrink-0 rounded-full bg-white/60 px-3.5 py-1.5 text-[12.5px] font-bold text-[#9AA0C4]">🎬 Videos · soon</span>
           </div>
         )}
 
@@ -362,7 +362,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="text-[14px] font-extrabold text-[#1E1B4B]">{username}</div>
                 <div className="text-[11px] text-[#7A7FA6]">Posting to everyone</div>
               </div>
-              <button type="button" onClick={() => setComposing(false)} aria-label="বন্ধ করুন" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]">
+              <button type="button" onClick={() => setComposing(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]">
                 ✕
               </button>
             </div>
@@ -405,7 +405,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 onClick={() => cfileRef.current?.click()}
                 className="flex h-9 items-center gap-1.5 rounded-full bg-[#F1EFFF] px-3 text-[12.5px] font-bold text-[#4F46E5] disabled:opacity-50"
               >
-                🖼 ছবি যোগ
+                🖼 Add photo
               </button>
               <button
                 type="button"
@@ -417,7 +417,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
                 }`}
               >
-                {cbusy ? "পোস্ট হচ্ছে…" : "Post"}
+                {cbusy ? "Posting…" : "Post"}
               </button>
             </div>
           </div>
@@ -455,15 +455,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               <div className="mt-2 grid grid-cols-3 rounded-2xl bg-[#F4F6FD] py-2 text-center">
                 <div>
                   <b className="block text-[15px] text-[#1E1B4B]">{toBnDigits(posts.length)}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">পোস্ট</small>
+                  <small className="text-[10.5px] text-[#7A7FA6]">Posts</small>
                 </div>
                 <div>
                   <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.likes, 0))}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">❤️ লাইক</small>
+                  <small className="text-[10.5px] text-[#7A7FA6]">❤️ Likes</small>
                 </div>
                 <div>
                   <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.views, 0))}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">👁 দেখা</small>
+                  <small className="text-[10.5px] text-[#7A7FA6]">👁 Views</small>
                 </div>
               </div>
               <div className="mt-3 flex gap-2">
@@ -472,10 +472,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   onClick={() => setComposing(true)}
                   className="flex-1 rounded-xl bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
                 >
-                  ✍️ নতুন post
+                  ✍️ New post
                 </button>
                 <Link href={`/profile/${encodeURIComponent(username)}`} className="flex-1 rounded-xl bg-[#F1EFFF] py-2 text-center text-[13px] font-extrabold text-[#4F46E5]">
-                  ✏️ প্রোফাইল
+                  ✏️ Profile
                 </Link>
               </div>
             </div>
@@ -492,7 +492,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             }}
             className="feed-pop mx-3.5 mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
           >
-            ↑ {fresh >= 20 ? "২০+" : toBnDigits(fresh)}টি নতুন post — দেখুন
+            ↑ {fresh >= 20 ? "20+" : fresh} new post{fresh === 1 ? "" : "s"} — tap to view
           </button>
         )}
 
@@ -519,7 +519,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
             {user && !author && (tab === "popular" || tab === "new") && (
               <Link href="/feed/write" className="mt-4 inline-block rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]">
-                ✍️ প্রথম post লিখুন
+                ✍️ Write the first post
               </Link>
             )}
           </div>
@@ -529,7 +529,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
-              <p className="py-6 text-center text-sm text-[#6B6F9A]">এই tab-এ এখনো ছবির post নেই।</p>
+              <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
             )}
           </div>
         )}

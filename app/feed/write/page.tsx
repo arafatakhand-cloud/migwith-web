@@ -464,12 +464,12 @@ function BlogWrite() {
 }
 
 const FEELINGS: [string, string][] = [
-  ["😊", "খুশি"],
-  ["😍", "ভালোবাসা"],
-  ["😢", "মন খারাপ"],
-  ["🤩", "উত্তেজিত"],
-  ["😴", "ক্লান্ত"],
-  ["🙏", "কৃতজ্ঞ"],
+  ["😊", "Happy"],
+  ["😍", "Loved"],
+  ["😢", "Sad"],
+  ["🤩", "Excited"],
+  ["😴", "Tired"],
+  ["🙏", "Thankful"],
 ];
 
 function Tool({ children, label, onClick }: { children: React.ReactNode; label: string; onClick: () => void }) {
