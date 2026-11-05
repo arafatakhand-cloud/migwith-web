@@ -75,7 +75,7 @@ export function AnnouncementPopup({ username, onDone }: { username: string; onDo
         </div>
 
         {/* the message (scrolls when long) */}
-        <div className="mx-3.5 my-3.5 max-h-[260px] overflow-y-auto rounded-[20px] border-[1.5px] border-white bg-white/60 px-3.5 py-3">
+        <div className="mx-3.5 my-3.5 max-h-[260px] overflow-y-auto rounded-[20px] border-[1.5px] border-white bg-white/95 px-3.5 py-3">
           <p className="whitespace-pre-wrap break-words text-sm leading-[21px] text-[#1E293B]">
             {lines.map((ln, i) => (
               <span

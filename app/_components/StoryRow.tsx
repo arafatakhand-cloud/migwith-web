@@ -146,6 +146,7 @@ export function StoryRow({
           confirmText="Share story"
           maxLen={140}
           placeholder="Write a caption… (optional)"
+          hasMedia
           onClose={() => setDraft(null)}
           onConfirm={(caption, audience, song) => {
             const url = draft;
@@ -178,10 +179,13 @@ export function StoryRow({
           confirmText="Share story"
           maxLen={280}
           placeholder="What's on your mind?"
+          allowPhoto
           onClose={() => setTextDraft(false)}
-          onConfirm={(text, audience, song) => {
+          onConfirm={(text, audience, song, photoUrl) => {
             setTextDraft(false);
-            publish({ text, song }, audience);
+            // a photo in a text story: the photo is the story, the text is its caption
+            if (photoUrl) publish({ url: photoUrl, caption: text, song }, audience);
+            else publish({ text, song }, audience);
           }}
         />
       )}
@@ -290,6 +294,8 @@ function StoryDialog({
   placeholder = "Write a caption… (optional)",
   onClose,
   onConfirm,
+  allowPhoto = false,
+  hasMedia = false,
 }: {
   uid?: string;
   title: string;
@@ -299,10 +305,19 @@ function StoryDialog({
   maxLen?: number;
   placeholder?: string;
   onClose: () => void;
-  onConfirm: (caption: string, audience: Audience, song?: StorySong | null) => void;
+  onConfirm: (caption: string, audience: Audience, song?: StorySong | null, photoUrl?: string | null) => void;
+  /** a text story may also get a photo, added right here */
+  allowPhoto?: boolean;
+  /** the photo is already chosen (the add-photo flow) */
+  hasMedia?: boolean;
 }) {
   const [caption, setCaption] = useState(caption0);
   const [audience, setAudience] = useState<Audience>(audience0);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const photoInput = useRef<HTMLInputElement>(null);
+  // Share works only with text or a photo
+  const canShare = hasMedia || !!photoUrl || caption.trim().length > 0;
   // 🎵 an optional song (plays for the first 30 seconds of the story)
   const [song, setSong] = useState<StorySong | null>(null);
   const [songBusy, setSongBusy] = useState(false);
@@ -323,6 +338,37 @@ function StoryDialog({
           placeholder={placeholder}
           className="mt-3 h-20 w-full resize-none rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-[14px] outline-none focus:border-[#6366F1]"
         />
+        {allowPhoto && (
+          <div className="mt-3">
+            <input
+              ref={photoInput}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f || !uid) return;
+                setPhotoBusy(true);
+                try {
+                  setPhotoUrl(await uploadChatImage(`blog_stories/${uid}`, f));
+                } catch (err) {
+                  setSongErr(err instanceof Error ? err.message : "Could not add the photo.");
+                } finally {
+                  setPhotoBusy(false);
+                }
+              }}
+            />
+            <button
+              type="button"
+              disabled={photoBusy}
+              onClick={() => (photoUrl ? setPhotoUrl(null) : photoInput.current?.click())}
+              className="rounded-full bg-[#EEF0FF] px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#4F46E5] disabled:opacity-50"
+            >
+              {photoBusy ? "📷 Adding photo…" : photoUrl ? "📷 Photo added ✕" : "📷 Add photo"}
+            </button>
+          </div>
+        )}
         <div className="mt-3 flex gap-2">
           {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
             <button
@@ -410,7 +456,12 @@ function StoryDialog({
         </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-full px-4 py-2 font-bold text-[#4F46E5]">Cancel</button>
-          <button type="button" onClick={() => onConfirm(caption.trim(), audience, song)} className="rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 font-extrabold text-white">
+          <button
+            type="button"
+            disabled={!canShare || photoBusy}
+            onClick={() => onConfirm(caption.trim(), audience, song, photoUrl)}
+            className="rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 font-extrabold text-white disabled:opacity-40"
+          >
             {confirmText}
           </button>
         </div>

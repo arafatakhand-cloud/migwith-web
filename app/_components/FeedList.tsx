@@ -430,8 +430,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
-
         {!author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
             {([["all", "All"], ["photos", "📷 Photos"]] as const).map(([k, label]) => (
@@ -743,6 +741,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             )}
           </div>
         )}
+
+        {/* 📸 stories sit under the feed */}
+        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
       </section>
 
       {reactorsOf && <ReactorsSheet post={reactorsOf} onClose={() => setReactorsOf(null)} />}
