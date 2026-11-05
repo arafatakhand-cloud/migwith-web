@@ -518,12 +518,11 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
   return (
     <article
       onClick={open}
-      style={{ background: `linear-gradient(160deg, ${tint}1F, rgba(255,255,255,.92) 45%)` }}
-      className="cursor-pointer rounded-[22px] border border-[#6366F1]/12 p-3 shadow-[inset_0_2px_0_#fff,0_2px_0_rgba(99,102,241,.24),0_4px_0_rgba(99,102,241,.14)] transition active:scale-[.995]"
+      className="cursor-pointer rounded-[20px] border border-[#DDE8F7] bg-white p-3.5 shadow-[0_2px_8px_rgba(16,63,145,.07)] transition active:scale-[.995]"
     >
       <div className="flex items-center gap-2.5">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()}>
-          <Avatar name={p.author} color={c} size={40} ring />
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-[#D9A83E] p-[1px]">
+          <Avatar name={p.author} color={c} size={40} />
         </Link>
         <div className="min-w-0">
           <div data-notranslate className="truncate text-[14px] font-extrabold" style={{ color: c }}>
@@ -573,7 +572,11 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
           <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white">✕</span>
         </div>
       )}
-      <div className="mt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <div className="mt-2.5 flex items-center text-[11.5px] text-[#718096]">
+        <span className="font-bold text-[#1458C8]">👍 {blogShort(p.likes)}</span>
+        <span className="ml-auto">{blogShort(p.comments)} Comments · {blogShort(p.views)} Views</span>
+      </div>
+      <div className="mt-2 border-t border-[#DDE8F7] pt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
         <button
           type="button"
           onClick={likeTap}
