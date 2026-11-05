@@ -30,7 +30,6 @@ export function StoryRow({
   const [viewer, setViewer] = useState<Story[] | null>(null);
   const [draft, setDraft] = useState<string | null>(null); // a photo waiting for its caption
   const [textDraft, setTextDraft] = useState(false); // a text-only story being written
-  const [addMenu, setAddMenu] = useState(false); // "+" asks: photo or text?
   const fileInput = useRef<HTMLInputElement>(null);
 
   const reload = () =>
@@ -127,7 +126,7 @@ export function StoryRow({
         {myUid && (
           <>
             <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => (onFile(e.target.files), (e.target.value = ""))} />
-            <button type="button" onClick={() => setAddMenu(true)} disabled={busy} className="flex w-[68px] shrink-0 flex-col items-center gap-1 text-center disabled:opacity-60">
+            <button type="button" onClick={() => setTextDraft(true)} disabled={busy} className="flex w-[68px] shrink-0 flex-col items-center gap-1 text-center disabled:opacity-60">
               <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full border-2 border-dashed border-[#6366F1] bg-white text-[24px] font-black text-[#6366F1]">{busy ? "…" : "+"}</span>
               <span className="w-full truncate text-[11.5px] font-bold text-[#1E1B4B]">Your story</span>
             </button>
@@ -156,24 +155,10 @@ export function StoryRow({
         />
       )}
 
-      {addMenu && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={() => setAddMenu(false)}>
-          <div className="w-full max-w-md rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="mb-2 text-[16px] font-black text-[#1E1B4B]">Add to your story</h3>
-            <button type="button" onClick={() => { setAddMenu(false); fileInput.current?.click(); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
-              📷 Add a photo
-            </button>
-            <button type="button" onClick={() => { setAddMenu(false); setTextDraft(true); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
-              Aa&nbsp; Write text
-            </button>
-          </div>
-        </div>
-      )}
-
       {textDraft && (
         <StoryDialog
           uid={myUid}
-          title="New text story"
+          title="New story"
           caption=""
           audience="everyone"
           confirmText="Share story"
