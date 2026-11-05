@@ -69,6 +69,30 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [liked, setLiked] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState("");
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
+  // ✔ authors whose users document says verified (read-only; miGlife sets it)
+  const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const names = [...new Set((posts || []).map((p) => p.author))];
+    if (!names.length) return;
+    let alive = true;
+    (async () => {
+      const found = new Set<string>();
+      for (let i = 0; i < names.length; i += 10) {
+        try {
+          const snap = await getDocs(query(collection(db, "users"), where("username", "in", names.slice(i, i + 10))));
+          snap.docs.forEach((d) => {
+            if (d.data().verified === true) found.add(String(d.data().username || ""));
+          });
+        } catch {
+          // quiet: the badge is a nicety
+        }
+      }
+      if (alive) setVerifiedAuthors(found);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [posts]);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -457,7 +481,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {posts.map((p) => (
-              <FeedCard key={p.id} p={p} color={colorOf(p.author)} liked={liked.has(p.id)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
           </div>
         )}
@@ -501,7 +525,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; onLike: () => void; onShare: () => void }) {
   const router = useRouter();
   // ❤️ each new like: the heart pops and a few hearts float up
   const [burst, setBurst] = useState(0);
@@ -525,8 +549,14 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
           <Avatar name={p.author} color={c} size={40} />
         </Link>
         <div className="min-w-0">
-          <div data-notranslate className="truncate text-[14px] font-extrabold" style={{ color: c }}>
-            {p.author}
+          <div className="flex items-center gap-1">
+            <div data-notranslate className="truncate text-[14px] font-extrabold" style={{ color: c }}>
+              {p.author}
+            </div>
+            {verified && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-4 w-4 shrink-0" />
+            )}
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
             {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
