@@ -157,29 +157,62 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCbusy(false);
     }
   };
-  const publishInline = async () => {
-    setCerr("");
-    if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
+  // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
+  const [undoable, setUndoable] = useState(false);
+  const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string }) => {
     // no title box: the title is the first line of the text
-    const first = ctext.trim().split("\n")[0].slice(0, 60);
+    const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
-    const [cover = "", ...rest] = cphotos;
-    const body = [ctext.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
+    const [cover = "", ...rest] = p.photos;
+    const body = [p.text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
     setCbusy(true);
     try {
-      await blogCall("create", { title, body, cover, category: ccat, video: cvideo });
-      setCtext("");
-      setCphotos([]);
-      setCvideo("");
-      setComposing(false);
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
     } catch (e) {
+      // the post did not go: bring the text back so nothing is lost
+      setCtext(p.text);
+      setCphotos(p.photos);
+      setCvideo(p.video);
+      setCcat(p.category);
+      setComposing(true);
       setCerr(blogError(e));
     } finally {
       setCbusy(false);
     }
+  };
+  const publishInline = () => {
+    setCerr("");
+    if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat };
+    setCtext("");
+    setCphotos([]);
+    setCvideo("");
+    setComposing(false);
+    setUndoable(true);
+    const id = window.setTimeout(() => {
+      undoRef.current = null;
+      setUndoable(false);
+      void sendPost(payload);
+    }, 5000);
+    undoRef.current = {
+      id,
+      restore: () => {
+        window.clearTimeout(id);
+        undoRef.current = null;
+        setUndoable(false);
+        setCtext(payload.text);
+        setCphotos(payload.photos);
+        setCvideo(payload.video);
+        setCcat(payload.category);
+        setComposing(true);
+        setToast("Post taken back");
+        window.setTimeout(() => setToast(""), 2000);
+      },
+    };
   };
 
   const [fresh, setFresh] = useState(0);
@@ -691,6 +724,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         />
       )}
 
+      {undoable && (
+        <div className="fixed bottom-24 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full bg-[#1E1B4B]/95 py-2 pl-4 pr-2 text-[13px] font-semibold text-white shadow-lg">
+          <span>Posting in 5 sec…</span>
+          <button type="button" onClick={() => undoRef.current?.restore()} className="rounded-full bg-white px-3 py-1 font-extrabold text-[#1D4ED8]">
+            Undo
+          </button>
+        </div>
+      )}
       {toast && (
         <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
       )}
