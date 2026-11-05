@@ -578,7 +578,7 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
           type="button"
           onClick={likeTap}
           className={`relative flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
-            liked ? "bg-[#FFE8F1] text-[#DB2777]" : "bg-[#F3F2FF] text-[#4F46E5]"
+            liked ? "bg-[#E6F0FF] text-[#1D4ED8]" : "bg-[#F3F2FF] text-[#4F46E5]"
           }`}
         >
           {burst > 0 &&
@@ -593,7 +593,8 @@ function FeedCard({ p, color, liked, onLike, onShare }: { p: BlogPost; color: st
               </span>
             ))}
           <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-            {liked ? "❤️" : "🤍"} {blogShort(p.likes)}
+            {/* 👍 the miGlife thumbs icon (public/icons/miglife-like.svg) */}
+            <img src="/icons/miglife-like.svg" alt="" className="h-[18px] w-[18px]" /> {blogShort(p.likes)}
           </span>
         </button>
         <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
