@@ -109,8 +109,8 @@ export function StoryRow({
   };
 
   const ring = (name: string, extra: React.ReactNode, onClick: () => void) => (
-    <button key={name} type="button" onClick={onClick} className="flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
-      <span className="flex h-[62px] w-[62px] items-center justify-center rounded-full bg-[conic-gradient(#38BDF8,#6366F1,#A855F7,#EC4899,#38BDF8)] p-[2.5px]">
+    <button key={name} type="button" onClick={onClick} className="story-item flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
+      <span className="story-ring flex h-[62px] w-[62px] items-center justify-center rounded-full p-[2.5px]">
         <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-white text-[18px] font-black text-white" style={{ background: colorOf(name) || "#6366F1" }}>
           {extra}
         </span>
@@ -223,7 +223,7 @@ export function StoryRow({
             <span className="absolute bottom-3 left-6 right-6 truncate text-center text-[12px] font-bold text-white/90">🎵 {current.song.title}</span>
           )}
           {current.url && current.caption && (
-            <p className="absolute bottom-10 left-6 right-6 rounded-xl bg-black/45 px-3 py-2 text-center text-[15px] font-bold text-white">{current.caption}</p>
+            <p className="story-glass absolute bottom-10 left-6 right-6 rounded-2xl px-4 py-2.5 text-center text-[15px] font-bold text-white">{current.caption}</p>
           )}
           {menu && (
             <div className="absolute inset-x-6 bottom-24 z-10 rounded-2xl bg-white p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
