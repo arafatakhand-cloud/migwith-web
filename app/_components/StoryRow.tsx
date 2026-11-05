@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { blogAgoBn, blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
 import { loadStories, type Story } from "../../lib/stories";
+import { STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
+
+export type StorySong = { url: string; title: string; startSec: number };
 
 // 📸 The story row above the feed: "Your story" adds one (photo, caption, who sees it).
 // Tap a ring to watch (5 s each). The writer can edit the caption / audience or delete it.
@@ -82,7 +85,7 @@ export function StoryRow({
     }
   };
 
-  const publish = async (data: { url?: string; caption?: string; text?: string }, privacy: Audience) => {
+  const publish = async (data: { url?: string; caption?: string; text?: string; song?: StorySong | null }, privacy: Audience) => {
     setError("");
     try {
       await blogCall("story", { ...data, privacy });
@@ -136,6 +139,7 @@ export function StoryRow({
 
       {draft && (
         <StoryDialog
+          uid={myUid}
           title="Add to your story"
           caption=""
           audience="everyone"
@@ -143,10 +147,10 @@ export function StoryRow({
           maxLen={140}
           placeholder="Write a caption… (optional)"
           onClose={() => setDraft(null)}
-          onConfirm={(caption, audience) => {
+          onConfirm={(caption, audience, song) => {
             const url = draft;
             setDraft(null);
-            publish({ url, caption }, audience);
+            publish({ url, caption, song }, audience);
           }}
         />
       )}
@@ -167,6 +171,7 @@ export function StoryRow({
 
       {textDraft && (
         <StoryDialog
+          uid={myUid}
           title="New text story"
           caption=""
           audience="everyone"
@@ -174,15 +179,29 @@ export function StoryRow({
           maxLen={280}
           placeholder="What's on your mind?"
           onClose={() => setTextDraft(false)}
-          onConfirm={(text, audience) => {
+          onConfirm={(text, audience, song) => {
             setTextDraft(false);
-            publish({ text }, audience);
+            publish({ text, song }, audience);
           }}
         />
       )}
 
       {viewer && current && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" role="dialog" aria-label="Story">
+          {current.song && (
+            // 🎵 the song starts at its chosen point and stops after 30 seconds
+            <audio
+              key={current.id}
+              src={current.song.url}
+              autoPlay
+              onLoadedMetadata={(e) => {
+                e.currentTarget.currentTime = current.song?.startSec ?? 0;
+              }}
+              onTimeUpdate={(e) => {
+                if (e.currentTarget.currentTime - (current.song?.startSec ?? 0) >= STORY_SONG_SECONDS) e.currentTarget.pause();
+              }}
+            />
+          )}
           {current.url ? (
             <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
@@ -211,6 +230,9 @@ export function StoryRow({
               ✕
             </button>
           </div>
+          {current.song && (
+            <span className="absolute bottom-3 left-6 right-6 truncate text-center text-[12px] font-bold text-white/90">🎵 {current.song.title}</span>
+          )}
           {current.url && current.caption && (
             <p className="absolute bottom-10 left-6 right-6 rounded-xl bg-black/45 px-3 py-2 text-center text-[15px] font-bold text-white">{current.caption}</p>
           )}
@@ -234,6 +256,7 @@ export function StoryRow({
 
       {editing && (
         <StoryDialog
+          uid={myUid}
           title="Edit story"
           caption={editing.caption}
           audience={editing.privacy}
@@ -258,6 +281,7 @@ export function StoryRow({
 
 // the caption and the audience (everyone / friends), used to add and to edit a story
 function StoryDialog({
+  uid,
   title,
   caption: caption0,
   audience: audience0,
@@ -267,6 +291,7 @@ function StoryDialog({
   onClose,
   onConfirm,
 }: {
+  uid?: string;
   title: string;
   caption: string;
   audience: Audience;
@@ -274,10 +299,15 @@ function StoryDialog({
   maxLen?: number;
   placeholder?: string;
   onClose: () => void;
-  onConfirm: (caption: string, audience: Audience) => void;
+  onConfirm: (caption: string, audience: Audience, song?: StorySong | null) => void;
 }) {
   const [caption, setCaption] = useState(caption0);
   const [audience, setAudience] = useState<Audience>(audience0);
+  // 🎵 an optional song (plays for the first 30 seconds of the story)
+  const [song, setSong] = useState<StorySong | null>(null);
+  const [songBusy, setSongBusy] = useState(false);
+  const [songErr, setSongErr] = useState("");
+  const songInput = useRef<HTMLInputElement>(null);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
       <div className="w-full max-w-md rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -303,9 +333,50 @@ function StoryDialog({
             </button>
           ))}
         </div>
+        <input
+          ref={songInput}
+          type="file"
+          accept="audio/*"
+          hidden
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (!f || !uid) return;
+            setSongErr("");
+            setSongBusy(true);
+            try {
+              const up = await uploadStorySong(uid, f);
+              setSong({ url: up.url, title: up.title, startSec: 0 });
+            } catch (err) {
+              setSongErr(err instanceof Error ? err.message : "Could not add the song.");
+            } finally {
+              setSongBusy(false);
+            }
+          }}
+        />
+        <div className="mt-3">
+          {song ? (
+            <div className="flex items-center gap-2 rounded-2xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1E1B4B]">
+              <span>🎵</span>
+              <span className="min-w-0 flex-1 truncate">{song.title}</span>
+              <span className="text-[11px] text-[#6B6F9A]">first {STORY_SONG_SECONDS} sec</span>
+              <button type="button" onClick={() => setSong(null)} aria-label="Remove song" className="text-[#8494B2]">✕</button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={songBusy}
+              onClick={() => songInput.current?.click()}
+              className="rounded-full bg-[#EEF0FF] px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#4F46E5] disabled:opacity-50"
+            >
+              {songBusy ? "🎵 Adding song…" : "🎵 Add a song"}
+            </button>
+          )}
+          {songErr && <p className="mt-1 text-[12px] text-[#B91C1C]">{songErr}</p>}
+        </div>
         <div className="mt-4 flex justify-end gap-2">
           <button type="button" onClick={onClose} className="rounded-full px-4 py-2 font-bold text-[#4F46E5]">Cancel</button>
-          <button type="button" onClick={() => onConfirm(caption.trim(), audience)} className="rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 font-extrabold text-white">
+          <button type="button" onClick={() => onConfirm(caption.trim(), audience, song)} className="rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 font-extrabold text-white">
             {confirmText}
           </button>
         </div>

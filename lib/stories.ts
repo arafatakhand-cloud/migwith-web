@@ -17,6 +17,8 @@ export type Story = {
   privacy: "everyone" | "friends" | "only_me";
   /** a text-only story (no photo) */
   text: string;
+  /** an optional song; it plays for 30 seconds from startSec */
+  song: { url: string; title: string; startSec: number } | null;
 };
 
 /** Stories still inside their 24 hours, newest first. Friends-only stories are kept for the caller to filter. */
@@ -37,6 +39,10 @@ export async function loadStories(): Promise<Story[]> {
         caption: String(x.caption || ""),
         privacy: x.privacy === "friends" || x.privacy === "only_me" ? x.privacy : "everyone",
         text: String(x.text || ""),
+        song:
+          x.song && typeof x.song.url === "string" && x.song.url
+            ? { url: String(x.song.url), title: String(x.song.title || "Song"), startSec: Number(x.song.startSec || 0) }
+            : null,
       } as Story;
     })
     .filter((s) => s.author && (s.url || s.text));
