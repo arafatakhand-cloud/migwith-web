@@ -8,6 +8,8 @@ import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
+import { useBadgeImages } from "../../lib/badgeImages";
+import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage } from "../../lib/imageUpload";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
@@ -73,23 +75,33 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
   // ✔ authors whose users document says verified (read-only; miGlife sets it)
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set());
+  // 🏅 each author's role badge emoji (users.role etc.), shown as the app's picture
+  const [authorBadge, setAuthorBadge] = useState<Record<string, string>>({});
+  const badgeImages = useBadgeImages(!!user);
   useEffect(() => {
     const names = [...new Set((posts || []).map((p) => p.author))];
     if (!names.length) return;
     let alive = true;
     (async () => {
       const found = new Set<string>();
+      const badges: Record<string, string> = {};
       for (let i = 0; i < names.length; i += 10) {
         try {
           const snap = await getDocs(query(collection(db, "users"), where("username", "in", names.slice(i, i + 10))));
           snap.docs.forEach((d) => {
-            if (d.data().verified === true) found.add(String(d.data().username || ""));
+            const name = String(d.data().username || "");
+            if (d.data().verified === true) found.add(name);
+            const b = roleBadgesForDoc(d.data())[0];
+            if (b) badges[name] = b;
           });
         } catch {
           // quiet: the badge is a nicety
         }
       }
-      if (alive) setVerifiedAuthors(found);
+      if (alive) {
+        setVerifiedAuthors(found);
+        setAuthorBadge(badges);
+      }
     })();
     return () => {
       alive = false;
@@ -526,7 +538,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
-              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -573,7 +585,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, roleBadge, roleImg, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; roleBadge: string; roleImg: string; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
   const [pick, setPick] = useState(false);
   const holdRef = useRef<number | null>(null);
   const router = useRouter();
@@ -607,6 +619,12 @@ function FeedCard({ p, color, liked, verified, reaction, onReact, onLike, onShar
               // eslint-disable-next-line @next/next/no-img-element
               <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-4 w-4 shrink-0" />
             )}
+            {roleImg ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={roleImg} alt="" title="Role badge" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+            ) : roleBadge ? (
+              <span className="shrink-0 text-[13px] leading-none" title="Role badge">{roleBadge}</span>
+            ) : null}
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
             {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
