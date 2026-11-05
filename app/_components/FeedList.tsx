@@ -31,7 +31,7 @@ import {
 // posts with ?author=name, from their profile). Anyone can read; writing needs
 // a login. Read once per tab (no live listener), pull the tab again to refresh.
 
-type Tab = "popular" | "new" | "friends" | "mine";
+type Tab = "popular" | "new" | "friends" | "mine" | "saved";
 
 // 🎨 each category's colour: the card's corner glows in it
 const CAT_TINT: Record<string, string> = {
@@ -62,6 +62,7 @@ const TABS: [Tab, string][] = [
   ["new", "New"],
   ["friends", "Friends"],
   ["mine", "Mine"],
+  ["saved", "🔖 Saved"],
 ];
 
 export function FeedList({ author = "", embedded = false }: { author?: string; embedded?: boolean }) {
@@ -75,6 +76,35 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const router = useRouter();
   // ❤️ which of these posts I liked (read once per list), and a short message
   const [liked, setLiked] = useState<Set<string>>(new Set());
+  // 🔖 the posts I saved (from the server, so the Saved tab can list them)
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user) return;
+    blogCall("saves")
+      .then((r) => setSavedIds(new Set((Array.isArray(r.postIds) ? r.postIds : []) as string[])))
+      .catch(() => {});
+  }, [user]);
+  // 🔖 save / unsave a post (optimistic; put back if the server says no)
+  const toggleSave = (p: BlogPost) => {
+    if (!user) return;
+    const on = !savedIds.has(p.id);
+    const flip = (cur: Set<string>) => {
+      const next = new Set(cur);
+      if (on) next.add(p.id);
+      else next.delete(p.id);
+      return next;
+    };
+    setSavedIds(flip);
+    blogCall("save", { postId: p.id, saved: on }).catch(() => {
+      setSavedIds((cur) => {
+        const next = new Set(cur);
+        if (on) next.delete(p.id);
+        else next.add(p.id);
+        return next;
+      });
+      setToast("Couldn't save. Try again.");
+    });
+  };
   const [toast, setToast] = useState("");
   // 👥 the post whose reactions I am looking at (null = closed)
   const [reactorsOf, setReactorsOf] = useState<BlogPost | null>(null);
@@ -244,6 +274,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       if (author) return map(await getDocs(query(col, where("author", "==", author), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
       if (tab === "popular") return map(await getDocs(query(col, orderBy("hot", "desc"), limit(40))));
       if (tab === "new") return map(await getDocs(query(col, orderBy("createdMs", "desc"), limit(40))));
+      if (tab === "saved") {
+        if (!user) return [];
+        const ids = [...savedIds].slice(0, 50);
+        const docs = await Promise.all(ids.map((id) => getDoc(doc(col, id))));
+        return docs.filter((d) => d.exists()).map((d) => toBlogPost(d.id, d.data() as Record<string, unknown>)).sort((a, b) => b.createdMs - a.createdMs);
+      }
       if (tab === "mine") {
         if (!user) return [];
         return map(await getDocs(query(col, where("authorUid", "==", user.uid), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
@@ -700,7 +736,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} />
+              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -887,7 +923,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1076,6 +1112,9 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
         </div>
         <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
           💬 {blogShort(p.comments)}
+        </button>
+        <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-9 w-10 items-center justify-center rounded-xl text-[15px] ${saved ? "bg-[#FFF4D6]" : "bg-[#F3F2FF] opacity-60"}`}>
+          🔖
         </button>
         <button type="button" onClick={onShare} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
           ↗ Share
