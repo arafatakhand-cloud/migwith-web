@@ -12,6 +12,7 @@ import { useBadgeImages } from "../../lib/badgeImages";
 import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage } from "../../lib/imageUpload";
+import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -132,6 +133,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [ccat, setCcat] = useState("life");
   const [cbusy, setCbusy] = useState(false);
   const [cerr, setCerr] = useState("");
+  // like the app's create-post box: one optional video, a mood line, a topic menu
+  const [cvideo, setCvideo] = useState("");
+  const [cvideoBusy, setCvideoBusy] = useState(false);
+  const [cmoodOpen, setCmoodOpen] = useState(false);
+  const [ccatOpen, setCcatOpen] = useState(false);
+  const cvideoRef = useRef<HTMLInputElement>(null);
   const cfileRef = useRef<HTMLInputElement>(null);
   const cupload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
@@ -152,7 +159,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   const publishInline = async () => {
     setCerr("");
-    if (!ctext.trim() && cphotos.length === 0) return setCerr("Write something or add a photo.");
+    if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
     // no title box: the title is the first line of the text
     const first = ctext.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -160,9 +167,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     const body = [ctext.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
     setCbusy(true);
     try {
-      await blogCall("create", { title, body, cover, category: ccat });
+      await blogCall("create", { title, body, cover, category: ccat, video: cvideo });
       setCtext("");
       setCphotos([]);
+      setCvideo("");
       setComposing(false);
       setToast("Posted ✓");
       setReload((n) => n + 1);
@@ -388,7 +396,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && user && composing && (
-          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
             <div className="flex items-center gap-2.5">
               <Avatar name={username} color={meColor} size={38} ring />
               <div className="min-w-0 flex-1">
@@ -400,6 +408,26 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </button>
             </div>
             <input ref={cfileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (cupload(e.target.files), (e.target.value = ""))} />
+            <input
+              ref={cvideoRef}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              hidden
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f || !user) return;
+                setCerr("");
+                setCvideoBusy(true);
+                try {
+                  setCvideo(await uploadBlogVideo(user.uid, f));
+                } catch (err) {
+                  setCerr(err instanceof Error ? err.message : blogError(err));
+                } finally {
+                  setCvideoBusy(false);
+                }
+              }}
+            />
             <textarea
               autoFocus
               value={ctext}
@@ -416,43 +444,108 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 ))}
               </div>
             )}
-            <div className="mt-1 flex gap-1.5 overflow-x-auto">
-              {BLOG_CATEGORIES.map(([k, label]) => (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setCcat(k)}
-                  className={`shrink-0 rounded-full px-2.5 py-1 text-[12px] font-bold ${
-                    ccat === k ? "bg-gradient-to-r from-[#38BDF8] to-[#8B5CFF] text-white" : "bg-[#EEF4FF] text-[#1D4ED8]"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {(cvideo || cvideoBusy) && (
+              <div className="mt-2 flex items-center justify-between rounded-xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1D4ED8]">
+                <span>{cvideoBusy ? "🎬 Uploading video…" : "🎬 Video attached"}</span>
+                {!cvideoBusy && (
+                  <button type="button" onClick={() => setCvideo("")} aria-label="Remove video" className="text-[#8494B2]">
+                    ✕
+                  </button>
+                )}
+              </div>
+            )}
             {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
-            <div className="mt-2.5 flex items-center gap-2 border-t border-[#EEF2F8] pt-2.5">
-              <button
-                type="button"
-                disabled={cbusy || cphotos.length >= 10}
-                onClick={() => cfileRef.current?.click()}
-                className="flex h-9 items-center gap-1.5 rounded-full bg-[#F1EFFF] px-3 text-[12.5px] font-bold text-[#4F46E5] disabled:opacity-50"
-              >
-                🖼 Add photo
-              </button>
-              <button
-                type="button"
-                onClick={publishInline}
-                disabled={cbusy || (!ctext.trim() && cphotos.length === 0)}
-                className={`ml-auto rounded-full px-5 py-2 text-[13px] font-extrabold transition ${
-                  cbusy || (!ctext.trim() && cphotos.length === 0)
-                    ? "bg-[#E5EAF5] text-[#8A97A8]"
-                    : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
-                }`}
-              >
-                {cbusy ? "Posting…" : "Post"}
-              </button>
+            <div className="mt-2.5 border-t border-[#EEF2F8] pt-1.5">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  disabled={cbusy || cphotos.length >= 10}
+                  onClick={() => cfileRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
+                >
+                  <span className="text-[17px]">🖼</span>Photo
+                </button>
+                <button
+                  type="button"
+                  disabled={cbusy || cvideoBusy || !!cvideo}
+                  onClick={() => cvideoRef.current?.click()}
+                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
+                >
+                  <span className="text-[17px]">🎬</span>Video
+                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCmoodOpen((v) => !v);
+                      setCcatOpen(false);
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
+                  >
+                    <span className="text-[17px]">😊</span>Mood
+                  </button>
+                  {cmoodOpen && (
+                    <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
+                      {[["😊", "খুশি"], ["😍", "ভালোবাসা"], ["😢", "মন খারাপ"], ["🤩", "উত্তেজিত"], ["😴", "ক্লান্ত"], ["🙏", "কৃতজ্ঞ"]].map(([e, l]) => (
+                        <button
+                          key={l}
+                          type="button"
+                          onClick={() => {
+                            setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
+                            setCmoodOpen(false);
+                          }}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-[13.5px] font-semibold text-[#1E1B4B] hover:bg-[#F4F6FD]"
+                        >
+                          {e}&nbsp; {l}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCcatOpen((v) => !v);
+                      setCmoodOpen(false);
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
+                  >
+                    <span className="text-[17px]">🏷</span>
+                    {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
+                  </button>
+                  {ccatOpen && (
+                    <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
+                      {BLOG_CATEGORIES.map(([k, label]) => (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => {
+                            setCcat(k);
+                            setCcatOpen(false);
+                          }}
+                          className={`block w-full rounded-xl px-3 py-2 text-left text-[13.5px] font-semibold ${ccat === k ? "bg-[#EEF4FF] text-[#1D4ED8]" : "text-[#1E1B4B] hover:bg-[#F4F6FD]"}`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={publishInline}
+              disabled={cbusy || cvideoBusy || (!ctext.trim() && cphotos.length === 0 && !cvideo)}
+              className={`mt-2 h-11 w-full rounded-2xl text-[15px] font-extrabold transition ${
+                cbusy || cvideoBusy || (!ctext.trim() && cphotos.length === 0 && !cvideo)
+                  ? "bg-[#E5EAF5] text-[#8A97A8]"
+                  : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_8px_18px_-8px_rgba(139,92,255,.8)]"
+              }`}
+            >
+              {cbusy ? "Posting…" : "Post"}
+            </button>
           </div>
         )}
         {!author && (!user || !composing) && (
