@@ -728,11 +728,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   : "No posts here yet."}
             </p>
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
-            {user && !author && (tab === "popular" || tab === "new") && (
-              <Link href="/feed/write" className="mt-4 inline-block rounded-full bg-gradient-to-r from-[#38BDF8] to-[#A855F7] px-5 py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]">
-                ✍️ Write the first post
-              </Link>
-            )}
           </div>
         ) : (
           <div className="space-y-3 px-3.5">
