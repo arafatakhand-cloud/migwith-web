@@ -58,8 +58,8 @@ function RichText({ text, className }: { text: string; className?: string }) {
   );
 }
 const TABS: [Tab, string][] = [
-  ["popular", "Popular"],
   ["new", "New"],
+  ["popular", "Popular"],
   ["friends", "Friends"],
   ["mine", "Mine"],
   ["saved", "🔖 Saved"],
