@@ -552,6 +552,27 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-3 px-3.5">
+          {/* 🔥 trending now: the three hottest posts, bar = likes + 2 × comments */}
+          {!author && tab === "popular" && media === "all" && posts.length > 2 && (() => {
+            const score = (p: BlogPost) => p.likes + p.comments * 2;
+            const top = [...posts].sort((a, b) => score(b) - score(a)).slice(0, 3);
+            const max = Math.max(1, ...top.map(score));
+            return (
+              <section className="mx-3.5 mb-3 rounded-[22px] border border-[#DDE8F7] bg-white p-3.5 shadow-[0_2px_8px_rgba(16,63,145,.07)]">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-[#E0527A]">🔥 Trending now</div>
+                <div className="mt-2 grid gap-2.5">
+                  {top.map((p) => (
+                    <button key={p.id} type="button" onClick={() => router.push(`/feed/${p.id}`)} className="grid gap-1 text-left">
+                      <span className="truncate text-[13.5px] font-bold text-[#1E1B4B]">{p.title || p.excerpt || "Post"}</span>
+                      <span className="block h-2 overflow-hidden rounded-full bg-[#EEF2FA]">
+                        <span className="block h-full rounded-full bg-gradient-to-r from-[#F59E0B] to-[#EC4899]" style={{ width: `${Math.round((score(p) / max) * 100)}%` }} />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
             {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
               <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}

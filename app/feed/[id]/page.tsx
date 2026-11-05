@@ -38,6 +38,8 @@ export default function BlogPostPage() {
   const [likeBusy, setLikeBusy] = useState(false);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  // ↩ the top comment I am replying to (null = a new top comment)
+  const [replyTo, setReplyTo] = useState<BlogComment | null>(null);
   const [toast, setToast] = useState("");
   const [canMod, setCanMod] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -107,7 +109,8 @@ export default function BlogPostPage() {
     if (!t || !post || sending) return;
     setSending(true);
     try {
-      await blogCall("comment", { postId: post.id, text: t });
+      await blogCall("comment", { postId: post.id, text: t, parentId: replyTo?.id || "" });
+      setReplyTo(null);
       setText("");
       setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300);
     } catch (e) {
@@ -283,8 +286,9 @@ export default function BlogPostPage() {
             {comments.map((c) => {
               const cc = colorOf(c.author) || "#2563EB";
               const canDel = !!user && (c.authorUid === user.uid || mine || canMod);
+              const isReply = !!c.replyTo;
               return (
-                <div key={c.id} className="flex gap-2">
+                <div key={c.id} className={`flex gap-2 ${isReply ? "ml-9" : ""}`}>
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: cc }}>
                     {c.author.slice(0, 1).toUpperCase()}
                   </span>
@@ -299,7 +303,8 @@ export default function BlogPostPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            // ↩ reply: the box starts with @name
+                            // ↩ reply: the box says who it answers and starts with @name
+                            setReplyTo(isReply ? comments.find((x) => x.id === c.replyTo) || c : c);
                             setText(`@${c.author} `);
                             document.getElementById("blog-comment")?.focus();
                           }}
@@ -324,6 +329,12 @@ export default function BlogPostPage() {
 
       {/* comment box, fixed at the bottom */}
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#C9D9EE] bg-white/95 px-3 py-2 backdrop-blur">
+        {replyTo && (
+          <div className="mx-auto mb-1.5 flex max-w-2xl items-center justify-between text-[12px] font-semibold text-[#2563EB]">
+            <span>↩ Replying to {replyTo.author}</span>
+            <button type="button" onClick={() => { setReplyTo(null); setText(""); }} className="text-[#8494B2]">✕</button>
+          </div>
+        )}
         <div className="mx-auto flex max-w-2xl gap-2">
           {user ? (
             <>

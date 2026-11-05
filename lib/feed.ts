@@ -26,7 +26,7 @@ export type BlogPost = {
   mentions: string[];
 };
 
-export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number };
+export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
 
 export const BLOG_CATEGORIES: [string, string][] = [
   ["life", "💬 Life"],
@@ -78,7 +78,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
-  return { id, authorUid: String(d.authorUid || ""), author: String(d.author || ""), text: String(d.text || ""), createdMs: ms(d.createdAt) };
+  return { id, authorUid: String(d.authorUid || ""), author: String(d.author || ""), text: String(d.text || ""), createdMs: ms(d.createdAt), replyTo: String(d.replyTo || "") };
 }
 
 export const blogShort = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));
