@@ -408,7 +408,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
               aria-hidden
-              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)] transition-[left,width] duration-300 ease-out"
+              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-br from-[#FF8A5B] via-[#E4577A] to-[#9B6BFF] shadow-[0_6px_14px_-6px_rgba(228,87,122,.7)] transition-[left,width] duration-300 ease-out"
               style={ind ? { left: ind.left, width: ind.width } : { opacity: 0 }}
             />
             {TABS.map(([k, label]) => (
