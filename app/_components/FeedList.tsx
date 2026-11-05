@@ -464,6 +464,21 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </div>
               </div>
               <div className="mt-1.5 text-[18px] font-black text-[#1E1B4B]">{username}</div>
+              {/* 🗓 this week's recap, from my own posts (last 7 days) */}
+              {(() => {
+                const since = Date.now() - 7 * 86400000;
+                const wk = posts.filter((p) => p.createdMs >= since);
+                const r = wk.reduce((n, p) => n + p.likes, 0);
+                const v = wk.reduce((n, p) => n + p.views, 0);
+                return (
+                  <div className="mt-2 rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-3.5 py-2.5 text-white">
+                    <div className="text-[11px] font-extrabold uppercase tracking-wider opacity-85">This week</div>
+                    <div className="text-[14px] font-bold">
+                      {wk.length} {wk.length === 1 ? "post" : "posts"} · {blogShort(r)} reactions · {blogShort(v)} views
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="mt-2 grid grid-cols-3 rounded-2xl bg-[#F4F6FD] py-2 text-center">
                 <div>
                   <b className="block text-[15px] text-[#1E1B4B]">{toBnDigits(posts.length)}</b>
@@ -538,7 +553,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-3 px-3.5">
             {(media === "photos" ? posts.filter((p) => !!(p.cover || p.firstImage)) : posts).map((p) => (
-              <FeedCard key={p.id} p={p} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
+              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => share(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -585,7 +600,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, roleBadge, roleImg, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; roleBadge: string; roleImg: string; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void }) {
   const [pick, setPick] = useState(false);
   const holdRef = useRef<number | null>(null);
   const router = useRouter();
@@ -628,6 +643,7 @@ function FeedCard({ p, color, liked, verified, roleBadge, roleImg, reaction, onR
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
             {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
+            {why && <span className="ml-1.5 rounded-full bg-[#EEF4FF] px-1.5 py-px text-[10.5px] font-bold text-[#1D4ED8]">{why}</span>}
           </div>
         </div>
         <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>

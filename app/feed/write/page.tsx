@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { EmoteEditor, type EmoteEditorHandle } from "../../_components/EmoteEditor";
 import { useRouter, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
@@ -58,6 +58,11 @@ function BlogWrite() {
   const [emoji, setEmoji] = useState(false);
   // 😊 the feeling chips (text only: saved as a line in the post)
   const [feel, setFeel] = useState(false);
+  // 🏷 hashtag ideas for the words in the post (not yet in the text)
+  const hashSuggest = useMemo(() => {
+    const t = text.toLowerCase();
+    return HASHTAG_IDEAS.filter(([k, tag]) => t.includes(k) && !t.includes(tag.toLowerCase())).map(([, tag]) => tag).slice(0, 4);
+  }, [text]);
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const area = useRef<EmoteEditorHandle>(null);
@@ -409,6 +414,21 @@ function BlogWrite() {
           >
             {busy || (editId ? "Save ➤" : "Publish ➤")}
           </button>
+          {/* 🏷 hashtag ideas from what you write (tap to add) */}
+          {hashSuggest.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-1.5 px-1">
+              {hashSuggest.map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setText((t) => `${t.trimEnd()} ${h}`)}
+                  className="rounded-full border border-dashed border-[#6366F1] px-3 py-1 text-[12px] font-bold text-[#6366F1]"
+                >
+                  + {h}
+                </button>
+              ))}
+            </div>
+          )}
           {feel && (
             <div className="np-bar mb-2 flex flex-wrap gap-1.5 rounded-[18px] p-2">
               {FEELINGS.map(([e, l]) => (
@@ -462,6 +482,18 @@ function BlogWrite() {
     </PageShell>
   );
 }
+
+// 🏷 keyword → hashtag ideas (shown while you write, never added by themselves)
+const HASHTAG_IDEAS: [string, string][] = [
+  ["ludo", "#LudoLife"],
+  ["cricket", "#Cricket"],
+  ["match", "#MatchDay"],
+  ["food", "#Foodie"],
+  ["travel", "#Travel"],
+  ["photo", "#Photography"],
+  ["game", "#GameNight"],
+  ["morning", "#GoodMorning"],
+];
 
 const FEELINGS: [string, string][] = [
   ["😊", "Happy"],
