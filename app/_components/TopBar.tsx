@@ -166,6 +166,11 @@ export function TopBar() {
     };
     const onStart = (e: TouchEvent) => {
       const el = e.target as Element | null;
+      // 🚫 The Feed page has no swipe between pages (tabs are tapped only).
+      if (orderRef.current.here === "/feed") {
+        start = null;
+        return;
+      }
       // Leave sideways scrollers, text boxes and game tables alone.
       if (e.touches.length !== 1 || el?.closest("input, textarea, select, [data-noswipe], .overflow-x-auto")) {
         start = null;
