@@ -1508,8 +1508,9 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 }
 
 /* 📰 Feed list: the same soft lavender as the New post sheet */
+/* 🌅 Sunset look (same as the app's Feed): peach → rose → lavender */
 .feed-lav {
-  background: linear-gradient(180deg, #eef0ff, #e8ebff 50%, #f1e9ff);
+  background: linear-gradient(180deg, #fff1e6, #ffe0ea 60%, #efe3ff);
 }
 
 /* 🎨 Chat name colours: the true colour on the dark chat background, a darker one
