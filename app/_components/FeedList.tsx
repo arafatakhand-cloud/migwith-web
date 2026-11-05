@@ -396,16 +396,25 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && user && composing && (
-          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
-            <div className="flex items-center gap-2.5">
-              <Avatar name={username} color={meColor} size={38} ring />
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-extrabold text-[#1E1B4B]">{username}</div>
-                <div className="text-[11px] text-[#7A7FA6]">Posting to everyone</div>
-              </div>
-              <button type="button" onClick={() => setComposing(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]">
+          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white p-3.5 shadow-[0_10px_30px_-14px_rgba(30,27,75,.35)]">
+            <div className="relative mb-3 text-center text-[16px] font-black text-[#1E1B4B]">
+              Create post
+              <button
+                type="button"
+                onClick={() => setComposing(false)}
+                aria-label="Close"
+                className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]"
+              >
                 ✕
               </button>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <Avatar name={username} color={meColor} size={42} />
+              <div className="min-w-0 flex-1">
+                <div className="text-[14px] font-extrabold text-[#1E1B4B]">{username}</div>
+                {/* 🌍 audience, like Facebook's Public pill */}
+                <span className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-[#EEF2F8] px-2 py-0.5 text-[11px] font-bold text-[#4B4F7D]">🌍 Public</span>
+              </div>
             </div>
             <input ref={cfileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (cupload(e.target.files), (e.target.value = ""))} />
             <input
@@ -455,34 +464,41 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </div>
             )}
             {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
-            <div className="mt-2.5 border-t border-[#EEF2F8] pt-1.5">
-              <div className="flex items-center justify-between">
+            <div className="mt-2.5 flex items-center justify-between rounded-2xl border border-[#E5EAF5] px-3 py-2">
+              <span className="text-[13px] font-bold text-[#334155]">Add to your post</span>
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
+                  aria-label="Add photo"
+                  title="Photo"
                   disabled={cbusy || cphotos.length >= 10}
                   onClick={() => cfileRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E6F7EC] text-[18px] disabled:opacity-40"
                 >
-                  <span className="text-[17px]">🖼</span>Photo
+                  🖼
                 </button>
                 <button
                   type="button"
+                  aria-label="Add video"
+                  title="Video"
                   disabled={cbusy || cvideoBusy || !!cvideo}
                   onClick={() => cvideoRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FDE8E8] text-[18px] disabled:opacity-40"
                 >
-                  <span className="text-[17px]">🎬</span>Video
+                  🎬
                 </button>
                 <div className="relative">
                   <button
                     type="button"
+                    aria-label="Mood"
+                    title="Mood"
                     onClick={() => {
                       setCmoodOpen((v) => !v);
                       setCcatOpen(false);
                     }}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FEF6DB] text-[18px]"
                   >
-                    <span className="text-[17px]">😊</span>Mood
+                    😊
                   </button>
                   {cmoodOpen && (
                     <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
@@ -505,14 +521,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="relative">
                   <button
                     type="button"
+                    aria-label="Topic"
+                    title={BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
                     onClick={() => {
                       setCcatOpen((v) => !v);
                       setCmoodOpen(false);
                     }}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[#E6F0FF] text-[18px]"
                   >
-                    <span className="text-[17px]">🏷</span>
-                    {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
+                    🏷
                   </button>
                   {ccatOpen && (
                     <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
