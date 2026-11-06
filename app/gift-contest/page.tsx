@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDocs, onSnapshot, query, Timestamp, where } from "firebase/firestore";
+import { collection, doc, getDocs, onSnapshot, query, setDoc, Timestamp, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useCurrentUser } from "../../lib/useCurrentUser";
+import { useFounderPerms } from "../../lib/founder";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 import { Face, profileImageUrl } from "../_components/RankFace";
@@ -57,6 +58,63 @@ export default function GiftContestPage() {
   const [active, setActive] = useState(false);
   const [prize, setPrize] = useState("");
   const [rules, setRules] = useState("");
+  // 🎁 Gift Contest admin (miGlife, or a founder with the Gift Contest tool)
+  const founder = useFounderPerms();
+  const canEdit = founder.can("gift_contest");
+  const [editOpen, setEditOpen] = useState(false);
+  const [eActive, setEActive] = useState(false);
+  const [ePrize, setEPrize] = useState("");
+  const [eRules, setERules] = useState("");
+  const [eRoom, setERoom] = useState("");
+  const [eGift, setEGift] = useState("");
+  const [eDate, setEDate] = useState("");
+  const [eHour, setEHour] = useState("20");
+  const [eMinute, setEMinute] = useState("0");
+  const [eHours, setEHours] = useState("24");
+  const [saveMsg, setSaveMsg] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const openEdit = () => {
+    setEActive(active);
+    setEPrize(prize);
+    setERules(rules);
+    setERoom(admin?.room || "");
+    setEGift(admin?.gift || "");
+    setEditOpen(true);
+    setSaveMsg("");
+  };
+
+  const saveContest = async () => {
+    if (saving) return;
+    setSaving(true);
+    setSaveMsg("");
+    try {
+      await setDoc(
+        doc(db, "app_settings", "gift_contest"),
+        { active: eActive, prizeDescription: ePrize.trim(), rulesText: eRules.trim(), updatedAt: Timestamp.now() },
+        { merge: true }
+      );
+      await setDoc(
+        doc(db, "app_settings", "gift_contest_admin"),
+        {
+          roomName: eRoom.trim(),
+          giftName: eGift.trim(),
+          startDate: eDate.trim(),
+          startHour: Number(eHour) || 0,
+          startMinute: Number(eMinute) || 0,
+          durationHours: Number(eHours) || 24,
+          updatedAt: Timestamp.now(),
+        },
+        { merge: true }
+      );
+      setSaveMsg("✅ Saved.");
+      setEditOpen(false);
+    } catch (e) {
+      setSaveMsg(e instanceof Error ? e.message : "Could not save. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
   const [loaded, setLoaded] = useState(false);
   const [admin, setAdmin] = useState<Admin | null>(null);
   const [rows, setRows] = useState<Row[] | null>(null);
@@ -178,6 +236,42 @@ export default function GiftContestPage() {
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-lg font-bold text-white"
             />
           </div>
+
+          {canEdit && (
+            <div className="mb-3">
+              {!editOpen ? (
+                <button type="button" onClick={openEdit} className="rounded-full bg-white/15 px-4 py-2 text-[13px] font-black">
+                  ✏️ Prize, rules &amp; time
+                </button>
+              ) : (
+                <div className="grid gap-2 rounded-[20px] border border-white/20 bg-white/[.08] p-3 text-[13px]">
+                  <p className="font-black text-[#FFD34D]">👑 Gift Contest settings</p>
+                  <label className="flex items-center gap-2 font-bold">
+                    <input type="checkbox" checked={eActive} onChange={(e) => setEActive(e.target.checked)} /> Contest is live
+                  </label>
+                  <input value={eRoom} onChange={(e) => setERoom(e.target.value)} placeholder="Room name" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  <input value={eGift} onChange={(e) => setEGift(e.target.value)} placeholder="Gift name" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input value={eDate} onChange={(e) => setEDate(e.target.value)} placeholder="Date YYYY-MM-DD" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                    <input value={eHours} onChange={(e) => setEHours(e.target.value)} placeholder="Hours" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                    <input value={eHour} onChange={(e) => setEHour(e.target.value)} placeholder="Start hour (0-23)" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                    <input value={eMinute} onChange={(e) => setEMinute(e.target.value)} placeholder="Start minute" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  </div>
+                  <textarea value={ePrize} onChange={(e) => setEPrize(e.target.value)} rows={2} placeholder="Prize" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  <textarea value={eRules} onChange={(e) => setERules(e.target.value)} rows={3} placeholder="Rules" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  <div className="flex gap-2">
+                    <button type="button" disabled={saving} onClick={saveContest} className="rounded-full bg-[#FFD34D] px-4 py-2 font-black text-[#3A1A2B] disabled:opacity-50">
+                      {saving ? "Saving…" : "Save"}
+                    </button>
+                    <button type="button" onClick={() => setEditOpen(false)} className="rounded-full bg-white/15 px-4 py-2 font-black">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+              {saveMsg && <p className="mt-2 text-[13px] font-bold">{saveMsg}</p>}
+            </div>
+          )}
 
           {!loaded ? (
             <p className="py-16 text-center text-sm text-white/70">Loading…</p>
