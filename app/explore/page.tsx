@@ -10,7 +10,7 @@ import { useIsClassic } from "../../lib/uiStyle";
 // ANNOUNCEMENTS / SHOP / EVENTS / COMMUNITY as pastel cards. Classic keeps its rows.
 // 💎 Luxury Festival: everyone sees the Luxury Bet top 25; miglife also sets its time.
 type Item = { icon: string; title: string; subtitle: string; color: string; tint: string; href?: string; note?: string; tab: Tab };
-const LIVE = new Set(["Luxury Festival", "Gift Contest", "Lucky User"]);
+const LIVE = new Set(["Luxury Festival", "Gift Contest", "Game Contest", "Lucky User"]);
 type Tab = "events" | "shop" | "community";
 const ITEMS: Item[] = [
   { icon: "📰", title: "Feed", subtitle: "Read and share stories", color: "#2563EB", tint: "#E6F0FC", href: "/feed", tab: "community" },
@@ -20,6 +20,7 @@ const ITEMS: Item[] = [
   { icon: "🏆", title: "Leader Board", subtitle: "Top game winners across rooms", color: "#D9A400", tint: "#FFF6DD", href: "/leaderboard", tab: "events" },
   { icon: "💎", title: "Luxury Festival", subtitle: "Live festival · top players by spend", color: "#D9A400", tint: "#E3F2FF", href: "/luxury-festival", tab: "events" },
   { icon: "🎁", title: "Gift Contest", subtitle: "Live contest · top gifters", color: "#E5484D", tint: "#FFE6F2", href: "/gift-contest", tab: "events" },
+  { icon: "🎮", title: "Game Contest", subtitle: "Live contest · top players", color: "#2F6FD6", tint: "#E6EEFF", href: "/ludo-contest", tab: "events" },
   { icon: "🍀", title: "Lucky User", subtitle: "Every 3 hours · most active chatter wins", color: "#1E8C4E", tint: "#E3F7EA", href: "/lucky", tab: "events" },
   { icon: "👑", title: "VIP Subscription", subtitle: "Rainbow name · picture & voice share", color: "#B04BD6", tint: "#FFF1C9", href: "/special-colour", tab: "shop" },
   { icon: "🎨", title: "Style Studio", subtitle: "Premium username colors", color: "#12AFC7", tint: "#FFE9DE", href: "/style-studio", tab: "shop" },
