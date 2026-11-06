@@ -13642,6 +13642,26 @@ async function handleUserMessage(data, context, collectionName, label, emailEnvN
     status: "new",
     createdAt: FieldValue.serverTimestamp(),
   });
+  // 📬 Also put it in the miglife account's Mail inbox, so miGlife can read and reply in the app.
+  try {
+    const miglife = await findUserDocByUsername("miglife");
+    if (miglife) {
+      await db.collection("emails").add({
+        mailboxType: "received",
+        mailboxUid: miglife.id,
+        mailboxUsername: "miglife",
+        fromUid: uid,
+        fromUsername: username || uid,
+        toUsername: "miglife",
+        subject: `${label}${username ? ` from @${username}` : ""}`,
+        message,
+        read: false,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error(`${collectionName}: mail to miglife failed`, { error: error?.message });
+  }
 
   // Also email it when a destination address is configured (functions/.env).
   const destination = emailEnvNames.map((name) => process.env[name]).find((value) => value && value.trim());
