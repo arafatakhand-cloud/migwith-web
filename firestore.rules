@@ -1,0 +1,3079 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================
+    // BASIC USER HELPERS
+    // =========================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userExists() {
+      return signedIn()
+        && exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        );
+    }
+
+    function currentUser() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    function currentRole() {
+      return userExists()
+        ? currentUser().data.role
+        : "";
+    }
+
+    function currentUsername() {
+      return userExists()
+        ? currentUser().data.username
+        : "";
+    }
+
+
+    // =========================================================
+    // ROLES
+    // =========================================================
+
+    function isOwner() {
+      return userExists()
+        && (
+          // The main founder account is "miglife" ONLY. The old "migwith"
+          // account is now a normal account with no founder powers.
+          currentUsername().lower() == "miglife"
+          || currentUser().data.get("migId", "").lower() == "miglife"
+        );
+    }
+
+    function isCEO() {
+      return isOwner();
+    }
+
+    // A founder added by migwith (founders/{uid}) who was given permission `p`.
+    // migwith (isOwner) always has every permission.
+    function founderHas(p) {
+      return isOwner()
+        || (signedIn()
+          && exists(/databases/$(database)/documents/founders/$(request.auth.uid))
+          && p in get(/databases/$(database)/documents/founders/$(request.auth.uid)).data.get("perms", []));
+    }
+
+    // 👑 Hidden founder: anyone miglife listed in founders/{uid}. Shown as a
+    // normal user, but has every admin / staff power.
+    function isHiddenFounder() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/founders/$(request.auth.uid));
+    }
+
+    // A hidden founder can never be kicked, banned or muted (except by miglife).
+    function founderTargetOk() {
+      let d = request.resource.data;
+      let uid = d.get("uid", "");
+      return isOwner()
+        || !(d.get("kicked", false) == true || d.get("banned", false) == true || d.get("muted", false) == true)
+        || !(uid is string && uid.size() > 0
+             && exists(/databases/$(database)/documents/founders/$(uid)));
+    }
+
+    // 🫥 Only the Founder (miglife + founders/{uid}), official Admins and Staff
+    // may switch on isInvisible or Presence Status INVISIBLE. Anyone may switch
+    // them OFF, and other profile edits are not affected.
+    function invisibleWriteOk() {
+      let d = request.resource.data;
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(["isInvisible", "presenceStatus"])
+        || (d.get("isInvisible", false) != true
+            && !(d.get("presenceStatus", "") is string && d.get("presenceStatus", "").upper() == "INVISIBLE"))
+        || isOwner()
+        || isAdminStaff()
+        || currentRole() in ["ceo", "owner"];
+    }
+
+    function isAdminStaff() {
+      return isHiddenFounder() || userExists()
+        && (
+          currentRole() in [
+            "admin",
+            "staff",
+            "superadmin"
+          ]
+          ||
+          currentUsername() in [
+            "admin",
+            "staff",
+            "miglife"
+          ]
+        );
+    }
+
+    function isRoomAdmin() {
+      return isHiddenFounder() || userExists()
+        && (
+          currentRole() in [
+            "admin",
+            "superadmin"
+          ]
+          ||
+          currentUsername() in [
+            "admin",
+            "miglife"
+          ]
+        );
+    }
+
+    // 👢 Kicked from this room less than 30 minutes ago (room_moderation/{room}/
+    // users/{me}.kickedAt). Such a person can't come back in, or write there,
+    // until the 30 minutes are over.
+    function kickedFromRoomRecently(room) {
+      let m = /databases/$(database)/documents/room_moderation/$(room)/users/$(currentUsername().lower());
+      return exists(m)
+        && get(m).data.get("kickedAt", null) is timestamp
+        && get(m).data.kickedAt > request.time - duration.value(30, "m");
+    }
+
+    function isRoomModerator() {
+      return isHiddenFounder() || userExists()
+        && (
+          currentRole() in [
+            "staff",
+            "admin",
+            "superadmin"
+          ]
+          ||
+          // 🔒 SECURITY: "mod" / "moderator" removed — anyone could register those names.
+          currentUsername() in [
+            "staff",
+            "admin",
+            "miglife"
+          ]
+        );
+    }
+
+    // =========================================================
+    // LEVEL CURVE (exact copy of xpRequiredForNextLevel in MainActivity.kt
+    // and luckyXpForNextLevel in index.js — keep all three in sync)
+    // =========================================================
+    // v3 curve (about 2x harder after level 50). Per level step:
+    // 1-10 → 50 · 11-30 → 75+5n · 31-40 → 180+10n · 41-50 → 500+30n ·
+    // 51-60 → 1600+100n · 61-100 → 3000+120n · 101-200 → 9000+200n ·
+    // 201+ → 30000+300n.
+    // xpToReachLevel(lv) = total XP needed to BE level lv, in closed form
+    // (rules have no loops).
+    function xpSegSum(n, base, step) {
+      return n * base + step * (n * (n - 1) / 2);
+    }
+    // 🔒 DAILY XP LIMIT (1,500 a Bangladesh day). Same day as the saved one →
+    // the day's total grows by exactly the XP given. Starting a new day (the
+    // total back to 0) is allowed only when the last daily update was on an
+    // EARLIER Bangladesh day (server time) — so the count can't be reset by
+    // writing a made-up date.
+    function xpDailyOk() {
+      let given = request.resource.data.xp
+        - (resource.data.get("xp", 0) is int ? resource.data.get("xp", 0) : 0);
+      let daily = request.resource.data.get("dailyXp", -1);
+      let lastAt = resource.data.get("dailyXpUpdatedAt", null);
+      return daily is int && daily <= 1500
+        && request.resource.data.get("dailyXpUpdatedAt", null) == request.time
+        && (
+          (request.resource.data.get("dailyXpDate", "") == resource.data.get("dailyXpDate", "")
+            && resource.data.get("dailyXp", 0) is int)
+            ? daily == resource.data.get("dailyXp", 0) + given
+            : (daily >= given
+                && (!(lastAt is timestamp)
+                    || math.floor((request.time.toMillis() + 21600000) / 86400000)
+                         > math.floor((lastAt.toMillis() + 21600000) / 86400000)))
+        );
+    }
+
+    // Same numbers, but only the segment the level is in is worked out (the
+    // totals at each segment start are fixed: 500 · 2950 · 5200 · 11550 ·
+    // 32050 · 245650 · 2135650). The old form summed all 8 segments every
+    // time and used most of the rules' 1000-step budget on its own.
+    function xpToReachLevel(lv) {
+      return lv <= 11 ? 50 * (lv - 1)
+        : lv <= 31 ? 500 + xpSegSum(lv - 11, 75, 5)
+        : lv <= 41 ? 2950 + xpSegSum(lv - 31, 180, 10)
+        : lv <= 51 ? 5200 + xpSegSum(lv - 41, 500, 30)
+        : lv <= 61 ? 11550 + xpSegSum(lv - 51, 1600, 100)
+        : lv <= 101 ? 32050 + xpSegSum(lv - 61, 3000, 120)
+        : lv <= 201 ? 245650 + xpSegSum(lv - 101, 9000, 200)
+        : 2135650 + xpSegSum(lv - 201, 30000, 300);
+    }
+
+    // =========================================================
+    // ROOM HELPERS (added for chat-room creation / capacity rules)
+    // =========================================================
+
+    // Level of the signed-in user — the `level` field on users/{uid}
+    // (the app writes it together with every XP gain).
+    function roomLevel() {
+      return userExists()
+        ? currentUser().data.get("level", 1)
+        : 1;
+    }
+
+    // Capacity of a level-based private room. Same numbers as the app:
+    // level 10-14 -> 25, 15-24 -> 30, 25-39 -> 40, 40 and above -> 50.
+    function privateRoomCapacityForLevel(level) {
+      return level >= 40 ? 50
+        : (level >= 25 ? 40
+        : (level >= 15 ? 30
+        : 25));
+    }
+
+    // =========================================================
+    // MENTOR / MERCHANT TAG LOOKUP HELPERS
+    // =========================================================
+
+    function isMentorOfUser(targetUserId) {
+      return userExists()
+        && exists(
+          /databases/$(database)/documents/mentor_tagged/$(currentUsername() + '_' + get(/databases/$(database)/documents/users/$(targetUserId)).data.username)
+        );
+    }
+
+    function isMerchantOfUser(targetUserId) {
+      return userExists()
+        && exists(
+          /databases/$(database)/documents/merchant_tagged/$(currentUsername() + '_' + get(/databases/$(database)/documents/users/$(targetUserId)).data.username)
+        );
+    }
+
+    // ADDED: bridges the 2-hop mentor -> merchant -> tagged-user chain.
+    // A user only ever belongs to one merchant at a time, so the target's
+    // own users/{uid} doc records which merchant tagged them
+    // (taggedByMerchant, self-written — see the new users/{userId} update
+    // rule below). From there we check the mentor recruited that merchant
+    // via the existing deterministic mentor_tagged/{mentor}_{merchant} doc.
+    // Both lookups are direct get()/exists() calls on known paths, so this
+    // stays within what security rules can evaluate (no collection scans).
+    function isMentorOfMerchantsUser(targetUserId) {
+      return userExists()
+        && exists(/databases/$(database)/documents/users/$(targetUserId))
+        && 'taggedByMerchant' in get(/databases/$(database)/documents/users/$(targetUserId)).data
+        && get(/databases/$(database)/documents/users/$(targetUserId)).data.taggedByMerchant is string
+        && exists(
+          /databases/$(database)/documents/mentor_tagged/$(
+            currentUsername() + '_' +
+            get(/databases/$(database)/documents/users/$(targetUserId)).data.taggedByMerchant
+          )
+        );
+    }
+
+
+    // =========================================================
+    // ID CREATION SETTINGS
+    // =========================================================
+
+    match /app_settings/id_creation {
+
+      allow read: if true;
+
+      allow create, update: if founderHas("id_creation")
+
+        && request.resource.data.otherUserCreationEnabled is bool;
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // INVITE / DOWNLOAD LINK SETTINGS
+    // =========================================================
+    //
+    // ADDED: the "Share Invite" download link shown on Home, editable by
+    // migwith from inside the app (see HomeDashboardPage's Invite Friends
+    // section) — everyone reads it, only migwith can change it. Same
+    // ownership pattern as app_settings/id_creation above.
+    //
+    // =========================================================
+
+    // 🎆 Cricket win fireworks: which rooms have it ON (miglife secret).
+    // Everyone signed in reads it; only miglife changes it.
+    match /app_settings/win_fx {
+      allow read: if signedIn();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(["cricketRooms", "updatedAt", "updatedBy"])
+        && request.resource.data.cricketRooms is list
+        && request.resource.data.cricketRooms.size() <= 300;
+      allow delete: if false;
+    }
+
+    // ✏️ Shop names / prices edited by miglife (written by founderEditShopItem).
+    match /app_settings/shop_overrides {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // 🌈 VIP Subscription: price + where to pay (written by founderSpecialColor).
+    match /app_settings/special_color {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /app_settings/invite {
+
+      allow read: if true;
+
+      allow create, update: if isOwner()
+
+        && request.resource.data.downloadUrl is string;
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // APP VERSION ("Update available" popup + Update Apps page)
+    // =========================================================
+    //
+    // ADDED: the app live-listens to app_settings/app_version for the
+    // update popup and the Update Apps page. Without this block the
+    // DEFAULT DENY at the bottom refused that read, so the popup never
+    // showed. Written only by setLatestAppVersion (Cloud Function, Admin
+    // SDK bypasses rules).
+    //
+    // =========================================================
+
+    // 🎰 Luxury Bet testing list — who may see the room (uids / names / open).
+    // Written only by founderLuxuryBetAccess (Cloud Function).
+    match /app_settings/luxury_bet_access {
+
+      allow read: if signedIn();
+
+      allow write: if false;
+    }
+
+
+    match /app_settings/app_version {
+
+      allow read: if signedIn();
+
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // GIFT CONTEST SETTINGS
+    // =========================================================
+    //
+    // ADDED: migwith sets the contest's rules text, prize description, and
+    // active window from the Explore > Gift Contest page. Everyone can
+    // read it (so the rules actually display to all players); only
+    // migwith can change it, same ownership pattern as
+    // app_settings/id_creation above.
+    //
+    // =========================================================
+
+    match /app_settings/gift_contest {
+
+      allow read: if true;
+
+      allow create, update: if founderHas("gift_contest")
+
+        && request.resource.data.rulesText is string
+
+        && request.resource.data.active is bool;
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // GIFT CONTEST — ADMIN-ONLY DETAILED CONFIG
+    // =========================================================
+    //
+    // ADDED: date, start/end hour, room, gift, winner count and prize coin
+    // amount — unlike gift_contest above (public rules/prize text), this
+    // is explicitly migwith-only to READ, not just to write. Kept as a
+    // separate document rather than more fields on gift_contest so the
+    // read rule itself can differ; a single doc can't have per-field read
+    // rules in Firestore.
+    //
+    // =========================================================
+
+    match /app_settings/gift_contest_admin {
+
+      allow read, write: if founderHas("gift_contest");
+    }
+
+    // 💎 Luxury Festival: the start/end dates (miglife sets them) and the
+    // Luxury Bet totals the server adds up between them — miglife-only.
+    // 🧨 Full Reset: which extra options miglife added to the list (miglife-only)
+    match /app_settings/full_reset_options {
+
+      allow read, write: if isOwner();
+    }
+
+    match /app_settings/luxury_festival_admin {
+
+      allow read, write: if isOwner();
+    }
+
+    // 💎 what each Luxury Festival paid (written only by the functions)
+    match /luxury_festival_payouts/{festivalId} {
+
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+    // 🏆 Daily game rewards: miglife sets the amounts; the payouts log is
+    // written only by the functions.
+    match /app_settings/daily_game_rewards {
+
+      allow read, write: if isOwner();
+    }
+
+    // 💰 coins a Mentor gets on Add / Renew (miglife sets them)
+    match /app_settings/mentor_coin_grant {
+
+      allow read, write: if isOwner();
+    }
+
+    match /daily_game_rewards_log/{date} {
+
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+    match /luxury_festival/{festivalId} {
+
+      allow read: if isOwner();
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // MEDIA SHARE PERMISSIONS (per role: picture / voice / video)
+    // =========================================================
+    //
+    // ADDED: migwith's Share Permissions page toggles which roles may
+    // post pictures, voice messages, and video in chat. Every signed-in
+    // user reads this (each client checks its own role's flags before
+    // allowing an upload); only migwith can change it — same ownership
+    // pattern as app_settings/id_creation above.
+    //
+    // =========================================================
+
+    match /app_settings/media_sharing_permissions {
+
+      allow read: if signedIn();
+
+      allow create, update: if founderHas("share_permissions");
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // ROLE BADGE IMAGES (Color Shop custom picture per role)
+    // =========================================================
+    //
+    // ADDED: migwith's uploaded custom picture per role, shown in place
+    // of that role's default emoji badge (Color Shop page, room
+    // enter/left lines). Every signed-in user reads this so those badge
+    // pictures actually render for everyone; only migwith can change it.
+    //
+    // =========================================================
+
+    match /app_settings/badge_images {
+
+      allow read: if signedIn();
+
+      allow create, update: if isOwner();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // LEVEL TIER BADGE IMAGES (custom picture per level tier)
+    // =========================================================
+    //
+    // ADDED: same idea as badge_images above, but keyed by level tier
+    // name (Newcomer, Bronze, ...) instead of a Color Shop role — shown
+    // on the profile page and room enter/left lines in place of a
+    // tier's default emoji. Every signed-in user reads this; only
+    // migwith can change it.
+    //
+    // =========================================================
+
+    match /app_settings/level_badge_images {
+
+      allow read: if signedIn();
+
+      allow create, update: if isOwner();
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // USERS
+    // =========================================================
+
+    // 🏅 Achievement badges — written only by Cloud Functions
+    // (onGiftEventAchievement, syncMyAchievements, founderRecountAchievements …). Anyone signed
+    // in may look at anyone's badges (they are shown on the profile).
+    match /achievements/{userId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // 🎉 Event badges (Eid, Puja, Noboborsho …) — created by the founder
+    // through founderAchievementEvent; the app shows the running ones.
+    match /achievement_events/{eventId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // 🌈 VIP Subscription — written only by Cloud Functions
+    // (specialColorApply / founderSpecialColor).
+    //   special_colors/{uid}           who has the rainbow name and until when (everyone reads)
+    //   special_color_requests/{id}    a person sees their own requests; miglife sees all
+    match /special_colors/{userId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /special_color_requests/{requestId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isOwner());
+      allow write: if false;
+    }
+
+    // 🎂 Today's birthdays: birthdays/{yyyy-MM-dd} = { date, names, people }.
+    // Written only by the birthday Cloud Functions (birthdayDaily /
+    // getTodayBirthdays). Everyone signed in reads it — the apps colour the
+    // birthday IDs for the day. birthday_log (one birthday a year) stays
+    // server-only (DEFAULT DENY).
+    match /birthdays/{date} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // 🎨 Ludo styles (owned dice + chosen board / pieces / dice).
+    // Written only by the buyLudoDice / setLudoStyle Cloud Functions, so
+    // nobody can give themselves a paid dice from the phone.
+    match /ludo_inventory/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    // 🎰 Luxury Bot box colours (owned + chosen) — same rules.
+    match /lb_inventory/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    // ✨ Entry effects (30-day subscriptions) — only buyEntryEffect /
+    // setEntryEffect write. Your own list is private; the "which effect plays
+    // when X enters" doc is readable by everyone signed in (the room needs it).
+    match /entry_fx/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /entry_fx_public/{name} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    // 🎴 Teen Patti styles (owned tables / cards + the chosen ones) — same rules.
+    match /tp_inventory/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+    // 🃏 29 Card styles (owned boards / cards + the chosen ones) — same rules.
+    // 🧠 Trivia game state of any room — read by phones, written only by functions.
+    match /trivia_games/{roomId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // 🧠 Trivia scores — phones read the leaderboard, only Cloud Functions write.
+    match /trivia_scores/{uid} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /trivia_daily/{dayKey}/users/{uid} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // Extra questions (with their ANSWERS) — never readable from a phone.
+    match /trivia_questions/{qid} {
+      allow read: if false;
+      allow write: if isOwner();
+    }
+    match /tn_inventory/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+
+      allow read: if signedIn();
+
+      allow create: if false;
+
+      allow update: if signedIn()
+
+        && request.auth.uid == userId
+
+        && invisibleWriteOk()
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "presenceStatus",
+            "statusMessage",
+            "statusUpdatedAt",
+            "lastActiveAt"
+          ]);
+
+      // ---------------------------------------------------------
+      // TARGET USER RECORDS WHICH MERCHANT TAGGED THEM
+      // ---------------------------------------------------------
+      //
+      // ADDED: written by the tagged user themselves, at the same moment
+      // they already write their own merchant_tagged doc when approving a
+      // merchant_tag_request (see MainActivity AlertsPage). This is the
+      // only field isMentorOfMerchantsUser() above reads, so it's scoped
+      // to just that one field, self-write only.
+      //
+      // ---------------------------------------------------------
+
+      allow update: if signedIn()
+
+        && request.auth.uid == userId
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["taggedByMerchant"])
+
+        && request.resource.data.taggedByMerchant is string
+
+        && request.resource.data.taggedByMerchant.size() > 0;
+
+      // ---------------------------------------------------------
+      // NORMAL USER PROFILE UPDATE
+      // ---------------------------------------------------------
+      //
+      // SECURITY FIX: added "roles" (the list field rolesFor() reads
+      // alongside singular "role"), and the security-PIN/-answer
+      // hash+salt fields, to the blocked-fields list. Previously only
+      // singular "role" was blocked, so a client could still grant
+      // itself a privileged role via the "roles" array, or overwrite
+      // its own security PIN/answer hash with a weak client-computed
+      // one — bypassing the new setSecurityPin/setSecurityQuestion
+      // Cloud Functions.
+      //
+      // SECURITY FIX (Security Question): "securityQuestion" (the
+      // plain-text question itself) is now also blocked here, alongside
+      // the answer hash/salt it was already missing from. The question
+      // text isn't secret, but it must only ever change together with
+      // securityAnswerHash/securityAnswerSalt via setSecurityQuestion —
+      // letting a client rewrite just the question straight from the
+      // phone would desync it from the answer that was set for it.
+      //
+      // ---------------------------------------------------------
+
+      allow update: if signedIn()
+
+        && request.auth.uid == userId
+
+        && invisibleWriteOk()
+
+        && !request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasAny([
+            "role",
+            "roles",
+            "balance",
+            "balanceUpdatedAt",
+            "xp",
+            "level",
+            "xpCooldowns",
+            "lastXpReason",
+            "lastXpAt",
+            "lastLevelUpLevel",
+            "lastLevelUpAt",
+            "securityPinHash",
+            "securityPinSalt",
+            "securityQuestion",
+            "securityAnswerHash",
+            "securityAnswerSalt",
+            // SECURITY FIX (audit C1): identity fields. Rules and Cloud
+            // Functions decide who the founder / an admin is by reading these
+            // fields from the user's OWN document, and this rule used to let
+            // anyone rewrite them: setting migId = "migwith" made isOwner()
+            // true, and a username like "MigWith" passed the old exact-match
+            // block yet is treated as the founder by every function (they
+            // lowercase before comparing). The app never edits these from the
+            // phone (accounts are created and changed only by Cloud
+            // Functions), so they are simply immutable for clients.
+            "username",
+            "usernameLower",
+            "migId",
+            // ✔ verified badge: only the setVerified Cloud Function writes these
+            "verified",
+            "verifiedAt",
+            "verifiedBy",
+            // 🔒 Profile lock: changed only by setProfileLock (it also keeps
+            // the profile_locks marker the private-chat rule reads)
+            "profileLocked",
+            // 🌍 a Country Representative's country — only miglife sets it (setRepCountry)
+            "repCountry",
+            "repCountryUpdatedAt",
+            // 🔒 private now: the block list lives in user_blocks/{uid}, the
+            // profile details in profile_details/{uid} (users/{uid} is read by everyone)
+            "blockedUsers",
+            "fullName",
+            "dateOfBirth",
+            "bio",
+            "relationship",
+            "coverPhotoUrl",
+            // 🔒 footprints / votes: profile_visits / profile_votes now
+            "visitedProfiles",
+            "visitedAt",
+            "votedProfiles",
+            "votedAt",
+            "contactEmail",
+            // One email = one ID: the Cloud Functions' record of which email
+            // this account owns (a phone could otherwise claim someone
+            // else's email and block their sign-up).
+            "contactEmailCanonical",
+            "email",
+            // IP Monitor: account-suspend flags are set ONLY by the ipAdmin
+            // Cloud Function (migwith only). Blocked here so a suspended user
+            // can't clear their own flag from the phone.
+            "accountSuspended",
+            "suspendReason",
+            "suspendedBy",
+            "suspendedAt",
+            // Lucky User: the 3-hour pink name is set ONLY by the
+            // pickBangladeshLuckyUser Cloud Function. Blocked here so nobody
+            // can give themselves a permanent pink name from the phone.
+            "luckyUntil",
+            // 🔒 SECURITY (audit 2026-10): paid / server-set fields a phone
+            // could write for free — Style Studio colours, role look-alikes,
+            // badge & XP bookkeeping (only via the XP rule below), account
+            // age (achievements), mentor term, PIN flag, push token owner info.
+            "ownedColors",
+            "activeColorId",
+            // ⚽ Supporter Colours: paid team colour + badge (buySupporterColour only)
+            "supporterTeam",
+            "supporterUntil",
+            "supporterPaused",
+            "membershipRole",
+            "memberType",
+            "createdAt",
+            "mentorUntil",
+            "mentorSince",
+            "welcomeBonus",
+            "levelSetBy",
+            "levelCurveV2At",
+            "roleUpdatedAt",
+            "roleUpdatedBy",
+            "createdByFounder",
+            "hasSecurityPin",
+            "taggedByMerchant",
+            "levelBadgeIcon",
+            "levelBadgeName",
+            "unlockedGifts",
+            "dailyXp",
+            "dailyXpDate",
+            "dailyXpUpdatedAt",
+            "recentXpActivities",
+            // 🔒 PRIVACY: push token lives in users_private (registerFcmToken)
+            "fcmToken",
+            "vip",
+            "vipUntil",
+            "vipPlan",
+            "isVip"
+          ]);
+
+
+      // ---------------------------------------------------------
+      // XP SYSTEM UPDATE
+      // ---------------------------------------------------------
+
+      allow update: if signedIn()
+
+        && request.auth.uid == userId
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "xp",
+            "level",
+            "xpCooldowns",
+            "lastXpReason",
+            "lastXpAt",
+            "lastLevelUpLevel",
+            "lastLevelUpAt",
+            "levelBadgeIcon",
+            "levelBadgeName",
+            "unlockedGifts",
+            "dailyXp",
+            "dailyXpDate",
+            "dailyXpUpdatedAt",
+            "recentXpActivities"
+          ])
+
+        && request.resource.data.xp is int
+
+        // FIX (new users never levelled up): accounts made by
+        // createNormalUserId had NO "xp" / "level" field yet, so reading
+        // resource.data.xp here was an error and every XP write was refused.
+        // A missing field now counts as xp 0 / level 1. An old account whose
+        // xp was saved as TEXT counts as 0 too (comparing a number with text
+        // was an error, so those accounts could never gain XP at all).
+        && request.resource.data.xp
+          >= (resource.data.get("xp", 0) is int ? resource.data.get("xp", 0) : 0)
+
+        && request.resource.data.xp
+          <= (resource.data.get("xp", 0) is int ? resource.data.get("xp", 0) : 0) + 10
+
+        // ANTI-SPAM: every award stamps lastXpAt with the server time, and a
+        // new award needs 5 seconds since the last one. The per-reason
+        // cooldowns lived only in the app, so a modified phone could send
+        // +10 XP hundreds of times a minute.
+        && request.resource.data.lastXpAt == request.time
+        && (
+          !("lastXpAt" in resource.data)
+          || !(resource.data.lastXpAt is timestamp)
+          || request.time > resource.data.lastXpAt + duration.value(5, "s")
+        )
+
+        && request.resource.data.level is int
+
+        // SECURITY FIX (anyone could set any level): the level only had to be
+        // "not lower than before", so one write could make a level-1 account
+        // level 1000 — unlocking room creation, room lock levels and badges.
+        // The level must now be exactly what the XP earns (same curve as the
+        // app), or stay unchanged (an old account whose saved level is above
+        // what its XP earns keeps it; it just can't go any higher that way).
+        && request.resource.data.level >= 1
+        && request.resource.data.level <= 100000
+        && (
+          (
+            xpToReachLevel(request.resource.data.level) <= request.resource.data.xp
+            && request.resource.data.xp < xpToReachLevel(request.resource.data.level + 1)
+          )
+          || request.resource.data.level == resource.data.get("level", 1)
+        )
+
+        && request.resource.data.lastXpReason in [
+          "chat_message",
+          "room_enter",
+          "friend_request",
+          "gift",
+          "luxury_bot_bet"
+        ]
+
+        // 🔒 DAILY XP LIMIT (1,500 a Bangladesh day) checked HERE too — it
+        // used to live only in the app / web, so a modified phone or a script
+        // could earn XP all day. A new day must be the real (server) day, and
+        // the day's total must grow by exactly the XP given.
+        && xpDailyOk();
+
+
+      // ---------------------------------------------------------
+      // BALANCES ARE SERVER-ONLY
+      // ---------------------------------------------------------
+      // SECURITY FIX: this used to be a rule letting any admin / staff /
+      // superadmin (and the "admin" / "staff" usernames) write ANY user's
+      // balance to ANY number straight from a client, with no transaction
+      // history and no alert. The app never used it (coin changes go through
+      // Cloud Functions such as adminAdjustCoins, which the Admin SDK does
+      // regardless of these rules), so it was removed. Nobody can change a
+      // balance from a client any more.
+
+
+      // ---------------------------------------------------------
+      // OWNER ROLE MANAGEMENT
+      // ---------------------------------------------------------
+
+      allow update: if signedIn()
+
+        && isCEO()
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "role"
+          ])
+
+        && request.resource.data.role in [
+          "admin",
+          "staff",
+          "user",
+          "executive_board",
+          "country_representative",
+          "elite_user",
+          "mentor"
+        ];
+
+
+      // 🔒 SECURITY: the old "a mentor may set role = merchant" client rule was
+      // removed — merchants are made only by approveMerchantRole (server).
+
+      allow delete: if false;
+
+
+      // ========================================================
+      // XP HISTORY
+      // ========================================================
+
+      match /xp_history/{historyId} {
+
+        allow read: if signedIn()
+          && request.auth.uid == userId;
+
+        allow create: if signedIn()
+
+          && request.auth.uid == userId
+
+          && request.resource.data.keys().hasOnly([
+            "amount",
+            "reason",
+            "oldLevel",
+            "newLevel",
+            "createdAt"
+          ])
+
+          && request.resource.data.amount is int
+
+          && request.resource.data.amount > 0
+
+          && request.resource.data.amount <= 10
+
+          && request.resource.data.reason in [
+            "chat_message",
+            "room_enter",
+            "friend_request",
+            "gift",
+            "luxury_bot_bet"
+          ];
+
+        allow update, delete: if false;
+      }
+
+
+      // ========================================================
+      // COIN TRANSACTIONS
+      // ========================================================
+
+      // 🎨 sticker packs this person owns (forever) — written only by getStickerPack
+      match /sticker_packs/{packId} {
+        allow read: if signedIn() && request.auth.uid == userId;
+        allow create, update, delete: if false;
+      }
+
+      match /coin_transactions/{transactionId} {
+
+        allow read: if signedIn()
+          && (
+            request.auth.uid == userId
+            || isOwner()
+            || isMentorOfUser(userId)
+            || isMerchantOfUser(userId)
+            || isMentorOfMerchantsUser(userId)
+          );
+
+        allow create, update, delete: if false;
+      }
+    }
+
+
+    // =========================================================
+    // ADMIN / STAFF MEMBER ROLES
+    // =========================================================
+
+    match /member_roles/{roleId} {
+
+      allow read: if signedIn();
+
+      allow create, update: if isOwner()
+
+        && roleId in [
+          "admin",
+          "staff"
+        ]
+
+        && request.resource.data.keys().hasOnly([
+          "members"
+        ])
+
+        && request.resource.data.members is list;
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // COIN OPERATIONS
+    // =========================================================
+
+    match /coin_operations/{operationId} {
+
+      allow read, create, update, delete: if false;
+    }
+
+
+    // =========================================================
+    // CLOUD FUNCTION IDEMPOTENCY LEDGER
+    // =========================================================
+    //
+    // ADDED: used by withIdempotency() in functions/index.js
+    // (changeManagementRole, approveMerchantRole, placeLuxuryBotBet).
+    // Clients never need to read or write this directly — only the
+    // Admin SDK (which bypasses these rules) touches it.
+    //
+    // =========================================================
+
+    // Founders added by migwith: each founder may read ONLY their own entry
+    // (to know which tools they have). Written only by manageFounder.
+    match /founders/{founderUid} {
+      allow read: if signedIn() && (request.auth.uid == founderUid || isOwner());
+      allow write: if false;
+    }
+
+    // users_private — server-only secrets (PIN hash and salt, security
+    // answer hash and salt, lockout counters). Written and read by Cloud
+    // Functions only; no client can touch it. (The deny-all rule at the
+    // bottom already covers it, this makes it explicit.)
+    match /users_private/{uid} {
+      allow read, write: if false;
+    }
+
+    match /_operations/{operationId} {
+      allow read, write: if false;
+    }
+
+
+    // =========================================================
+    // IP MONITOR (migwith secret → IP Monitor / IP Ban)
+    // =========================================================
+    //
+    // ADDED: every user's IP + location, which accounts used each IP,
+    // and the banned-IP list. Written by recordUserIp and read/written by
+    // ipAdmin (migwith only) — both Cloud Functions, Admin SDK bypasses
+    // these rules. No client may read or write any of it directly.
+    // (DEFAULT DENY already covers these; this makes it explicit.)
+    //
+    // =========================================================
+
+    match /user_ip_logs/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /ip_index/{ipKey} {
+      allow read, write: if false;
+    }
+
+    match /banned_ips/{ipKey} {
+      allow read, write: if false;
+    }
+
+    // Same-device detection: which accounts were used on the same phone
+    // (hashed phone IDs) and the banned-phone list. Written by recordUserIp
+    // and ipAdmin (Cloud Functions) only.
+    match /device_index/{deviceKey} {
+      allow read, write: if false;
+    }
+
+    match /banned_devices/{deviceKey} {
+      allow read, write: if false;
+    }
+
+
+    // =========================================================
+    // LUXURY BOT ROOM
+    // =========================================================
+
+    match /room_game/{roomId} {
+
+      // ADDED: LowCard Official's room_game/{roomId} document is a
+      // COMPLETELY DIFFERENT shape from Luxury Bot's (gameRunning/phase
+      // values of "JOINING"/"DRAWING"/"COUNTDOWN"/players/cards/totalPot/
+      // entryCost/provablyFair/gameRound, vs Luxury Bot's botRunning/
+      // phase values of "BETTING"/"RESULT"/bets/rollingText/
+      // liveBetMessage). None of the Luxury-specific create/update rules
+      // below match that shape today, so a direct client write to
+      // LowCard's document already fails — but that protection was only
+      // ever a SIDE EFFECT of the shape checks happening to not overlap,
+      // not something explicitly guaranteed. If a future edit ever
+      // broadens one of the Luxury rules' hasOnly()/field lists, it could
+      // silently start allowing writes to the LowCard room too, exactly
+      // the class of bug that let a client rig LowCard's card outcomes
+      // before functions/index.js's advanceLowCardRound /
+      // drawLowCardRound / etc. moved that game's state server-side.
+      // This flag makes the exclusion explicit and independent of how
+      // the Luxury rules below are worded — every LowCard write must go
+      // through the Admin SDK (Cloud Functions), which bypasses these
+      // rules entirely, same as Luxury Bot's own coin movements already
+      // do.
+      function isLowCardOfficialRoom() {
+        // The Ludo room (startLudo / joinLudo / ludoAction / tickLudo) is
+        // server-only too — without it here an admin/staff could delete the
+        // Ludo game mid-round from a phone and every entry fee was lost.
+        // The Cricket Bot room is treated exactly like LowCard here: its
+        // room_game doc is written ONLY by Cloud Functions (startCricketGame,
+        // joinCricketGame, batCricket, tickCricketGame), never by a phone.
+        return roomId == "🃏 LowCard Official" || roomId == "🏏 Cricket Official" ||
+          roomId == "🎴 Teen Patti Official" || roomId == "👑 MIG Royale Official" ||
+          roomId == "🃏 29 Official" || roomId == "🃏 29 Card Free" || roomId == "🎲 Ludo Bot Official" ||
+          // 🎲 Ludo — both rooms and every extra table ("🎲 Ludo Bot Free #3" …)
+          roomId.matches('🎲 Ludo Bot (Official|Free)( #[0-9]+)?') ||
+          // 🎴 every extra Teen Patti table ("🎴 Teen Patti Official #2" …)
+          roomId.matches('🎴 Teen Patti Official #[0-9]+') ||
+          // 🃏 every extra 29 table ("🃏 29 Official #2", "🃏 29 Card Free #3" …)
+          roomId.matches('🃏 29 (Official|Card Free) #[0-9]+') ||
+          // 🎰 Luxury Bet — run entirely by Cloud Functions (startLuxuryBet,
+          // placeLuxuryBet, tickLuxuryBet); a phone never writes its game doc.
+          roomId == "🎰 Luxury Bet" ||
+          // 🧠 Trivia — run entirely by Cloud Functions (triviaStart / triviaAnswer / triviaTick).
+          roomId == "🧠 Trivia Official" ||
+          // 🎯 Number Guess / 🐎 Horse Race — run entirely by Cloud Functions
+          // (numGuessStart / numGuessGuess / numGuessTick, horseStart / horseBet / horseTick).
+          roomId == "🎯 Number Guess Official" || roomId == "🐎 Horse Race Official" ||
+          roomId == "🎲 Liar's Dice Official" || roomId == "👑 Royal Treasure Official" ||
+          // 🤖 Any chat room where /bot lowcard or /bot cricket is on — its
+          // game doc is written ONLY by the LowCard / Cricket Cloud Functions.
+          exists(/databases/$(database)/documents/room_bots/$(roomId));
+      }
+
+      allow read: if signedIn();
+
+      // True once the server (runLuxurySettlementCore) has paid the round out.
+      function luxurySettled() {
+        return resource.data.get("settledAt", null) != null;
+      }
+
+      // SECURITY FIX (Luxury Bot bets lost): the round controller is simply
+      // whoever pressed Start, so ANY user can be it. It used to be allowed to
+      // set phase to anything at any time — set "RESULT" in the middle of
+      // betting and then close the round (RESULT -> IDLE below), and every
+      // bet in that round was lost: never paid, never refunded (the watchdogs
+      // ignore a round that is already IDLE). Now:
+      //   * CALCULATING / ROLLING only after the server's betting deadline,
+      //   * RESULT (and the "result" field) only after the server settled it.
+      function luxuryPhaseChangeOk() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        let newPhase = request.resource.data.get("phase", "");
+        return (
+            !("phase" in changed)
+            || (newPhase in ["CALCULATING", "ROLLING"]
+                && request.time.toMillis() >= resource.data.get("serverEndsAt", 0))
+            || (newPhase == "RESULT" && luxurySettled())
+          )
+          && (!("result" in changed) || luxurySettled());
+      }
+
+      // SECURITY FIX: rounds are started ONLY by the startLuxuryRound Cloud
+      // Function (Admin SDK). The old phone-side "create" / "start a stopped
+      // bot" rules were no longer used by the app, but let anyone flip the
+      // bot to running WITHOUT the server's deadline or a fresh round — the
+      // room then stayed "running" forever and nobody could !start again.
+      allow create: if false;
+
+      // The current controller may update the live game state.
+      // Coin balances and payouts remain server-side in Cloud Functions.
+      allow update: if signedIn()
+        && !isLowCardOfficialRoom()
+        && resource.data.botRunning == true
+        && resource.data.controllerUid == request.auth.uid
+        && request.resource.data.botRunning == true
+        && request.resource.data.controllerUid == resource.data.controllerUid
+        && request.resource.data.roundNumber == resource.data.roundNumber
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            "botRunning",
+            "phase",
+            "secondsLeft",
+            "bettingEndsAt",
+            "bets",
+            "rollingText",
+            "liveBetMessage",
+            "result",
+            "roundNumber",
+            "controllerUid"
+          ])
+        && luxuryPhaseChangeOk();
+
+      // Admin/Staff may close a round from the phone ONLY after it has been
+      // paid out. Stopping a round that is still taking bets must go through
+      // the adminStopBot Cloud Function, which refunds every bet first —
+      // closing it straight from here used to lose all of that round's bets.
+      allow update: if isAdminStaff()
+        && !isLowCardOfficialRoom()
+        && luxurySettled()
+        && resource.data.botRunning == true
+        && request.resource.data.botRunning == false
+        && request.resource.data.phase == "IDLE"
+        && request.resource.data.controllerUid == null
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            "botRunning",
+            "phase",
+            "secondsLeft",
+            "bettingEndsAt",
+            "liveBetMessage",
+            "controllerUid"
+          ]);
+
+      // The current controller may finish RESULT -> IDLE automatically.
+      allow update: if signedIn()
+        && !isLowCardOfficialRoom()
+        && resource.data.botRunning == true
+        && resource.data.controllerUid == request.auth.uid
+        && resource.data.phase == "RESULT"
+        && luxurySettled()
+        && request.resource.data.botRunning == false
+        && request.resource.data.phase == "IDLE"
+        && request.resource.data.controllerUid == null
+        && request.resource.data.roundNumber == resource.data.roundNumber
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            "botRunning",
+            "phase",
+            "secondsLeft",
+            "bettingEndsAt",
+            "liveBetMessage",
+            "controllerUid",
+            "bets"
+          ]);
+
+      // Deleting a game document mid-round lost every bet in it. Nothing in
+      // the app deletes these, so nobody may.
+      allow delete: if false;
+
+      // SECURITY FIX: user_bets is written ONLY by the placeLuxuryBotBet Cloud
+      // Function (Admin SDK, which bypasses these rules). The old client-side
+      // create/update rules let a player rewrite the "bets" map after paying a
+      // tiny real bet — the settlement pays out from that map, so a forged
+      // map meant forged winnings. The app never writes here, so every client
+      // write is now refused. Reading stays open (the bet feed uses it).
+      match /user_bets/{userId} {
+
+        allow read: if signedIn();
+
+        allow create, update, delete: if false;
+      }
+
+      // 🎲 Liar's Dice — each player's own secret dice. Only that player may read
+      // them; written only by the Liar's Dice Cloud Functions (Admin SDK).
+      match /liar_hands/{handUid} {
+
+        allow read: if signedIn() && request.auth.uid == handUid;
+
+        allow create, update, delete: if false;
+      }
+
+      // 🃏 29 — each player's own cards. Only that player may read them;
+      // written only by the 29 Cloud Functions (Admin SDK).
+      match /tn_hands/{handUid} {
+
+        allow read: if signedIn() && request.auth.uid == handUid;
+
+        allow create, update, delete: if false;
+      }
+
+      // 🐎 Horse Race bets ({round}_{uid}) — written only by horseBet (Admin SDK);
+      // everyone in the room sees everyone's bets and results.
+      match /hr_bets/{betId} {
+
+        allow read: if signedIn();
+
+        allow create, update, delete: if false;
+      }
+
+      // 👑 Royal Treasure bets ({round}_{uid}) — written only by royalTreasureBet (Admin SDK);
+      // everyone in the room sees everyone's bets.
+      match /rt_bets/{betId} {
+
+        allow read: if signedIn();
+
+        allow create, update, delete: if false;
+      }
+
+      // 👑 MIG Royale bets ({round}_{uid}) — written only by royaleBet (Admin SDK).
+      match /royale_bets/{betId} {
+
+        allow read: if signedIn();
+
+        allow create, update, delete: if false;
+      }
+
+      // 🎰 Luxury Bet bets ({round}_{uid}) — written only by placeLuxuryBet (Admin SDK).
+      match /lb_bets/{betId} {
+
+        allow read: if signedIn();
+
+        allow create, update, delete: if false;
+      }
+    }
+
+
+    // =========================================================
+    // TEEN PATTI SCOREBOARD (⚙ → 🏆 Scoreboard)
+    // =========================================================
+    //
+    // ADDED: tp_scores/{uid} (hands, wins, net coins) is written only by the
+    // Teen Patti Cloud Functions (Admin SDK). There was no rule for it, so
+    // the DEFAULT DENY refused every read and the Scoreboard always stayed
+    // empty. Everyone signed in may read it; nobody may write it.
+    //
+    // =========================================================
+
+    match /tp_scores/{uid} {
+
+      allow read: if signedIn();
+
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // ROOM PRESENCE
+    // =========================================================
+
+    match /room_presence/{roomId}/users/{userId} {
+
+      function presenceRoomStaff(room) {
+        let r = /databases/$(database)/documents/rooms/$(room);
+        return exists(r)
+          && (get(r).data.get("ownerUid", "") == request.auth.uid
+              || currentUsername().lower() in get(r).data.get("superMods", [])
+              || currentUsername().lower() in get(r).data.get("moderators", []));
+      }
+      function kickedOrBannedHere(room, name) {
+        let m = /databases/$(database)/documents/room_moderation/$(room)/users/$(name.lower());
+        return name is string && name != ""
+          && exists(m)
+          && (get(m).data.get("kicked", false) == true || get(m).data.get("banned", false) == true);
+      }
+
+      allow read: if signedIn();
+
+      // 🔒 SECURITY: your presence must carry YOUR name, and "parkedUntil" is
+      // set only by the parkRoomPresence function (paid parking).
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.get("username", "").lower() == currentUsername().lower()
+        && !("parkedUntil" in request.resource.data)
+        // 👢 kicked less than 30 minutes ago: can't come back in yet
+        && !kickedFromRoomRecently(roomId);
+      allow update: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.get("username", "").lower() == currentUsername().lower()
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["parkedUntil"]);
+
+      allow delete: if signedIn()
+        && (
+          // Your own spot — but NOT while it is /parked (paid): Leave, Logout
+          // or an older app version can't wipe a park by mistake.
+          (request.auth.uid == userId
+            && !(resource.data.get("parkedUntil", 0) is int
+                 && resource.data.get("parkedUntil", 0) > request.time.toMillis()))
+          || isRoomModerator()
+          // 👢🚫 the room's own Owner / Super Mods / Mods (they can kick and ban)
+          || presenceRoomStaff(roomId)
+          // a person this room just kicked or banned: their spot may be cleared
+          // by whoever did it (the kicked phone also leaves by itself)
+          || kickedOrBannedHere(roomId, resource.data.get("username", ""))
+          // Anyone in the room may clear a person who went INACTIVE (no
+          // heartbeat for 3 h, not parked) — then that phone can post the
+          // "has left" line (leaveByWatcherOk needs the doc gone).
+          || (
+            resource.data.get("lastSeen", null) is timestamp
+            && resource.data.lastSeen < request.time - duration.value(180, "m")
+            && !(resource.data.get("parkedUntil", 0) is int
+                 && resource.data.get("parkedUntil", 0) > request.time.toMillis())
+          )
+        );
+    }
+
+
+    // =========================================================
+    // ROOM BOTS (/bot lowcard · /bot cricket · /bot stop)
+    // =========================================================
+    //
+    // ADDED: room_bots/{roomId} = { bot: "lowcard" | "cricket", startedBy,
+    // startedByUid, startedAt }. Every phone in the room reads it to know
+    // which game box (LowCard / Cricket) to show. There was no rule for it,
+    // so the DEFAULT DENY refused the read and the game box never appeared.
+    // Written ONLY by the roomBotControl Cloud Function (Admin SDK).
+    //
+    // =========================================================
+
+    match /room_bots/{roomId} {
+
+      allow read: if signedIn();
+
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // ROOM MESSAGES
+    // =========================================================
+
+    match /room_messages/{roomId}/messages/{messageId} {
+
+      // 📢 /broadcast: app admin / staff, or a private room's Owner / Super Mod (not Mods).
+      function broadcastOk() {
+        let room = /databases/$(database)/documents/rooms/$(roomId);
+        return request.resource.data.get("type", "chat") != "broadcast"
+          || isRoomModerator()
+          || (exists(room)
+              && get(room).data.get("category", "") == "user"
+              && (get(room).data.get("ownerUid", "") == request.auth.uid
+                  || currentUsername().lower() in get(room).data.get("superMods", [])));
+      }
+
+      // 🔒 SECURITY: a room's chat is readable ONLY by people IN the room (a
+      // presence spot here). Out of the room (left, away too long, kicked,
+      // banned) = nothing of it can be read, from any app or tool. The founder,
+      // admins and staff may be in a room invisibly (no spot), so they keep it.
+      function inThisRoom() {
+        return exists(/databases/$(database)/documents/room_presence/$(roomId)/users/$(request.auth.uid));
+      }
+      function roomReadOk() {
+        return inThisRoom() || isRoomModerator() || isOwner();
+      }
+      allow read: if signedIn() && roomReadOk();
+
+      // 📏 one line is at most 3,000 characters (the apps send far less).
+      function roomTextSizeOk() {
+        let t = request.resource.data.get("text", "");
+        return t is string && t.size() <= 3000;
+      }
+
+      // 🔇 Muted or banned here (room_moderation/{room}/users/{name}), or the room
+      // is silenced: the server refuses the line too, not only the app.
+      // "has entered / has left" lines still go through.
+      function notMutedHere() {
+        let t = request.resource.data.get("type", "chat");
+        let me = /databases/$(database)/documents/room_moderation/$(roomId)/users/$(currentUsername().lower());
+        return t == "room_entry" || t == "room_leave"
+          || (!(exists(me) && (get(me).data.get("muted", false) == true || get(me).data.get("banned", false) == true))
+              && !kickedFromRoomRecently(roomId));
+      }
+      function notSilencedHere() {
+        let t = request.resource.data.get("type", "chat");
+        let mod = /databases/$(database)/documents/room_moderation/$(roomId);
+        let room = /databases/$(database)/documents/rooms/$(roomId);
+        return t == "room_entry" || t == "room_leave"
+          || !(exists(mod) && get(mod).data.get("silenced", false) == true)
+          || isRoomModerator()
+          || (exists(room)
+              && (get(room).data.get("ownerUid", "") == request.auth.uid
+                  || currentUsername().lower() in get(room).data.get("superMods", [])
+                  || currentUsername().lower() in get(room).data.get("moderators", [])));
+      }
+
+      // An "entered" / "left" notice must really BE one. Before, any user could
+      // post type "room_entry" / "room_leave" with ANY text — the app shows
+      // those lines without a sender name, so they looked like official room
+      // messages ("Bangladesh: ..."), and a fake "room_leave" for someone
+      // else's uid also dropped that person from "Currently in this room".
+      function presenceNoticeTextOk() {
+        let d = request.resource.data;
+        let t = d.get("type", "");
+        return (t != "room_entry" && t != "room_leave")
+          || (d.get("text", "") is string
+              && ((t == "room_entry" && d.text.matches('.* has entered[.]'))
+                  || (t == "room_leave" && d.text.matches('.* has left[.]'))));
+      }
+
+      // A watcher may post "X has left" for someone else only when X really
+      // is gone (no presence doc in this room any more), only on X's own
+      // leave document id (leave_<uid> or leave_<uid>_<visitId>).
+      function leaveByWatcherOk() {
+        let d = request.resource.data;
+        let leaver = d.get("senderUid", "");
+        return d.get("type", "") == "room_leave"
+          && leaver is string
+          && leaver.size() > 0
+          && (messageId == "leave_" + leaver || messageId.matches("leave_" + leaver + "_[A-Za-z0-9]+"))
+          && !exists(/databases/$(database)/documents/room_presence/$(roomId)/users/$(leaver));
+      }
+
+      // Lucky User picks the winner by counting these messages, so a phone
+      // may only write messages under its OWN uid, stamped with the real
+      // server time (the app always sends FieldValue.serverTimestamp()).
+      // The one exception is the "X has left" notice, which a watcher
+      // writes for the person who left. "Lucky Bot" lines come only from
+      // the pickBangladeshLuckyUser Cloud Function (Admin SDK).
+      allow create: if signedIn()
+        && (
+          request.resource.data.get("senderUid", "") == request.auth.uid
+          || leaveByWatcherOk()
+        )
+        && presenceNoticeTextOk()
+        // IMPERSONATION FIX: the name shown on a message is its "sender"
+        // field, and it was never checked — a modified phone could post as
+        // "migwith" or anybody else. It must now be the writer's own
+        // username (a watcher's "X has left" notice carries X's name).
+        && (
+          !("sender" in request.resource.data)
+          || request.resource.data.sender == currentUsername()
+          || leaveByWatcherOk()
+          // 👑 a hidden founder's moderation lines (kick, silence, announcement …)
+          // carry "Admin" instead of their real name.
+          || (request.resource.data.sender == "Admin" && isHiddenFounder()
+              && request.resource.data.get("type", "chat") != "room_entry"
+              && request.resource.data.get("type", "chat") != "room_leave")
+        )
+        && (
+          !("createdAt" in request.resource.data)
+          || request.resource.data.createdAt == request.time
+        )
+        && request.resource.data.get("sender", "") != "Lucky Bot"
+        // 🔒 only someone IN the room may write in it ("has entered / has left"
+        // lines and a watcher's "X has left" go through on their own rules)
+        && (roomReadOk()
+            || request.resource.data.get("type", "chat") in ["room_entry", "room_leave"]
+            || leaveByWatcherOk())
+        && roomTextSizeOk()
+        && notMutedHere()
+        && notSilencedHere()
+        // 🎨 stickers: only from a pack I own
+        && stickerMessageOk(request.resource.data.get("type", "chat") == "sticker")
+        // 📢 /broadcast: app admin / staff, or a private room's Owner / Super Mod
+        // (not plain Mods).
+        && broadcastOk();
+
+      allow update: if signedIn()
+        && (
+          (request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly(["reactions"])
+            && roomReadOk())
+
+          // "X has left" notices use ONE fixed document per person per room
+          // (leave_<uid>). Without this branch every leave after the first one
+          // was rejected (a plain update changes createdAt), so a person who
+          // left and came back showed "has entered" again with no "has left"
+          // in between. A later real departure may refresh the notice once
+          // the previous one is 10 seconds old; the near-simultaneous
+          // duplicate writes for the SAME departure (the leaver + every
+          // watcher) bounce off harmlessly.
+          || (
+            messageId.matches("leave_.*")
+            && resource.data.type == "room_leave"
+            && request.resource.data.type == "room_leave"
+            && request.resource.data.senderUid == resource.data.senderUid
+            && request.time > resource.data.createdAt + duration.value(10, "s")
+            && presenceNoticeTextOk()
+            && (request.resource.data.senderUid == request.auth.uid || leaveByWatcherOk())
+          )
+        );
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // VOTE KICK (running votes — written only by the voteKick Cloud Function)
+    // =========================================================
+
+    match /room_votekicks/{roomId}/votes/{targetId} {
+
+      allow read: if signedIn();
+
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // ROOM MODERATION
+    // =========================================================
+
+    match /room_moderation/{roomId} {
+
+      allow read: if signedIn();
+
+      allow create, update: if isRoomModerator();
+
+      allow delete: if isRoomAdmin();
+
+      // ---------------------------------------------------------------------------
+      // PRIVATE (user-made) rooms.
+      //   Owner        — everything below.
+      //   Super Mod    — picked by the owner (/smod): same, but not against the owner or
+      //                  other Super Mods.
+      //   Mod          — picked by the owner / a Super Mod (/mod): kick, ban, unban, mute,
+      //                  unmute, lock, unlock, silence, unsilence — not against the owner,
+      //                  Super Mods or other Mods.
+      //   Public Kick  — does not exist here (private rooms have no vote kick).
+      // ---------------------------------------------------------------------------
+      // A private room = made by a normal user (category "user", privacy "Private").
+      // A room made by migwith (privacy "Public") is a public room.
+      function isUserRoom() {
+        return exists(/databases/$(database)/documents/rooms/$(roomId))
+          && get(/databases/$(database)/documents/rooms/$(roomId)).data.get("category", "") == "user"
+          && get(/databases/$(database)/documents/rooms/$(roomId)).data.get("privacy", "Private") != "Public";
+      }
+
+      function privRoomData() {
+        return get(/databases/$(database)/documents/rooms/$(roomId)).data;
+      }
+
+      function isPrivRoomOwner() {
+        return isUserRoom() && privRoomData().get("ownerUid", "") == request.auth.uid;
+      }
+
+      function isPrivRoomSuperMod() {
+        return isUserRoom()
+          && currentUsername().lower() in privRoomData().get("superMods", []);
+      }
+
+      function isPrivRoomMod() {
+        return isUserRoom()
+          && currentUsername().lower() in privRoomData().get("moderators", []);
+      }
+
+      function privateRoomModerates() {
+        return isPrivRoomOwner() || isPrivRoomSuperMod() || isPrivRoomMod();
+      }
+
+      // Direct kicks: the owner, Super Mods and Mods of a private room (the app's own
+      // admin / staff are covered by the isRoomModerator rule). "Public Kick" of a public
+      // room is a VOTE and is done only by the voteKick Cloud Function (Admin SDK), so
+      // nobody can kick anybody straight from a phone there.
+      function privateKickAllowed() {
+        return privateRoomModerates();
+      }
+
+      // Who may be targeted (by name, lowercase).
+      function privateTargetOk(target) {
+        return target != privRoomData().get("ownerName", "").lower()
+          && target != "miglife"
+          && (isPrivRoomOwner() || !(target in privRoomData().get("superMods", [])))
+          && (isPrivRoomOwner() || isPrivRoomSuperMod() || !(target in privRoomData().get("moderators", [])));
+      }
+
+      // Lock / unlock and silence / unsilence a private room.
+      allow create: if signedIn()
+        && privateRoomModerates()
+        && request.resource.data.keys().hasOnly(["roomId", "locked", "lockedBy", "silenced", "updatedBy", "updatedAt"])
+        && request.resource.data.get("locked", false) is bool
+        && request.resource.data.get("silenced", false) is bool;
+
+      allow update: if signedIn()
+        && privateRoomModerates()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["roomId", "locked", "lockedBy", "silenced", "updatedBy", "updatedAt"])
+        && request.resource.data.get("locked", false) is bool
+        && request.resource.data.get("silenced", false) is bool;
+
+      // 📌 Room announcement in a private room — the Owner, Super Mods and Mods.
+      allow create: if signedIn()
+        && privateRoomModerates()
+        && request.resource.data.keys().hasOnly(["roomId", "announcement", "announcementBy", "updatedBy", "updatedAt"])
+        && request.resource.data.get("announcement", "") is string
+        && request.resource.data.get("announcement", "").size() <= 1000;
+
+      allow update: if signedIn()
+        && privateRoomModerates()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["roomId", "announcement", "announcementBy", "updatedBy", "updatedAt"])
+        && request.resource.data.get("announcement", "") is string
+        && request.resource.data.get("announcement", "").size() <= 1000;
+
+      match /users/{username} {
+
+        allow read: if signedIn();
+
+        allow create, update: if isRoomModerator() && founderTargetOk();
+        allow delete: if isRoomModerator();
+
+        // Kick a member of a private room.
+        allow create: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.keys().hasOnly(["uid", "username", "kicked", "kickedAt", "bumped", "updatedBy", "updatedAt"])
+          && request.resource.data.kicked == true
+          && request.resource.data.get("bumped", false) is bool
+          && (!("kickedAt" in request.resource.data) || request.resource.data.kickedAt == request.time)
+          && founderTargetOk()
+          && privateKickAllowed()
+          && privateTargetOk(username);
+
+        allow update: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["uid", "username", "kicked", "kickedAt", "bumped", "updatedBy", "updatedAt"])
+          && request.resource.data.kicked == true
+          && request.resource.data.get("bumped", false) is bool
+          && (!("kickedAt" in request.resource.data.diff(resource.data).affectedKeys())
+              || request.resource.data.kickedAt == request.time)
+          && founderTargetOk()
+          && privateKickAllowed()
+          && privateTargetOk(username);
+
+        // Ban / unban a person in a private room.
+        allow create: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.keys().hasOnly(["uid", "username", "banned", "updatedBy", "updatedAt"])
+          && request.resource.data.banned is bool
+          && founderTargetOk()
+          && privateRoomModerates()
+          && privateTargetOk(username);
+
+        allow update: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["uid", "username", "banned", "updatedBy", "updatedAt"])
+          && request.resource.data.banned is bool
+          && founderTargetOk()
+          && privateRoomModerates()
+          && privateTargetOk(username);
+
+        // 🔇 Mute / unmute a person in a private room (owner, Super Mods, Mods) —
+        // the same targets as ban: never the owner, miglife or a founder; a Mod
+        // never another Mod or a Super Mod; a Super Mod never another Super Mod.
+        allow create: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.keys().hasOnly(["uid", "username", "muted", "updatedBy", "updatedAt"])
+          && request.resource.data.muted is bool
+          && founderTargetOk()
+          && privateRoomModerates()
+          && privateTargetOk(username);
+
+        allow update: if signedIn()
+          // cheap field checks FIRST, room reads last: the room reads here used
+          // to break OTHER writes to this doc (the kicked person could not clear
+          // their own "kicked" flag in a private room, and stayed kicked forever)
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["uid", "username", "muted", "updatedBy", "updatedAt"])
+          && request.resource.data.muted is bool
+          && founderTargetOk()
+          && privateRoomModerates()
+          && privateTargetOk(username);
+
+        // The kicked (or 👋 bumped) person clears their OWN "kicked" / "bumped"
+        // flags after seeing the message, so they can come back in later. (Without
+        // this they were stuck being kicked.) "kickedAt" stays: 30 minutes out.
+        allow update: if signedIn()
+          && username == currentUsername().lower()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["kicked", "bumped", "updatedAt"])
+          && request.resource.data.kicked == false
+          && request.resource.data.get("bumped", false) == false;
+      }
+    }
+
+
+    // =========================================================
+    // ROOMS
+    // =========================================================
+    //
+    //  * migwith (isOwner) can create, edit and delete ANY room — this is
+    //    what the "Room info" page uses (change owner, capacity).
+    //  * A normal user can create a room only if ALL of these hold:
+    //      - level 10 or more,
+    //      - name of 5 to 15 characters, not an official room name,
+    //      - Private, with the capacity their level gives (25/30/40/50),
+    //        flagged capacityByLevel + capacityEnforced, category "user",
+    //        and they are the owner,
+    //      - the same write also raises their room_counts/{uid}.count by
+    //        exactly 1, and that count never goes above 10
+    //        => at most 10 rooms created per user.
+    //  * The owner can afterwards change only description, privacy and
+    //    maxUsers (+ updatedBy/updatedAt). On a level-based room the owner
+    //    cannot make it Public and cannot set any capacity other than the
+    //    one their level gives (this is also what lets the app grow the
+    //    capacity when they level up).
+    //  * A room admin (role admin/superadmin) can edit a room's
+    //    description; on rooms that are NOT level-based also privacy and
+    //    maxUsers. For an official room that has no document yet, a room admin
+    //    can create it (name/description/privacy/maxUsers only, no owner).
+    // =========================================================
+
+    match /rooms/{roomId} {
+
+      function isRoomOwnerOfDoc() {
+        return signedIn()
+          && resource.data.get("ownerUid", "") == request.auth.uid;
+      }
+
+      function isEnforcedRoom() {
+        return resource.data.get("capacityEnforced", false) == true;
+      }
+
+      // Names that belong to the official rooms (compared in lower case,
+      // so "bangladesh" / "BANGLADESH" are blocked too).
+      function isReservedRoomName() {
+        return roomId.lower() in [
+          "bangladesh", "india", "pakistan", "nepal", "bhutan", "maldives",
+          "qatar", "kuwait", "oman", "malaysia", "singapore", "indonesia",
+          "thailand", "canada", "australia", "germany", "france", "italy",
+          "spain", "russia", "brazil",
+          "👻 luxury bot official",
+          "🃏 lowcard official",
+          "🏏 cricket official",
+          "🎴 teen patti official",
+          "👑 mig royale official",
+          "🃏 29 official",
+          "🃏 29 card free",
+          "🎁 gift official",
+          "🎰 luxury bet"
+        ];
+      }
+
+      // A room admin (role admin/superadmin) may create the document of an OFFICIAL
+      // room that has none yet — only name/description/privacy/maxUsers, no owner —
+      // so "/description" and the room-settings dialog also work in rooms such as
+      // "Bangladesh" before anyone has edited them.
+      function roomAdminMayCreateOfficialDoc() {
+        let d = request.resource.data;
+        return isRoomAdmin()
+          && isReservedRoomName()
+          && d.keys().hasOnly([
+            "name",
+            "description",
+            "privacy",
+            "maxUsers",
+            "lockLevel",
+            "publicKick",
+            "allowMedia",
+            "allowVideo",
+            "updatedBy",
+            "updatedAt"
+          ])
+          && (!("lockLevel" in d) || (d.lockLevel is int && d.lockLevel >= 0 && d.lockLevel <= 100))
+          && (!("publicKick" in d) || d.publicKick is bool)
+          && (!("allowMedia" in d) || d.allowMedia is bool)
+          && (!("allowVideo" in d) || d.allowVideo is bool)
+          && (!("name" in d) || d.name == roomId)
+          && (!("description" in d) || d.description is string)
+          && (!("privacy" in d) || d.privacy in ["Public", "Private"])
+          && (!("maxUsers" in d)
+              || (d.maxUsers is int && d.maxUsers >= 1 && d.maxUsers <= 10000));
+      }
+
+      // The write that creates the room must also bump the creator's
+      // counter by exactly 1 (the app sends both in one batch), and the
+      // counter may never exceed 10.
+      function creationCounterOk() {
+        let before = exists(/databases/$(database)/documents/room_counts/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/room_counts/$(request.auth.uid)).data.count
+          : 0;
+        let after = getAfter(/databases/$(database)/documents/room_counts/$(request.auth.uid)).data.count;
+        return after == before + 1
+          && after <= 10;
+      }
+
+      function isValidNewUserRoom() {
+        let d = request.resource.data;
+        return roomLevel() >= 10
+          && roomId.size() >= 5
+          && roomId.size() <= 15
+          && !isReservedRoomName()
+          // Dirty room names are refused (same list as the app / server).
+          && !roomId.lower().matches('.*(sex|porn|xxx|nude|naked|fuck|pussy|dick|boobs|horny|escort|chudi|choda|khanki|randi).*')
+          && d.keys().hasOnly([
+            "name",
+            "description",
+            "category",
+            "ownerUid",
+            "ownerName",
+            "privacy",
+            "maxUsers",
+            "capacityByLevel",
+            "capacityEnforced",
+            "members",
+            "createdAt"
+          ])
+          && d.name == roomId
+          && d.ownerUid == request.auth.uid
+          && d.ownerName == currentUsername()
+          && d.category == "user"
+          && d.privacy == "Private"
+          && d.maxUsers == privateRoomCapacityForLevel(roomLevel())
+          && d.capacityByLevel == true
+          && d.capacityEnforced == true
+          && d.description is string
+          && d.description.size() <= 100
+          && d.members == [request.auth.uid]
+          && d.createdAt == request.time
+          && creationCounterOk();
+      }
+
+      // NEW private-room settings, all optional in one write: minimum level to enter,
+      // public kick, image/audio share, video share, and the moderator list (lowercase
+      // usernames). Each one that changes must have the right type and size.
+      function privateSettingsValid() {
+        let d = request.resource.data;
+        let changed = d.diff(resource.data).affectedKeys();
+        return (!("lockLevel" in changed)
+                || (d.lockLevel is int && d.lockLevel >= 0 && d.lockLevel <= 100))
+          && (!("publicKick" in changed) || d.publicKick is bool)
+          && (!("allowMedia" in changed) || d.allowMedia is bool)
+          && (!("allowVideo" in changed) || d.allowVideo is bool)
+          && (!("moderators" in changed)
+                || (d.moderators is list && d.moderators.size() <= 20))
+          && (!("superMods" in changed)
+                || (d.superMods is list && d.superMods.size() <= 10))
+          // 300, the same limit the app and the web use for every room
+          // (100 here refused longer descriptions: "Room settings were NOT saved").
+          && (!("description" in changed)
+                || (d.description is string && d.description.size() <= 300));
+      }
+
+      function ownerMayEdit() {
+        let d = request.resource.data;
+        let changed = d.diff(resource.data).affectedKeys();
+        return isRoomOwnerOfDoc()
+          && privateSettingsValid()
+          && changed.hasOnly([
+            "description",
+            "privacy",
+            "maxUsers",
+            "lockLevel",
+            "publicKick",
+            "allowMedia",
+            "allowVideo",
+            "moderators",
+            "superMods",
+            "updatedBy",
+            "updatedAt"
+          ])
+          && (
+            !isEnforcedRoom()
+            || (
+              (!("privacy" in changed) || d.privacy == "Private")
+              && (!("maxUsers" in changed)
+                  || d.maxUsers == privateRoomCapacityForLevel(roomLevel()))
+            )
+          );
+      }
+
+      function roomAdminMayEdit() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return isRoomAdmin()
+          && privateSettingsValid()
+          && (
+            changed.hasOnly([
+              "description",
+              "lockLevel",
+              "publicKick",
+              "allowMedia",
+              "allowVideo",
+              "moderators",
+              "superMods",
+              "updatedBy",
+              "updatedAt"
+            ])
+            || (
+              !isEnforcedRoom()
+              && changed.hasOnly([
+                "description",
+                "privacy",
+                "maxUsers",
+                "lockLevel",
+                "publicKick",
+                "allowMedia",
+                "allowVideo",
+                "moderators",
+                "superMods",
+                "updatedBy",
+                "updatedAt"
+              ])
+            )
+          );
+      }
+
+      // The app's own admin / staff (and migwith) may manage the settings of any user-made
+      // room — not its owner, privacy, capacity or Super Mod list.
+      function supermodMayEdit() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return isRoomModerator()
+          && resource.data.get("category", "") == "user"
+          && resource.data.get("privacy", "Private") != "Public"
+          && privateSettingsValid()
+          && changed.hasOnly([
+            "description",
+            "lockLevel",
+            "publicKick",
+            "allowMedia",
+            "allowVideo",
+            "moderators",
+            "updatedBy",
+            "updatedAt"
+          ]);
+      }
+
+      // A Super Mod of THIS room (picked by its owner with /smod) may change the room's
+      // settings and make/remove Mods — but not the Super Mod list, owner, privacy or capacity.
+      function roomSuperModMayEdit() {
+        let changed = request.resource.data.diff(resource.data).affectedKeys();
+        return resource.data.get("category", "") == "user"
+          && resource.data.get("privacy", "Private") != "Public"
+          && currentUsername().lower() in resource.data.get("superMods", [])
+          && privateSettingsValid()
+          && changed.hasOnly([
+            "description",
+            "lockLevel",
+            "publicKick",
+            "allowMedia",
+            "allowVideo",
+            "moderators",
+            "updatedBy",
+            "updatedAt"
+          ]);
+      }
+
+      allow read: if signedIn();
+
+      // Public (official) rooms: the owner, admins and staff may set the room's entry
+      // level (lockLevel, 0-100) — nothing else. The room may have no document yet.
+      function staffMayCreateEntryLevelDoc() {
+        let d = request.resource.data;
+        return isRoomModerator()
+          && isReservedRoomName()
+          && d.keys().hasOnly(["name", "lockLevel", "updatedBy", "updatedAt"])
+          && (!("name" in d) || d.name == roomId)
+          && d.lockLevel is int && d.lockLevel >= 0 && d.lockLevel <= 100;
+      }
+
+      function staffMayEditEntryLevel() {
+        let d = request.resource.data;
+        let changed = d.diff(resource.data).affectedKeys();
+        return isRoomModerator()
+          && (isReservedRoomName() || resource.data.get("privacy", "Private") == "Public")
+          && changed.hasOnly(["lockLevel", "updatedBy", "updatedAt"])
+          && (!("lockLevel" in changed)
+                || (d.lockLevel is int && d.lockLevel >= 0 && d.lockLevel <= 100));
+      }
+
+      allow create: if signedIn()
+        && (
+          isOwner()
+          || isValidNewUserRoom()
+          || roomAdminMayCreateOfficialDoc()
+          || staffMayCreateEntryLevelDoc()
+        );
+
+      allow update: if signedIn()
+        && (
+          isOwner()
+          || founderHas("room_info")
+          || ownerMayEdit()
+          || roomAdminMayEdit()
+          || supermodMayEdit()
+          || roomSuperModMayEdit()
+          || staffMayEditEntryLevel()
+        );
+
+      allow delete: if signedIn()
+        && (
+          isOwner()
+          || isRoomOwnerOfDoc()
+        );
+    }
+
+
+    // =========================================================
+    // ROOM COUNTS  (how many rooms a user has created)
+    // =========================================================
+    //
+    // room_counts/{uid}.count — written by the app in the SAME batch as a
+    // new room (increment by 1). A user can only ever raise their own
+    // counter by exactly 1 and never above 10; nobody can lower or delete
+    // it. To give a user more rooms, migwith edits the number in the
+    // Firebase console.
+    //
+    // =========================================================
+
+    match /room_counts/{uid} {
+
+      allow read: if signedIn()
+        && (
+          request.auth.uid == uid
+          || isOwner()
+        );
+
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["count"])
+        && request.resource.data.count == 1;
+
+      allow update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["count"])
+        && request.resource.data.count == resource.data.count + 1
+        && request.resource.data.count <= 10;
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // FRIEND REQUESTS
+    // =========================================================
+
+    match /friend_requests/{requestId} {
+
+      // 🔒 PRIVACY: only the two people of a request (and miglife) can read it —
+      // nobody can look through someone else's friends or requests. A
+      // profile's friend COUNT comes from getFriendCount (server).
+      allow read: if signedIn()
+        && (resource.data.fromUsername == currentUsername()
+            || resource.data.toUsername == currentUsername()
+            || isOwner());
+
+      allow create: if signedIn()
+
+        && request.resource.data.fromUsername
+          == currentUsername()
+
+        && request.resource.data.toUsername is string
+
+        && request.resource.data.toUsername
+          != currentUsername()
+
+        && request.resource.data.status == "pending";
+
+      allow update: if signedIn()
+
+        && resource.data.toUsername == currentUsername()
+
+        && resource.data.status == "pending"
+
+        && request.resource.data.status in ["accepted", "rejected"]
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "status",
+            "updatedAt"
+          ]);
+
+      allow update: if signedIn()
+
+        && resource.data.fromUsername == currentUsername()
+
+        && resource.data.status == "pending"
+
+        && request.resource.data.status == "cancelled"
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "status",
+            "updatedAt"
+          ]);
+
+      // Unfriend: either of the two friends may delete the ACCEPTED friendship
+      // document (Friends page "Remove" and the /uf room command). This used
+      // to be "if false", so removing a friend always silently failed.
+      allow delete: if signedIn()
+
+        && resource.data.status == "accepted"
+
+        && (
+          resource.data.fromUsername == currentUsername()
+          || resource.data.toUsername == currentUsername()
+        );
+    }
+
+
+    // =========================================================
+    // PRIVATE MESSAGES (1:1 friend chat)
+    // =========================================================
+
+    // ✍️ "is typing" for private chats: one small doc per person per chat, id = "{chatId}__{uid}".
+    // Only the two people of the chat (who are friends) can read / write their own doc.
+    match /private_typing/{docId} {
+      allow read: if signedIn()
+        && (resource.data.chatId.split("__")[0] == currentUsername().lower()
+            || resource.data.chatId.split("__")[1] == currentUsername().lower());
+      allow create, update: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.username == currentUsername().lower()
+        && exists(/databases/$(database)/documents/friendships/$(request.resource.data.chatId));
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /private_messages/{messageId} {
+
+      // 🔒 profile_locks / friendships / chat_spoke are written only by the
+      // functions (setProfileLock, syncFriendshipMarker, markChatSpoke,
+      // syncPrivacyMarkers). Pair ids are the two names, lowercase, sorted.
+      function privateChatOpen() {
+        let a = request.resource.data.fromUsername.lower();
+        let b = request.resource.data.toUsername.lower();
+        let pair = a < b ? a + "__" + b : b + "__" + a;
+        // 🤝 FRIENDS only (for everyone). miglife may write to anyone, and
+        // someone miglife wrote to may answer (chat_spoke).
+        return isOwner()
+          || exists(/databases/$(database)/documents/friendships/$(pair))
+          || (b == "miglife" && exists(/databases/$(database)/documents/chat_spoke/$(pair + "__miglife")));
+      }
+
+      // PRIVACY FIX: this used to be "any signed-in user", so anyone could
+      // read ANY two people's private chat just by asking for their chatId.
+      // Now only the two people in the chat can read it: the sender, the
+      // receiver, or a query by a chatId ("a__b", lowercase) that contains
+      // the reader's own username.
+      allow read: if signedIn()
+        && (
+          resource.data.fromUsername == currentUsername()
+          || resource.data.toUsername == currentUsername()
+          || currentUsername().lower() in resource.data.chatId.split("__")
+        );
+
+      allow create: if signedIn()
+
+        && request.resource.data.fromUsername
+          == currentUsername()
+
+        && request.resource.data.toUsername is string
+
+        && request.resource.data.toUsername
+          != currentUsername()
+
+        && request.resource.data.chatId is string
+
+        // The chatId must be THIS pair's chat ("a__b", lowercase) — a
+        // message could otherwise be planted into anybody else's chat.
+        && request.resource.data.chatId in [
+          request.resource.data.fromUsername.lower() + "__" + request.resource.data.toUsername.lower(),
+          request.resource.data.toUsername.lower() + "__" + request.resource.data.fromUsername.lower()
+        ]
+
+        // Gift messages are written only by the sendGift Cloud Function
+        // (after the coins are really paid) — a phone could fake them.
+        && request.resource.data.get("messageType", "") != "gift"
+
+        // 🎨 stickers: only from a pack I own
+        && stickerMessageOk(request.resource.data.get("messageType", "") == "sticker")
+
+        // 🤝 Private messages: friends only (see privateChatOpen)
+        && privateChatOpen()
+
+        && (
+          !("fromUid" in request.resource.data)
+          || request.resource.data.fromUid == request.auth.uid
+          || request.resource.data.fromUid == ""
+        )
+
+        && request.resource.data.text is string
+
+        && request.resource.data.text.size() > 0
+
+        && request.resource.data.text.size() <= 2000;
+
+      allow update: if signedIn()
+
+        && (
+          resource.data.fromUsername == currentUsername()
+          || resource.data.toUsername == currentUsername()
+        )
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["reactions", "read"]);
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // ALERTS
+    // =========================================================
+
+    // 🔒 Profile lock markers (see private_messages) — read by the apps to
+    // show "locked", written only by the functions.
+    match /profile_locks/{name} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // 🔒 one pair at a time, and only a pair you are in (no listing).
+    // 💔 who ended which friendship — written only by unfriendUser /
+    // onFriendshipDeleted (Admin SDK); only miglife can read it.
+    match /unfriend_logs/{logId} {
+      allow read: if isOwner();
+      allow write: if false;
+    }
+    match /friendships/{pair} {
+      allow get: if signedIn() && currentUsername().lower() in pair.split("__");
+      allow write: if false;
+    }
+    match /chat_spoke/{id} {
+      allow get: if signedIn() && currentUsername().lower() in id.split("__");
+      allow write: if false;
+    }
+
+    // 🔒 👣 Footprints and ❤️ votes: profile_visits|profile_votes/{whoLower}/by/{myUid}.
+    // Only the profile's owner (and miglife) sees WHO; I can see my own entry.
+    // Other people get just the numbers (getFriendCount).
+    match /profile_visits/{owner}/by/{visitor} {
+      allow get: if signedIn() && (request.auth.uid == visitor || currentUsername().lower() == owner || isOwner());
+      allow list: if signedIn() && (currentUsername().lower() == owner || isOwner());
+      allow create, update: if signedIn() && request.auth.uid == visitor
+        && owner != currentUsername().lower()
+        && request.resource.data.keys().hasOnly(["username", "at"])
+        && request.resource.data.username == currentUsername()
+        && request.resource.data.at == request.time;
+      allow delete: if false;
+    }
+    match /profile_votes/{owner}/by/{voter} {
+      allow get: if signedIn() && (request.auth.uid == voter || currentUsername().lower() == owner || isOwner());
+      allow list: if signedIn() && (currentUsername().lower() == owner || isOwner());
+      allow create, update: if signedIn() && request.auth.uid == voter
+        && owner != currentUsername().lower()
+        && request.resource.data.keys().hasOnly(["username", "at"])
+        && request.resource.data.username == currentUsername()
+        && request.resource.data.at == request.time;
+      allow delete: if signedIn() && request.auth.uid == voter;
+    }
+
+    // 🔒 My block list — only I can read or change it (the functions read it
+    // to stop pushes / mail from people I blocked).
+    match /user_blocks/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["names", "updatedAt"])
+        && request.resource.data.names is list
+        && request.resource.data.names.size() <= 1000;
+      allow delete: if false;
+    }
+
+    // 🔒 Profile details (full name, birthday, bio, relationship, cover photo).
+    // Everyone may read them — unless the person locked their profile: then
+    // only they, their friends and miglife. One document at a time (no list).
+    match /profile_details/{uid} {
+      function detailsVisible() {
+        let n = resource.data.get("usernameLower", "");
+        let me = currentUsername().lower();
+        let pair = me < n ? me + "__" + n : n + "__" + me;
+        return request.auth.uid == uid
+          || isOwner()
+          || (n != ""
+              && (!exists(/databases/$(database)/documents/profile_locks/$(n))
+                  || exists(/databases/$(database)/documents/friendships/$(pair))));
+      }
+      allow get: if signedIn() && detailsVisible();
+      allow list: if false;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["usernameLower", "fullName", "dateOfBirth", "bio", "relationship", "coverPhotoUrl", "updatedAt"])
+        && request.resource.data.usernameLower == currentUsername().lower()
+        && request.resource.data.get("fullName", "") is string && request.resource.data.get("fullName", "").size() <= 60
+        && request.resource.data.get("dateOfBirth", "") is string && request.resource.data.get("dateOfBirth", "").size() <= 20
+        && request.resource.data.get("bio", "") is string && request.resource.data.get("bio", "").size() <= 500
+        && request.resource.data.get("relationship", "") is string && request.resource.data.get("relationship", "").size() <= 40
+        && request.resource.data.get("coverPhotoUrl", "") is string && request.resource.data.get("coverPhotoUrl", "").size() <= 1000;
+      allow delete: if false;
+    }
+
+    // 📝 Blog: anyone may read (the web shows it without logging in); only the
+    // server (the `blog` function) writes. A like / view is readable only by its owner.
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow write: if false;
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if false;
+      }
+      match /likes/{likeUid} {
+        allow read: if signedIn() && request.auth.uid == likeUid;
+        allow write: if false;
+      }
+      match /views/{viewUid} {
+        allow read, write: if false;
+      }
+    }
+    match /blog_rate/{rateUid} {
+      allow read, write: if false;
+    }
+
+    match /alerts/{alertId} {
+
+      allow read: if signedIn()
+        && resource.data.toUsername == currentUsername();
+
+      allow create: if signedIn()
+
+        && request.resource.data.toUsername is string
+
+        && request.resource.data.toUsername != currentUsername()
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() > 0
+
+        && request.resource.data.message.size() <= 300
+
+        // SECURITY FIX (fake alerts): "mentor_earning" and "gift" alerts are
+        // written only by the Cloud Functions, yet any phone could create
+        // them — e.g. a fake "💰 10,000 coins added" alert from "migwith" to
+        // anybody. They are no longer allowed from a phone, and a phone may
+        // only name ITSELF as the sender.
+        && request.resource.data.type in [
+          "friend_request",
+          "friend_request_accepted",
+          "mentor_tag_request",
+          "merchant_tag_request",
+          "mentor_tag_request_approved",
+          "merchant_tag_request_approved",
+          "mentor_request",
+          "mention",
+          // "you are already tagged by someone else" note to the mentor/merchant
+          "tag_blocked"
+        ]
+
+        // 🔒 SECURITY: a phone must always sign its alerts with its own name
+        // (no more sender-less "system-looking" alerts).
+        && request.resource.data.fromUsername == currentUsername();
+
+      // FIX (Approve / Cancel never showed "Approved" / "Cancelled"): the
+      // app marks a handled tag-request alert with resolved + resolution,
+      // but only "read" was allowed, so that write was always refused.
+      allow update: if signedIn()
+
+        && resource.data.toUsername == currentUsername()
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["read", "resolved", "resolution"])
+
+        && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(["resolution"])
+          || request.resource.data.resolution in ["approved", "cancelled"]
+        );
+
+      allow delete: if false;
+    }
+
+
+    // =========================================================
+    // EMAILS
+    // =========================================================
+    //
+    // FIX ("Email (n)" never went down): update used to be "if false",
+    // so the app's mark-as-read (read = true) was refused every time and
+    // the unread count stayed stuck. The recipient may now change ONLY
+    // "read", ONLY to true, and ONLY on their own received copy.
+    //
+    // ADDED: subject / message size limits (stops inbox flooding with huge
+    // mails), and a new received copy must start as unread (read == false)
+    // so a sender can't hide a mail from the recipient's unread count.
+    //
+    // =========================================================
+
+    match /emails/{emailId} {
+
+      allow read: if signedIn()
+        && resource.data.mailboxUsername
+          == currentUsername();
+
+      allow create: if signedIn()
+
+        && request.resource.data.mailboxType == "sent"
+
+        && request.resource.data.mailboxUid
+          == request.auth.uid
+
+        && request.resource.data.mailboxUsername
+          == currentUsername()
+
+        && request.resource.data.fromUid
+          == request.auth.uid
+
+        && request.resource.data.fromUsername
+          == currentUsername()
+
+        && request.resource.data.toUsername is string
+
+        && request.resource.data.subject is string
+
+        && request.resource.data.subject.size() <= 200
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() <= 5000
+
+        // Optional attached photo: a Firebase Storage download link only.
+        && (!('imageUrl' in request.resource.data)
+          || (request.resource.data.imageUrl is string
+            && request.resource.data.imageUrl.size() <= 1000
+            && request.resource.data.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/.*')));
+
+      allow create: if signedIn()
+
+        && request.resource.data.mailboxType == "received"
+
+        && request.resource.data.fromUid
+          == request.auth.uid
+
+        && request.resource.data.fromUsername
+          == currentUsername()
+
+        && request.resource.data.mailboxUid is string
+
+        && request.resource.data.mailboxUsername
+          == request.resource.data.toUsername
+
+        && request.resource.data.toUsername is string
+
+        && request.resource.data.subject is string
+
+        && request.resource.data.subject.size() <= 200
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() <= 5000
+
+        // Optional attached photo: a Firebase Storage download link only.
+        && (!('imageUrl' in request.resource.data)
+          || (request.resource.data.imageUrl is string
+            && request.resource.data.imageUrl.size() <= 1000
+            && request.resource.data.imageUrl.matches('https://firebasestorage[.]googleapis[.]com/.*')))
+
+        && request.resource.data.read == false
+
+        && exists(
+          /databases/$(database)/documents/users/$(request.resource.data.mailboxUid)
+        )
+
+        && get(
+          /databases/$(database)/documents/users/$(request.resource.data.mailboxUid)
+        ).data.username
+          == request.resource.data.mailboxUsername
+        // 🚫 the receiver blocked me → no mail
+        && !(currentUsername() in get(
+          /databases/$(database)/documents/users/$(request.resource.data.mailboxUid)
+        ).data.get("blockedUsers", []))
+        && !(exists(/databases/$(database)/documents/user_blocks/$(request.resource.data.mailboxUid))
+             && currentUsername() in get(
+               /databases/$(database)/documents/user_blocks/$(request.resource.data.mailboxUid)
+             ).data.get("names", []));
+
+      allow delete: if signedIn()
+
+        && resource.data.mailboxUsername
+          == currentUsername();
+
+      // The recipient may mark their OWN received mail as read — nothing else.
+      allow update: if signedIn()
+
+        && resource.data.mailboxUsername
+          == currentUsername()
+
+        && resource.data.mailboxType == "received"
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["read"])
+
+        && request.resource.data.read == true;
+    }
+
+
+    // =========================================================
+    // GIFT CATALOG
+    // =========================================================
+
+    // 🎨 Sticker Store packs — written only by founderStickerPack
+    match /sticker_packs/{packId} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    // A sticker message must come from a pack the sender owns, and its picture
+    // must be one of that pack's stickers (no other pictures sent as "stickers").
+    function stickerMessageOk(isSticker) {
+      let d = request.resource.data;
+      return !isSticker
+        || (d.get("stickerPack", "") is string
+            && d.stickerPack.matches('^[A-Za-z0-9_-]{3,64}$')
+            && d.get("imageUrl", "") is string
+            && exists(/databases/$(database)/documents/users/$(request.auth.uid)/sticker_packs/$(d.stickerPack))
+            && d.imageUrl in get(/databases/$(database)/documents/sticker_packs/$(d.stickerPack)).data.get("urls", []));
+    }
+
+    match /gift_catalog/{giftId} {
+      allow read: if signedIn();
+
+      // The Gift Shops page is for migwith only (the app checks the same thing) and it
+      // adds / edits / deletes gifts DIRECTLY. With "if false" here every add, edit and
+      // delete — and the starter-gift setup when the page opens — came back as
+      // PERMISSION_DENIED. Nobody else may touch the catalog, and a gift's price has to be
+      // a sensible whole number.
+      // miglife, or a founder miglife gave the "Gift Shops" permission
+      // (the app shows the Gift Shops admin page to both).
+      allow create, update: if founderHas("gift_shop")
+        && request.resource.data.price_coins is int
+        && request.resource.data.price_coins >= 1
+        && request.resource.data.price_coins <= 10000000;
+
+      allow delete: if founderHas("gift_shop");
+    }
+
+
+    // =========================================================
+    // GIFT EVENTS
+    // =========================================================
+
+    match /gift_events/{eventId} {
+      // 🔒 the full record (price, uids) — the apps never read it; miglife only.
+      allow read: if isOwner();
+      allow create, update, delete: if false;
+    }
+
+
+    // =========================================================
+    // GIFT ACTIVITY
+    // =========================================================
+
+    // 🔒 Gifts sent INSIDE a private chat (written only by sendGift): the
+    // two people, the sender's own Mentor / Merchant (their reports count
+    // this spending) and miglife — nobody else.
+    match /gift_activity_private/{activityId} {
+      allow read: if signedIn()
+        && (resource.data.fromUsername == currentUsername()
+            || resource.data.toUsername == currentUsername()
+            || isOwner()
+            || exists(/databases/$(database)/documents/mentor_tagged/$(currentUsername() + '_' + resource.data.fromUsername))
+            || exists(/databases/$(database)/documents/merchant_tagged/$(currentUsername() + '_' + resource.data.fromUsername)));
+      allow write: if false;
+    }
+
+    match /gift_activity/{activityId} {
+
+      allow read: if signedIn();
+
+      // SECURITY FIX (audit C3): written ONLY by the sendGift Cloud Function
+      // (Admin SDK bypasses rules). distributeGiftContestPrizes counts these
+      // documents to pick the contest winners and pays the prizes out of the
+      // founder's balance, so letting clients create them meant anyone could
+      // forge thousands of gifts and win the contest.
+      allow create, update, delete: if false;
+    }
+
+
+    // =========================================================
+    // ANNOUNCEMENTS
+    // =========================================================
+
+    match /announcements/{announcementId} {
+
+      allow read: if signedIn();
+
+      allow create: if isOwner()
+
+        && request.resource.data.createdBy == currentUsername()
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() > 0
+
+        && request.resource.data.message.size() <= 1500;
+
+      allow update: if isOwner()
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            "message",
+            "editedAt"
+          ])
+
+        && request.resource.data.message is string
+
+        && request.resource.data.message.size() > 0
+
+        && request.resource.data.message.size() <= 1500;
+
+      allow delete: if isOwner();
+    }
+
+
+    // =========================================================
+    // MENTOR PROGRAM
+    // =========================================================
+
+    match /mentor_requests/{requestId} {
+
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+
+        && request.resource.data.fromUsername == currentUsername()
+
+        && request.resource.data.toMentor is string
+
+        && request.resource.data.status == "pending";
+
+      allow update: if signedIn()
+
+        && resource.data.toMentor == currentUsername()
+
+        && resource.data.status == "pending"
+
+        && request.resource.data.status in ["approved", "rejected"]
+
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(["status"]);
+
+      allow delete: if signedIn()
+
+        && resource.data.fromUsername == currentUsername()
+
+        && resource.data.status == "pending";
+    }
+
+    match /mentor_merchants/{merchantDocId} {
+
+      allow read: if signedIn();
+
+      // 🔒 SECURITY: the mentor ↔ merchant link is written only by the
+      // approveMerchantRole function (it pays 0.5% of the merchant's downline).
+      allow create: if isOwner();
+
+      allow update: if isOwner();
+
+      allow delete: if isOwner();
+    }
+
+    match /mentor_tagged/{taggedDocId} {
+
+      // SECURITY FIX (audit C2): "rate" is the commission percentage that is
+      // later paid out as real coins. It was unrestricted, so a user could
+      // tag an alternate account with rate = 1000 and turn that account's
+      // spending into free coins. The app only ever writes 3.0 (or leaves it
+      // out, meaning the 3.0 default); only the founder may set anything else.
+      function mentorRateAllowed() {
+        return isOwner()
+          || !("rate" in request.resource.data)
+          || request.resource.data.rate in [3, 3.0, 0.5];
+      }
+
+      allow read: if signedIn();
+
+      // 🔒 SECURITY (audit 2026-10): tags are created ONLY by the server
+      // (approveTagRequest / approveMerchantRole), so nobody can forge, back-date
+      // or stretch a tag to collect trail commission. The mentor may only end
+      // (deactivate) his own tag; the founder can do anything.
+      allow create: if isOwner() && mentorRateAllowed();
+
+      allow update: if isOwner()
+        || (signedIn()
+          && resource.data.mentorUsername == currentUsername()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "updatedAt"])
+          && request.resource.data.status != "active");
+
+      allow delete: if signedIn()
+        && (resource.data.mentorUsername == currentUsername() || isOwner());
+    }
+
+    match /mentor_tag_requests/{requestId} {
+
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.mentorUsername == currentUsername()
+        && request.resource.data.taggedUsername is string
+        && request.resource.data.status == "pending";
+
+      allow update: if signedIn()
+        && resource.data.status == "pending"
+        && (
+          resource.data.taggedUsername == currentUsername()
+          || resource.data.mentorUsername == currentUsername()
+          || isOwner()
+        )
+        && request.resource.data.status in ["approved", "cancelled"];
+
+      allow delete: if false;
+    }
+
+    match /mentor_reports/{mentorUsername}/days/{date} {
+
+      allow get: if signedIn()
+        && (mentorUsername == currentUsername() || isOwner());
+
+      allow list: if false;
+
+      allow write: if isOwner();
+    }
+
+    match /mentor_earnings/{mentorUsername} {
+
+      allow get: if signedIn()
+        && (mentorUsername == currentUsername() || isOwner());
+
+      allow list: if false;
+
+      allow write: if isOwner();
+
+      // Daily commission buckets (see functions/index.js: creditCommissions /
+      // settleCommissions) — written only by the Admin SDK, which bypasses
+      // these rules. No client ever needs to read or write this directly; the
+      // summed today/last7Days/last30Days fields on the parent doc above
+      // are what the app displays.
+      match /daily/{dateKey} {
+        allow read, write: if false;
+      }
+    }
+
+    match /merchant_reports/{merchantUsername}/days/{date} {
+
+      allow get: if signedIn()
+        && (merchantUsername == currentUsername() || isOwner());
+
+      allow list: if false;
+
+      allow write: if isOwner();
+    }
+
+    // =========================================================
+    // MERCHANT TAGGED USERS
+    // =========================================================
+
+    match /merchant_tagged/{taggedDocId} {
+
+      allow read: if signedIn();
+
+      // 🔒 SECURITY (audit 2026-10): created ONLY by the server
+      // (approveTagRequest). The merchant may only end (deactivate) his own tag.
+      allow create: if isOwner();
+
+      allow update: if isOwner()
+        || (signedIn()
+          && resource.data.merchantUsername == currentUsername()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "updatedAt"])
+          && request.resource.data.status != "active");
+
+      allow delete: if signedIn()
+        && (
+          resource.data.merchantUsername == currentUsername()
+          || isOwner()
+        );
+    }
+
+    match /merchant_tag_requests/{requestId} {
+
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.merchantUsername == currentUsername()
+        && request.resource.data.taggedUsername is string
+        && request.resource.data.status == "pending";
+
+      allow update: if signedIn()
+        && resource.data.status == "pending"
+        && (
+          resource.data.taggedUsername == currentUsername()
+          || resource.data.merchantUsername == currentUsername()
+          || isOwner()
+        )
+        && request.resource.data.status in ["approved", "cancelled"];
+
+      allow delete: if false;
+    }
+
+    match /merchant_earnings/{merchantUsername} {
+
+      allow get: if signedIn()
+        && (merchantUsername == currentUsername() || isOwner());
+
+      allow list: if false;
+
+      allow write: if isOwner();
+
+      // Same as mentor_earnings/{mentorUsername}/daily above.
+      match /daily/{dateKey} {
+        allow read, write: if false;
+      }
+    }
+
+
+    // =========================================================
+    // COMMISSION LEDGER (auto pending/settle system)
+    // =========================================================
+    //
+    // ADDED: written only by Cloud Functions (creditCommissions /
+    // settleCommissions in functions/index.js), which use the Admin SDK and
+    // bypass these rules entirely. Clients never write here. Read is scoped
+    // to the beneficiary the entry belongs to (or the owner account) so a
+    // future "pending items" list view is possible without opening this up
+    // to everyone.
+    //
+    // =========================================================
+
+    match /commission_ledger/{entryId} {
+
+      allow get: if signedIn()
+        && (resource.data.beneficiaryUsername == currentUsername() || isOwner());
+
+      allow list: if false;
+
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // LEADERBOARDS (pre-aggregated daily totals)
+    // =========================================================
+    //
+    // leaderboards_daily/{gameKey}_{date} holds aggregated totals,
+    // win counts, USERNAMES, and — as of the spend-ranked leaderboard —
+    // per-player SPEND too. Spend is exactly the number that must never
+    // reach another player's device (see getLeaderboard in
+    // functions/index.js: it ranks by spend server-side and sends back
+    // rank + win count only, plus the caller's own spend, never anyone
+    // else's). That privacy guarantee only holds if this collection is
+    // never client-readable directly — read is fully denied here, every
+    // access goes through the Cloud Function's Admin SDK instead.
+    //
+    // =========================================================
+
+    match /leaderboards_daily/{docId} {
+
+      allow read, write: if false;
+    }
+
+
+    // =========================================================
+    // COLOR SHOP PURCHASE REQUESTS
+    // =========================================================
+    //
+    // ADDED: written only by the Admin SDK (requestColorPurchase /
+    // approveColorPurchase / rejectColorPurchase in functions/index.js),
+    // which bypasses these rules — coins are escrowed and colors are
+    // granted there, never by a direct client write. Read access lets the
+    // buyer see their own request's status and lets admin/staff review
+    // the pending queue.
+    //
+    // =========================================================
+
+    match /color_purchase_requests/{requestId} {
+
+      allow read: if signedIn()
+        && (resource.data.uid == request.auth.uid || isAdminStaff());
+
+      allow create, update, delete: if false;
+    }
+
+
+    // =========================================================
+    // LUCKY VOUCHERS
+    // =========================================================
+    //
+    // ADDED: written only by the Admin SDK (dropLuckyVouchers /
+    // pickVoucher in functions/index.js). Read is open to every signed-in
+    // user — the voucher's code is already announced to everyone in the
+    // room via a plain chat message the moment it drops, so there's no
+    // fairness reason to hide the same code here too.
+    //
+    // =========================================================
+
+    match /active_vouchers/{roomId} {
+
+      allow read: if signedIn();
+
+      allow create, update, delete: if false;
+    }
+
+
+    // =========================================================
+    // LUCKY USER (Bangladesh room)
+    // =========================================================
+    //
+    // ADDED: written only by the pickBangladeshLuckyUser Cloud Function
+    // (Admin SDK, bypasses these rules). lucky_user_state holds each
+    // winner's last win time — the secret once-per-24-hours rule — and
+    // lucky_rounds is the per-3-hour lock that stops a retry from paying
+    // twice (readable, never writable, by clients — see below).
+    //
+    // =========================================================
+
+    match /lucky_user_state/{uid} {
+      allow read, write: if false;
+    }
+
+    // Every signed-in user may READ the rounds (Explore → Lucky User page:
+    // current winner, previous winners). Nothing secret is in here — the
+    // once-per-24h rule lives in lucky_user_state, which stays closed.
+    match /lucky_rounds/{roundId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+
+    // =========================================================
+    // EMAIL VERIFICATION (sign-up)
+    // =========================================================
+    //
+    // ADDED: holds a live verification code (email_verifications/{email}),
+    // written and read only by sendEmailVerificationCode /
+    // verifyEmailVerificationCode / createNormalUserId in
+    // functions/index.js — all via the Admin SDK. No client read or write
+    // at all: this runs before an account even exists (no signedIn()
+    // caller to scope a read to), and the code itself must never be
+    // readable by anyone but those three functions.
+    //
+    // =========================================================
+
+    match /email_verifications/{email} {
+
+      allow read, write: if false;
+    }
+
+
+    // =========================================================
+    // APP UPDATE CONFIG (in-app "Update Apps" page)
+    // =========================================================
+    //
+    // ADDED: app_config/latest holds versionCode, versionName, apkUrl,
+    // notes and forceUpdate for the in-app updater. Everyone can read it;
+    // only the owner (migwith) can change it from the app. Normally it is
+    // edited from the Firebase console, which bypasses these rules.
+    //
+    // =========================================================
+
+    match /app_config/{docId} {
+
+      allow read: if true;
+
+      allow write: if isOwner();
+    }
+
+
+    // 📺 Live scores — written only by the refreshLiveSports function
+    match /live_sports/{doc} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // 📸 stories (24 hours) — written only by the blog "story" Cloud Function
+    match /blog_stories/{storyId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // =========================================================
+    // DEFAULT DENY
+    // =========================================================
+
+    match /{document=**} {
+
+      allow read, write: if false;
+    }
+  }
+}
