@@ -468,10 +468,12 @@ async function mailUser(toUsername, toUid, subject, body) {
   const to = String(toUsername || "").trim();
   if (!to || !toUid) return;
   try {
+    // Same shape the Mail page writes for a normal message (mailboxType "received"),
+    // so it shows in the member's Inbox.
     await db.collection("emails").add({
-      mailboxType: "inbox", mailboxUid: toUid, mailboxUsername: to,
-      from: "miGlife Support", fromUsername: "miGlife Support", senderUid: "system",
-      subject, body, read: false, createdAt: FieldValue.serverTimestamp(),
+      mailboxType: "received", mailboxUid: toUid, mailboxUsername: to,
+      fromUid: "system", fromUsername: "miGlife Support", toUsername: to,
+      subject, message: body, read: false, createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("mailUser failed", error?.message);
