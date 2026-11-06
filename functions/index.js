@@ -474,7 +474,10 @@ async function mailUser(toUsername, toUid, subject, body) {
       mailboxType: "received", mailboxUid: toUid, mailboxUsername: to,
       // The sender is shown as "miGlife Support". A Reply to it is routed to miGlife's inbox by the Mail page.
       fromUid: "system", fromUsername: "miGlife Support", toUsername: to,
-      subject, message: body, read: false, createdAt: FieldValue.serverTimestamp(),
+      subject,
+      // 📜 every system mail ends with the Terms & Conditions link
+      message: `${body}\n\n────────────\nTerms & Conditions: https://web.miglife.app/terms\nBy receiving this mail you agree to the miGlife Terms & Conditions.`,
+      read: false, createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("mailUser failed", error?.message);
