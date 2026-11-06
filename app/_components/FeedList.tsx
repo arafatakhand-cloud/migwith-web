@@ -502,6 +502,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               autoFocus
               value={ctext}
               onChange={(e) => setCtext(e.target.value)}
+              // ⌨️ when the keyboard opens on a phone, bring the box up above it
+              onFocus={(e) => {
+                const el = e.currentTarget;
+                window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+              }}
               placeholder={`What's on your mind, ${username}?`}
               rows={3}
               className="mt-1 w-full resize-none bg-transparent px-1 py-1 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
