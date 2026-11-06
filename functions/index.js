@@ -472,8 +472,8 @@ async function mailUser(toUsername, toUid, subject, body) {
     // so it shows in the member's Inbox.
     await db.collection("emails").add({
       mailboxType: "received", mailboxUid: toUid, mailboxUsername: to,
-      // fromUsername is the real miGlife account, so a member's Reply reaches miGlife.
-      fromUid: "system", fromUsername: FOUNDER_ALERT_USERNAME, toUsername: to,
+      // The sender is shown as "miGlife Support". A Reply to it is routed to miGlife's inbox by the Mail page.
+      fromUid: "system", fromUsername: "miGlife Support", toUsername: to,
       subject, message: body, read: false, createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
