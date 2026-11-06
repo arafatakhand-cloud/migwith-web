@@ -568,6 +568,83 @@ function founderPermissionMailTemplate(name, added, removed) {
   };
 }
 
+// ⚠️ WARNINGS — miGlife only. A warning is a Support mail that says which rule was
+// broken (Terms & Community Rules, section 2) and keeps a count per member.
+// Nothing is suspended automatically: at WARNING_SUSPEND_AT warnings miGlife decides.
+const WARNING_SUSPEND_AT = 3;
+const WARNING_REASONS = {
+  harassment: { label: "Harassment or bullying", rule: "Harassment, bullying, threats" },
+  hate: { label: "Hate speech", rule: "Hate speech or attacks on people" },
+  sexual: { label: "Sexual or nude content", rule: "Sexual or nude content" },
+  violence: { label: "Violent or shocking content", rule: "Violent or shocking content" },
+  scam: { label: "Scam, fraud or asking for passwords or money", rule: "Scams, fraud, phishing" },
+  spam: { label: "Spam or advertising", rule: "Spam, flooding, advertising" },
+  impersonation: { label: "Pretending to be someone else", rule: "Pretending to be someone else" },
+  privacy: { label: "Sharing private information or photos", rule: "Sharing other people's private information" },
+  coins: { label: "Buying or selling coins or accounts", rule: "Buying, selling or trading miGlife coins or accounts" },
+  other: { label: "Other rule breach", rule: "The community rules" },
+};
+exports.issueWarning = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(normalizeUsername(me.get("username")))) {
+    throw new functionsV1.https.HttpsError("permission-denied", "Only miGlife can give warnings.");
+  }
+  const key = String(data?.reason || "");
+  const reason = WARNING_REASONS[key];
+  if (!reason) throw new functionsV1.https.HttpsError("invalid-argument", "Choose a reason.");
+  const note = String(data?.note || "").trim().slice(0, 500);
+  const name = String(data?.username || "").trim().replace(/^@/, "");
+  const userDoc = await findUserDocByUsername(name);
+  if (!userDoc) throw new functionsV1.https.HttpsError("not-found", "User not found.");
+  const username = String(userDoc.get("username") || name);
+  // the count goes up first, so the mail shows the right number
+  await userDoc.ref.set({ warningCount: FieldValue.increment(1), lastWarningAt: FieldValue.serverTimestamp() }, { merge: true });
+  const count = Number((await userDoc.ref.get()).get("warningCount") || 1);
+  await db.collection("warnings").add({
+    uid: userDoc.id, username, reason: key, reasonLabel: reason.label, note, count,
+    by: "miglife", at: FieldValue.serverTimestamp(),
+  });
+  const next = count >= WARNING_SUSPEND_AT
+    ? "This is warning number " + count + ". Another breach may lead to your account being suspended."
+    : "This is warning number " + count + ". Please read the rules again, and be careful from now on.";
+  const body = [
+    `Dear ${username},`, "",
+    "miGlife has given you a warning.", "",
+    `Reason: ${reason.label}`,
+    `Rule: ${reason.rule} (Terms & Community Rules, section 2)`,
+    ...(note ? ["", `Note from miGlife: ${note}`] : []),
+    "", next, "",
+    "You can read the full rules at web.miglife.app/terms. If you think this warning is a mistake, reply through Support.",
+  ].join("\n");
+  await mailUser(username, userDoc.id, `Warning from miGlife: ${reason.label}`, body);
+  await alertUser(username, `⚠️ You received a warning from miGlife: ${reason.label}.`, "warning");
+  await db.collection("founder_admin_log").add({ action: "warning", username, reason: key, count, by: "miglife", at: FieldValue.serverTimestamp() });
+  return { ok: true, username, count, suspendAt: WARNING_SUSPEND_AT };
+});
+
+// listWarnings — miGlife only: the latest 50 warnings (optionally for one MIG ID).
+exports.listWarnings = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(normalizeUsername(me.get("username")))) {
+    throw new functionsV1.https.HttpsError("permission-denied", "Only miGlife can see warnings.");
+  }
+  const name = String(data?.username || "").trim().replace(/^@/, "");
+  let q = db.collection("warnings").orderBy("at", "desc").limit(50);
+  if (name) q = db.collection("warnings").where("username", "==", name).limit(50);
+  const snap = await q.get();
+  const warnings = snap.docs.map((d) => ({
+    id: d.id,
+    username: String(d.get("username") || ""),
+    reasonLabel: String(d.get("reasonLabel") || ""),
+    note: String(d.get("note") || ""),
+    count: Number(d.get("count") || 0),
+    atMs: d.get("at") && typeof d.get("at").toMillis === "function" ? d.get("at").toMillis() : 0,
+  }));
+  return { warnings, reasons: Object.entries(WARNING_REASONS).map(([k, v]) => ({ key: k, label: v.label })), suspendAt: WARNING_SUSPEND_AT };
+});
+
 // 📣 miGlife Secret → Support Mail: miGlife writes one mail and sends it to one
 // member (by MIG ID) or to everyone who has a chosen role. Same Inbox and contact-email
 // delivery as the other system mails. miGlife only.
