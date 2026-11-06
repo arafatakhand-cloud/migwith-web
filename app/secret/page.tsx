@@ -225,6 +225,7 @@ export default function SecretPage() {
           { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
           { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
+          { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
           { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
