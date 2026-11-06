@@ -389,11 +389,17 @@ function Compose({
     setError("");
     setSending(true);
     try {
+      // 🔒 "miGlife Support" is the shown name of miGlife's own inbox. Mail to it goes to
+      // the miglife account, and the sender never sees where it went.
+      const SUPPORT_LABEL = "miGlife Support";
+      const isSupport = toClean.toLowerCase() === SUPPORT_LABEL.toLowerCase();
+      const lookupName = isSupport ? "miglife" : toClean;
       // Exact username first, then the same name in any upper/lower case.
       const users = collection(db, "users");
-      let found = (await getDocs(query(users, where("username", "==", toClean), limit(1)))).docs[0];
-      if (!found) found = (await getDocs(query(users, where("usernameLower", "==", toClean.toLowerCase()), limit(1)))).docs[0];
-      const recipient = found ? String(found.get("username") || "").trim() || toClean : "";
+      let found = (await getDocs(query(users, where("username", "==", lookupName), limit(1)))).docs[0];
+      if (!found) found = (await getDocs(query(users, where("usernameLower", "==", lookupName.toLowerCase()), limit(1)))).docs[0];
+      const recipient = found ? String(found.get("username") || "").trim() || lookupName : "";
+      const shownTo = isSupport ? SUPPORT_LABEL : recipient;
       if (!found || !recipient) {
         setSending(false);
         return setError("No user found with that username.");
@@ -407,7 +413,7 @@ function Compose({
         createdAt: serverTimestamp(),
       };
       const batch = writeBatch(db);
-      batch.set(doc(collection(db, "emails")), { mailboxType: "sent", mailboxUid: uid, mailboxUsername: username, ...base });
+      batch.set(doc(collection(db, "emails")), { mailboxType: "sent", mailboxUid: uid, mailboxUsername: username, ...base, toUsername: shownTo });
       batch.set(doc(collection(db, "emails")), {
         mailboxType: "received",
         mailboxUid: found.id,
