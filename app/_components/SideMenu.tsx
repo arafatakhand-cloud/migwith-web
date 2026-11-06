@@ -173,17 +173,20 @@ export function MenuPanel() {
             </Link>
           );
         })}
-        <FacebookGroupButton />
-        {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom, no
-            colour, no card (a bright red button invites taps), like the app */}
-        <button
-          type="button"
-          onClick={logout}
-          className="mx-auto mt-[18px] flex items-center gap-1.5 rounded-[4px] border border-[#C9D2DE] bg-white px-5 py-2 text-[13px] font-semibold text-[#5A6B82] hover:bg-[#F4F6F9]"
-        >
-          ↪ Log out
-        </button>
-        <p className="mt-1 text-center text-[10px] text-[#8A97A8]">miGlife Web</p>
+        <div className="mt-4 space-y-3">
+          <FacebookGroupButton />
+          <button
+            type="button"
+            onClick={logout}
+            className="flex w-full items-center justify-center gap-2 rounded-[18px] border border-[#F3C9C2] bg-gradient-to-r from-[#FFF5F3] to-[#FFE9E5] py-2.5 text-[14px] font-bold text-[#C0392B] shadow-[0_2px_8px_-4px_rgba(192,57,43,.35)] transition hover:brightness-[.99] active:scale-[.98]"
+          >
+            ↪ Log out
+          </button>
+        </div>
+        <div className="mt-5 flex flex-col items-center gap-0.5 border-t border-[#DDE3EA] pt-3 text-center">
+          <span className="text-[12px] font-extrabold tracking-[0.12em] text-[#2F6ABD]">miGlife</span>
+          <span className="text-[10px] text-[#8A97A8]">Web · web.miglife.app</span>
+        </div>
       </div>
     );
   }
@@ -314,25 +317,26 @@ export function DesktopSidebar() {
 export const FACEBOOK_GROUP_URL = "https://www.facebook.com/share/g/1BRd2amXTK/";
 function FacebookGroupButton() {
   return (
-    <div className="mt-5 flex justify-center">
-      <a
-        href={FACEBOOK_GROUP_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Join our Facebook Group"
-        className="flex flex-col items-center gap-1 transition active:scale-95"
-      >
-        <span className="flex h-14 w-14 items-center justify-center rounded-full bg-[#FBE9E3] shadow-[0_2px_8px_-3px_rgba(0,0,0,.2)]">
-          <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden>
-            <circle cx="12" cy="12" r="12" fill="#1877F2" />
-            <path
-              fill="#fff"
-              d="M15.1 12.6h-2.2V20h-3v-7.4H8.4V10h1.5V8.4c0-2 .9-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1V10h2.4l-.2 2.6Z"
-            />
-          </svg>
-        </span>
-        <span className="text-[11px] font-semibold text-[#5A6B82]">Facebook Group</span>
-      </a>
-    </div>
+    <a
+      href={FACEBOOK_GROUP_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Join our Facebook Group"
+      className="group flex items-center gap-3 rounded-[18px] border border-[#DCE6F5] bg-gradient-to-r from-white to-[#EEF4FF] px-3 py-2.5 shadow-[0_2px_8px_-4px_rgba(24,119,242,.35)] transition active:scale-[.98]"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[#1877F2] shadow-[0_4px_10px_-4px_rgba(24,119,242,.6)]">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+          <path
+            fill="#fff"
+            d="M15.1 12.6h-2.2V20h-3v-7.4H8.4V10h1.5V8.4c0-2 .9-3.4 3.4-3.4h2v2.6h-1.3c-.9 0-1.1.4-1.1 1V10h2.4l-.2 2.6Z"
+          />
+        </svg>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[14px] font-bold text-[#0B2A5B]">Join our Facebook Group</span>
+        <span className="block text-[12px] text-[#6B7F99]">Updates, events and the community</span>
+      </span>
+      <span className="text-xl text-[#9DB0CC] transition group-hover:translate-x-0.5">›</span>
+    </a>
   );
 }
