@@ -293,7 +293,7 @@ export default function BlogPostPage() {
                     {c.author.slice(0, 1).toUpperCase()}
                   </span>
                   <div className="min-w-0 rounded-xl bg-white px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)]">
-                    <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="mr-1.5 font-bold" style={{ color: cc }}>
+                    <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
                       {c.author}
                     </Link>
                     <span className="break-words">{c.text}</span>
