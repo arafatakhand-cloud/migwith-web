@@ -949,7 +949,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
         </Link>
         <div className="min-w-0">
           <div className="flex items-center gap-1">
-            <div data-notranslate className="truncate text-[14px] font-extrabold" style={{ color: c }}>
+            <div data-notranslate className="truncate text-[14px] font-extrabold text-[#1E3A6E]">
               {p.author}
             </div>
             {verified && (
