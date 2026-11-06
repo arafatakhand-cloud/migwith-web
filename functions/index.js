@@ -508,7 +508,13 @@ function roleMailTemplate(role, ctx) {
     };
   }
   const label = ROLE_ALERT_LABELS[role] || role;
-  const lines = [hi, "", `Congratulations! miGlife has selected you as ${label}.`];
+  // Design A (letter): a short badge, a welcome heading, then a warm personal opening.
+  const lines = [
+    `${label.toUpperCase()} · SELECTED`, "",
+    `Welcome to the ${label} team.`, "",
+    hi, "",
+    `Congratulations! miGlife has selected you as ${label}. We chose you because the community trusts how you treat people.`,
+  ];
   if (role === "staff") {
     lines.push("", "As Staff, you help keep miGlife friendly, safe and respectful for every member. Please use your Staff tools only for their purpose, and treat every member fairly.");
   } else if (role === "admin") {
