@@ -26218,3 +26218,41 @@ exports.addLibrarySong = functionsV1.https.onCall(async (data, context) => {
   });
   return { ok: true, id: ref.id };
 });
+
+// 📨 Auto-reply to a member who writes to miGlife Support (the miglife inbox).
+// Only for real member mail (never for system mail or miglife's own mail), and
+// at most once per member per UTC day (the _operations marker keeps it to one).
+const SUPPORT_AUTOREPLY_SUBJECT = "Thanks for contacting miGlife Support";
+const SUPPORT_AUTOREPLY_BODY =
+  "Hello,\n\nThank you for writing to miGlife Support. We have received your message and our team will reply to you here in your Mail as soon as possible.\n\n" +
+  "Please do not send the same message again. Thank you for your patience.\n\n" +
+  MAIL_SIGN_OFF;
+
+exports.onSupportMailReceived = functionsV1.firestore
+  .document("emails/{mailId}")
+  .onCreate(async (snap) => {
+    const d = snap.data() || {};
+    if (d.mailboxType !== "received") return null;
+    if (String(d.mailboxUsername || "").trim().toLowerCase() !== "miglife") return null;
+    const fromName = String(d.fromUsername || "").trim();
+    const fromLower = fromName.toLowerCase();
+    if (!fromName || fromLower === "miglife" || fromLower === "miglife support") return null;
+    if (d.fromUid === "system") return null;
+
+    let uid = String(d.fromUid || "").trim();
+    if (!uid) {
+      const found = await findUserDocByUsername(fromName);
+      if (!found) return null;
+      uid = found.id;
+    }
+
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const marker = db.collection("_operations").doc(`support_autoreply_${uid}_${dayKey}`);
+    try {
+      await marker.create({ createdAt: FieldValue.serverTimestamp() });
+    } catch (error) {
+      return null; // already auto-replied today
+    }
+    await mailUser(fromName, uid, SUPPORT_AUTOREPLY_SUBJECT, SUPPORT_AUTOREPLY_BODY);
+    return null;
+  });
