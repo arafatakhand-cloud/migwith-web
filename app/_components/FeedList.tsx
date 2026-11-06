@@ -556,7 +556,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   </button>
                   {cmoodOpen && (
                     <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
-                      {[["😊", "খুশি"], ["😍", "ভালোবাসা"], ["😢", "মন খারাপ"], ["🤩", "উত্তেজিত"], ["😴", "ক্লান্ত"], ["🙏", "কৃতজ্ঞ"]].map(([e, l]) => (
+                      {[["😊", "Happy"], ["😍", "Loved"], ["😢", "Sad"], ["🤩", "Excited"], ["😴", "Tired"], ["🙏", "Thankful"]].map(([e, l]) => (
                         <button
                           key={l}
                           type="button"
