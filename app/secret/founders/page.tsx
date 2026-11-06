@@ -61,6 +61,117 @@ function FounderCard({ f, busy, onSave, onRemove }: { f: Founder; busy: boolean;
   );
 }
 
+// 🎭 Permissions by role (Staff / Admin / Founder) and ➕ Add staff id / ➕ Add admin id
+// (one MIG ID with its own tools), the same as the Android Founders page.
+const ROLE_LABELS: [string, string][] = [
+  ["staff", "🛠 Staff"],
+  ["admin", "⚙️ Admin"],
+  ["founder", "👥 Founder"],
+];
+
+function RoleTools() {
+  const [roles, setRoles] = useState<Record<string, Set<string>>>({});
+  const [staffName, setStaffName] = useState("");
+  const [staffPerms, setStaffPerms] = useState(new Set<string>());
+  const [adminName, setAdminName] = useState("");
+  const [adminPerms, setAdminPerms] = useState(new Set<string>());
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    manageFounder({ action: "roleList" })
+      .then(({ data }) => {
+        const out: Record<string, Set<string>> = {};
+        for (const [k] of ROLE_LABELS) out[k] = new Set(Array.isArray(data.roles?.[k]) ? data.roles[k].map(String) : []);
+        setRoles(out);
+      })
+      .catch(() => setMsg("❌ Could not load role tools."));
+  }, []);
+
+  const toggle = (set: Set<string>, p: string) => {
+    const n = new Set(set);
+    if (n.has(p)) n.delete(p);
+    else n.add(p);
+    return n;
+  };
+
+  const saveRole = async (role: string) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      await manageFounder({ action: "roleSet", role, perms: [...(roles[role] || [])] });
+      setMsg(`✅ ${role} tools saved.`);
+    } catch (e: any) {
+      setMsg("❌ " + (e?.message || "Could not save."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addRole = async (role: "staff" | "admin", name: string, perms: Set<string>, clear: () => void) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const { data } = await manageFounder({ action: "setUserRole", username: name.trim(), role, perms: [...perms] });
+      setMsg(`✅ ${data.username || name.trim()} is now ${role}.`);
+      clear();
+    } catch (e: any) {
+      setMsg("❌ " + (e?.message || "Could not add."));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <div className={`${card} space-y-3`}>
+        <p className="text-[15px] font-bold">🎭 Permissions by role</p>
+        <p className="text-xs text-gray-500">Everyone with the role gets the ticked tools.</p>
+        {ROLE_LABELS.map(([k, label]) => (
+          <div key={k} className="space-y-1 border-t pt-2">
+            <p className="text-[13px] font-bold">{label}</p>
+            <PermList selected={roles[k] || new Set()} onToggle={(p) => setRoles((r) => ({ ...r, [k]: toggle(r[k] || new Set(), p) }))} />
+            <button type="button" disabled={busy} onClick={() => saveRole(k)} className="rounded-full bg-[#2F80ED] px-4 py-1.5 text-[13px] font-bold text-white disabled:opacity-40">
+              Save {label}
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className={`${card} space-y-2`}>
+        <p className="text-[15px] font-bold">➕ Add staff id</p>
+        <input value={staffName} onChange={(e) => setStaffName(e.target.value)} placeholder="MIG ID" className={input} />
+        <p className="text-xs text-gray-500">Permissions for this person</p>
+        <PermList selected={staffPerms} onToggle={(p) => setStaffPerms((s) => toggle(s, p))} />
+        <button
+          type="button"
+          disabled={!staffName.trim() || busy}
+          onClick={() => addRole("staff", staffName, staffPerms, () => { setStaffName(""); setStaffPerms(new Set()); })}
+          className="w-full rounded-full bg-[#2F80ED] py-2.5 font-bold text-white disabled:opacity-40"
+        >
+          Add staff
+        </button>
+      </div>
+
+      <div className={`${card} space-y-2`}>
+        <p className="text-[15px] font-bold">➕ Add admin id</p>
+        <input value={adminName} onChange={(e) => setAdminName(e.target.value)} placeholder="MIG ID" className={input} />
+        <p className="text-xs text-gray-500">Permissions for this person</p>
+        <PermList selected={adminPerms} onToggle={(p) => setAdminPerms((s) => toggle(s, p))} />
+        <button
+          type="button"
+          disabled={!adminName.trim() || busy}
+          onClick={() => addRole("admin", adminName, adminPerms, () => { setAdminName(""); setAdminPerms(new Set()); })}
+          className="w-full rounded-full bg-[#2F80ED] py-2.5 font-bold text-white disabled:opacity-40"
+        >
+          Add admin
+        </button>
+      </div>
+      {msg && <p className="text-[13px] font-bold text-gray-600">{msg}</p>}
+    </>
+  );
+}
+
 export default function FoundersPage() {
   const f = useFounderPerms();
   const [busy, setBusy] = useState(false);
@@ -101,6 +212,8 @@ export default function FoundersPage() {
     <FounderShell title="👥 Founders" allowed={f.isMigwith} loaded={f.loaded}>
       {busy && <div className="h-1 animate-pulse rounded bg-[#2F80ED]/60" />}
       {status && <p className="text-[13px] text-gray-500">{status}</p>}
+      <RoleTools />
+
       <div className={`${card} space-y-2`}>
         <p className="text-[15px] font-bold">➕ Add a founder</p>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="MIG ID" className={input} />
