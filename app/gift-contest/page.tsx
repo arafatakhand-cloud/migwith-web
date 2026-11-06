@@ -8,6 +8,7 @@ import { db } from "../../lib/firebase";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useFounderPerms } from "../../lib/founder";
+import { OFFICIAL_COUNTRY_ROOMS, OFFICIAL_GAME_ROOMS } from "../../lib/rooms";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 import { Face, profileImageUrl } from "../_components/RankFace";
@@ -72,6 +73,26 @@ export default function GiftContestPage() {
   const [eMinute, setEMinute] = useState("0");
   const [eHours, setEHours] = useState("24");
   const [saveMsg, setSaveMsg] = useState("");
+  const [giftOptions, setGiftOptions] = useState<string[]>([]);
+  useEffect(() => {
+    if (!canEdit) return;
+    getDocs(collection(db, "gift_catalog"))
+      .then((snap) =>
+        setGiftOptions(
+          snap.docs
+            .filter((d) => d.get("active") !== false)
+            .map((d) => String(d.get("name") || "").trim())
+            .filter(Boolean)
+            .sort()
+        )
+      )
+      .catch(() => setGiftOptions([]));
+  }, [canEdit]);
+  const roomOptions = [...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS];
+  const hourOptions = Array.from({ length: 24 }, (_, i) => String(i));
+  const minuteOptions = ["0", "5", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
+  const hoursOptions = ["1", "2", "3", "6", "12", "24", "48", "72"];
+  const selectClass = "rounded-xl bg-white/15 px-3 py-2 text-white outline-none [&>option]:text-black";
   const [saving, setSaving] = useState(false);
 
   const openEdit = () => {
@@ -249,13 +270,37 @@ export default function GiftContestPage() {
                   <label className="flex items-center gap-2 font-bold">
                     <input type="checkbox" checked={eActive} onChange={(e) => setEActive(e.target.checked)} /> Contest is live
                   </label>
-                  <input value={eRoom} onChange={(e) => setERoom(e.target.value)} placeholder="Room name" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
-                  <input value={eGift} onChange={(e) => setEGift(e.target.value)} placeholder="Gift name" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                  <label className="grid gap-1 text-[12px] font-bold">Room
+                    <select value={eRoom} onChange={(e) => setERoom(e.target.value)} className={selectClass}>
+                      <option value="">Choose a room</option>
+                      {roomOptions.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </label>
+                  <label className="grid gap-1 text-[12px] font-bold">Gift
+                    <select value={eGift} onChange={(e) => setEGift(e.target.value)} className={selectClass}>
+                      <option value="">Choose a gift</option>
+                      {giftOptions.map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </label>
                   <div className="grid grid-cols-2 gap-2">
-                    <input value={eDate} onChange={(e) => setEDate(e.target.value)} placeholder="Date YYYY-MM-DD" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
-                    <input value={eHours} onChange={(e) => setEHours(e.target.value)} placeholder="Hours" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
-                    <input value={eHour} onChange={(e) => setEHour(e.target.value)} placeholder="Start hour (0-23)" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
-                    <input value={eMinute} onChange={(e) => setEMinute(e.target.value)} placeholder="Start minute" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
+                    <label className="grid gap-1 text-[12px] font-bold">Date
+                      <input type="date" value={eDate} onChange={(e) => setEDate(e.target.value)} className={selectClass} />
+                    </label>
+                    <label className="grid gap-1 text-[12px] font-bold">Lasts (hours)
+                      <select value={eHours} onChange={(e) => setEHours(e.target.value)} className={selectClass}>
+                        {hoursOptions.map((h) => <option key={h} value={h}>{h} hours</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-[12px] font-bold">Start hour
+                      <select value={eHour} onChange={(e) => setEHour(e.target.value)} className={selectClass}>
+                        {hourOptions.map((h) => <option key={h} value={h}>{h.padStart(2, "0")}</option>)}
+                      </select>
+                    </label>
+                    <label className="grid gap-1 text-[12px] font-bold">Start minute
+                      <select value={eMinute} onChange={(e) => setEMinute(e.target.value)} className={selectClass}>
+                        {minuteOptions.map((m) => <option key={m} value={m}>{m.padStart(2, "0")}</option>)}
+                      </select>
+                    </label>
                   </div>
                   <textarea value={ePrize} onChange={(e) => setEPrize(e.target.value)} rows={2} placeholder="Prize" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
                   <textarea value={eRules} onChange={(e) => setERules(e.target.value)} rows={3} placeholder="Rules" className="rounded-xl bg-white/15 px-3 py-2 text-white outline-none placeholder:text-white/60" />
