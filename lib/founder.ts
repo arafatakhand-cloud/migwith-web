@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
-import { db } from "./firebase";
+import { httpsCallable } from "firebase/functions";
+import { db, functions } from "./firebase";
 import { useSession } from "../app/_components/AppSession";
 
 // The main founder account, like the app's MainFounderUsernames: "miglife"
@@ -34,14 +35,22 @@ export const FOUNDER_PERMS: [string, string][] = [
   ["game_contest", "Game Contest"],
 ];
 
+// 🔑 Every tool this person has, worked out by the server: from founders/{uid},
+// from their own tools (set when they were made Staff / Admin), and from their role.
+const getMyFounderPerms = httpsCallable<Record<string, never>, { perms: string[] }>(functions, "getMyFounderPerms");
+
 export function useFounderPerms() {
   const { user, username } = useSession();
   const [perms, setPerms] = useState<Set<string>>(new Set());
+  const [serverPerms, setServerPerms] = useState<Set<string>>(new Set());
   const [listed, setListed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const isMigwith = isMainFounderName(username);
   useEffect(() => {
     if (!user) return;
+    getMyFounderPerms({})
+      .then((r) => setServerPerms(new Set(Array.isArray(r.data.perms) ? r.data.perms : [])))
+      .catch(() => setServerPerms(new Set()));
     return onSnapshot(
       doc(db, "founders", user.uid),
       (d) => {
@@ -56,8 +65,8 @@ export function useFounderPerms() {
   return {
     isMigwith,
     loaded: loaded || isMigwith,
-    can: (p: string) => isMigwith || perms.has(p),
-    isAnyFounder: isMigwith || perms.size > 0,
+    can: (p: string) => isMigwith || perms.has(p) || serverPerms.has(p),
+    isAnyFounder: isMigwith || perms.size > 0 || serverPerms.size > 0,
     /**
      * 👑 Hidden founder (listed in miglife secret → Founders, even with no
      * permission ticked): shown as a normal "User" everywhere, but with every
