@@ -76,10 +76,16 @@ function fullTime(ms: number) {
   return `${d.toLocaleDateString(undefined, { weekday: "short", day: "2-digit", month: "short", year: "numeric" })} • ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`;
 }
 
-function toMail(d: { id: string; get: (k: string, o?: any) => any }, sent: boolean): Mail {
+// The official miglife account is shown to users as "miGlife Support".
+// Mail sent to that name is routed to the miglife account (see compose).
+const SUPPORT_LABEL = "miGlife Support";
+
+function toMail(d: { id: string; get: (k: string, o?: any) => any }, sent: boolean, viewer: string): Mail {
+  const raw = String((sent ? d.get("toUsername") : d.get("fromUsername")) || "").trim();
+  const isMiglife = raw.toLowerCase() === "miglife" && viewer.toLowerCase() !== "miglife";
   return {
     id: d.id,
-    other: String((sent ? d.get("toUsername") : d.get("fromUsername")) || "").trim(),
+    other: isMiglife ? SUPPORT_LABEL : raw,
     subject: String(d.get("subject") || "").trim() || "(No subject)",
     body: String(d.get("message") ?? d.get("body") ?? ""),
     timeMs: d.get("createdAt", { serverTimestamps: "estimate" })?.toMillis?.() ?? 0,
@@ -126,7 +132,7 @@ function MailPage() {
         ),
         (snap) => {
           setLoadError("");
-          const list = snap.docs.map((d) => toMail(d, sent));
+          const list = snap.docs.map((d) => toMail(d, sent, username));
           if (sent) setSentBox(list);
           else setInbox(list);
         },
@@ -391,7 +397,6 @@ function Compose({
     try {
       // 🔒 "miGlife Support" is the shown name of miGlife's own inbox. Mail to it goes to
       // the miglife account, and the sender never sees where it went.
-      const SUPPORT_LABEL = "miGlife Support";
       const isSupport = toClean.toLowerCase() === SUPPORT_LABEL.toLowerCase();
       const lookupName = isSupport ? "miglife" : toClean;
       // Exact username first, then the same name in any upper/lower case.
