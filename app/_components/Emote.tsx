@@ -188,7 +188,11 @@ export function EmotePanel({
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${i === active ? "bg-[#174EA6]/15" : ""}`}
               >
-                {s.tabId ? <EmoteView id={s.tabId} size={34} playing={false} /> : s.glyph}
+                {s.tabId ? (
+                  <EmoteView id={s.tabId} size={30} playing={false} />
+                ) : (
+                  <span className="flex h-[30px] w-[30px] items-center justify-center text-[22px] leading-none">{s.glyph}</span>
+                )}
               </span>
               <span className={`mt-0.5 h-[3px] w-[18px] rounded-full ${i === active ? "bg-[#174EA6]" : "bg-transparent"}`} />
             </button>
