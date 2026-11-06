@@ -484,7 +484,13 @@ async function mailUser(toUsername, toUid, subject, body) {
   }
 }
 
-const MAIL_SIGN_OFF = "With respect,\nmiGlife Support team";
+// ✍️ The signature at the end of every system mail.
+const MAIL_SIGN_OFF = [
+  "With respect,",
+  "miGlife Support Team",
+  "miGlife · https://web.miglife.app",
+  "support@miglife.app",
+].join("\n");
 
 // ✉️ Wording of the role Mails (English). ctx: { name, until, country, previousLabel }.
 function roleMailTemplate(role, ctx) {
