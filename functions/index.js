@@ -467,24 +467,32 @@ async function alertUser(toUsername, message, type, extra = {}, docId = null) {
 async function mailUser(toUsername, toUid, subject, body) {
   const to = String(toUsername || "").trim();
   if (!to || !toUid) return;
+  const message = `${body}\n\n────────────\nTerms & Conditions: https://web.miglife.app/terms\nBy receiving this mail you agree to the miGlife Terms & Conditions.`;
   try {
     // Same shape the Mail page writes for a normal message (mailboxType "received"),
     // so it shows in the member's Inbox.
     await db.collection("emails").add({
       mailboxType: "received", mailboxUid: toUid, mailboxUsername: to,
-      // The sender is shown as "miGlife Support". A Reply to it is routed to miGlife's inbox by the Mail page.
+      // fromUsername is the shown name; the Mail page routes a Reply to it to miGlife's inbox.
       fromUid: "system", fromUsername: "miGlife Support", toUsername: to,
-      subject,
-      // 📜 every system mail ends with the Terms & Conditions link
-      message: `${body}\n\n────────────\nTerms & Conditions: https://web.miglife.app/terms\nBy receiving this mail you agree to the miGlife Terms & Conditions.`,
-      read: false, createdAt: FieldValue.serverTimestamp(),
+      subject, message, read: false, createdAt: FieldValue.serverTimestamp(),
     });
   } catch (error) {
     console.error("mailUser failed", error?.message);
   }
+  // 📧 Also to the member's own contact email, if they have set one (private to them).
+  try {
+    const address = await contactEmailOf(toUid, null);
+    if (address) {
+      const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const html = `<div style="font-family:system-ui,sans-serif;font-size:14px;line-height:1.6;color:#17233D"><p style="margin:0 0 8px;font-weight:700">${esc(subject)}</p><pre style="font-family:inherit;white-space:pre-wrap;margin:0">${esc(message)}</pre></div>`;
+      await sendVerificationEmail(address, subject, message, html);
+    }
+  } catch (error) {
+    console.error("mailUser contact email failed", error?.message);
+  }
 }
 
-// ✍️ The signature at the end of every system mail.
 const MAIL_SIGN_OFF = [
   "With respect,",
   "miGlife Support Team",
