@@ -8,8 +8,9 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 
-// 🎮 Game Contests. miglife can set up several contests, each for one game (or all
-// games). A contest counts wins only while it is running. Players see the running ones.
+// 🎮 Game Contests. miGlife (or a founder with Game Contest) sets them up and runs them.
+// Edit only before a contest starts. Once it has started, only miGlife can remove it.
+// Only miGlife sets the prizes. A contest counts wins only while it is running.
 
 type Player = { uid: string; username: string; position: number; wins: number };
 type Contest = {
@@ -17,13 +18,16 @@ type Contest = {
   name: string;
   game: string;
   active: boolean;
+  everStarted: boolean;
+  prizes: string[];
   startedAtMs: number;
   players: Player[];
   myWins: number;
   myPosition: number;
 };
-type State = { contests: Contest[]; isOwner: boolean; games: string[] };
-type Action = "create" | "start" | "stop" | "reset" | "delete";
+type State = { contests: Contest[]; isOwner: boolean; isMain: boolean; games: string[] };
+type Action = "create" | "edit" | "start" | "stop" | "reset" | "delete" | "setPrize";
+type Payload = { action: Action; id?: string; name?: string; game?: string; prizes?: string[] };
 
 const GAME_LABELS: Record<string, string> = {
   all: "All games",
@@ -39,12 +43,14 @@ const GAME_LABELS: Record<string, string> = {
   royaltreasure: "💎 Royal Treasure",
 };
 const gameLabel = (g: string) => GAME_LABELS[g] || g;
+const MEDAL = ["🥇", "🥈", "🥉"];
+const MAX_PRIZES = 10;
 
 const getGameContests = httpsCallable<Record<string, never>, State>(functions, "getLudoContest");
-const ceoGameContest = httpsCallable<{ action: Action; id?: string; name?: string; game?: string }, { ok: boolean }>(functions, "ceoLudoContest");
+const ceoGameContest = httpsCallable<Payload, { ok: boolean }>(functions, "ceoLudoContest");
 
 const BG = "radial-gradient(120% 60% at 50% 0%, #A0287A 0%, #4A1150 55%, #1E0A2E 100%)";
-const MEDAL = ["#FFD34D", "#CFD6E4", "#E7A26B"];
+const MEDAL_BG = ["#FFD34D", "#CFD6E4", "#E7A26B"];
 
 export default function GameContestPage() {
   const ready = useRequireLogin();
@@ -55,6 +61,10 @@ export default function GameContestPage() {
   const [tick, setTick] = useState(0);
   const [newName, setNewName] = useState("");
   const [newGame, setNewGame] = useState("all");
+  const [editing, setEditing] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editGame, setEditGame] = useState("all");
+  const [prizeDraft, setPrizeDraft] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     if (!ready) return;
@@ -64,16 +74,25 @@ export default function GameContestPage() {
       .catch(() => setError("Couldn't load the contests. Please try again."));
   }, [ready, tick]);
 
-  const act = async (payload: { action: Action; id?: string; name?: string; game?: string }) => {
+  const act = async (payload: Payload) => {
     if (busy) return;
     setBusy(true);
     setError("");
     try {
       await ceoGameContest(payload);
       if (payload.action === "create") setNewName("");
+      if (payload.action === "edit") setEditing(null);
+      if (payload.action === "setPrize" && payload.id) {
+        setPrizeDraft((d) => {
+          const next = { ...d };
+          delete next[payload.id as string];
+          return next;
+        });
+      }
       setTick((t) => t + 1);
-    } catch {
-      setError("That didn't work. Please try again.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setError(msg && !msg.startsWith("internal") ? msg : "That didn't work. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -82,7 +101,11 @@ export default function GameContestPage() {
   const contests = state?.contests || [];
   const running = contests.filter((c) => c.active);
   const isOwner = !!state?.isOwner;
+  const isMain = !!state?.isMain;
   const games = state?.games || ["all"];
+
+  const prizesOf = (c: Contest) => prizeDraft[c.id] ?? (c.prizes.length ? c.prizes : ["", "", ""]);
+  const setPrizes = (id: string, list: string[]) => setPrizeDraft((d) => ({ ...d, [id]: list }));
 
   return (
     <PageShell light>
@@ -142,29 +165,116 @@ export default function GameContestPage() {
               </div>
 
               {contests.length > 0 && (
-                <ul className="mt-3 grid gap-2">
-                  {contests.map((c) => (
-                    <li key={c.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-                      <span className="min-w-0 flex-1 truncate font-extrabold">
-                        {c.name} <span className="text-[11px] text-white/70">· {gameLabel(c.game)} · {c.active ? "running" : "stopped"}</span>
-                      </span>
-                      {c.active ? (
-                        <button type="button" disabled={busy} onClick={() => act({ action: "stop", id: c.id })} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-black disabled:opacity-50">
-                          ■ Stop
-                        </button>
-                      ) : (
-                        <button type="button" disabled={busy} onClick={() => act({ action: "start", id: c.id })} className="rounded-full bg-[#FFD34D] px-3 py-1 text-[12px] font-black text-[#3A1A2B] disabled:opacity-50">
-                          ▶ Start
-                        </button>
-                      )}
-                      <button type="button" disabled={busy} onClick={() => act({ action: "reset", id: c.id })} className="rounded-full bg-[#FF8FC7]/30 px-3 py-1 text-[12px] font-black text-[#FFD0E8] disabled:opacity-50">
-                        🔄 Reset
-                      </button>
-                      <button type="button" disabled={busy} onClick={() => act({ action: "delete", id: c.id })} className="rounded-full bg-red-500/25 px-3 py-1 text-[12px] font-black disabled:opacity-50">
-                        🗑
-                      </button>
-                    </li>
-                  ))}
+                <ul className="mt-3 grid gap-3">
+                  {contests.map((c) => {
+                    const canDelete = isMain || !c.everStarted;
+                    const list = prizesOf(c);
+                    return (
+                      <li key={c.id} className="grid gap-2 rounded-xl bg-white/10 p-3">
+                        {editing === c.id ? (
+                          <div className="grid gap-2">
+                            <input
+                              value={editName}
+                              onChange={(e) => setEditName(e.target.value)}
+                              maxLength={60}
+                              className="rounded-xl bg-white/15 px-3 py-2 text-[14px] text-white outline-none"
+                            />
+                            <div className="flex flex-wrap gap-1.5">
+                              {games.map((g) => (
+                                <button
+                                  key={g}
+                                  type="button"
+                                  onClick={() => setEditGame(g)}
+                                  aria-pressed={editGame === g}
+                                  className={`rounded-full px-3 py-1 text-[12px] font-extrabold ${editGame === g ? "bg-white text-[#3A1A2B]" : "bg-white/12 text-white/85"}`}
+                                >
+                                  {gameLabel(g)}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="flex gap-2">
+                              <button type="button" disabled={busy || !editName.trim()} onClick={() => act({ action: "edit", id: c.id, name: editName.trim(), game: editGame })} className="rounded-full bg-[#FFD34D] px-3 py-1 text-[12px] font-black text-[#3A1A2B] disabled:opacity-50">
+                                Save
+                              </button>
+                              <button type="button" onClick={() => setEditing(null)} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-black">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate font-extrabold">
+                              {c.name} <span className="text-[11px] text-white/70">· {gameLabel(c.game)} · {c.active ? "running" : c.everStarted ? "stopped" : "not started"}</span>
+                            </span>
+                            {!c.everStarted && (
+                              <button type="button" disabled={busy} onClick={() => { setEditing(c.id); setEditName(c.name); setEditGame(c.game); }} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-black disabled:opacity-50">
+                                ✏️ Edit
+                              </button>
+                            )}
+                            {c.active ? (
+                              <button type="button" disabled={busy} onClick={() => act({ action: "stop", id: c.id })} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-black disabled:opacity-50">
+                                ■ Stop
+                              </button>
+                            ) : (
+                              <button type="button" disabled={busy} onClick={() => act({ action: "start", id: c.id })} className="rounded-full bg-[#FFD34D] px-3 py-1 text-[12px] font-black text-[#3A1A2B] disabled:opacity-50">
+                                ▶ Start
+                              </button>
+                            )}
+                            <button type="button" disabled={busy} onClick={() => act({ action: "reset", id: c.id })} className="rounded-full bg-[#FF8FC7]/30 px-3 py-1 text-[12px] font-black text-[#FFD0E8] disabled:opacity-50">
+                              🔄 Reset
+                            </button>
+                            {canDelete && (
+                              <button type="button" disabled={busy} onClick={() => act({ action: "delete", id: c.id })} className="rounded-full bg-red-500/25 px-3 py-1 text-[12px] font-black disabled:opacity-50">
+                                🗑
+                              </button>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 🏆 Prize: only miGlife sets it */}
+                        <div className="grid gap-1.5 rounded-lg bg-white/[.06] p-2">
+                          <p className="text-[11px] font-black tracking-wide text-[#FFD34D]">🏆 PRIZE{isMain ? "" : " (set by miGlife)"}</p>
+                          {list.map((p, i) => (
+                            <div key={i} className="flex items-center gap-2">
+                              <span className="w-7 shrink-0 text-center text-[15px]">{MEDAL[i] || `${i + 1}.`}</span>
+                              {isMain ? (
+                                <input
+                                  value={p}
+                                  maxLength={80}
+                                  placeholder={`Prize for place ${i + 1}`}
+                                  onChange={(e) => {
+                                    const next = [...list];
+                                    next[i] = e.target.value;
+                                    setPrizes(c.id, next);
+                                  }}
+                                  className="min-w-0 flex-1 rounded-lg bg-white/15 px-2 py-1.5 text-[13px] text-white placeholder:text-white/50 outline-none"
+                                />
+                              ) : (
+                                <span className="min-w-0 flex-1 text-[13px]">{p || "—"}</span>
+                              )}
+                            </div>
+                          ))}
+                          {isMain && (
+                            <div className="flex flex-wrap items-center gap-2 pt-1">
+                              {list.length < MAX_PRIZES && (
+                                <button type="button" onClick={() => setPrizes(c.id, [...list, ""])} aria-label="Add a prize place" className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-[18px] font-black">
+                                  +
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => act({ action: "setPrize", id: c.id, prizes: list.map((p) => p.trim()).filter(Boolean) })}
+                                className="rounded-full bg-[#FFD34D] px-3 py-1 text-[12px] font-black text-[#3A1A2B] disabled:opacity-50"
+                              >
+                                Save prize
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -188,6 +298,16 @@ export default function GameContestPage() {
                 <div key={c.id} className="rounded-[22px] border border-white/15 bg-white/[.06] p-3">
                   <h2 className="mb-0.5 px-1 text-[16px] font-black">{c.name}</h2>
                   <p className="mb-2 px-1 text-[11.5px] font-bold text-[#FFB3DE]">{gameLabel(c.game)}</p>
+                  {c.prizes.length > 0 && (
+                    <div className="mb-2 grid gap-1 rounded-xl bg-[#FFD34D]/15 px-3 py-2 text-[13px]">
+                      {c.prizes.map((p, i) => (
+                        <p key={i}>
+                          <span className="mr-1">{MEDAL[i] || `${i + 1}.`}</span>
+                          {p}
+                        </p>
+                      ))}
+                    </div>
+                  )}
                   {c.myPosition ? (
                     <p className="mb-2 rounded-xl bg-white/10 px-3 py-2 text-[13px] font-bold">
                       You are #{c.myPosition} with {c.myWins} win{c.myWins === 1 ? "" : "s"}
@@ -201,7 +321,7 @@ export default function GameContestPage() {
                         <li key={p.uid} className="grid grid-cols-[34px_1fr_auto] items-center gap-3 rounded-[18px] border border-white/15 bg-white/10 px-3 py-2.5">
                           <span
                             className="flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-black"
-                            style={{ background: MEDAL[p.position - 1] || "rgba(255,255,255,.2)", color: p.position <= 3 ? "#3A1A2B" : "#fff" }}
+                            style={{ background: MEDAL_BG[p.position - 1] || "rgba(255,255,255,.2)", color: p.position <= 3 ? "#3A1A2B" : "#fff" }}
                           >
                             {p.position}
                           </span>
