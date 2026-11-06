@@ -249,7 +249,7 @@ export function EmotePanel({
               className="flex aspect-square items-center justify-center rounded-[10px] p-1 hover:bg-[#EAF4FE] active:scale-90"
             >
               {/* fixed, smaller picture in the middle of the cell (the trimmed emotes otherwise looked huge) */}
-              <EmoteView id={id} size={34} playing={false} />
+              <EmoteView id={id} size={32} playing={false} />
             </button>
           ))}
         </div>
