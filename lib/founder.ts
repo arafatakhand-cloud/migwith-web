@@ -28,6 +28,10 @@ export const FOUNDER_PERMS: [string, string][] = [
   ["gift_shop", "Gift Edit"],
   // 🚩 see and handle user reports
   ["reports", "Reports"],
+  // 🎁 Gift Contest: set the prize, rules, room and time
+  ["gift_contest", "Gift Contest"],
+  // 🎮 Game Contests: add, start, stop, reset and delete
+  ["game_contest", "Game Contest"],
 ];
 
 export function useFounderPerms() {
