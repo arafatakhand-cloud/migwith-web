@@ -522,6 +522,7 @@ function roleMailTemplate(role, ctx) {
   } else if (role === "elite_user") {
     lines.push("", "Elite (Honor) members are recognised for their contribution to the community. Thank you for being part of it.");
   }
+  lines.push("", "miGlife may remove this role at any time, with or without notice, under the Terms & Community Rules.");
   lines.push("", "If you have any questions, reply through Support.", "", MAIL_SIGN_OFF);
   return { subject: `You have been selected as ${label}`, body: lines.join("\n") };
 }
@@ -539,6 +540,7 @@ function founderPermissionMailTemplate(name, added, removed) {
     removed.forEach((p) => lines.push(`  • ${FOUNDER_PERM_NAMES[p] || p}`));
     lines.push("", "Your other permissions are not changed.", "");
   }
+  if (added.length) lines.push("miGlife may remove these permissions at any time, with or without notice, under the Terms & Community Rules.", "");
   lines.push("If you have a question about these changes, reply through Support.", "", MAIL_SIGN_OFF);
   return {
     subject: added.length ? "Your founder permissions were updated" : "Some founder permissions were removed",
