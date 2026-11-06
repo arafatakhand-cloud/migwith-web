@@ -82,7 +82,8 @@ export function EmoteView({ id, size, playing = true }: { id: string; size: numb
       loading="lazy"
       draggable={false}
       className="inline-block align-middle"
-      style={{ width: size, height: size }}
+      // 🔍 crisp: pixel-art emotes stay sharp when shown bigger
+      style={{ width: size, height: size, imageRendering: size >= 40 ? "pixelated" : "auto" }}
     />
   );
 }
@@ -94,7 +95,7 @@ export function EmoteView({ id, size, playing = true }: { id: string; size: numb
  */
 export function withEmotes(text: string, fontPx: number, renderText: (s: string, key: string) => ReactNode = (s) => s): ReactNode[] {
   // ~the height of the text (was 10/7 — emoji looked bigger than the words)
-  const size = Math.round(fontPx * 1.15);
+  const size = Math.round(fontPx * 1.5);
   const pieces = splitEmotes(text);
   return pieces.map((p, i) => {
     if ("emote" in p) return <EmoteView key={`e${i}`} id={p.emote} size={size} />;
@@ -187,7 +188,7 @@ export function EmotePanel({
               <span
                 className={`flex h-10 w-10 items-center justify-center rounded-xl text-xl ${i === active ? "bg-[#174EA6]/15" : ""}`}
               >
-                {s.tabId ? <EmoteView id={s.tabId} size={26} playing={false} /> : s.glyph}
+                {s.tabId ? <EmoteView id={s.tabId} size={34} playing={false} /> : s.glyph}
               </span>
               <span className={`mt-0.5 h-[3px] w-[18px] rounded-full ${i === active ? "bg-[#174EA6]" : "bg-transparent"}`} />
             </button>
@@ -244,7 +245,7 @@ export function EmotePanel({
               className="flex aspect-square items-center justify-center rounded-[10px] p-1 hover:bg-[#EAF4FE] active:scale-90"
             >
               {/* fixed, smaller picture in the middle of the cell (the trimmed emotes otherwise looked huge) */}
-              <EmoteView id={id} size={26} playing={false} />
+              <EmoteView id={id} size={34} playing={false} />
             </button>
           ))}
         </div>
