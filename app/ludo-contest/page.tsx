@@ -8,31 +8,45 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { RefreshButton } from "../_components/RefreshButton";
 
-// 🎮 Ludo Contests. miglife can set up several contests, each with its own name.
-// A contest counts Ludo wins only while it is running. Players see the running ones.
+// 🎮 Game Contests. miglife can set up several contests, each for one game (or all
+// games). A contest counts wins only while it is running. Players see the running ones.
 
 type Player = { uid: string; username: string; position: number; wins: number };
 type Contest = {
   id: string;
   name: string;
+  game: string;
   active: boolean;
   startedAtMs: number;
   players: Player[];
   myWins: number;
   myPosition: number;
 };
-type State = { contests: Contest[]; isOwner: boolean };
+type State = { contests: Contest[]; isOwner: boolean; games: string[] };
+type Action = "create" | "start" | "stop" | "reset" | "delete";
 
-const getLudoContests = httpsCallable<Record<string, never>, State>(functions, "getLudoContest");
-const ceoLudoContest = httpsCallable<{ action: "create" | "start" | "stop" | "reset" | "delete"; id?: string; name?: string }, { ok: boolean }>(
-  functions,
-  "ceoLudoContest"
-);
+const GAME_LABELS: Record<string, string> = {
+  all: "All games",
+  ludo: "🎲 Ludo",
+  cricket: "🏏 Cricket",
+  teenpatti: "🃏 Teen Patti",
+  royale: "👑 Royale",
+  twentynine: "🂡 29",
+  luxurybet: "🎰 Luxury Bet",
+  numguess: "🎯 Number Guess",
+  horserace: "🐎 Horse Race",
+  liardice: "🎲 Liar Dice",
+  royaltreasure: "💎 Royal Treasure",
+};
+const gameLabel = (g: string) => GAME_LABELS[g] || g;
+
+const getGameContests = httpsCallable<Record<string, never>, State>(functions, "getLudoContest");
+const ceoGameContest = httpsCallable<{ action: Action; id?: string; name?: string; game?: string }, { ok: boolean }>(functions, "ceoLudoContest");
 
 const BG = "radial-gradient(120% 60% at 50% 0%, #A0287A 0%, #4A1150 55%, #1E0A2E 100%)";
 const MEDAL = ["#FFD34D", "#CFD6E4", "#E7A26B"];
 
-export default function LudoContestPage() {
+export default function GameContestPage() {
   const ready = useRequireLogin();
   const router = useRouter();
   const [state, setState] = useState<State | null>(null);
@@ -40,21 +54,22 @@ export default function LudoContestPage() {
   const [busy, setBusy] = useState(false);
   const [tick, setTick] = useState(0);
   const [newName, setNewName] = useState("");
+  const [newGame, setNewGame] = useState("all");
 
   useEffect(() => {
     if (!ready) return;
     setError("");
-    getLudoContests({})
+    getGameContests({})
       .then((r) => setState(r.data))
-      .catch(() => setError("Couldn't load the Ludo Contests. Please try again."));
+      .catch(() => setError("Couldn't load the contests. Please try again."));
   }, [ready, tick]);
 
-  const act = async (payload: { action: "create" | "start" | "stop" | "reset" | "delete"; id?: string; name?: string }) => {
+  const act = async (payload: { action: Action; id?: string; name?: string; game?: string }) => {
     if (busy) return;
     setBusy(true);
     setError("");
     try {
-      await ceoLudoContest(payload);
+      await ceoGameContest(payload);
       if (payload.action === "create") setNewName("");
       setTick((t) => t + 1);
     } catch {
@@ -67,6 +82,7 @@ export default function LudoContestPage() {
   const contests = state?.contests || [];
   const running = contests.filter((c) => c.active);
   const isOwner = !!state?.isOwner;
+  const games = state?.games || ["all"];
 
   return (
     <PageShell light>
@@ -82,7 +98,7 @@ export default function LudoContestPage() {
               ‹
             </button>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-black">🎮 Ludo Contest</h1>
+              <h1 className="text-xl font-black">🎮 Game Contests</h1>
               <p className="text-[10.5px] font-extrabold tracking-[0.15em] text-[#FFB3DE]">LIVE CONTESTS · TOP PLAYERS</p>
             </div>
             <RefreshButton
@@ -105,11 +121,24 @@ export default function LudoContestPage() {
                 <button
                   type="button"
                   disabled={busy || !newName.trim()}
-                  onClick={() => act({ action: "create", name: newName.trim() })}
+                  onClick={() => act({ action: "create", name: newName.trim(), game: newGame })}
                   className="rounded-xl bg-[#FFD34D] px-4 py-2 text-[13px] font-black text-[#3A1A2B] disabled:opacity-40"
                 >
                   + Add
                 </button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {games.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setNewGame(g)}
+                    aria-pressed={newGame === g}
+                    className={`rounded-full px-3 py-1 text-[12px] font-extrabold ${newGame === g ? "bg-white text-[#3A1A2B]" : "bg-white/12 text-white/85"}`}
+                  >
+                    {gameLabel(g)}
+                  </button>
+                ))}
               </div>
 
               {contests.length > 0 && (
@@ -117,7 +146,7 @@ export default function LudoContestPage() {
                   {contests.map((c) => (
                     <li key={c.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
                       <span className="min-w-0 flex-1 truncate font-extrabold">
-                        {c.name} <span className="text-[11px] text-white/70">{c.active ? "· running" : "· stopped"}</span>
+                        {c.name} <span className="text-[11px] text-white/70">· {gameLabel(c.game)} · {c.active ? "running" : "stopped"}</span>
                       </span>
                       {c.active ? (
                         <button type="button" disabled={busy} onClick={() => act({ action: "stop", id: c.id })} className="rounded-full bg-white/15 px-3 py-1 text-[12px] font-black disabled:opacity-50">
@@ -150,21 +179,22 @@ export default function LudoContestPage() {
               <p className="text-[40px] leading-none">🎮💤</p>
               <p className="mt-2 text-[15px] font-extrabold">No contest right now</p>
               <p className="mt-1 text-[12.5px] text-white/75">
-                The next Ludo Contest is coming soon. Watch Alerts and Announcements — the top players win prizes! 🏆
+                The next contest is coming soon. Watch Alerts and Announcements — the top players win prizes! 🏆
               </p>
             </div>
           ) : (
             <div className="grid gap-5">
               {running.map((c) => (
                 <div key={c.id} className="rounded-[22px] border border-white/15 bg-white/[.06] p-3">
-                  <h2 className="mb-2 px-1 text-[16px] font-black">{c.name}</h2>
+                  <h2 className="mb-0.5 px-1 text-[16px] font-black">{c.name}</h2>
+                  <p className="mb-2 px-1 text-[11.5px] font-bold text-[#FFB3DE]">{gameLabel(c.game)}</p>
                   {c.myPosition ? (
                     <p className="mb-2 rounded-xl bg-white/10 px-3 py-2 text-[13px] font-bold">
                       You are #{c.myPosition} with {c.myWins} win{c.myWins === 1 ? "" : "s"}
                     </p>
                   ) : null}
                   {c.players.length === 0 ? (
-                    <p className="px-1 py-4 text-center text-[13px] text-white/75">No Ludo wins yet. Play Ludo to take the first place! 🎲</p>
+                    <p className="px-1 py-4 text-center text-[13px] text-white/75">No wins yet. Play to take the first place! 🎲</p>
                   ) : (
                     <ol className="grid gap-2">
                       {c.players.map((p) => (
