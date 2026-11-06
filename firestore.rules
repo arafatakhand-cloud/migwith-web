@@ -61,7 +61,17 @@ service cloud.firestore {
       return isOwner()
         || (signedIn()
           && exists(/databases/$(database)/documents/founders/$(request.auth.uid))
-          && p in get(/databases/$(database)/documents/founders/$(request.auth.uid)).data.get("perms", []));
+          && p in get(/databases/$(database)/documents/founders/$(request.auth.uid)).data.get("perms", []))
+        // their own tools (given when they were made Staff / Admin / etc.)
+        || (signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && p in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("personPerms", []))
+        // the tools of their role (set by miGlife in app_settings/founder_roles)
+        || (signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && exists(/databases/$(database)/documents/app_settings/founder_roles)
+          && p in get(/databases/$(database)/documents/app_settings/founder_roles).data.get(
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("role", "user"), []));
     }
 
     // 👑 Hidden founder: anyone miglife listed in founders/{uid}. Shown as a

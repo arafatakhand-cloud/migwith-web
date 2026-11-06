@@ -568,6 +568,15 @@ function founderPermissionMailTemplate(name, added, removed) {
   };
 }
 
+// 🔑 getMyFounderPerms — the caller's own tools, all sources together (founders
+// list, their personal tools, and their role's tools). Used by the web to show the
+// right Secret tiles.
+exports.getMyFounderPerms = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const perms = [...(await founderPermsOf(uid))];
+  return { perms };
+});
+
 // ⚠️ WARNINGS — miGlife only. A warning is a Support mail that says which rule was
 // broken (Terms & Community Rules, section 2) and keeps a count per member.
 // Nothing is suspended automatically: at WARNING_SUSPEND_AT warnings miGlife decides.
