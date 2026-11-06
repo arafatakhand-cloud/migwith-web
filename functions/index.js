@@ -568,6 +568,49 @@ function founderPermissionMailTemplate(name, added, removed) {
   };
 }
 
+// 📣 miGlife Secret → Support Mail: miGlife writes one mail and sends it to one
+// member (by MIG ID) or to everyone who has a chosen role. Same Inbox and contact-email
+// delivery as the other system mails. miGlife only.
+const SUPPORT_MAIL_ROLES = ["staff", "admin", "mentor", "merchant", "country_representative", "executive_board", "elite_user"];
+exports.sendSupportMail = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(normalizeUsername(me.get("username")))) {
+    throw new functionsV1.https.HttpsError("permission-denied", "Only miGlife can send Support mail.");
+  }
+  const subject = String(data?.subject || "").trim().slice(0, 120);
+  const text = String(data?.body || "").trim().slice(0, 5000);
+  if (!subject || !text) throw new functionsV1.https.HttpsError("invalid-argument", "Write a subject and a message.");
+  const target = String(data?.target || "");
+  let recipients = [];
+  let roleKey = null;
+  let nameKey = null;
+  if (target === "user") {
+    const name = String(data?.username || "").trim().replace(/^@/, "");
+    const userDoc = await findUserDocByUsername(name);
+    if (!userDoc) throw new functionsV1.https.HttpsError("not-found", "User not found.");
+    recipients = [{ uid: userDoc.id, username: String(userDoc.get("username") || name) }];
+    nameKey = recipients[0].username;
+  } else if (target === "role") {
+    roleKey = String(data?.role || "").trim().toLowerCase();
+    if (!SUPPORT_MAIL_ROLES.includes(roleKey)) throw new functionsV1.https.HttpsError("invalid-argument", "Unknown role.");
+    const snap = await db.collection("users").where("role", "==", roleKey).limit(2000).get();
+    recipients = snap.docs.map((d) => ({ uid: d.id, username: String(d.get("username") || "") })).filter((r) => r.username);
+  } else {
+    throw new functionsV1.https.HttpsError("invalid-argument", "Choose a user or a role.");
+  }
+  const fullBody = `${text}\n\n${MAIL_SIGN_OFF}`;
+  // send in small groups so a big role does not wait for one long line of writes
+  for (let i = 0; i < recipients.length; i += 25) {
+    await Promise.all(recipients.slice(i, i + 25).map((r) => mailUser(r.username, r.uid, subject, fullBody)));
+  }
+  await db.collection("founder_admin_log").add({
+    action: "supportMail", target, role: roleKey, username: nameKey, count: recipients.length,
+    subject, by: "miglife", at: FieldValue.serverTimestamp(),
+  });
+  return { ok: true, count: recipients.length };
+});
+
 const ROLE_ALERT_LABELS = {
   executive_board: "🏅 Executive Board", admin: "🛡️ Admin", country_representative: "🌍 Country Representative",
   staff: "🪪 Staff", elite_user: "💠 Elite User", mentor: "💼 Mentor", merchant: "🏪 Merchant",
