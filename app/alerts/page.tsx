@@ -30,6 +30,7 @@ import { PageShell } from "../_components/PageShell";
 import { PushToggle } from "../_components/PushToggle";
 import { BackButton } from "../_components/BackButton";
 import { withEmotes } from "../_components/Emote";
+import { GiftImg } from "../_components/GiftImg";
 
 // The app's Alerts page (MainActivity.kt AlertsPage): the NEWEST 100 alerts,
 // grouped by day, filter chips on top, a coloured card per type, and the
@@ -292,12 +293,50 @@ function AlertRow({ a, isNew, href }: { a: Alert; isNew: boolean; href?: string 
   return href ? <Link href={href}>{body}</Link> : body;
 }
 
+// 🖼 Each gift's own picture (miglife: "every gift's logo is the same"): the
+// alert only keeps the emoji (🎁 for most picture gifts), so the picture is
+// looked up by the gift's name in gift_catalog — read once per visit.
+let giftPicsCache: Promise<Map<string, string>> | null = null;
+function loadGiftPics(): Promise<Map<string, string>> {
+  if (!giftPicsCache) {
+    giftPicsCache = getDocs(collection(db, "gift_catalog"))
+      .then((snap) => {
+        const m = new Map<string, string>();
+        snap.docs.forEach((d) => {
+          const name = String(d.get("name") || "").trim().toLowerCase();
+          const url = String(d.get("imageUrl") || "").trim();
+          if (name && /^https:\/\//i.test(url)) m.set(name, url);
+        });
+        return m;
+      })
+      .catch(() => {
+        giftPicsCache = null;
+        return new Map<string, string>();
+      });
+  }
+  return giftPicsCache;
+}
+function useGiftPic(name: string): string {
+  const key = name.trim().toLowerCase();
+  const [pic, setPic] = useState("");
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    loadGiftPics().then((m) => alive && setPic(m.get(key) || ""));
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+  return pic;
+}
+
 // 🎁 A gift you got: a pink card with the gift big, the sender's message in a
 // chat bubble, the room it was sent in, and 💝 Say thanks (opens a private
 // chat with the sender).
 function GiftAlertCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string }) {
   const [lockedNote, setLockedNote] = useState("");
   const icon = a.giftIcon && Array.from(a.giftIcon).length <= 8 ? a.giftIcon : "🎁";
+  const pic = useGiftPic(a.giftName);
   return (
     <div
       className="relative my-1 overflow-hidden rounded-[22px] p-3.5 text-white"
@@ -309,7 +348,7 @@ function GiftAlertCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string 
       <span className="pointer-events-none absolute -right-10 -top-10 h-[130px] w-[130px] rounded-full bg-white/[0.13]" />
       <div className="relative flex items-center gap-3">
         <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-white text-[34px] shadow-[0_4px_10px_rgba(0,0,0,.2)]">
-          {icon}
+          {pic ? <GiftImg src={pic} fallback={icon} className="h-[44px] w-[44px] object-contain" /> : icon}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-extrabold">{a.fromUsername}</p>
