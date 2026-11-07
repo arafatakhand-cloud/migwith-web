@@ -194,8 +194,12 @@ export function dragTo(body: HTMLElement, dx: number, animateMs = 0) {
   }
 }
 
+// when the slide that is running now ends (the copy stays until then)
+let slideEndsAt = 0;
+
 /** Let go past the line: the page leaves, the tab beside it takes its place. */
 export function slideAway(body: HTMLElement, side: Side, ms: number) {
+  slideEndsAt = performance.now() + ms;
   const t = `transform ${ms}ms ${EASE}`;
   body.style.transition = t;
   body.style.transform = `translate3d(${-side * 100}%,0,0)`;
@@ -230,16 +234,14 @@ function handOver() {
     return false;
   }
   const host = keep.host;
-  let f = requestAnimationFrame(() => {
-    f = requestAnimationFrame(() => {
-      window.setTimeout(() => {
-        host.style.transition = "opacity 90ms ease-out";
-        host.style.opacity = "0";
-        window.setTimeout(() => host.remove(), 110);
-      }, 180);
-    });
-  });
-  void f;
+  // ⚡ the real page now opens while the slide is still running: the copy
+  // finishes its slide, waits a breath for the page to settle, then fades
+  const wait = Math.max(0, slideEndsAt - performance.now()) + 70;
+  window.setTimeout(() => {
+    host.style.transition = "opacity 90ms ease-out";
+    host.style.opacity = "0";
+    window.setTimeout(() => host.remove(), 110);
+  }, wait);
   return true;
 }
 
@@ -267,9 +269,10 @@ export function SwipeBody({ children }: { children: React.ReactNode }) {
     const first = window.setTimeout(snap, 1500);
     const leave = () => {
       clearTimeout(first);
-      // Copied a moment ago: keep that one (no work while a new page opens).
-      const last = copies.get(key(pathRef.current));
-      if (!last || Date.now() - last.at > 1500) keepCopy(el, pathRef.current);
+      // ⚡ Copying a long chat page while the next page opens froze the swipe:
+      // a copy made since it opened is kept as it is (no work at that moment;
+      // the real page replaces it a moment after it slides in anyway).
+      if (!copies.has(key(pathRef.current))) keepCopy(el, pathRef.current);
     };
 
     const { dir, at } = swipeEnter;

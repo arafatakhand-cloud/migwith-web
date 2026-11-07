@@ -254,7 +254,8 @@ export function TopBar() {
           const withCopy = peekHasCopy();
           // A faster flick finishes faster, like the app.
           const left = width - Math.abs(dx);
-          const ms = Math.round(Math.min(460, Math.max(320, left / Math.max(Math.abs(v), 1.2))));
+          // ⚡ quicker settle (was 320–460 ms)
+          const ms = Math.round(Math.min(340, Math.max(220, left / Math.max(Math.abs(v), 1.4))));
           slideAway(el, side, ms);
           unswipe(ms + 260);
           // No copy of that tab yet: it slides in by itself once it opens.
@@ -272,7 +273,9 @@ export function TopBar() {
                 clearSwipeStyle(el);
               }
             }, 1500);
-          }, withCopy ? ms - 10 : Math.min(ms, 180));
+            // ⚡ the next page starts opening while the slide runs (it used to
+            // wait for the slide to end, then open — the swipe felt slow)
+          }, withCopy ? Math.round(ms * 0.45) : Math.min(ms, 120));
         } else {
           slideBack(el, 260);
           unswipe(300);
