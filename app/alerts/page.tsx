@@ -339,43 +339,45 @@ function GiftAlertCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string 
   const pic = useGiftPic(a.giftName);
   return (
     <div
-      className="relative my-1 overflow-hidden rounded-[22px] p-3.5 text-white"
+      // 🤍 H2: a light white card with a pink line on the left (was all pink)
+      className="gift-alert relative my-1 overflow-hidden rounded-[22px] border bg-white py-3.5 pl-[19px] pr-3.5 text-[#0B1F3A]"
       style={{
-        background: "linear-gradient(135deg, #FF6FA8, #B0245A)",
-        boxShadow: isNew ? "0 8px 18px #D6336C66" : "0 4px 10px #D6336C40",
+        borderColor: isNew ? "#F7B8CE" : "#F3D3DF",
+        boxShadow: isNew ? "0 6px 14px #D6336C26" : "0 2px 6px #D6336C14",
       }}
     >
-      <span className="pointer-events-none absolute -right-10 -top-10 h-[130px] w-[130px] rounded-full bg-white/[0.13]" />
+      <span className="pointer-events-none absolute inset-y-0 left-0 w-[5px] bg-[#FF6FA8]" />
+      <span className="pointer-events-none absolute -right-10 -top-10 h-[130px] w-[130px] rounded-full bg-[#FF6FA8]/[0.08]" />
       <div className="relative flex items-center gap-3">
-        <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-white text-[34px] shadow-[0_4px_10px_rgba(0,0,0,.2)]">
+        <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-[#FFF0F5] text-[34px] shadow-[0_2px_6px_rgba(0,0,0,.08)]">
           {pic ? <GiftImg src={pic} fallback={icon} className="h-[44px] w-[44px] object-contain" /> : icon}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-extrabold">{a.fromUsername}</p>
-          <p className="text-[13px] text-white/90">
+          <p className="text-[13px] text-[#5B6B8C]">
             sent you <b>{a.giftName || "a gift"}</b>
           </p>
         </div>
-        <span className="flex items-center gap-1.5 self-start text-[11px] text-white/85">
+        <span className="flex items-center gap-1.5 self-start text-[11px] text-[#8A94A6]">
           {shortTime(a.createdAtMs)}
-          {isNew && <span className="h-2 w-2 rounded-full bg-white" />}
+          {isNew && <span className="h-2 w-2 rounded-full bg-[#FF6FA8]" />}
         </span>
       </div>
       {a.giftMessage && (
-        <p className="relative mt-3 whitespace-pre-wrap break-words rounded-[4px_16px_16px_16px] bg-white px-3 py-2.5 text-sm italic leading-5 text-[#0B1F3A]">
+        <p className="relative mt-3 whitespace-pre-wrap break-words rounded-[4px_16px_16px_16px] bg-[#FFF0F5] px-3 py-2.5 text-sm italic leading-5 text-[#0B1F3A]">
           <span className="mr-1.5 not-italic">💬</span>
           {withEmotes(a.giftMessage, 14)}
         </p>
       )}
       <div className="relative mt-3 flex items-center gap-2">
         {a.roomName && (
-          <Link href={roomHref(a.roomName)} className="min-w-0 truncate rounded-full bg-white/[0.18] px-2.5 py-1 text-xs font-bold">
+          <Link href={roomHref(a.roomName)} className="min-w-0 truncate rounded-full bg-[#F4F7FB] px-2.5 py-1 text-xs font-bold text-[#15589B]">
             🏠 {a.roomName} room
           </Link>
         )}
         <SayThanksButton me={me} from={a.fromUsername} onLocked={setLockedNote} />
       </div>
-      {lockedNote && <p className="relative mt-2 rounded-xl bg-white/20 px-3 py-2 text-xs font-bold">{lockedNote}</p>}
+      {lockedNote && <p className="relative mt-2 rounded-xl bg-[#FFF0F5] px-3 py-2 text-xs font-bold text-[#B0245A]">{lockedNote}</p>}
     </div>
   );
 }
@@ -396,7 +398,7 @@ function SayThanksButton({ me, from, onLocked }: { me: string; from: string; onL
         if (locked) onLocked(lockedChatText(from));
         else router.push(chatHref(from));
       }}
-      className="ml-auto shrink-0 rounded-full bg-white px-3.5 py-2 text-[13px] font-extrabold text-[#B0245A] disabled:opacity-70"
+      className="ml-auto shrink-0 rounded-full bg-[#FFE3EE] px-3.5 py-2 text-[13px] font-extrabold text-[#B0245A] disabled:opacity-70"
     >
       {busy ? "…" : "💝 Say thanks"}
     </button>
