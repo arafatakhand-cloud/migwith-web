@@ -241,8 +241,7 @@ export default function BlogPostPage() {
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
             </span>
           </div>
-          <div className="mt-2 flex items-start gap-2">
-            <h1 className="min-w-0 flex-1 text-[22px] font-extrabold leading-tight text-[#0F1D3A]">{tr?.title || post.title}</h1>
+          <div className="mt-2 flex justify-end">
             <TranslateChip postId={post.id} title={post.title} text={feedPlainText(post.body)} />
           </div>
           {tr?.text && (

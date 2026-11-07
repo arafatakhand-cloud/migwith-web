@@ -975,10 +975,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
         </div>
         <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>
       </div>
-      <div className="mx-0.5 mt-2.5 flex items-start gap-2">
-        <h2 className="min-w-0 flex-1 text-[16.5px] font-black leading-snug text-[#1E1B4B]">
-          <RichText text={tr?.title || p.title} />
-        </h2>
+      {/* no separate title line: the post text is shown once, below */}
+      <div className="mx-0.5 mt-2.5 flex justify-end">
         <TranslateChip postId={p.id} title={p.title} text={p.excerpt} />
       </div>
       {(tr?.text || p.excerpt) && (
