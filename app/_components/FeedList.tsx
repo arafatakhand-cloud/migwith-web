@@ -166,6 +166,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // like the app's create-post box: one optional video, a mood line, a topic menu
   const [cvideo, setCvideo] = useState("");
   const [cvideoBusy, setCvideoBusy] = useState(false);
+  // 🎬 miGlife's switch: when video is OFF the Video button is hidden
+  const [videoOn, setVideoOn] = useState(true);
+  useEffect(() => {
+    blogCall("videoStatus")
+      .then((r) => setVideoOn(r.videoEnabled !== false))
+      .catch(() => setVideoOn(true));
+  }, []);
   const [cmoodOpen, setCmoodOpen] = useState(false);
   const [ccatOpen, setCcatOpen] = useState(false);
   const cvideoRef = useRef<HTMLInputElement>(null);
@@ -540,14 +547,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 >
                   <span className="text-[17px]">🖼</span>Photo
                 </button>
-                <button
-                  type="button"
-                  disabled={cbusy || cvideoBusy || !!cvideo}
-                  onClick={() => cvideoRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
-                >
-                  <span className="text-[17px]">🎬</span>Video
-                </button>
+                {videoOn && (
+                  <button
+                    type="button"
+                    disabled={cbusy || cvideoBusy || !!cvideo}
+                    onClick={() => cvideoRef.current?.click()}
+                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
+                  >
+                    <span className="text-[17px]">🎬</span>Video
+                  </button>
+                )}
                 <div className="relative">
                   <button
                     type="button"
