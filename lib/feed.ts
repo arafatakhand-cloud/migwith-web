@@ -30,6 +30,8 @@ export type BlogPost = {
   sharedId: string;
   sharedAuthor: string;
   sharedTitle: string;
+  /** the Text Art colour the writer picked (0–7), -1 = picked from the post id */
+  bg: number;
 };
 
 export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
@@ -85,6 +87,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     sharedId: String(d.sharedId || ""),
     sharedAuthor: String(d.sharedAuthor || ""),
     sharedTitle: String(d.sharedTitle || ""),
+    bg: Number.isInteger(d.bg) && Number(d.bg) >= 0 && Number(d.bg) < 8 ? Number(d.bg) : -1,
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {

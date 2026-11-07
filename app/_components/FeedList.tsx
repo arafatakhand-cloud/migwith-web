@@ -240,6 +240,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [ccatOpen, setCcatOpen] = useState(false);
   const cvideoRef = useRef<HTMLInputElement>(null);
   const cfileRef = useRef<HTMLInputElement>(null);
+  const ctextRef = useRef<HTMLTextAreaElement>(null);
+  // 🎨 the Text Art colour for a words-only post (a fresh random one each time the writer opens)
+  const [cbg, setCbg] = useState(0);
+  const cbgKeep = useRef<number | null>(null); // a post brought back keeps its colour
+  useEffect(() => {
+    if (!composing) return;
+    setCbg(cbgKeep.current ?? Math.floor(Math.random() * TEXT_ART.length));
+    cbgKeep.current = null;
+  }, [composing]);
   const cupload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = 10 - cphotos.length;
@@ -260,7 +269,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -268,7 +277,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     const body = [p.text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
     setCbusy(true);
     try {
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video });
+      // the colour only matters for a words-only post
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -278,6 +288,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCphotos(p.photos);
       setCvideo(p.video);
       setCcat(p.category);
+      cbgKeep.current = p.bg;
       setComposing(true);
       setCerr(blogError(e));
     } finally {
@@ -287,7 +298,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg };
     setCtext("");
     setCphotos([]);
     setCvideo("");
@@ -308,6 +319,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCphotos(payload.photos);
         setCvideo(payload.video);
         setCcat(payload.category);
+        cbgKeep.current = payload.bg;
         setComposing(true);
         setToast("Post taken back");
         window.setTimeout(() => setToast(""), 2000);
@@ -615,159 +627,43 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
-        {!author && user && composing && (
-          <div className="mx-3.5 mb-4 mt-1 rounded-[24px] bg-[#FFFFFF] p-3.5 shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)]">
-            <div className="flex items-center gap-2.5">
-              <Avatar name={username} color={meColor} size={38} ring />
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-extrabold text-[#1E1B4B]">{username}</div>
-                <div className="text-[11px] text-[#7A7FA6]">Posting to everyone</div>
-              </div>
-              <button type="button" onClick={() => setComposing(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#EEF2F8] text-[14px] text-[#4B4F7D]">
-                ✕
-              </button>
-            </div>
-            <input ref={cfileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (cupload(e.target.files), (e.target.value = ""))} />
-            <input
-              ref={cvideoRef}
-              type="file"
-              accept="video/mp4,video/webm,video/quicktime"
-              hidden
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                e.target.value = "";
-                if (!f || !user) return;
-                setCerr("");
-                setCvideoBusy(true);
-                try {
-                  setCvideo(await uploadBlogVideo(user.uid, f));
-                } catch (err) {
-                  setCerr(err instanceof Error ? err.message : blogError(err));
-                } finally {
-                  setCvideoBusy(false);
-                }
-              }}
-            />
-            {mentionSuggest.length > 0 && (
-              <div className="mb-1 flex flex-wrap gap-1.5">
-                {mentionSuggest.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => pickMention(f)}
-                    className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#EEF4FF] to-[#F3E8FF] px-3 py-1.5 text-[13px] font-extrabold text-[#2563EB] shadow-sm ring-1 ring-[#DCE6FF] transition hover:scale-[1.03]"
-                  >
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#A855F7] text-[10px] text-white">@</span>
-                    {f}
-                  </button>
-                ))}
-              </div>
-            )}
-            <textarea
-              autoFocus
-              value={ctext}
-              onChange={(e) => setCtext(e.target.value)}
-              // ⌨️ when the keyboard opens on a phone, bring the box up above it
-              onFocus={(e) => {
-                const el = e.currentTarget;
-                window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
-              }}
-              placeholder={`What's on your mind, ${username}?`}
-              rows={3}
-              className="mt-1 w-full resize-none bg-transparent px-1 py-1 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
-            />
-            {cphotos.length > 0 && (
-              <div className="mt-2 flex gap-1.5 overflow-x-auto">
-                {cphotos.map((u) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={u} src={u} alt="" className="h-16 w-16 shrink-0 rounded-xl object-cover" />
-                ))}
-              </div>
-            )}
-            {(cvideo || cvideoBusy) && (
-              <div className="mt-2 flex items-center justify-between rounded-xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1D4ED8]">
-                <span>{cvideoBusy ? "🎬 Uploading video…" : "🎬 Video attached"}</span>
-                {!cvideoBusy && (
-                  <button type="button" onClick={() => setCvideo("")} aria-label="Remove video" className="text-[#8494B2]">
-                    ✕
-                  </button>
-                )}
-              </div>
-            )}
-            {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
-          {cmoodOpen && (
-            <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
-              <div className="mb-2 flex items-center justify-between px-0.5">
-                <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</span>
-                <button type="button" onClick={() => setCmoodOpen(false)} className="text-[12px] font-bold text-[#8494B2]">Close</button>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
-                  <button
-                    key={l}
-                    type="button"
-                    onClick={() => {
-                      setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
-                      setCmoodOpen(false);
-                    }}
-                    className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2.5 text-[12px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.04] active:scale-95`}
-                  >
-                    <span className="text-[22px] leading-none">{e}</span>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-            <div className="mt-2.5 border-t border-[#EEF2F8] pt-1.5">
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  disabled={cbusy || cphotos.length >= 10}
-                  onClick={() => cfileRef.current?.click()}
-                  className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
-                >
-                  <span className="text-[17px]">🖼</span>Photo
-                </button>
-                {videoOn && (
-                  <button
-                    type="button"
-                    disabled={cbusy || cvideoBusy || !!cvideo}
-                    onClick={() => cvideoRef.current?.click()}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD] disabled:opacity-40"
-                  >
-                    <span className="text-[17px]">🎬</span>Video
-                  </button>
-                )}
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCmoodOpen((v) => !v);
-                      setCcatOpen(false);
-                    }}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
-                  >
-                    <span className="text-[17px]">😊</span>Mood
-                  </button>
+        {!author && user && composing && (() => {
+          // ✍️ C1 · Text Art writer: with no photo or video, you write right on the
+          // colour your post will have in the Feed, and pick that colour below
+          const art = cphotos.length === 0 && !cvideo && !cvideoBusy;
+          const [bgFill, ink] = TEXT_ART[cbg] || TEXT_ART[0];
+          const empty = !ctext.trim() && cphotos.length === 0 && !cvideo;
+          const len = ctext.trim().length;
+          const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
+          return (
+            <div className="mx-3.5 mb-4 mt-1 rounded-[26px] bg-[#FFFFFF] p-3.5 shadow-[0_14px_30px_-18px_rgba(60,64,140,.6)]">
+              <div className="flex items-center gap-2.5">
+                <Avatar name={username} color={meColor} size={42} ring />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[15px] font-black text-[#1E1B4B]">{username}</div>
+                  <div className="flex items-center gap-1 text-[12px] font-semibold text-[#8A8FB0]">
+                    🌍 Everyone ·
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCcatOpen((v) => !v);
+                        setCmoodOpen(false);
+                      }}
+                      className="font-extrabold text-[#6366F1]"
+                    >
+                      {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"} ▾
+                    </button>
+                  </div>
                 </div>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCcatOpen((v) => !v);
-                      setCmoodOpen(false);
-                    }}
-                    className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-[13px] font-bold text-[#334155] hover:bg-[#F4F6FD]"
-                  >
-                    <span className="text-[17px]">🏷</span>
-                    {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
-                  </button>
-                  {ccatOpen && (
-                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCcatOpen(false)}>
-                    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-white p-3 shadow-2xl">
-                      <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">Pick a topic</div>
-                      <div className="grid grid-cols-2 gap-1.5">
+                <button type="button" onClick={() => setComposing(false)} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F2F8] text-[14px] font-black text-[#6B6F9A]">
+                  ✕
+                </button>
+              </div>
+              {ccatOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCcatOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-[#FFFFFF] p-3 shadow-2xl">
+                    <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">Pick a topic</div>
+                    <div className="grid grid-cols-2 gap-1.5">
                       {BLOG_CATEGORIES.map(([k, label]) => (
                         <button
                           key={k}
@@ -776,32 +672,189 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                             setCcat(k);
                             setCcatOpen(false);
                           }}
-                          className={`rounded-full px-3 py-1.5 text-left text-[12.5px] font-bold transition hover:scale-[1.03] ${ccat === k ? "bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow" : "bg-[#F4F6FD] text-[#1E1B4B] hover:bg-[#EEF4FF]"}`}
+                          className={`rounded-full px-3 py-1.5 text-left text-[12.5px] font-bold transition hover:scale-[1.03] ${ccat === k ? "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow" : "bg-[#F4F6FD] text-[#1E1B4B] hover:bg-[#EEF4FF]"}`}
                         >
                           {label}
                         </button>
                       ))}
-                      </div>
                     </div>
-                    </div>
+                  </div>
+                </div>
+              )}
+              <input ref={cfileRef} type="file" accept="image/*" multiple hidden onChange={(e) => (cupload(e.target.files), (e.target.value = ""))} />
+              <input
+                ref={cvideoRef}
+                type="file"
+                accept="video/mp4,video/webm,video/quicktime"
+                hidden
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f || !user) return;
+                  setCerr("");
+                  setCvideoBusy(true);
+                  try {
+                    setCvideo(await uploadBlogVideo(user.uid, f));
+                  } catch (err) {
+                    setCerr(err instanceof Error ? err.message : blogError(err));
+                  } finally {
+                    setCvideoBusy(false);
+                  }
+                }}
+              />
+              {mentionSuggest.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {mentionSuggest.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      onClick={() => pickMention(f)}
+                      className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#EEF4FF] to-[#F3E8FF] px-3 py-1.5 text-[13px] font-extrabold text-[#2563EB] shadow-sm ring-1 ring-[#DCE6FF] transition hover:scale-[1.03]"
+                    >
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#A855F7] text-[10px] text-white">@</span>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {art ? (
+                // 🎨 write right on the colour
+                <div className="mt-3 flex min-h-[170px] items-center justify-center rounded-[22px] px-5 py-6 transition-[background] duration-300" style={{ background: bgFill }}>
+                  <textarea
+                    ref={ctextRef}
+                    autoFocus
+                    value={ctext}
+                    onChange={(e) => setCtext(e.target.value)}
+                    onFocus={(e) => {
+                      const el = e.currentTarget;
+                      window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+                    }}
+                    placeholder={`What's on your mind, ${username}?`}
+                    rows={Math.min(8, Math.max(2, ctext.split("\n").length + Math.floor(len / 26)))}
+                    className={`w-full resize-none bg-transparent text-center font-extrabold leading-snug outline-none ${artSize} ${ink === "#FFFFFF" ? "placeholder:text-white/70" : "placeholder:text-black/40"}`}
+                    style={{ color: ink, textShadow: ink === "#FFFFFF" ? "0 2px 10px rgba(0,0,0,.25)" : "none" }}
+                  />
+                </div>
+              ) : (
+                <textarea
+                  ref={ctextRef}
+                  autoFocus
+                  value={ctext}
+                  onChange={(e) => setCtext(e.target.value)}
+                  placeholder="Say something about this…"
+                  rows={3}
+                  className="mt-3 w-full resize-none rounded-2xl bg-[#F6F7FC] px-3.5 py-3 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
+                />
+              )}
+              {art && (
+                <div className="mt-3 flex items-center gap-2.5 px-0.5">
+                  {TEXT_ART.map(([g], i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setCbg(i)}
+                      aria-label={`Colour ${i + 1}`}
+                      className={`h-7 w-7 shrink-0 rounded-full transition active:scale-90 ${cbg === i ? "scale-110 ring-2 ring-[#6366F1] ring-offset-2" : ""}`}
+                      style={{ background: g }}
+                    />
+                  ))}
+                </div>
+              )}
+              {cphotos.length > 0 && (
+                <div className="mt-2.5 flex gap-1.5 overflow-x-auto">
+                  {cphotos.map((u) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={u} src={u} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
+                  ))}
+                </div>
+              )}
+              {(cvideo || cvideoBusy) && (
+                <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1D4ED8]">
+                  <span>{cvideoBusy ? "🎬 Uploading video…" : "🎬 Video attached"}</span>
+                  {!cvideoBusy && (
+                    <button type="button" onClick={() => setCvideo("")} aria-label="Remove video" className="text-[#8494B2]">
+                      ✕
+                    </button>
                   )}
                 </div>
+              )}
+              {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
+              {cmoodOpen && (
+                <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
+                  <div className="mb-2 flex items-center justify-between px-0.5">
+                    <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</span>
+                    <button type="button" onClick={() => setCmoodOpen(false)} className="text-[12px] font-bold text-[#8494B2]">
+                      Close
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
+                      <button
+                        key={l}
+                        type="button"
+                        onClick={() => {
+                          setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
+                          setCmoodOpen(false);
+                        }}
+                        className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2.5 text-[12px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.04] active:scale-95`}
+                      >
+                        <span className="text-[22px] leading-none">{e}</span>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* tools on the left, Post on the right */}
+              <div className="mt-3 flex items-center gap-1">
+                <button type="button" disabled={cbusy || cphotos.length >= 10} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
+                  🖼️
+                </button>
+                {videoOn && (
+                  <button type="button" disabled={cbusy || cvideoBusy || !!cvideo} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
+                    🎬
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCmoodOpen((v) => !v);
+                    setCcatOpen(false);
+                  }}
+                  aria-label="Mood"
+                  title="Mood"
+                  className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FFFBEB] active:scale-90 ${cmoodOpen ? "bg-[#FFFBEB]" : ""}`}
+                >
+                  😊
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCtext((t) => (t && !/\s$/.test(t) ? `${t} @` : `${t}@`));
+                    window.setTimeout(() => ctextRef.current?.focus(), 0);
+                  }}
+                  aria-label="Mention a friend"
+                  title="Mention"
+                  className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[18px] font-black text-[#6366F1] transition hover:bg-[#EEF0FF] active:scale-90"
+                >
+                  @
+                </button>
+                <button
+                  type="button"
+                  onClick={publishInline}
+                  disabled={cbusy || cvideoBusy || empty}
+                  className={`ml-auto h-11 rounded-2xl px-6 text-[15px] font-black transition active:scale-95 ${
+                    cbusy || cvideoBusy || empty
+                      ? "bg-[#E9EBF4] text-[#A0A6C2]"
+                      : "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_10px_20px_-10px_rgba(236,72,153,.9)]"
+                  }`}
+                >
+                  {cbusy ? "Posting…" : "Post ➤"}
+                </button>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={publishInline}
-              disabled={cbusy || cvideoBusy || (!ctext.trim() && cphotos.length === 0 && !cvideo)}
-              className={`mt-2 h-11 w-full rounded-2xl text-[15px] font-extrabold transition ${
-                cbusy || cvideoBusy || (!ctext.trim() && cphotos.length === 0 && !cvideo)
-                  ? "bg-[#E5EAF5] text-[#8A97A8]"
-                  : "bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] text-white shadow-[0_8px_18px_-8px_rgba(139,92,255,.8)]"
-              }`}
-            >
-              {cbusy ? "Posting…" : "Post"}
-            </button>
-          </div>
-        )}
+          );
+        })()}
         {!author && (!user || !composing) && !(user && tab === "mine") && (
           user ? (
             <button
@@ -1117,7 +1170,8 @@ const TEXT_ART: [string, string][] = [
   ["linear-gradient(135deg,#FECACA,#FCA5A5 40%,#F472B6)", "#4C0519"],
   ["linear-gradient(135deg,#0C4A6E,#0EA5E9 55%,#BAE6FD)", "#FFFFFF"],
 ];
-function textArtOf(id: string): [string, string] {
+function textArtOf(id: string, bg = -1): [string, string] {
+  if (bg >= 0 && bg < TEXT_ART.length) return TEXT_ART[bg];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
   return TEXT_ART[h % TEXT_ART.length];
@@ -1144,7 +1198,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   const open = () => router.push(`/feed/${p.id}`);
   const [viewing, setViewing] = useState(false);
   const text = tr?.text || p.excerpt;
-  const [artBg, artInk] = textArtOf(p.id);
+  const [artBg, artInk] = textArtOf(p.id, p.bg);
   // short words get big letters; a long text gets normal ones
   const artSize = text.length <= 60 ? "text-[26px]" : text.length <= 140 ? "text-[21px]" : "text-[16px]";
   const role = rolePill && ROLE_PILLS[rolePill] ? ROLE_PILLS[rolePill][0] : "";
