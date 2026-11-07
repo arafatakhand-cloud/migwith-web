@@ -13,6 +13,7 @@ import { useBadgeImages } from "../../lib/badgeImages";
 import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage } from "../../lib/imageUpload";
+import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
@@ -217,6 +218,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [composing, setComposing] = useState(false);
   const [ctext, setCtext] = useState("");
   const [cphotos, setCphotos] = useState<string[]>([]);
+  // 🖼 the picked files (by their uploaded link), so a photo can be edited later;
+  // which photo is being changed / edited
+  const cfilesRef = useRef<Record<string, File>>({});
+  const [cswapAt, setCswapAt] = useState(-1);
+  const [ceditAt, setCeditAt] = useState(-1);
+  const cswapRef = useRef<HTMLInputElement>(null);
   const [ccat, setCcat] = useState("life");
   const [cbusy, setCbusy] = useState(false);
   const [cerr, setCerr] = useState("");
@@ -258,8 +265,24 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     try {
       for (const f of Array.from(files).slice(0, room)) {
         const url = await uploadChatImage(`room_images/blog_${user.uid}`, f);
+        cfilesRef.current[url] = f;
         setCphotos((p) => [...p, url].slice(0, 10));
       }
+    } catch (e) {
+      setCerr(blogError(e));
+    } finally {
+      setCbusy(false);
+    }
+  };
+  // 🔄 put a new / edited picture in place of photo number i
+  const creplace = async (i: number, f: File) => {
+    if (!user || i < 0) return;
+    setCerr("");
+    setCbusy(true);
+    try {
+      const url = await uploadChatImage(`room_images/blog_${user.uid}`, f);
+      cfilesRef.current[url] = f;
+      setCphotos((p) => p.map((u, j) => (j === i ? url : u)));
     } catch (e) {
       setCerr(blogError(e));
     } finally {
@@ -770,12 +793,73 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </div>
               )}
               {cphotos.length > 0 && (
-                <div className="mt-2.5 flex gap-1.5 overflow-x-auto">
-                  {cphotos.map((u) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img key={u} src={u} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover" />
+                // 🖼 each photo: ✕ remove, ✏️ edit (crop · zoom · turn), 🔄 change; the first is the cover
+                <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1">
+                  {cphotos.map((u, i) => (
+                    <div key={u + i} className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl shadow-[0_6px_14px_-8px_rgba(30,40,90,.6)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={u} alt="" className="h-full w-full object-cover" />
+                      {i === 0 && cphotos.length > 1 && (
+                        <span className="absolute left-1.5 top-1.5 rounded-full bg-black/55 px-1.5 py-px text-[9.5px] font-black text-white">★ COVER</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setCphotos((p) => p.filter((_, j) => j !== i))}
+                        aria-label="Remove photo"
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[11px] font-black text-white"
+                      >
+                        ✕
+                      </button>
+                      <div className="absolute inset-x-0 bottom-0 flex justify-center gap-1.5 bg-gradient-to-t from-black/60 to-transparent pb-1.5 pt-4">
+                        {cfilesRef.current[u] && (
+                          <button type="button" disabled={cbusy} onClick={() => setCeditAt(i)} aria-label="Edit photo" title="Edit" className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[11px] disabled:opacity-50">
+                            ✏️
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          disabled={cbusy}
+                          onClick={() => {
+                            setCswapAt(i);
+                            cswapRef.current?.click();
+                          }}
+                          aria-label="Change photo"
+                          title="Change"
+                          className="flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-[11px] disabled:opacity-50"
+                        >
+                          🔄
+                        </button>
+                      </div>
+                    </div>
                   ))}
+                  {cbusy && <div className="feed-shimmer h-24 w-24 shrink-0 rounded-2xl" />}
                 </div>
+              )}
+              <input
+                ref={cswapRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (f) void creplace(cswapAt, f);
+                }}
+              />
+              {ceditAt >= 0 && cfilesRef.current[cphotos[ceditAt]] && (
+                <PhotoCropDialog
+                  file={cfilesRef.current[cphotos[ceditAt]]}
+                  frameAspect={4 / 5}
+                  round={false}
+                  outWidth={1080}
+                  hint="Drag to move · pinch or scroll to zoom · the frame is how the photo shows"
+                  onCancel={() => setCeditAt(-1)}
+                  onCropped={(jpeg) => {
+                    const at = ceditAt;
+                    setCeditAt(-1);
+                    void creplace(at, new File([jpeg], "photo.jpg", { type: "image/jpeg" }));
+                  }}
+                />
               )}
               {(cvideo || cvideoBusy) && (
                 <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1D4ED8]">
