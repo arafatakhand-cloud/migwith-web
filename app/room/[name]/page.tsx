@@ -2859,6 +2859,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {infoOpen && profile && (
         <RoomInfoPage
           canTransferOwner={isMainFounderName(profile.username)}
+          onLeave={leaveRoom}
           roomName={roomName}
           shownRoomName={roomDisplayName(roomName)}
           ownerName={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}

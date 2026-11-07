@@ -24,12 +24,12 @@ type Perms = {
 const lc = (s: string) => s.trim().toLowerCase();
 
 function Card({ children }: { children: ReactNode }) {
-  return <div className="overflow-hidden rounded-[20px] bg-white shadow-[0_3px_12px_rgba(11,42,91,0.12)]">{children}</div>;
+  return <div className="overflow-hidden rounded-[22px] bg-[#FFFFFF] shadow-[0_8px_18px_-14px_rgba(12,59,94,0.45)]">{children}</div>;
 }
 
 function Chip({ icon, text }: { icon?: string; text: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF3FC] px-3 py-1.5 text-[13px] font-semibold text-[#0B2A5B]">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/70 px-2.5 py-1 text-[12px] font-extrabold text-[#2A5D80]">
       {icon && <span>{icon}</span>}
       <span data-notranslate>{text}</span>
     </span>
@@ -62,13 +62,13 @@ function Line({
 }) {
   const body = (
     <>
-      <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full text-lg" style={{ background: bubbleFor(label) }}>
+      <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[12px] text-lg" style={{ background: bubbleFor(label) }}>
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-[15px] font-medium text-[#12233F]">{label}</span>
+        <span className="block text-[14.5px] font-extrabold text-[#0C3B5E]">{label}</span>
         {sub && (
-          <span data-notranslate className="block truncate text-xs text-[#7D8DA6]">
+          <span data-notranslate className="block truncate text-[11.5px] font-semibold text-[#7B8FA8]">
             {sub}
           </span>
         )}
@@ -76,7 +76,7 @@ function Line({
       {value && (
         <span
           className={`rounded-full px-3 py-1 text-xs font-extrabold ${
-            value === "ON" ? "bg-[#DDF6E7] text-[#1E9E55]" : value === "OFF" ? "bg-[#EDEFF3] text-[#8A9AB2]" : "bg-[#DDEEFC] text-[#15589B]"
+            value === "ON" ? "bg-[#DCFCE7] text-[#15803D]" : value === "OFF" ? "bg-[#EEF1F6] text-[#8A9AB2]" : "bg-[#E0F2FE] text-[#0284C7]"
           }`}
         >
           {value}
@@ -105,17 +105,43 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       role="switch"
       aria-checked={on}
       onClick={() => onChange(!on)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition ${on ? "bg-[#1F8BE6]" : "bg-[#C9D3E3]"}`}
+      className={`relative h-7 w-12 shrink-0 rounded-full transition ${on ? "bg-gradient-to-r from-[#22C55E] to-[#14B8A6]" : "bg-[#D5DAE6]"}`}
     >
       <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition ${on ? "left-6" : "left-1"}`} />
     </button>
   );
 }
 
+// 🟢 the same switch, only showing the value (Room Info before ✎)
+function SwitchLook({ on }: { on: boolean }) {
+  return (
+    <span aria-label={on ? "On" : "Off"} className={`relative h-7 w-12 shrink-0 rounded-full ${on ? "bg-gradient-to-r from-[#22C55E] to-[#14B8A6]" : "bg-[#D5DAE6]"}`}>
+      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow ${on ? "left-6" : "left-1"}`} />
+    </span>
+  );
+}
+
+// "!start", "!j" … in the description stand out as small chips
+function DescText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(![a-z]{1,12}\b)/gi).map((part, i) =>
+        /^![a-z]{1,12}$/i.test(part) ? (
+          <span key={i} className="mx-0.5 inline-block rounded-md bg-[#E0F2FE] px-1.5 text-[12.5px] font-extrabold text-[#0369A1]">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 function PersonRow({ name, details, onDemote }: { name: string; details: string; onDemote?: () => void }) {
   return (
-    <div className="mx-2.5 my-1 flex items-center gap-3 rounded-[14px] bg-[#F1F6FC] px-3 py-2.5">
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-[#FFE08A] bg-gradient-to-br from-[#3B8BE6] to-[#0B2A5B] text-[17px] font-bold text-white">
+    <div className="mx-2.5 my-1 flex items-center gap-3 rounded-[16px] bg-[#F2F9FF] px-3 py-2.5">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#38BDF8] to-[#14B8A6] text-[17px] font-bold text-white shadow">
         {name.charAt(0).toUpperCase() || "?"}
       </span>
       <span className="min-w-0 flex-1">
@@ -146,6 +172,7 @@ export function RoomInfoPage({
   onNote,
   onSetEntryLevel,
   canTransferOwner = false,
+  onLeave,
 }: {
   roomName: string;
   shownRoomName: string;
@@ -162,7 +189,24 @@ export function RoomInfoPage({
   onSetEntryLevel: (level: number) => void;
   /** 👑 miglife only: give this room to another MIG ID (server: founderTransferRoomOwner). */
   canTransferOwner?: boolean;
+  /** 🚪 leave this room (closes its tab) */
+  onLeave?: () => void;
 }) {
+  // L2: ℹ️ Info · ⚙️ Settings · 👥 Members
+  const [tab, setTab] = useState<"info" | "settings" | "members">("info");
+  const roomIcon = (shownRoomName.match(/^\p{Extended_Pictographic}/u) || ["🏠"])[0];
+  const shareRoom = async () => {
+    const url = `${window.location.origin}/room/${encodeURIComponent(roomName)}`;
+    try {
+      if (navigator.share) await navigator.share({ title: shownRoomName, text: `Join ${shownRoomName} on miGlife`, url });
+      else {
+        await navigator.clipboard.writeText(url);
+        say("Room link copied ✓");
+      }
+    } catch {
+      // closed the share sheet
+    }
+  };
   const capacityEditable = !info.capacityEnforced;
   const showSuperMods = perms.isUserRoom;
   const showPublicKick = !perms.isUserRoom;
@@ -306,7 +350,7 @@ export function RoomInfoPage({
       <Card>
         <button type="button" onClick={() => (isSuper ? setSuperOpen(!superOpen) : setModsOpen(!modsOpen))} className="flex w-full items-center gap-2.5 px-4 py-3.5">
           <span className="text-lg">{isSuper ? "🌟" : "⭐"}</span>
-          <span className="flex-1 text-left text-[15px] font-bold text-[#0B2A5B]">{isSuper ? "Super Moderator" : "Moderator"}</span>
+          <span className="flex-1 text-left text-[15px] font-extrabold text-[#0C3B5E]">{isSuper ? "Super Moderator" : "Moderator"}</span>
           <Chip text={String(list.length)} />
           <span className="text-base text-[#7D8DA6]">{open ? "▴" : "▾"}</span>
         </button>
@@ -325,7 +369,7 @@ export function RoomInfoPage({
               <button
                 type="button"
                 onClick={() => setDialog(isSuper ? "addsuper" : "addmod")}
-                className="mx-2.5 my-2 block w-[calc(100%-20px)] rounded-[14px] bg-[#15589B] py-3 text-sm font-bold text-white"
+                className="mx-2.5 my-2 block w-[calc(100%-20px)] rounded-[14px] bg-gradient-to-r from-[#38BDF8] to-[#14B8A6] py-3 text-sm font-bold text-white"
               >
                 ＋ {isSuper ? "Add super moderator" : "Add moderator"}
               </button>
@@ -351,118 +395,172 @@ export function RoomInfoPage({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-gradient-to-b from-[#DDF1FF] to-[#F4FAFF]" style={{ top }}>
-      {/* header: gradient, rounded bottom */}
-      <div className="flex shrink-0 items-center gap-2 rounded-b-[26px] bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3 pb-2.5 pt-2.5 shadow-lg">
-        <button
-          type="button"
-          aria-label="Back"
-          onClick={() => (editing ? setEditing(false) : onClose())}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-2xl text-white"
-        >
-          ←
-        </button>
-        <h2 className="flex-1 truncate text-lg font-bold text-white">{editing ? "Edit Room Info" : "Room Info"}</h2>
-        {/* Everyone sees the pencil; only people who may change something here
-            (room admins / private-room managers, a public room's mods for the
-            entry level) get into Edit Room Info — others just get the toast. */}
-        <button
-          type="button"
-          aria-label={editing ? "Save" : "Edit"}
-          onClick={() =>
-            editing
-              ? save()
-              : canManage || (!perms.isUserRoom && perms.isRoomMod)
-                ? setEditing(true)
-                : say("You are not authorized to update this room!")
-          }
-          className="flex h-[42px] w-[42px] items-center justify-center rounded-full border border-white/50 bg-white/20 text-xl font-bold text-white"
-        >
-          {editing ? "✓" : "✎"}
-        </button>
-      </div>
+    <div className="fixed inset-x-0 bottom-0 z-[60] flex flex-col bg-[#F4FAFF]" style={{ top }}>
+      <div className="flex-1 overflow-y-auto pb-10">
+        {/* 🌤 L2 · Sky Breeze header: back · title · ✎, then the room */}
+        <div className="rounded-b-[28px] bg-gradient-to-br from-[#E0F2FE] to-[#D1FAE5] pb-4 shadow-[0_10px_24px_-18px_rgba(12,59,94,0.6)]">
+          <div className="mx-auto flex max-w-xl items-center gap-2.5 px-3.5 pb-2 pt-3 text-[#0C3B5E]">
+            <button
+              type="button"
+              aria-label="Back"
+              onClick={() => (editing ? setEditing(false) : onClose())}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-xl font-black"
+            >
+              ←
+            </button>
+            <h2 className="flex-1 truncate text-[17px] font-black">{editing ? "Edit Room Info" : "Room Info"}</h2>
+            {/* Everyone sees the pencil; only people who may change something here
+                (room admins / private-room managers, a public room's mods for the
+                entry level) get into Edit Room Info — others just get the toast. */}
+            <button
+              type="button"
+              aria-label={editing ? "Save" : "Edit"}
+              onClick={() =>
+                editing
+                  ? save()
+                  : canManage || (!perms.isUserRoom && perms.isRoomMod)
+                    ? setEditing(true)
+                    : say("You are not authorized to update this room!")
+              }
+              className={`flex h-10 items-center justify-center rounded-full text-[17px] font-black ${editing ? "bg-gradient-to-r from-[#22C55E] to-[#14B8A6] px-4 text-[14px] text-white" : "w-10 bg-white/70"}`}
+            >
+              {editing ? "✓ Save" : "✎"}
+            </button>
+          </div>
+          <div className="mx-auto flex max-w-xl items-center gap-3 px-4 text-[#0C3B5E]">
+            <span className="flex h-[58px] w-[58px] shrink-0 items-center justify-center rounded-[18px] bg-[#FFFFFF] text-[30px] shadow-[0_6px_14px_-8px_rgba(12,59,94,0.5)]">{roomIcon}</span>
+            <div className="min-w-0">
+              <p data-notranslate className="truncate text-[19px] font-black leading-tight">
+                {shownRoomName.replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u, "")}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                <Chip icon="👑" text={ownerName || "-"} />
+                <Chip icon="👥" text={String(info.maxUsers)} />
+                <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2.5 py-1 text-[12px] font-extrabold text-[#15803D]">● {roomMembers.length} live</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-      <div className="mx-auto w-full max-w-xl flex-1 space-y-3.5 overflow-y-auto px-3.5 py-3.5 pb-10">
-        {!editing ? (
-          <>
-            <Card>
-              <div className="flex flex-col items-center p-[18px]">
-                <span className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#3B8BE6] to-[#0B2A5B] text-3xl">🏠</span>
-                <p data-notranslate className="mt-2.5 text-center text-2xl font-extrabold text-[#0B2A5B]">
-                  {shownRoomName}
-                </p>
-                <div className="mt-2.5 flex flex-wrap justify-center gap-2">
-                  <Chip icon="👑" text={ownerName || "-"} />
-                  <Chip icon="👥" text={String(info.maxUsers)} />
-                </div>
-              </div>
-            </Card>
-            <Card>
-              <div className="p-4">
-                <p className="text-xs font-bold text-[#7D8DA6]">Description</p>
-                <p data-notranslate className="mt-1 whitespace-pre-wrap text-sm text-[#12233F]">
-                  {description || "No description."}
-                </p>
-              </div>
-            </Card>
-            <Card>
-              <Line icon="🔒" label="Lock Level" value={String(info.lockLevel)} />
-              {showPublicKick && <Line icon="👢" label="Public Kick" value={info.publicKick ? "ON" : "OFF"} />}
-              <Line icon="🖼️" label="Image or audio share" value={info.allowMedia ? "ON" : "OFF"} />
-              <Line icon="🎬" label="Video share" value={info.allowVideo ? "ON" : "OFF"} />
-            </Card>
-          </>
-        ) : (
-          <>
-            <Card>
-              <Line
-                icon="👑"
-                label="Owner"
-                sub={ownerName || "-"}
-                onClick={canTransferOwner ? () => (setDialogText(""), setDialog("owner")) : undefined}
-                trailing={
-                  canTransferOwner ? <span className="text-[17px] text-[#15589B]">✎</span> : <span className="text-lg text-[#B5C2D3]">✓</span>
-                }
-              />
-              <Line
-                icon="👥"
-                label="Capacity"
-                sub={draft.capacity}
-                onClick={capacityEditable ? () => (setDialogText(draft.capacity), setDialog("capacity")) : undefined}
-                trailing={<span className="text-[17px] text-[#15589B]">{capacityEditable ? "✎" : "🔒"}</span>}
-              />
-              <Line
-                icon="📝"
-                label="Description"
-                sub={draft.description || "-"}
-                onClick={() => (setDialogText(draft.description), setDialog("description"))}
-                trailing={<span className="text-[17px] text-[#15589B]">✎</span>}
-              />
-              <Line
-                icon="🔒"
-                label="Lock Level"
-                sub={String(draft.lock)}
-                onClick={() => (setDialogText(String(draft.lock)), setDialog("lock"))}
-                trailing={<span className="text-lg">🔐</span>}
-              />
-            </Card>
-            <Card>
-              {showPublicKick && (
-                <Line
-                  icon="👢"
-                  label="Public Kick"
-                  sub="A vote: 5 votes in 60 seconds kick a person"
-                  trailing={<Switch on={draft.publicKick} onChange={(v) => setDraft((d) => ({ ...d, publicKick: v }))} />}
-                />
+        <div className="mx-auto w-full max-w-xl space-y-3.5 px-3.5 pt-3.5">
+          {!editing && (
+            <div className="flex rounded-full bg-[#FFFFFF] p-1 shadow-[0_6px_14px_-10px_rgba(12,59,94,0.45)]">
+              {([
+                ["info", "ℹ️ Info"],
+                ["settings", "⚙️ Settings"],
+                ["members", "👥 Members"],
+              ] as const).map(([k, label]) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setTab(k)}
+                  className={`flex-1 rounded-full py-2.5 text-[13px] font-black transition ${tab === k ? "bg-gradient-to-r from-[#38BDF8] to-[#34D399] text-white shadow" : "text-[#6B7F99]"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {!editing ? (
+            <>
+              {tab === "info" && (
+                <Card>
+                  <div className="p-4">
+                    <p className="text-[11px] font-black uppercase tracking-wider text-[#0EA5E9]">About this room</p>
+                    <p data-notranslate className="mt-1.5 whitespace-pre-wrap text-[14px] leading-relaxed text-[#1E3A5F]">
+                      {description ? <DescText text={description} /> : "No description."}
+                    </p>
+                  </div>
+                </Card>
               )}
-              <Line icon="🖼️" label="Enable Audio/Image share" trailing={<Switch on={draft.media} onChange={(v) => setDraft((d) => ({ ...d, media: v }))} />} />
-              <Line icon="🎬" label="Enable Video share" trailing={<Switch on={draft.video} onChange={(v) => setDraft((d) => ({ ...d, video: v }))} />} />
-            </Card>
-          </>
-        )}
-
-        {showSuperMods && peopleCard("super")}
-        {peopleCard("mod")}
+              {tab === "settings" && (
+                <Card>
+                  <Line icon="🔒" label="Lock Level" sub={info.lockLevel ? `Level ${info.lockLevel}+ can come in` : "Anyone can come in"} value={`Level ${info.lockLevel}`} />
+                  {showPublicKick && <Line icon="👢" label="Public Kick" sub="Anyone can vote to kick" trailing={<SwitchLook on={info.publicKick} />} />}
+                  <Line icon="🖼️" label="Image or audio share" sub="Members can send photos & voice" trailing={<SwitchLook on={info.allowMedia} />} />
+                  <Line icon="🎬" label="Video share" sub="Members can send videos" trailing={<SwitchLook on={info.allowVideo} />} />
+                </Card>
+              )}
+              {tab === "members" && (
+                <>
+                  {showSuperMods && peopleCard("super")}
+                  {peopleCard("mod")}
+                  <Card>
+                    <div className="px-4 pb-1 pt-3.5 text-[13px] font-black text-[#0C3B5E]">🟢 In the room now ({roomMembers.length})</div>
+                    <div className="flex flex-wrap gap-1.5 px-3.5 pb-3.5 pt-1.5">
+                      {roomMembers.length === 0 && <span className="text-[13px] text-[#7B8FA8]">Nobody else right now.</span>}
+                      {roomMembers.slice(0, 60).map((n) => (
+                        <span key={n} data-notranslate className="rounded-full bg-[#F2F9FF] px-2.5 py-1 text-[12.5px] font-bold text-[#1E3A5F]">
+                          {n}
+                        </span>
+                      ))}
+                    </div>
+                  </Card>
+                </>
+              )}
+              <div className="flex gap-2.5">
+                <button type="button" onClick={shareRoom} className="h-12 flex-1 rounded-2xl bg-[#FFFFFF] text-[14.5px] font-black text-[#0284C7] shadow-[0_6px_14px_-10px_rgba(12,59,94,0.45)] active:scale-[.98]">
+                  ↗ Share room
+                </button>
+                {onLeave && (
+                  <button type="button" onClick={onLeave} className="h-12 flex-1 rounded-2xl bg-[#FFF1F2] text-[14.5px] font-black text-[#E11D48] active:scale-[.98]">
+                    🚪 Leave
+                  </button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <Card>
+                <Line
+                  icon="👑"
+                  label="Owner"
+                  sub={ownerName || "-"}
+                  onClick={canTransferOwner ? () => (setDialogText(""), setDialog("owner")) : undefined}
+                  trailing={
+                    canTransferOwner ? <span className="text-[17px] text-[#0284C7]">✎</span> : <span className="text-lg text-[#B5C2D3]">✓</span>
+                  }
+                />
+                <Line
+                  icon="👥"
+                  label="Capacity"
+                  sub={draft.capacity}
+                  onClick={capacityEditable ? () => (setDialogText(draft.capacity), setDialog("capacity")) : undefined}
+                  trailing={<span className="text-[17px] text-[#0284C7]">{capacityEditable ? "✎" : "🔒"}</span>}
+                />
+                <Line
+                  icon="📝"
+                  label="Description"
+                  sub={draft.description || "-"}
+                  onClick={() => (setDialogText(draft.description), setDialog("description"))}
+                  trailing={<span className="text-[17px] text-[#0284C7]">✎</span>}
+                />
+                <Line
+                  icon="🔒"
+                  label="Lock Level"
+                  sub={String(draft.lock)}
+                  onClick={() => (setDialogText(String(draft.lock)), setDialog("lock"))}
+                  trailing={<span className="text-lg">🔐</span>}
+                />
+              </Card>
+              <Card>
+                {showPublicKick && (
+                  <Line
+                    icon="👢"
+                    label="Public Kick"
+                    sub="A vote: 5 votes in 60 seconds kick a person"
+                    trailing={<Switch on={draft.publicKick} onChange={(v) => setDraft((d) => ({ ...d, publicKick: v }))} />}
+                  />
+                )}
+                <Line icon="🖼️" label="Enable Audio/Image share" sub="Members can send photos & voice" trailing={<Switch on={draft.media} onChange={(v) => setDraft((d) => ({ ...d, media: v }))} />} />
+                <Line icon="🎬" label="Enable Video share" sub="Members can send videos" trailing={<Switch on={draft.video} onChange={(v) => setDraft((d) => ({ ...d, video: v }))} />} />
+              </Card>
+              {showSuperMods && peopleCard("super")}
+              {peopleCard("mod")}
+            </>
+          )}
+        </div>
       </div>
 
       {toast && (
