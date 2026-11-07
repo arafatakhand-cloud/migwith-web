@@ -448,7 +448,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   const meColor = colorOf(username) || "#2563EB";
   return (
-    <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F2F3FA]">
+    <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
       <section className="relative mx-auto max-w-2xl pb-10">
         {author ? (
           <div className="px-3 sm:px-6">
@@ -456,8 +456,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           // 🎨 design A: gradient header band
-          <div className="-mx-0 mb-1 flex items-center justify-between rounded-b-[28px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-5 pb-4 pt-4 shadow-[0_14px_30px_-12px_rgba(99,102,241,.6)]">
-            <h1 className="text-[26px] font-black tracking-tight text-white">Feed</h1>
+          <div className="mb-1 flex items-center justify-between px-5 pb-2 pt-4">
+            <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
             {user && (
               <div className="flex items-center gap-2.5">
                 <button
@@ -465,7 +465,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   onClick={() => setTab(tab === "saved" ? "popular" : "saved")}
                   aria-label="Saved posts"
                   title="Saved posts"
-                  className={`flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-extrabold transition ${tab === "saved" ? "bg-white text-[#4F46E5]" : "bg-white/20 text-white"}`}
+                  className={`flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-extrabold transition ${tab === "saved" ? "bg-[#111827] text-white" : "bg-[#FFFFFF] text-[#3B4266] shadow-[0_4px_12px_-6px_rgba(60,64,140,.4)]"}`}
                 >
                   🔖 Saved
                 </button>
@@ -843,7 +843,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
-          <div className="space-y-4 px-3.5">
+          <div className="space-y-5 px-3.5">
             {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
               <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
             ))}
@@ -1033,61 +1033,125 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
+// 🎨 D4-B + D4-D: every post is one big rounded card.
+//  · a photo / video post fills the card; a text-only post becomes "Text Art"
+//    (big words on a colour background picked from the post id)
+//  · a glass bar on top: picture, name ✔, role · time, Follow
+//  · the words and glass buttons (❤️ · 💬 · ↗ · 🔖) float on the bottom
+const TEXT_ART: [string, string][] = [
+  ["linear-gradient(135deg,#312E81,#7C3AED 55%,#DB2777)", "#FFFFFF"],
+  ["linear-gradient(135deg,#0F172A,#1D4ED8 45%,#22D3EE)", "#FFFFFF"],
+  ["linear-gradient(135deg,#FDE68A,#FDBA74)", "#7C2D12"],
+  ["linear-gradient(135deg,#064E3B,#059669 50%,#A7F3D0)", "#FFFFFF"],
+  ["linear-gradient(135deg,#BE185D,#F472B6 55%,#FBCFE8)", "#FFFFFF"],
+  ["linear-gradient(135deg,#1E1B4B,#4338CA 50%,#A5B4FC)", "#FFFFFF"],
+  ["linear-gradient(135deg,#FECACA,#FCA5A5 40%,#F472B6)", "#4C0519"],
+  ["linear-gradient(135deg,#0C4A6E,#0EA5E9 55%,#BAE6FD)", "#FFFFFF"],
+];
+function textArtOf(id: string): [string, string] {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return TEXT_ART[h % TEXT_ART.length];
+}
+
 function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
   const holdRef = useRef<number | null>(null);
   const router = useRouter();
-  // ❤️ each new like: the heart pops and a few hearts float up
+  // ❤️ each new like: the heart pops; a double tap on the card shows a big heart
   const [burst, setBurst] = useState(0);
+  const [bigHeart, setBigHeart] = useState(0);
+  const lastTap = useRef(0);
   const likeTap = () => {
     if (!liked) setBurst((n) => n + 1);
     onLike();
   };
   const pic = p.cover || p.firstImage;
+  const media = !!(p.video || pic);
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
   const open = () => router.push(`/feed/${p.id}`);
-  const tint = CAT_TINT[p.category] || "#6366F1";
   const [viewing, setViewing] = useState(false);
+  const text = tr?.text || p.excerpt;
+  const [artBg, artInk] = textArtOf(p.id);
+  // short words get big letters; a long text gets normal ones
+  const artSize = text.length <= 60 ? "text-[26px]" : text.length <= 140 ? "text-[21px]" : "text-[16px]";
+  const role = rolePill && ROLE_PILLS[rolePill] ? ROLE_PILLS[rolePill][0] : "";
+  // one tap opens the post; a quick second tap likes it with a big heart
+  const tapCard = () => {
+    const now = Date.now();
+    if (now - lastTap.current < 320) {
+      lastTap.current = 0;
+      if (!liked) {
+        setBurst((n) => n + 1);
+        onLike();
+      }
+      setBigHeart((n) => n + 1);
+      return;
+    }
+    lastTap.current = now;
+    window.setTimeout(() => {
+      if (lastTap.current === now) open();
+    }, 330);
+  };
+  const glass = "bg-white/20 backdrop-blur-md";
   return (
     <article
-      onClick={open}
-      className="cursor-pointer rounded-[26px] bg-[#FFFFFF] px-4 pb-4 pt-4 shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition active:scale-[.995]"
+      className="relative overflow-hidden rounded-[28px] shadow-[0_22px_36px_-18px_rgba(40,50,120,.55)]"
+      style={media ? { background: "#0F172A" } : { background: artBg }}
     >
-      <div className="flex items-center gap-3">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full bg-gradient-to-br from-[#A855F7] to-[#6366F1] p-[2.5px]">
-          <span className="block rounded-full bg-[#FFFFFF] p-[2px]">
-            <Avatar name={p.author} color={c} size={42} />
+      {/* the picture / video, or the Text Art words */}
+      <div onClick={tapCard} className="relative cursor-pointer select-none">
+        {p.video ? (
+          <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[560px] min-h-[360px] w-full bg-black object-cover" />
+        ) : pic ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={pic} alt="" loading="lazy" className="block max-h-[560px] min-h-[380px] w-full object-cover" />
+        ) : (
+          <div className="flex min-h-[340px] items-center justify-center px-7 pb-24 pt-20 text-center">
+            <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
+              <RichText text={text || "📷"} />
+            </p>
+          </div>
+        )}
+        {bigHeart > 0 && (
+          <span key={bigHeart} aria-hidden className="feed-bigheart pointer-events-none absolute left-1/2 top-1/2 text-[96px]">
+            ❤️
           </span>
+        )}
+        {/* soft dark fade so the white words and buttons can be read */}
+        {media && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/75 via-black/30 to-transparent" />}
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />
+      </div>
+
+      {/* 🫧 glass bar on top: who wrote it */}
+      <div className={`absolute left-3 right-3 top-3 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-1.5 text-white ${glass}`}>
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-white/90">
+          <Avatar name={p.author} color={c} size={34} />
         </Link>
-        <div className="min-w-0 flex-1">
-          <div className="flex min-w-0 items-center gap-1.5">
-            <div data-notranslate className="max-w-[150px] shrink-0 truncate text-[16px] font-black text-[#1E1B4B]">
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="flex min-w-0 items-center gap-1">
+            <span data-notranslate className="truncate text-[14px] font-extrabold drop-shadow">
               {p.author}
-            </div>
+            </span>
             {verified && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-[17px] w-[17px] shrink-0" />
+              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-[15px] w-[15px] shrink-0" />
             )}
-            {rolePill && ROLE_PILLS[rolePill] ? (
-              <span
-                className="min-w-0 truncate rounded-full px-2 py-[3px] text-[11px] font-extrabold leading-none"
-                style={{ background: ROLE_PILLS[rolePill][1], color: ROLE_PILLS[rolePill][2] }}
-              >
-                {ROLE_PILLS[rolePill][0]}
-              </span>
-            ) : roleImg ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={roleImg} alt="" title="Role badge" className="h-4 w-4 shrink-0 rounded-full object-cover" />
-            ) : roleBadge ? (
-              <span className="shrink-0 text-[13px] leading-none" title="Role badge">{roleBadge}</span>
-            ) : null}
+            {!role &&
+              (roleImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={roleImg} alt="" title="Role badge" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+              ) : roleBadge ? (
+                <span className="shrink-0 text-[12px] leading-none">{roleBadge}</span>
+              ) : null)}
           </div>
-          <div className="mt-0.5 text-[12.5px] text-[#7C82A6]">
-            {blogAgoBn(p.createdMs)} · Public
-            {why && <span className="sr-only">{why}</span>}
+          <div className="truncate text-[11px] font-semibold text-white/85">
+            {role ? `${role} · ` : ""}
+            {blogAgoBn(p.createdMs)}
+            {why && <span className="sr-only"> {why}</span>}
           </div>
         </div>
         {canFollow && (
@@ -1097,46 +1161,113 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               e.stopPropagation();
               onFollow();
             }}
-            className={`ml-auto shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold transition active:scale-95 ${following ? "bg-[#EEF0F7] text-[#3B4266]" : "bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"}`}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? "bg-white/25 text-white" : "bg-[#FFFFFF] text-[#4F46E5]"}`}
           >
             {following ? "Following" : "+ Follow"}
           </button>
         )}
       </div>
-      {/* no separate title line; the translate button lives on the post page */}
-      {(tr?.text || p.excerpt) && (
-        <p className="mx-0.5 mt-3 line-clamp-4 text-[15.5px] leading-relaxed text-[#1E1B4B]">
-          <RichText text={tr?.text || p.excerpt} />
-        </p>
-      )}
-      {p.sharedId && (
+
+      {/* the words (photo posts) and the glass buttons, floating on the bottom */}
+      <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white" onClick={(e) => e.stopPropagation()}>
+        {media && text && (
+          <p onClick={open} className="mb-2.5 line-clamp-3 cursor-pointer text-[14.5px] font-semibold leading-snug drop-shadow">
+            <RichText text={text} />
+          </p>
+        )}
+        {p.sharedId && (
+          <button type="button" onClick={() => router.push(`/feed/${p.sharedId}`)} className={`mb-2.5 block w-full rounded-2xl p-2.5 text-left ${glass}`}>
+            <span className="block text-[11.5px] font-bold text-white/85">↗ {p.sharedAuthor}</span>
+            <span className="mt-0.5 line-clamp-2 block text-[13px] font-bold">{p.sharedTitle}</span>
+          </button>
+        )}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            {fly && (
+              <span key={fly.k} className="feed-fly pointer-events-none absolute bottom-12 left-3 z-30 text-[24px]">
+                {fly.e}
+              </span>
+            )}
+            {pick && (
+              // 😀 the six reactions: tap one (tap the same again to take it back)
+              <div className="absolute bottom-12 left-0 z-20 flex gap-1 rounded-full bg-[#FFFFFF] px-2 py-1 shadow-[0_8px_20px_-6px_rgba(16,63,145,.45)]">
+                {["👍", "❤️", "😂", "😮", "😢", "😡"].map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => {
+                      setPick(false);
+                      setFly({ e, k: Date.now() });
+                      onReact(e);
+                    }}
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-[20px] transition hover:-translate-y-0.5 hover:scale-125 ${reaction === e ? "bg-[#E6F0FF]" : ""}`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={likeTap}
+              onPointerDown={() => {
+                // a long press (½ second) opens the reaction picker
+                holdRef.current = window.setTimeout(() => setPick(true), 500);
+              }}
+              onPointerUp={() => {
+                if (holdRef.current) window.clearTimeout(holdRef.current);
+              }}
+              onPointerLeave={() => {
+                if (holdRef.current) window.clearTimeout(holdRef.current);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setPick(true);
+              }}
+              aria-label={liked ? "Unlike" : "Like"}
+              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? "bg-[#FFFFFF] text-[#E11D48]" : glass}`}
+            >
+              {burst > 0 &&
+                ["❤️", "💖", "✨", "💕"].map((h, i) => (
+                  <span key={`${burst}-${i}`} aria-hidden className="feed-burst" style={{ ["--x" as string]: `${(i - 1.5) * 26}px` }}>
+                    {h}
+                  </span>
+                ))}
+              <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
+                {liked ? reaction || "❤️" : "🤍"}
+              </span>
+            </button>
+          </div>
+          {p.likes > 0 && (
+            <button type="button" onClick={onReactors} aria-label="See who reacted" className="-ml-1 text-[13px] font-extrabold drop-shadow">
+              {blogShort(p.likes)}
+            </button>
+          )}
+          <button type="button" onClick={open} aria-label="Comments" className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${glass}`}>
+            💬 {blogShort(p.comments)}
+          </button>
+          <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${glass}`}>
+            ↗
+          </button>
+          <span className="ml-auto text-[11.5px] font-bold text-white/80 drop-shadow">👁 {blogShort(p.views)}</span>
+          <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition active:scale-95 ${saved ? "bg-[#FFFFFF]" : glass}`}>
+            🔖
+          </button>
+        </div>
+      </div>
+
+      {media && pic && !p.video && (
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            router.push(`/feed/${p.sharedId}`);
-          }}
-          className="mt-2.5 block w-full rounded-2xl border border-[#DDE8F7] bg-[#F7F9FF] p-3 text-left"
-        >
-          <span className="block text-[12px] font-bold text-[#6366F1]">↗ {p.sharedAuthor}</span>
-          <span className="mt-0.5 line-clamp-2 block text-[13.5px] font-bold text-[#1E1B4B]">{p.sharedTitle}</span>
-        </button>
-      )}
-      {p.video && (
-        <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="mt-2.5 max-h-[320px] w-full rounded-2xl bg-black" />
-      )}
-      {pic && !p.video && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={pic}
-          alt=""
-          loading="lazy"
-          onClick={(e) => {
-            e.stopPropagation();
             setViewing(true);
           }}
-          className="mt-2.5 max-h-[320px] w-full cursor-zoom-in rounded-2xl object-cover"
-        />
+          aria-label="See the full picture"
+          className={`absolute right-3 top-[62px] flex h-8 w-8 items-center justify-center rounded-full text-[13px] text-white ${glass}`}
+        >
+          ⤢
+        </button>
       )}
       {viewing && pic && (
         // 🔍 full-screen picture: tap anywhere to close
@@ -1152,101 +1283,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white">✕</span>
         </div>
       )}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (p.likes > 0) onReactors();
-        }}
-        aria-label="See who reacted"
-        className="mt-3 flex items-center gap-2 text-left text-[13.5px] text-[#7C82A6]"
-      >
-        {p.likes > 0 && (
-          <span className="flex shrink-0">
-            <span className="h-[22px] w-[22px] rounded-full border-2 border-white bg-[#4F7BEA]" />
-            <span className="-ml-2 h-[22px] w-[22px] rounded-full border-2 border-white bg-[#E5484D]" />
-          </span>
-        )}
-        <span>
-          {p.likes > 0 ? `${blogShort(p.likes)} · ` : ""}
-          {blogShort(p.comments)} {p.comments === 1 ? "comment" : "comments"} · {blogShort(p.views)} {p.views === 1 ? "view" : "views"}
-        </span>
-      </button>
-      <div className="mt-3 flex gap-2 border-t border-[#E6E8F2] pt-3" onClick={(e) => e.stopPropagation()}>
-        <div className="relative flex-1">
-        {fly && (
-          <span key={fly.k} className="feed-fly pointer-events-none absolute bottom-12 left-3 z-30 text-[24px]">
-            {fly.e}
-          </span>
-        )}
-        {pick && (
-          // 😀 the six reactions: tap one (tap the same again to take it back)
-          <div className="absolute bottom-11 left-0 z-20 flex gap-1 rounded-full bg-white px-2 py-1 shadow-[0_8px_20px_-6px_rgba(16,63,145,.35)] ring-1 ring-[#DDE8F7]">
-            {["👍", "❤️", "😂", "😮", "😢", "😡"].map((e) => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => {
-                  setPick(false);
-                  setFly({ e, k: Date.now() });
-                  onReact(e);
-                }}
-                className={`flex h-8 w-8 items-center justify-center rounded-full text-[20px] transition hover:-translate-y-0.5 hover:scale-125 ${reaction === e ? "bg-[#E6F0FF]" : ""}`}
-              >
-                {e}
-              </button>
-            ))}
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={likeTap}
-          onPointerDown={() => {
-            // a long press (½ second) opens the reaction picker
-            holdRef.current = window.setTimeout(() => setPick(true), 500);
-          }}
-          onPointerUp={() => {
-            if (holdRef.current) window.clearTimeout(holdRef.current);
-          }}
-          onPointerLeave={() => {
-            if (holdRef.current) window.clearTimeout(holdRef.current);
-          }}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setPick(true);
-          }}
-          className={`relative flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl text-[13.5px] font-extrabold transition active:scale-95 ${
-            liked ? "bg-[#E6EEFF] text-[#1D4ED8]" : "bg-[#F4F5FB] text-[#3B4266]"
-          }`}
-        >
-          {burst > 0 &&
-            ["❤️", "💖", "✨", "💕"].map((h, i) => (
-              <span
-                key={`${burst}-${i}`}
-                aria-hidden
-                className="feed-burst"
-                style={{ ["--x" as string]: `${(i - 1.5) * 26}px` }}
-              >
-                {h}
-              </span>
-            ))}
-          <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-            {/* 👍 design A: a label, the reaction I picked shows its emoji */}
-            {liked && reaction ? reaction : "👍"}{" "}
-            {liked ? "Liked" : "Like"}
-          </span>
-        </button>
-        </div>
-        <button type="button" onClick={open} className="flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-[#F4F5FB] text-[13.5px] font-extrabold text-[#3B4266] transition active:scale-95">
-          💬 Comment
-        </button>
-        <button type="button" onClick={onShare} className="flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-[#F4F5FB] text-[13.5px] font-extrabold text-[#3B4266] transition active:scale-95">
-          ↗ Share
-        </button>
-        <button type="button" onClick={onSave} aria-pressed={saved} className={`flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl text-[13.5px] font-extrabold transition active:scale-95 ${saved ? "bg-[#FFF4D6] text-[#B7791F]" : "bg-[#F4F5FB] text-[#3B4266]"}`}>
-          🔖 {saved ? "Saved" : "Save"}
-        </button>
-      </div>
     </article>
   );
 }

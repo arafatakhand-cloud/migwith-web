@@ -1573,6 +1573,15 @@ html {
   60% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+.feed-bigheart { transform: translate(-50%, -50%); animation: feedBigHeart 0.9s ease-out forwards; filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
+@keyframes feedBigHeart {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  30% { transform: translate(-50%, -50%) scale(.95); }
+  45% { transform: translate(-50%, -50%) scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -60%) scale(1); }
+}
 .feed-pop { animation: feedPop 0.4s cubic-bezier(0.3, 1.5, 0.5, 1); }
 @keyframes feedShimmer { to { background-position: -200% 0; } }
 .feed-shimmer {
