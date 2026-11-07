@@ -469,9 +469,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 >
                   🔖 Saved
                 </button>
-                <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
+                {/* 👤 my picture → my own posts (the Mine tab) */}
+                <button type="button" onClick={() => setTab("mine")} aria-label="My posts" title="My posts" className="rounded-full transition active:scale-95">
                   <Avatar name={username} color={meColor} size={34} ring />
-                </Link>
+                </button>
               </div>
             )}
           </div>
