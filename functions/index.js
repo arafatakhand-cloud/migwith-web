@@ -25921,13 +25921,21 @@ async function blogMovePost(fromRef, toRef, privacy) {
   if (privacy) data.privacy = privacy;
   else delete data.privacy;
   await toRef.set(data);
-  for (const sub of ["likes", "comments", "views"]) {
-    const docs = (await fromRef.collection(sub).limit(2000).get()).docs;
+  const copy = async (from, to, sub) => {
+    const docs = (await from.collection(sub).limit(2000).get()).docs;
     for (let i = 0; i < docs.length; i += 400) {
       const b = db.batch();
-      docs.slice(i, i + 400).forEach((x) => b.set(toRef.collection(sub).doc(x.id), x.data()));
+      docs.slice(i, i + 400).forEach((x) => b.set(to.collection(sub).doc(x.id), x.data()));
       await b.commit();
     }
+    return docs;
+  };
+  await copy(fromRef, toRef, "likes");
+  await copy(fromRef, toRef, "views");
+  const comments = await copy(fromRef, toRef, "comments");
+  // 👍 each comment's reactions go along too
+  for (const c of comments) {
+    if (c.get("likes")) await copy(c.ref, toRef.collection("comments").doc(c.id), "likes");
   }
   await db.recursiveDelete(fromRef);
 }
@@ -26146,6 +26154,8 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
         author: String(c.get("author") || ""),
         text: String(c.get("text") || ""),
         replyTo: String(c.get("replyTo") || ""),
+        reactions: c.get("reactions") || {},
+        likes: Number(c.get("likes") || 0),
         createdMs: c.get("createdAt") && typeof c.get("createdAt").toMillis === "function" ? c.get("createdAt").toMillis() : 0,
       }));
     }
@@ -26298,6 +26308,46 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     return { ok: true, commentId: cRef.id };
   }
 
+  // 👍 React to a comment (👍 ❤️ 😂 😮 😢 😡), Facebook style: one per person per
+  // comment; the same one again (or "") takes it back.
+  //   comments/{cid}.reactions = { emoji: count }, .likes = total
+  //   comments/{cid}/likes/{uid} = { username, type }
+  if (action === "commentReact") {
+    const REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "😡"];
+    const wanted = String(d.reaction || "");
+    const cRef = postRef.collection("comments").doc(String(d.commentId || "x").trim().slice(0, 100));
+    const lRef = cRef.collection("likes").doc(uid);
+    const res = await db.runTransaction(async (tx) => {
+      const [c, l] = await Promise.all([tx.get(cRef), tx.get(lRef)]);
+      if (!c.exists) throw new E("not-found", "That comment is gone.");
+      const prev = l.exists ? String(l.get("type") || "👍") : null;
+      const counts = { ...(c.get("reactions") || {}) };
+      if (prev) counts[prev] = Math.max(0, Number(counts[prev] || 0) - 1);
+      let next = null;
+      if (wanted && REACTIONS.includes(wanted) && wanted !== prev) {
+        next = wanted;
+        counts[wanted] = Number(counts[wanted] || 0) + 1;
+        tx.set(lRef, { username: me, type: wanted, at: FieldValue.serverTimestamp() });
+      } else if (prev) {
+        tx.delete(lRef);
+      }
+      Object.keys(counts).forEach((k) => { if (!counts[k]) delete counts[k]; });
+      const likes = Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
+      tx.update(cRef, { reactions: counts, likes });
+      return { reaction: next, reactions: counts, likes };
+    });
+    return { ok: true, ...res };
+  }
+  // 👍 which reaction I left on each of these comments of the post (one call)
+  if (action === "myCommentReactions") {
+    const ids = (Array.isArray(d.commentIds) ? d.commentIds : []).map((x) => String(x || "").trim().slice(0, 100)).filter(Boolean).slice(0, 300);
+    if (!ids.length) return { ok: true, reactions: {} };
+    const snaps = await db.getAll(...ids.map((id) => postRef.collection("comments").doc(id).collection("likes").doc(uid)));
+    const reactions = {};
+    snaps.forEach((l, i) => { if (l.exists) reactions[ids[i]] = String(l.get("type") || "👍"); });
+    return { ok: true, reactions };
+  }
+
   if (action === "deleteComment") {
     const cRef = postRef.collection("comments").doc(String(d.commentId || "x").slice(0, 100));
     const [s, c] = await Promise.all([postRef.get(), cRef.get()]);
@@ -26310,6 +26360,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       tx.delete(cRef);
       tx.update(postRef, { comments: Math.max(0, Number(s2.get("comments") || 0) - 1) });
     });
+    await db.recursiveDelete(cRef.collection("likes")).catch(() => {});
     return { ok: true };
   }
 

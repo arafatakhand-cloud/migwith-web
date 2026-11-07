@@ -1106,7 +1106,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             >
               <Avatar name={username} color={meColor} size={40} ring />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1EFFF] text-[17px] transition group-hover:scale-110">🖼</span>
             </button>
           ) : (
             <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">

@@ -38,7 +38,32 @@ export type BlogPost = {
   privacy: "" | "friends" | "me";
 };
 
-export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
+export type BlogComment = {
+  id: string;
+  authorUid: string;
+  author: string;
+  text: string;
+  createdMs: number;
+  /** the top comment this one answers ('' = top level) */
+  replyTo: string;
+  /** 👍 reactions on the comment: { emoji: count } and the total */
+  reactions: Record<string, number>;
+  likes: number;
+};
+/** the six reactions, with the word shown on the Like button */
+export const BLOG_REACTIONS: [string, string, string][] = [
+  ["👍", "Like", "#2563EB"],
+  ["❤️", "Love", "#E11D48"],
+  ["😂", "Haha", "#D97706"],
+  ["😮", "Wow", "#D97706"],
+  ["😢", "Sad", "#D97706"],
+  ["😡", "Angry", "#EA580C"],
+];
+function reactionCounts(v: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (v && typeof v === "object") for (const [k, n] of Object.entries(v as Record<string, unknown>)) if (Number(n) > 0) out[k] = Number(n);
+  return out;
+}
 
 export const BLOG_CATEGORIES: [string, string][] = [
   ["life", "💬 Life"],
@@ -97,7 +122,16 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
-  return { id, authorUid: String(d.authorUid || ""), author: String(d.author || ""), text: String(d.text || ""), createdMs: ms(d.createdAt), replyTo: String(d.replyTo || "") };
+  return {
+    id,
+    authorUid: String(d.authorUid || ""),
+    author: String(d.author || ""),
+    text: String(d.text || ""),
+    createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
+    replyTo: String(d.replyTo || ""),
+    reactions: reactionCounts(d.reactions),
+    likes: Number(d.likes || 0),
+  };
 }
 
 export const blogShort = (n: number) => (n >= 1_000_000 ? `${(n / 1_000_000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(1)}K` : String(n));

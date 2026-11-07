@@ -16,6 +16,7 @@ import {
   blogCategoryLabel,
   blogPrivacyLabel,
   BLOG_PRIVACY,
+  BLOG_REACTIONS,
   blogCoverFallback,
   blogError,
   blogShort,
@@ -88,13 +89,56 @@ export default function BlogPostPage() {
         if (!p) return setPost(null);
         setPost(toBlogPost(String(p.id), p));
         const cs = Array.isArray(r.comments) ? (r.comments as Record<string, unknown>[]) : [];
-        setComments(cs.map((c) => ({ id: String(c.id), authorUid: String(c.authorUid || ""), author: String(c.author || ""), text: String(c.text || ""), createdMs: Number(c.createdMs || 0), replyTo: String(c.replyTo || "") })));
+        setComments(cs.map((c) => toBlogComment(String(c.id), c)));
       })
       .catch(() => setPost(null));
     blogCall("myReactions", { postIds: [id], privateIds: [id] })
       .then((r) => setLiked(!!(r.reactions as Record<string, string> | undefined)?.[id]))
       .catch(() => {});
   }, [id, isPrivate, user, privTick]);
+  // 👍 my reaction on each comment, and the comment whose reaction row is open
+  const [cReact, setCReact] = useState<Record<string, string>>({});
+  const [cPick, setCPick] = useState("");
+  const holdRef = useRef<number | null>(null);
+  const cIds = comments.map((c) => c.id).join(",");
+  useEffect(() => {
+    if (!user || !id || !cIds) return;
+    let alive = true;
+    blogCall("myCommentReactions", { postId: id, commentIds: cIds.split(",") })
+      .then((r) => alive && setCReact((r.reactions as Record<string, string>) || {}))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [id, user, cIds]);
+  const reactComment = async (c: BlogComment, emoji: string) => {
+    if (!user) return router.push("/login");
+    if (!post) return;
+    setCPick("");
+    const was = cReact[c.id] || "";
+    const next = was === emoji ? "" : emoji;
+    // at once; the server's answer settles it
+    const bump = (cur: Record<string, number>) => {
+      const m = { ...cur };
+      if (was) m[was] = Math.max(0, (m[was] || 0) - 1);
+      if (next) m[next] = (m[next] || 0) + 1;
+      Object.keys(m).forEach((k) => !m[k] && delete m[k]);
+      return m;
+    };
+    const setCounts = (cid: string, reactions: Record<string, number>) =>
+      setComments((list) => list.map((x) => (x.id === cid ? { ...x, reactions, likes: Object.values(reactions).reduce((a, b) => a + b, 0) } : x)));
+    setCReact((m) => ({ ...m, [c.id]: next }));
+    setCounts(c.id, bump(c.reactions));
+    try {
+      const r = await blogCall("commentReact", { postId: post.id, commentId: c.id, reaction: next });
+      setCReact((m) => ({ ...m, [c.id]: String(r.reaction || "") }));
+      setCounts(c.id, (r.reactions as Record<string, number>) || {});
+    } catch (e) {
+      setCReact((m) => ({ ...m, [c.id]: was }));
+      setCounts(c.id, c.reactions);
+      setToast(blogError(e));
+    }
+  };
   const setPrivacy = async (next: string) => {
     if (!post) return;
     try {
@@ -348,7 +392,7 @@ export default function BlogPostPage() {
           <p className="mt-2 text-right text-[12px] text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</p>
 
           <h3 className="mb-2 mt-3 text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
-          <div ref={commentsRef} className="space-y-2">
+          <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
             {comments.length === 0 && <p className="text-[13px] text-[#6B7FA6]">No comments yet. Say something nice!</p>}
             {comments.map((c) => {
               const cc = colorOf(c.author) || "#2563EB";
@@ -359,13 +403,68 @@ export default function BlogPostPage() {
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: cc }}>
                     {c.author.slice(0, 1).toUpperCase()}
                   </span>
-                  <div className="min-w-0 rounded-xl bg-white px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)]">
+                  <div className="relative min-w-0">
+                  <div className="relative min-w-0 rounded-xl bg-white px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)]">
                     <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
                       {c.author}
                     </Link>
                     <span className="break-words">{c.text}</span>
-                    <div className="mt-0.5 flex gap-3 text-[11px] text-[#8494B2]">
+                    {/* 👍❤️ 5 — the reactions on this comment, on the bubble's corner */}
+                    {c.likes > 0 && (
+                      <span className="absolute -bottom-2.5 right-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-bold text-[#5A6F93] shadow-[0_1px_4px_rgba(0,0,0,.18)]">
+                        {Object.entries(c.reactions)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 3)
+                          .map(([e]) => (
+                            <span key={e} className="text-[12px] leading-none">{e}</span>
+                          ))}
+                        <span className="ml-0.5">{c.likes}</span>
+                      </span>
+                    )}
+                  </div>
+                    {/* the six reactions, after a long press on Like */}
+                    {cPick === c.id && (
+                      <div data-react className="absolute -top-11 left-0 z-20 flex gap-0.5 rounded-full bg-white px-1.5 py-1 shadow-[0_6px_18px_-6px_rgba(30,40,90,.45)]">
+                        {BLOG_REACTIONS.map(([e, label]) => (
+                          <button key={e} type="button" aria-label={label} onClick={() => reactComment(c, e)} className="rounded-full px-1 text-[24px] leading-none transition hover:scale-125 active:scale-110">
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className={`flex gap-3 pl-1 text-[11.5px] text-[#8494B2] ${c.likes > 0 ? "mt-3" : "mt-1"}`}>
                       <span>{blogAgo(c.createdMs)}</span>
+                      {(() => {
+                        const mineR = cReact[c.id] || "";
+                        const look = BLOG_REACTIONS.find(([e]) => e === mineR);
+                        const clear = () => holdRef.current && (window.clearTimeout(holdRef.current), (holdRef.current = null));
+                        return (
+                          <button
+                            type="button"
+                            onPointerDown={() => {
+                              clear();
+                              holdRef.current = window.setTimeout(() => {
+                                holdRef.current = null;
+                                setCPick(c.id);
+                              }, 450);
+                            }}
+                            onPointerUp={(e) => {
+                              if (holdRef.current) {
+                                clear();
+                                e.preventDefault();
+                                void reactComment(c, mineR || "👍");
+                              }
+                            }}
+                            onPointerLeave={clear}
+                            data-react
+                            onContextMenu={(e) => (e.preventDefault(), setCPick(c.id))}
+                            className="select-none font-bold"
+                            style={{ color: look ? look[2] : undefined }}
+                          >
+                            {look ? `${look[0]} ${look[1]}` : "Like"}
+                          </button>
+                        );
+                      })()}
                       {user && (
                         <button
                           type="button"
