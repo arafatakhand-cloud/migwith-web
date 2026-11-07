@@ -445,7 +445,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
               aria-hidden
-              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-gradient-to-br from-[#14B88F] to-[#2C9BEA] shadow-[0_6px_14px_-6px_rgba(20,184,143,.7)] transition-[left,width] duration-300 ease-out"
+              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-white shadow-[0_4px_12px_-4px_rgba(99,102,241,.45)] transition-[left,width] duration-300 ease-out"
               style={ind ? { left: ind.left, width: ind.width } : { opacity: 0 }}
             />
             {TABS.map(([k, label]) => (
@@ -457,7 +457,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
                 className={`relative z-10 flex-1 rounded-xl py-2 text-[13px] font-extrabold transition-colors ${
-                  tab === k ? "text-white" : "text-[#6B6F9A]"
+                  tab === k ? "text-[#4F46E5]" : "text-[#6B6F9A]"
                 }`}
               >
                 {k === "popular" && tab === k ? "🔥 " : ""}
@@ -1179,18 +1179,14 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
               </span>
             ))}
           <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-            {/* 👍 the miGlife thumbs icon, or the reaction I picked */}
-            {liked && reaction && reaction !== "👍" ? (
-              <span className="text-[17px] leading-none">{reaction}</span>
-            ) : (
-              <img src="/icons/miglife-like.svg" alt="" className="h-[18px] w-[18px]" />
-            )}{" "}
-            {blogShort(p.likes)}
+            {/* 👍 design A: a label, the reaction I picked shows its emoji */}
+            {liked && reaction ? reaction : "👍"}{" "}
+            {liked ? "Liked" : "Like"}
           </span>
         </button>
         </div>
         <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
-          💬 {blogShort(p.comments)}
+          💬 Comment
         </button>
         <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-9 w-10 items-center justify-center rounded-xl text-[15px] ${saved ? "bg-[#FFF4D6]" : "bg-[#F3F2FF] opacity-60"}`}>
           🔖
