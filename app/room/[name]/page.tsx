@@ -3707,7 +3707,7 @@ function MessageRow({
         {stamp}
       </p>
     );
-    return betBubble ? <div className="w-full rounded-[14px] bg-[#e7eff4] px-2.5 py-1.5">{botP}</div> : botP;
+    return betBubble ? <div className="lb-bubble w-full rounded-[14px] bg-[#e7eff4] px-2.5 py-1.5">{botP}</div> : botP;
   }
 
   // "name: message" — the sender is whatever comes before the first colon,
