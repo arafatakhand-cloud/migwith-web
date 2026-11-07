@@ -446,6 +446,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
 
   const meColor = colorOf(username) || "#2563EB";
+  // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
+  const mineOnly = !author && !!user && tab === "mine";
   return (
     <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
       <section className="relative mx-auto max-w-2xl pb-10">
@@ -456,8 +458,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           // 🎨 design A: gradient header band
           <div className="mb-1 flex items-center justify-between px-5 pb-2 pt-4">
-            <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
-            {user && (
+            {mineOnly ? (
+              <button
+                type="button"
+                onClick={() => setTab("new")}
+                aria-label="Back to the Feed"
+                className="flex items-center gap-2.5 text-[#1E1B4B] transition active:scale-95"
+              >
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] text-[18px] font-black shadow-[0_6px_14px_-8px_rgba(60,64,140,.55)]">←</span>
+                <span className="text-[22px] font-black tracking-tight">My posts</span>
+              </button>
+            ) : (
+              <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
+            )}
+            {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
@@ -478,9 +492,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {/* 📸 stories sit right under the Feed title */}
-        {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
+        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
 
-        {!author && (
+        {!author && !mineOnly && (
           <div className="sticky top-0 z-30 mx-3.5 mb-3 mt-2 flex rounded-[22px] bg-[#E7E9F6]/90 p-1.5 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
@@ -831,7 +845,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       : "Log in to see the people you follow."
                     : "No posts here yet."}
             </p>
-            {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
+            {user && !author && tab !== "mine" && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
           <div className="space-y-5 px-3.5">
