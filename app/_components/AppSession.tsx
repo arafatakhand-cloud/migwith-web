@@ -11,6 +11,7 @@ import { useSpecialColorListener } from "../../lib/specialColor";
 import { useOnlineHeartbeat } from "../../lib/heartbeat";
 import { useAutoLeave } from "../../lib/autoLeave";
 import { AlertPopup } from "./AlertPopup";
+import { useRecordWebIp } from "../../lib/webIp";
 
 // One sign-in listener and one set of badge listeners for the whole site.
 // It lives in the root layout, so it survives page changes instead of being
@@ -40,6 +41,9 @@ export function AppSession({ children }: { children: React.ReactNode }) {
   // ⏰ Minimised for 120 min → out of the open rooms (tabs kept, never logged
   // out); signed out any other way → that ID's room tabs closed.
   useAutoLeave(uid);
+  // 🌐 IP Monitor: this browser's IP + location go to the server on every open /
+  // login (like the app); a banned IP / suspended account is signed out.
+  useRecordWebIp(uid);
   // 🔐 Signed out (e.g. coming back to a tab after the login ran out): straight
   // to the login page instead of a page that keeps showing "Loading…".
   const pathname = usePathname() || "/";
