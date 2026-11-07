@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, where, getCountFromServer } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { setFollowing, useFollowing } from "../../lib/follow";
@@ -187,6 +187,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   }, [tab]);
   const friendsKey = friends.join(",");
   const followed = useFollowing(user?.uid);
+  // 💜 how many members follow me (for my wall on the Mine tab)
+  const [myFollowers, setMyFollowers] = useState<number | null>(null);
+  useEffect(() => {
+    if (tab !== "mine" || !username) return;
+    getCountFromServer(query(collection(db, "users"), where("following", "array-contains", username)))
+      .then((c) => setMyFollowers(c.data().count))
+      .catch(() => {});
+  }, [tab, username]);
   const followedKey = followed.join(",");
   const toggleFollow = async (name: string) => {
     try {
@@ -782,15 +790,17 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   ✏️ Profile
                 </Link>
               </div>
-              <div className="grid grid-cols-3 divide-x divide-[#ECEDF5] py-3 text-center">
+              <div className="grid grid-cols-5 divide-x divide-[#ECEDF5] py-3 text-center">
                 {([
                   [blogShort(posts.length), "Posts"],
+                  [myFollowers === null ? "…" : blogShort(myFollowers), "Followers"],
+                  [blogShort(followed.length), "Following"],
                   [blogShort(likes), "Likes"],
                   [blogShort(views), "Views"],
                 ] as const).map(([n, label]) => (
-                  <div key={label}>
-                    <div className="text-[18px] font-black text-[#1E1B4B]">{n}</div>
-                    <div className="text-[11.5px] font-semibold text-[#8A8FB0]">{label}</div>
+                  <div key={label} className="min-w-0 px-0.5">
+                    <div className="text-[17px] font-black text-[#1E1B4B]">{n}</div>
+                    <div className="truncate text-[10.5px] font-semibold text-[#8A8FB0]">{label}</div>
                   </div>
                 ))}
               </div>
