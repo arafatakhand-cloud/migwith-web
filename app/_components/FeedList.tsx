@@ -769,6 +769,19 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     }
   };
 
+  // 🗑 delete one of my Migs from its card
+  const deleteMig = async (p: BlogPost) => {
+    if (!confirm("Delete this Mig?")) return;
+    setPosts((cur) => (cur ? cur.filter((x) => x.id !== p.id) : cur));
+    try {
+      await blogCall("delete", { postId: p.id });
+      setToast("Mig deleted");
+    } catch (e) {
+      setToast(blogError(e));
+      setReload((n) => n + 1);
+    }
+    window.setTimeout(() => setToast(""), 2200);
+  };
   // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
   const [sheetId, setSheetId] = useState("");
   const openSheet = (id: string) => {
@@ -1527,7 +1540,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-5 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1767,7 +1780,9 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void }) {
+  // ⋯ my own Mig: Edit / Delete right on the card
+  const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1924,6 +1939,33 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           >
             {following ? "Following" : "+ Follow"}
           </button>
+        )}
+        {onEdit && (
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              aria-label="Mig options"
+              onClick={(e) => (e.stopPropagation(), setMenu((v) => !v))}
+              className={`flex h-9 w-9 items-center justify-center rounded-full text-[18px] font-black leading-none ${plain ? "bg-[#1E1B4B]/[0.06] text-[#3B4266]" : "bg-white/25 text-white"}`}
+            >
+              ⋯
+            </button>
+            {menu && (
+              <>
+                <span className="fixed inset-0 z-10" onClick={(e) => (e.stopPropagation(), setMenu(false))} />
+                <div className="absolute right-0 top-11 z-20 w-40 overflow-hidden rounded-2xl bg-[#FFFFFF] py-1 text-[14px] font-bold text-[#1E1B4B] shadow-[0_12px_28px_-10px_rgba(30,27,75,.45)]">
+                  <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onEdit())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
+                    ✏️ Edit
+                  </button>
+                  {onDelete && (
+                    <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onDelete())} className="block w-full px-4 py-2.5 text-left text-[#DC2626] hover:bg-[#FEF2F2]">
+                      🗑 Delete
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         )}
       </div>
 
