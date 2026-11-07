@@ -64,8 +64,27 @@ const TABS: [Tab, string][] = [
   ["friends", "Friends"],
   ["following", "Following"],
   ["mine", "Mine"],
-  ["saved", "🔖 Saved"],
 ];
+
+// 🏷 the coloured role pill beside a name (like the app's Feed)
+const ROLE_PILLS: Record<string, [string, string, string]> = {
+  founder: ["Founder", "#FFF4D6", "#B7791F"],
+  superadmin: ["Founder", "#FFF4D6", "#B7791F"],
+  admin: ["Admin", "#E6F0FF", "#1D4ED8"],
+  staff: ["Staff", "#E3F8EA", "#15803D"],
+  merchant: ["Merchant", "#FFEBD9", "#C2410C"],
+  mentor: ["Mentor", "#F1E8FF", "#7C3AED"],
+  country_representative: ["Country Rep", "#E0F2FE", "#0369A1"],
+  executive_board: ["Executive", "#FCE7F3", "#BE185D"],
+  elite: ["Elite", "#FEF3C7", "#A16207"],
+};
+function rolePillOf(d: Record<string, unknown>): string {
+  for (const f of ["membershipRole", "memberType", "role"]) {
+    const v = String(d[f] || "").toLowerCase().replace(/[\s-]+/g, "_");
+    if (ROLE_PILLS[v]) return v;
+  }
+  return "";
+}
 
 export function FeedList({ author = "", embedded = false }: { author?: string; embedded?: boolean }) {
   const { user, username } = useCurrentUser();
@@ -117,6 +136,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set());
   // 🏅 each author's role badge emoji (users.role etc.), shown as the app's picture
   const [authorBadge, setAuthorBadge] = useState<Record<string, string>>({});
+  const [authorRole, setAuthorRole] = useState<Record<string, string>>({});
   const badgeImages = useBadgeImages(!!user);
   useEffect(() => {
     const names = [...new Set((posts || []).map((p) => p.author))];
@@ -125,6 +145,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     (async () => {
       const found = new Set<string>();
       const badges: Record<string, string> = {};
+      const roles: Record<string, string> = {};
       for (let i = 0; i < names.length; i += 10) {
         try {
           const snap = await getDocs(query(collection(db, "users"), where("username", "in", names.slice(i, i + 10))));
@@ -133,6 +154,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             if (d.data().verified === true) found.add(name);
             const b = roleBadgesForDoc(d.data())[0];
             if (b) badges[name] = b;
+            const r = rolePillOf(d.data());
+            if (r) roles[name] = r;
           });
         } catch {
           // quiet: the badge is a nicety
@@ -141,6 +164,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       if (alive) {
         setVerifiedAuthors(found);
         setAuthorBadge(badges);
+        setAuthorRole(roles);
       }
     })();
     return () => {
@@ -152,8 +176,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [ind, setInd] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
-    const el = tabRefs.current[tab];
-    if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
+    // the white pill follows the chosen tab, also when the window is resized
+    // (none for 🔖 Saved, which lives in the header)
+    const place = () => {
+      const el = tabRefs.current[tab];
+      setInd(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
   }, [tab]);
   const friendsKey = friends.join(",");
   const followed = useFollowing(user?.uid);
@@ -417,9 +448,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   const meColor = colorOf(username) || "#2563EB";
   return (
-    <div className="feed-lav relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden">
-      <span aria-hidden className="pointer-events-none absolute -right-44 -top-28 h-[420px] w-[420px] rounded-full bg-[radial-gradient(rgba(167,139,250,.40),transparent_65%)]" />
-      <span aria-hidden className="pointer-events-none fixed -bottom-36 -left-40 h-[380px] w-[380px] rounded-full bg-[radial-gradient(rgba(96,165,250,.40),transparent_65%)]" />
+    <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F2F3FA]">
       <section className="relative mx-auto max-w-2xl pb-10">
         {author ? (
           <div className="px-3 sm:px-6">
@@ -430,9 +459,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           <div className="-mx-0 mb-1 flex items-center justify-between rounded-b-[28px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-5 pb-4 pt-4 shadow-[0_14px_30px_-12px_rgba(99,102,241,.6)]">
             <h1 className="text-[26px] font-black tracking-tight text-white">Feed</h1>
             {user && (
-              <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
-                <Avatar name={username} color={meColor} size={34} ring />
-              </Link>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setTab(tab === "saved" ? "popular" : "saved")}
+                  aria-label="Saved posts"
+                  title="Saved posts"
+                  className={`flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-extrabold transition ${tab === "saved" ? "bg-white text-[#4F46E5]" : "bg-white/20 text-white"}`}
+                >
+                  🔖 Saved
+                </button>
+                <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
+                  <Avatar name={username} color={meColor} size={34} ring />
+                </Link>
+              </div>
             )}
           </div>
         )}
@@ -441,11 +481,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
 
         {!author && (
-          <div className="sticky top-0 z-30 mx-3.5 mb-1 mt-2 flex rounded-2xl bg-[#E9ECFA]/80 p-1 backdrop-blur-md">
+          <div className="sticky top-0 z-30 mx-3.5 mb-3 mt-2 flex rounded-[22px] bg-[#E7E9F6]/90 p-1.5 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
               aria-hidden
-              className="pointer-events-none absolute bottom-1 top-1 rounded-xl bg-white shadow-[0_4px_12px_-4px_rgba(99,102,241,.45)] transition-[left,width] duration-300 ease-out"
+              className="pointer-events-none absolute bottom-1.5 top-1.5 rounded-[18px] bg-white shadow-[0_4px_12px_-4px_rgba(99,102,241,.45)] transition-[left,width] duration-300 ease-out"
               style={ind ? { left: ind.left, width: ind.width } : { opacity: 0 }}
             />
             {TABS.map(([k, label]) => (
@@ -456,7 +496,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 }}
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
-                className={`relative z-10 flex-1 rounded-xl py-2 text-[13px] font-extrabold transition-colors ${
+                className={`relative z-10 flex-1 whitespace-nowrap rounded-xl px-1 py-2.5 text-[13px] font-extrabold transition-colors ${
                   tab === k ? "text-[#4F46E5]" : "text-[#6B6F9A]"
                 }`}
               >
@@ -467,7 +507,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {!author && (
+        {false && !author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
             {([["all", "All"], ["photos", "📷 Photos"]] as const).map(([k, label]) => (
               <button
@@ -691,7 +731,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             <button
               type="button"
               onClick={() => setComposing(true)}
-              className="group mx-3.5 my-2.5 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5 text-left shadow-[inset_0_2px_0_#fff,0_3px_0_rgba(99,102,241,.24),0_6px_0_rgba(99,102,241,.15),0_10px_16px_-8px_rgba(99,102,241,.35)] transition duration-200 hover:-translate-y-px active:translate-y-[2px] active:scale-[.99]"
+              className="group mx-3.5 mb-4 mt-1 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[22px] bg-[#FFFFFF] py-2.5 pl-3 pr-2.5 text-left shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition duration-200 active:scale-[.99]"
             >
               <Avatar name={username} color={meColor} size={40} ring />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
@@ -802,9 +842,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
-          <div className="space-y-3 px-3.5">
+          <div className="space-y-4 px-3.5">
             {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -992,7 +1032,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1013,31 +1053,40 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
   return (
     <article
       onClick={open}
-      className="cursor-pointer rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_12px_30px_-14px_rgba(99,102,241,.35)] transition active:scale-[.995]"
+      className="cursor-pointer rounded-[26px] bg-[#FFFFFF] px-4 pb-4 pt-4 shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition active:scale-[.995]"
     >
-      <div className="flex items-center gap-2.5">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-[#D9A83E] p-[1px]">
-          <Avatar name={p.author} color={c} size={40} />
+      <div className="flex items-center gap-3">
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full bg-gradient-to-br from-[#A855F7] to-[#6366F1] p-[2.5px]">
+          <span className="block rounded-full bg-[#FFFFFF] p-[2px]">
+            <Avatar name={p.author} color={c} size={42} />
+          </span>
         </Link>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1">
-            <div data-notranslate className="truncate text-[14px] font-extrabold text-[#1E3A6E]">
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <div data-notranslate className="max-w-[150px] shrink-0 truncate text-[16px] font-black text-[#1E1B4B]">
               {p.author}
             </div>
             {verified && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-4 w-4 shrink-0" />
+              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-[17px] w-[17px] shrink-0" />
             )}
-            {roleImg ? (
+            {rolePill && ROLE_PILLS[rolePill] ? (
+              <span
+                className="min-w-0 truncate rounded-full px-2 py-[3px] text-[11px] font-extrabold leading-none"
+                style={{ background: ROLE_PILLS[rolePill][1], color: ROLE_PILLS[rolePill][2] }}
+              >
+                {ROLE_PILLS[rolePill][0]}
+              </span>
+            ) : roleImg ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={roleImg} alt="" title="Role badge" className="h-4 w-4 shrink-0 rounded-full object-cover" />
             ) : roleBadge ? (
               <span className="shrink-0 text-[13px] leading-none" title="Role badge">{roleBadge}</span>
             ) : null}
           </div>
-          <div className="text-[11.5px] text-[#7A7FA6]">
-            {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
-            {why && <span className="ml-1.5 rounded-full bg-[#EEF4FF] px-1.5 py-px text-[10.5px] font-bold text-[#1D4ED8]">{why}</span>}
+          <div className="mt-0.5 text-[12.5px] text-[#7C82A6]">
+            {blogAgoBn(p.createdMs)} · Public
+            {why && <span className="sr-only">{why}</span>}
           </div>
         </div>
         {canFollow && (
@@ -1047,7 +1096,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
               e.stopPropagation();
               onFollow();
             }}
-            className={`ml-auto shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold ${following ? "bg-[#EEF2F8] text-[#4B5575]" : "bg-gradient-to-r from-[#38BDF8] to-[#A855F7] text-white"}`}
+            className={`ml-auto shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold transition active:scale-95 ${following ? "bg-[#EEF0F7] text-[#3B4266]" : "bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"}`}
           >
             {following ? "Following" : "+ Follow"}
           </button>
@@ -1055,7 +1104,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
       </div>
       {/* no separate title line; the translate button lives on the post page */}
       {(tr?.text || p.excerpt) && (
-        <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">
+        <p className="mx-0.5 mt-3 line-clamp-4 text-[15.5px] leading-relaxed text-[#1E1B4B]">
           <RichText text={tr?.text || p.excerpt} />
         </p>
       )}
@@ -1102,21 +1151,27 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
           <span className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-bold text-white">✕</span>
         </div>
       )}
-      <div className="mt-2.5 flex items-center text-[11.5px] text-[#718096]">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReactors();
-          }}
-          className="font-bold text-[#1458C8] underline-offset-2 hover:underline"
-          aria-label="See who reacted"
-        >
-          👍 {blogShort(p.likes)}
-        </button>
-        <span className="ml-auto">{blogShort(p.comments)} Comments · {blogShort(p.views)} Views</span>
-      </div>
-      <div className="mt-2 border-t border-[#DDE8F7] pt-2.5 flex gap-2" onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (p.likes > 0) onReactors();
+        }}
+        aria-label="See who reacted"
+        className="mt-3 flex items-center gap-2 text-left text-[13.5px] text-[#7C82A6]"
+      >
+        {p.likes > 0 && (
+          <span className="flex shrink-0">
+            <span className="h-[22px] w-[22px] rounded-full border-2 border-white bg-[#4F7BEA]" />
+            <span className="-ml-2 h-[22px] w-[22px] rounded-full border-2 border-white bg-[#E5484D]" />
+          </span>
+        )}
+        <span>
+          {p.likes > 0 ? `${blogShort(p.likes)} · ` : ""}
+          {blogShort(p.comments)} {p.comments === 1 ? "comment" : "comments"} · {blogShort(p.views)} {p.views === 1 ? "view" : "views"}
+        </span>
+      </button>
+      <div className="mt-3 flex gap-2 border-t border-[#E6E8F2] pt-3" onClick={(e) => e.stopPropagation()}>
         <div className="relative flex-1">
         {fly && (
           <span key={fly.k} className="feed-fly pointer-events-none absolute bottom-12 left-3 z-30 text-[24px]">
@@ -1159,8 +1214,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
             e.preventDefault();
             setPick(true);
           }}
-          className={`relative flex h-9 w-full items-center justify-center gap-1.5 rounded-xl text-[13px] font-extrabold transition active:scale-95 ${
-            liked ? "bg-[#E6F0FF] text-[#1D4ED8]" : "bg-[#F3F2FF] text-[#4F46E5]"
+          className={`relative flex h-11 w-full items-center justify-center gap-1.5 rounded-2xl text-[13.5px] font-extrabold transition active:scale-95 ${
+            liked ? "bg-[#E6EEFF] text-[#1D4ED8]" : "bg-[#F4F5FB] text-[#3B4266]"
           }`}
         >
           {burst > 0 &&
@@ -1181,14 +1236,14 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
           </span>
         </button>
         </div>
-        <button type="button" onClick={open} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
+        <button type="button" onClick={open} className="flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-[#F4F5FB] text-[13.5px] font-extrabold text-[#3B4266] transition active:scale-95">
           💬 Comment
         </button>
-        <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-9 w-10 items-center justify-center rounded-xl text-[15px] ${saved ? "bg-[#FFF4D6]" : "bg-[#F3F2FF] opacity-60"}`}>
-          🔖
-        </button>
-        <button type="button" onClick={onShare} className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F3F2FF] text-[13px] font-extrabold text-[#4F46E5]">
+        <button type="button" onClick={onShare} className="flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl bg-[#F4F5FB] text-[13.5px] font-extrabold text-[#3B4266] transition active:scale-95">
           ↗ Share
+        </button>
+        <button type="button" onClick={onSave} aria-pressed={saved} className={`flex h-11 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl text-[13.5px] font-extrabold transition active:scale-95 ${saved ? "bg-[#FFF4D6] text-[#B7791F]" : "bg-[#F4F5FB] text-[#3B4266]"}`}>
+          🔖 {saved ? "Saved" : "Save"}
         </button>
       </div>
     </article>
