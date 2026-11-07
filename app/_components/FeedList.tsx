@@ -57,8 +57,8 @@ function RichText({ text, className }: { text: string; className?: string }) {
     </span>
   );
 }
-// which tab bar look the Feed uses ("underline" = T1, "icons" = T3)
-const TAB_LOOK: "underline" | "icons" = "underline";
+// which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
+const TAB_LOOK: "pills" | "underline" | "icons" = "pills";
 const TAB_ICONS: Record<string, string> = { new: "✨", popular: "🔥", friends: "👥", following: "⭐", mine: "👤" };
 const TABS: [Tab, string][] = [
   ["new", "New"],
@@ -185,6 +185,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setInd(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
     };
     place();
+    // T2 pills: bring the chosen pill into view sideways (never moves the page)
+    const el = tabRefs.current[tab];
+    const row = el?.parentElement;
+    if (el && row && row.scrollWidth > row.clientWidth) row.scrollTo({ left: Math.max(0, el.offsetLeft - (row.clientWidth - el.offsetWidth) / 2), behavior: "smooth" });
     window.addEventListener("resize", place);
     return () => window.removeEventListener("resize", place);
   }, [tab]);
@@ -502,6 +506,29 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
+        {!author && !mineOnly && TAB_LOOK === "pills" && (
+          // T2 · Gradient pill: a white pill for each tab; the chosen one turns miGlife-colour
+          <div className="no-scrollbar sticky top-0 z-30 mb-2 flex gap-2 overflow-x-auto bg-[#F4F4F8]/90 px-3.5 pb-2 pt-1 backdrop-blur-md">
+            {TABS.map(([k, label]) => (
+              <button
+                key={k}
+                ref={(el) => {
+                  tabRefs.current[k] = el;
+                }}
+                type="button"
+                onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
+                className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition active:scale-95 ${
+                  tab === k
+                    ? "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_8px_16px_-8px_rgba(236,72,153,.9)]"
+                    : "bg-[#FFFFFF] text-[#6B6F9A] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
+                }`}
+              >
+                {k === "popular" ? "🔥 " : ""}
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         {!author && !mineOnly && TAB_LOOK === "underline" && (
           // T1 · Underline: just the words; a miGlife-colour line slides under the chosen one
           <div className="sticky top-0 z-30 mb-2 bg-[#F4F4F8]/90 px-2 pt-1 backdrop-blur-md">
