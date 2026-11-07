@@ -75,3 +75,26 @@ export async function uploadChatImage(folder: string, file: File): Promise<strin
     throw e;
   }
 }
+
+/** 🪶 A small copy (≈720px) of a photo for the Feed list, so phones download
+ *  ~60 KB instead of the full picture. Returns '' if it can't be made — the
+ *  Feed then simply shows the full photo. */
+export async function uploadThumb(folder: string, file: File, side = 720): Promise<string> {
+  try {
+    if (!file.type.startsWith("image/") || file.type === "image/gif") return "";
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, side / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", 0.74));
+    if (!blob) return "";
+    const r = ref(storage, `${folder}/thumb_${crypto.randomUUID()}.jpg`);
+    await uploadBytes(r, blob, { contentType: "image/jpeg" });
+    return await getDownloadURL(r);
+  } catch {
+    return "";
+  }
+}

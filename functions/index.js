@@ -25820,7 +25820,10 @@ function blogClean(d) {
   const excerpt = body.replace(/!\[\]\([^)]*\)/g, " ").replace(/\*\*/g, "").replace(/\s+/g, " ").trim().slice(0, 200);
   // 🎨 the Text Art colour the writer picked (0–7, 8 = plain white); left out = keep / pick from the id
   const bg = Number.isInteger(d.bg) && d.bg >= 0 && d.bg < 9 ? d.bg : null;
-  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }) };
+  // ⚡ a small copy (≈480 px) of the cover for the Feed list; the full photo opens with the post
+  const thumb = String(d.thumb || "").trim();
+  const thumbOk = thumb && blogImgOk(thumb);
+  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }), ...(thumbOk ? { thumb } : {}) };
 }
 // 🔔 an alert in the person's migAlerts
 function blogAlert(batch, toUsername, fromUsername, postId, message) {
@@ -26025,6 +26028,17 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   }
 
   // may I delete other people's posts / comments? (shows 🗑 Delete)
+  // ⚡ which reaction I left on each of these posts, in one call (the Feed used to read
+  // one likes/{uid} document per post)
+  if (action === "myReactions") {
+    const ids = (Array.isArray(d.postIds) ? d.postIds : []).map((x) => String(x || "").trim().slice(0, 100)).filter(Boolean).slice(0, 40);
+    if (!ids.length) return { ok: true, reactions: {} };
+    const snaps = await db.getAll(...ids.map((id) => db.collection("blog_posts").doc(id).collection("likes").doc(uid)));
+    const reactions = {};
+    snaps.forEach((l, i) => { if (l.exists) reactions[ids[i]] = String(l.get("type") || "👍"); });
+    return { ok: true, reactions };
+  }
+
   if (action === "canModerate") {
     return { ok: true, canModerate: await blogCanModerate(uid, me) };
   }
@@ -26040,7 +26054,9 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       if (!s.exists) throw new E("not-found", "That post is gone.");
       if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can edit this post.");
       before = Array.isArray(s.get("mentions")) ? s.get("mentions").map((x) => String(x).toLowerCase()) : [];
-      tx.update(postRef, { ...p, mentions: mentioned.map((x) => x.name), updatedAt: FieldValue.serverTimestamp(), edited: true });
+      // a new cover without a new small copy: the old small copy goes (the list shows the cover)
+      const staleThumb = !p.thumb && s.get("thumb") && s.get("cover") !== p.cover ? { thumb: FieldValue.delete() } : {};
+      tx.update(postRef, { ...p, ...staleThumb, mentions: mentioned.map((x) => x.name), updatedAt: FieldValue.serverTimestamp(), edited: true });
     });
     // only friends who were not mentioned before get a notification
     await blogNotifyMentions(me, postId, p.title, mentioned, before);

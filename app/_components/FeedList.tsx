@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where, getCountFromServer } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, where, getCountFromServer, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { setFollowing, useFollowing } from "../../lib/follow";
@@ -12,7 +12,7 @@ import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
 import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
-import { uploadChatImage } from "../../lib/imageUpload";
+import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
@@ -135,6 +135,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↗ the post I am sharing to my wall (null = closed)
   const [sharing, setSharing] = useState<BlogPost | null>(null);
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
+  // ⚡ 12 posts at first; the next 12 only when you scroll near the bottom
+  // (Popular / New fetch the next page from the server; the other tabs show more of their list)
+  const FEED_PAGE = 12;
+  const [visible, setVisible] = useState(FEED_PAGE);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const lastSnap = useRef<QueryDocumentSnapshot | null>(null);
   // ✔ authors whose users document says verified (read-only; miGlife sets it)
   const [verifiedAuthors, setVerifiedAuthors] = useState<Set<string>>(new Set());
   // 🏅 each author's role badge emoji (users.role etc.), shown as the app's picture
@@ -301,7 +308,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCbusy(true);
     try {
       // the colour only matters for a words-only post
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(cover || p.video ? {} : { bg: p.bg }) });
+      // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
+      const coverFile = cover ? cfilesRef.current[cover] : undefined;
+      const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -370,15 +380,37 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   useEffect(() => {
     let alive = true;
-    setPosts(null);
+    // 💾 the last first page of Popular / New shows at once (then the fresh one replaces it)
+    const cacheKey = !author && (tab === "popular" || tab === "new") ? `migwith.feedCache.${tab}` : "";
+    let cached: BlogPost[] | null = null;
+    try {
+      const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
+      if (raw) cached = JSON.parse(raw) as BlogPost[];
+    } catch {
+      cached = null;
+    }
+    setPosts(cached && cached.length ? cached : null);
     setError("");
     setFresh(0);
+    setVisible(FEED_PAGE);
+    setHasMore(false);
+    lastSnap.current = null;
     const col = collection(db, "blog_posts");
     const load = async (): Promise<BlogPost[]> => {
       const map = (s: Awaited<ReturnType<typeof getDocs>>) => s.docs.map((d) => toBlogPost(d.id, d.data() as Record<string, unknown>));
       if (author) return map(await getDocs(query(col, where("author", "==", author), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
-      if (tab === "popular") return map(await getDocs(query(col, orderBy("hot", "desc"), limit(40))));
-      if (tab === "new") return map(await getDocs(query(col, orderBy("createdMs", "desc"), limit(40))));
+      if (tab === "popular" || tab === "new") {
+        const snap = await getDocs(query(col, orderBy(tab === "popular" ? "hot" : "createdMs", "desc"), limit(FEED_PAGE)));
+        lastSnap.current = (snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot) || null;
+        if (alive) setHasMore(snap.size >= FEED_PAGE);
+        const first = map(snap);
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(first));
+        } catch {
+          // storage full / blocked
+        }
+        return first;
+      }
       if (tab === "saved") {
         if (!user) return [];
         const ids = [...savedIds].slice(0, 50);
@@ -406,25 +438,79 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       return out.sort((a, b) => b.createdMs - a.createdMs).slice(0, 60);
     };
     load()
-      .then((p) => alive && setPosts(p))
+      .then((p) => {
+        if (!alive) return;
+        setPosts(p);
+        if (author || (tab !== "popular" && tab !== "new")) setHasMore(p.length > FEED_PAGE);
+      })
       .catch(() => alive && (setError("Couldn't load the Feed. Please try again."), setPosts([])));
     return () => {
       alive = false;
     };
   }, [tab, author, user, friendsKey, followedKey, reload]);
 
-  // my likes for the posts on screen
-  const ids = (posts || []).map((p) => p.id).join(",");
+  // 📄 the posts shown now (Popular / New: all loaded pages; other tabs: the first `visible`)
+  const paged = !author && (tab === "popular" || tab === "new");
+  const shown = posts ? (paged ? posts : posts.slice(0, visible)) : null;
+  const loadMore = async () => {
+    if (loadingMore || !hasMore || !posts) return;
+    if (!paged) {
+      setVisible((v) => v + FEED_PAGE);
+      setHasMore(posts.length > visible + FEED_PAGE);
+      return;
+    }
+    const after = lastSnap.current;
+    if (!after) return setHasMore(false);
+    const openTab = tab;
+    setLoadingMore(true);
+    try {
+      const snap = await getDocs(query(collection(db, "blog_posts"), orderBy(openTab === "popular" ? "hot" : "createdMs", "desc"), startAfter(after), limit(FEED_PAGE)));
+      if (openTab !== tab) return;
+      lastSnap.current = (snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot) || after;
+      setHasMore(snap.size >= FEED_PAGE);
+      const more = snap.docs.map((d) => toBlogPost(d.id, d.data() as Record<string, unknown>));
+      setPosts((cur) => {
+        const have = new Set((cur || []).map((p) => p.id));
+        return [...(cur || []), ...more.filter((p) => !have.has(p.id))];
+      });
+    } catch {
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+  // ⬇ near the bottom, the next 12 come by themselves
+  const moreRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = moreRef.current;
+    if (!el || !hasMore) return;
+    const io = new IntersectionObserver((e) => e.some((x) => x.isIntersecting) && void loadMore(), { rootMargin: "600px 0px" });
+    io.observe(el);
+    return () => io.disconnect();
+  });
+
+  // my reactions for the posts on screen — one call (an older server: one read per post)
+  const ids = (shown || []).map((p) => p.id).join(",");
   useEffect(() => {
     if (!user || !ids) return setLiked(new Set());
     let alive = true;
-    Promise.all(
-      ids.split(",").map((id) =>
-        getDoc(doc(db, "blog_posts", id, "likes", user.uid))
-          .then((s) => (s.exists() ? id : ""))
-          .catch(() => "")
-      )
-    ).then((r) => alive && setLiked(new Set(r.filter(Boolean))));
+    const list = ids.split(",");
+    blogCall("myReactions", { postIds: list })
+      .then((r) => {
+        if (!alive) return;
+        const got = (r as { reactions?: Record<string, string> }).reactions || {};
+        setLiked(new Set(Object.keys(got)));
+        setReactOf((m) => ({ ...m, ...got }));
+      })
+      .catch(() =>
+        Promise.all(
+          list.map((id) =>
+            getDoc(doc(db, "blog_posts", id, "likes", user.uid))
+              .then((s) => (s.exists() ? id : ""))
+              .catch(() => "")
+          )
+        ).then((r) => alive && setLiked(new Set(r.filter(Boolean))))
+      );
     return () => {
       alive = false;
     };
@@ -659,7 +745,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           const len = ctext.trim().length;
           const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
           return (
-            <div className="mx-3.5 mb-4 mt-1 rounded-[26px] bg-[#FFFFFF] p-3.5 shadow-[0_14px_30px_-18px_rgba(60,64,140,.6)]">
+            <div className="mx-3.5 mb-4 mt-1 rounded-[26px] bg-[#FFFFFF] p-3.5 shadow-[0_8px_16px_-12px_rgba(60,64,140,.45)]">
               <div className="flex items-center gap-2.5">
                 <Avatar name={username} color={meColor} size={42} ring />
                 <div className="min-w-0 flex-1">
@@ -974,7 +1060,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           const likes = posts.reduce((n, p) => n + p.likes, 0);
           const views = posts.reduce((n, p) => n + p.views, 0);
           return (
-            <section className="mx-3.5 mb-5 mt-1 overflow-hidden rounded-[28px] bg-[#FFFFFF] shadow-[0_18px_34px_-20px_rgba(60,64,140,.55)]">
+            <section className="mx-3.5 mb-5 mt-1 overflow-hidden rounded-[28px] bg-[#FFFFFF] shadow-[0_8px_16px_-12px_rgba(60,64,140,.4)]">
               <div className="relative flex items-center gap-3 bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-4 py-4 text-white">
                 <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/15" />
                 <span className="shrink-0 rounded-full bg-white/90 p-[3px]">
@@ -1059,11 +1145,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-5 px-3.5">
-            {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
+            {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
               <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
+            )}
+            {hasMore && (
+              <div ref={moreRef} className="flex justify-center py-3">
+                <button type="button" onClick={() => void loadMore()} className="rounded-full bg-[#FFFFFF] px-4 py-2 text-[13px] font-bold text-[#6B6F9A] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]">
+                  {loadingMore ? "Loading more…" : "⬇ More posts"}
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -1322,7 +1415,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/[0.22]";
   return (
     <article
-      className="relative overflow-hidden rounded-[28px] shadow-[0_22px_36px_-18px_rgba(40,50,120,.55)]"
+      className="relative overflow-hidden rounded-[28px] shadow-[0_10px_18px_-12px_rgba(40,50,120,.4)]"
       style={media ? { background: "#0F172A" } : plain ? { background: "#FFFFFF", boxShadow: "0 16px 32px -20px rgba(60,64,140,.5)" } : { background: artBg }}
     >
       {/* the picture / video, or the Text Art words */}
@@ -1331,7 +1424,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[560px] min-h-[360px] w-full bg-black object-cover" />
         ) : pic ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={pic} alt="" loading="lazy" className="block max-h-[560px] min-h-[380px] w-full object-cover" />
+          <img src={(p.cover && p.thumb) || pic} alt="" loading="lazy" decoding="async" className="block max-h-[560px] min-h-[380px] w-full object-cover" />
         ) : (
           <div className="flex min-h-[340px] items-center justify-center px-7 pb-24 pt-20 text-center">
             <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
