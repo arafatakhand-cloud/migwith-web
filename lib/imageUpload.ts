@@ -1,7 +1,7 @@
 "use client";
 
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { storage } from "./firebase";
+import { auth, storage } from "./firebase";
 
 // Photo messages: shrink the picture in the browser (like the app does
 // before uploading), then upload it to Storage and return its URL.
@@ -46,7 +46,32 @@ export async function uploadChatImage(folder: string, file: File): Promise<strin
   if (body.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new Error(`That photo is ${sizeLabel(body.size)}. The limit is 10 MB — please send a smaller one.`);
   }
-  const r = ref(storage, `${folder}/${crypto.randomUUID()}.jpg`);
-  await uploadBytes(r, body, { contentType: body.type || "image/jpeg" });
-  return getDownloadURL(r);
+  const contentType = body.type && body.type.startsWith("image/") ? body.type : "image/jpeg";
+  const send = async () => {
+    const r = ref(storage, `${folder}/${crypto.randomUUID()}.jpg`);
+    await uploadBytes(r, body, { contentType });
+    return getDownloadURL(r);
+  };
+  try {
+    return await send();
+  } catch (e: any) {
+    // 🔑 On phones (above all iPhone Safari) the login token sometimes fails to
+    // refresh in the background, so Storage sees "not signed in" and refuses
+    // ("storage/unauthorized"). Refresh the token and try once more.
+    if (e?.code === "storage/unauthorized" && auth.currentUser) {
+      try {
+        await auth.currentUser.getIdToken(true);
+        return await send();
+      } catch {
+        // fall through to the simple message
+      }
+    }
+    if (e?.code === "storage/unauthorized" || e?.code === "storage/unauthenticated") {
+      throw new Error("Couldn't send the photo — please try again. If it keeps failing, log out and log in once.");
+    }
+    if (e?.code === "storage/retry-limit-exceeded" || e?.code === "storage/canceled") {
+      throw new Error("Couldn't send the photo — check your internet and try again.");
+    }
+    throw e;
+  }
 }

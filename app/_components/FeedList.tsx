@@ -520,7 +520,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {!author && !mineOnly && TAB_LOOK === "pills" && (
           // T2 · Gradient pill: a white pill for each tab; the chosen one turns miGlife-colour
-          <div className="no-scrollbar sticky top-0 z-30 mb-2 flex gap-2 overflow-x-auto bg-[#F4F4F8]/90 px-3.5 pb-2 pt-1 backdrop-blur-md">
+          <div className="no-scrollbar sticky top-0 z-30 mb-2 flex gap-2 overflow-x-auto bg-[#F4F4F8] px-3.5 pb-2 pt-1">
             {TABS.map(([k, label]) => (
               <button
                 key={k}
@@ -1233,7 +1233,9 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   };
   // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
   const plain = !media && p.bg === PLAIN_BG;
-  const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/20 backdrop-blur-md";
+  // ⚡ no live blur on each card (about 200 blurs on a long Feed made phones lag):
+  // a see-through tint looks almost the same and costs nothing
+  const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/[0.22]";
   return (
     <article
       className="relative overflow-hidden rounded-[28px] shadow-[0_22px_36px_-18px_rgba(40,50,120,.55)]"
