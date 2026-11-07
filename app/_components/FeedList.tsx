@@ -500,7 +500,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && user && composing && (
-          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white/92 p-3.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white p-3.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
             <div className="flex items-center gap-2.5">
               <Avatar name={username} color={meColor} size={38} ring />
               <div className="min-w-0 flex-1">
@@ -707,7 +707,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* 🧱 My wall (Mine tab): cover, my picture, my numbers, and the two buttons */}
         {!author && tab === "mine" && user && posts && (
-          <section className="mx-3.5 mb-2 mt-2 overflow-hidden rounded-[22px] bg-white/95 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+          <section className="mx-3.5 mb-2 mt-2 overflow-hidden rounded-[22px] bg-white shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
             <div className="h-[84px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7]" />
             <div className="px-4 pb-4">
               <div className="-mt-9 inline-block rounded-full bg-gradient-to-br from-[#2F6FD6] to-[#8B5CFF] p-[3px]">
