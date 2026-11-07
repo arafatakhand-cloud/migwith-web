@@ -1745,6 +1745,36 @@ function dailyRewardAmounts(cfg, game) {
   });
 }
 
+// 📊 "% of spent" mode: { <game>Mode: "percent", <game>Pct: [1, 1, …], <game>Cap: [1000000, 500000, …] }
+// → place i gets <pct>% of what that player spent in the game that day, never more
+// than its cap (0 = no cap). Fixed mode (the default) keeps the old amounts.
+function dailyRewardRule(cfg, game) {
+  if (cfg[`${game.key}Mode`] !== "percent") {
+    const amounts = dailyRewardAmounts(cfg, game);
+    return { mode: "fixed", any: amounts.some((a) => a > 0), prize: (i) => amounts[i] || 0 };
+  }
+  const pcts = Array.isArray(cfg[`${game.key}Pct`]) ? cfg[`${game.key}Pct`] : [];
+  const caps = Array.isArray(cfg[`${game.key}Cap`]) ? cfg[`${game.key}Cap`] : [];
+  const pct = (i) => {
+    const n = Number(pcts[i] || 0);
+    return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 0;
+  };
+  const cap = (i) => {
+    const n = Math.floor(Number(caps[i] || 0));
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  };
+  return {
+    mode: "percent",
+    pct,
+    cap,
+    any: Array.from({ length: game.places }, (_, i) => pct(i)).some((v) => v > 0),
+    prize: (i, spend) => {
+      const raw = Math.floor((Number(spend || 0) * pct(i)) / 100);
+      return cap(i) > 0 ? Math.min(raw, cap(i)) : raw;
+    },
+  };
+}
+
 async function payDailyGameRewardsFor(date) {
   const cfgSnap = await DAILY_REWARDS_REF().get();
   const cfg = cfgSnap.exists ? (cfgSnap.data() || {}) : {};
@@ -1760,8 +1790,8 @@ async function payDailyGameRewardsFor(date) {
 
   const results = [];
   for (const game of DAILY_REWARD_GAMES) {
-    const amounts = dailyRewardAmounts(cfg, game);
-    if (!amounts.some((a) => a > 0)) continue;
+    const rule = dailyRewardRule(cfg, game);
+    if (!rule.any) continue;
 
     // Once per game per day, however often this runs.
     const marker = db.collection("_operations").doc(`daily_game_reward_${game.key}_${date}`);
@@ -1777,7 +1807,10 @@ async function payDailyGameRewardsFor(date) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, game.places);
     const winners = ranked
-      .map(([u], i) => ({ uid: u, username: typeof names[u] === "string" ? names[u] : "", place: i + 1, prize: amounts[i] }))
+      .map(([u, spent], i) => ({
+        uid: u, username: typeof names[u] === "string" ? names[u] : "", place: i + 1, spent,
+        prize: rule.prize(i, spent), pct: rule.mode === "percent" ? rule.pct(i) : 0,
+      }))
       .filter((w) => w.prize > 0);
     if (!winners.length) {
       await marker.set({ createdAt: FieldValue.serverTimestamp(), paid: 0 });
@@ -1841,7 +1874,7 @@ async function payDailyGameRewardsFor(date) {
             gameKey: game.key,
             place: w.place,
             rewardDate: date,
-            reason: `${game.label} daily reward #${w.place}`,
+            reason: `${game.label} daily reward #${w.place}` + (w.pct ? ` (${w.pct}% of ${formatCoins(w.spent)} spent)` : ""),
             createdAt: FieldValue.serverTimestamp(),
           });
         });
@@ -1850,11 +1883,12 @@ async function payDailyGameRewardsFor(date) {
       const paid = winners.filter((w) => w.paidOk);
       for (const w of paid) {
         await alertUser(w.username,
-          `${game.icon} You were #${w.place} in ${game.label} yesterday! ${formatCoins(w.prize)} coins daily reward have been added to your balance. 🏆`,
+          `${game.icon} You were #${w.place} in ${game.label} yesterday! ${formatCoins(w.prize)} coins daily reward` +
+            (w.pct ? ` (${w.pct}% of the ${formatCoins(w.spent)} you spent)` : "") + ` have been added to your balance. 🏆`,
           "game_reward", { amount: w.prize, gameKey: game.key, place: w.place, rewardDate: date },
           `game_reward_${game.key}_${date}_${w.uid}`);
       }
-      results.push({ game: game.key, label: game.label, icon: game.icon, total, topUp: gameTopUp, paid: paid.map((w) => ({ uid: w.uid, username: w.username, place: w.place, amount: w.prize })) });
+      results.push({ game: game.key, label: game.label, icon: game.icon, total, topUp: gameTopUp, paid: paid.map((w) => ({ uid: w.uid, username: w.username, place: w.place, amount: w.prize, spent: w.spent, pct: w.pct || 0 })) });
     } catch (error) {
       if (error?.message === "already-paid") continue;
       const low = error?.message === "insufficient-founder-balance";

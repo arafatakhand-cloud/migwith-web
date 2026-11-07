@@ -18,17 +18,25 @@ const GAMES = [
 ] as const;
 type GameKey = (typeof GAMES)[number]["key"];
 type Amounts = Record<GameKey, string[]>;
-type LogGame = { label: string; icon: string; total: number; error?: string; have?: number | null; paid: { username: string; place: number; amount: number }[] };
+type LogGame = { label: string; icon: string; total: number; error?: string; have?: number | null; paid: { username: string; place: number; amount: number; spent?: number; pct?: number }[] };
 type Log = { date: string; games: Record<string, LogGame> };
 
 const ceoPayDailyGameRewards = httpsCallable<{ date: string }, unknown>(functions, "ceoPayDailyGameRewards");
 const MEDAL = ["🥇", "🥈", "🥉"];
 const empty = (): Amounts => ({ luxury: Array(10).fill(""), lowcard: Array(3).fill(""), cricket: Array(3).fill("") });
 const coins = (n: number) => n.toLocaleString();
+type Mode = "fixed" | "percent";
+// 📊 starting values for "% of spent": 1% each, #1 at most 10 lakh, the others 5 lakh
+const pctStart = (n: number) => Array(n).fill("1");
+const capStart = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? "1000000" : "500000"));
 
 export function DailyGameRewardsCard() {
   const [enabled, setEnabled] = useState(false);
   const [amounts, setAmounts] = useState<Amounts>(empty);
+  // 📊 per game: fixed coins, or a % of what the player spent that day (with a max)
+  const [modes, setModes] = useState<Record<GameKey, Mode>>({ luxury: "fixed", lowcard: "fixed", cricket: "fixed" });
+  const [pcts, setPcts] = useState<Amounts>(empty);
+  const [caps, setCaps] = useState<Amounts>(empty);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
@@ -41,11 +49,22 @@ export function DailyGameRewardsCard() {
         doc(db, "app_settings", "daily_game_rewards"),
         (s) => {
           const next = empty();
+          const nextP = empty();
+          const nextC = empty();
+          const nextM = { luxury: "fixed", lowcard: "fixed", cricket: "fixed" } as Record<GameKey, Mode>;
           GAMES.forEach((g) => {
             const list = (s.get(g.key) as unknown[]) || [];
             next[g.key] = next[g.key].map((_, i) => (Number(list[i]) > 0 ? String(Number(list[i])) : ""));
+            const pl = (s.get(`${g.key}Pct`) as unknown[]) || [];
+            const cl = (s.get(`${g.key}Cap`) as unknown[]) || [];
+            nextP[g.key] = nextP[g.key].map((_, i) => (Number(pl[i]) > 0 ? String(Number(pl[i])) : ""));
+            nextC[g.key] = nextC[g.key].map((_, i) => (Number(cl[i]) > 0 ? String(Number(cl[i])) : ""));
+            nextM[g.key] = s.get(`${g.key}Mode`) === "percent" ? "percent" : "fixed";
           });
           setAmounts(next);
+          setPcts(nextP);
+          setCaps(nextC);
+          setModes(nextM);
           setEnabled(s.get("enabled") === true);
           setLoaded(true);
         },
@@ -63,15 +82,26 @@ export function DailyGameRewardsCard() {
     []
   );
 
-  const totalOf = (k: GameKey) => amounts[k].reduce((sum, v) => sum + (Number(v) || 0), 0);
-  const nightly = GAMES.reduce((sum, g) => sum + totalOf(g.key), 0);
+  // the most a game can pay in one night (null = no max: a % place without a cap)
+  const totalOf = (k: GameKey): number | null =>
+    modes[k] === "percent"
+      ? pcts[k].some((p, i) => Number(p) > 0 && !(Number(caps[k][i]) > 0))
+        ? null
+        : pcts[k].reduce((sum, p, i) => sum + (Number(p) > 0 ? Number(caps[k][i]) || 0 : 0), 0)
+      : amounts[k].reduce((sum, v) => sum + (Number(v) || 0), 0);
+  const nightly = GAMES.some((g) => totalOf(g.key) === null) ? null : GAMES.reduce((sum, g) => sum + (totalOf(g.key) || 0), 0);
 
   const save = async (on = enabled) => {
     setMsg("");
     setSaving(true);
     try {
       const data: Record<string, unknown> = { enabled: on, updatedAt: serverTimestamp() };
-      GAMES.forEach((g) => (data[g.key] = amounts[g.key].map((v) => Math.max(0, Math.floor(Number(v) || 0)))));
+      GAMES.forEach((g) => {
+        data[g.key] = amounts[g.key].map((v) => Math.max(0, Math.floor(Number(v) || 0)));
+        data[`${g.key}Mode`] = modes[g.key];
+        data[`${g.key}Pct`] = pcts[g.key].map((v) => Math.max(0, Math.min(100, Math.round((Number(v) || 0) * 100) / 100)));
+        data[`${g.key}Cap`] = caps[g.key].map((v) => Math.max(0, Math.floor(Number(v) || 0)));
+      });
       await setDoc(doc(db, "app_settings", "daily_game_rewards"), data);
       setMsg(on ? "✅ Saved — rewards will be paid tonight at 12:00." : "✅ Saved — daily rewards are OFF.");
     } catch (e: any) {
@@ -119,37 +149,97 @@ export function DailyGameRewardsCard() {
           </button>
         </div>
 
-        {GAMES.map((g) => (
-          <div key={g.key} className="rounded-2xl border p-3" style={{ borderColor: `${g.tint}44`, background: `${g.tint}0D` }}>
-            <div className="mb-2 flex items-center justify-between">
-              <p className="font-extrabold" style={{ color: g.tint }}>
-                {g.label} · Top {g.places}
-              </p>
-              <p className="text-[11px] font-bold text-[#5B6B8C]">🪙 {coins(totalOf(g.key))} / night</p>
-            </div>
-            <div className={`grid gap-2 ${g.places > 3 ? "grid-cols-2" : "grid-cols-3"}`}>
-              {amounts[g.key].map((v, i) => (
-                <label key={i} className="flex items-center gap-1.5 rounded-xl border border-[#E3EAF5] bg-white px-2.5 py-1.5">
-                  <span className="w-7 shrink-0 text-center text-sm font-black text-[#5B6B8C]">{MEDAL[i] || `#${i + 1}`}</span>
-                  <input
-                    inputMode="numeric"
-                    value={v}
-                    placeholder="0"
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/[^\d]/g, "").slice(0, 9);
-                      setAmounts((a) => ({ ...a, [g.key]: a[g.key].map((x, j) => (j === i ? val : x)) }));
+        {GAMES.map((g) => {
+          const pctMode = modes[g.key] === "percent";
+          const total = totalOf(g.key);
+          return (
+            <div key={g.key} className="rounded-2xl border p-3" style={{ borderColor: `${g.tint}44`, background: `${g.tint}0D` }}>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="font-extrabold" style={{ color: g.tint }}>
+                  {g.label} · Top {g.places}
+                </p>
+                <p className="text-[11px] font-bold text-[#5B6B8C]">🪙 {total === null ? "no max" : `${pctMode ? "max " : ""}${coins(total)}`} / night</p>
+              </div>
+              {/* 🪙 fixed coins, or 📊 a % of what that player spent today */}
+              <div className="mb-2 flex rounded-full bg-white p-0.5 text-[12px] font-extrabold">
+                {(["fixed", "percent"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setModes((x) => ({ ...x, [g.key]: m }));
+                      if (m === "percent" && !pcts[g.key].some((v) => Number(v) > 0)) {
+                        setPcts((x) => ({ ...x, [g.key]: pctStart(g.places) }));
+                        setCaps((x) => ({ ...x, [g.key]: capStart(g.places) }));
+                      }
                     }}
-                    className="min-w-0 flex-1 bg-transparent text-[15px] font-bold outline-none"
-                  />
-                </label>
-              ))}
+                    className={`flex-1 rounded-full py-1.5 transition ${modes[g.key] === m ? "text-white" : "text-[#5B6B8C]"}`}
+                    style={modes[g.key] === m ? { background: g.tint } : undefined}
+                  >
+                    {m === "fixed" ? "🪙 Fixed coins" : "📊 % of spent"}
+                  </button>
+                ))}
+              </div>
+              {pctMode ? (
+                <div className="space-y-1.5">
+                  {pcts[g.key].map((p, i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-xl border border-[#E3EAF5] bg-white px-2.5 py-1.5 text-[13px] font-bold text-[#3A4A66]">
+                      <span className="w-7 shrink-0 text-center text-sm font-black text-[#5B6B8C]">{MEDAL[i] || `#${i + 1}`}</span>
+                      <input
+                        inputMode="decimal"
+                        value={p}
+                        placeholder="0"
+                        aria-label={`Place ${i + 1} percent`}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1").slice(0, 5);
+                          setPcts((a) => ({ ...a, [g.key]: a[g.key].map((x, j) => (j === i ? val : x)) }));
+                        }}
+                        className="w-12 rounded-lg bg-[#F4F7FC] px-1.5 py-1 text-center text-[15px] font-black outline-none"
+                      />
+                      <span className="shrink-0">% of spent · max</span>
+                      <input
+                        inputMode="numeric"
+                        value={caps[g.key][i]}
+                        placeholder="no max"
+                        aria-label={`Place ${i + 1} max coins`}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d]/g, "").slice(0, 10);
+                          setCaps((a) => ({ ...a, [g.key]: a[g.key].map((x, j) => (j === i ? val : x)) }));
+                        }}
+                        className="min-w-0 flex-1 rounded-lg bg-[#F4F7FC] px-2 py-1 text-[15px] font-black outline-none"
+                      />
+                    </div>
+                  ))}
+                  <p className="px-1 text-[11px] leading-4 text-[#8A97B2]">
+                    Example: #1 spent 50,00,000 → 1% = 50,000 coins. Spent 15,00,00,000 → 1% = 15,00,000, but the max is the most it can be.
+                  </p>
+                </div>
+              ) : (
+                <div className={`grid gap-2 ${g.places > 3 ? "grid-cols-2" : "grid-cols-3"}`}>
+                  {amounts[g.key].map((v, i) => (
+                    <label key={i} className="flex items-center gap-1.5 rounded-xl border border-[#E3EAF5] bg-white px-2.5 py-1.5">
+                      <span className="w-7 shrink-0 text-center text-sm font-black text-[#5B6B8C]">{MEDAL[i] || `#${i + 1}`}</span>
+                      <input
+                        inputMode="numeric"
+                        value={v}
+                        placeholder="0"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^\d]/g, "").slice(0, 9);
+                          setAmounts((a) => ({ ...a, [g.key]: a[g.key].map((x, j) => (j === i ? val : x)) }));
+                        }}
+                        className="min-w-0 flex-1 bg-transparent text-[15px] font-bold outline-none"
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div className="flex items-center justify-between rounded-xl bg-[#FFF8E1] px-3 py-2 text-sm">
           <span className="font-bold text-[#7A5A00]">Every night, at most</span>
-          <span className="font-black text-[#B7791F]">🪙 {coins(nightly)}</span>
+          <span className="font-black text-[#B7791F]">🪙 {nightly === null ? "no max" : coins(nightly)}</span>
         </div>
         <button
           type="button"
@@ -199,7 +289,7 @@ export function DailyGameRewardsCard() {
                   ) : g.paid.length === 0 ? (
                     "no players"
                   ) : (
-                    g.paid.map((w) => `#${w.place} ${w.username} ${coins(w.amount)}`).join(", ")
+                    g.paid.map((w) => `#${w.place} ${w.username} ${coins(w.amount)}${w.pct ? ` (${w.pct}% of ${coins(Number(w.spent || 0))})` : ""}`).join(", ")
                   )}
                 </p>
               ))}
