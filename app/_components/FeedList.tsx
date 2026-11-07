@@ -396,7 +396,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const cupload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = 10 - cphotos.length;
-    if (room <= 0) return setCerr("A post can have up to 10 photos.");
+    if (room <= 0) return setCerr("A Mig can have up to 10 photos.");
     setCerr("");
     setCbusy(true);
     try {
@@ -442,7 +442,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
       await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
-      setToast("Posted ✓");
+      setToast("Migged ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
     } catch (e) {
@@ -519,7 +519,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCmood(payload.mood);
         cbgKeep.current = payload.bg;
         setComposing(true);
-        setToast("Post taken back");
+        setToast("Mig taken back");
         window.setTimeout(() => setToast(""), 2000);
       },
     };
@@ -758,7 +758,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const share = async (p: BlogPost) => {
     const url = `${window.location.origin}/feed/${p.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: p.title, text: `📰 ${p.title} — by ${p.author} on miGlife`, url });
+      if (navigator.share) await navigator.share({ title: p.title, text: `📰 ${p.title} — a Mig by ${p.author} on miGlife`, url });
       else {
         await navigator.clipboard.writeText(url);
         setToast("Link copied ✓");
@@ -776,7 +776,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       <section className="relative mx-auto max-w-2xl pb-10">
         {author ? (
           <div className="px-3 sm:px-6">
-            <PageTitle title={`${author}'s Feed`} subtitle="Every post by this writer" icon="📰" backHref={`/profile/${encodeURIComponent(author)}`} />
+            <PageTitle title={`${author}'s Feed`} subtitle="Every Mig by this writer" icon="📰" backHref={`/profile/${encodeURIComponent(author)}`} />
           </div>
         ) : (
           // 🎨 design A: gradient header band
@@ -789,7 +789,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 className="flex min-w-0 items-center gap-2.5 text-[#1E1B4B] transition active:scale-95"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFFFF] text-[18px] font-black shadow-[0_6px_14px_-8px_rgba(60,64,140,.55)]">←</span>
-                <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : "My posts"}</span>
+                <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : "My Migs"}</span>
               </button>
             ) : (
               <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
@@ -799,14 +799,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <button
                   type="button"
                   onClick={() => setTab(tab === "saved" ? "popular" : "saved")}
-                  aria-label="Saved posts"
-                  title="Saved posts"
+                  aria-label="Saved Migs"
+                  title="Saved Migs"
                   className={`flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-extrabold transition ${tab === "saved" ? "bg-[#111827] text-white" : "bg-[#FFFFFF] text-[#3B4266] shadow-[0_4px_12px_-6px_rgba(60,64,140,.4)]"}`}
                 >
                   🔖 Saved
                 </button>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
-                <button type="button" onClick={() => setTab("mine")} aria-label="My posts" title="My posts" className="rounded-full transition active:scale-95">
+                <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
                   <Avatar name={username} color={meColor} size={34} ring />
                 </button>
               </div>
@@ -955,7 +955,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     <button
                       type="button"
                       disabled={!!cedit}
-                      title={cedit ? "Change it from the post's ⋯ menu" : undefined}
+                      title={cedit ? "Change it from the Mig's ⋯ menu" : undefined}
                       onClick={() => {
                         setCprivOpen((v) => !v);
                         setCcatOpen(false);
@@ -994,7 +994,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </button>
               </div>
               {cedit && (
-                <div className="mt-2.5 rounded-xl bg-[#EEF0FF] px-3 py-1.5 text-[12.5px] font-bold text-[#4F46E5]">✏️ Editing your post — change it and tap Save ✓</div>
+                <div className="mt-2.5 rounded-xl bg-[#EEF0FF] px-3 py-1.5 text-[12.5px] font-bold text-[#4F46E5]">✏️ Editing your Mig — change it and tap Save ✓</div>
               )}
               {cdraftNote && !cedit && (
                 <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#FFF7E6] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309]">
@@ -1376,7 +1376,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       : "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_10px_20px_-10px_rgba(236,72,153,.9)]"
                   }`}
                 >
-                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Posting…" : "Post ➤"}
+                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Migging…" : "Mig it ➤"}
                 </button>
               </div>
             </div>
@@ -1395,7 +1395,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           ) : (
             <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>
-              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">Log in to write a post</span>
+              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">Log in to write a Mig</span>
             </Link>
           )
         )}
@@ -1416,7 +1416,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="relative min-w-0 flex-1">
                   <div className="truncate text-[19px] font-black leading-tight drop-shadow">{username}</div>
                   <div className="mt-1 inline-flex max-w-full truncate whitespace-nowrap rounded-full bg-white/20 px-2.5 py-0.5 text-[11.5px] font-bold backdrop-blur-sm">
-                    📅 This week: {wk.length} {wk.length === 1 ? "post" : "posts"}
+                    📅 This week: {wk.length} {wk.length === 1 ? "Mig" : "Migs"}
                   </div>
                 </div>
                 <Link href={`/profile/${encodeURIComponent(username)}`} className="relative shrink-0 rounded-full bg-white/20 px-3 py-1.5 text-[12px] font-extrabold backdrop-blur-sm transition active:scale-95">
@@ -1425,7 +1425,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </div>
               <div className="grid grid-cols-5 divide-x divide-[#ECEDF5] py-3 text-center">
                 {([
-                  [blogShort(posts.length), "Posts"],
+                  [blogShort(posts.length), "Migs"],
                   [myFollowers === null ? "…" : blogShort(myFollowers), "Followers"],
                   [blogShort(followed.length), "Following"],
                   [blogShort(likes), "Likes"],
@@ -1443,7 +1443,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   onClick={() => setComposing(true)}
                   className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[14px] font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98]"
                 >
-                  ✍️ New post
+                  ✍️ New Mig
                 </button>
               </div>
             </section>
@@ -1460,7 +1460,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             }}
             className="feed-pop mx-3.5 mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
           >
-            ↑ {fresh >= 20 ? "20+" : fresh} new post{fresh === 1 ? "" : "s"} — tap to view
+            ↑ {fresh >= 20 ? "20+" : fresh} new Mig{fresh === 1 ? "" : "s"} — tap to view
           </button>
         )}
 
@@ -1476,17 +1476,17 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             <p className="mt-2 font-semibold">
               {tab === "mine" && !author
                 ? user
-                  ? "You haven't written a post yet."
-                  : "Log in to see your posts."
+                  ? "You haven't written a Mig yet."
+                  : "Log in to see your Migs."
                 : tab === "friends" && !author
                   ? user
                     ? "Your friends haven't written anything yet."
-                    : "Log in to see your friends' posts."
+                    : "Log in to see your friends' Migs."
                   : tab === "following" && !author
                     ? user
-                      ? "Follow members to see their posts here."
+                      ? "Follow members to see their Migs here."
                       : "Log in to see the people you follow."
-                    : "No posts here yet."}
+                    : "No Migs here yet."}
             </p>
             {user && !author && tab !== "mine" && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
@@ -1496,12 +1496,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
-              <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
+              <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
             )}
             {hasMore && (
               <div ref={moreRef} className="flex justify-center py-3">
                 <button type="button" onClick={() => void loadMore()} className="rounded-full bg-[#FFFFFF] px-4 py-2 text-[13px] font-bold text-[#6B6F9A] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]">
-                  {loadingMore ? "Loading more…" : "⬇ More posts"}
+                  {loadingMore ? "Loading more…" : "⬇ More Migs"}
                 </button>
               </div>
             )}
@@ -1527,7 +1527,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
       {undoable && (
         <div className="fixed bottom-24 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full bg-[#1E1B4B]/95 py-2 pl-4 pr-2 text-[13px] font-semibold text-white shadow-lg">
-          <span>Posting in 5 sec…</span>
+          <span>Migging in 5 sec…</span>
           <button type="button" onClick={() => undoRef.current?.restore()} className="rounded-full bg-white px-3 py-1 font-extrabold text-[#1D4ED8]">
             Undo
           </button>
@@ -1608,7 +1608,7 @@ function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose
     try {
       await blogCall("create", {
         title: `↗ ${origin.title}`.slice(0, 60),
-        body: text.trim() || "↗ Shared a post",
+        body: text.trim() || "↗ Shared a Mig",
         category: post.category,
         cover: "",
         sharedId: origin.id,

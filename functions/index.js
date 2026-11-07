@@ -25770,10 +25770,10 @@ async function blogSharedMeta(d) {
   if (!id) return null;
   const E = functionsV1.https.HttpsError;
   let src = await db.collection("blog_posts").doc(id).get();
-  if (!src.exists) throw new E("not-found", "That post is gone.");
+  if (!src.exists) throw new E("not-found", "That Mig is gone.");
   if (src.get("sharedId")) {
     src = await db.collection("blog_posts").doc(String(src.get("sharedId"))).get();
-    if (!src.exists) throw new E("not-found", "That post is gone.");
+    if (!src.exists) throw new E("not-found", "That Mig is gone.");
   }
   return {
     sharedId: src.id,
@@ -25867,7 +25867,7 @@ async function blogNotifyMentions(me, postId, title, mentioned, alreadyLower) {
   if (!fresh.length) return;
   const batch = db.batch();
   const t = String(title || "").slice(0, 60);
-  for (const x of fresh) blogAlert(batch, x.name, me, postId, `📰 ${me} mentioned you in a post: "${t}"`);
+  for (const x of fresh) blogAlert(batch, x.name, me, postId, `📰 ${me} mentioned you in a Mig: "${t}"`);
   await batch.commit().catch((e) => console.error("blog mention alerts failed", e?.message));
   await Promise.all(fresh.map(async (x) => {
     try {
@@ -25876,7 +25876,7 @@ async function blogNotifyMentions(me, postId, title, mentioned, alreadyLower) {
       if (!token) return;
       await getMessaging().send({
         token,
-        data: { type: "blog_mention", title: `📰 ${me} mentioned you`, body: `in a post: "${t}"`, postId },
+        data: { type: "blog_mention", title: `📰 ${me} mentioned you`, body: `in a Mig: "${t}"`, postId },
         android: { priority: "high" },
       });
     } catch (e) {
@@ -25972,7 +25972,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const priv = db.collection("blog_private").doc(pid);
     const ps = await priv.get();
     if (ps.exists && (await blogCanSeePrivate(ps, uid, me))) return priv;
-    return pub; // missing → the actions below say "That post is gone."
+    return pub; // missing → the actions below say "That Mig is gone."
   };
 
   // 🔖 save / unsave a post for my Saved tab (only I see my saves)
@@ -25982,7 +25982,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const ref = db.collection("blog_saves").doc(uid + "_" + pid);
     if (d.saved === true) {
       const post = await (await resolvePost(pid)).get();
-      if (!post.exists) throw new E("not-found", "That post is gone.");
+      if (!post.exists) throw new E("not-found", "That Mig is gone.");
       await ref.set({ uid, postId: pid, at: FieldValue.serverTimestamp() });
     } else {
       await ref.delete();
@@ -26099,7 +26099,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     await db.runTransaction(async (tx) => {
       const rate = await tx.get(rateRef);
       const n = rate.exists && rate.get("day") === day ? Number(rate.get("posts") || 0) : 0;
-      if (n >= BLOG_POSTS_PER_DAY) throw new E("resource-exhausted", `You can write ${BLOG_POSTS_PER_DAY} posts a day. Please come back tomorrow.`);
+      if (n >= BLOG_POSTS_PER_DAY) throw new E("resource-exhausted", `You can write ${BLOG_POSTS_PER_DAY} Migs a day. Please come back tomorrow.`);
       const c = rate.exists && rate.get("day") === day ? Number(rate.get("comments") || 0) : 0;
       tx.set(rateRef, { day, posts: n + 1, comments: c });
       tx.set(ref, {
@@ -26153,7 +26153,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     if (!pid) throw new E("invalid-argument", "Which post?");
     const ref = await resolvePost(pid);
     const s = await ref.get();
-    if (!s.exists) throw new E("not-found", "That post is gone.");
+    if (!s.exists) throw new E("not-found", "That Mig is gone.");
     const out = { ok: true, post: blogOut(s) };
     if (ref.parent.id === "blog_private") {
       const cs = await ref.collection("comments").orderBy("createdAt", "asc").limit(300).get();
@@ -26182,13 +26182,13 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   if (action === "setPrivacy") {
     const next = blogPrivacyOf(d);
     const s = await postRef.get();
-    if (!s.exists) throw new E("not-found", "That post is gone.");
+    if (!s.exists) throw new E("not-found", "That Mig is gone.");
     if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can change this.");
     const isPrivate = postRef.parent.id === "blog_private";
     if (!next && isPrivate) {
       await blogMovePost(postRef, db.collection("blog_posts").doc(postRef.id), "");
     } else if (next && !isPrivate) {
-      if (s.get("sharedId")) throw new E("failed-precondition", "A shared post stays 🌍 Everyone.");
+      if (s.get("sharedId")) throw new E("failed-precondition", "A shared Mig stays 🌍 Everyone.");
       await blogMovePost(postRef, db.collection("blog_private").doc(postRef.id), next);
     } else if (next) {
       await postRef.update({ privacy: next });
@@ -26202,8 +26202,8 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     let before = [];
     await db.runTransaction(async (tx) => {
       const s = await tx.get(postRef);
-      if (!s.exists) throw new E("not-found", "That post is gone.");
-      if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can edit this post.");
+      if (!s.exists) throw new E("not-found", "That Mig is gone.");
+      if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can edit this Mig.");
       before = Array.isArray(s.get("mentions")) ? s.get("mentions").map((x) => String(x).toLowerCase()) : [];
       // a new cover without a new small copy: the old small copy goes (the list shows the cover)
       const staleThumb = !p.thumb && s.get("thumb") && s.get("cover") !== p.cover ? { thumb: FieldValue.delete() } : {};
@@ -26218,12 +26218,12 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const s = await postRef.get();
     if (!s.exists) return { ok: true };
     if (s.get("authorUid") !== uid && !(await blogCanModerate(uid, me))) {
-      throw new E("permission-denied", "Only the writer or the miGlife team can delete this post.");
+      throw new E("permission-denied", "Only the writer or the miGlife team can delete this Mig.");
     }
     await db.recursiveDelete(postRef);
     if (s.get("authorUid") !== uid) {
       const batch = db.batch();
-      blogAlert(batch, String(s.get("author") || ""), "miGlife", postId, `📰 Your Feed post "${String(s.get("title") || "").slice(0, 60)}" was removed by the miGlife team.`);
+      blogAlert(batch, String(s.get("author") || ""), "miGlife", postId, `📰 Your Mig "${String(s.get("title") || "").slice(0, 60)}" was removed by the miGlife team.`);
       await batch.commit().catch(() => {});
     }
     return { ok: true };
@@ -26237,7 +26237,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const likeRef = postRef.collection("likes").doc(uid);
     const res = await db.runTransaction(async (tx) => {
       const [s, l] = await Promise.all([tx.get(postRef), tx.get(likeRef)]);
-      if (!s.exists) throw new E("not-found", "That post is gone.");
+      if (!s.exists) throw new E("not-found", "That Mig is gone.");
       const prev = l.exists ? String(l.get("type") || "👍") : null;
       // older posts have no reaction counts yet: their likes all count as 👍
       const counts = s.get("reactions")
@@ -26267,7 +26267,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const likeRef = postRef.collection("likes").doc(uid);
     const res = await db.runTransaction(async (tx) => {
       const [s, l] = await Promise.all([tx.get(postRef), tx.get(likeRef)]);
-      if (!s.exists) throw new E("not-found", "That post is gone.");
+      if (!s.exists) throw new E("not-found", "That Mig is gone.");
       const likes = Math.max(0, Number(s.get("likes") || 0) + (l.exists ? -1 : 1));
       if (l.exists) tx.delete(likeRef);
       else tx.set(likeRef, { username: me, at: FieldValue.serverTimestamp() });
@@ -26292,7 +26292,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       const [s, rate, parent] = await Promise.all([
         tx.get(postRef), tx.get(rateRef), parentRef ? tx.get(parentRef) : Promise.resolve(null),
       ]);
-      if (!s.exists) throw new E("not-found", "That post is gone.");
+      if (!s.exists) throw new E("not-found", "That Mig is gone.");
       if (parentRef && (!parent || !parent.exists)) throw new E("not-found", "That comment is gone.");
       if (parent && parent.exists && parent.get("replyTo")) throw new E("invalid-argument", "You can only reply to a top comment.");
       const same = rate.exists && rate.get("day") === day;
@@ -26311,7 +26311,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     });
     if (post.get("authorUid") !== uid) {
       const batch = db.batch();
-      blogAlert(batch, String(post.get("author") || ""), me, postId, `💬 ${me} commented on your Feed post: "${text.slice(0, 60)}"`);
+      blogAlert(batch, String(post.get("author") || ""), me, postId, `💬 ${me} commented on your Mig: "${text.slice(0, 60)}"`);
       await batch.commit().catch(() => {});
     }
     return { ok: true, commentId: cRef.id };

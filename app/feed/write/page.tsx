@@ -213,7 +213,7 @@ function BlogWrite() {
   const upload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = MAX_PHOTOS - photos.length;
-    if (room <= 0) return setError(`At most ${MAX_PHOTOS} photos in one post.`);
+    if (room <= 0) return setError(`At most ${MAX_PHOTOS} photos in one Mig.`);
     setError("");
     setBusy("Uploading…");
     try {
@@ -233,7 +233,7 @@ function BlogWrite() {
     setError("");
     if (title.trim().length < 3) return setError("Please write a title (at least 3 letters).");
     if (!text.trim() && photos.length === 0 && !video) return setError("Please write something.");
-    setBusy(editId ? "Saving…" : "Publishing…");
+    setBusy(editId ? "Saving…" : "Migging…");
     try {
       // the first photo is the cover; the rest go after the story
       const [cover = "", ...rest] = photos;
@@ -277,7 +277,7 @@ function BlogWrite() {
           <button type="button" onClick={close} aria-label="Close" className="np-chip flex h-[34px] w-[34px] items-center justify-center rounded-full text-[14px]">
             ✕
           </button>
-          <b className="text-[15px]">{editId ? "Edit post" : "New post"}</b>
+          <b className="text-[15px]">{editId ? "Edit Mig" : "New Mig"}</b>
           <span className={`w-[64px] text-right text-[12px] font-bold text-[#16A34A] transition-opacity ${saved ? "opacity-100" : "opacity-0"}`}>✓ Saved</span>
         </div>
 
@@ -298,7 +298,7 @@ function BlogWrite() {
               <b data-notranslate className="block truncate text-[15px]">
                 {username}
               </b>
-              <span className="text-[11.5px] text-[#6B6F9A]">Posting to everyone 🌍</span>
+              <span className="text-[11.5px] text-[#6B6F9A]">Migging to everyone 🌍</span>
             </div>
           </div>
 
@@ -418,7 +418,7 @@ function BlogWrite() {
           {photos.length === 0 && <p className="px-[18px] pt-1.5 text-[11.5px] text-[#8B8FD6]">The first photo is the cover · up to {MAX_PHOTOS}</p>}
 
           {error && <p className="mx-4 mt-3 rounded-xl bg-red-50/90 px-3 py-2 text-[13px] text-red-700">{error}</p>}
-          {!editId && <p className="mt-3 text-center text-[11.5px] text-[#6B6F9A]/80">You can write 5 posts a day.</p>}
+          {!editId && <p className="mt-3 text-center text-[11.5px] text-[#6B6F9A]/80">You can write 5 Migs a day.</p>}
         </div>
 
         {/* big Publish + the tool bar */}
@@ -446,7 +446,7 @@ function BlogWrite() {
             disabled={!canPublish}
             className="mb-2.5 h-[52px] w-full rounded-[18px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[16px] font-black text-white shadow-[0_12px_24px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98] disabled:from-[#C7CCE6] disabled:via-[#C7CCE6] disabled:to-[#C7CCE6] disabled:shadow-none"
           >
-            {busy || (editId ? "Save ➤" : "Publish ➤")}
+            {busy || (editId ? "Save ➤" : "Mig it ➤")}
           </button>
           {video && (
             <div className="mb-2 flex items-center justify-between rounded-[16px] bg-white px-3.5 py-2.5 text-[13px] font-bold text-[#4F46E5] shadow-[0_1px_0_#C9D8EA]">

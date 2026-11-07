@@ -216,7 +216,7 @@ export default function BlogPostPage() {
     if (!post) return;
     const url = `${window.location.origin}/feed/${post.id}`;
     try {
-      if (navigator.share) await navigator.share({ title: post.title, text: `📰 ${post.title} — by ${post.author} on miGlife`, url });
+      if (navigator.share) await navigator.share({ title: post.title, text: `📰 ${post.title} — a Mig by ${post.author} on miGlife`, url });
       else {
         await navigator.clipboard.writeText(url);
         setToast("Link copied ✓");
@@ -226,7 +226,7 @@ export default function BlogPostPage() {
     }
   };
   const remove = async () => {
-    if (!post || !confirm(mine ? "Delete this post?" : `Delete ${post.author}'s post?`)) return;
+    if (!post || !confirm(mine ? "Delete this Mig?" : `Delete ${post.author}'s Mig?`)) return;
     try {
       await blogCall("delete", { postId: post.id });
       router.replace("/feed");
@@ -259,7 +259,7 @@ export default function BlogPostPage() {
       <PageShell light>
         <div className="mx-auto max-w-2xl px-3 pt-16 text-center text-[#5A6F93]">
           <div className="text-4xl">📝</div>
-          <p className="mt-2 font-semibold">This post is gone.</p>
+          <p className="mt-2 font-semibold">This Mig is gone.</p>
           <Link href="/feed" className="mt-4 inline-block rounded-xl bg-[#2563EB] px-4 py-2 font-bold text-white">
             Back to Feed
           </Link>
