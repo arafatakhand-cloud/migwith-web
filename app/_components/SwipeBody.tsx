@@ -65,7 +65,7 @@ function keepCopy(el: HTMLElement, path: string) {
   const k = key(path);
   copies.delete(k);
   copies.set(k, { box, at: Date.now() });
-  if (copies.size > 10) copies.delete(copies.keys().next().value as string);
+  if (copies.size > 5) copies.delete(copies.keys().next().value as string);
 }
 
 // ---- the tabs beside the page (built ahead, shown while a finger drags) ----
@@ -257,16 +257,16 @@ export function SwipeBody({ children }: { children: React.ReactNode }) {
     // the real page just takes its place.
     if (handOver()) swipeEnter.dir = 0;
 
-    // A fresh copy of this page now and then, while idle.
-    // (never while a finger is on the screen or just was — copying a big room
-    // takes a moment, and a swipe starting meanwhile would stutter)
+    // ⚡ SMOOTHNESS FIX: the page used to be copied every 4 seconds (every
+    // element, every chat line), which made phones stutter every few seconds
+    // and kept up to 10 big copies in memory. Now it is copied once, a moment
+    // after it opens, and again when you leave it — that is all a swipe needs.
+    // (never while a finger is on the screen or just was)
     const snap = () =>
       idle(() => !swipeState.dragging && Date.now() - swipeState.touchedAt > 1500 && el.isConnected && keepCopy(el, pathRef.current));
-    const first = window.setTimeout(snap, 700);
-    const every = window.setInterval(snap, 4000);
+    const first = window.setTimeout(snap, 1500);
     const leave = () => {
       clearTimeout(first);
-      clearInterval(every);
       // Copied a moment ago: keep that one (no work while a new page opens).
       const last = copies.get(key(pathRef.current));
       if (!last || Date.now() - last.at > 1500) keepCopy(el, pathRef.current);

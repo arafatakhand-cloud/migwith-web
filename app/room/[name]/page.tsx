@@ -3791,7 +3791,7 @@ function MessageRow({
               const qColor = author ? nameColorWithoutLucky(author) : "#2F80ED";
               return (
                 <span
-                  className={`mb-[-1px] flex w-fit max-w-[88%] items-center gap-1.5 truncate rounded-t-[12px] border border-b-0 px-2.5 py-1 text-left text-xs text-[#1b2430] backdrop-blur-[2px] ${rightSide ? "ml-auto mr-2.5" : "ml-2.5"}`}
+                  className={`mb-[-1px] flex w-fit max-w-[88%] items-center gap-1.5 truncate rounded-t-[12px] border border-b-0 px-2.5 py-1 text-left text-xs text-[#1b2430] ${rightSide ? "ml-auto mr-2.5" : "ml-2.5"}`}
                   style={{
                     borderColor: `${qColor}33`,
                     background: `linear-gradient(90deg, ${qColor}1F, rgba(255,255,255,.92) 70%)`,

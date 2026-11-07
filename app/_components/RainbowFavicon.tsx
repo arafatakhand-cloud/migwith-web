@@ -80,7 +80,12 @@ export function RainbowFavicon() {
     };
 
     draw();
-    const t = setInterval(draw, 150);
+    // ⚡ SMOOTHNESS FIX: phones never show the tab icon, so it is drawn once and
+    // never animated there (it used to redraw 7 times a second, forever). On a
+    // computer it still slides, but gently (twice a second, only while visible).
+    const touch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+    if (touch) return;
+    const t = setInterval(draw, 500);
     return () => clearInterval(t);
   }, []);
   return null;
