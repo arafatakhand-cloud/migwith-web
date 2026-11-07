@@ -192,7 +192,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [ind, setInd] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
     // the white pill follows the chosen tab, also when the window is resized
-    // (none for 🔖 Saved, which lives in the header)
+    // (none for 🔖 Saved, which opens from the Mine card)
     const place = () => {
       const el = tabRefs.current[tab];
       setInd(el ? { left: el.offsetLeft, width: el.offsetWidth } : null);
@@ -770,7 +770,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   const meColor = colorOf(username) || "#2563EB";
   // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
-  const mineOnly = (!author && !!user && tab === "mine") || (!author && !!placeView);
+  const mineOnly = (!author && !!user && (tab === "mine" || tab === "saved")) || (!author && !!placeView);
   return (
     <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
       <section className="relative mx-auto max-w-2xl pb-10">
@@ -784,27 +784,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {mineOnly ? (
               <button
                 type="button"
-                onClick={() => (placeView ? setPlaceView("") : setTab("new"))}
+                onClick={() => (placeView ? setPlaceView("") : setTab(tab === "saved" ? "mine" : "new"))}
                 aria-label="Back to the Feed"
                 className="flex min-w-0 items-center gap-2.5 text-[#1E1B4B] transition active:scale-95"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFFFF] text-[18px] font-black shadow-[0_6px_14px_-8px_rgba(60,64,140,.55)]">←</span>
-                <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : "My Migs"}</span>
+                <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : tab === "saved" ? "🔖 Saved Migs" : "My Migs"}</span>
               </button>
             ) : (
               <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
             )}
             {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setTab(tab === "saved" ? "popular" : "saved")}
-                  aria-label="Saved Migs"
-                  title="Saved Migs"
-                  className={`flex h-9 items-center gap-1 rounded-full px-3 text-[12.5px] font-extrabold transition ${tab === "saved" ? "bg-[#111827] text-white" : "bg-[#FFFFFF] text-[#3B4266] shadow-[0_4px_12px_-6px_rgba(60,64,140,.4)]"}`}
-                >
-                  🔖 Saved
-                </button>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
                 <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
                   <Avatar name={username} color={meColor} size={34} ring />
@@ -1382,7 +1373,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             </div>
           );
         })()}
-        {!author && !placeView && (!user || !composing) && !(user && tab === "mine") && (
+        {!author && !placeView && (!user || !composing) && !(user && (tab === "mine" || tab === "saved")) && (
           user ? (
             <button
               type="button"
@@ -1438,13 +1429,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 ))}
               </div>
               <div className="px-4 pb-4">
-                <button
-                  type="button"
-                  onClick={() => setComposing(true)}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[14px] font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98]"
-                >
-                  ✍️ New Mig
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setComposing(true)}
+                    className="flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[14px] font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98]"
+                  >
+                    ✍️ New Mig
+                  </button>
+                  {/* 🔖 the Migs I saved */}
+                  <button
+                    type="button"
+                    onClick={() => (setTab("saved"), window.scrollTo({ top: 0 }))}
+                    className="flex h-11 items-center justify-center gap-1.5 rounded-2xl bg-[#FFF4D6] px-4 text-[14px] font-extrabold text-[#92400E] transition active:scale-[.98]"
+                  >
+                    🔖 Saved <span className="rounded-full bg-white/80 px-1.5 text-[12px]">{savedIds.size}</span>
+                  </button>
+                </div>
               </div>
             </section>
           );
@@ -1486,9 +1487,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     ? user
                       ? "Follow members to see their Migs here."
                       : "Log in to see the people you follow."
-                    : "No Migs here yet."}
+                    : tab === "saved" && !author
+                      ? "No saved Migs yet."
+                      : "No Migs here yet."}
             </p>
-            {user && !author && tab !== "mine" && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
+            {tab === "saved" && !author && <p className="mt-1 text-sm">Tap 🔖 on any Mig to keep it here.</p>}
+            {user && !author && tab !== "mine" && tab !== "saved" && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
           <div className="space-y-5 px-3.5">
