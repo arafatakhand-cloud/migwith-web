@@ -1034,30 +1034,26 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
             ) : roleBadge ? (
               <span className="shrink-0 text-[13px] leading-none" title="Role badge">{roleBadge}</span>
             ) : null}
-            {canFollow && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onFollow();
-                }}
-                className={`ml-1 shrink-0 rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold ${following ? "bg-[#EEF2F8] text-[#4B5575]" : "bg-gradient-to-r from-[#38BDF8] to-[#A855F7] text-white"}`}
-              >
-                {following ? "Following" : "+ Follow"}
-              </button>
-            )}
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
             {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}
             {why && <span className="ml-1.5 rounded-full bg-[#EEF4FF] px-1.5 py-px text-[10.5px] font-bold text-[#1D4ED8]">{why}</span>}
           </div>
         </div>
-        <span className="ml-auto shrink-0 rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[11px] font-extrabold text-[#1D4ED8]">{blogCategoryLabel(p.category)}</span>
+        {canFollow && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onFollow();
+            }}
+            className={`ml-auto shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold ${following ? "bg-[#EEF2F8] text-[#4B5575]" : "bg-gradient-to-r from-[#38BDF8] to-[#A855F7] text-white"}`}
+          >
+            {following ? "Following" : "+ Follow"}
+          </button>
+        )}
       </div>
-      {/* no separate title line: the post text is shown once, below */}
-      <div className="mx-0.5 mt-2.5 flex justify-end">
-        <TranslateChip postId={p.id} title={p.title} text={p.excerpt} />
-      </div>
+      {/* no separate title line; the translate button lives on the post page */}
       {(tr?.text || p.excerpt) && (
         <p className="mx-0.5 mt-0.5 line-clamp-3 text-[13.5px] leading-relaxed text-[#4B4F7D]">
           <RichText text={tr?.text || p.excerpt} />
