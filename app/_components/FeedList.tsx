@@ -246,7 +246,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const cbgKeep = useRef<number | null>(null); // a post brought back keeps its colour
   useEffect(() => {
     if (!composing) return;
-    setCbg(cbgKeep.current ?? Math.floor(Math.random() * TEXT_ART.length));
+    setCbg(cbgKeep.current ?? PLAIN_BG); // plain white first; tap a colour to change
     cbgKeep.current = null;
   }, [composing]);
   const cupload = async (files: FileList | null) => {
@@ -631,7 +631,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           // ✍️ C1 · Text Art writer: with no photo or video, you write right on the
           // colour your post will have in the Feed, and pick that colour below
           const art = cphotos.length === 0 && !cvideo && !cvideoBusy;
-          const [bgFill, ink] = TEXT_ART[cbg] || TEXT_ART[0];
+          const [bgFill, ink] = cbg === PLAIN_BG ? ["#F6F7FC", "#1E1B4B"] : TEXT_ART[cbg] || TEXT_ART[0];
           const empty = !ctext.trim() && cphotos.length === 0 && !cvideo;
           const len = ctext.trim().length;
           const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
@@ -747,7 +747,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 />
               )}
               {art && (
-                <div className="mt-3 flex items-center gap-2.5 px-0.5">
+                <div className="no-scrollbar mt-3 flex items-center gap-2.5 overflow-x-auto px-0.5 py-1">
+                  <button
+                    type="button"
+                    onClick={() => setCbg(PLAIN_BG)}
+                    aria-label="Plain white"
+                    title="Plain white"
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#D5D8E8] bg-[#FFFFFF] text-[11px] font-black text-[#6B6F9A] transition active:scale-90 ${cbg === PLAIN_BG ? "scale-110 ring-2 ring-[#6366F1] ring-offset-2" : ""}`}
+                  >
+                    Aa
+                  </button>
                   {TEXT_ART.map(([g], i) => (
                     <button
                       key={i}
@@ -1170,7 +1179,10 @@ const TEXT_ART: [string, string][] = [
   ["linear-gradient(135deg,#FECACA,#FCA5A5 40%,#F472B6)", "#4C0519"],
   ["linear-gradient(135deg,#0C4A6E,#0EA5E9 55%,#BAE6FD)", "#FFFFFF"],
 ];
+// ⬜ 8 = plain white (no colour): dark words on a clean white card
+const PLAIN_BG = 8;
 function textArtOf(id: string, bg = -1): [string, string] {
+  if (bg === PLAIN_BG) return ["#FFFFFF", "#1E1B4B"];
   if (bg >= 0 && bg < TEXT_ART.length) return TEXT_ART[bg];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -1219,11 +1231,13 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
       if (lastTap.current === now) open();
     }, 330);
   };
-  const glass = "bg-white/20 backdrop-blur-md";
+  // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
+  const plain = !media && p.bg === PLAIN_BG;
+  const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/20 backdrop-blur-md";
   return (
     <article
       className="relative overflow-hidden rounded-[28px] shadow-[0_22px_36px_-18px_rgba(40,50,120,.55)]"
-      style={media ? { background: "#0F172A" } : { background: artBg }}
+      style={media ? { background: "#0F172A" } : plain ? { background: "#FFFFFF", boxShadow: "0 16px 32px -20px rgba(60,64,140,.5)" } : { background: artBg }}
     >
       {/* the picture / video, or the Text Art words */}
       <div onClick={tapCard} className="relative cursor-pointer select-none">
@@ -1246,11 +1260,11 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         )}
         {/* soft dark fade so the white words and buttons can be read */}
         {media && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/75 via-black/30 to-transparent" />}
-        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />
+        {!plain && <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />}
       </div>
 
       {/* 🫧 glass bar on top: who wrote it */}
-      <div className={`absolute left-3 right-3 top-3 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-1.5 text-white ${glass}`}>
+      <div className={`absolute left-3 right-3 top-3 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-1.5 ${plain ? "text-[#1E1B4B]" : "text-white"} ${glass}`}>
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-white/90">
           <Avatar name={p.author} color={c} size={34} />
         </Link>
@@ -1271,7 +1285,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 <span className="shrink-0 text-[12px] leading-none">{roleBadge}</span>
               ) : null)}
           </div>
-          <div className="truncate text-[11px] font-semibold text-white/85">
+          <div className={`truncate text-[11px] font-semibold ${plain ? "text-[#7C82A6]" : "text-white/85"}`}>
             {role ? `${role} · ` : ""}
             {blogAgoBn(p.createdMs)}
             {why && <span className="sr-only"> {why}</span>}
@@ -1284,7 +1298,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               e.stopPropagation();
               onFollow();
             }}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? "bg-white/25 text-white" : "bg-[#FFFFFF] text-[#4F46E5]"}`}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? (plain ? "bg-[#EEF0F7] text-[#3B4266]" : "bg-white/25 text-white") : plain ? "bg-gradient-to-r from-[#6366F1] to-[#A855F7] text-white" : "bg-[#FFFFFF] text-[#4F46E5]"}`}
           >
             {following ? "Following" : "+ Follow"}
           </button>
@@ -1292,7 +1306,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
       </div>
 
       {/* the words (photo posts) and the glass buttons, floating on the bottom */}
-      <div className="absolute inset-x-0 bottom-0 px-4 pb-3.5 text-white" onClick={(e) => e.stopPropagation()}>
+      <div className={`absolute inset-x-0 bottom-0 px-4 pb-3.5 ${plain ? "text-[#1E1B4B]" : "text-white"}`} onClick={(e) => e.stopPropagation()}>
         {media && text && (
           <p onClick={open} className="mb-2.5 line-clamp-3 cursor-pointer text-[14.5px] font-semibold leading-snug drop-shadow">
             <RichText text={text} />
@@ -1348,7 +1362,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 setPick(true);
               }}
               aria-label={liked ? "Unlike" : "Like"}
-              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? "bg-[#FFFFFF] text-[#E11D48]" : glass}`}
+              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? (plain ? "bg-[#FFE4EC] text-[#E11D48]" : "bg-[#FFFFFF] text-[#E11D48]") : glass}`}
             >
               {burst > 0 &&
                 ["❤️", "💖", "✨", "💕"].map((h, i) => (
@@ -1372,8 +1386,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${glass}`}>
             ↗
           </button>
-          <span className="ml-auto text-[11.5px] font-bold text-white/80 drop-shadow">👁 {blogShort(p.views)}</span>
-          <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition active:scale-95 ${saved ? "bg-[#FFFFFF]" : glass}`}>
+          <span className={`ml-auto text-[11.5px] font-bold ${plain ? "text-[#8A8FB0]" : "text-white/80 drop-shadow"}`}>👁 {blogShort(p.views)}</span>
+          <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition active:scale-95 ${saved ? (plain ? "bg-[#FFF4D6]" : "bg-[#FFFFFF]") : glass}`}>
             🔖
           </button>
         </div>

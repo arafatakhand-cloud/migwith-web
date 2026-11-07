@@ -25818,8 +25818,8 @@ function blogClean(d) {
   if (imgs.length > 10) throw new E("invalid-argument", "At most 10 photos in one post.");
   if (!imgs.every(blogImgOk)) throw new E("invalid-argument", "A photo in the post can't be used.");
   const excerpt = body.replace(/!\[\]\([^)]*\)/g, " ").replace(/\*\*/g, "").replace(/\s+/g, " ").trim().slice(0, 200);
-  // 🎨 the Text Art colour the writer picked (0–7); left out = keep / pick from the id
-  const bg = Number.isInteger(d.bg) && d.bg >= 0 && d.bg < 8 ? d.bg : null;
+  // 🎨 the Text Art colour the writer picked (0–7, 8 = plain white); left out = keep / pick from the id
+  const bg = Number.isInteger(d.bg) && d.bg >= 0 && d.bg < 9 ? d.bg : null;
   return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }) };
 }
 // 🔔 an alert in the person's migAlerts
