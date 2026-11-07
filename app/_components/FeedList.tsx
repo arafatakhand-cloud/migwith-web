@@ -558,6 +558,30 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </div>
             )}
             {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
+          {cmoodOpen && (
+            <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
+              <div className="mb-2 flex items-center justify-between px-0.5">
+                <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</span>
+                <button type="button" onClick={() => setCmoodOpen(false)} className="text-[12px] font-bold text-[#8494B2]">Close</button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => {
+                      setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
+                      setCmoodOpen(false);
+                    }}
+                    className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2.5 text-[12px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.04] active:scale-95`}
+                  >
+                    <span className="text-[22px] leading-none">{e}</span>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
             <div className="mt-2.5 border-t border-[#EEF2F8] pt-1.5">
               <div className="flex items-center justify-between">
                 <button
@@ -589,27 +613,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   >
                     <span className="text-[17px]">😊</span>Mood
                   </button>
-                  {cmoodOpen && (
-                    <div className="absolute bottom-full right-0 z-20 mb-2 w-[232px] rounded-2xl border border-[#E5EAF5] bg-white/95 p-2 shadow-xl backdrop-blur">
-                      <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
-                          <button
-                            key={l}
-                            type="button"
-                            onClick={() => {
-                              setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
-                              setCmoodOpen(false);
-                            }}
-                            className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2 text-[11.5px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.05] active:scale-95`}
-                          >
-                            <span className="text-[20px] leading-none">{e}</span>
-                            {l}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div className="relative">
                   <button
