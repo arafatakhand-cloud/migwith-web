@@ -14,6 +14,7 @@ import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
 import { placeHere, searchPlaces, type Place } from "../../lib/places";
+import { MigView } from "./MigView";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
@@ -97,7 +98,7 @@ function rolePillOf(d: Record<string, unknown>): string {
 export function FeedList({ author = "", embedded = false }: { author?: string; embedded?: boolean }) {
   const { user, username } = useCurrentUser();
   const friends = useFriends(username);
-  const [tab, setTab] = useState<Tab>("popular");
+  const [tab, setTab] = useState<Tab>("new");
   // 📷 show all posts, or only the ones with a photo
   const [media, setMedia] = useState<"all" | "photos">("all");
   // 🏷 one category, or "all"
@@ -768,6 +769,35 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     }
   };
 
+  // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
+  const [sheetId, setSheetId] = useState("");
+  const openSheet = (id: string) => {
+    setSheetId(id);
+    try {
+      window.history.pushState({ migSheet: id }, "");
+    } catch {
+      // no history
+    }
+  };
+  const closeSheet = () => {
+    if (!sheetId) return;
+    // the Back step we added goes too (popstate below clears the sheet)
+    if ((window.history.state as { migSheet?: string } | null)?.migSheet) window.history.back();
+    else setSheetId("");
+  };
+  useEffect(() => {
+    const onPop = () => setSheetId("");
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+  useEffect(() => {
+    if (!sheetId) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [sheetId]);
   const meColor = colorOf(username) || "#2563EB";
   // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
   const mineOnly = (!author && !!user && (tab === "mine" || tab === "saved")) || (!author && !!placeView);
@@ -1497,7 +1527,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-5 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1515,6 +1545,26 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       </section>
 
       {reactorsOf && <ReactorsSheet post={reactorsOf} onClose={() => setReactorsOf(null)} />}
+      {sheetId && (
+        <MigSheet onClose={closeSheet}>
+          <MigView
+            key={sheetId}
+            id={sheetId}
+            sheet
+            onClose={closeSheet}
+            onGone={() => setReload((n) => n + 1)}
+            onEdit={(p) => {
+              closeSheet();
+              window.setTimeout(() => startEdit(p), 50);
+            }}
+            onPlace={(pl) => {
+              closeSheet();
+              setPlaceView(pl);
+              window.scrollTo({ top: 0 });
+            }}
+          />
+        </MigSheet>
+      )}
 
       {sharing && (
         <ShareSheet
@@ -1717,7 +1767,7 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1735,9 +1785,22 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   const media = !!(p.video || pic);
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
-  const open = () => router.push(`/feed/${p.id}`);
+  // X2: in the Feed a Mig opens in the bottom sheet; elsewhere on its own page
+  const open = () => (onOpen ? onOpen() : router.push(`/feed/${p.id}`));
   const [viewing, setViewing] = useState(false);
   const text = tr?.text || p.excerpt;
+  // X1: a long words-only Mig shows like normal writing on white, its end fading
+  // out under a "Read more ⌄" pill that opens it right here
+  const fullText =
+    tr?.text ||
+    p.body
+      .split("\n")
+      .filter((l) => !/^!\[\]\(/.test(l.trim()))
+      .join("\n")
+      .trim() ||
+    p.excerpt;
+  const long = !p.video && !(p.cover || p.firstImage) && (fullText.length > 170 || fullText.split("\n").length > 5);
+  const [more, setMore] = useState(false);
   const [artBg, artInk] = textArtOf(p.id, p.bg);
   // short words get big letters; a long text gets normal ones
   const artSize = text.length <= 60 ? "text-[26px]" : text.length <= 140 ? "text-[21px]" : "text-[16px]";
@@ -1760,7 +1823,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
     }, 330);
   };
   // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
-  const plain = !media && p.bg === PLAIN_BG;
+  const plain = !media && (p.bg === PLAIN_BG || long);
   // ⚡ no live blur on each card (about 200 blurs on a long Feed made phones lag):
   // a see-through tint looks almost the same and costs nothing
   const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/[0.22]";
@@ -1776,6 +1839,22 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         ) : pic ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={(p.cover && p.thumb) || pic} alt="" loading="lazy" decoding="async" className="block max-h-[560px] min-h-[380px] w-full object-cover" />
+        ) : long ? (
+          <div className="px-5 pb-[84px] pt-[78px] text-left">
+            <div className={`relative ${more ? "" : "max-h-[9.6em] overflow-hidden"}`}>
+              <p className="whitespace-pre-line break-words text-[15px] font-medium leading-[1.6] text-[#1E1B4B]">
+                <RichText text={fullText} />
+              </p>
+              {!more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
+            </div>
+            <button
+              type="button"
+              onClick={(e) => (e.stopPropagation(), setMore((v) => !v))}
+              className="mx-auto mt-1.5 block rounded-full bg-gradient-to-r from-[#EEF0FF] to-[#F5EDFF] px-4 py-1.5 text-[12.5px] font-black text-[#4F46E5] transition active:scale-95"
+            >
+              {more ? "Show less ⌃" : "Read more ⌄"}
+            </button>
+          </div>
         ) : (
           <div className="flex min-h-[340px] items-center justify-center px-7 pb-24 pt-20 text-center">
             <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
@@ -1967,5 +2046,40 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         </div>
       )}
     </article>
+  );
+}
+
+// 🫧 the bottom sheet a Mig opens in (X2): slides up, pull the top down to close
+function MigSheet({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const boxRef = useRef<HTMLDivElement>(null);
+  const start = useRef<number | null>(null);
+  const [drag, setDrag] = useState(0);
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center bg-[#0B1F3A]/45 feed-sheet-fade" onClick={onClose}>
+      <div
+        ref={boxRef}
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => {
+          start.current = (boxRef.current?.scrollTop || 0) <= 0 ? e.touches[0].clientY : null;
+        }}
+        onTouchMove={(e) => {
+          if (start.current === null) return;
+          const dy = e.touches[0].clientY - start.current;
+          setDrag(dy > 0 ? dy : 0);
+        }}
+        onTouchEnd={() => {
+          if (drag > 110) onClose();
+          setDrag(0);
+          start.current = null;
+        }}
+        className="feed-sheet-up relative h-[92dvh] w-full max-w-2xl overflow-y-auto overscroll-contain rounded-t-[26px] bg-[#F4F0FF] shadow-2xl"
+        style={drag ? { transform: `translateY(${drag}px)`, transition: "none" } : undefined}
+      >
+        <div className="sticky top-0 z-40 flex justify-center bg-transparent pb-1 pt-2">
+          <span className="h-1.5 w-11 rounded-full bg-white/80 shadow" />
+        </div>
+        <div className="-mt-[14px]">{children}</div>
+      </div>
+    </div>
   );
 }

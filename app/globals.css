@@ -1574,6 +1574,12 @@ html {
   100% { transform: scale(1); }
 }
 .feed-bigheart { transform: translate(-50%, -50%); animation: feedBigHeart 0.9s ease-out forwards; filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
+/* 🫧 X2: the Mig sheet slides up from the bottom */
+.feed-sheet-up { animation: feedSheetUp 0.28s cubic-bezier(.2,.8,.2,1); transition: transform 0.2s ease-out; }
+.feed-sheet-fade { animation: feedSheetFade 0.2s ease-out; }
+@keyframes feedSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes feedSheetFade { from { background-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .feed-sheet-up, .feed-sheet-fade { animation: none; } }
 @keyframes feedBigHeart {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
   15% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
