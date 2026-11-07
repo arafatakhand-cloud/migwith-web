@@ -292,9 +292,21 @@ export default function BlogPostPage() {
           {menu && (
             <div className="absolute right-3 top-14 z-20 w-44 overflow-hidden rounded-xl bg-white text-[14px] font-semibold text-[#0F1D3A] shadow-xl" onClick={() => setMenu(false)}>
               {mine && (
-                <Link href={`/feed/write?edit=${post.id}`} className="block px-4 py-2.5 hover:bg-[#F1F5FB]">
+                // ✏️ edit in the Feed's writer (colours, photos, place…)
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem("migwith.feedEdit", post.id);
+                    } catch {
+                      return router.push(`/feed/write?edit=${post.id}`);
+                    }
+                    router.push("/feed");
+                  }}
+                  className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]"
+                >
                   ✏️ Edit
-                </Link>
+                </button>
               )}
               {mine && !post.sharedId && (
                 <button type="button" onClick={(e) => (e.stopPropagation(), setPrivMenu((v) => !v))} className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]">
@@ -353,6 +365,23 @@ export default function BlogPostPage() {
               {post.privacy ? ` · ${blogPrivacyLabel(post.privacy)}` : ""}
             </span>
           </div>
+          {post.place && (
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("migwith.feedPlace", post.place);
+                } catch {
+                  // blocked
+                }
+                router.push("/feed");
+              }}
+              className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#FFE4E6] to-[#FCE7F3] px-2.5 py-0.5 text-[12.5px] font-extrabold text-[#BE185D]"
+            >
+              <span className="font-semibold text-[#5A6F93]">is at</span> 📍 {post.place}
+              {post.placeSub ? <span className="font-semibold text-[#BE185D]/70">, {post.placeSub.split(",")[0]}</span> : null}
+            </button>
+          )}
           <div className="mt-2 flex justify-end">
             <TranslateChip postId={post.id} title={post.title} text={feedPlainText(post.body)} />
           </div>

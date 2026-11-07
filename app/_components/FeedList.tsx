@@ -13,6 +13,7 @@ import { useBadgeImages } from "../../lib/badgeImages";
 import { StoryRow } from "./StoryRow";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
+import { placeHere, searchPlaces, type Place } from "../../lib/places";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
@@ -257,6 +258,17 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 🔒 who can see the new post: '' = 🌍 Everyone, 'friends', 'me'
   const [cpriv, setCpriv] = useState<"" | "friends" | "me">("");
   const [cprivOpen, setCprivOpen] = useState(false);
+  // 📍 where I am (optional) and its picker
+  const [cplace, setCplace] = useState<Place | null>(null);
+  const [cplaceOpen, setCplaceOpen] = useState(false);
+  const [cplaceQ, setCplaceQ] = useState("");
+  const [cplaceBusy, setCplaceBusy] = useState("");
+  // ✏️ the post being edited here (null = a new post)
+  const [cedit, setCedit] = useState<BlogPost | null>(null);
+  // 📝 the unsent post is kept on this device and comes back when the writer opens
+  const draftKey = user ? `migwith.feedInlineDraft.${user.uid}` : "";
+  const [cdraftNote, setCdraftNote] = useState(false);
+  const [closeAsk, setCloseAsk] = useState(false);
   const cvideoRef = useRef<HTMLInputElement>(null);
   const cfileRef = useRef<HTMLInputElement>(null);
   const ctextRef = useRef<HTMLTextAreaElement>(null);
@@ -264,10 +276,116 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cbg, setCbg] = useState(0);
   const cbgKeep = useRef<number | null>(null); // a post brought back keeps its colour
   useEffect(() => {
-    if (!composing) return;
-    setCbg(cbgKeep.current ?? PLAIN_BG); // plain white first; tap a colour to change
-    cbgKeep.current = null;
+    if (!composing) return setCdraftNote(false);
+    if (cbgKeep.current !== null) {
+      // a post brought back / being edited keeps its colour
+      setCbg(cbgKeep.current);
+      cbgKeep.current = null;
+      return;
+    }
+    setCbg(PLAIN_BG); // plain white first; tap a colour to change
+    // 📝 bring back the draft (only into an empty writer)
+    if (cedit || !draftKey || ctext.trim() || cphotos.length || cvideo) return;
+    try {
+      const d = JSON.parse(localStorage.getItem(draftKey) || "null") as {
+        text?: string; photos?: string[]; video?: string; cat?: string; bg?: number; priv?: "" | "friends" | "me"; place?: Place | null;
+      } | null;
+      if (!d || !(d.text || d.photos?.length || d.video)) return;
+      setCtext(d.text || "");
+      setCphotos(Array.isArray(d.photos) ? d.photos.slice(0, 10) : []);
+      setCvideo(d.video || "");
+      if (d.cat) setCcat(d.cat);
+      if (typeof d.bg === "number") setCbg(d.bg);
+      setCpriv(d.priv || "");
+      setCplace(d.place && d.place.name ? d.place : null);
+      setCdraftNote(true);
+    } catch {
+      // no draft
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [composing]);
+  // 📝 keep the unsent post on this device while I write (not while editing a post)
+  useEffect(() => {
+    if (!composing || cedit || !draftKey) return;
+    const t = window.setTimeout(() => {
+      try {
+        if (!ctext.trim() && !cphotos.length && !cvideo) localStorage.removeItem(draftKey);
+        else localStorage.setItem(draftKey, JSON.stringify({ text: ctext, photos: cphotos, video: cvideo, cat: ccat, bg: cbg, priv: cpriv, place: cplace }));
+      } catch {
+        // storage full / blocked
+      }
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [composing, cedit, draftKey, ctext, cphotos, cvideo, ccat, cbg, cpriv, cplace]);
+  const clearWriter = () => {
+    setCtext("");
+    setCphotos([]);
+    setCvideo("");
+    setCplace(null);
+    setCpriv("");
+    setCerr("");
+    setCdraftNote(false);
+  };
+  const dropDraft = () => {
+    try {
+      if (draftKey) localStorage.removeItem(draftKey);
+    } catch {
+      // blocked
+    }
+  };
+  // ✕: an edit just closes; a new post with something in it asks keep / discard
+  const closeWriter = () => {
+    if (cedit) {
+      clearWriter();
+      setCedit(null);
+      return setComposing(false);
+    }
+    if (ctext.trim() || cphotos.length || cvideo) return setCloseAsk(true);
+    setComposing(false);
+  };
+  // ✏️ open one of my posts in this writer
+  const startEdit = (p: BlogPost) => {
+    const lines = p.body.split("\n");
+    const img = /^!\[\]\(([^)\s]+)\)$/;
+    const inBody = lines.map((l) => l.trim().match(img)?.[1] || "").filter(Boolean);
+    setCtext(lines.filter((l) => !img.test(l.trim())).join("\n").trim());
+    setCphotos([...(p.cover ? [p.cover] : []), ...inBody].slice(0, 10));
+    setCvideo(p.video);
+    setCcat(p.category);
+    setCpriv(p.privacy);
+    setCplace(p.place ? { name: p.place, sub: p.placeSub, icon: "📍" } : null);
+    setCerr("");
+    setCdraftNote(false);
+    cbgKeep.current = p.bg >= 0 ? p.bg : PLAIN_BG;
+    setCedit(p);
+    setComposing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  // the post page's ✏️ Edit and 📍 place link come here through this tab's memory
+  const [placeView, setPlaceView] = useState("");
+  useEffect(() => {
+    if (!user || author) return;
+    let want = "";
+    let place = "";
+    try {
+      want = sessionStorage.getItem("migwith.feedEdit") || "";
+      place = sessionStorage.getItem("migwith.feedPlace") || "";
+      sessionStorage.removeItem("migwith.feedEdit");
+      sessionStorage.removeItem("migwith.feedPlace");
+    } catch {
+      // blocked
+    }
+    if (place) setPlaceView(place);
+    if (!want) return;
+    (async () => {
+      const pub = await getDoc(doc(db, "blog_posts", want)).catch(() => null);
+      if (pub && pub.exists()) return toBlogPost(pub.id, pub.data() as Record<string, unknown>);
+      const r = await blogCall("getPost", { postId: want }).catch(() => null);
+      const x = (r?.post || null) as Record<string, unknown> | null;
+      return x ? toBlogPost(want, x) : null;
+    })().then((p) => p && p.authorUid === user.uid && startEdit(p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, author]);
   const cupload = async (files: FileList | null) => {
     if (!files?.length || !user) return;
     const room = 10 - cphotos.length;
@@ -304,7 +422,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me" }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -316,7 +434,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -327,8 +445,39 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCvideo(p.video);
       setCcat(p.category);
       setCpriv(p.privacy);
+      setCplace(p.place);
       cbgKeep.current = p.bg;
       setComposing(true);
+      setCerr(blogError(e));
+    } finally {
+      setCbusy(false);
+    }
+  };
+  // ✏️ save the post I am editing
+  const saveEdit = async () => {
+    if (!cedit || cbusy) return;
+    setCerr("");
+    if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
+    const first = ctext.trim().split("\n")[0].slice(0, 60);
+    const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
+    const [cover = "", ...rest] = cphotos;
+    const body = [ctext.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
+    setCbusy(true);
+    try {
+      const coverFile = cover && cover !== cedit.cover ? cfilesRef.current[cover] : undefined;
+      const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
+      await blogCall("edit", {
+        postId: cedit.id, title, body, cover, category: ccat,
+        place: cplace?.name || "", placeSub: cplace?.sub || "",
+        ...(thumb ? { thumb } : {}), ...(cover || cvideo ? {} : { bg: cbg }),
+      });
+      clearWriter();
+      setCedit(null);
+      setComposing(false);
+      setToast("Saved ✓");
+      setReload((n) => n + 1);
+      window.setTimeout(() => setToast(""), 2200);
+    } catch (e) {
       setCerr(blogError(e));
     } finally {
       setCbusy(false);
@@ -337,10 +486,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv };
-    setCtext("");
-    setCphotos([]);
-    setCvideo("");
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace };
+    clearWriter();
+    dropDraft();
     setComposing(false);
     setUndoable(true);
     const id = window.setTimeout(() => {
@@ -359,6 +507,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCvideo(payload.video);
         setCcat(payload.category);
         setCpriv(payload.privacy);
+        setCplace(payload.place);
         cbgKeep.current = payload.bg;
         setComposing(true);
         setToast("Post taken back");
@@ -406,6 +555,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     const load = async (): Promise<BlogPost[]> => {
       const map = (s: Awaited<ReturnType<typeof getDocs>>) => s.docs.map((d) => toBlogPost(d.id, d.data() as Record<string, unknown>));
       if (author) return map(await getDocs(query(col, where("author", "==", author), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
+      // 📍 every Everyone post written at one place
+      if (placeView) return map(await getDocs(query(col, where("place", "==", placeView), limit(60)))).sort((a, b) => b.createdMs - a.createdMs);
       if (tab === "popular" || tab === "new") {
         const snap = await getDocs(query(col, orderBy(tab === "popular" ? "hot" : "createdMs", "desc"), limit(FEED_PAGE)));
         lastSnap.current = (snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot) || null;
@@ -446,7 +597,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     };
     // 🔒 the 👥 Friends / 🔒 Only me posts I may see come from the server and join the list
     const withPrivate = async (p: BlogPost[]): Promise<BlogPost[]> => {
-      if (!user || !(author || tab === "new" || tab === "friends" || tab === "mine")) return p;
+      if (!user || placeView || !(author || tab === "new" || tab === "friends" || tab === "mine")) return p;
       try {
         const r = await blogCall("privateFeed", { scope: tab === "mine" && !author ? "mine" : "all", author: author || "" });
         let extra = (Array.isArray(r.posts) ? (r.posts as Record<string, unknown>[]) : []).map((x) => toBlogPost(String(x.id), x));
@@ -467,16 +618,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       .then((p) => {
         if (!alive) return;
         setPosts(p);
-        if (author || (tab !== "popular" && tab !== "new")) setHasMore(p.length > FEED_PAGE);
+        if (author || placeView || (tab !== "popular" && tab !== "new")) setHasMore(p.length > FEED_PAGE);
       })
       .catch(() => alive && (setError("Couldn't load the Feed. Please try again."), setPosts([])));
     return () => {
       alive = false;
     };
-  }, [tab, author, user, friendsKey, followedKey, reload]);
+  }, [tab, author, user, friendsKey, followedKey, reload, placeView]);
 
   // 📄 the posts shown now (Popular / New: all loaded pages; other tabs: the first `visible`)
-  const paged = !author && (tab === "popular" || tab === "new");
+  const paged = !author && !placeView && (tab === "popular" || tab === "new");
   const shown = posts ? (paged ? posts : posts.slice(0, visible)) : null;
   const loadMore = async () => {
     if (loadingMore || !hasMore || !posts) return;
@@ -610,7 +761,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   const meColor = colorOf(username) || "#2563EB";
   // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
-  const mineOnly = !author && !!user && tab === "mine";
+  const mineOnly = (!author && !!user && tab === "mine") || (!author && !!placeView);
   return (
     <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
       <section className="relative mx-auto max-w-2xl pb-10">
@@ -624,12 +775,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {mineOnly ? (
               <button
                 type="button"
-                onClick={() => setTab("new")}
+                onClick={() => (placeView ? setPlaceView("") : setTab("new"))}
                 aria-label="Back to the Feed"
-                className="flex items-center gap-2.5 text-[#1E1B4B] transition active:scale-95"
+                className="flex min-w-0 items-center gap-2.5 text-[#1E1B4B] transition active:scale-95"
               >
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FFFFFF] text-[18px] font-black shadow-[0_6px_14px_-8px_rgba(60,64,140,.55)]">←</span>
-                <span className="text-[22px] font-black tracking-tight">My posts</span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFFFFF] text-[18px] font-black shadow-[0_6px_14px_-8px_rgba(60,64,140,.55)]">←</span>
+                <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : "My posts"}</span>
               </button>
             ) : (
               <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
@@ -780,6 +931,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <div className="flex items-center gap-1 text-[12px] font-semibold text-[#8A8FB0]">
                     <button
                       type="button"
+                      disabled={!!cedit}
+                      title={cedit ? "Change it from the post's ⋯ menu" : undefined}
                       onClick={() => {
                         setCprivOpen((v) => !v);
                         setCcatOpen(false);
@@ -801,11 +954,111 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"} ▾
                     </button>
                   </div>
+                  {cplace && (
+                    <span className="mt-1 inline-flex max-w-full items-center gap-1 rounded-full bg-gradient-to-r from-[#FFE4E6] to-[#FCE7F3] px-2.5 py-0.5 text-[12px] font-extrabold text-[#BE185D]">
+                      <button type="button" onClick={() => setCplaceOpen(true)} className="truncate">
+                        📍 {cplace.name}
+                        {cplace.sub ? <span className="font-semibold text-[#BE185D]/70">, {cplace.sub.split(",")[0]}</span> : null}
+                      </button>
+                      <button type="button" onClick={() => setCplace(null)} aria-label="Remove place" className="pl-0.5 font-black">
+                        ✕
+                      </button>
+                    </span>
+                  )}
                 </div>
-                <button type="button" onClick={() => setComposing(false)} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F2F8] text-[14px] font-black text-[#6B6F9A]">
+                <button type="button" onClick={closeWriter} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F2F8] text-[14px] font-black text-[#6B6F9A]">
                   ✕
                 </button>
               </div>
+              {cedit && (
+                <div className="mt-2.5 rounded-xl bg-[#EEF0FF] px-3 py-1.5 text-[12.5px] font-bold text-[#4F46E5]">✏️ Editing your post — change it and tap Save ✓</div>
+              )}
+              {cdraftNote && !cedit && (
+                <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#FFF7E6] px-3 py-1.5 text-[12.5px] font-bold text-[#B45309]">
+                  <span>📝 Your draft is back</span>
+                  <button type="button" onClick={() => (clearWriter(), dropDraft())} className="font-extrabold text-[#DC2626]">
+                    Discard
+                  </button>
+                </div>
+              )}
+              {closeAsk && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCloseAsk(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[300px] rounded-3xl bg-[#FFFFFF] p-4 text-center shadow-2xl">
+                    <div className="text-[28px]">📝</div>
+                    <div className="mt-1 text-[16px] font-black text-[#1E1B4B]">Keep this as a draft?</div>
+                    <div className="mt-1 text-[12.5px] font-semibold text-[#8A8FB0]">It comes back the next time you write.</div>
+                    <button type="button" onClick={() => (setCloseAsk(false), setComposing(false))} className="mt-3 h-11 w-full rounded-2xl bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-[14.5px] font-black text-white">
+                      Keep draft
+                    </button>
+                    <button type="button" onClick={() => (setCloseAsk(false), clearWriter(), dropDraft(), setComposing(false))} className="mt-2 h-10 w-full rounded-2xl bg-[#FEF2F2] text-[14px] font-extrabold text-[#DC2626]">
+                      Discard
+                    </button>
+                  </div>
+                </div>
+              )}
+              {cplaceOpen && (
+                <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#0B1F3A]/40 sm:items-center sm:p-4" onClick={() => setCplaceOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="flex max-h-[80dvh] w-full max-w-md flex-col rounded-t-[26px] bg-[#FFFFFF] p-4 shadow-2xl sm:rounded-[26px]">
+                    <div className="mb-2.5 flex items-center justify-between">
+                      <span className="text-[17px] font-black text-[#1E1B4B]">📍 Where are you?</span>
+                      <button type="button" onClick={() => setCplaceOpen(false)} aria-label="Close" className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F2F8] text-[13px] font-black text-[#6B6F9A]">✕</button>
+                    </div>
+                    <input
+                      value={cplaceQ}
+                      onChange={(e) => setCplaceQ(e.target.value.slice(0, 60))}
+                      placeholder="🔍 Search a place, city or area…"
+                      className="h-11 rounded-2xl bg-[#F4F6FD] px-3.5 text-[14px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
+                    />
+                    <button
+                      type="button"
+                      disabled={!!cplaceBusy}
+                      onClick={async () => {
+                        setCplaceBusy("Finding you…");
+                        try {
+                          setCplace(await placeHere());
+                          setCplaceOpen(false);
+                          setCplaceQ("");
+                        } catch {
+                          setCplaceBusy("Couldn't find your location — allow location, or pick a place below.");
+                          return;
+                        }
+                        setCplaceBusy("");
+                      }}
+                      className="mt-2.5 flex items-center gap-2.5 rounded-2xl bg-gradient-to-r from-[#EEF4FF] to-[#F3E8FF] px-3.5 py-3 text-left text-[14px] font-extrabold text-[#4F46E5]"
+                    >
+                      <span className="text-[20px]">🎯</span>
+                      <span className="min-w-0 flex-1">{cplaceBusy || "Use my current location"}</span>
+                      <span className="text-[11px] font-bold text-[#8A8FB0]">GPS</span>
+                    </button>
+                    <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+                      {cplaceQ.trim() && !searchPlaces(cplaceQ).some((x) => x.name.toLowerCase() === cplaceQ.trim().toLowerCase()) && (
+                        <button
+                          type="button"
+                          onClick={() => (setCplace({ name: cplaceQ.trim(), sub: "", icon: "📍" }), setCplaceOpen(false), setCplaceQ(""))}
+                          className="flex w-full items-center gap-3 border-b border-[#F0F1F7] px-1 py-2.5 text-left"
+                        >
+                          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FFF1F2] text-[17px]">➕</span>
+                          <span className="text-[14px] font-extrabold text-[#1E1B4B]">Use “{cplaceQ.trim()}”</span>
+                        </button>
+                      )}
+                      {searchPlaces(cplaceQ).map((x) => (
+                        <button
+                          key={x.name + x.sub}
+                          type="button"
+                          onClick={() => (setCplace(x), setCplaceOpen(false), setCplaceQ(""))}
+                          className="flex w-full items-center gap-3 border-b border-[#F0F1F7] px-1 py-2.5 text-left hover:bg-[#FAFAFE]"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FFF1F2] text-[17px]">{x.icon}</span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[14px] font-extrabold text-[#1E1B4B]">{x.name}</span>
+                            <span className="block truncate text-[12px] font-semibold text-[#8A8FB0]">{x.sub}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
               {cprivOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCprivOpen(false)}>
                   <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-[#FFFFFF] p-3 shadow-2xl">
@@ -1013,7 +1266,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               {(cvideo || cvideoBusy) && (
                 <div className="mt-2.5 flex items-center justify-between rounded-xl bg-[#F4F6FD] px-3 py-2 text-[13px] font-bold text-[#1D4ED8]">
                   <span>{cvideoBusy ? "🎬 Uploading video…" : "🎬 Video attached"}</span>
-                  {!cvideoBusy && (
+                  {!cvideoBusy && !cedit && (
                     <button type="button" onClick={() => setCvideo("")} aria-label="Remove video" className="text-[#8494B2]">
                       ✕
                     </button>
@@ -1052,7 +1305,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <button type="button" disabled={cbusy || cphotos.length >= 10} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
                   🖼️
                 </button>
-                {videoOn && (
+                {videoOn && !cedit && (
                   <button type="button" disabled={cbusy || cvideoBusy || !!cvideo} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
                     🎬
                   </button>
@@ -1083,7 +1336,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </button>
                 <button
                   type="button"
-                  onClick={publishInline}
+                  onClick={() => setCplaceOpen(true)}
+                  aria-label="Add a place"
+                  title="Location"
+                  className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#FFF1F2] active:scale-90 ${cplace ? "bg-[#FFE4E6]" : ""}`}
+                >
+                  📍
+                </button>
+                <button
+                  type="button"
+                  onClick={cedit ? saveEdit : publishInline}
                   disabled={cbusy || cvideoBusy || empty}
                   className={`ml-auto h-11 rounded-2xl px-6 text-[15px] font-black transition active:scale-95 ${
                     cbusy || cvideoBusy || empty
@@ -1091,13 +1353,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       : "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_10px_20px_-10px_rgba(236,72,153,.9)]"
                   }`}
                 >
-                  {cbusy ? "Posting…" : "Post ➤"}
+                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Posting…" : "Post ➤"}
                 </button>
               </div>
             </div>
           );
         })()}
-        {!author && (!user || !composing) && !(user && tab === "mine") && (
+        {!author && !placeView && (!user || !composing) && !(user && tab === "mine") && (
           user ? (
             <button
               type="button"
@@ -1116,7 +1378,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         )}
 
         {/* 🧱 My wall (Mine tab): one tidy card — picture, name, my numbers, New post */}
-        {!author && tab === "mine" && user && posts && !composing && (() => {
+        {!author && !placeView && tab === "mine" && user && posts && !composing && (() => {
           const since = Date.now() - 7 * 86400000;
           const wk = posts.filter((p) => p.createdMs >= since);
           const likes = posts.reduce((n, p) => n + p.likes, 0);
@@ -1208,7 +1470,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-5 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -1428,7 +1690,7 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1527,6 +1789,12 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               ) : null)}
           </div>
           <div className={`truncate text-[11px] font-semibold ${plain ? "text-[#7C82A6]" : "text-white/85"}`}>
+            {/* 📍 the place: tap = every post from there */}
+            {p.place && (
+              <button type="button" onClick={(e) => (e.stopPropagation(), onPlace())} className="mr-1 font-extrabold underline-offset-2 hover:underline">
+                📍 {p.place} ·
+              </button>
+            )}
             {role ? `${role} · ` : ""}
             {blogAgoBn(p.createdMs)}
             {p.privacy ? ` · ${blogPrivacyLabel(p.privacy)}` : ""}

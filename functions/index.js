@@ -25823,7 +25823,13 @@ function blogClean(d) {
   // ⚡ a small copy (≈480 px) of the cover for the Feed list; the full photo opens with the post
   const thumb = String(d.thumb || "").trim();
   const thumbOk = thumb && blogImgOk(thumb);
-  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }), ...(thumbOk ? { thumb } : {}) };
+  // 📍 where the writer is ("Cox's Bazar" + "Bangladesh"); sent as "" = no place.
+  // Left out (older apps) = keep the post's place as it is.
+  const loc = d.place === undefined ? {} : {
+    place: String(d.place || "").replace(/\s+/g, " ").trim().slice(0, 60),
+    placeSub: String(d.place ? d.placeSub || "" : "").replace(/\s+/g, " ").trim().slice(0, 80),
+  };
+  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }), ...(thumbOk ? { thumb } : {}), ...loc };
 }
 // 🔔 an alert in the person's migAlerts
 function blogAlert(batch, toUsername, fromUsername, postId, message) {

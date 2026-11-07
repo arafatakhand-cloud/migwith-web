@@ -36,6 +36,9 @@ export type BlogPost = {
   thumb: string;
   /** who can see it: '' = 🌍 Everyone, 'friends' = 👥 Friends, 'me' = 🔒 Only me */
   privacy: "" | "friends" | "me";
+  /** 📍 where the writer was ("" = none) and the line under it */
+  place: string;
+  placeSub: string;
 };
 
 export type BlogComment = {
@@ -119,6 +122,8 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     bg: Number.isInteger(d.bg) && Number(d.bg) >= 0 && Number(d.bg) < 9 ? Number(d.bg) : -1,
     thumb: String(d.thumb || ""),
     privacy: d.privacy === "friends" || d.privacy === "me" ? d.privacy : "",
+    place: String(d.place || ""),
+    placeSub: String(d.placeSub || ""),
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
