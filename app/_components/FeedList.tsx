@@ -57,6 +57,9 @@ function RichText({ text, className }: { text: string; className?: string }) {
     </span>
   );
 }
+// which tab bar look the Feed uses ("underline" = T1, "icons" = T3)
+const TAB_LOOK: "underline" | "icons" = "underline";
+const TAB_ICONS: Record<string, string> = { new: "✨", popular: "🔥", friends: "👥", following: "⭐", mine: "👤" };
 const TABS: [Tab, string][] = [
   ["new", "New"],
   ["popular", "Popular"],
@@ -499,12 +502,38 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {!author && !mineOnly && (
-          <div className="sticky top-0 z-30 mx-3.5 mb-3 mt-2 flex rounded-[22px] bg-[#E7E9F6]/90 p-1.5 backdrop-blur-md">
-            {/* 🫧 one gradient pill that slides under the chosen tab */}
+        {!author && !mineOnly && TAB_LOOK === "underline" && (
+          // T1 · Underline: just the words; a miGlife-colour line slides under the chosen one
+          <div className="sticky top-0 z-30 mb-2 bg-[#F4F4F8]/90 px-2 pt-1 backdrop-blur-md">
+            <div className="relative flex border-b border-[#E3E5F0]">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -bottom-px h-[3px] rounded-full bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] transition-[left,width] duration-300 ease-out"
+                style={ind ? { left: ind.left + 8, width: Math.max(0, ind.width - 16) } : { opacity: 0 }}
+              />
+              {TABS.map(([k, label]) => (
+                <button
+                  key={k}
+                  ref={(el) => {
+                    tabRefs.current[k] = el;
+                  }}
+                  type="button"
+                  onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
+                  className={`relative flex-1 whitespace-nowrap px-1 pb-3 pt-2 text-[14px] font-extrabold transition-colors ${tab === k ? "text-[#1E1B4B]" : "text-[#8A8FB0]"}`}
+                >
+                  {k === "popular" && tab === k ? "🔥 " : ""}
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {!author && !mineOnly && TAB_LOOK === "icons" && (
+          // T3 · Icon tabs: a white card, an icon over each name; the chosen one glows
+          <div className="sticky top-0 z-30 mx-3.5 mb-3 mt-1 grid grid-cols-5 rounded-[22px] bg-[#FFFFFF]/95 p-1.5 shadow-[0_12px_26px_-18px_rgba(60,64,140,.6)] backdrop-blur-md">
             <span
               aria-hidden
-              className="pointer-events-none absolute bottom-1.5 top-1.5 rounded-[18px] bg-white shadow-[0_4px_12px_-4px_rgba(99,102,241,.45)] transition-[left,width] duration-300 ease-out"
+              className="pointer-events-none absolute bottom-1.5 top-1.5 rounded-[16px] bg-gradient-to-br from-[#FFF1E6] to-[#FCE7F3] transition-[left,width] duration-300 ease-out"
               style={ind ? { left: ind.left, width: ind.width } : { opacity: 0 }}
             />
             {TABS.map(([k, label]) => (
@@ -515,12 +544,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 }}
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
-                className={`relative z-10 flex-1 whitespace-nowrap rounded-xl px-1 py-2.5 text-[13px] font-extrabold transition-colors ${
-                  tab === k ? "text-[#4F46E5]" : "text-[#6B6F9A]"
-                }`}
+                className="relative z-10 flex flex-col items-center gap-0.5 rounded-2xl py-1.5"
               >
-                {k === "popular" && tab === k ? "🔥 " : ""}
-                {label}
+                <span className={`text-[19px] leading-none transition ${tab === k ? "scale-110" : "opacity-80 grayscale-[.3]"}`}>{TAB_ICONS[k]}</span>
+                <span className={`whitespace-nowrap text-[11px] font-extrabold ${tab === k ? "text-[#DB2777]" : "text-[#8A8FB0]"}`}>{label}</span>
               </button>
             ))}
           </div>
