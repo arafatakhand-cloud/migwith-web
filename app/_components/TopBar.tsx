@@ -316,6 +316,14 @@ export function TopBar() {
     };
   }, [uid, router]);
 
+  // a new page: is it a chat? (behind a chat the page takes the chat's colour)
+  useEffect(() => {
+    const check = () => document.documentElement.classList.toggle("chat-page", !!document.querySelector(".h-screen-minus-bar"));
+    check();
+    const t = window.setTimeout(check, 400);
+    return () => window.clearTimeout(t);
+  }, [pathname]);
+
   // The height above the on-screen keyboard (iPhone keeps 100dvh the same when
   // the keyboard opens), for chat pages that size themselves to the screen.
   useEffect(() => {
@@ -332,6 +340,8 @@ export function TopBar() {
       const chat = !!document.querySelector(".h-screen-minus-bar");
       const kbOpen = vv.height < window.innerHeight - 80;
       root.classList.toggle("kb-lock", chat && kbOpen);
+      // behind a chat (seen for a moment while the keyboard slides): the chat's colour
+      root.classList.toggle("chat-page", chat);
       if (chat && kbOpen && (window.scrollY !== 0 || vv.offsetTop !== 0)) window.scrollTo(0, 0);
     };
     // iPhone moves the page in steps while the keyboard slides in.
@@ -368,6 +378,7 @@ export function TopBar() {
       window.removeEventListener("focusin", settle);
       window.removeEventListener("focusout", settle);
       root.classList.remove("kb-lock");
+      root.classList.remove("chat-page");
       root.style.removeProperty("--vvh");
       root.style.removeProperty("--vvtop");
     };
