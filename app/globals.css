@@ -103,6 +103,17 @@ html.kb-lock main[data-shell] {
   min-height: 0;
   overflow: hidden;
 }
+/* 🌑 Chat pages (rooms, private chats): while the keyboard slides in or out
+   the chat is shorter than the screen for a moment, and the page's blue sky
+   showed under it. Behind a chat it is now the dark navy of the top bar and
+   the keyboard area (the chat itself covers it the rest of the time). */
+@media (max-width: 639px) {
+  /* (phones only: on a wide screen the sky shows beside the chat on purpose) */
+  html main[data-shell]:has(.h-screen-minus-bar),
+  html[data-theme] main[data-shell]:has(.h-screen-minus-bar) {
+    background: #0B1A33 !important;
+  }
+}
 /* Room above the iPhone home bar. */
 .pb-safe {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
