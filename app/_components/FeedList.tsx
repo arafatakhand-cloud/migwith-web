@@ -429,9 +429,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           <div className="flex items-center justify-between px-4 pb-1 pt-3.5">
             <h1 className="text-[26px] font-black tracking-tight text-[#1E1B4B]">Feed</h1>
             {user && (
-              <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
+              // 👤 my picture opens my "Mine" wall in the Feed (like the app)
+              <button type="button" onClick={() => setTab("mine")} aria-label="My posts" className="rounded-full">
                 <Avatar name={username} color={meColor} size={34} ring />
-              </Link>
+              </button>
             )}
           </div>
         )}
