@@ -26297,3 +26297,51 @@ exports.setFollow = functionsV1.https.onCall(async (data, context) => {
   await ref.set({ follower: me, followee, followerUid: uid, createdAt: FieldValue.serverTimestamp() });
   return { ok: true, following: true };
 });
+
+// ✔ Auto verified: miGlife, staff, admin, country representatives and executive board
+// get the tick automatically. Runs whenever a user's role or MIG ID changes.
+// verifiedAuto = true marks a tick the system gave, so it is taken away when the role goes.
+const AUTO_VERIFY_ROLES = ["staff", "admin", "country_representative", "executive_board"];
+exports.onUserAutoVerify = functionsV1.firestore
+  .document("users/{uid}")
+  .onWrite(async (change) => {
+    const after = change.after;
+    if (!after || !after.exists) return null;
+    const b = change.before && change.before.exists ? change.before.data() || {} : {};
+    const a = after.data() || {};
+    if (String(a.role || "") === String(b.role || "") && String(a.username || "") === String(b.username || "")) return null;
+    const isMiglife = isMainFounderName(normalizeUsername(a.username));
+    const auto = isMiglife || AUTO_VERIFY_ROLES.includes(String(a.role || "").toLowerCase());
+    if (auto && a.verified !== true) {
+      return after.ref.update({ verified: true, verifiedAt: FieldValue.serverTimestamp(), verifiedAuto: true });
+    }
+    if (!auto && a.verifiedAuto === true) {
+      return after.ref.update({ verified: false, verifiedAt: null, verifiedAuto: false });
+    }
+    return null;
+  });
+
+// 🔁 One-time catch-up for existing staff/admin/representatives/board and miGlife (miGlife only).
+exports.syncAutoVerifiedAll = functionsV1.https.onCall(async (data, context) => {
+  const E = functionsV1.https.HttpsError;
+  const uid = requireAuth(context);
+  const meName = String((await db.collection("users").doc(uid).get()).get("username") || "");
+  if (!isMainFounderName(meName)) throw new E("permission-denied", "Only miGlife can run this.");
+  const stamp = { verified: true, verifiedAt: FieldValue.serverTimestamp(), verifiedAuto: true };
+  let count = 0;
+  for (const role of AUTO_VERIFY_ROLES) {
+    const snap = await db.collection("users").where("role", "==", role).get();
+    for (const d of snap.docs) {
+      if (d.get("verified") !== true) {
+        await d.ref.update(stamp);
+        count += 1;
+      }
+    }
+  }
+  const mig = await findUserDocByUsername("miglife");
+  if (mig && mig.get("verified") !== true) {
+    await mig.ref.update(stamp);
+    count += 1;
+  }
+  return { ok: true, count };
+});

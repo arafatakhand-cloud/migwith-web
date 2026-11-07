@@ -13,6 +13,7 @@ const setVerified = httpsCallable<{ username: string; verified: boolean }, { ok:
   functions,
   "setVerified"
 );
+const syncAutoVerifiedAll = httpsCallable<Record<string, never>, { ok: boolean; count: number }>(functions, "syncAutoVerifiedAll");
 
 export default function VerifiedPage() {
   const f = useFounderPerms();
@@ -20,6 +21,22 @@ export default function VerifiedPage() {
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
+
+  const catchUp = async () => {
+    if (busy) return;
+    if (!window.confirm("Give the ✔ tick to all staff, admin, country representatives, executive board and miGlife who do not have it yet?")) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const r = await syncAutoVerifiedAll({});
+      setMsg({ text: `✅ Done. ${r.data.count} member${r.data.count === 1 ? "" : "s"} got the tick.`, error: false });
+    } catch (e) {
+      const text = e instanceof Error ? e.message : "";
+      setMsg({ text: text && !text.startsWith("internal") ? text : "Could not run the catch-up. Please try again.", error: true });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const change = async (on: boolean) => {
     const name = username.trim().replace(/^@/, "");
@@ -66,6 +83,15 @@ export default function VerifiedPage() {
             className="flex-1 rounded-xl bg-[#B91C1C] py-3 text-sm font-bold text-white disabled:opacity-50"
           >
             Remove
+          </button>
+        </div>
+
+        <div className="space-y-2 rounded-xl bg-[#EEF3FB] p-3">
+          <p className="text-xs text-[#5B6B8C]">
+            Staff, admin, country representatives and executive board get the tick automatically. Press once to give it to people who already hold these roles.
+          </p>
+          <button type="button" onClick={catchUp} disabled={busy} className="w-full rounded-xl bg-[#1D9BF0] py-2.5 text-sm font-bold text-white disabled:opacity-50">
+            ✔ Auto-verify all roles
           </button>
         </div>
 
