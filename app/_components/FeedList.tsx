@@ -499,9 +499,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {/* 📸 stories sit right under the Feed title */}
-        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
-
         {!author && !mineOnly && (
           <div className="sticky top-0 z-30 mx-3.5 mb-3 mt-2 flex rounded-[22px] bg-[#E7E9F6]/90 p-1.5 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
@@ -528,6 +525,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             ))}
           </div>
         )}
+
+        {/* 📸 stories, under the tabs */}
+        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
 
         {false && !author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
