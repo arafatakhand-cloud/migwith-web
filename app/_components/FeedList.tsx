@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
+import { setFollowing, useFollowing } from "../../lib/follow";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
@@ -31,7 +32,7 @@ import {
 // posts with ?author=name, from their profile). Anyone can read; writing needs
 // a login. Read once per tab (no live listener), pull the tab again to refresh.
 
-type Tab = "popular" | "new" | "friends" | "mine" | "saved";
+type Tab = "popular" | "new" | "friends" | "following" | "mine" | "saved";
 
 // 🎨 each category's colour: the card's corner glows in it
 const CAT_TINT: Record<string, string> = {
@@ -61,6 +62,7 @@ const TABS: [Tab, string][] = [
   ["new", "New"],
   ["popular", "Popular"],
   ["friends", "Friends"],
+  ["following", "Following"],
   ["mine", "Mine"],
   ["saved", "🔖 Saved"],
 ];
@@ -154,6 +156,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
   }, [tab]);
   const friendsKey = friends.join(",");
+  const followed = useFollowing(username);
+  const followedKey = followed.join(",");
+  const toggleFollow = async (name: string) => {
+    try {
+      await setFollowing(name, !followed.includes(name));
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Could not change follow. Please try again.");
+    }
+  };
 
   // 🔔 "৩টি নতুন post": every 90 s, while the page is open on Popular / New
   // ✍️ the composer opens right here in the feed (Facebook style), no new page
@@ -297,6 +308,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         if (!user) return [];
         return map(await getDocs(query(col, where("authorUid", "==", user.uid), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
       }
+      if (tab === "following") {
+        const names = followedKey ? followedKey.split(",") : [];
+        const out: BlogPost[] = [];
+        for (let i = 0; i < names.length && i < 100; i += 10) {
+          out.push(...map(await getDocs(query(col, where("author", "in", names.slice(i, i + 10)), limit(30)))));
+        }
+        return out.sort((a, b) => b.createdMs - a.createdMs).slice(0, 60);
+      }
       // friends: 10 names per query (Firestore "in" limit)
       const names = friendsKey ? friendsKey.split(",") : [];
       const out: BlogPost[] = [];
@@ -311,7 +330,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     return () => {
       alive = false;
     };
-  }, [tab, author, user, friendsKey, reload]);
+  }, [tab, author, user, friendsKey, followedKey, reload]);
 
   // my likes for the posts on screen
   const ids = (posts || []).map((p) => p.id).join(",");
@@ -772,14 +791,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   ? user
                     ? "Your friends haven't written anything yet."
                     : "Log in to see your friends' posts."
-                  : "No posts here yet."}
+                  : tab === "following" && !author
+                    ? user
+                      ? "Follow members to see their posts here."
+                      : "Log in to see the people you follow."
+                    : "No posts here yet."}
             </p>
             {user && !author && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
           <div className="space-y-3 px-3.5">
             {posts.filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={friends.includes(p.author) ? "👥 Friend" : p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo posts in this tab yet.</p>
@@ -967,7 +990,7 @@ function Avatar({ name, color, size, ring = false }: { name: string; color: stri
 
 /** One post as a soft white card: photo-ring, name · time · 👁, category chip,
  *  title, text, the photo, then ❤️ · 💬 · ↗ Share buttons (❤️ likes right here). */
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {} }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void }) {
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -1009,6 +1032,18 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
             ) : roleBadge ? (
               <span className="shrink-0 text-[13px] leading-none" title="Role badge">{roleBadge}</span>
             ) : null}
+            {canFollow && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFollow();
+                }}
+                className={`ml-1 shrink-0 rounded-full px-2.5 py-0.5 text-[11.5px] font-extrabold ${following ? "bg-[#EEF2F8] text-[#4B5575]" : "bg-gradient-to-r from-[#38BDF8] to-[#A855F7] text-white"}`}
+              >
+                {following ? "Following" : "+ Follow"}
+              </button>
+            )}
           </div>
           <div className="text-[11.5px] text-[#7A7FA6]">
             {blogAgoBn(p.createdMs)} · 👁 {blogShort(p.views)}

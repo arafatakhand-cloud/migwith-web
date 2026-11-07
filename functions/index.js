@@ -26276,3 +26276,24 @@ exports.onSupportMailReceived = functionsV1.firestore
     await mailUser(fromName, uid, SUPPORT_AUTOREPLY_SUBJECT, SUPPORT_AUTOREPLY_BODY);
     return null;
   });
+
+// 👥 Follow / unfollow a member (one-way, no approval). Only the server writes follows.
+exports.setFollow = functionsV1.https.onCall(async (data, context) => {
+  const E = functionsV1.https.HttpsError;
+  const uid = requireAuth(context);
+  const me = String((await db.collection("users").doc(uid).get()).get("username") || "").trim();
+  if (!me) throw new E("failed-precondition", "Set your MIG ID first.");
+  const target = String(data?.username || "").trim().replace(/^@/, "");
+  if (!target) throw new E("invalid-argument", "Who do you want to follow?");
+  if (target.toLowerCase() === me.toLowerCase()) throw new E("invalid-argument", "You cannot follow yourself.");
+  const userDoc = await findUserDocByUsername(target);
+  if (!userDoc) throw new E("not-found", "That user was not found.");
+  const followee = String(userDoc.get("username") || target);
+  const ref = db.collection("follows").doc(`${me.toLowerCase()}__${followee.toLowerCase()}`);
+  if (data?.follow === false) {
+    await ref.delete();
+    return { ok: true, following: false };
+  }
+  await ref.set({ follower: me, followee, followerUid: uid, createdAt: FieldValue.serverTimestamp() });
+  return { ok: true, following: true };
+});

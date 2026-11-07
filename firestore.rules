@@ -2474,6 +2474,12 @@ service cloud.firestore {
     //
     // =========================================================
 
+    // 👥 Follow list: signed-in users can read (counts, Following tab); only the server writes
+    match /follows/{followId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /emails/{emailId} {
 
       allow read: if signedIn()
