@@ -1621,3 +1621,17 @@ html {
 }
 .feed-fly { animation: feed-fly .9s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .feed-fly { animation: none; opacity: 0; } }
+
+/* 🌙 Dark Night: the Luxury Bet lines and bet box were light-on-light (pale
+   bubble, light text; see-through white glass box over the dark page with
+   dark letters). The bubble turns dark like the other dark lines, and a glass
+   bet box gets a solid light face so its dark letters read again. */
+html[data-theme="dark_night"] .lb-bubble {
+  background: #16233B !important;
+  border: 1px solid #22355A;
+}
+html[data-theme="dark_night"] .lb-glass {
+  background: linear-gradient(180deg, #EAF2FC, #D6E4F5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
