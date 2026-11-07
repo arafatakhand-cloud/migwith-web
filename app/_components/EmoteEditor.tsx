@@ -11,7 +11,9 @@ export type EmoteEditorHandle = {
   blur: () => void;
   focus: () => void;
   getCaret: () => number;
-  setCaret: (pos: number) => void;
+  /** focus = false: only remember the spot (the emote panel is open, the
+   *  phone keyboard must stay away) */
+  setCaret: (pos: number, focus?: boolean) => void;
 };
 
 type Props = {
@@ -108,9 +110,9 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
     blur: () => box.current?.blur(),
     focus: () => box.current?.focus(),
     getCaret: () => (box.current ? caretOffset(box.current) : 0),
-    setCaret: (pos: number) => {
+    setCaret: (pos: number, focus = true) => {
       const el = box.current;
-      if (!el) return;
+      if (!el || !focus) return;
       el.focus();
       setCaretAt(el, pos);
     },

@@ -36,6 +36,20 @@ export function EmojiPicker({
   const [tab, setTab] = useState<"emoji" | "stickers">("emoji");
   const boxRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  // where the next emote goes while the docked panel is open (the text box is
+  // not focused then, so it has no caret of its own)
+  const caretRef = useRef<number | null>(null);
+
+  // ⌨️ one at a time, like the app: tapping the text box (the phone keyboard
+  // comes up) closes the emote panel
+  useEffect(() => {
+    if (!open || !dockTo) return;
+    const el = inputRef.current?.el();
+    if (!el) return;
+    const onFocus = () => setOpen(false);
+    el.addEventListener("focus", onFocus);
+    return () => el.removeEventListener("focus", onFocus);
+  }, [open, dockTo, inputRef]);
 
   // Close when tapping anywhere else (the text box too: the keyboard takes its place).
   // On "click", not "pointerdown": closing on the press moved the chat bar down
@@ -55,13 +69,19 @@ export function EmojiPicker({
   // Like the app: the code goes in with a space after it, at the cursor.
   const insert = (code: string) => {
     const el = inputRef.current;
-    const start = el?.getCaret() ?? value.length;
+    const docked = !!dockTo;
+    const start = Math.min(value.length, docked ? (caretRef.current ?? value.length) : (el?.getCaret() ?? value.length));
     const end = start;
     const before = value.slice(0, start);
     const piece = (before && !/\s$/.test(before) ? " " : "") + code + " ";
     const next = (before + piece + value.slice(end)).slice(0, 1000);
     onChange(next);
     const caret = Math.min(start + piece.length, next.length);
+    if (docked) {
+      // the keyboard stays away: just remember the spot for the next emote
+      caretRef.current = caret;
+      return;
+    }
     requestAnimationFrame(() => {
       el?.setCaret(caret);
     });
@@ -95,11 +115,18 @@ export function EmojiPicker({
           if (open) {
             // ⌨️ like the app: emotes away, the keyboard comes back.
             setOpen(false);
-            inputRef.current?.focus();
+            // the caret goes back where the emotes were being added
+            const pos = caretRef.current ?? value.length;
+            requestAnimationFrame(() => inputRef.current?.setCaret(pos));
             return;
           }
           // Docked like the app: the phone keyboard goes away while the emotes show.
-          if (dockTo) inputRef.current?.blur();
+          if (dockTo) {
+            const el = inputRef.current;
+            const box = el?.el();
+            caretRef.current = box && document.activeElement === box ? el!.getCaret() : value.length;
+            el?.blur();
+          }
           setOpen(true);
         }}
         disabled={disabled}
