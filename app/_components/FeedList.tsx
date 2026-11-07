@@ -174,6 +174,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       .catch(() => setVideoOn(true));
   }, []);
   const [cmoodOpen, setCmoodOpen] = useState(false);
+  // @ mention: while you type "@ab", suggest your friends whose name starts with it
+  const mentionMatch = ctext.match(/@([A-Za-z0-9_.\-]{0,20})$/);
+  const mentionSuggest = mentionMatch
+    ? friends.filter((f) => f.toLowerCase().startsWith(mentionMatch[1].toLowerCase()) && f.toLowerCase() !== mentionMatch[1].toLowerCase()).slice(0, 6)
+    : [];
+  const pickMention = (name: string) => setCtext((t) => t.replace(/@[A-Za-z0-9_.\-]{0,20}$/, `@${name} `));
   const [ccatOpen, setCcatOpen] = useState(false);
   const cvideoRef = useRef<HTMLInputElement>(null);
   const cfileRef = useRef<HTMLInputElement>(null);
@@ -505,6 +511,21 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 }
               }}
             />
+            {mentionSuggest.length > 0 && (
+              <div className="mb-1 flex flex-wrap gap-1.5">
+                {mentionSuggest.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => pickMention(f)}
+                    className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#EEF4FF] to-[#F3E8FF] px-3 py-1.5 text-[13px] font-extrabold text-[#2563EB] shadow-sm ring-1 ring-[#DCE6FF] transition hover:scale-[1.03]"
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#A855F7] text-[10px] text-white">@</span>
+                    {f}
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               autoFocus
               value={ctext}
@@ -569,20 +590,24 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     <span className="text-[17px]">😊</span>Mood
                   </button>
                   {cmoodOpen && (
-                    <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
-                      {[["😊", "Happy"], ["😍", "Loved"], ["😢", "Sad"], ["🤩", "Excited"], ["😴", "Tired"], ["🙏", "Thankful"]].map(([e, l]) => (
-                        <button
-                          key={l}
-                          type="button"
-                          onClick={() => {
-                            setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
-                            setCmoodOpen(false);
-                          }}
-                          className="block w-full rounded-xl px-3 py-2 text-left text-[13.5px] font-semibold text-[#1E1B4B] hover:bg-[#F4F6FD]"
-                        >
-                          {e}&nbsp; {l}
-                        </button>
-                      ))}
+                    <div className="absolute bottom-full right-0 z-20 mb-2 w-[232px] rounded-2xl border border-[#E5EAF5] bg-white/95 p-2 shadow-xl backdrop-blur">
+                      <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
+                          <button
+                            key={l}
+                            type="button"
+                            onClick={() => {
+                              setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
+                              setCmoodOpen(false);
+                            }}
+                            className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2 text-[11.5px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.05] active:scale-95`}
+                          >
+                            <span className="text-[20px] leading-none">{e}</span>
+                            {l}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -599,7 +624,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
                   </button>
                   {ccatOpen && (
-                    <div className="absolute bottom-full right-0 z-20 mb-2 w-44 rounded-2xl border border-[#E5EAF5] bg-white p-1.5 shadow-xl">
+                    <div className="absolute bottom-full right-0 z-20 mb-2 w-[232px] rounded-2xl border border-[#E5EAF5] bg-white/95 p-2 shadow-xl backdrop-blur">
+                      <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">Pick a topic</div>
+                      <div className="grid grid-cols-2 gap-1.5">
                       {BLOG_CATEGORIES.map(([k, label]) => (
                         <button
                           key={k}
@@ -608,11 +635,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                             setCcat(k);
                             setCcatOpen(false);
                           }}
-                          className={`block w-full rounded-xl px-3 py-2 text-left text-[13.5px] font-semibold ${ccat === k ? "bg-[#EEF4FF] text-[#1D4ED8]" : "text-[#1E1B4B] hover:bg-[#F4F6FD]"}`}
+                          className={`rounded-full px-3 py-1.5 text-left text-[12.5px] font-bold transition hover:scale-[1.03] ${ccat === k ? "bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-white shadow" : "bg-[#F4F6FD] text-[#1E1B4B] hover:bg-[#EEF4FF]"}`}
                         >
                           {label}
                         </button>
                       ))}
+                      </div>
                     </div>
                   )}
                 </div>
