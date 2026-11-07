@@ -111,7 +111,7 @@ export function StoryRow({
   const ring = (name: string, extra: React.ReactNode, onClick: () => void) => (
     <button key={name} type="button" onClick={onClick} className="story-item flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
       <span className="story-ring flex h-[62px] w-[62px] items-center justify-center rounded-full p-[2.5px]">
-        <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-white text-[18px] font-black text-white" style={{ background: colorOf(name) || "#6366F1" }}>
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-[18px] font-black text-[#6366F1]">
           {extra}
         </span>
       </span>
