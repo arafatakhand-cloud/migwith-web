@@ -426,8 +426,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             <PageTitle title={`${author}'s Feed`} subtitle="Every post by this writer" icon="📰" backHref={`/profile/${encodeURIComponent(author)}`} />
           </div>
         ) : (
-          <div className="flex items-center justify-between px-4 pb-1 pt-3.5">
-            <h1 className="bg-gradient-to-r from-[#0EA5E9] via-[#6366F1] to-[#A855F7] bg-clip-text text-[26px] font-black tracking-tight text-transparent">Feed</h1>
+          // 🎨 design A: gradient header band
+          <div className="-mx-0 mb-1 flex items-center justify-between rounded-b-[28px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-5 pb-4 pt-4 shadow-[0_14px_30px_-12px_rgba(99,102,241,.6)]">
+            <h1 className="text-[26px] font-black tracking-tight text-white">Feed</h1>
             {user && (
               <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
                 <Avatar name={username} color={meColor} size={34} ring />
