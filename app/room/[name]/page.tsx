@@ -1742,7 +1742,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               const toText = sent.slice(0, 5).join(", ") + (others > 0 ? ` and ${others} other` : "");
               // (an older server didn't write the line — post it here, as before)
               if (data?.roomLinePosted !== true) addDoc(collection(db, "room_messages", roomName, "messages"), {
-                text: `<<🎁*GIFT SHOWER* ${profile.username}[${profile.level}] gives a ${shownGift} ${icon} to ${toText}! Hurray!>>${suffix}`,
+                text: `<<💝*GIFT SHOWER* ${profile.username}[${profile.level}] gives a ${shownGift} ${icon} to ${toText}! Hurray!>>${suffix}`,
                 sender: profile.username,
                 senderUid: user.uid,
                 type: "gift",
@@ -3356,9 +3356,16 @@ function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
 // swapped for its uploaded picture when there is one. The "<< … >>" around it
 // stays, like the app.
 function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number): ReactNode[] {
-  const clean = text;
   const out: ReactNode[] = [];
   let k = 0;
+  // 💝 every Gift Shower starts with the same 💝 (older lines say 🎁 — and when the
+  // gift's own icon was 🎁 that turned into the gift's picture, so the lines looked different)
+  let clean = text;
+  const shower = /^<<(?:🎁|💝)\*GIFT SHOWER\*/.exec(clean);
+  if (shower) {
+    out.push(<span key="gs<">{"<<"}</span>, <span key="gs-icon" className="mx-0.5">💝</span>);
+    clean = clean.slice(shower[0].length - "*GIFT SHOWER*".length);
+  }
   const pushSegment = (seg: string) => {
     if (giftIcon && giftImage && seg.includes(giftIcon)) {
       seg.split(giftIcon).forEach((piece, i) => {

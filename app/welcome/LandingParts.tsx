@@ -113,7 +113,7 @@ const SCENES: { id: string; label: string; room: string; lines: Line[] }[] = [
     lines: [
       { k: "msg", who: "sumon", color: "#3DDC84", text: "happy birthday nila 🎂" },
       { k: "gift", text: "🎁 sumon[31] gives a Rose 🌹 to nila! Hurray!" },
-      { k: "gift", text: "🎁 *GIFT SHOWER* rafi[24] gives a Cake 🎂 to nila, sumon and 4 other! Hurray!" },
+      { k: "gift", text: "💝 *GIFT SHOWER* rafi[24] gives a Cake 🎂 to nila, sumon and 4 other! Hurray!" },
       { k: "msg", who: "nila", color: "#FF6B8A", text: "thank you all 🥹💖" },
     ],
   },

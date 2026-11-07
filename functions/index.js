@@ -10245,7 +10245,7 @@ exports.sendGiftShower = functionsV1.runWith({ minInstances: 1 }).https.onCall(a
       const toText = names.slice(0, 5).join(", ") + (others > 0 ? ` and ${others} other` : "");
       const suffix = giftMessage ? ` — "${giftMessage}"` : "";
       tx.set(showerLineRef, {
-        text: `<<🎁*GIFT SHOWER* ${senderUsername}[${giftUserLevel(freshSenderSnap.data())}] gives a ${resolvedGiftName} ${giftIcon} to ${toText}! Hurray!>>${suffix}`,
+        text: `<<💝*GIFT SHOWER* ${senderUsername}[${giftUserLevel(freshSenderSnap.data())}] gives a ${resolvedGiftName} ${giftIcon} to ${toText}! Hurray!>>${suffix}`,
         sender: senderUsername,
         senderUid,
         type: "gift",
