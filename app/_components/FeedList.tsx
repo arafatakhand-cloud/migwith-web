@@ -590,7 +590,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     <span className="text-[17px]">😊</span>Mood
                   </button>
                   {cmoodOpen && (
-                    <div className="absolute bottom-full right-0 z-20 mb-2 w-[232px] rounded-2xl border border-[#E5EAF5] bg-white/95 p-2 shadow-xl backdrop-blur">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCmoodOpen(false)}>
+                    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-white p-3 shadow-2xl">
                       <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</div>
                       <div className="grid grid-cols-3 gap-1.5">
                         {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
@@ -609,6 +610,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                         ))}
                       </div>
                     </div>
+                    </div>
                   )}
                 </div>
                 <div className="relative">
@@ -624,7 +626,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"}
                   </button>
                   {ccatOpen && (
-                    <div className="absolute bottom-full right-0 z-20 mb-2 w-[232px] rounded-2xl border border-[#E5EAF5] bg-white/95 p-2 shadow-xl backdrop-blur">
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCcatOpen(false)}>
+                    <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-white p-3 shadow-2xl">
                       <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">Pick a topic</div>
                       <div className="grid grid-cols-2 gap-1.5">
                       {BLOG_CATEGORIES.map(([k, label]) => (
@@ -641,6 +644,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                         </button>
                       ))}
                       </div>
+                    </div>
                     </div>
                   )}
                 </div>
