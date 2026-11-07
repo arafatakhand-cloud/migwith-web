@@ -228,6 +228,7 @@ export default function SecretPage() {
           { icon: "🎁", label: "Gift Contest", hint: "Prize, rules, room and time", tint: "#E12A2A", href: "/gift-contest", ok: f.can("gift_contest") },
           { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
           { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },
+          { icon: "🎬", label: "Feed Video", hint: "Video posts ON / OFF", tint: "#6366F1", href: "/secret/video", ok: f.isMigwith },
           { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.isMigwith },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
