@@ -1,36 +1,39 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
-import { db, functions } from "./firebase";
+import { arrayRemove, arrayUnion, doc, getDoc, onSnapshot, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
-// 👥 One-way follow. The server (setFollow) writes follows/<follower>__<followee>;
-// anyone signed in can read them, so counts and the Following tab work.
-const setFollowFn = httpsCallable<{ username: string; follow: boolean }, { ok: boolean; following: boolean }>(functions, "setFollow");
+// 👥 Follow uses the same list as the profile page and the app: users/{uid}.following
+// (an array of usernames). One follow system for web and Android.
 
-/** Names this user follows (live). */
-export function useFollowing(username: string): string[] {
+/** The usernames I follow (live). */
+export function useFollowing(uid: string | undefined): string[] {
   const [names, setNames] = useState<string[]>([]);
   useEffect(() => {
-    if (!username) {
+    if (!uid) {
       setNames([]);
       return;
     }
     return onSnapshot(
-      query(collection(db, "follows"), where("follower", "==", username)),
-      (snap) => setNames(snap.docs.map((d) => String(d.get("followee") || "")).filter(Boolean)),
+      doc(db, "users", uid),
+      (snap) => {
+        const list = snap.get("following") as unknown[] | undefined;
+        setNames(Array.isArray(list) ? list.filter((v): v is string => typeof v === "string") : []);
+      },
       () => setNames([])
     );
-  }, [username]);
+  }, [uid]);
   return names;
 }
 
-/** How many members follow this one. */
-export async function followerCount(username: string): Promise<number> {
-  const snap = await getDocs(query(collection(db, "follows"), where("followee", "==", username)));
-  return snap.size;
-}
-
-export async function setFollowing(username: string, follow: boolean): Promise<boolean> {
-  const r = await setFollowFn({ username, follow });
-  return r.data.following;
+/** Follow or unfollow one username. Changes only that name, like the profile page. */
+export async function setFollowing(uid: string, username: string, follow: boolean): Promise<void> {
+  const ref = doc(db, "users", uid);
+  const snap = await getDoc(ref);
+  const current = ((snap.get("following") as unknown[]) || []).filter((v): v is string => typeof v === "string");
+  const matches = current.filter((n) => n.trim().toLowerCase() === username.trim().toLowerCase());
+  if (follow) {
+    if (matches.length === 0) await updateDoc(ref, { following: arrayUnion(username) });
+  } else if (matches.length > 0) {
+    await updateDoc(ref, { following: arrayRemove(...matches) });
+  }
 }

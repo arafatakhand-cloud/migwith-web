@@ -156,11 +156,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (el) setInd({ left: el.offsetLeft, width: el.offsetWidth });
   }, [tab]);
   const friendsKey = friends.join(",");
-  const followed = useFollowing(username);
+  const followed = useFollowing(user?.uid);
   const followedKey = followed.join(",");
   const toggleFollow = async (name: string) => {
     try {
-      await setFollowing(name, !followed.includes(name));
+      if (!user) return;
+      await setFollowing(user.uid, name, !followed.includes(name));
     } catch (e) {
       window.alert(e instanceof Error ? e.message : "Could not change follow. Please try again.");
     }
