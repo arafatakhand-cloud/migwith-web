@@ -23,7 +23,6 @@ import {
   BLOG_CATEGORIES,
   blogCategoryLabel,
   blogShort,
-  toBnDigits,
   toBlogPost,
   type BlogPost,
 } from "../../lib/feed";
@@ -541,7 +540,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* ✍️ "What's on your mind?" — opens the writer */}
         {!author && user && composing && (
-          <div className="mx-3.5 my-2.5 rounded-[22px] border border-[#6366F1]/15 bg-white p-3.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
+          <div className="mx-3.5 mb-4 mt-1 rounded-[24px] bg-[#FFFFFF] p-3.5 shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)]">
             <div className="flex items-center gap-2.5">
               <Avatar name={username} color={meColor} size={38} ring />
               <div className="min-w-0 flex-1">
@@ -727,7 +726,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             </button>
           </div>
         )}
-        {!author && (!user || !composing) && (
+        {!author && (!user || !composing) && !(user && tab === "mine") && (
           user ? (
             <button
               type="button"
@@ -746,61 +745,53 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           )
         )}
 
-        {/* 🧱 My wall (Mine tab): cover, my picture, my numbers, and the two buttons */}
-        {!author && tab === "mine" && user && posts && (
-          <section className="mx-3.5 mb-2 mt-2 overflow-hidden rounded-[22px] bg-white shadow-[inset_0_2px_0_#fff,0_3px_0_#C9D8EA,0_6px_0_#B7C9E0]">
-            <div className="h-[84px] bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7]" />
-            <div className="px-4 pb-4">
-              <div className="-mt-9 inline-block rounded-full bg-gradient-to-br from-[#2F6FD6] to-[#8B5CFF] p-[3px]">
-                <div className="rounded-full bg-white p-0.5">
-                  <Avatar name={username} color={meColor} size={68} />
-                </div>
-              </div>
-              <div className="mt-1.5 text-[18px] font-black text-[#1E1B4B]">{username}</div>
-              {/* 🗓 this week's recap, from my own posts (last 7 days) */}
-              {(() => {
-                const since = Date.now() - 7 * 86400000;
-                const wk = posts.filter((p) => p.createdMs >= since);
-                const r = wk.reduce((n, p) => n + p.likes, 0);
-                const v = wk.reduce((n, p) => n + p.views, 0);
-                return (
-                  <div className="mt-2 rounded-2xl bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-3.5 py-2.5 text-white">
-                    <div className="text-[11px] font-extrabold uppercase tracking-wider opacity-85">This week</div>
-                    <div className="text-[14px] font-bold">
-                      {wk.length} {wk.length === 1 ? "post" : "posts"} · {blogShort(r)} reactions · {blogShort(v)} views
-                    </div>
+        {/* 🧱 My wall (Mine tab): one tidy card — picture, name, my numbers, New post */}
+        {!author && tab === "mine" && user && posts && !composing && (() => {
+          const since = Date.now() - 7 * 86400000;
+          const wk = posts.filter((p) => p.createdMs >= since);
+          const likes = posts.reduce((n, p) => n + p.likes, 0);
+          const views = posts.reduce((n, p) => n + p.views, 0);
+          return (
+            <section className="mx-3.5 mb-5 mt-1 overflow-hidden rounded-[28px] bg-[#FFFFFF] shadow-[0_18px_34px_-20px_rgba(60,64,140,.55)]">
+              <div className="relative flex items-center gap-3 bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] px-4 py-4 text-white">
+                <span aria-hidden className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-white/15" />
+                <span className="shrink-0 rounded-full bg-white/90 p-[3px]">
+                  <Avatar name={username} color={meColor} size={58} />
+                </span>
+                <div className="relative min-w-0 flex-1">
+                  <div className="truncate text-[19px] font-black leading-tight drop-shadow">{username}</div>
+                  <div className="mt-1 inline-flex max-w-full truncate whitespace-nowrap rounded-full bg-white/20 px-2.5 py-0.5 text-[11.5px] font-bold backdrop-blur-sm">
+                    📅 This week: {wk.length} {wk.length === 1 ? "post" : "posts"}
                   </div>
-                );
-              })()}
-              <div className="mt-2 grid grid-cols-3 rounded-2xl bg-[#F4F6FD] py-2 text-center">
-                <div>
-                  <b className="block text-[15px] text-[#1E1B4B]">{toBnDigits(posts.length)}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">Posts</small>
                 </div>
-                <div>
-                  <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.likes, 0))}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">❤️ Likes</small>
-                </div>
-                <div>
-                  <b className="block text-[15px] text-[#1E1B4B]">{blogShort(posts.reduce((n, p) => n + p.views, 0))}</b>
-                  <small className="text-[10.5px] text-[#7A7FA6]">👁 Views</small>
-                </div>
-              </div>
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setComposing(true)}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-[#2F6FD6] to-[#8B5CFF] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(139,92,255,.7)]"
-                >
-                  ✍️ New post
-                </button>
-                <Link href={`/profile/${encodeURIComponent(username)}`} className="flex-1 rounded-xl bg-[#F1EFFF] py-2 text-center text-[13px] font-extrabold text-[#4F46E5]">
+                <Link href={`/profile/${encodeURIComponent(username)}`} className="relative shrink-0 rounded-full bg-white/20 px-3 py-1.5 text-[12px] font-extrabold backdrop-blur-sm transition active:scale-95">
                   ✏️ Profile
                 </Link>
               </div>
-            </div>
-          </section>
-        )}
+              <div className="grid grid-cols-3 divide-x divide-[#ECEDF5] py-3 text-center">
+                {([
+                  [blogShort(posts.length), "Posts"],
+                  [blogShort(likes), "Likes"],
+                  [blogShort(views), "Views"],
+                ] as const).map(([n, label]) => (
+                  <div key={label}>
+                    <div className="text-[18px] font-black text-[#1E1B4B]">{n}</div>
+                    <div className="text-[11.5px] font-semibold text-[#8A8FB0]">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="px-4 pb-4">
+                <button
+                  type="button"
+                  onClick={() => setComposing(true)}
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] text-[14px] font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(99,102,241,.8)] transition active:scale-[.98]"
+                >
+                  ✍️ New post
+                </button>
+              </div>
+            </section>
+          );
+        })()}
         {error && <p className="mx-3.5 mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
 
         {fresh > 0 && (
