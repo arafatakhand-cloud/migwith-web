@@ -19,6 +19,8 @@ import { PageTitle } from "./LightCards";
 import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgoBn,
+  blogPrivacyLabel,
+  BLOG_PRIVACY,
   blogCall,
   blogError,
   BLOG_CATEGORIES,
@@ -252,6 +254,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     : [];
   const pickMention = (name: string) => setCtext((t) => t.replace(/@[A-Za-z0-9_.\-]{0,20}$/, `@${name} `));
   const [ccatOpen, setCcatOpen] = useState(false);
+  // 🔒 who can see the new post: '' = 🌍 Everyone, 'friends', 'me'
+  const [cpriv, setCpriv] = useState<"" | "friends" | "me">("");
+  const [cprivOpen, setCprivOpen] = useState(false);
   const cvideoRef = useRef<HTMLInputElement>(null);
   const cfileRef = useRef<HTMLInputElement>(null);
   const ctextRef = useRef<HTMLTextAreaElement>(null);
@@ -299,7 +304,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me" }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -311,7 +316,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -321,6 +326,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCphotos(p.photos);
       setCvideo(p.video);
       setCcat(p.category);
+      setCpriv(p.privacy);
       cbgKeep.current = p.bg;
       setComposing(true);
       setCerr(blogError(e));
@@ -331,7 +337,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv };
     setCtext("");
     setCphotos([]);
     setCvideo("");
@@ -352,6 +358,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCphotos(payload.photos);
         setCvideo(payload.video);
         setCcat(payload.category);
+        setCpriv(payload.privacy);
         cbgKeep.current = payload.bg;
         setComposing(true);
         setToast("Post taken back");
@@ -437,7 +444,26 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       }
       return out.sort((a, b) => b.createdMs - a.createdMs).slice(0, 60);
     };
+    // 🔒 the 👥 Friends / 🔒 Only me posts I may see come from the server and join the list
+    const withPrivate = async (p: BlogPost[]): Promise<BlogPost[]> => {
+      if (!user || !(author || tab === "new" || tab === "friends" || tab === "mine")) return p;
+      try {
+        const r = await blogCall("privateFeed", { scope: tab === "mine" && !author ? "mine" : "all", author: author || "" });
+        let extra = (Array.isArray(r.posts) ? (r.posts as Record<string, unknown>[]) : []).map((x) => toBlogPost(String(x.id), x));
+        if (tab === "friends" && !author) extra = extra.filter((x) => x.authorUid !== user.uid);
+        // New: only the ones that belong among the posts loaded so far
+        if (tab === "new" && !author && p.length >= FEED_PAGE) {
+          const oldest = p[p.length - 1]?.createdMs || 0;
+          extra = extra.filter((x) => x.createdMs >= oldest);
+        }
+        const have = new Set(p.map((x) => x.id));
+        return [...p, ...extra.filter((x) => !have.has(x.id))].sort((a, b) => b.createdMs - a.createdMs);
+      } catch {
+        return p; // an older server: Everyone posts only
+      }
+    };
     load()
+      .then(withPrivate)
       .then((p) => {
         if (!alive) return;
         setPosts(p);
@@ -491,11 +517,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
   // my reactions for the posts on screen — one call (an older server: one read per post)
   const ids = (shown || []).map((p) => p.id).join(",");
+  const privIds = (shown || []).filter((p) => p.privacy).map((p) => p.id).join(",");
   useEffect(() => {
     if (!user || !ids) return setLiked(new Set());
     let alive = true;
     const list = ids.split(",");
-    blogCall("myReactions", { postIds: list })
+    blogCall("myReactions", { postIds: list, privateIds: privIds ? privIds.split(",") : [] })
       .then((r) => {
         if (!alive) return;
         const got = (r as { reactions?: Record<string, string> }).reactions || {};
@@ -514,7 +541,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     return () => {
       alive = false;
     };
-  }, [ids, user]);
+  }, [ids, privIds, user]);
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(""), 2400);
@@ -751,7 +778,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-black text-[#1E1B4B]">{username}</div>
                   <div className="flex items-center gap-1 text-[12px] font-semibold text-[#8A8FB0]">
-                    🌍 Everyone ·
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCprivOpen((v) => !v);
+                        setCcatOpen(false);
+                        setCmoodOpen(false);
+                      }}
+                      className="rounded-full bg-[#F1F2F8] px-2 py-0.5 font-extrabold text-[#4B4F7A]"
+                    >
+                      {blogPrivacyLabel(cpriv)} ▾
+                    </button>
+                    ·
                     <button
                       type="button"
                       onClick={() => {
@@ -768,6 +806,31 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   ✕
                 </button>
               </div>
+              {cprivOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCprivOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-[#FFFFFF] p-3 shadow-2xl">
+                    <div className="mb-1.5 px-1 text-[11px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">Who can see this?</div>
+                    {BLOG_PRIVACY.map(([k, icon, label]) => (
+                      <button
+                        key={k || "all"}
+                        type="button"
+                        onClick={() => {
+                          setCpriv(k);
+                          setCprivOpen(false);
+                        }}
+                        className={`mb-1 flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition ${cpriv === k ? "bg-gradient-to-r from-[#EEF0FF] to-[#F5EDFF] ring-2 ring-[#6366F1]" : "hover:bg-[#F4F6FD]"}`}
+                      >
+                        <span className="text-[22px]">{icon}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-[14px] font-black text-[#1E1B4B]">{label}</span>
+                          <span className="block text-[11.5px] font-semibold text-[#8A8FB0]">{k === "" ? "Anyone on miGlife" : k === "friends" ? "Only your friends" : "Only you"}</span>
+                        </span>
+                        {cpriv === k && <span className="font-black text-[#6366F1]">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {ccatOpen && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCcatOpen(false)}>
                   <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[290px] rounded-3xl border border-[#E5EAF5] bg-[#FFFFFF] p-3 shadow-2xl">
@@ -1467,6 +1530,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <div className={`truncate text-[11px] font-semibold ${plain ? "text-[#7C82A6]" : "text-white/85"}`}>
             {role ? `${role} · ` : ""}
             {blogAgoBn(p.createdMs)}
+            {p.privacy ? ` · ${blogPrivacyLabel(p.privacy)}` : ""}
             {why && <span className="sr-only"> {why}</span>}
           </div>
         </div>
@@ -1562,9 +1626,12 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <button type="button" onClick={open} aria-label="Comments" className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${glass}`}>
             💬 {blogShort(p.comments)}
           </button>
-          <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${glass}`}>
-            ↗
-          </button>
+          {/* 🔒 a 👥 / 🔒 post can't be shared */}
+          {!p.privacy && (
+            <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${glass}`}>
+              ↗
+            </button>
+          )}
           <span className={`ml-auto text-[11.5px] font-bold ${plain ? "text-[#8A8FB0]" : "text-white/80 drop-shadow"}`}>👁 {blogShort(p.views)}</span>
           <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition active:scale-95 ${saved ? (plain ? "bg-[#FFF4D6]" : "bg-[#FFFFFF]") : glass}`}>
             🔖

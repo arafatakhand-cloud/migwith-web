@@ -25876,6 +25876,62 @@ async function blogNotifyMentions(me, postId, title, mentioned, alreadyLower) {
   }));
 }
 
+// 🔒 Post privacy: 🌍 Everyone posts live in blog_posts (anyone can read them, as
+// before). 👥 Friends and 🔒 Only me posts live in blog_private, which the rules let
+// NO app or browser read — only this server, which checks who is asking. So old
+// apps never see them, and nobody can read them by a trick.
+const BLOG_PRIVACY = ["friends", "me"];
+function blogPrivacyOf(d) {
+  const p = String(d.privacy || "").trim();
+  return BLOG_PRIVACY.includes(p) ? p : "";
+}
+// my friends' names, as written in friendships/{a__b} ({ a, b })
+async function blogFriendNames(me) {
+  const names = new Set();
+  const forms = [...new Set([me, me.toLowerCase()])];
+  for (const f of forms) {
+    const [x, y] = await Promise.all([
+      db.collection("friendships").where("a", "==", f).limit(500).get(),
+      db.collection("friendships").where("b", "==", f).limit(500).get(),
+    ]);
+    x.docs.forEach((s) => names.add(String(s.get("b") || "").trim()));
+    y.docs.forEach((s) => names.add(String(s.get("a") || "").trim()));
+  }
+  names.delete("");
+  return [...names];
+}
+// may this person see this private post? the writer always; friends only for 👥 Friends
+async function blogCanSeePrivate(s, uid, me) {
+  if (s.get("authorUid") === uid) return true;
+  if (s.get("privacy") !== "friends") return false;
+  const f = await db.collection("friendships").doc(chatPairKey(me, String(s.get("author") || ""))).get();
+  return f.exists;
+}
+// a post as plain data for the app / web (timestamps → ms)
+function blogOut(s) {
+  const x = { ...s.data() };
+  delete x.createdAt;
+  delete x.updatedAt;
+  return { id: s.id, ...x };
+}
+// 🔁 move a post (with its likes, comments and views) to the other collection, same id
+async function blogMovePost(fromRef, toRef, privacy) {
+  const s = await fromRef.get();
+  const data = { ...s.data() };
+  if (privacy) data.privacy = privacy;
+  else delete data.privacy;
+  await toRef.set(data);
+  for (const sub of ["likes", "comments", "views"]) {
+    const docs = (await fromRef.collection(sub).limit(2000).get()).docs;
+    for (let i = 0; i < docs.length; i += 400) {
+      const b = db.batch();
+      docs.slice(i, i + 400).forEach((x) => b.set(toRef.collection(sub).doc(x.id), x.data()));
+      await b.commit();
+    }
+  }
+  await db.recursiveDelete(fromRef);
+}
+
 exports.blog = functionsV1.https.onCall(async (data, context) => {
   const E = functionsV1.https.HttpsError;
   const uid = requireAuth(context);
@@ -25890,7 +25946,17 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   const day = dhakaDayKey();
   const rateRef = db.collection("blog_rate").doc(uid);
   const postId = String(d.postId || "").trim();
-  const postRef = postId ? db.collection("blog_posts").doc(postId.slice(0, 100)) : null;
+  let postRef = postId ? db.collection("blog_posts").doc(postId.slice(0, 100)) : null;
+  // 🔒 the post may be a 👥 Friends / 🔒 Only me one: find it, and check I may see it
+  // (one that I may not see is simply "gone" for me)
+  const resolvePost = async (pid) => {
+    const pub = db.collection("blog_posts").doc(pid);
+    if ((await pub.get()).exists) return pub;
+    const priv = db.collection("blog_private").doc(pid);
+    const ps = await priv.get();
+    if (ps.exists && (await blogCanSeePrivate(ps, uid, me))) return priv;
+    return pub; // missing → the actions below say "That post is gone."
+  };
 
   // 🔖 save / unsave a post for my Saved tab (only I see my saves)
   if (action === "save") {
@@ -25898,7 +25964,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     if (!pid) throw new E("invalid-argument", "Which post?");
     const ref = db.collection("blog_saves").doc(uid + "_" + pid);
     if (d.saved === true) {
-      const post = await db.collection("blog_posts").doc(pid).get();
+      const post = await (await resolvePost(pid)).get();
       if (!post.exists) throw new E("not-found", "That post is gone.");
       await ref.set({ uid, postId: pid, at: FieldValue.serverTimestamp() });
     } else {
@@ -25915,7 +25981,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   if (action === "reactors") {
     const pid = String(d.postId || "").trim().slice(0, 100);
     if (!pid) throw new E("invalid-argument", "Which post?");
-    const snap = await db.collection("blog_posts").doc(pid).collection("likes").limit(300).get();
+    const snap = await (await resolvePost(pid)).collection("likes").limit(300).get();
     const reactors = snap.docs
       .map((x) => ({
         username: String(x.get("username") || x.id).slice(0, 60),
@@ -26007,9 +26073,11 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     if (video && !(await feedVideoOn())) {
       throw new E("failed-precondition", "Video posts are turned off right now.");
     }
-    const mentioned = await blogMentionedFriends(me, p.body);
+    const privacy = blogPrivacyOf(d);
+    // 🔒 Only me: nobody is told; 👥 Friends: tagged friends may see it, so they are told
+    const mentioned = privacy === "me" ? [] : await blogMentionedFriends(me, p.body);
     const shared = await blogSharedMeta(d);
-    const ref = db.collection("blog_posts").doc();
+    const ref = db.collection(privacy ? "blog_private" : "blog_posts").doc();
     const now = Date.now();
     await db.runTransaction(async (tx) => {
       const rate = await tx.get(rateRef);
@@ -26018,7 +26086,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       const c = rate.exists && rate.get("day") === day ? Number(rate.get("comments") || 0) : 0;
       tx.set(rateRef, { day, posts: n + 1, comments: c });
       tx.set(ref, {
-        ...p, video, ...(shared || {}), mentions: mentioned.map((x) => x.name), authorUid: uid, author: me, likes: 0, comments: 0, views: 0,
+        ...p, video, ...(shared || {}), ...(privacy ? { privacy } : {}), mentions: mentioned.map((x) => x.name), authorUid: uid, author: me, likes: 0, comments: 0, views: 0,
         hot: blogHot(now, 0, 0, 0), createdMs: now,
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
       });
@@ -26033,10 +26101,55 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   if (action === "myReactions") {
     const ids = (Array.isArray(d.postIds) ? d.postIds : []).map((x) => String(x || "").trim().slice(0, 100)).filter(Boolean).slice(0, 40);
     if (!ids.length) return { ok: true, reactions: {} };
-    const snaps = await db.getAll(...ids.map((id) => db.collection("blog_posts").doc(id).collection("likes").doc(uid)));
+    // 🔒 the ids of 👥 / 🔒 posts in the list are sent as privateIds (they live in blog_private)
+    const priv = new Set((Array.isArray(d.privateIds) ? d.privateIds : []).map((x) => String(x || "").trim()));
+    const snaps = await db.getAll(...ids.map((id) => db.collection(priv.has(id) ? "blog_private" : "blog_posts").doc(id).collection("likes").doc(uid)));
     const reactions = {};
     snaps.forEach((l, i) => { if (l.exists) reactions[ids[i]] = String(l.get("type") || "👍"); });
     return { ok: true, reactions };
+  }
+
+  // 🔒 the 👥 Friends / 🔒 Only me posts I may see, newest first:
+  //   scope "mine" = only my own; otherwise mine + my friends' 👥 Friends posts
+  //   (author = one name: only that member's, if I may see them)
+  if (action === "privateFeed") {
+    const col = db.collection("blog_private");
+    const want = String(d.author || "").trim();
+    const out = [];
+    const mineToo = !want || want.toLowerCase() === me.toLowerCase();
+    if (mineToo) (await col.where("authorUid", "==", uid).limit(60).get()).docs.forEach((x) => out.push(x));
+    if (d.scope !== "mine" && !(want && mineToo)) {
+      let friends = await blogFriendNames(me);
+      if (want) friends = friends.filter((n) => n.toLowerCase() === want.toLowerCase());
+      for (let i = 0; i < friends.length && i < 300; i += 30) {
+        const snap = await col.where("author", "in", friends.slice(i, i + 30)).where("privacy", "==", "friends").limit(40).get();
+        snap.docs.forEach((x) => out.push(x));
+      }
+    }
+    const posts = out.map(blogOut).sort((a, b) => Number(b.createdMs || 0) - Number(a.createdMs || 0)).slice(0, 60);
+    return { ok: true, posts };
+  }
+  // 🔒 one post (Everyone, or a 👥 / 🔒 one I may see) and, for a private one, its comments
+  // (the comments of Everyone posts are read straight from blog_posts, as before)
+  if (action === "getPost") {
+    const pid = String(d.postId || "").trim().slice(0, 100);
+    if (!pid) throw new E("invalid-argument", "Which post?");
+    const ref = await resolvePost(pid);
+    const s = await ref.get();
+    if (!s.exists) throw new E("not-found", "That post is gone.");
+    const out = { ok: true, post: blogOut(s) };
+    if (ref.parent.id === "blog_private") {
+      const cs = await ref.collection("comments").orderBy("createdAt", "asc").limit(300).get();
+      out.comments = cs.docs.map((c) => ({
+        id: c.id,
+        authorUid: String(c.get("authorUid") || ""),
+        author: String(c.get("author") || ""),
+        text: String(c.get("text") || ""),
+        replyTo: String(c.get("replyTo") || ""),
+        createdMs: c.get("createdAt") && typeof c.get("createdAt").toMillis === "function" ? c.get("createdAt").toMillis() : 0,
+      }));
+    }
+    return out;
   }
 
   if (action === "canModerate") {
@@ -26044,6 +26157,25 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   }
 
   if (!postRef) throw new E("invalid-argument", "Which post?");
+  postRef = await resolvePost(postRef.id);
+
+  // 🔒 change who can see my post: "everyone" | "friends" | "me" (only the writer)
+  if (action === "setPrivacy") {
+    const next = blogPrivacyOf(d);
+    const s = await postRef.get();
+    if (!s.exists) throw new E("not-found", "That post is gone.");
+    if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can change this.");
+    const isPrivate = postRef.parent.id === "blog_private";
+    if (!next && isPrivate) {
+      await blogMovePost(postRef, db.collection("blog_posts").doc(postRef.id), "");
+    } else if (next && !isPrivate) {
+      if (s.get("sharedId")) throw new E("failed-precondition", "A shared post stays 🌍 Everyone.");
+      await blogMovePost(postRef, db.collection("blog_private").doc(postRef.id), next);
+    } else if (next) {
+      await postRef.update({ privacy: next });
+    }
+    return { ok: true, privacy: next || "everyone" };
+  }
 
   if (action === "edit") {
     const p = blogClean(d);

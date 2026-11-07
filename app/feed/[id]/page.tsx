@@ -14,6 +14,8 @@ import {
   blogAgo,
   blogCall,
   blogCategoryLabel,
+  blogPrivacyLabel,
+  BLOG_PRIVACY,
   blogCoverFallback,
   blogError,
   blogShort,
@@ -44,6 +46,11 @@ export default function BlogPostPage() {
   const [canMod, setCanMod] = useState(false);
   const [menu, setMenu] = useState(false);
   const viewed = useRef(false);
+  // 🔒 a 👥 Friends / 🔒 Only me post: it comes from the server (no live updates);
+  // bump privTick to read it again after a like / comment / change
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [privTick, setPrivTick] = useState(0);
+  const [privMenu, setPrivMenu] = useState(false);
   const commentsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,8 +58,13 @@ export default function BlogPostPage() {
     const ref = doc(db, "blog_posts", id);
     const off1 = onSnapshot(
       ref,
-      (s) => setPost(s.exists() ? toBlogPost(s.id, s.data()) : null),
-      () => setPost(null)
+      (s) => {
+        if (s.exists()) {
+          setIsPrivate(false);
+          setPost(toBlogPost(s.id, s.data()));
+        } else setIsPrivate(true); // maybe a 👥 / 🔒 post: asked from the server below
+      },
+      () => setIsPrivate(true)
     );
     const off2 = onSnapshot(query(collection(ref, "comments"), orderBy("createdAt", "asc"), limit(300)), (s) =>
       setComments(s.docs.map((d) => toBlogComment(d.id, d.data())))
@@ -62,6 +74,40 @@ export default function BlogPostPage() {
       off2();
     };
   }, [id]);
+
+  // 🔒 read a private post (and its comments) from the server
+  useEffect(() => {
+    if (!id || !isPrivate) return;
+    if (!user) {
+      setPost(null);
+      return;
+    }
+    blogCall("getPost", { postId: id })
+      .then((r) => {
+        const p = r.post as Record<string, unknown> | undefined;
+        if (!p) return setPost(null);
+        setPost(toBlogPost(String(p.id), p));
+        const cs = Array.isArray(r.comments) ? (r.comments as Record<string, unknown>[]) : [];
+        setComments(cs.map((c) => ({ id: String(c.id), authorUid: String(c.authorUid || ""), author: String(c.author || ""), text: String(c.text || ""), createdMs: Number(c.createdMs || 0), replyTo: String(c.replyTo || "") })));
+      })
+      .catch(() => setPost(null));
+    blogCall("myReactions", { postIds: [id], privateIds: [id] })
+      .then((r) => setLiked(!!(r.reactions as Record<string, string> | undefined)?.[id]))
+      .catch(() => {});
+  }, [id, isPrivate, user, privTick]);
+  const setPrivacy = async (next: string) => {
+    if (!post) return;
+    try {
+      await blogCall("setPrivacy", { postId: post.id, privacy: next || "everyone" });
+      setToast(`Now: ${blogPrivacyLabel(next)}`);
+      if (post.privacy && !next) setIsPrivate(false);
+      else if (!post.privacy && next) setIsPrivate(true);
+      setPrivTick((n) => n + 1);
+      setPost({ ...post, privacy: next as BlogPost["privacy"] });
+    } catch (e) {
+      setToast(blogError(e));
+    }
+  };
 
   // my like + one view (counted once per person, on the server)
   useEffect(() => {
@@ -96,6 +142,7 @@ export default function BlogPostPage() {
     try {
       const r = await blogCall("like", { postId: post.id });
       setLiked(r.liked === true);
+      if (isPrivate) setPrivTick((n) => n + 1);
     } catch (e) {
       setLiked(liked);
       setToast(blogError(e));
@@ -112,6 +159,7 @@ export default function BlogPostPage() {
       await blogCall("comment", { postId: post.id, text: t, parentId: replyTo?.id || "" });
       setReplyTo(null);
       setText("");
+      if (isPrivate) setPrivTick((n) => n + 1);
       setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300);
     } catch (e) {
       setToast(blogError(e));
@@ -145,6 +193,7 @@ export default function BlogPostPage() {
     if (!post || !confirm("Delete this comment?")) return;
     try {
       await blogCall("deleteComment", { postId: post.id, commentId: c.id });
+      if (isPrivate) setPrivTick((n) => n + 1);
     } catch (e) {
       setToast(blogError(e));
     }
@@ -203,6 +252,22 @@ export default function BlogPostPage() {
                   ✏️ Edit
                 </Link>
               )}
+              {mine && !post.sharedId && (
+                <button type="button" onClick={(e) => (e.stopPropagation(), setPrivMenu((v) => !v))} className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]">
+                  {blogPrivacyLabel(post.privacy)} ▾
+                </button>
+              )}
+              {mine && privMenu &&
+                BLOG_PRIVACY.map(([k, icon, label]) => (
+                  <button
+                    key={k || "all"}
+                    type="button"
+                    onClick={() => (setPrivMenu(false), setPrivacy(k))}
+                    className={`block w-full py-2 pl-8 pr-4 text-left text-[13px] hover:bg-[#F1F5FB] ${post.privacy === k ? "font-black text-[#6366F1]" : ""}`}
+                  >
+                    {icon} {label} {post.privacy === k ? "✓" : ""}
+                  </button>
+                ))}
               {(mine || canMod) && (
                 <button type="button" onClick={remove} className="block w-full px-4 py-2.5 text-left text-[#DC2626] hover:bg-[#FEF2F2]">
                   🗑 Delete
@@ -221,9 +286,11 @@ export default function BlogPostPage() {
                   🚩 Report
                 </button>
               )}
-              <button type="button" onClick={share} className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]">
-                ↗ Share
-              </button>
+              {!post.privacy && (
+                <button type="button" onClick={share} className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]">
+                  ↗ Share
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -239,6 +306,7 @@ export default function BlogPostPage() {
             <span className="shrink-0">
               · {blogAgo(post.createdMs)}
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
+              {post.privacy ? ` · ${blogPrivacyLabel(post.privacy)}` : ""}
             </span>
           </div>
           <div className="mt-2 flex justify-end">
@@ -269,13 +337,13 @@ export default function BlogPostPage() {
             >
               💬 {blogShort(post.comments)}
             </button>
-            <button
+            {!post.privacy && <button
               type="button"
               onClick={share}
               className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-white text-[14px] font-bold text-[#1D4ED8] shadow-[0_2px_6px_-3px_rgba(30,60,120,.35)]"
             >
               ↗ Share
-            </button>
+            </button>}
           </div>
           <p className="mt-2 text-right text-[12px] text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</p>
 

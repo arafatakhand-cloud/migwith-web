@@ -34,6 +34,8 @@ export type BlogPost = {
   bg: number;
   /** a small copy of the cover for the Feed list ('' = use the cover) */
   thumb: string;
+  /** who can see it: '' = 🌍 Everyone, 'friends' = 👥 Friends, 'me' = 🔒 Only me */
+  privacy: "" | "friends" | "me";
 };
 
 export type BlogComment = { id: string; authorUid: string; author: string; text: string; createdMs: number; /** the top comment this one answers ('' = top level) */ replyTo: string };
@@ -91,6 +93,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     sharedTitle: String(d.sharedTitle || ""),
     bg: Number.isInteger(d.bg) && Number(d.bg) >= 0 && Number(d.bg) < 9 ? Number(d.bg) : -1,
     thumb: String(d.thumb || ""),
+    privacy: d.privacy === "friends" || d.privacy === "me" ? d.privacy : "",
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
@@ -131,4 +134,15 @@ export async function blogCall(action: string, data: Record<string, unknown> = {
 export function blogError(e: unknown): string {
   const m = (e as { message?: string })?.message || "";
   return m.replace(/^FirebaseError:\s*/, "") || "Something went wrong. Please try again.";
+}
+
+// 🔒 who can see a post
+export const BLOG_PRIVACY: ["" | "friends" | "me", string, string][] = [
+  ["", "🌍", "Everyone"],
+  ["friends", "👥", "Friends"],
+  ["me", "🔒", "Only me"],
+];
+export function blogPrivacyLabel(p: string): string {
+  const x = BLOG_PRIVACY.find(([k]) => k === p) || BLOG_PRIVACY[0];
+  return `${x[1]} ${x[2]}`;
 }

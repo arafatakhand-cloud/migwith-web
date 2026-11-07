@@ -131,8 +131,16 @@ function BlogWrite() {
   useEffect(() => {
     if (!user) return;
     if (editId) {
-      getDoc(doc(db, "blog_posts", editId)).then((s) => {
-        if (!s.exists() || s.get("authorUid") !== user.uid) return router.replace("/feed");
+      // 🔒 a 👥 / 🔒 post is not readable here: then ask the server for it
+      const load = async () => {
+        const pub = await getDoc(doc(db, "blog_posts", editId));
+        if (pub.exists()) return { get: (k: string) => pub.get(k) };
+        const r = await blogCall("getPost", { postId: editId }).catch(() => null);
+        const p = (r?.post || null) as Record<string, unknown> | null;
+        return p ? { get: (k: string) => p[k] } : null;
+      };
+      load().then((s) => {
+        if (!s || s.get("authorUid") !== user.uid) return router.replace("/feed");
         const lines = String(s.get("body") || "").split("\n");
         const inBody = lines.map((l) => l.trim().match(IMG_LINE)?.[1] || "").filter(Boolean);
         const cover = String(s.get("cover") || "");
