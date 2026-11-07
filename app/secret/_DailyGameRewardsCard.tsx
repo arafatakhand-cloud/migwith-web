@@ -26,9 +26,9 @@ const MEDAL = ["🥇", "🥈", "🥉"];
 const empty = (): Amounts => ({ luxury: Array(10).fill(""), lowcard: Array(3).fill(""), cricket: Array(3).fill("") });
 const coins = (n: number) => n.toLocaleString();
 type Mode = "fixed" | "percent";
-// 📊 starting values for "% of spent": 1% each, #1 at most 10 lakh, the others 5 lakh
-const pctStart = (n: number) => Array(n).fill("1");
-const capStart = (n: number) => Array.from({ length: n }, (_, i) => (i === 0 ? "1000000" : "500000"));
+// 10,00,000 → "10 lakh", 1,50,00,000 → "1.5 crore" (so the max is easy to read)
+const lakh = (n: number) =>
+  n >= 10_000_000 ? `${+(n / 10_000_000).toFixed(2)} crore` : n >= 100_000 ? `${+(n / 100_000).toFixed(2)} lakh` : n > 0 ? coins(n) : "";
 
 export function DailyGameRewardsCard() {
   const [enabled, setEnabled] = useState(false);
@@ -166,13 +166,7 @@ export function DailyGameRewardsCard() {
                   <button
                     key={m}
                     type="button"
-                    onClick={() => {
-                      setModes((x) => ({ ...x, [g.key]: m }));
-                      if (m === "percent" && !pcts[g.key].some((v) => Number(v) > 0)) {
-                        setPcts((x) => ({ ...x, [g.key]: pctStart(g.places) }));
-                        setCaps((x) => ({ ...x, [g.key]: capStart(g.places) }));
-                      }
-                    }}
+                    onClick={() => setModes((x) => ({ ...x, [g.key]: m }))}
                     className={`flex-1 rounded-full py-1.5 transition ${modes[g.key] === m ? "text-white" : "text-[#5B6B8C]"}`}
                     style={modes[g.key] === m ? { background: g.tint } : undefined}
                   >
@@ -188,7 +182,7 @@ export function DailyGameRewardsCard() {
                       <input
                         inputMode="decimal"
                         value={p}
-                        placeholder="0"
+                        placeholder="%"
                         aria-label={`Place ${i + 1} percent`}
                         onChange={(e) => {
                           const val = e.target.value.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1").slice(0, 5);
@@ -200,7 +194,7 @@ export function DailyGameRewardsCard() {
                       <input
                         inputMode="numeric"
                         value={caps[g.key][i]}
-                        placeholder="no max"
+                        placeholder="max coins"
                         aria-label={`Place ${i + 1} max coins`}
                         onChange={(e) => {
                           const val = e.target.value.replace(/[^\d]/g, "").slice(0, 10);
@@ -208,10 +202,12 @@ export function DailyGameRewardsCard() {
                         }}
                         className="min-w-0 flex-1 rounded-lg bg-[#F4F7FC] px-2 py-1 text-[15px] font-black outline-none"
                       />
+                      {Number(caps[g.key][i]) > 0 && <span className="shrink-0 text-[11px] font-extrabold" style={{ color: g.tint }}>{lakh(Number(caps[g.key][i]))}</span>}
                     </div>
                   ))}
                   <p className="px-1 text-[11px] leading-4 text-[#8A97B2]">
-                    Example: #1 spent 50,00,000 → 1% = 50,000 coins. Spent 15,00,00,000 → 1% = 15,00,000, but the max is the most it can be.
+                    Write each place&apos;s % and its max yourself. Example: 1% and max 10,00,000 — spent 50,00,000 → 50,000 coins; spent 15,00,00,000 → 1% would be
+                    15,00,000, so it gets the max 10,00,000. A place left empty gets nothing; an empty max = no max.
                   </p>
                 </div>
               ) : (
