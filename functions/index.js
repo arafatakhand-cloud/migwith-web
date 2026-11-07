@@ -21978,7 +21978,16 @@ exports.manageFounder = onCallV2({ region: FUNCTIONS_REGION }, async (request) =
 
   if (action === "list") {
     const snap = await db.collection("founders").get();
+    // 🪪 the Staff / Admin ids given by "Add staff id" / "Add admin id"
+    const roleSnap = await db.collection("users").where("role", "in", ["staff", "admin", "Staff", "Admin"]).get();
     return {
+      staff: roleSnap.docs.map((d) => ({
+        uid: d.id,
+        username: String(d.get("username") || ""),
+        role: String(d.get("role") || "").toLowerCase(),
+        perms: cleanPerms(d.get("personPerms")),
+        addedAt: tsMs(d.get("roleUpdatedAt")),
+      })).filter((r) => r.username).sort((a, b) => a.role.localeCompare(b.role) || a.username.localeCompare(b.username)),
       perms: FOUNDER_PERMS,
       founders: snap.docs.map((d) => ({
         uid: d.id,
@@ -23510,6 +23519,73 @@ exports.toggleSupporterBadge = functionsV1.https.onCall(async (data, context) =>
 // ✏️ miglife sets the Supporter Colours price (and days) for every team, or —
 // with { team } — one team's own price ({ team, reset: true } = back to the
 // default price).
+// 🎁 Gift Shops (web /gifts): add / edit / delete a gift and upload its picture.
+// Storage and Firestore rules only know founders/{uid}, but a Staff / Admin
+// id can get "gift_shop" from its role or its own ticked tools — so those
+// people saw the Edit button and then got storage/unauthorized. The server
+// checks the same tools the page shows (founderPermsOf) and does the write.
+const GIFT_SHOP_ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+exports.giftShopManage = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  if (!(await hasFounderPerm(uid, "gift_shop"))) throw new E("permission-denied", "You don't have the Gift Shops tool.");
+  const action = String(data?.action || "");
+  const id = String(data?.id || "");
+  if (!GIFT_SHOP_ID_RE.test(id)) throw new E("invalid-argument", "Unknown gift.");
+  const ref = db.collection("gift_catalog").doc(id);
+  if (action === "upload") {
+    const contentType = String(data?.contentType || "").toLowerCase();
+    if (!/^image\/(png|jpeg|jpg|gif|webp)$/.test(contentType)) throw new E("invalid-argument", "Please choose a picture (PNG or JPG).");
+    const buf = Buffer.from(String(data?.fileBase64 || ""), "base64");
+    if (buf.length < 50) throw new E("invalid-argument", "The picture is empty.");
+    if (buf.length > 5 * 1024 * 1024) throw new E("invalid-argument", "That picture is too big (over 5 MB). Please choose a smaller one.");
+    const path = `gift_images/${id}.jpg`;
+    const token = crypto.randomUUID();
+    const bucket = require("firebase-admin/storage").getStorage().bucket();
+    await bucket.file(path).save(buf, {
+      resumable: false,
+      metadata: { contentType, cacheControl: "public, max-age=31536000", metadata: { firebaseStorageDownloadTokens: token } },
+    });
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}&v=${Date.now()}`;
+    return { ok: true, url };
+  }
+  if (action === "save") {
+    const g = data?.gift || {};
+    const str = (v, n) => String(v ?? "").trim().slice(0, n);
+    const name = str(g.name, 60);
+    const price = Math.floor(Number(g.price_coins));
+    if (!name) throw new E("invalid-argument", "Write the gift's name.");
+    if (!Number.isFinite(price) || price < 5 || price > 1000000000) throw new E("invalid-argument", "Price: at least 5 coins.");
+    const imageUrl = str(g.imageUrl, 1000);
+    if (imageUrl && !/^https:\/\//i.test(imageUrl)) throw new E("invalid-argument", "The picture must be a web link.");
+    const out = {
+      name,
+      category: str(g.category, 40) || "Special",
+      price_coins: price,
+      icon: str(g.icon, 16) || "🎁",
+      imageUrl,
+      animation: str(g.animation, 200),
+      limited: g.limited === true,
+      featured: g.featured === true,
+      active: g.active !== false,
+      sortOrder: Math.floor(Number(g.sortOrder) || 0),
+    };
+    if (data?.isNew === true) {
+      if ((await ref.get()).exists) throw new E("already-exists", "That gift already exists.");
+      await ref.set({ ...out, createdAt: FieldValue.serverTimestamp(), createdBy: uid });
+    } else {
+      if (!(await ref.get()).exists) throw new E("not-found", "Gift not found.");
+      await ref.set({ ...out, updatedAt: FieldValue.serverTimestamp(), updatedBy: uid }, { merge: true });
+    }
+    return { ok: true };
+  }
+  if (action === "delete") {
+    await ref.delete();
+    return { ok: true };
+  }
+  throw new E("invalid-argument", "Unknown action.");
+});
+
 exports.founderSetSupporterPrice = functionsV1.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const E = functionsV1.https.HttpsError;

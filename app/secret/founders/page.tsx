@@ -11,7 +11,7 @@ import { FounderShell, card, input } from "../_Shell";
 
 const manageFounder = httpsCallable<Record<string, unknown>, Record<string, any>>(functions, "manageFounder");
 
-type Founder = { uid: string; username: string; perms: string[]; addedAt: number | null };
+type Founder = { uid: string; username: string; perms: string[]; addedAt: number | null; role?: string };
 
 function PermList({ selected, onToggle }: { selected: Set<string>; onToggle: (p: string) => void }) {
   return (
@@ -34,7 +34,14 @@ function FounderCard({ f, busy, onSave, onRemove }: { f: Founder; busy: boolean;
     <div className="space-y-1.5 rounded-2xl bg-[#F1F5FB] p-4">
       <div className="flex items-center">
         <div className="flex-1">
-          <p className="text-[15px] font-bold">{f.username}</p>
+          <p className="text-[15px] font-bold">
+            {f.username}
+            {f.role && (
+              <span className="ml-2 rounded-full bg-[#DCE8F8] px-2 py-0.5 text-[11px] font-bold text-[#15589B]">
+                {f.role === "admin" ? "⚙️ Admin" : "🛠 Staff"}
+              </span>
+            )}
+          </p>
           {f.addedAt && (
             <p className="text-[11px] text-gray-500">
               Added {new Date(f.addedAt).toLocaleString(undefined, { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
@@ -69,13 +76,14 @@ const ROLE_LABELS: [string, string][] = [
   ["founder", "👥 Founder"],
 ];
 
-function RoleTools() {
+function RoleTools({ onAdded }: { onAdded: () => void }) {
   const [roles, setRoles] = useState<Record<string, Set<string>>>({});
   const [staffName, setStaffName] = useState("");
   const [staffPerms, setStaffPerms] = useState(new Set<string>());
   const [adminName, setAdminName] = useState("");
   const [adminPerms, setAdminPerms] = useState(new Set<string>());
   const [msg, setMsg] = useState("");
+  const [msgAt, setMsgAt] = useState<"staff" | "admin" | "">("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -98,6 +106,7 @@ function RoleTools() {
   const saveRole = async (role: string) => {
     setBusy(true);
     setMsg("");
+    setMsgAt("");
     try {
       await manageFounder({ action: "roleSet", role, perms: [...(roles[role] || [])] });
       setMsg(`✅ ${role} tools saved.`);
@@ -111,10 +120,13 @@ function RoleTools() {
   const addRole = async (role: "staff" | "admin", name: string, perms: Set<string>, clear: () => void) => {
     setBusy(true);
     setMsg("");
+    setMsgAt(role);
+    setMsgAt(role);
     try {
       const { data } = await manageFounder({ action: "setUserRole", username: name.trim(), role, perms: [...perms] });
       setMsg(`✅ ${data.username || name.trim()} is now ${role}.`);
       clear();
+      onAdded();
     } catch (e: any) {
       setMsg("❌ " + (e?.message || "Could not add."));
     } finally {
@@ -151,6 +163,7 @@ function RoleTools() {
         >
           Add staff
         </button>
+        {msg && msgAt === "staff" && <p className="text-[13px] font-bold text-gray-600">{msg}</p>}
       </div>
 
       <div className={`${card} space-y-2`}>
@@ -166,8 +179,9 @@ function RoleTools() {
         >
           Add admin
         </button>
+        {msg && msgAt === "admin" && <p className="text-[13px] font-bold text-gray-600">{msg}</p>}
       </div>
-      {msg && <p className="text-[13px] font-bold text-gray-600">{msg}</p>}
+      {msg && msgAt === "" && <p className="text-[13px] font-bold text-gray-600">{msg}</p>}
     </>
   );
 }
@@ -177,6 +191,7 @@ export default function FoundersPage() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const [founders, setFounders] = useState<Founder[]>([]);
+  const [staff, setStaff] = useState<Founder[]>([]);
   const [name, setName] = useState("");
   const [perms, setPerms] = useState(new Set<string>());
 
@@ -201,6 +216,15 @@ export default function FoundersPage() {
         addedAt: typeof m.addedAt === "number" ? m.addedAt : null,
       }))
     );
+    setStaff(
+      (Array.isArray(data.staff) ? data.staff : []).map((m: any) => ({
+        uid: String(m.uid || ""),
+        username: String(m.username || ""),
+        role: String(m.role || "staff"),
+        perms: Array.isArray(m.perms) ? m.perms.map(String) : [],
+        addedAt: typeof m.addedAt === "number" ? m.addedAt : null,
+      }))
+    );
   };
 
   useEffect(() => {
@@ -212,7 +236,7 @@ export default function FoundersPage() {
     <FounderShell title="👥 Founders" allowed={f.isMigwith} loaded={f.loaded}>
       {busy && <div className="h-1 animate-pulse rounded bg-[#2F80ED]/60" />}
       {status && <p className="text-[13px] text-gray-500">{status}</p>}
-      <RoleTools />
+      <RoleTools onAdded={() => run(refresh)} />
 
       <div className={`${card} space-y-2`}>
         <p className="text-[15px] font-bold">➕ Add a founder</p>
@@ -244,6 +268,33 @@ export default function FoundersPage() {
           Add founder
         </button>
       </div>
+      {staff.length > 0 && (
+        <>
+          <p className="font-bold">Staff &amp; Admin ids ({staff.length})</p>
+          {staff.map((x) => (
+            <FounderCard
+              key={x.uid}
+              f={x}
+              busy={busy}
+              onSave={(p) =>
+                run(async () => {
+                  await manageFounder({ action: "setUserRole", username: x.username, role: x.role, perms: p });
+                  await refresh();
+                  setStatus(`✅ Updated ${x.username}`);
+                })
+              }
+              onRemove={() => {
+                if (!window.confirm(`Remove ${x.username} from ${x.role}?`)) return;
+                run(async () => {
+                  await manageFounder({ action: "setUserRole", username: x.username, role: "user", perms: [] });
+                  await refresh();
+                  setStatus(`✅ Removed ${x.username}`);
+                });
+              }}
+            />
+          ))}
+        </>
+      )}
       {founders.length > 0 ? (
         <>
           <p className="font-bold">Founders ({founders.length})</p>

@@ -11,8 +11,9 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { uploadIcon } from "../../lib/iconUpload";
-import { db } from "../../lib/firebase";
+import { httpsCallable } from "firebase/functions";
+import { prepareIcon, uploadIcon } from "../../lib/iconUpload";
+import { db, functions } from "../../lib/firebase";
 import { useSession } from "../_components/AppSession";
 import { PageShell } from "../_components/PageShell";
 import { useRequireLogin } from "../../lib/useRequireLogin";
@@ -40,6 +41,44 @@ type CatalogGift = {
 };
 
 const bool = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
+
+// 🎁 A Staff / Admin id can get the Gift Shops tool from its role or its own
+// tools, which the Storage / Firestore rules can't see (storage/unauthorized).
+// So a refused write is done again by the server (giftShopManage), which
+// checks the same tools this page shows.
+const giftShopManage = httpsCallable<Record<string, unknown>, { ok: boolean; url?: string }>(functions, "giftShopManage");
+const refused = (e: any) => /unauthorized|permission/i.test(String(e?.code || "") + " " + String(e?.message || ""));
+
+async function viaServer<T>(direct: () => Promise<T>, server: () => Promise<T>): Promise<T> {
+  try {
+    return await direct();
+  } catch (e) {
+    if (!refused(e)) throw e;
+    return await server();
+  }
+}
+
+function blobBase64(b: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(",")[1] || "");
+    r.onerror = () => reject(new Error("This picture can't be read."));
+    r.readAsDataURL(b);
+  });
+}
+
+async function uploadGiftPicture(id: string, file: File): Promise<string> {
+  return viaServer(
+    () => uploadIcon(`gift_images/${id}.jpg`, file),
+    async () => {
+      const gif = file.type === "image/gif";
+      const body: Blob = gif ? file : await prepareIcon(file);
+      if (body.size > 5 * 1024 * 1024) throw new Error("That picture is too big (over 5 MB). Please choose a smaller one.");
+      const r = await giftShopManage({ action: "upload", id, contentType: gif ? "image/gif" : "image/png", fileBase64: await blobBase64(body) });
+      return String(r.data.url || "");
+    }
+  );
+}
 
 export default function GiftShopsPage() {
   const ready = useRequireLogin();
@@ -89,8 +128,13 @@ export default function GiftShopsPage() {
 
   const save = async (id: string, isNew: boolean, data: Record<string, unknown>) => {
     try {
-      if (isNew) await setDoc(doc(db, "gift_catalog", id), { ...data, createdAt: serverTimestamp(), createdBy: user?.uid || "" });
-      else await updateDoc(doc(db, "gift_catalog", id), { ...data, updatedAt: serverTimestamp() });
+      await viaServer(
+        () =>
+          isNew
+            ? setDoc(doc(db, "gift_catalog", id), { ...data, createdAt: serverTimestamp(), createdBy: user?.uid || "" })
+            : updateDoc(doc(db, "gift_catalog", id), { ...data, updatedAt: serverTimestamp() }),
+        () => giftShopManage({ action: "save", id, isNew, gift: data }).then(() => undefined)
+      );
       setEditing(null);
     } catch (e: any) {
       setError(e?.message || "Could not save the gift.");
@@ -206,7 +250,10 @@ export default function GiftShopsPage() {
                         type="button"
                         onClick={() => {
                           if (window.confirm(`Delete Gift?\n\nAre you sure you want to delete "${g.name}"?`))
-                            deleteDoc(doc(db, "gift_catalog", g.id)).catch((e) => setError(e?.message || "Could not delete."));
+                            viaServer(
+                              () => deleteDoc(doc(db, "gift_catalog", g.id)),
+                              () => giftShopManage({ action: "delete", id: g.id }).then(() => undefined)
+                            ).catch((e) => setError(e?.message || "Could not delete."));
                         }}
                         className="px-1.5 py-0.5 text-[#C23B3B]"
                       >
@@ -273,7 +320,7 @@ function GiftEditor({
     setUploadError("");
     try {
       // 512 × 512 PNG, right way up, fresh link (see lib/iconUpload)
-      setImageUrl(await uploadIcon(`gift_images/${id}.jpg`, file));
+      setImageUrl(await uploadGiftPicture(id, file));
       setPictureFailed(false);
     } catch (e: any) {
       setUploadError(e?.message || "Image upload failed.");
