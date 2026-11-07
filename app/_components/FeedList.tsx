@@ -2099,10 +2099,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               ↗
             </button>
           )}
-          <span className={`ml-auto text-[11.5px] font-bold ${plain ? "text-[#8A8FB0]" : "text-white/80 drop-shadow"}`}>👁 {blogShort(p.views)}</span>
-          <button type="button" onClick={onSave} aria-pressed={saved} aria-label={saved ? "Unsave" : "Save"} className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] transition active:scale-95 ${saved ? (plain ? "bg-[#FFF4D6]" : "bg-[#FFFFFF]") : glass}`}>
-            🔖
-          </button>
+          <span className={`ml-auto pr-1 text-[11.5px] font-bold ${plain ? "text-[#8A8FB0]" : "text-white/80 drop-shadow"}`}>👁 {blogShort(p.views)}</span>
+          {/* 🔖 Save lives in the ⋯ menu now */}
         </div>
       </div>
 
