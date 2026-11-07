@@ -427,7 +427,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="flex items-center justify-between px-4 pb-1 pt-3.5">
-            <h1 className="text-[26px] font-black tracking-tight text-[#1E1B4B]">Feed</h1>
+            <h1 className="bg-gradient-to-r from-[#0EA5E9] via-[#6366F1] to-[#A855F7] bg-clip-text text-[26px] font-black tracking-tight text-transparent">Feed</h1>
             {user && (
               <Link href={`/profile/${encodeURIComponent(username)}`} aria-label="My profile">
                 <Avatar name={username} color={meColor} size={34} ring />
@@ -440,7 +440,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         {!author && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
 
         {!author && (
-          <div className="sticky top-0 z-30 mx-3.5 mb-1 mt-2 flex rounded-2xl border border-[#6366F1]/15 bg-white/70 p-1 backdrop-blur-md">
+          <div className="sticky top-0 z-30 mx-3.5 mb-1 mt-2 flex rounded-2xl bg-[#E9ECFA]/80 p-1 backdrop-blur-md">
             {/* 🫧 one gradient pill that slides under the chosen tab */}
             <span
               aria-hidden
@@ -1012,7 +1012,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, roleImg, rea
   return (
     <article
       onClick={open}
-      className="cursor-pointer rounded-[20px] border border-[#DDE8F7] bg-white p-3.5 shadow-[0_2px_8px_rgba(16,63,145,.07)] transition active:scale-[.995]"
+      className="cursor-pointer rounded-[24px] border border-white/80 bg-white p-4 shadow-[0_12px_30px_-14px_rgba(99,102,241,.35)] transition active:scale-[.995]"
     >
       <div className="flex items-center gap-2.5">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-[#D9A83E] p-[1px]">
