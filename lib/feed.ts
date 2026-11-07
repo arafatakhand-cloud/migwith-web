@@ -39,6 +39,8 @@ export type BlogPost = {
   /** 📍 where the writer was ("" = none) and the line under it */
   place: string;
   placeSub: string;
+  /** 😊 the writer's mood key ("" = none) — shown as "name is 😊 happy" */
+  mood: string;
 };
 
 export type BlogComment = {
@@ -124,6 +126,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     privacy: d.privacy === "friends" || d.privacy === "me" ? d.privacy : "",
     place: String(d.place || ""),
     placeSub: String(d.placeSub || ""),
+    mood: String(d.mood || ""),
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {
@@ -184,4 +187,24 @@ export const BLOG_PRIVACY: ["" | "friends" | "me", string, string][] = [
 export function blogPrivacyLabel(p: string): string {
   const x = BLOG_PRIVACY.find(([k]) => k === p) || BLOG_PRIVACY[0];
   return `${x[1]} ${x[2]}`;
+}
+
+// 😊 moods: "mahin is 😊 happy" [key, emoji, word]
+export const BLOG_MOODS: [string, string, string][] = [
+  ["happy", "😊", "happy"],
+  ["loved", "😍", "loved"],
+  ["sad", "😢", "sad"],
+  ["excited", "🤩", "excited"],
+  ["thankful", "🙏", "thankful"],
+  ["blessed", "😇", "blessed"],
+  ["cool", "😎", "cool"],
+  ["tired", "😴", "tired"],
+  ["inlove", "🥰", "in love"],
+  ["angry", "😡", "angry"],
+  ["sick", "🤒", "sick"],
+  ["celebrating", "🥳", "celebrating"],
+];
+export function blogMood(key: string): [string, string] | null {
+  const m = BLOG_MOODS.find(([k]) => k === key);
+  return m ? [m[1], m[2]] : null;
 }

@@ -22,6 +22,8 @@ import {
   blogAgoBn,
   blogPrivacyLabel,
   BLOG_PRIVACY,
+  BLOG_MOODS,
+  blogMood,
   blogCall,
   blogError,
   BLOG_CATEGORIES,
@@ -248,6 +250,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       .catch(() => setVideoOn(true));
   }, []);
   const [cmoodOpen, setCmoodOpen] = useState(false);
+  // 😊 my mood for this post ("" = none): "mahin is 😊 happy"
+  const [cmood, setCmood] = useState("");
   // @ mention: while you type "@ab", suggest your friends whose name starts with it
   const mentionMatch = ctext.match(/@([A-Za-z0-9_.\-]{0,20})$/);
   const mentionSuggest = mentionMatch
@@ -288,7 +292,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cedit || !draftKey || ctext.trim() || cphotos.length || cvideo) return;
     try {
       const d = JSON.parse(localStorage.getItem(draftKey) || "null") as {
-        text?: string; photos?: string[]; video?: string; cat?: string; bg?: number; priv?: "" | "friends" | "me"; place?: Place | null;
+        text?: string; photos?: string[]; video?: string; cat?: string; bg?: number; priv?: "" | "friends" | "me"; place?: Place | null; mood?: string;
       } | null;
       if (!d || !(d.text || d.photos?.length || d.video)) return;
       setCtext(d.text || "");
@@ -298,6 +302,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       if (typeof d.bg === "number") setCbg(d.bg);
       setCpriv(d.priv || "");
       setCplace(d.place && d.place.name ? d.place : null);
+      setCmood(d.mood || "");
       setCdraftNote(true);
     } catch {
       // no draft
@@ -310,18 +315,19 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     const t = window.setTimeout(() => {
       try {
         if (!ctext.trim() && !cphotos.length && !cvideo) localStorage.removeItem(draftKey);
-        else localStorage.setItem(draftKey, JSON.stringify({ text: ctext, photos: cphotos, video: cvideo, cat: ccat, bg: cbg, priv: cpriv, place: cplace }));
+        else localStorage.setItem(draftKey, JSON.stringify({ text: ctext, photos: cphotos, video: cvideo, cat: ccat, bg: cbg, priv: cpriv, place: cplace, mood: cmood }));
       } catch {
         // storage full / blocked
       }
     }, 500);
     return () => window.clearTimeout(t);
-  }, [composing, cedit, draftKey, ctext, cphotos, cvideo, ccat, cbg, cpriv, cplace]);
+  }, [composing, cedit, draftKey, ctext, cphotos, cvideo, ccat, cbg, cpriv, cplace, cmood]);
   const clearWriter = () => {
     setCtext("");
     setCphotos([]);
     setCvideo("");
     setCplace(null);
+    setCmood("");
     setCpriv("");
     setCerr("");
     setCdraftNote(false);
@@ -354,6 +360,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCcat(p.category);
     setCpriv(p.privacy);
     setCplace(p.place ? { name: p.place, sub: p.placeSub, icon: "📍" } : null);
+    setCmood(p.mood);
     setCerr("");
     setCdraftNote(false);
     cbgKeep.current = p.bg >= 0 ? p.bg : PLAIN_BG;
@@ -422,7 +429,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -434,7 +441,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Posted ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -446,6 +453,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCcat(p.category);
       setCpriv(p.privacy);
       setCplace(p.place);
+      setCmood(p.mood);
       cbgKeep.current = p.bg;
       setComposing(true);
       setCerr(blogError(e));
@@ -468,7 +476,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
       await blogCall("edit", {
         postId: cedit.id, title, body, cover, category: ccat,
-        place: cplace?.name || "", placeSub: cplace?.sub || "",
+        place: cplace?.name || "", placeSub: cplace?.sub || "", mood: cmood,
         ...(thumb ? { thumb } : {}), ...(cover || cvideo ? {} : { bg: cbg }),
       });
       clearWriter();
@@ -486,7 +494,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -508,6 +516,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCcat(payload.category);
         setCpriv(payload.privacy);
         setCplace(payload.place);
+        setCmood(payload.mood);
         cbgKeep.current = payload.bg;
         setComposing(true);
         setToast("Post taken back");
@@ -927,7 +936,21 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               <div className="flex items-center gap-2.5">
                 <Avatar name={username} color={meColor} size={42} ring />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[15px] font-black text-[#1E1B4B]">{username}</div>
+                  <div className="text-[15px] font-black leading-snug text-[#1E1B4B]">
+                    {username}
+                    {/* 😊 M1: "mahin is 😊 happy" — tap to change, ✕ to take it off */}
+                    {blogMood(cmood) && (
+                      <span className="font-semibold text-[#4B4F7A]">
+                        {" "}
+                        <button type="button" onClick={() => setCmoodOpen(true)}>
+                          is {blogMood(cmood)![0]} <b className="font-black text-[#1E1B4B]">{blogMood(cmood)![1]}</b>
+                        </button>
+                        <button type="button" onClick={() => setCmood("")} aria-label="Remove mood" className="ml-1 text-[12px] font-black text-[#A0A6C2]">
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1 text-[12px] font-semibold text-[#8A8FB0]">
                     <button
                       type="button"
@@ -1277,24 +1300,24 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               {cmoodOpen && (
                 <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
                   <div className="mb-2 flex items-center justify-between px-0.5">
-                    <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">How are you feeling?</span>
+                    <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#8B5CFF]">😊 How are you?</span>
                     <button type="button" onClick={() => setCmoodOpen(false)} className="text-[12px] font-bold text-[#8494B2]">
                       Close
                     </button>
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {[["😊", "Happy", "from-[#FDE68A] to-[#FBBF24]"], ["😍", "Loved", "from-[#FBCFE8] to-[#F472B6]"], ["😢", "Sad", "from-[#BFDBFE] to-[#60A5FA]"], ["🤩", "Excited", "from-[#FDE68A] to-[#A78BFA]"], ["😴", "Tired", "from-[#E2E8F0] to-[#94A3B8]"], ["🙏", "Thankful", "from-[#BBF7D0] to-[#34D399]"]].map(([e, l, g]) => (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {BLOG_MOODS.map(([k, e, word]) => (
                       <button
-                        key={l}
+                        key={k}
                         type="button"
                         onClick={() => {
-                          setCtext((t) => (t.trim() ? `${t.trimEnd()}\n${e} ${l}` : `${e} ${l}`));
+                          setCmood(cmood === k ? "" : k);
                           setCmoodOpen(false);
                         }}
-                        className={`flex flex-col items-center gap-0.5 rounded-xl bg-gradient-to-br ${g} px-1 py-2.5 text-[12px] font-bold text-[#1E1B4B] shadow-sm transition hover:scale-[1.04] active:scale-95`}
+                        className={`flex items-center gap-1.5 rounded-xl px-2 py-2 text-left text-[12.5px] font-extrabold text-[#1E1B4B] transition active:scale-95 ${cmood === k ? "bg-gradient-to-r from-[#FEF3C7] to-[#FCE7F3] ring-2 ring-[#F59E0B]" : "bg-[#FFFFFF] shadow-sm hover:bg-[#FFFBEB]"}`}
                       >
-                        <span className="text-[22px] leading-none">{e}</span>
-                        {l}
+                        <span className="text-[20px] leading-none">{e}</span>
+                        <span className="truncate">{word}</span>
                       </button>
                     ))}
                   </div>
@@ -1775,6 +1798,12 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <div className="flex min-w-0 items-center gap-1">
             <span data-notranslate className="truncate text-[14px] font-extrabold drop-shadow">
               {p.author}
+              {/* 😊 "life is 😊 happy" */}
+              {blogMood(p.mood) && (
+                <span className="font-semibold">
+                  {" "}is {blogMood(p.mood)![0]} <b className="font-extrabold">{blogMood(p.mood)![1]}</b>
+                </span>
+              )}
             </span>
             {verified && (
               // eslint-disable-next-line @next/next/no-img-element

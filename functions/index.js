@@ -25756,6 +25756,7 @@ exports.founderStickerPack = functionsV1.runWith({ timeoutSeconds: 60, memory: "
 // blog_posts/{id}/comments/{cid}, /likes/{uid}, /views/{uid}
 // Everything is written here (the rules let nobody write). Anyone can read.
 // =====================================================================
+const BLOG_MOODS = ["happy", "loved", "sad", "excited", "thankful", "blessed", "cool", "tired", "inlove", "angry", "sick", "celebrating"];
 const BLOG_CATEGORIES = ["life", "games", "music", "fun", "news", "love", "tips", "other"];
 const BLOG_POSTS_PER_DAY = 5;
 const BLOG_COMMENTS_PER_DAY = 100;
@@ -25829,7 +25830,9 @@ function blogClean(d) {
     place: String(d.place || "").replace(/\s+/g, " ").trim().slice(0, 60),
     placeSub: String(d.place ? d.placeSub || "" : "").replace(/\s+/g, " ").trim().slice(0, 80),
   };
-  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }), ...(thumbOk ? { thumb } : {}), ...loc };
+  // 😊 the writer's mood ("mahin is 😊 happy"): one of BLOG_MOODS, "" = none; left out = kept
+  const mood = d.mood === undefined ? {} : { mood: BLOG_MOODS.includes(String(d.mood)) ? String(d.mood) : "" };
+  return { title, body, cover, category, excerpt, firstImage: imgs[0] || "", ...(bg === null ? {} : { bg }), ...(thumbOk ? { thumb } : {}), ...loc, ...mood };
 }
 // 🔔 an alert in the person's migAlerts
 function blogAlert(batch, toUsername, fromUsername, postId, message) {

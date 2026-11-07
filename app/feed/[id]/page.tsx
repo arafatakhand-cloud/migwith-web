@@ -15,6 +15,7 @@ import {
   blogCall,
   blogCategoryLabel,
   blogPrivacyLabel,
+  blogMood,
   BLOG_PRIVACY,
   BLOG_REACTIONS,
   blogCoverFallback,
@@ -352,13 +353,18 @@ export default function BlogPostPage() {
         </div>
 
         <div className="px-4 pt-3">
-          <div className="flex items-center gap-2 text-[12.5px] text-[#5A6F93]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-[#5A6F93]">
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: color }}>
               {post.author.slice(0, 1).toUpperCase()}
             </span>
             <Link href={`/profile/${encodeURIComponent(post.author)}`} data-notranslate className="truncate font-bold" style={{ color }}>
               {post.author}
             </Link>
+            {blogMood(post.mood) && (
+              <span className="shrink-0 font-semibold text-[#3B4266]">
+                is {blogMood(post.mood)![0]} <b>{blogMood(post.mood)![1]}</b>
+              </span>
+            )}
             <span className="shrink-0">
               · {blogAgo(post.createdMs)}
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
