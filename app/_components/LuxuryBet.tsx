@@ -8,6 +8,7 @@ import { LbStyleDialog, lbBoxStyle, lbSkinNow, lbIsGlass, lbTileFace, lbChipFace
 import { LB_KINDS, useInventory } from "./StyleShop";
 import { useRememberedAmount } from "../../lib/amountMemory";
 import { awardUserXp } from "../../lib/xp";
+import { serverNow } from "../../lib/serverTime";
 
 // 🎰 Luxury Bet — Luxury Bot's game with new characters, run ENTIRELY by the
 // server (startLuxuryBet / placeLuxuryBet / tickLuxuryBet). The web only shows
@@ -116,7 +117,10 @@ export function useLuxuryBet(
   const [phaseEndsAt, setPhaseEndsAt] = useState(0);
   const [round, setRound] = useState(0);
   const [myBets, setMyBets] = useState<Record<string, number>>({});
-  const [now, setNow] = useState(Date.now());
+  // ⏱ server time, not the phone's clock: phaseEndsAt is the server's time, so a
+  // phone whose clock is off showed the wrong countdown and closed betting early / late
+  // (the room's own presence heartbeat teaches the offset, as for the other games)
+  const [now, setNow] = useState(() => serverNow());
   const [starting, setStarting] = useState(false);
   const [inFlight, setInFlight] = useState(0);
   const [lastBet, setLastBet] = useState<{ character: string; amount: number } | null>(null);
@@ -176,7 +180,7 @@ export function useLuxuryBet(
   useEffect(() => {
     if (!enabled) return;
     const t = setInterval(() => {
-      const n = Date.now();
+      const n = serverNow();
       setNow(n);
       const due = running && ((phase === "BETTING" && n >= phaseEndsAt + 500) || phase === "SETTLING");
       if (due && n - lastTick.current > 4000) {
@@ -286,14 +290,14 @@ export function useLuxuryBet(
       let stopped = false;
       try {
         for (const [character, amount] of queue) {
-          if (Date.now() >= endsAtRef.current) { stopped = true; break; } // the round closed
+          if (serverNow() >= endsAtRef.current) { stopped = true; break; } // the round closed
           // one bid per ~1.2 s; "Betting too fast" (nothing charged) → wait and send the SAME bid again,
           // so a 2x never stops halfway (it used to: 40k → 52k instead of 80k)
           let sent = false;
           for (let attempt = 0; attempt < 4 && !sent; attempt++) {
             const wait = (attempt === 0 ? 1200 : 1600) - (Date.now() - lastBetSentAt.current);
             if (wait > 0) await sleep(wait);
-            if (Date.now() >= endsAtRef.current) break;
+            if (serverNow() >= endsAtRef.current) break;
             lastBetSentAt.current = Date.now();
             try {
               const { data } = await betCall({
