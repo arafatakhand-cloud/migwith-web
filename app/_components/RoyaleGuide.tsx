@@ -459,7 +459,7 @@ const SCENES: Scene[] = [
     len: 6500,
     draw: (t) => {
       const rows: [string, string, boolean][] = [
-        ["🔴 Red 1,000", "+1,900", true],
+        ["🔴 Red 1,000", "+1,800", true],
         ["✋ Run 200", "+3,000", true],
         ["🔵 Blue 500", "lost", false],
       ];
