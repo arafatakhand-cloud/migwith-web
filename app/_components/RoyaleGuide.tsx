@@ -228,8 +228,8 @@ const SCENES: Scene[] = [
           {at(t, 3400) && (
             <div className="relative mt-2 text-center">
               {at(t, 3600) && <Confetti />}
-              <p className="royale-tick text-[18px] font-black text-amber-300">🪙 1,900</p>
-              <p className="royale-tick text-[10.5px] font-bold text-[#DCE3FF]">1,000 on Red returns 1,900 — stake included</p>
+              <p className="royale-tick text-[18px] font-black text-amber-300">🪙 1,800</p>
+              <p className="royale-tick text-[10.5px] font-bold text-[#DCE3FF]">1,000 on Red returns 1,800 — stake included</p>
             </div>
           )}
         </>
