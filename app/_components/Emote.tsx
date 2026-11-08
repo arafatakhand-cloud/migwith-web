@@ -14,6 +14,7 @@ import {
   readRecentEmotes,
   rememberEmote,
   splitEmotes,
+  PICKER_HIDDEN,
 } from "../../lib/emotes";
 
 // ---------------------------------------------------------------------------
@@ -141,7 +142,7 @@ export function EmotePanel({
     // the app's 120 classic emoticons (":)", ":D", ":@" …), right after Recent
     { key: "classic120", title: "miGlife Classic", tabId: CLASSIC_EMOTES[0].id, glyph: null, ids: CLASSIC_EMOTES.map((e) => e.id) },
     { key: GIF_GROUP.key, title: "😆 MIGLIFE Animated", tabId: null, glyph: "😆", ids: GIF_GROUP.ids },
-    ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids })),
+    ...EMOTE_GROUPS.map((g) => ({ key: g.key, title: g.title, tabId: g.tab, glyph: null, ids: g.ids.filter((id) => !PICKER_HIDDEN.has(id)) })),
     ...ANIMATED_GROUPS.map((g, i) => ({ key: g.key, title: `✨ ${g.title}`, tabId: null, glyph: ANIM_GLYPHS[i] ?? "✨", ids: g.ids })),
   ];
   const [active, setActive] = useState(0);
