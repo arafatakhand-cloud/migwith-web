@@ -12,7 +12,7 @@ import { db, functions } from "../../lib/firebase";
 // catalogs. The server charges the edited price too.
 
 // prev = the value BEFORE the last change (the last history entry): what ↺ Reset goes back to.
-type Override = { name: string | null; price: number | null; prev: { name: string; price: number } | null };
+type Override = { name: string | null; price: number | null; prev: { name: string; price: number } | null; hidden: boolean };
 export type ShopOverrides = { colors: Record<string, Override>; entryFx: Record<string, Override> };
 
 function parse(raw: unknown): Record<string, Override> {
@@ -26,7 +26,7 @@ function parse(raw: unknown): Record<string, Override> {
     const history = Array.isArray((m as { history?: unknown }).history) ? ((m as { history: unknown[] }).history) : [];
     const last = history[history.length - 1] as { name?: unknown; price?: unknown } | undefined;
     const prev = last && typeof last.name === "string" && typeof last.price === "number" ? { name: last.name, price: last.price } : null;
-    out[id] = { name, price, prev };
+    out[id] = { name, price, prev, hidden: (m as { hidden?: unknown }).hidden === true };
   }
   return out;
 }
@@ -48,9 +48,11 @@ export function useShopOverrides(enabled = true): ShopOverrides {
 export const shopName = (map: Record<string, Override>, id: string, fallback: string) => map[id]?.name ?? fallback;
 export const shopPrice = (map: Record<string, Override>, id: string, fallback: number) => map[id]?.price ?? fallback;
 export const shopPrev = (map: Record<string, Override>, id: string) => map[id]?.prev ?? null;
+/** 🗑 miglife deleted it from the shop (Entry Effects). */
+export const shopHidden = (map: Record<string, Override>, id: string) => map[id]?.hidden === true;
 
 const founderEditShopItem = httpsCallable<
-  { kind: "color" | "fx"; id: string; name?: string; price?: number; currentName?: string; reset?: boolean },
+  { kind: "color" | "fx"; id: string; name?: string; price?: number; currentName?: string; reset?: boolean; hidden?: boolean },
   { ok?: boolean }
 >(functions, "founderEditShopItem");
 
@@ -63,6 +65,7 @@ export function ShopItemEditDialog({
   currentName,
   currentPrice,
   previous,
+  hidden,
   onDone,
   onDismiss,
 }: {
@@ -73,6 +76,8 @@ export function ShopItemEditDialog({
   currentPrice: number;
   /** What ↺ Reset restores (null = nothing saved yet). */
   previous: { name: string; price: number } | null;
+  /** Entry Effects: deleted from the shop → the dialog shows ↩ Restore (undefined = no Delete button). */
+  hidden?: boolean;
   onDone: (message: string) => void;
   onDismiss: () => void;
 }) {
@@ -121,6 +126,20 @@ export function ShopItemEditDialog({
             : "No earlier name/price saved yet."}
         </p>
         {error && <p className="mt-1 text-xs font-bold text-[#E5484D]">{error}</p>}
+        {/* 🗑 Delete hides it from the shop (nobody can buy it); ↩ Restore brings it back */}
+        {hidden !== undefined && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              if (!hidden && !window.confirm(`Delete ${title} from the shop?\n\nNobody can buy it any more. People who already have it keep it until their 30 days end. You can restore it later.`)) return;
+              void call({ kind, id, hidden: !hidden }, hidden ? `↩ ${currentName} is back in the shop.` : `🗑 ${currentName} was deleted from the shop.`);
+            }}
+            className={`mt-3 w-full rounded-xl py-2 text-sm font-extrabold disabled:opacity-50 ${hidden ? "bg-[#E8F5E9] text-[#2E7D32]" : "bg-[#FDECEC] text-[#C62828]"}`}
+          >
+            {hidden ? "↩ Restore to the shop" : "🗑 Delete from the shop"}
+          </button>
+        )}
         <div className="mt-3 flex items-center justify-between text-sm font-bold">
           <button
             type="button"

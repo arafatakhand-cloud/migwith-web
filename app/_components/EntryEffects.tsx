@@ -8,7 +8,7 @@ import { serverNow } from "../../lib/serverTime";
 import { brandMiglife } from "../../lib/brand";
 import { useIsClassic } from "../../lib/uiStyle";
 import { isMainFounderName } from "../../lib/founder";
-import { ShopItemEditDialog, shopName, shopPrev, shopPrice, useShopOverrides } from "./ShopEdit";
+import { ShopItemEditDialog, shopHidden, shopName, shopPrev, shopPrice, useShopOverrides } from "./ShopEdit";
 import { FxCanvas, clamp01, dot, hashStr, heartPath, rgba, rng, useNewLineEvents, usePlayQueue } from "./RoomEffects";
 
 // ✨ ENTRY EFFECTS (the app's EntryEffects.kt) — 30-day subscriptions bought
@@ -1685,7 +1685,11 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
   };
 
   const owned = ENTRY_FX.filter((f) => (inv.owned[f.id] || 0) > now);
-  const shown = ENTRY_FX.filter((f) => tab === "All" || f.category === tab).sort((a, b) => priceOf(a) - priceOf(b));
+  // 🗑 deleted effects are gone from the shop — miglife still sees them (marked) to restore
+  const gone = (fx: EntryFx) => shopHidden(ov.entryFx, fx.id);
+  const shown = ENTRY_FX.filter((f) => (tab === "All" || f.category === tab) && (isFounder || !gone(f) || (inv.owned[f.id] || 0) > now)).sort(
+    (a, b) => Number(gone(a)) - Number(gone(b)) || priceOf(a) - priceOf(b)
+  );
   const daysLeft = (id: string) => Math.max(0, Math.ceil(((inv.owned[id] || 0) - now) / 86_400_000));
   const rad = classic ? "rounded-[4px]" : "rounded-[14px]";
   const btn = `${classic ? "rounded-[4px]" : "rounded-full"} px-3 py-1.5 text-xs font-extrabold`;
@@ -1771,7 +1775,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
           const price = priceOf(fx);
           const canAfford = balance !== null && balance >= price;
           return (
-            <div key={fx.id} className={`pb-[3px] ${rad}`} style={{ background: rgba(fx.accent, 0.55) }}>
+            <div key={fx.id} className={`pb-[3px] ${rad} ${gone(fx) ? "opacity-50" : ""}`} style={{ background: rgba(fx.accent, 0.55) }}>
               <div className={`flex overflow-hidden bg-gradient-to-b from-white to-[#F6F6F8] shadow-[0_2px_4px_rgba(0,0,0,.18)] ${rad}`}>
                 <span className="w-1 shrink-0" style={{ background: fx.accent }} />
                 <div className="min-w-0 flex-1 p-[11px]">
@@ -1792,6 +1796,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                     <Chip text="30 days" color={fx.accent} />
                     <Chip text={fx.category} color="#6B7788" />
                     {isOwned && <Chip text={`OWNED · ${daysLeft(fx.id)}d`} color="#2E9E6B" />}
+                    {gone(fx) && <Chip text="🗑 DELETED" color="#C62828" />}
                   </div>
                   {/* mini banner: what everyone sees when you enter */}
                   <button
@@ -1831,7 +1836,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                     ) : (
                       <button
                         type="button"
-                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
+                        onClick={() => (gone(fx) ? setMessage(`${nameOf(fx)} is no longer sold.`) : canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
                         className={`${btn} text-white`}
                         style={{ background: canAfford ? (classic ? "#F07A00" : "#7B4DE0") : "#B0B8C4" }}
                       >
@@ -1841,7 +1846,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
                     {isOwned && (
                       <button
                         type="button"
-                        onClick={() => (canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
+                        onClick={() => (gone(fx) ? setMessage(`${nameOf(fx)} is no longer sold.`) : canAfford ? setConfirm(fx) : setMessage(`You need ${price.toLocaleString("en-US")} coins for ${nameOf(fx)}.`))}
                         className={`${btn} bg-[#FFF3D6] text-[#8A5A00]`}
                       >
                         +30 days
@@ -1893,6 +1898,7 @@ export function EntryEffectShop({ uid, myName }: { uid: string; myName: string }
           currentName={nameOf(editing)}
           currentPrice={priceOf(editing)}
           previous={shopPrev(ov.entryFx, editing.id)}
+          hidden={gone(editing)}
           onDone={setMessage}
           onDismiss={() => setEditing(null)}
         />

@@ -23706,6 +23706,7 @@ exports.buyEntryEffect = functionsV1.https.onCall(async (data, context) => {
   const id = String((data && data.id) || "");
   if (!Object.prototype.hasOwnProperty.call(ENTRY_FX_SHOP, id)) throw new E("invalid-argument", "Unknown effect.");
   const fxOv = ((await readShopOverrides()).entryFx || {})[id] || {};
+  if (fxOv.hidden === true) throw new E("failed-precondition", "This effect is no longer sold.");
   const price = Number.isInteger(fxOv.price) && fxOv.price > 0 ? fxOv.price : ENTRY_FX_SHOP[id];
   const userRef = db.collection("users").doc(uid);
   const fxRef = entryFxRef(uid);
@@ -24338,6 +24339,13 @@ exports.founderEditShopItem = functionsV1.https.onCall(async (data, context) => 
     const curName = typeof cur.name === "string" && cur.name ? cur.name : baseName;
     const curPrice = Number.isInteger(cur.price) && cur.price > 0 ? cur.price : basePrice;
     const history = Array.isArray(cur.history) ? cur.history.slice(-9) : [];
+    // 🗑 Delete / ↩ Restore an Entry Effect: a deleted one is hidden from the
+    // shop and can't be bought (owners keep it until their 30 days end).
+    if (typeof data?.hidden === "boolean") {
+      if (kind !== "fx") throw new E("invalid-argument", "Only Entry Effects can be deleted here.");
+      tx.set(ref, { [field]: { [id]: { hidden: data.hidden } }, updatedAt: FieldValue.serverTimestamp(), updatedBy: uid }, { merge: true });
+      return { ok: true, hidden: data.hidden };
+    }
     if (data?.reset === true) {
       // ↺ Reset = go back to the value BEFORE the last change, and remember the
       // one it replaced, so pressing Reset again goes forward to it (it switches
