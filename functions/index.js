@@ -26281,6 +26281,67 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     return out;
   }
 
+  // 🌐 Translate a Mig (miglife: "no translate button" — the browser's own
+  // translator only works in desktop Chrome, not on phones). The server asks
+  // Google Translate (free web endpoint) and keeps the result per post +
+  // language + text, so each Mig is translated once per language.
+  if (action === "translate") {
+    const pid = String(d.postId || "").trim().slice(0, 100);
+    if (!pid) throw new E("invalid-argument", "Which post?");
+    let to = String(d.to || "en").trim().toLowerCase().split("-")[0];
+    if (!/^[a-z]{2,3}$/.test(to)) to = "en";
+    const ref = await resolvePost(pid);
+    const s = await ref.get();
+    if (!s.exists) throw new E("not-found", "That Mig is gone.");
+    const plain = (v) => String(v || "").split("\n")
+      .filter((l) => !/^!\[\]\(https:\/\/[^)\s]+\)$/.test(l.trim()))
+      .join("\n").replace(/\*\*/g, "").trim().slice(0, 4500);
+    const title = plain(s.get("title")).slice(0, 300);
+    const body = plain(s.get("body"));
+    if (!title && !body) throw new E("failed-precondition", "Nothing to translate.");
+    const hash = crypto.createHash("sha1").update(title + "\u0000" + body).digest("hex").slice(0, 16);
+    const cacheRef = db.collection("blog_translations").doc(`${pid}_${to}`);
+    const cached = await cacheRef.get();
+    if (cached.exists && cached.get("hash") === hash) {
+      return { ok: true, title: cached.get("title") || "", text: cached.get("text") || "", from: cached.get("from") || "", to: cached.get("to") || to };
+    }
+    const gtx = async (q, tl) => {
+      if (!q) return { text: "", from: "" };
+      const res = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&dt=t&tl=" + encodeURIComponent(tl), {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: "q=" + encodeURIComponent(q),
+      });
+      if (!res.ok) throw new Error("translate " + res.status);
+      const j = await res.json();
+      const text = (Array.isArray(j?.[0]) ? j[0] : []).map((seg) => (Array.isArray(seg) ? String(seg[0] || "") : "")).join("");
+      return { text, from: String(j?.[2] || "") };
+    };
+    let tl = to;
+    let out;
+    try {
+      out = { b: await gtx(body || title, tl) };
+      // already in my language → English (or Bangla, if it was English)
+      if (out.b.from && out.b.from.split("-")[0] === tl) {
+        tl = tl === "en" ? "bn" : "en";
+        out.b = await gtx(body || title, tl);
+      }
+      out.t = body && title ? await gtx(title, tl) : { text: "" };
+    } catch (err) {
+      console.error("blog translate failed", err);
+      throw new E("unavailable", "Couldn't translate right now. Try again.");
+    }
+    const result = {
+      title: body ? out.t.text : out.b.text,
+      text: body ? out.b.text : "",
+      from: (out.b.from || "").split("-")[0],
+      to: tl,
+    };
+    if (!result.text && !result.title) throw new E("unavailable", "No translation.");
+    await cacheRef.set({ ...result, hash, at: FieldValue.serverTimestamp() }).catch(() => {});
+    return { ok: true, ...result };
+  }
+
   if (action === "canModerate") {
     return { ok: true, canModerate: await blogCanModerate(uid, me) };
   }

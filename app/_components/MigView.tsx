@@ -414,7 +414,7 @@ export function MigView({
           </div>
           {tr?.text && (
             <div className="mt-3 whitespace-pre-line rounded-2xl border border-[#6366F1]/15 bg-[#EEF2FF] px-3.5 py-3 text-[15px] leading-[1.65] text-[#253A5E]">
-              <div className="mb-1 text-[11px] font-extrabold text-[#4F46E5]">🌐 English</div>
+              <div className="mb-1 text-[11px] font-extrabold text-[#4F46E5]">🌐 Translation</div>
               {tr.text}
             </div>
           )}

@@ -38,6 +38,8 @@ export function useRoomTranslation(id: string): RoomTranslation | null {
   );
 }
 export const hideRoomTranslation = (id: string) => set(id, null);
+/** For translations made elsewhere (the Feed asks the server). */
+export const setRoomTranslation = (id: string, v: RoomTranslation | null) => set(id, v);
 
 /** Translate INTO this browser's language (a Bengali browser → Bengali). */
 function targetLang(): string {

@@ -19,7 +19,7 @@ import { openReport } from "./ReportDialog";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { PageTitle } from "./LightCards";
-import { TranslateChip, useFeedTranslation } from "./FeedTranslate";
+import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgoBn,
   blogPrivacyLabel,
@@ -1813,6 +1813,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   const media = !!(p.video || pic);
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
+  const trToggle = useFeedTranslateToggle(p.id);
+  const hasWords = !!(p.title.trim() || p.excerpt.trim() || p.body.trim());
   // X2: in the Feed a Mig opens in the bottom sheet; elsewhere on its own page
   const open = () => (onOpen ? onOpen() : router.push(`/feed/${p.id}`));
   const [viewing, setViewing] = useState(false);
@@ -1882,12 +1884,14 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
             >
               {more ? "Show less ⌃" : "Read more ⌄"}
             </button>
+            <TranslateLink postId={p.id} />
           </div>
         ) : (
-          <div className="flex min-h-[340px] items-center justify-center px-7 pb-24 pt-20 text-center">
+          <div className="flex min-h-[340px] flex-col items-center justify-center px-7 pb-24 pt-20 text-center">
             <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
               <RichText text={text || "📷"} />
             </p>
+            {hasWords && <TranslateLink postId={p.id} dark={artInk === "#FFFFFF"} />}
           </div>
         )}
         {bigHeart > 0 && (
@@ -1994,6 +1998,11 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                   <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onSave())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
                     {saved ? "🔖 Unsave" : "🔖 Save"}
                   </button>
+                  {hasWords && (
+                    <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), trToggle.toggle())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
+                      {trToggle.on ? "🌐 See original" : trToggle.busy ? "🌐 Translating…" : "🌐 Translate"}
+                    </button>
+                  )}
                   {canReport && (
                     <button
                       type="button"
