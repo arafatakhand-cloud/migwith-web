@@ -72,7 +72,7 @@ function Side({ red, children, win, lose, label }: { red: boolean; children?: Re
         boxShadow: win ? "0 0 18px rgba(252,211,77,.5)" : undefined,
       }}
     >
-      <span className={`mb-1 text-[10px] font-black ${red ? "text-[#FF9C9C]" : "text-[#9DC4FF]"}`}>{label ?? (red ? "🔴 Red · 1.9x" : "🔵 Blue · 1.9x")}</span>
+      <span className={`mb-1 text-[10px] font-black ${red ? "text-[#FF9C9C]" : "text-[#9DC4FF]"}`}>{label ?? (red ? "🔴 Red · 1.8x" : "🔵 Blue · 1.8x")}</span>
       {children}
     </div>
   );
@@ -157,7 +157,7 @@ const SCENES: Scene[] = [
     draw: (t) => (
       <div className="flex h-full flex-col justify-end gap-1.5">
         {at(t, 500) && <Bubble who="You" text="!start" right />}
-        {at(t, 1600) && <Bubble who="MIG Royale Bot" bot text="MIG Royale started! Red vs Blue. Type !bet [option] [amount] (e.g. !bet red 500). [45 seconds]" />}
+        {at(t, 1600) && <Bubble who="MIG Royale Bot" bot text="MIG Royale started! Red vs Blue. Type !bet [option] [amount] (e.g. !bet red 500). [60 seconds]" />}
         {at(t, 2600) && (
           <div className="royale-tick flex items-center justify-center gap-2 pt-1">
             <Ring s={45 - Math.min(5, Math.floor((t - 2600) / 600))} />
@@ -170,8 +170,8 @@ const SCENES: Scene[] = [
   {
     ch: 0,
     title: "The betting window",
-    cap: "Everyone bets in the same 45 seconds — as often as they like.",
-    desc: "Betting stays open for 45 seconds. Bet with !bet <option> <amount> in chat, or from the game box. You can place several bets on several options; the totals on each side update live for everyone.",
+    cap: "Everyone bets in the same 60 seconds — as often as they like.",
+    desc: "Betting stays open for 60 seconds. Bet with !bet <option> <amount> in chat, or from the game box. You can place several bets on several options; the totals on each side update live for everyone.",
     len: 6500,
     draw: (t) => {
       const red = (at(t, 1200) ? 500 : 0) + (at(t, 3600) ? 1000 : 0);
@@ -180,11 +180,11 @@ const SCENES: Scene[] = [
       return (
         <>
           <div className="flex items-center gap-2">
-            <Side red label="🔴 Red · 1.9x">
+            <Side red label="🔴 Red · 1.8x">
               <span className="text-[14px] font-black text-white">{red ? `🪙 ${k(red)}` : "—"}</span>
             </Side>
             <Ring s={45 - Math.floor(t / 600)} />
-            <Side red={false} label="🔵 Blue · 1.9x">
+            <Side red={false} label="🔵 Blue · 1.8x">
               <span className="text-[14px] font-black text-white">{blue ? `🪙 ${k(blue)}` : "—"}</span>
             </Side>
           </div>
@@ -208,9 +208,9 @@ const SCENES: Scene[] = [
   },
   {
     ch: 1,
-    title: "Red or Blue — 1.9x",
-    cap: "Back a side. If it wins you get 1.9x your bet back.",
-    desc: "A side bet wins when that colour's hand is stronger. Payouts include your stake: 1,000 on Red returns 1,900 when Red wins. Bets on the other side lose. If both hands are exactly equal it's a tie and Red/Blue bets come back.",
+    title: "Red or Blue — 1.8x",
+    cap: "Back a side. If it wins you get 1.8x your bet back.",
+    desc: "A side bet wins when that colour's hand is stronger. Payouts include your stake: 1,000 on Red returns 1,800 when Red wins. Bets on the other side lose. If both hands are exactly equal it's a tie and Red/Blue bets come back.",
     len: 6500,
     draw: (t) => {
       const win = at(t, 2600);
@@ -336,8 +336,8 @@ const SCENES: Scene[] = [
     len: 7500,
     draw: (t) => {
       const tiles: [string, string, string][] = [
-        ["Red", "1.9x", "red"],
-        ["Blue", "1.9x", "blue"],
+        ["Red", "1.8x", "red"],
+        ["Blue", "1.8x", "blue"],
         ["Jutt", "2.5x", ""],
         ["Color", "10x", ""],
         ["Run", "15x", ""],
@@ -395,20 +395,20 @@ const SCENES: Scene[] = [
   {
     ch: 1,
     title: "Bet limits",
-    cap: "100 – 200,000 per option a round · biggest win 5,000,000.",
-    desc: "Each bet must be at least 100. You can put up to 200,000 on one option in a round (several options are fine), and your balance must cover every bet. The most one player can win in a round is 5,000,000.",
+    cap: "100 – 20,000 a bet · up to 50 bets and 1,000,000 a round.",
+    desc: "Each bet is 100 – 20,000. In one round you can place up to 50 bets, 1,000,000 coins in all (several options are fine), and your balance must cover every bet. Wins are paid in full — there is no win cap.",
     len: 6500,
     draw: (t) => (
       <>
         <div className="rounded-[12px] bg-gradient-to-b from-[#FFF4D6] to-[#F5E2B0] p-2 text-center text-[#3A2500]">
           <p className="text-[12px] font-black">📏 Limits</p>
-          {at(t, 300) && <p className="royale-tick text-[10.5px] font-bold">Each bet: 100 – 200,000 per option</p>}
-          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Biggest win: 5,000,000 a round</p>}
+          {at(t, 300) && <p className="royale-tick text-[10.5px] font-bold">Each bet: 100 – 20,000</p>}
+          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Per round: 50 bets · 1,000,000</p>}
           {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Your balance must cover every bet</p>}
         </div>
         <div className="mt-1.5 flex flex-col gap-1">
           {at(t, 2400) && <Bubble who="You" text="!bet tirel 300000" right />}
-          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Max 200,000 on one option per round." />}
+          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Max 1,000,000 per round — you can bet 20,000 more." />}
         </div>
       </>
     ),
@@ -417,7 +417,7 @@ const SCENES: Scene[] = [
     ch: 2,
     title: "The reveal",
     cap: "Betting closes, then the cards open: Red first, then Blue.",
-    desc: "When the 45 seconds end the box shows NO MORE BETS and the bot deals both hands face down. Red's three cards open, then Blue's. You can drag Blue's last card up to peek at it yourself. Everyone in the room sees the same result.",
+    desc: "When the 60 seconds end the box shows NO MORE BETS and the bot deals both hands face down. Red's three cards open, then Blue's. You can drag Blue's last card up to peek at it yourself. Everyone in the room sees the same result.",
     len: 7500,
     draw: (t) => {
       const r = count(t, [1900, 2400, 2900]);

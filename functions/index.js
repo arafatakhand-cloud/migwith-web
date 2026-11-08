@@ -18311,7 +18311,7 @@ exports.balanceWatchDaily = functionsV1
 // ===========================================================================
 // 👑 MIG Royale — Red vs Blue (Teen Patti hands)
 // ===========================================================================
-// Anyone types !start → 45 s betting. Bet on a SIDE (Red / Blue, 1.9x) or on a
+// Anyone types !start → 60 s betting. Bet on a SIDE (Red / Blue, 1.8x) or on a
 // HAND TYPE (Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x).
 // When betting closes the server deals 3 cards to Red and 3 to Blue from a
 // provably-fair shuffle (hash posted at the start, seed revealed at the end);
@@ -18319,13 +18319,18 @@ exports.balanceWatchDaily = functionsV1
 // side has that hand. A tie refunds side bets. Everything — coins, cards,
 // payouts — happens here on the server; the app only shows it.
 const ROYALE_ROOM_ID = "👑 MIG Royale Official";
-const ROYALE_BET_MS = 45_000;
+// 📏 Limits (miglife, 2026-11 — the same as the Royale Battle guide): each bet
+// 100 – 20,000; per player per round at most 50 bets and 1,000,000 in all.
+// NO win cap any more: what the multiplier says is what is paid (the old
+// 5,000,000 cap cut a 200,000 Tirel win from 30,000,000 to 5,000,000).
+const ROYALE_BET_MS = 60_000;
 const ROYALE_MIN_BET = 100;
-const ROYALE_MAX_BET_PER_OPTION = 200_000;   // per player, per option, per round
-const ROYALE_MAX_WIN = 5_000_000;            // per player, per round
+const ROYALE_MAX_BET = 20_000;               // one bet
+const ROYALE_MAX_BETS_PER_ROUND = 50;        // per player, per round
+const ROYALE_MAX_ROUND_TOTAL = 1_000_000;    // per player, per round, all options together
 const ROYALE_OPTIONS = {
-  red:       { label: "Red",        mult: 1.9 },
-  blue:      { label: "Blue",       mult: 1.9 },
+  red:       { label: "Red",        mult: 1.8 },
+  blue:      { label: "Blue",       mult: 1.8 },
   jutt:      { label: "Jutt",       mult: 2.5, cat: 2 },   // pair
   color:     { label: "Color",      mult: 10,  cat: 3 },   // flush
   run:       { label: "Run",        mult: 15,  cat: 4 },   // sequence
@@ -18384,7 +18389,8 @@ exports.startRoyale = functionsV1.https.onCall(async (data, context) => {
     royaleSay(tx, [
       "MIG Royale started! Red vs Blue.",
       "Type !bet [option] [amount] to bet (e.g. !bet red 500).",
-      "Options: Red 1.9x · Blue 1.9x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
+      "Options: Red 1.8x · Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
+      `Each bet 100 – ${royaleFmt(ROYALE_MAX_BET)} · up to ${ROYALE_MAX_BETS_PER_ROUND} bets and ${royaleFmt(ROYALE_MAX_ROUND_TOTAL)} per player a round.`,
       "Hand-type bets pay only when the WINNING side has that hand; a hand type on the losing side does not win.",
       `[${ROYALE_BET_MS / 1000} seconds]`,
     ], now);
@@ -18398,8 +18404,8 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
   const amount = Number(data && data.amount);
   const operationId = ludoValidOpId(data);
   if (!ROYALE_OPTIONS[option]) throw new functionsV1.https.HttpsError("invalid-argument", "Unknown option. Use red, blue, jutt, color, run, doublerun or tirel.");
-  if (!Number.isSafeInteger(amount) || amount < ROYALE_MIN_BET) {
-    throw new functionsV1.https.HttpsError("invalid-argument", `Minimum bet is ${ROYALE_MIN_BET}.`);
+  if (!Number.isSafeInteger(amount) || amount < ROYALE_MIN_BET || amount > ROYALE_MAX_BET) {
+    throw new functionsV1.https.HttpsError("invalid-argument", `A bet is ${ROYALE_MIN_BET} – ${royaleFmt(ROYALE_MAX_BET)} coins.`);
   }
   const userRef = db.collection("users").doc(uid);
   const opRef = db.collection("_operations").doc(`royale_bet_${operationId}`);
@@ -18416,8 +18422,16 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
     const betRef = royaleBetsCol().doc(`${roundNumber}_${uid}`);
     const betSnap = await tx.get(betRef);
     const bets = { ...((betSnap.exists && betSnap.get("bets")) || {}) };
-    if (Number(bets[option] || 0) + amount > ROYALE_MAX_BET_PER_OPTION) {
-      throw new functionsV1.https.HttpsError("failed-precondition", `Max ${royaleFmt(ROYALE_MAX_BET_PER_OPTION)} on one option per round.`);
+    const betCount = Number((betSnap.exists && betSnap.get("count")) || 0);
+    const soFar = Object.values(bets).reduce((a, b) => a + Number(b || 0), 0);
+    if (betCount >= ROYALE_MAX_BETS_PER_ROUND) {
+      throw new functionsV1.https.HttpsError("failed-precondition", `Max ${ROYALE_MAX_BETS_PER_ROUND} bets per round.`);
+    }
+    if (soFar + amount > ROYALE_MAX_ROUND_TOTAL) {
+      const left = ROYALE_MAX_ROUND_TOTAL - soFar;
+      throw new functionsV1.https.HttpsError("failed-precondition", left >= ROYALE_MIN_BET
+        ? `Max ${royaleFmt(ROYALE_MAX_ROUND_TOTAL)} per round — you can bet ${royaleFmt(left)} more.`
+        : `Max ${royaleFmt(ROYALE_MAX_ROUND_TOTAL)} per round reached. Wait for the next round.`);
     }
     const balance = Number(user.get("balance") || 0);
     if (!(balance >= amount)) throw new functionsV1.https.HttpsError("failed-precondition", "Insufficient coins.");
@@ -18432,7 +18446,7 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
       balanceBefore: balance, balanceAfter: balance - amount,
       roomId: ROYALE_ROOM_ID, roundNumber, operationId, createdAt: FieldValue.serverTimestamp(),
     });
-    tx.set(betRef, { uid, username, roundNumber, bets, total, updatedAt: FieldValue.serverTimestamp() });
+    tx.set(betRef, { uid, username, roundNumber, bets, total, count: betCount + 1, updatedAt: FieldValue.serverTimestamp() });
     // (Every bet used to also write "pool" / "bettors" on the ONE shared game
     // document — nothing reads them, but every bet transaction then fought
     // over that document, so with several people betting in the last
@@ -18476,7 +18490,7 @@ function royaleSettleOne(bets, winner, winCat) {
       parts.push(`${royaleFmt(amt)} on ${def.label}`);
     }
   }
-  return { win: Math.min(win, ROYALE_MAX_WIN), parts };
+  return { win, parts };
 }
 
 // Steps 2 + 3 for a round whose result is already locked on the game doc.

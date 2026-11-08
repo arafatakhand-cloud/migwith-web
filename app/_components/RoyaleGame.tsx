@@ -22,8 +22,8 @@ export const ROYALE_ROOM = "👑 MIG Royale Official";
 type RoyaleOption = { key: string; label: string; mult: string; side: boolean };
 
 export const ROYALE_OPTIONS: RoyaleOption[] = [
-  { key: "red", label: "Red", mult: "1.9x", side: true },
-  { key: "blue", label: "Blue", mult: "1.9x", side: true },
+  { key: "red", label: "Red", mult: "1.8x", side: true },
+  { key: "blue", label: "Blue", mult: "1.8x", side: true },
   { key: "jutt", label: "Jutt", mult: "2.5x", side: false },
   { key: "color", label: "Color", mult: "10x", side: false },
   { key: "run", label: "Run", mult: "15x", side: false },
@@ -350,7 +350,7 @@ export function royaleHandleCommand(state: RoyaleState, text: string, note: (t: 
   }
   if (cmd === "!help") {
     note(
-      "MIG Royale Bot: !start · !bet [red|blue|jutt|color|run|doublerun|tirel] [amount] · Red/Blue 1.9x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x · hand types pay only on the winning side"
+      "MIG Royale Bot: !start · !bet [red|blue|jutt|color|run|doublerun|tirel] [amount] · Red/Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x · hand types pay only on the winning side"
     );
     return true;
   }
@@ -459,7 +459,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
   const hands = ROYALE_OPTIONS.filter((o) => !o.side);
   const hot = hands.reduce<string | null>((best, o) => ((state.pool[o.key]?.coins || 0) > (best ? state.pool[best]?.coins || 0 : 0) ? o.key : best), null);
   const RING = 2 * Math.PI * 14;
-  const total = 45; // betting lasts 45 s
+  const total = 60; // betting lasts 60 s
 
   return (
     <div
@@ -640,14 +640,14 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           <RoyaleGuide />
           <p className="mt-3 text-[12.5px] font-black text-amber-300">📜 Rules</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[#DCE3FF]">
-            <li>Type !start or tap Start. Betting is open for 45 seconds.</li>
-            <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.9x (your stake included).</li>
+            <li>Type !start or tap Start. Betting is open for 60 seconds.</li>
+            <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.8x (your stake included).</li>
             <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
             <li>A hand bet pays only when the WINNING side has that hand.</li>
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
             <li>Tie: Red and Blue bets come back; a hand bet on that hand still wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
-            <li>Min 100 · max 200,000 per option a round · biggest win 5,000,000 a round. Double-tap a tile to bet at once.</li>
+            <li>Each bet 100 – 20,000 · up to 50 bets and 1,000,000 per round. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
@@ -805,8 +805,8 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                 aria-label="Custom amount"
               />
             </div>
-            {!CHIPS.includes(amount) && (amount < 100 || amount > 200000) && (
-              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Bets are 100 – 200,000</p>
+            {!CHIPS.includes(amount) && (amount < 100 || amount > 20000) && (
+              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Bets are 100 – 20,000</p>
             )}
 
             {/* ↻ Same + Bet */}
