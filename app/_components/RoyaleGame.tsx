@@ -647,7 +647,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
             <li>No ties: if both hands are exactly equal, both sides get new cards (the next cards of the same sealed deck) until one side wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
-            <li>Min bet 100 · no maximum — bet as much as your coins allow. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
+            <li>Min bet 100 · max 200,000 on each option · max 1,000,000 on all options together in a round. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>

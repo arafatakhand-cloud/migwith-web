@@ -18316,15 +18316,17 @@ exports.balanceWatchDaily = functionsV1
 // When betting closes the server deals 3 cards to Red and 3 to Blue from a
 // provably-fair shuffle (hash posted at the start, seed revealed at the end);
 // the better Teen Patti hand wins. A hand-type bet pays only if the WINNING
-// side has that hand. A tie refunds side bets. Everything — coins, cards,
+// side has that hand. Exactly equal hands are re-dealt (no ties). Everything — coins, cards,
 // payouts — happens here on the server; the app only shows it.
 const ROYALE_ROOM_ID = "👑 MIG Royale Official";
-// 📏 Limits (miglife, 2026-11): NO limits — a bet is at least 100 and your
-// coins must cover it, nothing else: no max per bet, no max per round, and
-// NO win cap (what the multiplier says is what is paid — the old 5,000,000
-// cap cut a 200,000 Tirel win from 30,000,000 to 5,000,000).
+// 📏 Limits (miglife, 2026-11): a bet is at least 100; per player per round at
+// most 200,000 on each option (Red, Blue, Jutt, Color, Run, Double Run, Tirel)
+// and at most 1,000,000 on all options together. NO win cap (what the
+// multiplier says is what is paid).
 const ROYALE_BET_MS = 60_000;
 const ROYALE_MIN_BET = 100;
+const ROYALE_MAX_PER_OPTION = 200_000;
+const ROYALE_MAX_PER_ROUND = 1_000_000;
 const ROYALE_OPTIONS = {
   red:       { label: "Red",        mult: 1.8 },
   blue:      { label: "Blue",       mult: 1.8 },
@@ -18387,7 +18389,7 @@ exports.startRoyale = functionsV1.https.onCall(async (data, context) => {
       "MIG Royale started! Red vs Blue.",
       "Type !bet [option] [amount] to bet (e.g. !bet red 500).",
       "Options: Red 1.8x · Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
-      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · no maximum · wins paid in full.`,
+      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · max ${royaleFmt(ROYALE_MAX_PER_OPTION)} on each option · max ${royaleFmt(ROYALE_MAX_PER_ROUND)} a round · wins paid in full.`,
       "Hand-type bets pay only when the WINNING side has that hand; a hand type on the losing side does not win.",
       `[${ROYALE_BET_MS / 1000} seconds]`,
     ], now);
@@ -18423,8 +18425,22 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
     const balance = Number(user.get("balance") || 0);
     if (!(balance >= amount)) throw new functionsV1.https.HttpsError("failed-precondition", "Insufficient coins.");
     const username = String(user.get("username") || "Player");
-    bets[option] = Number(bets[option] || 0) + amount;
-    const total = Object.values(bets).reduce((a, b) => a + Number(b || 0), 0);
+    const onOption = Number(bets[option] || 0);
+    if (onOption + amount > ROYALE_MAX_PER_OPTION) {
+      const left = Math.max(0, ROYALE_MAX_PER_OPTION - onOption);
+      throw new functionsV1.https.HttpsError("failed-precondition",
+        `Max ${royaleFmt(ROYALE_MAX_PER_OPTION)} on ${ROYALE_OPTIONS[option].label} a round.` +
+        (left >= ROYALE_MIN_BET ? ` You can add ${royaleFmt(left)} more.` : ""));
+    }
+    const before = Object.values(bets).reduce((a, b) => a + Number(b || 0), 0);
+    if (before + amount > ROYALE_MAX_PER_ROUND) {
+      const left = Math.max(0, ROYALE_MAX_PER_ROUND - before);
+      throw new functionsV1.https.HttpsError("failed-precondition",
+        `Max ${royaleFmt(ROYALE_MAX_PER_ROUND)} on all options together a round.` +
+        (left >= ROYALE_MIN_BET ? ` You can add ${royaleFmt(left)} more.` : ""));
+    }
+    bets[option] = onOption + amount;
+    const total = before + amount;
 
     tx.update(userRef, { balance: balance - amount, balanceUpdatedAt: FieldValue.serverTimestamp() });
     tx.set(userRef.collection("coin_transactions").doc(`royale_${operationId}`), {
