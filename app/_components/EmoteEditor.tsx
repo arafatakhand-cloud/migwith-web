@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, type ClipboardEvent, type KeyboardEvent } from "react";
-import { emoteSrc, splitEmotes } from "../../lib/emotes";
+import { emoteSrc, isAnimated, isSprite, splitEmotes } from "../../lib/emotes";
 
 // ✍️ A writing box where an emote shows as its PICTURE (like the app), not its code.
 // The value is still the codes (":)", ";m18" …), so what is saved and sent is unchanged.
@@ -26,6 +26,21 @@ type Props = {
   disabled?: boolean;
 };
 
+// 🖼 the picture shown in the writing box. A MIGLIFE Animated emote is an
+// 18-frame strip, and an animated Google emoji is a Lottie file — shown as an
+// <img> as they are, the strip came out as squeezed stripes and the Lottie as a
+// broken picture (miglife: "see how emojis show while sending"). The box shows
+// the strip's first frame and the emoji's own still glyph instead.
+function editorSrc(id: string): string {
+  if (isAnimated(id)) {
+    const cp = parseInt(id.replace(/^[a-z]+_/, "").split("_")[0], 16);
+    const ch = Number.isFinite(cp) ? String.fromCodePoint(cp) : "🙂";
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text x="50" y="54" font-size="84" text-anchor="middle" dominant-baseline="middle">${ch}</text></svg>`;
+    return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+  }
+  return emoteSrc(id);
+}
+
 // value (codes) -> the box's content: text, and a picture for every emote code
 function render(el: HTMLElement, value: string) {
   el.textContent = "";
@@ -34,12 +49,17 @@ function render(el: HTMLElement, value: string) {
       el.appendChild(document.createTextNode(p.text));
     } else {
       const img = document.createElement("img");
-      img.src = emoteSrc(p.emote);
+      img.src = editorSrc(p.emote);
       img.alt = p.raw;
       img.dataset.code = p.raw;
       img.draggable = false;
       img.contentEditable = "false";
       img.className = "inline-block h-[1.3em] w-[1.3em] align-[-0.3em]";
+      // the strip's first frame only (not the whole strip squeezed into one square)
+      if (isSprite(p.emote)) {
+        img.style.objectFit = "cover";
+        img.style.objectPosition = "0 50%";
+      }
       el.appendChild(img);
     }
   }
