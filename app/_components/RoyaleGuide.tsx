@@ -395,8 +395,8 @@ const SCENES: Scene[] = [
   {
     ch: 1,
     title: "Bet limits",
-    cap: "Min 100 · 40 bets a round on any options · max 1,000,000.",
-    desc: "Each bet must be at least 100. In one round you can place up to 40 bets, on any options you like, and at most 1,000,000 on all of them together. Wins are paid in full — there is no win cap.",
+    cap: "Min 100 · 40 bets a round on any options · no maximum amount.",
+    desc: "Each bet must be at least 100. In one round you can place up to 40 bets, on any options you like and of any size your coins cover. Wins are paid in full — there is no win cap.",
     len: 6500,
     draw: (t) => (
       <>
@@ -404,7 +404,7 @@ const SCENES: Scene[] = [
           <p className="text-[12px] font-black">📏 Limits</p>
           {at(t, 300) && <p className="royale-tick text-[10.5px] font-bold">Each bet: at least 100</p>}
           {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Up to 40 bets a round — any options</p>}
-          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Max 1,000,000 a round · no win cap</p>}
+          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">No maximum amount · no win cap</p>}
         </div>
         <div className="mt-1.5 flex flex-col gap-1">
           {at(t, 2400) && <Bubble who="You" text="!bet tirel 500 (bet no. 41)" right />}

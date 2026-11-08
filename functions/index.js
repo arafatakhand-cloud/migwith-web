@@ -18320,11 +18320,10 @@ exports.balanceWatchDaily = functionsV1
 // payouts — happens here on the server; the app only shows it.
 const ROYALE_ROOM_ID = "👑 MIG Royale Official";
 // 📏 Limits (miglife, 2026-11): a bet is at least 100; per player per round at
-// most 40 bets (on any options) and at most 1,000,000 on all options together.
-// No limit per option. NO win cap (what the multiplier says is what is paid).
+// most 40 bets (on any options, any amount the coins cover). No limit per
+// option and no limit per round. NO win cap (what the multiplier says is what is paid).
 const ROYALE_BET_MS = 40_000;
 const ROYALE_MIN_BET = 100;
-const ROYALE_MAX_PER_ROUND = 1_000_000;
 const ROYALE_MAX_BETS = 40;           // bets per player per round
 const ROYALE_OPTIONS = {
   red:       { label: "Red",        mult: 1.8 },
@@ -18388,7 +18387,7 @@ exports.startRoyale = functionsV1.https.onCall(async (data, context) => {
       "MIG Royale started! Red vs Blue.",
       "Type !bet [option] [amount] to bet (e.g. !bet red 500).",
       "Options: Red 1.8x · Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
-      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · up to ${ROYALE_MAX_BETS} bets on any options · max ${royaleFmt(ROYALE_MAX_PER_ROUND)} a round · wins paid in full.`,
+      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · up to ${ROYALE_MAX_BETS} bets on any options · no maximum amount · wins paid in full.`,
       "Hand-type bets pay only when the WINNING side has that hand; a hand type on the losing side does not win.",
       `[${ROYALE_BET_MS / 1000} seconds]`,
     ], now);
@@ -18430,12 +18429,6 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
     }
     const onOption = Number(bets[option] || 0);
     const before = Object.values(bets).reduce((a, b) => a + Number(b || 0), 0);
-    if (before + amount > ROYALE_MAX_PER_ROUND) {
-      const left = Math.max(0, ROYALE_MAX_PER_ROUND - before);
-      throw new functionsV1.https.HttpsError("failed-precondition",
-        `Max ${royaleFmt(ROYALE_MAX_PER_ROUND)} on all options together a round.` +
-        (left >= ROYALE_MIN_BET ? ` You can add ${royaleFmt(left)} more.` : ""));
-    }
     bets[option] = onOption + amount;
     const total = before + amount;
 
