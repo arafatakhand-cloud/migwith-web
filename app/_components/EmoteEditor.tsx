@@ -128,7 +128,12 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
   useImperativeHandle(ref, () => ({
     el: () => box.current,
     blur: () => box.current?.blur(),
-    focus: () => box.current?.focus(),
+    focus: () => {
+      const el = box.current;
+      if (!el) return;
+      el.focus();
+      if (document.activeElement === el) setCaretAt(el, toCodes(el).length);
+    },
     getCaret: () => (box.current ? caretOffset(box.current) : 0),
     setCaret: (pos: number, focus = true) => {
       const el = box.current;
@@ -142,7 +147,13 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    if (toCodes(el) !== value) render(el, value);
+    if (toCodes(el) !== value) {
+      render(el, value);
+      // ⌨️ rebuilding the box loses the caret, and the phone then puts it at the
+      // very start (miglife: "the cursor jumps to the left" after picking a
+      // /gift name or an @mention) — while typing here, keep it at the end
+      if (document.activeElement === el) setCaretAt(el, value.length);
+    }
   }, [value]);
 
   const report = () => {
