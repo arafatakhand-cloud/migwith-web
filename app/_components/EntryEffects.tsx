@@ -22,7 +22,7 @@ export type EntryFx = {
   banner: [string, string]; ink: string; accent: string; subtitle: string;
 };
 
-export const ENTRY_FX_CATEGORIES = ["🌟 Classic", "🌸 Nature", "💖 Love", "🎉 Party", "🏮 Festival", "🔥 Elements", "💰 Rich", "👑 Royal", "🚀 Legend", "🐉 Mythic", "💎 Exclusive"];
+export const ENTRY_FX_CATEGORIES = ["🌟 Classic", "🌸 Nature", "💖 Love", "🎉 Party", "🏮 Festival", "🔥 Elements", "💰 Rich", "👑 Royal", "🚀 Legend", "🐾 Wild", "🐉 Mythic", "💎 Exclusive"];
 
 export const ENTRY_FX: EntryFx[] = [
   { id: "sparkle", name: "Golden Sparkle", emoji: "✨", category: "🌟 Classic", price: 100000, banner: ["#3E2723", "#6D4C41"], ink: "#FFF8E1", accent: "#FFD54F", subtitle: "sparkles into the room" },
@@ -54,6 +54,27 @@ export const ENTRY_FX: EntryFx[] = [
   { id: "frost", name: "Frost Wings", emoji: "❄️", category: "💎 Exclusive", price: 600000, banner: ["#001E3C", "#0277BD"], ink: "#E1F5FE", accent: "#80D8FF", subtitle: "soars in on wings of ice!" },
   { id: "blackhole", name: "Black Hole", emoji: "🕳️", category: "💎 Exclusive", price: 700000, banner: ["#0A0014", "#311B92"], ink: "#FFE0B2", accent: "#FF9100", subtitle: "bends space and time!" },
   { id: "dragon", name: "Dragon King", emoji: "🐉", category: "💎 Exclusive", price: 800000, banner: ["#3E0000", "#B71C1C"], ink: "#FFF8E1", accent: "#FFC400", subtitle: "rides in on a fire dragon!" },
+  // ✨ 20 new (2026-11)
+  { id: "ocean", name: "Ocean Wave", emoji: "🌊", category: "🌸 Nature", price: 130000, banner: ["#01303F", "#0277BD"], ink: "#E1F5FE", accent: "#80D8FF", subtitle: "rides in on a giant wave!" },
+  { id: "desert", name: "Desert Storm", emoji: "🏜️", category: "🌸 Nature", price: 140000, banner: ["#4E2A0A", "#C17A2C"], ink: "#FFF3E0", accent: "#FFD180", subtitle: "storms in from the desert" },
+  { id: "tornado", name: "Tornado", emoji: "🌪️", category: "🔥 Elements", price: 190000, banner: ["#1B2430", "#4B5B70"], ink: "#ECEFF1", accent: "#CFD8DC", subtitle: "spins in like a tornado!" },
+  { id: "ice", name: "Ice Shatter", emoji: "🧊", category: "🔥 Elements", price: 210000, banner: ["#002B44", "#0288D1"], ink: "#E1F5FE", accent: "#B3E5FC", subtitle: "breaks through the ice!" },
+  { id: "volcano", name: "Volcano", emoji: "🌋", category: "🔥 Elements", price: 230000, banner: ["#2A0500", "#B71C1C"], ink: "#FFF3E0", accent: "#FF9100", subtitle: "erupts into the room!" },
+  { id: "glitch", name: "Cyber Glitch", emoji: "👾", category: "🎉 Party", price: 230000, banner: ["#0A0A12", "#2D0B4E"], ink: "#E0FFF6", accent: "#00FFC8", subtitle: "hacks into the room!" },
+  { id: "hologram", name: "Hologram", emoji: "🛸", category: "🎉 Party", price: 260000, banner: ["#00141A", "#00363F"], ink: "#E0F7FA", accent: "#00E5FF", subtitle: "beams in as a hologram" },
+  { id: "tiger", name: "Tiger Claw", emoji: "🐯", category: "🐾 Wild", price: 260000, banner: ["#3A1200", "#E65100"], ink: "#FFF3E0", accent: "#FFAB00", subtitle: "slashes in like a tiger!" },
+  { id: "peacock", name: "Peacock Glory", emoji: "🦚", category: "🐾 Wild", price: 290000, banner: ["#003D33", "#00897B"], ink: "#E0F2F1", accent: "#26C6DA", subtitle: "opens its royal feathers" },
+  { id: "eagle", name: "Golden Eagle", emoji: "🦅", category: "🐾 Wild", price: 340000, banner: ["#2E1E00", "#A06A00"], ink: "#FFF8E1", accent: "#FFD54F", subtitle: "soars in like an eagle" },
+  { id: "lion", name: "Lion Roar", emoji: "🦁", category: "🐾 Wild", price: 360000, banner: ["#3B2200", "#C77800"], ink: "#FFF8E1", accent: "#FFC107", subtitle: "roars into the room!" },
+  { id: "champagne", name: "Champagne Pop", emoji: "🍾", category: "💰 Rich", price: 270000, banner: ["#2B1B00", "#7A5A00"], ink: "#FFF8E1", accent: "#FFE082", subtitle: "pops the champagne!" },
+  { id: "treasure", name: "Treasure Chest", emoji: "🪙", category: "💰 Rich", price: 330000, banner: ["#2A1400", "#8A4B00"], ink: "#FFF8E1", accent: "#FFC107", subtitle: "opens the treasure!" },
+  { id: "palace", name: "Palace Gates", emoji: "🏰", category: "👑 Royal", price: 380000, banner: ["#2B1A00", "#8D6E00"], ink: "#FFF8E1", accent: "#FFD54F", subtitle: "— the palace gates open!" },
+  { id: "rocket", name: "Rocket Launch", emoji: "🚀", category: "🚀 Legend", price: 360000, banner: ["#0B1736", "#1E3A8A"], ink: "#E3F2FD", accent: "#FFAB40", subtitle: "blasts off into the room!" },
+  { id: "eclipse", name: "Moon Eclipse", emoji: "🌑", category: "🚀 Legend", price: 400000, banner: ["#05050C", "#1B1B3A"], ink: "#FFF8E1", accent: "#FFD54F", subtitle: "rises with the eclipse" },
+  { id: "spell", name: "Spell Circle", emoji: "🔮", category: "🚀 Legend", price: 410000, banner: ["#1A0538", "#5E35B1"], ink: "#EDE7F6", accent: "#B388FF", subtitle: "appears from a magic circle" },
+  { id: "saturn", name: "Saturn Rings", emoji: "🪐", category: "🚀 Legend", price: 430000, banner: ["#14072B", "#3B1D7A"], ink: "#F3E5F5", accent: "#FFCC80", subtitle: "orbits in from space" },
+  { id: "unicorn", name: "Starlight Unicorn", emoji: "🦄", category: "🐉 Mythic", price: 460000, banner: ["#2A0B4A", "#C2185B"], ink: "#FCE4EC", accent: "#FFF59D", subtitle: "gallops on a rainbow" },
+  { id: "samurai", name: "Samurai Slash", emoji: "⚔️", category: "💎 Exclusive", price: 650000, banner: ["#1A0000", "#5B0F0F"], ink: "#FFEBEE", accent: "#FFFFFF", subtitle: "cuts in like a samurai" },
 ];
 
 export const entryFxById = (id: string | null | undefined) => ENTRY_FX.find((f) => f.id === id) || null;
@@ -1200,6 +1221,378 @@ function drawEntryFx(ctx: CanvasRenderingContext2D, w: number, h: number, fx: En
         const x = r() * w, ph = r(), life = 1.2 + r();
         const tt = ((t + ph * life) % life) / life;
         dot(ctx, x, h - tt * h * 0.9, 1.5 + 2 * (1 - tt), rgba("#FF9100", (1 - tt) * 0.8));
+      }
+      break;
+    }
+    // ===================== ✨ 20 NEW (2026-11) =====================
+    case "ocean": {
+      fill(ctx, rgba("#01303F", 0.45 * dimA), w, h);
+      const rise = 1 - Math.pow(1 - clamp01(t / 1.2), 2);
+      const cols = ["#4FC3F7", "#0288D1", "#01579B"];
+      for (let k = 2; k >= 0; k--) {
+        const base = h - rise * h * 0.42 - k * 28;
+        ctx.beginPath();
+        ctx.moveTo(0, h);
+        for (let x = 0; x <= w + 10; x += 10) ctx.lineTo(x, base - 22 * sin(x / 48 + t * 4 + k * 1.7));
+        ctx.lineTo(w, h);
+        ctx.closePath();
+        ctx.fillStyle = rgba(cols[k], 0.55 + k * 0.12);
+        ctx.fill();
+        if (k === 0) for (let x = 0; x <= w; x += 14) dot(ctx, x, base - 22 * sin(x / 48 + t * 4) - 3, 3 + (x % 3), rgba("#FFFFFF", 0.85));
+      }
+      for (let i = 0; i < 45; i++) {
+        const x = r() * w, ph = r(), life = 0.9 + r() * 0.6;
+        const tt = ((t + ph * life) % life) / life;
+        dot(ctx, x, h - rise * h * 0.42 - tt * h * 0.35, 2 + r() * 3, rgba("#E1F5FE", (1 - tt) * 0.9));
+      }
+      break;
+    }
+    case "glitch": {
+      fill(ctx, rgba("#05000F", 0.6 * dimA), w, h);
+      for (let y = 0; y < h; y += 4) { ctx.fillStyle = rgba("#00FFC8", 0.05); ctx.fillRect(0, y, w, 1); }
+      const frame = Math.floor(t * 14);
+      const hz = (a: number) => { const s = sin(a * 127.1 + frame * 311.7) * 43758.5453; return s - Math.floor(s); };
+      const gcol = ["#00FFF0", "#FF00C8", "#7CFF00"];
+      for (let i = 0; i < 12; i++) if (hz(i) > 0.55) { ctx.fillStyle = rgba(gcol[i % 3], 0.45); ctx.fillRect(hz(i + 20) * w * 0.3 - 20, hz(i + 40) * h, w * (0.4 + hz(i + 60) * 0.8), 3 + hz(i + 80) * 14); }
+      for (let i = 0; i < 36; i++) {
+        const x = Math.floor(r() * (w / 10)) * 10, sp = 0.25 + r() * 0.4, ph = r();
+        const y = ((t * sp + ph) % 1) * h;
+        for (let j = 0; j < 6; j++) { ctx.fillStyle = rgba("#00FF9C", (1 - j / 6) * 0.85); ctx.fillRect(x, y - j * 12, 6, 8); }
+      }
+      break;
+    }
+    case "desert": {
+      fill(ctx, rgba("#3A1E05", 0.42 * dimA), w, h);
+      const sc = clamp01(t / 0.6);
+      for (let i = 0; i < 260; i++) {
+        const a = r() * PI * 2 + t * 3 * (0.5 + r());
+        const rad = (40 + r() * 230) * sc;
+        dot(ctx, cx + cos(a) * rad * 1.25, cy + sin(a) * rad * 0.55, 1.5 + r() * 3, rgba(r() > 0.5 ? "#E0A35A" : "#F3CF8E", 0.25 + r() * 0.55));
+      }
+      for (let i = 0; i < 14; i++) {
+        const y = r() * h, sp = 0.6 + r(), len = 60 + r() * 120;
+        const x = ((t * sp * 0.6 + r()) % 1.3) * (w + len) - len;
+        line(ctx, x, y, x + len, y - 6, rgba("#F6D7A0", 0.35), 2);
+      }
+      break;
+    }
+    case "tiger": {
+      fill(ctx, rgba("#1A0800", 0.5 * dimA), w, h);
+      for (let k = 0; k < 3; k++) {
+        const pr = clamp01((t - 0.15 - k * 0.08) / 0.3);
+        if (pr <= 0) continue;
+        const x0 = w * 0.18 + k * w * 0.13, y0 = h * 0.18, x1 = x0 + w * 0.45, y1 = y0 + h * 0.6;
+        const fade = clamp01(1.6 - (t - 1.2) * 0.8);
+        line(ctx, x0, y0, x0 + (x1 - x0) * pr, y0 + (y1 - y0) * pr, rgba("#FF9100", 0.35 * fade), 22);
+        line(ctx, x0, y0, x0 + (x1 - x0) * pr, y0 + (y1 - y0) * pr, rgba("#FFE0B2", fade), 6);
+      }
+      for (let i = 0; i < 50; i++) {
+        const ph = r(), life = 0.7 + r() * 0.5, a = r() * PI * 2, sp = 120 + r() * 200;
+        const tt = ((t + ph * life) % life) / life;
+        dot(ctx, cx + cos(a) * sp * tt, cy + sin(a) * sp * tt, 2 + (1 - tt) * 3, rgba(i % 2 ? "#FFAB00" : "#FF6D00", (1 - tt) * 0.9));
+      }
+      break;
+    }
+    case "spell": {
+      fill(ctx, rgba("#0B0220", 0.55 * dimA), w, h);
+      const sc = 1 - Math.pow(1 - clamp01(t / 0.8), 3);
+      dot(ctx, cx, cy, 150 * sc, rgba("#7C4DFF", 0.12));
+      const rr = [170, 138, 106];
+      rr.forEach((R0, k) => {
+        const R1 = R0 * sc, rot = t * (k % 2 ? -1.4 : 1.1) * (k + 1) * 0.6;
+        ring(ctx, cx, cy, R1, rgba("#D1C4E9", 0.9), 2.5);
+        for (let j = 0; j < 12; j++) {
+          const a = rot + (j / 12) * PI * 2, px = cx + cos(a) * R1, py = cy + sin(a) * R1;
+          ctx.save(); ctx.translate(px, py); ctx.rotate(a);
+          ctx.fillStyle = rgba(j % 2 ? "#E1BEE7" : "#B388FF", 0.95);
+          ctx.beginPath(); ctx.moveTo(0, -6); ctx.lineTo(4, 0); ctx.lineTo(0, 6); ctx.lineTo(-4, 0); ctx.closePath(); ctx.fill();
+          ctx.restore();
+        }
+      });
+      for (let tri = 0; tri < 2; tri++) {
+        ctx.beginPath();
+        for (let j = 0; j < 3; j++) {
+          const a = -t * 0.8 + tri * PI + (j / 3) * PI * 2 - PI / 2;
+          const px = cx + cos(a) * 170 * sc, py = cy + sin(a) * 170 * sc;
+          if (j === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.strokeStyle = rgba("#B388FF", 0.85); ctx.lineWidth = 2; ctx.stroke();
+      }
+      break;
+    }
+    case "palace": {
+      fill(ctx, rgba("#120A00", 0.5 * dimA), w, h);
+      const pr = clamp01((t - 0.2) / 1.2), open = pr * pr * (3 - 2 * pr);
+      const gap = open * w * 0.5;
+      dot(ctx, cx, cy, Math.max(1, gap * 1.4), rgba("#FFE082", 0.35 * open));
+      for (let side = 0; side < 2; side++) {
+        const x = side === 0 ? -gap : cx + gap;
+        ctx.fillStyle = vgrad(ctx, 0, h, ["#5D4037", "#3E2723"]); ctx.fillRect(x, 0, cx, h);
+        ctx.strokeStyle = rgba("#FFD54F", 0.95); ctx.lineWidth = 5; ctx.strokeRect(x + 14, 24, cx - 28, h - 48);
+        ctx.strokeRect(x + 30, 60, cx - 60, h * 0.36); ctx.strokeRect(x + 30, h * 0.5, cx - 60, h * 0.36);
+        for (let j = 0; j < 6; j++) dot(ctx, x + (side === 0 ? cx - 24 : 24), 80 + j * (h - 160) / 5, 5, "#FFD54F");
+      }
+      break;
+    }
+    case "rocket": {
+      fill(ctx, rgba("#030A1F", 0.55 * dimA), w, h);
+      for (let i = 0; i < 50; i++) dot(ctx, r() * w, r() * h, 0.6 + r(), rgba("#FFFFFF", 0.3 + 0.5 * r()));
+      const pr = clamp01(t / 2.6);
+      const pos = (q: number) => ({ x: w * 0.1 + q * w * 0.8, y: h * 0.95 - q * h * 0.9 - sin(q * PI) * 40 });
+      for (let i = 0; i < 40; i++) {
+        const q = pr - (i / 40) * 0.35; if (q < 0) continue;
+        const p0 = pos(q);
+        dot(ctx, p0.x + (r() - 0.5) * 16, p0.y + (r() - 0.5) * 16 + 20, 8 + (i / 40) * 26, rgba("#E0E0E8", 0.5 * (1 - i / 40)));
+      }
+      const p = pos(pr);
+      rotated(ctx, 45, p.x, p.y, () => {
+        dot(ctx, p.x, p.y + 44, 14 + 5 * sin(t * 40), rgba("#FFAB40", 0.9));
+        dot(ctx, p.x, p.y + 40, 8, "#FFF3E0");
+        ctx.fillStyle = "#D32F2F";
+        ctx.beginPath(); ctx.moveTo(p.x - 16, p.y + 18); ctx.lineTo(p.x - 28, p.y + 38); ctx.lineTo(p.x - 12, p.y + 30); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(p.x + 16, p.y + 18); ctx.lineTo(p.x + 28, p.y + 38); ctx.lineTo(p.x + 12, p.y + 30); ctx.closePath(); ctx.fill();
+        oval(ctx, p.x - 15, p.y - 34, 30, 70, "#ECEFF1");
+        ctx.fillStyle = "#D32F2F"; ctx.beginPath(); ctx.moveTo(p.x - 13, p.y - 22); ctx.quadraticCurveTo(p.x, p.y - 56, p.x + 13, p.y - 22); ctx.closePath(); ctx.fill();
+        dot(ctx, p.x, p.y - 6, 7, "#1E88E5"); dot(ctx, p.x - 2, p.y - 8, 2.5, "#BBDEFB");
+      });
+      break;
+    }
+    case "saturn": {
+      fill(ctx, rgba("#05010F", 0.6 * dimA), w, h);
+      for (let i = 0; i < 60; i++) { const ph = r() * 6; dot(ctx, r() * w, r() * h, 0.7 + r() * 1.2, rgba("#FFFFFF", 0.3 + 0.5 * (0.5 + 0.5 * sin(t * 5 + ph)))); }
+      const sc = 1 - Math.pow(1 - clamp01(t / 0.9), 3);
+      rotated(ctx, -20, cx, cy, () => {
+        ["#FFCC80", "#CE93D8", "#80DEEA"].forEach((col, k) => {
+          ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 5;
+          ctx.beginPath(); ctx.ellipse(cx, cy, (190 + k * 20) * sc, (50 + k * 6) * sc, 0, 0, PI * 2); ctx.stroke();
+        });
+        for (let i = 0; i < 6; i++) {
+          const a = t * 2.2 + (i / 6) * PI * 2;
+          const px = cx + cos(a) * 210 * sc, py = cy + sin(a) * 56 * sc;
+          dot(ctx, px, py, 14, rgba("#FFF59D", 0.25)); dot(ctx, px, py, 5, "#FFF59D");
+        }
+      });
+      break;
+    }
+    case "volcano": {
+      fill(ctx, rgba("#1A0300", 0.5 * dimA), w, h);
+      const top = h - 170;
+      dot(ctx, cx, top, 90, rgba("#FF3D00", 0.25 + 0.1 * sin(t * 10)));
+      ctx.fillStyle = vgrad(ctx, top, h, ["#4E342E", "#1B0F0B"]);
+      ctx.beginPath(); ctx.moveTo(cx - w * 0.55, h); ctx.lineTo(cx - 34, top); ctx.lineTo(cx + 34, top); ctx.lineTo(cx + w * 0.55, h); ctx.closePath(); ctx.fill();
+      line(ctx, cx - 10, top + 4, cx - 40, top + 90, rgba("#FF6D00", 0.9), 6);
+      line(ctx, cx + 14, top + 4, cx + 50, top + 120, rgba("#FF9100", 0.8), 5);
+      for (let i = 0; i < 90; i++) {
+        const ph = r(), life = 1 + r() * 0.6, vx = (r() - 0.5) * 360, vy = -(420 + r() * 380);
+        const tt = ((t + ph * life) % life);
+        const x = cx + vx * tt, y = top + vy * tt + 520 * tt * tt;
+        if (y > h) continue;
+        const col = r() > 0.5 ? "#FF3D00" : r() > 0.5 ? "#FFAB00" : "#FFEB3B";
+        dot(ctx, x, y, 10, rgba(col, 0.2)); dot(ctx, x, y, 3 + r() * 4, rgba(col, 0.95));
+      }
+      break;
+    }
+    case "ice": {
+      fill(ctx, rgba("#001626", 0.45 * dimA), w, h);
+      if (t < 0.45) fill(ctx, rgba("#E1F5FE", 0.6 * (1 - t / 0.45)), w, h);
+      if (t < 0.6) for (let k = 0; k < 10; k++) {
+        const a = (k / 10) * PI * 2 + r() * 0.3, len = (120 + r() * 200) * clamp01(t / 0.25);
+        line(ctx, cx, cy, cx + cos(a) * len, cy + sin(a) * len, rgba("#FFFFFF", 0.9 * (1 - t / 0.6)), 2);
+      }
+      for (let i = 0; i < 34; i++) {
+        const a = r() * PI * 2, sp = 140 + r() * 320, s = 10 + r() * 22, spin = (r() - 0.5) * 8;
+        const tt = Math.max(0, t - 0.25);
+        const x = cx + cos(a) * sp * tt, y = cy + sin(a) * sp * tt + 60 * tt * tt;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(spin * tt);
+        ctx.fillStyle = rgba("#B3E5FC", 0.75 * clamp01(1.4 - tt * 0.5));
+        ctx.strokeStyle = rgba("#FFFFFF", 0.9 * clamp01(1.4 - tt * 0.5)); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(s * 0.7, s * 0.3); ctx.lineTo(-s * 0.5, s * 0.8); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+      }
+      break;
+    }
+    case "peacock": {
+      fill(ctx, rgba("#00140F", 0.5 * dimA), w, h);
+      const pr = clamp01((t - 0.1) / 0.9), open = 1 - Math.pow(1 - pr, 3);
+      const ox = cx, oy = cy + 70;
+      for (let k = 0; k < 17; k++) {
+        const a = -PI / 2 + ((k - 8) / 8) * (PI * 0.47) * open + sin(t * 2 + k) * 0.02;
+        const L = 230;
+        ctx.save(); ctx.translate(ox, oy); ctx.rotate(a + PI / 2);
+        const g = ctx.createLinearGradient(0, 0, 0, -L);
+        spread(g, ["#004D40", "#00897B", "#26C6DA"]);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, -L * 0.55, 22, L * 0.5, 0, 0, PI * 2); ctx.fill();
+        dot(ctx, 0, -L * 0.9, 18, "#00ACC1"); dot(ctx, 0, -L * 0.9, 12, "#1A237E"); dot(ctx, 0, -L * 0.9, 6, "#FFD600");
+        ctx.restore();
+      }
+      break;
+    }
+    case "eagle": {
+      fill(ctx, rgba("#1A1000", 0.5 * dimA), w, h);
+      const pr = clamp01(t / 0.9), by = -60 + (cy - 170 + 60) * (1 - Math.pow(1 - pr, 3));
+      const flap = sin(t * 9) * 0.32;
+      for (let side = 0; side < 2; side++) {
+        const sg = side === 0 ? -1 : 1;
+        for (let f = 0; f < 9; f++) {
+          const u = f / 8, ang = 0.35 - u * 0.7 + flap;
+          const len = 70 + u * 110;
+          const bx = cx + sg * 18, x2 = bx + sg * cos(ang) * len, y2 = by - sin(ang) * len + u * 20;
+          line(ctx, bx, by, x2, y2, rgba("#B26A00", 0.9), 16 - u * 6);
+          line(ctx, bx, by, x2, y2, rgba("#FFE082", 0.9), 6 - u * 2);
+        }
+      }
+      oval(ctx, cx - 16, by - 20, 32, 52, "#8D5A00");
+      dot(ctx, cx, by - 26, 13, "#FFF8E1");
+      ctx.fillStyle = "#FFB300"; ctx.beginPath(); ctx.moveTo(cx - 4, by - 24); ctx.lineTo(cx + 4, by - 24); ctx.lineTo(cx, by - 14); ctx.closePath(); ctx.fill();
+      for (let i = 0; i < 26; i++) {
+        const x0 = r() * w, ph = r(), life = 1.4 + r();
+        const tt = ((t + ph * life) % life) / life;
+        rotated(ctx, tt * 400 + i * 30, x0 + sin(tt * 6 + i) * 20, tt * h, () => oval(ctx, x0 + sin(tt * 6 + i) * 20 - 3, tt * h - 9, 6, 18, rgba("#FFD54F", 0.75)));
+      }
+      break;
+    }
+    case "lion": {
+      fill(ctx, rgba("#1A0E00", 0.5 * dimA), w, h);
+      for (let i = 0; i < 28; i++) {
+        const a = (i / 28) * PI * 2 + t * 0.4;
+        line(ctx, cx + cos(a) * 130, cy + sin(a) * 130, cx + cos(a) * (230 + 20 * sin(t * 6 + i)), cy + sin(a) * (230 + 20 * sin(t * 6 + i)), rgba("#FFA000", 0.45), 5);
+      }
+      for (let k = 0; k < 5; k++) {
+        const q = ((t * 0.9 + k / 5) % 1);
+        ring(ctx, cx, cy, 40 + q * 300, rgba("#FFC107", 1 - q), 2 + 8 * (1 - q));
+      }
+      for (let i = 0; i < 40; i++) {
+        const a = r() * PI * 2, ph = r(), life = 0.8 + r() * 0.4;
+        const tt = ((t + ph * life) % life) / life;
+        dot(ctx, cx + cos(a) * (140 + tt * 160), cy + sin(a) * (140 + tt * 160), 2 + (1 - tt) * 2, rgba("#FFE082", (1 - tt) * 0.8));
+      }
+      break;
+    }
+    case "samurai": {
+      fill(ctx, rgba("#0A0000", 0.55 * dimA), w, h);
+      const slash = (start: number, x0: number, y0: number, x1: number, y1: number) => {
+        const pr = clamp01((t - start) / 0.18), fade = clamp01(1 - (t - start - 0.6) / 0.8);
+        if (pr <= 0 || fade <= 0) return;
+        line(ctx, x0, y0, x0 + (x1 - x0) * pr, y0 + (y1 - y0) * pr, rgba("#FFFFFF", 0.35 * fade), 18);
+        line(ctx, x0, y0, x0 + (x1 - x0) * pr, y0 + (y1 - y0) * pr, rgba("#FFFFFF", fade), 4);
+      };
+      slash(0.15, -20, h * 0.82, w + 20, h * 0.18);
+      slash(0.55, -20, h * 0.22, w + 20, h * 0.7);
+      for (let i = 0; i < 46; i++) {
+        const x0 = r() * w, ph = r(), life = 1.6 + r(), rot0 = r() * 360;
+        const tt = ((t + ph * life) % life) / life;
+        const x = x0 + tt * 120 + sin(tt * 8 + i) * 20, y = tt * h;
+        rotated(ctx, rot0 + tt * 300, x, y, () => oval(ctx, x - 7, y - 3.5, 14, 7, rgba(i % 3 === 0 ? "#FFCDD2" : "#E53935", 0.85)));
+      }
+      break;
+    }
+    case "hologram": {
+      fill(ctx, rgba("#00080C", 0.6 * dimA), w, h);
+      for (let x = 0; x < w; x += 28) line(ctx, x, 0, x, h, rgba("#00E5FF", 0.12), 1);
+      for (let y = 0; y < h; y += 28) line(ctx, 0, y, w, y, rgba("#00E5FF", 0.12), 1);
+      ctx.fillStyle = rgba("#00E5FF", 0.18 + 0.06 * sin(t * 30));
+      ctx.beginPath(); ctx.moveTo(cx - 50, h); ctx.lineTo(cx - 170, cy); ctx.lineTo(cx + 170, cy); ctx.lineTo(cx + 50, h); ctx.closePath(); ctx.fill();
+      const sy = ((t * 0.7) % 1) * h;
+      ctx.fillStyle = vgrad(ctx, sy - 90, sy, ["rgba(0,229,255,0)", "rgba(0,229,255,0.5)"]); ctx.fillRect(0, sy - 90, w, 90);
+      line(ctx, 0, sy, w, sy, rgba("#84FFFF", 0.95), 3);
+      oval(ctx, cx - 60, h - 26, 120, 18, rgba("#00E5FF", 0.6));
+      break;
+    }
+    case "champagne": {
+      fill(ctx, rgba("#140C00", 0.45 * dimA), w, h);
+      const bx = w * 0.2, by = h * 0.86;
+      rotated(ctx, 35, bx, by, () => {
+        ctx.fillStyle = "#1B5E20"; ctx.fillRect(bx - 18, by - 40, 36, 90);
+        ctx.fillRect(bx - 8, by - 80, 16, 44);
+        ctx.fillStyle = "#FFD54F"; ctx.fillRect(bx - 9, by - 84, 18, 22);
+        ctx.fillStyle = "#FFF8E1"; ctx.fillRect(bx - 18, by - 10, 36, 26);
+      });
+      const mx = bx + 50, my = by - 70;
+      const cork = clamp01((t - 0.15) / 0.7);
+      if (cork > 0 && cork < 1) dot(ctx, mx + cork * w * 0.6, my - cork * h * 0.5 + cork * cork * 120, 8, "#D7B46A");
+      for (let i = 0; i < 110; i++) {
+        const ph = r(), life = 0.9 + r() * 0.6, vx = 80 + r() * 260, vy = -(380 + r() * 380);
+        const tt = Math.max(0, ((t - 0.15 + ph * life) % life));
+        if (t < 0.15) continue;
+        const x = mx + vx * tt, y = my + vy * tt + 420 * tt * tt;
+        ctx.strokeStyle = rgba(i % 4 === 0 ? "#FFFFFF" : "#FFE082", clamp01(1 - tt / life)); ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(x, y, 2 + r() * 5, 0, PI * 2); ctx.stroke();
+      }
+      break;
+    }
+    case "eclipse": {
+      fill(ctx, rgba("#000005", 0.7 * dimA), w, h);
+      for (let i = 0; i < 50; i++) dot(ctx, r() * w, r() * h, 0.6 + r(), rgba("#FFFFFF", (0.3 + 0.5 * r()) * clamp01(t / 1.2)));
+      const sx = cx, sy = cy - 180;
+      dot(ctx, sx, sy, 130, rgba("#FFD54F", 0.15)); dot(ctx, sx, sy, 95, rgba("#FFE082", 0.25));
+      for (let i = 0; i < 30; i++) {
+        const a = (i / 30) * PI * 2 + t * 0.3, l = 92 + 22 * sin(t * 4 + i);
+        line(ctx, sx + cos(a) * 74, sy + sin(a) * 74, sx + cos(a) * l, sy + sin(a) * l, rgba("#FFE082", 0.55), 3);
+      }
+      dot(ctx, sx, sy, 70, "#FFF8E1");
+      const mvx = sx + 140 * (1 - (1 - Math.pow(1 - clamp01(t / 1.3), 3)));
+      dot(ctx, mvx, sy, 69, "#07070F");
+      break;
+    }
+    case "tornado": {
+      fill(ctx, rgba("#0C1118", 0.5 * dimA), w, h);
+      const sc = clamp01(t / 0.7);
+      for (let i = 0; i < 260; i++) {
+        const hh = r(), a = t * 7 * (1.3 - hh) + r() * PI * 2;
+        const rad = (18 + hh * 180) * sc;
+        dot(ctx, cx + cos(a) * rad, h - hh * h * 0.95 + sin(a) * rad * 0.16, 2 + hh * 4, rgba(r() > 0.5 ? "#CFD8DC" : "#90A4AE", 0.25 + r() * 0.45));
+      }
+      for (let i = 0; i < 14; i++) {
+        const hh = 0.2 + r() * 0.7, a = t * 5 + r() * PI * 2, rad = (40 + hh * 170) * sc;
+        const x = cx + cos(a) * rad, y = h - hh * h * 0.95 + sin(a) * rad * 0.16;
+        rotated(ctx, t * 500 + i * 40, x, y, () => { ctx.fillStyle = rgba("#6D4C41", 0.9); ctx.fillRect(x - 5, y - 3, 10, 6); });
+      }
+      break;
+    }
+    case "treasure": {
+      fill(ctx, rgba("#140900", 0.5 * dimA), w, h);
+      const bx = cx, by = h - 70;
+      for (let i = 0; i < 14; i++) {
+        const a = -PI / 2 + ((i - 6.5) / 6.5) * 0.9;
+        ctx.fillStyle = rgba("#FFE082", 0.12 + 0.05 * sin(t * 4 + i));
+        ctx.beginPath(); ctx.moveTo(bx, by - 30); ctx.lineTo(bx + cos(a - 0.05) * h, by - 30 + sin(a - 0.05) * h); ctx.lineTo(bx + cos(a + 0.05) * h, by - 30 + sin(a + 0.05) * h); ctx.closePath(); ctx.fill();
+      }
+      const lid = clamp01(t / 0.5);
+      rotated(ctx, -lid * 55, bx - 60, by - 30, () => { ctx.fillStyle = "#6D3B00"; ctx.fillRect(bx - 60, by - 62, 120, 32); ctx.fillStyle = "#FFC107"; ctx.fillRect(bx - 60, by - 40, 120, 6); });
+      ctx.fillStyle = "#7B4300"; ctx.fillRect(bx - 60, by - 30, 120, 70);
+      ctx.fillStyle = "#FFC107"; ctx.fillRect(bx - 60, by - 30, 120, 7); ctx.fillRect(bx - 44, by - 30, 8, 70); ctx.fillRect(bx + 36, by - 30, 8, 70);
+      dot(ctx, bx, by, 8, "#FFD54F");
+      for (let i = 0; i < 60; i++) {
+        const ph = r(), life = 1 + r() * 0.6, vx = (r() - 0.5) * 420, vy = -(520 + r() * 420);
+        if (t < 0.3) continue;
+        const tt = ((t - 0.3 + ph * life) % life);
+        const x = bx + vx * tt, y = by - 30 + vy * tt + 640 * tt * tt;
+        if (y > h) continue;
+        const sx = 0.25 + 0.75 * Math.abs(cos(t * 10 + i));
+        ctx.save(); ctx.translate(x, y); ctx.scale(sx, 1);
+        dot(ctx, 0, 0, 11, "#FFB300"); dot(ctx, 0, 0, 7, "#FFE082");
+        ctx.restore();
+      }
+      break;
+    }
+    case "unicorn": {
+      fill(ctx, rgba("#14052A", 0.5 * dimA), w, h);
+      const pr = clamp01(t / 2.4);
+      const head = -40 + pr * (w + 80);
+      const path = (x: number) => h * 0.78 - 60 * sin(x / 90) - (x / w) * h * 0.3;
+      ["#FF5252", "#FFAB40", "#FFEB3B", "#69F0AE", "#40C4FF", "#B388FF"].forEach((col, k) => {
+        ctx.strokeStyle = rgba(col, 0.9); ctx.lineWidth = 9; ctx.lineCap = "round";
+        ctx.beginPath();
+        for (let x = -20; x <= head; x += 8) { const y = path(x) - k * 9; if (x === -20) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+        ctx.stroke();
+      });
+      const hy = path(head) - 22;
+      dot(ctx, head, hy, 34, rgba("#FFFFFF", 0.3)); starPath(ctx, head, hy, 20); ctx.fillStyle = "#FFFFFF"; ctx.fill();
+      for (let i = 0; i < 40; i++) {
+        const x = r() * Math.max(1, head), ph = r() * 6;
+        starPath(ctx, x, path(x) - 30 - r() * 120, 3 + r() * 5);
+        ctx.fillStyle = rgba(i % 2 ? "#FFFFFF" : "#FFF59D", 0.5 + 0.5 * sin(t * 8 + ph));
+        ctx.fill();
       }
       break;
     }

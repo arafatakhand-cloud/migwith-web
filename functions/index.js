@@ -23425,6 +23425,16 @@ const ENTRY_FX_SHOP = {
   fireworks: 520000, lotus: 550000,        // 💎 Exclusive
   angel: 600000, frost: 600000,
   blackhole: 700000, dragon: 800000,
+  // ✨ 20 new (2026-11)
+  ocean: 130000, desert: 140000,           // 🌸 Nature
+  tornado: 190000, ice: 210000, volcano: 230000, // 🔥 Elements
+  glitch: 230000, hologram: 260000,        // 🎉 Party
+  tiger: 260000, peacock: 290000, eagle: 340000, lion: 360000, // 🐾 Wild
+  champagne: 270000, treasure: 330000,     // 💰 Rich
+  palace: 380000,                          // 👑 Royal
+  rocket: 360000, eclipse: 400000, spell: 410000, saturn: 430000, // 🚀 Legend
+  unicorn: 460000,                         // 🐉 Mythic
+  samurai: 650000,                         // 💎 Exclusive
 };
 function entryFxRef(uid) { return db.collection("entry_fx").doc(uid); }
 function entryFxPublicRef(name) { return db.collection("entry_fx_public").doc(String(name || "").trim().toLowerCase()); }
