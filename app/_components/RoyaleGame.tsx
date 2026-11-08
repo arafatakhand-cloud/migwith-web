@@ -645,7 +645,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
             <li>A hand bet pays only when the WINNING side has that hand.</li>
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
-            <li>Tie: Red and Blue bets come back; a hand bet on that hand still wins.</li>
+            <li>No ties: if both hands are exactly equal, both sides get new cards (the next cards of the same sealed deck) until one side wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
             <li>Min bet 100 · no maximum — bet as much as your coins allow. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
@@ -1434,7 +1434,8 @@ function RoyaleConfetti() {
 
 // 🔒 Provably fair check, right here in the browser: the seed must hash to the
 // hash posted at !start, and the same seed must shuffle into the same cards
-// (server: tpShuffledDeck(seed, "royale:<round>") → Red = cards 1-3, Blue = 4-6).
+// (server: tpShuffledDeck(seed, "royale:<round>") → Red = cards 1-3, Blue = 4-6;
+// exactly equal hands → the next 6 cards: Red 7-9, Blue 10-12, … — see royaleDeal).
 const FAIR_RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
 const FAIR_SUITS = ["♠", "♥", "♦", "♣"];
 async function fairSha256(text: string): Promise<string> {
@@ -1454,6 +1455,45 @@ async function fairDeck(seed: string, round: number): Promise<string[]> {
   return deck;
 }
 
+// Same as the server's royaleDeal: exactly equal hands are put aside and the
+// next 6 cards are dealt (up to 8 deals); after that the suits decide.
+const fairVal = (c: string) => FAIR_RANKS.indexOf(c.slice(0, -1)) + 2;
+const fairSuit = (c: string) => c.slice(-1);
+function fairEval(cards: string[]): { cat: number; keys: number[] } {
+  const v = cards.map(fairVal).sort((a, b) => b - a);
+  const flush = cards.every((c) => fairSuit(c) === fairSuit(cards[0]));
+  const isAKQ = v[0] === 14 && v[1] === 13 && v[2] === 12;
+  const isA23 = v[0] === 14 && v[1] === 3 && v[2] === 2;
+  const run = (v[0] - v[1] === 1 && v[1] - v[2] === 1) || isA23;
+  const seqKey = isAKQ ? 14 : isA23 ? 13.5 : v[0];
+  if (v[0] === v[1] && v[1] === v[2]) return { cat: 6, keys: [v[0]] };
+  if (run && flush) return { cat: 5, keys: [seqKey] };
+  if (run) return { cat: 4, keys: [seqKey] };
+  if (flush) return { cat: 3, keys: v };
+  if (v[0] === v[1] || v[1] === v[2]) return { cat: 2, keys: [v[1], v[0] === v[1] ? v[2] : v[0]] };
+  return { cat: 1, keys: v };
+}
+function fairCompare(a: string[], b: string[]): number {
+  const ea = fairEval(a);
+  const eb = fairEval(b);
+  if (ea.cat !== eb.cat) return ea.cat - eb.cat;
+  for (let i = 0; i < Math.max(ea.keys.length, eb.keys.length); i += 1) {
+    const d = (ea.keys[i] || 0) - (eb.keys[i] || 0);
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+function fairDeal(deck: string[]): { red: string[]; blue: string[] } {
+  let red = deck.slice(0, 3);
+  let blue = deck.slice(3, 6);
+  for (let k = 0; k < 8; k += 1) {
+    red = deck.slice(k * 6, k * 6 + 3);
+    blue = deck.slice(k * 6 + 3, k * 6 + 6);
+    if (fairCompare(red, blue) !== 0) break;
+  }
+  return { red, blue };
+}
+
 function RoyaleVerify({ state, onClose }: { state: RoyaleState; onClose: () => void }) {
   const [res, setRes] = useState<{ hashOk: boolean; cardsOk: boolean; round: number; red: string[]; blue: string[] } | null>(null);
   const [err, setErr] = useState("");
@@ -1469,8 +1509,7 @@ function RoyaleVerify({ state, onClose }: { state: RoyaleState; onClose: () => v
         let best: { round: number; red: string[]; blue: string[]; ok: boolean } | null = null;
         for (const r of tries) {
           const d = await fairDeck(state.lastSeed, r);
-          const red = d.slice(0, 3);
-          const blue = d.slice(3, 6);
+          const { red, blue } = fairDeal(d);
           const ok = red.join(",") + "|" + blue.join(",") === want;
           if (!best || ok) best = { round: r, red, blue, ok };
           if (ok) break;
@@ -1540,7 +1579,7 @@ function RoyaleVerify({ state, onClose }: { state: RoyaleState; onClose: () => v
         {state.lastSeed && row("Seed revealed after", state.lastSeed)}
         {state.running && state.seedHash && row(`Round #${state.round} — sealed now`, state.seedHash)}
         <p className="mt-2 text-[10px] leading-snug text-[#7E89B8]">
-          Check it yourself: SHA-256(seed) = hash. Cards: shuffle 2♠…A♣ with HMAC-SHA256(seed, &quot;teenpatti:royale:ROUND:i&quot;), Red = cards 1-3, Blue = 4-6.
+          Check it yourself: SHA-256(seed) = hash. Cards: shuffle 2♠…A♣ with HMAC-SHA256(seed, &quot;teenpatti:royale:ROUND:i&quot;), Red = cards 1-3, Blue = 4-6. Exactly equal hands → the next 6 cards (Red 7-9, Blue 10-12, …).
         </p>
       </div>
     </div>
