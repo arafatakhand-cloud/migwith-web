@@ -6,7 +6,10 @@ import type { SupporterTeam } from "../../lib/supporterTeams";
 import { openPresencePopup } from "./PresencePopup";
 import Link from "next/link";
 import { totalXpForLevel } from "../../lib/level";
-import { chatHref } from "../../lib/privateChat";
+import { chatHref, useUnreadChats } from "../../lib/privateChat";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { withEmotes } from "./Emote";
 
 // ✨ MODERN Home (the app's ModernHomeTop): gradient hero card (photo with a
 // rainbow ring, name + role, status, level bar with XP; a stats card: Email / Alerts /
@@ -84,7 +87,9 @@ function StatTile({
   accent2,
   highlight = false,
   live = false,
+  onClick,
 }: {
+  onClick?: (e: React.MouseEvent) => void;
   href: string;
   icon: string;
   glyph: keyof typeof STAT_GLYPHS;
@@ -98,6 +103,7 @@ function StatTile({
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={`relative flex min-w-0 flex-1 flex-col items-center rounded-full py-2 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
       style={{
         // (the Glass theme's .stat-glass washes the tile with this colour)
@@ -190,6 +196,9 @@ export function ModernHomeTop({
   onStatus: () => void;
 }) {
   const online = friends.filter((f) => f.online);
+  const router = useRouter();
+  const unreadList = useUnreadChats(username);
+  const [sendersOpen, setSendersOpen] = useState(false);
   const start = totalXpForLevel(level);
   const next = totalXpForLevel(level + 1);
   const frac = next > start ? Math.min(1, Math.max(0, (xp - start) / (next - start))) : 0;
@@ -298,11 +307,60 @@ export function ModernHomeTop({
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
           its tile up with a glowing border and a pulsing dot; Online pulses
           while friends are online (the app's HomeStatTile). */}
-      <div className="mh-stats glass-card mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
+      <div className="mh-stats glass-card relative mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
         <StatTile href="/mail" icon="✉️" glyph="mail" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
         <StatTile href="/alerts" icon="🔔" glyph="bell" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
         <StatTile href="/friends" icon="👥" glyph="users" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
-        <StatTile href="/messages" icon="💬" glyph="chat" value={unreadChats} label={unreadChats > 0 ? "New chat" : "Chat"} accent="#0EA5E9" accent2="#2563EB" highlight={unreadChats > 0} />
+        <StatTile
+          href="/messages"
+          icon="💬"
+          glyph="chat"
+          value={unreadChats}
+          label={unreadChats > 0 ? "New chat" : "Chat"}
+          accent="#0EA5E9"
+          accent2="#2563EB"
+          highlight={unreadChats > 0}
+          onClick={(e) => {
+            // 💬 C2: who sent new messages — one person opens their inbox at once,
+            // several show a small box under the tile, none → all chats (as before)
+            if (unreadList.length === 0) return;
+            e.preventDefault();
+            if (unreadList.length === 1) return router.push(chatHref(unreadList[0].from));
+            setSendersOpen((v) => !v);
+          }}
+        />
+        {sendersOpen && unreadList.length > 1 && (
+          <>
+            <span className="fixed inset-0 z-30" onClick={() => setSendersOpen(false)} />
+            <div className="absolute right-2.5 top-full z-40 mt-2 w-[min(290px,calc(100%-20px))] rounded-[18px] bg-[#FFFFFF] p-1.5 text-left shadow-[0_14px_30px_rgba(11,31,58,.25)]">
+              <span aria-hidden className="absolute -top-[7px] right-[12%] h-0 w-0 border-x-[8px] border-b-[8px] border-x-transparent border-b-[#FFFFFF]" />
+              <p className="px-2.5 pb-1.5 pt-1 text-[14px] font-black text-[#0B1F3A]">💬 New messages</p>
+              <div className="max-h-[300px] overflow-y-auto" data-notranslate>
+                {unreadList.map((u) => {
+                  const f = friends.find((x) => x.name.toLowerCase() === u.from.toLowerCase());
+                  return (
+                    <Link
+                      key={u.from}
+                      href={chatHref(u.from)}
+                      onClick={() => setSendersOpen(false)}
+                      className="flex items-center gap-2.5 rounded-2xl px-2 py-2 active:bg-[#F1F6FD]"
+                    >
+                      <Avatar name={u.from} photo={f?.photo || ""} size={40} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-[14px] font-extrabold text-[#0B1F3A]">{u.from}</span>
+                        <span className="block truncate text-[12px] text-[#5B6B8C]">{u.last ? withEmotes(u.last, 12) : "New message"}</span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-[#EF4444] px-2 py-0.5 text-[11.5px] font-extrabold text-white">{u.count > 99 ? "99+" : u.count}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+              <Link href="/messages" onClick={() => setSendersOpen(false)} className="block py-2.5 text-center text-[13px] font-extrabold text-[#2563EB]">
+                See all chats ›
+              </Link>
+            </div>
+          </>
+        )}
       </div>
 
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games

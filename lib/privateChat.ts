@@ -78,3 +78,37 @@ export function useUnreadBySender(username: string) {
 
   return counts;
 }
+
+/** 💬 Who sent me unread messages: one row per person (count, last message),
+ * newest first — the Lobby's Chat tile lists them (miglife: "show which ID the
+ * message came from, tap to open that inbox"). */
+export type UnreadChat = { from: string; count: number; last: string; lastMs: number };
+export function useUnreadChats(username: string): UnreadChat[] {
+  const [rows, setRows] = useState<UnreadChat[]>([]);
+  useEffect(() => {
+    if (!username) return;
+    return onSnapshot(
+      query(collection(db, "private_messages"), where("toUsername", "==", username), where("read", "==", false)),
+      (snap) => {
+        const by = new Map<string, UnreadChat>();
+        snap.docs.forEach((d) => {
+          const from = String(d.get("fromUsername") || "");
+          if (!from) return;
+          const c = d.get("createdAt");
+          const ms = c && typeof c.toMillis === "function" ? c.toMillis() : Number(d.get("timestamp") || 0);
+          const text = String(d.get("text") || d.get("message") || "").replace(/\s+/g, " ").trim();
+          const row = by.get(from) || { from, count: 0, last: "", lastMs: -1 };
+          row.count += 1;
+          if (ms >= row.lastMs) {
+            row.lastMs = ms;
+            row.last = text;
+          }
+          by.set(from, row);
+        });
+        setRows([...by.values()].sort((a, b) => b.lastMs - a.lastMs));
+      },
+      (err) => console.error("unread chats listener failed", err)
+    );
+  }, [username]);
+  return rows;
+}
