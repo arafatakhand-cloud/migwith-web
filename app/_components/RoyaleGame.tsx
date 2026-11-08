@@ -647,7 +647,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
             <li>Tie: Red and Blue bets come back; a hand bet on that hand still wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
-            <li>Each bet 100 – 20,000 · up to 50 bets and 1,000,000 per round. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
+            <li>Min bet 100 · no maximum — bet as much as your coins allow. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
@@ -805,8 +805,8 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                 aria-label="Custom amount"
               />
             </div>
-            {!CHIPS.includes(amount) && (amount < 100 || amount > 20000) && (
-              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Bets are 100 – 20,000</p>
+            {!CHIPS.includes(amount) && amount < 100 && (
+              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Min bet is 100</p>
             )}
 
             {/* ↻ Same + Bet */}
