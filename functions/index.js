@@ -18458,6 +18458,32 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
 // anything stops half way, the next tick simply finishes steps 2–3.
 const ROYALE_RESUME_AFTER_MS = 15_000;
 
+// NO TIES: Red = cards 1-3, Blue = 4-6. Only if both hands are exactly equal,
+// those 6 cards are put aside and the next 6 are dealt (Red 7-9, Blue 10-12, …),
+// up to 8 times. If even the 8th deal is exactly equal (practically never), the
+// suits decide: compare the cards from highest to lowest, ♠ > ♥ > ♦ > ♣.
+// Everything comes from the committed shuffle, so anyone can re-check it.
+const ROYALE_SUIT_ORDER = ["♣", "♦", "♥", "♠"];
+function royaleDeal(deck) {
+  let red = deck.slice(0, 3);
+  let blue = deck.slice(3, 6);
+  for (let k = 0; k < 8; k += 1) {
+    red = deck.slice(k * 6, k * 6 + 3);
+    blue = deck.slice(k * 6 + 3, k * 6 + 6);
+    const cmp = tpCompare(red, blue);
+    if (cmp !== 0) return { red, blue, winner: cmp > 0 ? "red" : "blue", redeals: k };
+  }
+  const bySize = (h) => [...h].sort((a, b) => tpCardValue(b) - tpCardValue(a) ||
+    ROYALE_SUIT_ORDER.indexOf(tpCardSuit(b)) - ROYALE_SUIT_ORDER.indexOf(tpCardSuit(a)));
+  const r = bySize(red);
+  const b = bySize(blue);
+  for (let i = 0; i < 3; i += 1) {
+    const d = ROYALE_SUIT_ORDER.indexOf(tpCardSuit(r[i])) - ROYALE_SUIT_ORDER.indexOf(tpCardSuit(b[i]));
+    if (d !== 0) return { red, blue, winner: d > 0 ? "red" : "blue", redeals: 7 };
+  }
+  return { red, blue, winner: "red", redeals: 7 }; // unreachable: two hands never share a card
+}
+
 function royaleSettleOne(bets, winner, winCat) {
   let win = 0;
   const parts = [];
@@ -18609,10 +18635,7 @@ async function tickRoyaleCore() {
 
     // Deal from the committed shuffle (same card engine as Teen Patti).
     const deck = tpShuffledDeck(serverSeed, `royale:${roundNumber}`);
-    const red = deck.slice(0, 3);
-    const blue = deck.slice(3, 6);
-    const cmp = tpCompare(red, blue);
-    const winner = cmp > 0 ? "red" : cmp < 0 ? "blue" : "tie";
+    const { red, blue, winner, redeals } = royaleDeal(deck);
     const redCat = tpEvaluate(red).cat;
     const blueCat = tpEvaluate(blue).cat;
     const winCat = winner === "red" ? redCat : winner === "blue" ? blueCat : redCat;
@@ -18620,6 +18643,7 @@ async function tickRoyaleCore() {
     const now = Date.now();
     const lines = [
       "Betting ends. Dealing cards...",
+      ...(redeals > 0 ? [`🔁 Both hands were exactly equal — dealt again${redeals > 1 ? ` (${redeals} times)` : ""}. There are no ties.`] : []),
       `🔴 Red: ${tpCardsText(red)} — ${ROYALE_CAT_NAMES[redCat]}\n🔵 Blue: ${tpCardsText(blue)} — ${ROYALE_CAT_NAMES[blueCat]}`,
     ];
     if (winner === "tie") {

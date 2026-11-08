@@ -210,7 +210,7 @@ const SCENES: Scene[] = [
     ch: 1,
     title: "Red or Blue — 1.8x",
     cap: "Back a side. If it wins you get 1.8x your bet back.",
-    desc: "A side bet wins when that colour's hand is stronger. Payouts include your stake: 1,000 on Red returns 1,800 when Red wins. Bets on the other side lose. If both hands are exactly equal it's a tie and Red/Blue bets come back.",
+    desc: "A side bet wins when that colour's hand is stronger. Payouts include your stake: 1,000 on Red returns 1,800 when Red wins. Bets on the other side lose. There are no ties — one side always wins.",
     len: 6500,
     draw: (t) => {
       const win = at(t, 2600);
@@ -491,7 +491,7 @@ const SCENES: Scene[] = [
     ch: 2,
     title: "Same hand type? Higher cards win",
     cap: "Equal hand types are decided by their cards.",
-    desc: "If both hands are the same type, the higher cards decide: the bigger pair, then the third card; the higher run; the highest card, then the next. Only when both hands are exactly equal is it a tie — Red and Blue bets come back, and hand bets on that hand still win.",
+    desc: "If both hands are the same type, the higher cards decide: the bigger pair, then the third card; the higher run; the highest card, then the next. There are no ties: if both hands are exactly equal, those cards are put aside and both sides get new cards from the same sealed deck, until one side wins.",
     len: 7000,
     draw: (t) => {
       const done = at(t, 3600);
@@ -518,11 +518,11 @@ const SCENES: Scene[] = [
     ch: 3,
     title: "The road",
     cap: "Recent winners at a glance — newest on the right.",
-    desc: "The road in the game box shows this room's recent results as red and blue beads (grey for a tie). A letter marks a round won by a big hand: J Jutt, C Color, R Run, D Double Run, T Tirel. It's only a record — every round is dealt fresh, so history can't predict the next one.",
+    desc: "The road in the game box shows this room's recent results as red and blue beads (grey only for an old tie round, from before ties were removed). A letter marks a round won by a big hand: J Jutt, C Color, R Run, D Double Run, T Tirel. It's only a record — every round is dealt fresh, so history can't predict the next one.",
     len: 6500,
     draw: (t) => {
       const beads: [string, string][] = [
-        ["blue", ""], ["red", "J"], ["red", ""], ["blue", "C"], ["red", ""], ["tie", ""], ["blue", ""], ["red", "R"], ["red", "J"],
+        ["blue", ""], ["red", "J"], ["red", ""], ["blue", "C"], ["red", ""], ["blue", ""], ["blue", ""], ["red", "R"], ["red", "J"],
       ];
       const n = Math.min(beads.length, 1 + Math.floor(t / 350));
       const reds = beads.slice(0, n).filter((b) => b[0] === "red").length;
@@ -558,7 +558,7 @@ const SCENES: Scene[] = [
     ch: 4,
     title: "Sealed before you bet",
     cap: "The deal is fixed — and published as a hash — before the first bet.",
-    desc: "At !start the bot locks a secret seed and posts its SHA-256 hash. After betting, a deck shuffled from that seed deals both hands, and the seed is revealed with the result. Tap the green 🔒 on the result (or ⋯ → Verify last round): it checks the hash and rebuilds the exact cards.",
+    desc: "At !start the bot locks a secret seed and posts its SHA-256 hash. After betting, a deck shuffled from that seed deals both hands (if they are exactly equal, the next cards of that deck are dealt), and the seed is revealed with the result. Tap the green 🔒 on the result (or ⋯ → Verify last round): it checks the hash and rebuilds the exact cards.",
     len: 8000,
     draw: (t) => {
       const steps = ["The seed's hash is posted at !start", "Both hands come from that seed", "The seed is revealed with the result"];
