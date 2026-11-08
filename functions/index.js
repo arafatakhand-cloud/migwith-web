@@ -38,6 +38,12 @@ function gen2Options(runtime = {}) {
   }
   if (runtime.minInstances != null) opts.minInstances = runtime.minInstances;
   if (runtime.maxInstances != null) opts.maxInstances = runtime.maxInstances;
+  // ⚡ a busy game can take many requests on one instance (needs a whole CPU);
+  // with concurrency 1 every extra player's tap waited for a NEW instance to start
+  if (runtime.concurrency > 1) {
+    opts.concurrency = runtime.concurrency;
+    opts.cpu = runtime.cpu || 1;
+  }
   return opts;
 }
 
@@ -20194,7 +20200,11 @@ exports.startLuxuryBet = functionsV1.https.onCall(async (data, context) => {
   });
 });
 
-exports.placeLuxuryBet = functionsV1.https.onCall(async (data, context) => {
+// ⚡ SPEED (miglife: "why is Luxury Bet slow?"): many bets share one instance
+// (concurrency 40) instead of each player's tap waiting for a new copy to
+// start; the player's bet doc is read together with the rest; the two display
+// writes after the bet go out together.
+exports.placeLuxuryBet = functionsV1.runWith({ concurrency: 40, cpu: 1 }).https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   if (data && data.warm === true) return { ok: true, warm: true }; // ⚡ wake-up only
   await lbRequireAccess(uid);
@@ -20215,7 +20225,11 @@ exports.placeLuxuryBet = functionsV1.https.onCall(async (data, context) => {
   const opRef = db.collection("_operations").doc(`lb_bet_${operationId}`);
 
   const result = await db.runTransaction(async (tx) => {
-    const [game, user, op] = await Promise.all([tx.get(lbGameRef()), tx.get(userRef), tx.get(opRef)]);
+    // the round the phone thinks it is → its bet doc is read in the same go
+    const guessRef = Number.isInteger(expectedRound) && expectedRound > 0 ? lbBetsCol().doc(`${expectedRound}_${uid}`) : null;
+    const [game, user, op, guessSnap] = await Promise.all([
+      tx.get(lbGameRef()), tx.get(userRef), tx.get(opRef), guessRef ? tx.get(guessRef) : Promise.resolve(null),
+    ]);
     if (op.exists) return { ...(op.get("result") || {}), alreadyProcessed: true };
     if (!game.exists || game.get("gameRunning") !== true || game.get("phase") !== "BETTING" ||
         Date.now() >= Number(game.get("phaseEndsAt") || 0)) {
@@ -20227,7 +20241,7 @@ exports.placeLuxuryBet = functionsV1.https.onCall(async (data, context) => {
     }
     if (!user.exists) throw new functionsV1.https.HttpsError("not-found", "User account not found.");
     const betRef = lbBetsCol().doc(`${roundNumber}_${uid}`);
-    const betSnap = await tx.get(betRef);
+    const betSnap = guessSnap && guessRef && guessRef.path === betRef.path ? guessSnap : await tx.get(betRef);
     const lastBetAt = Number((betSnap.exists && betSnap.get("lastBetAt")) || 0);
     if (lastBetAt > 0 && Date.now() - lastBetAt < 800) {
       throw new functionsV1.https.HttpsError("resource-exhausted", "Betting too fast. Please wait a moment.");
@@ -20265,18 +20279,17 @@ exports.placeLuxuryBet = functionsV1.https.onCall(async (data, context) => {
   if (result.alreadyProcessed) return result;
   // Display-only writes (outside the money transaction, so a busy room never
   // makes bets fail): the room's per-character total and the feed line.
-  try {
-    await lbGameRef().update({ [`totals.${character}`]: FieldValue.increment(amount) });
-  } catch (e) { console.error("placeLuxuryBet: total update failed", e?.message); }
-  try {
-    const betsText = LB_CHARACTERS.filter((c) => Number(result.bets[c] || 0) > 0)
-      .map((c) => `${c} ${result.bets[c]}`).join(" | ");
-    await db.collection("room_messages").doc(LB_ROOM_ID).collection("messages").add({
+  const betsText = LB_CHARACTERS.filter((c) => Number(result.bets[c] || 0) > 0)
+    .map((c) => `${c} ${result.bets[c]}`).join(" | ");
+  await Promise.all([
+    lbGameRef().update({ [`totals.${character}`]: FieldValue.increment(amount) })
+      .catch((e) => console.error("placeLuxuryBet: total update failed", e?.message)),
+    db.collection("room_messages").doc(LB_ROOM_ID).collection("messages").add({
       text: `${LB_BOT}: ${result.username} placed ${amount} coins on ${character}. Bets: ${betsText}`,
       sender: LB_BOT, type: "chat", betUid: uid,
       createdAt: FieldValue.serverTimestamp(), clientCreatedAt: Date.now(),
-    });
-  } catch (e) { console.error("placeLuxuryBet: feed line failed", e?.message); }
+    }).catch((e) => console.error("placeLuxuryBet: feed line failed", e?.message)),
+  ]);
   return result;
 });
 
@@ -20420,7 +20433,7 @@ async function tickLuxuryBetCore() {
   return { changed: true };
 }
 
-exports.tickLuxuryBet = functionsV1.https.onCall(async (data, context) => {
+exports.tickLuxuryBet = functionsV1.runWith({ concurrency: 40, cpu: 1 }).https.onCall(async (data, context) => {
   requireAuth(context);
   if (data && data.warm === true) return { ok: true, warm: true }; // ⚡ wake-up only
   return tickLuxuryBetCore();
