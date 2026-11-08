@@ -18321,12 +18321,13 @@ exports.balanceWatchDaily = functionsV1
 const ROYALE_ROOM_ID = "👑 MIG Royale Official";
 // 📏 Limits (miglife, 2026-11): a bet is at least 100; per player per round at
 // most 200,000 on each option (Red, Blue, Jutt, Color, Run, Double Run, Tirel)
-// and at most 1,000,000 on all options together. NO win cap (what the
+// and at most 1,000,000 on all options together, and at most 40 bets. NO win cap (what the
 // multiplier says is what is paid).
 const ROYALE_BET_MS = 60_000;
 const ROYALE_MIN_BET = 100;
 const ROYALE_MAX_PER_OPTION = 200_000;
 const ROYALE_MAX_PER_ROUND = 1_000_000;
+const ROYALE_MAX_BETS = 40;           // bets per player per round
 const ROYALE_OPTIONS = {
   red:       { label: "Red",        mult: 1.8 },
   blue:      { label: "Blue",       mult: 1.8 },
@@ -18389,7 +18390,7 @@ exports.startRoyale = functionsV1.https.onCall(async (data, context) => {
       "MIG Royale started! Red vs Blue.",
       "Type !bet [option] [amount] to bet (e.g. !bet red 500).",
       "Options: Red 1.8x · Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
-      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · max ${royaleFmt(ROYALE_MAX_PER_OPTION)} on each option · max ${royaleFmt(ROYALE_MAX_PER_ROUND)} a round · wins paid in full.`,
+      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · max ${royaleFmt(ROYALE_MAX_PER_OPTION)} on each option · max ${royaleFmt(ROYALE_MAX_PER_ROUND)} a round · up to ${ROYALE_MAX_BETS} bets · wins paid in full.`,
       "Hand-type bets pay only when the WINNING side has that hand; a hand type on the losing side does not win.",
       `[${ROYALE_BET_MS / 1000} seconds]`,
     ], now);
@@ -18425,6 +18426,10 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
     const balance = Number(user.get("balance") || 0);
     if (!(balance >= amount)) throw new functionsV1.https.HttpsError("failed-precondition", "Insufficient coins.");
     const username = String(user.get("username") || "Player");
+    if (betCount >= ROYALE_MAX_BETS) {
+      throw new functionsV1.https.HttpsError("failed-precondition",
+        `Limit reached. You may place up to ${ROYALE_MAX_BETS} bets in one round and have already placed ${betCount}.`);
+    }
     const onOption = Number(bets[option] || 0);
     if (onOption + amount > ROYALE_MAX_PER_OPTION) {
       const left = Math.max(0, ROYALE_MAX_PER_OPTION - onOption);
