@@ -1093,7 +1093,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       unwatchSpot = onSnapshot(
         presenceRef,
         (snap) => {
-          spotGone = !snap.exists();
+          // a spot with no name is only an entry marker, not a real spot
+          spotGone = !snap.exists() || !String(snap.get("username") || "").trim();
           const other = snap.exists() ? String(snap.get("deviceId") || "") : "";
           if (!other || other === deviceId || left || disposed) return;
           left = true;
@@ -1144,13 +1145,23 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       restorePresenceRef.current = async () => {
         if (left || disposed) return;
         if (spotGone || goneWhileHere) return reEnter();
-        updateDoc(presenceRef, { lastSeen: serverTimestamp() })
-          .then(() => {
-            lastBeatOk = Date.now();
-          })
-          .catch((err) => {
-            if (err?.code === "not-found") reEnter();
-          });
+        // BUG FIX ("has left" then my message, no "has entered"): this was not
+        // awaited, so the message went out first and the "has entered" came
+        // after it. Now the spot is checked (and I come back in) BEFORE sending.
+        try {
+          // (no answer in 5 s, e.g. offline: the server check before sending decides)
+          await Promise.race([
+            updateDoc(presenceRef, { lastSeen: serverTimestamp() }),
+            new Promise((r) => setTimeout(r, 5000)),
+          ]);
+          lastBeatOk = Date.now();
+        } catch (err) {
+          if ((err as { code?: string })?.code !== "not-found") return;
+          // Same rule as the heartbeat: taken out a moment ago (left on another
+          // phone / tab) → back in with "has entered"; away too long → out of
+          // the room, nothing is sent (the check below says so).
+          if (!isAutoLeft(uid, roomName) && Date.now() - lastBeatOk < PRESENCE_HEARTBEAT_MS * 4) await reEnter();
+        }
       };
       heartbeat = setInterval(() => {
         // updateDoc, not a merge: if someone cleared this presence doc (3 h
@@ -1945,7 +1956,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // 🚪 Not in the room (my spot is gone and I could not come back in): nothing is
       // sent — the same "You are not in this room" as the app. Checked on the server.
       const mySpot = await getDocFromServer(doc(db, "room_presence", roomName, "users", user.uid)).catch(() => null);
-      if (!mySpot || !mySpot.exists()) {
+      if (!mySpot || !mySpot.exists() || !String(mySpot.get("username") || "").trim()) {
         note(`${roomName} : You are not in ${roomName} chat room`);
         setNotInRoomOpen(true);
         return;
