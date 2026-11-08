@@ -3,7 +3,7 @@
 import type { User } from "firebase/auth";
 import type { EmoteEditorHandle } from "../../_components/EmoteEditor";
 import { createPortal } from "react-dom";
-import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { awardUserXp } from "../../../lib/xp";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -3466,7 +3466,12 @@ function MessageRow({
   // must run before any of the early returns below.)
   const special = useSpecialColors();
   // 😂 Long-press (or right-click) a chat message: reactions + Copy.
-  const [picker, setPicker] = useState(false);
+  const pickerKey = m.id || `${m.createdAtMs}|${m.text.slice(0, 40)}`;
+  const picker = usePickerOpen(pickerKey);
+  const setPicker = (on: boolean) => {
+    if (on) setOpenPicker(pickerKey);
+    else if (openPickerKey === pickerKey) setOpenPicker("");
+  };
   // 🌐 this message's translation (long-press → Translate)
   const translation = useRoomTranslation(m.id);
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
@@ -3963,6 +3968,31 @@ function MessageRow({
 
 const REACTION_EMOJIS = QUICK_REACTIONS;
 
+// 😂 ONE reaction box on the whole page (miglife: "two reaction boxes open at
+// once"): each message used to keep its own open/closed state, and its
+// tap-outside layer sat inside the swipe-to-reply wrapper (a transformed box),
+// so it only covered that one message. Now the open box is remembered here:
+// opening one closes any other.
+let openPickerKey = "";
+const pickerSubs = new Set<() => void>();
+function setOpenPicker(key: string) {
+  if (openPickerKey === key) return;
+  openPickerKey = key;
+  pickerSubs.forEach((f) => f());
+}
+function usePickerOpen(key: string): boolean {
+  return useSyncExternalStore(
+    (f) => {
+      pickerSubs.add(f);
+      return () => pickerSubs.delete(f);
+    },
+    () => !!key && openPickerKey === key,
+    () => false
+  );
+}
+// left open without a choice → it closes by itself after this long
+const PICKER_IDLE_MS = 6000;
+
 // The long-press menu over a room message — ONE dark pill like the app (demo D):
 // 6 reactions (a dot under the one you gave) and ＋ for more (like WhatsApp), a thin line, then small round
 // 📋 Copy / 🌐 Translate / 🚩 Report buttons. Hover or hold one to see its name.
@@ -3990,6 +4020,51 @@ function ReactionPicker({
 }) {
   const [hint, setHint] = useState<string | null>(null);
   const [more, setMore] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const idle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const restartIdle = () => {
+    if (idle.current) clearTimeout(idle.current);
+    idle.current = setTimeout(() => closeRef.current(), PICKER_IDLE_MS);
+  };
+  // 🧠 Smart close, when no reaction is picked: a tap anywhere outside the box,
+  // the chat scrolled by finger / wheel, the message box focused (typing), Esc,
+  // the page hidden, or 6 s without touching it.
+  useEffect(() => {
+    const close = () => closeRef.current();
+    const outside = (e: Event) => {
+      if (boxRef.current && e.target instanceof Node && boxRef.current.contains(e.target)) return;
+      close();
+    };
+    const onFocus = (e: FocusEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || t.tagName === "INPUT" || t.tagName === "TEXTAREA")) close();
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    const onHide = () => document.visibilityState === "hidden" && close();
+    restartIdle();
+    // after this tap's own events (the long-press that opened it) have passed
+    const t = setTimeout(() => {
+      document.addEventListener("pointerdown", outside, true);
+      document.addEventListener("wheel", outside, { capture: true, passive: true });
+      document.addEventListener("touchmove", outside, { capture: true, passive: true });
+    }, 0);
+    document.addEventListener("focusin", onFocus);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("visibilitychange", onHide);
+    return () => {
+      clearTimeout(t);
+      if (idle.current) clearTimeout(idle.current);
+      document.removeEventListener("pointerdown", outside, true);
+      document.removeEventListener("wheel", outside, true);
+      document.removeEventListener("touchmove", outside, true);
+      document.removeEventListener("focusin", onFocus);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("visibilitychange", onHide);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const copy = copyText.trim()
     ? () => {
         const plain = copyText.startsWith("↩ ") && copyText.includes("\n") ? copyText.slice(copyText.indexOf("\n") + 1) : copyText;
@@ -4012,7 +4087,12 @@ function ReactionPicker({
   return (
     <>
       <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => (e.preventDefault(), onClose())} />
-      <div className={`absolute bottom-full z-50 mb-2 flex flex-col gap-1 ${mineSide ? "right-0 items-end" : "left-0 items-start"}`}>
+      <div
+        ref={boxRef}
+        onPointerDown={restartIdle}
+        onPointerMove={restartIdle}
+        className={`absolute bottom-full z-50 mb-2 flex flex-col gap-1 ${mineSide ? "right-0 items-end" : "left-0 items-start"}`}
+      >
         <div className="flex h-7 items-end">
           {hint && <span className="rounded-[10px] bg-[#161E34]/95 px-2.5 py-1 text-xs font-bold text-white">{hint}</span>}
         </div>
