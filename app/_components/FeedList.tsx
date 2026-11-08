@@ -1913,6 +1913,17 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           <div className="flex min-w-0 items-center gap-1">
             <span data-notranslate className="truncate text-[14px] font-extrabold drop-shadow">
               {p.author}
+              {/* ✔ the gold seal right after the name, before "is 😊 happy" */}
+              {verified && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src="/icons/miglife-verified.svg?v=3"
+                  alt="Verified"
+                  title="Verified"
+                  className="ml-1 inline-block h-[16px] w-[16px] align-[-3px]"
+                  style={{ filter: "drop-shadow(0 1px 2px rgba(180,83,9,.45))" }}
+                />
+              )}
               {/* 😊 "life is 😊 happy" */}
               {blogMood(p.mood) && (
                 <span className="font-semibold">
@@ -1920,10 +1931,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 </span>
               )}
             </span>
-            {verified && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src="/icons/miglife-verified.svg" alt="Verified" title="Verified" className="h-[15px] w-[15px] shrink-0" />
-            )}
             {!role &&
               (roleImg ? (
                 // eslint-disable-next-line @next/next/no-img-element
