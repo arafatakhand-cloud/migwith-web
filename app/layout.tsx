@@ -50,10 +50,14 @@ export default function RootLayout({
             or a big phone shows the same lines, the same wrapping, the same sizes —
             like the app. Tablets / computers (and a phone turned sideways) keep
             their own width. (Next.js adds its own viewport tag again after the
-            page starts, so every viewport tag is kept in step.) */}
+            page starts, so every viewport tag is kept in step.)
+            📱 iPhone: it keeps the first zoom (1×) when the tag changes later, so a
+            412px page stuck out past a smaller screen and had to be zoomed out
+            (miglife: "page width is not compatible with mobile"). The tag now also
+            says the zoom (screen ÷ 412), so the whole page fits the screen. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var W=412;function want(){var w=Math.min(screen.width,screen.height),land=screen.width>screen.height,rest=", viewport-fit=cover, interactive-widget=resizes-content";return w<600&&!land?"width="+W+rest:"width=device-width, initial-scale=1"+rest}function fit(){try{var c=want();document.querySelectorAll('meta[name="viewport"]').forEach(function(m){if(m.getAttribute("content")!==c)m.setAttribute("content",c)})}catch(e){}}fit();try{new MutationObserver(fit).observe(document.head,{childList:true,subtree:true,attributes:true,attributeFilter:["content"]})}catch(e){}addEventListener("orientationchange",function(){setTimeout(fit,50)})})()`,
+            __html: `(function(){var W=412;function want(){var w=Math.min(screen.width,screen.height),land=screen.width>screen.height,rest=", viewport-fit=cover, interactive-widget=resizes-content";if(w<600&&!land){var k=Math.round(w/W*1000)/1000;return "width="+W+", initial-scale="+k+", minimum-scale="+k+rest}return "width=device-width, initial-scale=1"+rest}function fit(){try{var c=want();document.querySelectorAll('meta[name="viewport"]').forEach(function(m){if(m.getAttribute("content")!==c)m.setAttribute("content",c)})}catch(e){}}fit();try{new MutationObserver(fit).observe(document.head,{childList:true,subtree:true,attributes:true,attributeFilter:["content"]})}catch(e){}addEventListener("orientationchange",function(){setTimeout(fit,50)})})()`,
           }}
         />
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
