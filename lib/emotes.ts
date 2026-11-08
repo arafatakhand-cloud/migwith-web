@@ -49,6 +49,12 @@ export const EMOTE_CODES: Record<string, string> = (() => {
   return out;
 })();
 
+// 🧹 The same picture twice in the picker (miglife: "remove the same emotes"):
+// these copies are only hidden from the emote panel. Their codes stay exactly
+// as they were (codes are numbered by picker order), so old messages and a
+// typed code still show the picture. Keep in sync with the app's Emotes.kt.
+export const PICKER_HIDDEN = new Set<string>(["mle_289", "mle_288", "mlp_031", "mlp_030", "mle_110", "mle_219", "mle_084", "mle_248", "mle_274", "mle_295", "mle_152", "mle_235", "mle_130", "mle_173", "mle_346", "mle_124", "mle_168", "mle_216", "mle_250", "mle_320", "mle_285", "mle_331", "mle_357", "mle_280", "mle_222", "mle_199", "mle_060", "mle_171", "mle_184", "mle_174", "mle_218", "mle_207", "mle_091", "mle_287", "mle_332", "mle_276", "mle_352", "mle_203", "mle_305", "mle_304", "mle_342", "mle_209", "mle_333", "mle_271", "mle_322"]);
+
 export const isAnimated = (id: string) => id.startsWith("mla_");
 
 export const isSprite = (id: string) => id.startsWith("mlg_");
