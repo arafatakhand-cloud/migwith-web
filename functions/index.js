@@ -18319,11 +18319,11 @@ exports.balanceWatchDaily = functionsV1
 // side has that hand. Exactly equal hands are re-dealt (no ties). Everything — coins, cards,
 // payouts — happens here on the server; the app only shows it.
 const ROYALE_ROOM_ID = "👑 MIG Royale Official";
-// 📏 Limits (miglife, 2026-11): a bet is at least 100; per player per round at
-// most 40 bets (on any options, any amount the coins cover). No limit per
-// option and no limit per round. NO win cap (what the multiplier says is what is paid).
+// 📏 Limits (miglife, 2026-11): each bet 100 – 20,000; per player per round at
+// most 40 bets on any options (so at most 40 × 20,000 = 800,000). NO win cap (what the multiplier says is what is paid).
 const ROYALE_BET_MS = 40_000;
 const ROYALE_MIN_BET = 100;
+const ROYALE_MAX_BET = 20_000;          // one bet
 const ROYALE_MAX_BETS = 40;           // bets per player per round
 const ROYALE_OPTIONS = {
   red:       { label: "Red",        mult: 1.8 },
@@ -18387,7 +18387,7 @@ exports.startRoyale = functionsV1.https.onCall(async (data, context) => {
       "MIG Royale started! Red vs Blue.",
       "Type !bet [option] [amount] to bet (e.g. !bet red 500).",
       "Options: Red 1.8x · Blue 1.8x · Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x",
-      `Min bet ${royaleFmt(ROYALE_MIN_BET)} · up to ${ROYALE_MAX_BETS} bets on any options · no maximum amount · wins paid in full.`,
+      `Bets ${royaleFmt(ROYALE_MIN_BET)}–${royaleFmt(ROYALE_MAX_BET)} · up to ${ROYALE_MAX_BETS} bets on any options · wins paid in full.`,
       "Hand-type bets pay only when the WINNING side has that hand; a hand type on the losing side does not win.",
       `[${ROYALE_BET_MS / 1000} seconds]`,
     ], now);
@@ -18403,6 +18403,9 @@ exports.royaleBet = functionsV1.https.onCall(async (data, context) => {
   if (!ROYALE_OPTIONS[option]) throw new functionsV1.https.HttpsError("invalid-argument", "Unknown option. Use red, blue, jutt, color, run, doublerun or tirel.");
   if (!Number.isSafeInteger(amount) || amount < ROYALE_MIN_BET) {
     throw new functionsV1.https.HttpsError("invalid-argument", `Minimum bet is ${ROYALE_MIN_BET}.`);
+  }
+  if (amount > ROYALE_MAX_BET) {
+    throw new functionsV1.https.HttpsError("invalid-argument", `Maximum bet is ${royaleFmt(ROYALE_MAX_BET)}.`);
   }
   const userRef = db.collection("users").doc(uid);
   const opRef = db.collection("_operations").doc(`royale_bet_${operationId}`);
