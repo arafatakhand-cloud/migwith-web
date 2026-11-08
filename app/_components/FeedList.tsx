@@ -156,7 +156,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [authorRole, setAuthorRole] = useState<Record<string, string>>({});
   const badgeImages = useBadgeImages(!!user);
   useEffect(() => {
-    const names = [...new Set((posts || []).map((p) => p.author))];
+    // (my own name too: the ✔ on my wall card shows even before I post)
+    const names = [...new Set([...(posts || []).map((p) => p.author), ...(username ? [username] : [])])];
     if (!names.length) return;
     let alive = true;
     (async () => {
@@ -187,7 +188,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     return () => {
       alive = false;
     };
-  }, [posts]);
+  }, [posts, username]);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
@@ -1461,7 +1462,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <Avatar name={username} color={meColor} size={58} />
                 </span>
                 <div className="relative min-w-0 flex-1">
-                  <div className="truncate text-[19px] font-black leading-tight drop-shadow">{username}</div>
+                  <div className="truncate text-[19px] font-black leading-tight drop-shadow">
+                    {username}
+                    {/* ✔ the gold seal on my wall card too */}
+                    {verifiedAuthors.has(username) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src="/icons/miglife-verified.svg?v=3" alt="Verified" title="Verified" className="ml-1.5 inline-block h-[20px] w-[20px] align-[-3px]" style={{ filter: "drop-shadow(0 1px 2px rgba(120,60,0,.5))" }} />
+                    )}
+                  </div>
                   <div className="mt-1 inline-flex max-w-full truncate whitespace-nowrap rounded-full bg-white/20 px-2.5 py-0.5 text-[11.5px] font-bold backdrop-blur-sm">
                     📅 This week: {wk.length} {wk.length === 1 ? "Mig" : "Migs"}
                   </div>
