@@ -18323,7 +18323,7 @@ const ROYALE_ROOM_ID = "👑 MIG Royale Official";
 // most 200,000 on each option (Red, Blue, Jutt, Color, Run, Double Run, Tirel)
 // and at most 1,000,000 on all options together, and at most 40 bets. NO win cap (what the
 // multiplier says is what is paid).
-const ROYALE_BET_MS = 60_000;
+const ROYALE_BET_MS = 40_000;
 const ROYALE_MIN_BET = 100;
 const ROYALE_MAX_PER_OPTION = 200_000;
 const ROYALE_MAX_PER_ROUND = 1_000_000;

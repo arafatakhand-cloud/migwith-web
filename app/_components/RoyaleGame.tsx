@@ -459,7 +459,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
   const hands = ROYALE_OPTIONS.filter((o) => !o.side);
   const hot = hands.reduce<string | null>((best, o) => ((state.pool[o.key]?.coins || 0) > (best ? state.pool[best]?.coins || 0 : 0) ? o.key : best), null);
   const RING = 2 * Math.PI * 14;
-  const total = 60; // betting lasts 60 s
+  const total = 40; // betting lasts 40 s
 
   return (
     <div
@@ -639,7 +639,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           <RoyaleGuide />
           <p className="mt-3 text-[12.5px] font-black text-amber-300">📜 Rules</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[#DCE3FF]">
-            <li>Type !start or tap Start. Betting is open for 60 seconds.</li>
+            <li>Type !start or tap Start. Betting is open for 40 seconds.</li>
             <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.8x (your stake included).</li>
             <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
             <li>A hand bet pays only when the WINNING side has that hand.</li>
