@@ -470,11 +470,10 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
       style={
         skin.id === "classic" && !collapsed
           ? {
-              // blends into the room's light chat background: no fill, no border, dark ink
-              background: "transparent",
-              border: "2px solid rgba(27,36,64,.16)",
-              boxShadow:
-                "inset 0 2px 0 rgba(255,255,255,.85), inset 0 -3px 0 rgba(27,36,64,.14), 0 4px 0 rgba(27,36,64,.12), 0 10px 18px rgba(27,36,64,.12)",
+              // Royale Battle look: a plain white card with a soft shadow, dark ink
+              background: "#FFFFFF",
+              border: "1px solid rgba(27,36,64,.08)",
+              boxShadow: "0 6px 18px rgba(27,36,64,.10)",
               ["--rk-ink" as string]: "#1B2440",
               ["--rk-sub" as string]: "#3D4766",
               ["--rk-muted" as string]: "#5B6585",
@@ -525,25 +524,25 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             {state.running ? (canBet ? state.secondsLeft : "🃏") : "👑"}
           </b>
         </div>
-        <div className="min-w-0 leading-tight">
-          <p className="text-[15px] font-black">MIG Royale</p>
-          <p className="truncate text-[10px] font-bold text-[#9BA6D6]">
-            {state.running ? `Round #${state.round} · ${canBet ? "bets open" : "dealing…"}` : "Red vs Blue"}
-          </p>
-        </div>
-        {state.running && state.poolTotal > 0 && (
-          <div className="ml-auto text-right leading-none">
-            <b className="block text-[15px] font-black tabular-nums text-amber-300">{shortK(state.poolTotal)}</b>
-            <span className="text-[8.5px] font-extrabold tracking-[1px] text-[#9BA6D6]">POOL</span>
-          </div>
+        <p className="shrink-0 text-[14px] font-black">MIG Royale</p>
+        <span
+          className={`shrink-0 rounded-full px-2 py-[1px] text-[9.5px] font-black ${
+            canBet ? "bg-[#EAF1FE] text-[#2563EB]" : state.running ? "bg-amber-100 text-amber-700" : "bg-[#EEF1F7] text-[#5B6585]"
+          }`}
+        >
+          {canBet ? "Bets open" : state.running ? "Dealing…" : "Red vs Blue"}
+        </span>
+        {state.running && (
+          <span className="min-w-0 truncate text-[11px] font-bold tabular-nums text-[#5B6585]">pool {shortK(state.poolTotal)}</span>
         )}
+        <span className="ml-auto" />
         {collapsed && state.running && <LiveWatch onWatch={() => setCollapsed(false)} />}
         {/* ⋯ = score, help and settings · ⌄ = fold */}
         <button
           type="button"
           onClick={() => setMenu(true)}
           title="Score, help and settings"
-          className={`${state.running && state.poolTotal > 0 ? "" : "ml-auto"} grid h-7 w-8 place-items-center rounded-lg bg-white/10 text-[15px] font-black leading-none hover:bg-white/15`}
+          className="grid h-7 w-7 place-items-center rounded-full bg-[#EEF1F7] text-[14px] font-black leading-none text-[#3D4766]"
         >
           ⋯
         </button>
@@ -551,7 +550,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           type="button"
           onClick={() => setCollapsed((v) => !v)}
           title={collapsed ? "Open" : "Fold"}
-          className="grid h-7 w-7 place-items-center rounded-lg border border-white/15 text-[12px] text-white/80 hover:bg-white/10"
+          className="grid h-7 w-7 place-items-center rounded-full bg-[#EEF1F7] text-[12px] text-[#3D4766]"
         >
           {collapsed ? "⌃" : "⌄"}
         </button>
@@ -647,7 +646,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
             <li>No ties: if both hands are exactly equal, both sides get new cards (the next cards of the same sealed deck) until one side wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
-            <li>Min bet 100 · no maximum — bet as much as your coins allow. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
+            <li>Min bet 100 · max 200,000 on each option · max 1,000,000 on all options together and up to 40 bets in a round. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
@@ -687,8 +686,8 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           </>
         ) : (
           <>
-            {/* Red VS Blue */}
-            <div className="relative mt-1 grid grid-cols-2 gap-1.5">
+            {/* Red / Blue — Royale Battle look: card backs, coins in · bettors, my "You" badge */}
+            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
               {ROYALE_OPTIONS.filter((o) => o.side).map((o) => {
                 const red = o.key === "red";
                 const sel = selected === o.key;
@@ -702,44 +701,31 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
                     onDoubleClick={() => quick(o.key)}
-                    className="rounded-[12px] border-2 px-1 py-1 text-center transition disabled:opacity-60"
+                    className="relative flex flex-col items-center rounded-[12px] border-[1.5px] px-1 pb-1 pt-1.5 text-center transition disabled:opacity-60"
                     style={{
-                      background: red ? "linear-gradient(160deg, rgba(239,68,68,.32), rgba(239,68,68,.08))" : "linear-gradient(200deg, rgba(59,130,246,.34), rgba(59,130,246,.08))",
-                      borderColor: sel ? (red ? "#FF7A7A" : "#7DB2FF") : red ? "rgba(239,68,68,.45)" : "rgba(59,130,246,.45)",
-                      boxShadow: sel ? (red ? "0 0 0 3px rgba(239,68,68,.25), 0 0 18px rgba(239,68,68,.35)" : "0 0 0 3px rgba(59,130,246,.25), 0 0 18px rgba(59,130,246,.35)") : undefined,
+                      background: sel ? (red ? "#DC2626" : "#2563EB") : red ? "#FDECEC" : "#EAF1FE",
+                      borderColor: red ? (sel ? "#B91C1C" : "#F5A3A3") : sel ? "#1D4ED8" : "#9CBDF5",
+                      color: sel ? "#fff" : red ? "#B91C1C" : "#1D4ED8",
                     }}
                   >
-                    <span className={`block text-[15px] font-black leading-tight ${red ? "text-[#FF8C8C]" : "text-[#8DBBFF]"}`}>
+                    {mine > 0 && (
+                      <span className="absolute right-1 top-1 rounded-md bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>
+                    )}
+                    <RbCardBacks />
+                    <span className="mt-0.5 flex items-center gap-1 text-[13px] font-black leading-tight">
                       {o.label}
-                      <span className="ml-1 rounded-full bg-white/[0.12] px-1.5 align-[2px] text-[10px] font-black text-white">{o.mult}</span>
+                      <span className={`rounded-full px-1.5 text-[9px] font-black ${sel ? "bg-white/25 text-white" : "bg-white text-[#1B2440]/70"}`}>{o.mult}</span>
                     </span>
-                    {/* one line: coins in · people · my pill */}
-                    <span className="flex items-center justify-center gap-1 text-[10px] font-bold tabular-nums text-[#C9D2F2]">
-                      {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : "no bets"}
-                      {mine > 0 && <span className="rounded-full bg-amber-300 px-1.5 text-[9.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>}
+                    <span className={`text-[9px] font-bold tabular-nums ${sel ? "text-white/85" : "text-[#5B6585]"}`}>
+                      {pool ? `${shortK(pool.coins)} in · ${pool.people} ${pool.people === 1 ? "bettor" : "bettors"}` : "No bets yet"}
                     </span>
                   </button>
                 );
               })}
-              <span
-                className="pointer-events-none absolute left-1/2 top-1/2 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[9.5px] font-black text-[#1A1200]"
-                style={{ background: "radial-gradient(circle at 35% 30%, #FFF0B8, #F5C842 55%, #C8952A)", boxShadow: "0 0 0 3px var(--rk-ring, #141A3A), 0 4px 12px rgba(0,0,0,.3)" }}
-              >
-                VS
-              </span>
-            </div>
-            {/* tug bar: which side has more coins */}
-            <div className="mt-1 flex items-center gap-1.5 text-[9px] font-extrabold tabular-nums text-[#9BA6D6]">
-            <span>{redPct}%</span>
-            <div className="flex h-[5px] flex-1 overflow-hidden rounded-full bg-[#20284F]">
-              <i className="block h-full bg-gradient-to-r from-red-700 to-red-500 transition-[width] duration-500" style={{ width: `${redPct}%` }} />
-              <i className="block h-full bg-gradient-to-r from-blue-500 to-blue-700 transition-[width] duration-500" style={{ width: `${100 - redPct}%` }} />
-            </div>
-            <span>{100 - redPct}%</span>
             </div>
 
             {/* Hands */}
-            <div className="mt-1 grid grid-cols-5 gap-1">
+            <div className="mt-1.5 grid grid-cols-5 gap-1">
               {hands.map((o) => {
                 const sel = selected === o.key;
                 const pool = state.pool[o.key];
@@ -752,25 +738,22 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                     disabled={!canBet}
                     onClick={() => tap(o.key)}
                     onDoubleClick={() => quick(o.key)}
-                    className={`relative rounded-[10px] border-[1.5px] px-0.5 py-0.5 text-center disabled:opacity-60 ${
-                      sel ? "border-violet-400 bg-violet-600/30 shadow-[0_0_14px_rgba(124,58,237,.4)]" : "border-white/10 bg-white/[0.06]"
+                    className={`relative rounded-[10px] border-[1.5px] px-0.5 py-1 text-center text-[#1B2440] disabled:opacity-60 ${
+                      sel ? "border-[#2563EB] bg-[#EAF1FE]" : "border-transparent bg-[#EEF1F7]"
                     }`}
                   >
-                    {hot === o.key && <span className="absolute -right-0.5 -top-2 text-[11px]">🔥</span>}
-                    <b className="block truncate text-[10.5px] font-black">{o.key === "doublerun" ? "D.Run" : o.label}</b>
-                    <em className="block text-[13px] font-black not-italic leading-tight text-amber-300">{o.mult}</em>
-                    {/* chance until someone bets, then coins · people; my bet as a pill */}
+                    <b className="block truncate text-[10px] font-black">{o.label}</b>
+                    <em className="block text-[11px] font-black not-italic leading-tight text-[#B45309]">{o.mult}</em>
                     {mine > 0 ? (
-                      <span className="inline-block rounded-full bg-amber-300 px-1 text-[8.5px] font-black text-[#3A2500]">You {shortK(mine)}</span>
+                      <span className="inline-block rounded-md bg-amber-300 px-1 text-[8px] font-black text-[#3A2500]">You {shortK(mine)}</span>
                     ) : (
-                      <small className={`block truncate text-[8.5px] font-bold tabular-nums ${pool ? "text-[#9BA6D6]" : "text-[#C4B5FD]"}`}>
-                        {pool ? `${shortK(pool.coins)} · 👥${pool.people}` : ""}
-                      </small>
+                      <small className="block h-[11px] truncate text-[8px] font-bold tabular-nums text-[#6B7591]">{pool ? `${shortK(pool.coins)} in` : ""}</small>
                     )}
                   </button>
                 );
               })}
             </div>
+            <p className="mt-1 text-center text-[9.5px] font-bold text-[#6B7591]">ⓘ Hand bets win only on the winning side</p>
 
             {/* Amount chips */}
             <div className="mt-1 flex gap-1">
@@ -780,93 +763,43 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                   data-chip={c}
                   type="button"
                   onClick={() => setAmount(c)}
-                  className={`flex-1 rounded-full border py-[3px] text-[11px] font-black ${
-                    amount === c ? "border-amber-300 bg-amber-300 text-[#3A2500]" : "border-white/[0.12] bg-white/[0.07] text-[#DCE3FF]"
+                  className={`flex-1 rounded-full py-[5px] text-[11px] font-black ${
+                    amount === c ? "bg-[#2563EB] text-white shadow-[0_3px_8px_rgba(37,99,235,.35)]" : "bg-[#EAF1FE] text-[#1D4ED8]"
                   }`}
                 >
                   {c >= 1000 ? `${c / 1000}k` : c}
                 </button>
               ))}
-              {/* ✎ any amount: type it here */}
+            </div>
+
+            {/* Custom amount + Bet */}
+            <div className="mt-1.5 flex gap-1.5">
               <input
                 id="royale-custom-amount"
                 type="text"
                 inputMode="numeric"
-                placeholder="✎"
+                placeholder="Custom amount"
                 value={CHIPS.includes(amount) ? "" : String(amount)}
                 onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  const n = Number(e.target.value.replace(/\D/g, "").slice(0, 7));
                   if (n > 0) setAmount(n);
                   else setAmount(CHIPS[0]);
                 }}
-                className={`w-[52px] rounded-full border px-1 py-[3px] text-center text-[11px] font-black outline-none placeholder:text-[#DCE3FF] ${
-                  CHIPS.includes(amount) ? "border-white/[0.12] bg-white/[0.07] text-[#DCE3FF]" : "border-amber-300 bg-amber-300 text-[#3A2500]"
+                className={`min-w-0 flex-1 rounded-xl px-3 py-2 text-[12px] font-bold text-[#1B2440] outline-none placeholder:text-[#6B7591] ${
+                  CHIPS.includes(amount) ? "bg-[#EEF1F7]" : "bg-[#EAF1FE] ring-2 ring-[#2563EB]"
                 }`}
                 aria-label="Custom amount"
               />
-            </div>
-            {!CHIPS.includes(amount) && amount < 100 && (
-              <p className="mt-0.5 text-center text-[10px] font-bold text-red-400">Min bet is 100</p>
-            )}
-
-            {/* ↻ Same + Bet */}
-            <div className="mt-1 grid grid-cols-[auto_auto_1fr] gap-1.5">
-              <button
-                type="button"
-                disabled={!canBet || !state.lastBet || state.busy}
-                onClick={() => state.lastBet && state.bet(state.lastBet.option, state.lastBet.amount)}
-                title="Repeat my last bet"
-                data-rk="key"
-                className="rounded-xl border border-white/[0.14] bg-white/[0.08] px-2.5 text-[11px] font-black text-[#DCE3FF] disabled:opacity-40"
-              >
-                ↻ Same
-              </button>
-              {/* ⭐ My usual: save this round's mix once, then one tap places it every round */}
-              <span className="flex">
-                <button
-                  type="button"
-                  disabled={!canBet || state.busy || (!usual && Object.keys(state.myBets).length === 0)}
-                  onClick={() => {
-                    if (!usual) {
-                      const mix = Object.entries(state.myBets).filter(([, v]) => Number(v) > 0).map(([k, v]) => [k, Number(v)] as [string, number]);
-                      if (mix.length) {
-                        saveUsual(mix);
-                        setUsual(mix);
-                      }
-                      return;
-                    }
-                    if (placingUsual.current) return;
-                    placingUsual.current = true;
-                    usual.forEach(([o, a], i) => setTimeout(() => state.bet(o, a), i * 1300));
-                    setTimeout(() => (placingUsual.current = false), usual.length * 1300);
-                  }}
-                  title={usual ? usual.map(([o, a]) => `${shortK(a)} ${o}`).join(" + ") : "Bet first, then tap to save this mix"}
-                  data-rk="key"
-                  className="rounded-l-xl border border-amber-300/40 bg-amber-300/10 px-2 text-[11px] font-black text-amber-200 disabled:opacity-40"
-                >
-                  {usual ? `⭐ ${usual.map(([o, a]) => `${shortK(a)} ${ROYALE_OPTIONS.find((x) => x.key === o)?.label || o}`).join(" + ").slice(0, 22)}` : "⭐ Save usual"}
-                </button>
-                {usual && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      saveUsual(null);
-                      setUsual(null);
-                    }}
-                    title="Forget my usual"
-                    className="rounded-r-xl border border-l-0 border-amber-300/40 bg-amber-300/10 px-1.5 text-[11px] font-black text-amber-200"
-                  >
-                    ✕
-                  </button>
-                )}
-              </span>
               <button
                 type="button"
                 disabled={!ready}
                 onClick={() => opt && state.bet(opt.key, amount)}
-                data-rk={flash ? undefined : "bet"}
-                className={`rounded-xl py-1.5 text-[13px] font-black text-white disabled:opacity-60 ${
-                  flash ? "bg-gradient-to-r from-green-600 to-green-700" : "bg-gradient-to-r from-violet-500 to-violet-700 shadow-[0_6px_16px_rgba(124,58,237,.4)]"
+                className={`flex-[1.3] rounded-xl py-2 text-[12.5px] font-black text-white transition ${
+                  flash
+                    ? "bg-green-600"
+                    : ready
+                      ? "bg-[#2563EB] shadow-[0_6px_14px_rgba(37,99,235,.35)]"
+                      : "bg-[#C9D0E0] text-[#3D4766]"
                 }`}
               >
                 {flash
@@ -874,20 +807,41 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                   : !canBet
                     ? "🃏 Dealing cards…"
                     : !opt
-                      ? "Tap a side or a hand"
+                      ? "Tap an option, then bet"
                       : state.busy
                         ? "Placing bet…"
-                        : `🎯 Bet ${shortK(amount)} on ${opt.label}`}
+                        : `🎯 Bet ${amount.toLocaleString("en-US")} on ${opt.label}`}
               </button>
             </div>
+            {!CHIPS.includes(amount) && amount < 100 && (
+              <p className="mt-0.5 text-center text-[10px] font-bold text-red-500">Min bet is 100</p>
+            )}
 
             <RoyaleRoad history={state.history} compact />
+            <p className="mt-0.5 text-center text-[9.5px] font-bold text-[#6B7591]">
+              Bets 100–200k an option · 40 bets a round · double-tap a tile to bet in one go
+            </p>
             <RoyaleTodayTop list={state.todayTop} />
           </>
         ))}
       {/* the chat input sits inside the box, like the reference */}
       {footer && <div className="mt-2" data-noswipe>{footer}</div>}
     </div>
+  );
+}
+
+// three little purple card backs on the Red / Blue tiles (Royale Battle look)
+function RbCardBacks() {
+  return (
+    <span className="flex -space-x-1" aria-hidden>
+      {[0, 1, 2].map((i) => (
+        <i
+          key={i}
+          className="block h-[19px] w-[14px] rounded-[3px] border border-white/70"
+          style={{ background: "linear-gradient(160deg,#7C5CFF,#4B2BC9)", transform: `rotate(${(i - 1) * 8}deg)` }}
+        />
+      ))}
+    </span>
   );
 }
 
@@ -1109,20 +1063,21 @@ function RoyaleRoad({ history, compact }: { history: HistoryItem[]; compact?: bo
       else break;
     }
     return (
-      <div className="mt-1 flex items-center gap-[3px] rounded-[9px] px-2 py-1">
+      <div className="mt-1.5 flex items-center gap-[3px] rounded-[10px] bg-[#EEF1F7] px-2 py-1.5">
         {history
           .slice(0, 16)
           .reverse()
           .map((h, i) => (
             <i
               key={i}
-              className={`grid h-[10px] w-[10px] shrink-0 place-items-center rounded-full text-[6.5px] font-black not-italic leading-none text-white ${h.winner === "red" ? "bg-red-500" : h.winner === "blue" ? "bg-blue-500" : "bg-neutral-400"}`}
+              className={`grid h-[13px] w-[13px] shrink-0 place-items-center rounded-full text-[7px] font-black not-italic leading-none text-white ${h.winner === "red" ? "bg-red-600" : h.winner === "blue" ? "bg-blue-600" : "bg-neutral-400"} ${i === Math.min(15, history.length - 1) ? "ring-2 ring-amber-400" : ""}`}
             >
               {HAND_LETTER[h.hand] || ""}
             </i>
           ))}
-        <span className="ml-auto whitespace-nowrap text-[9px] font-black text-[#8DBBFF]">
-          {history[0].winner === "red" || history[0].winner === "blue" ? `${history[0].winner === "red" ? "Red" : "Blue"} ×${st} · ` : ""}🔴{history.filter((h) => h.winner === "red").length} 🔵{history.filter((h) => h.winner === "blue").length}
+        <span className="ml-auto flex items-center gap-1.5 whitespace-nowrap text-[10px] font-black tabular-nums text-[#3D4766]" title={history[0].winner === "red" || history[0].winner === "blue" ? `${history[0].winner === "red" ? "Red" : "Blue"} ×${st} in a row` : undefined}>
+          <span><i className="mr-0.5 inline-block h-[7px] w-[7px] rounded-full bg-red-600" />{history.slice(0, 16).filter((h) => h.winner === "red").length}</span>
+          <span><i className="mr-0.5 inline-block h-[7px] w-[7px] rounded-full bg-blue-600" />{history.slice(0, 16).filter((h) => h.winner === "blue").length}</span>
         </span>
       </div>
     );

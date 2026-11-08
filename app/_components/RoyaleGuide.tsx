@@ -395,20 +395,20 @@ const SCENES: Scene[] = [
   {
     ch: 1,
     title: "Bet limits",
-    cap: "Min 100 a bet · no maximum · wins paid in full.",
-    desc: "Each bet must be at least 100. There is no maximum: bet as often and as much as you like on any options, as long as your balance covers every bet. Wins are paid in full — there is no win cap.",
+    cap: "Min 100 · max 200,000 an option · 1,000,000 a round · 40 bets.",
+    desc: "Each bet must be at least 100. In one round you can put at most 200,000 on each option (Red, Blue, Jutt, Color, Run, Double Run, Tirel), at most 1,000,000 on all of them together, and place at most 40 bets. Wins are paid in full — there is no win cap.",
     len: 6500,
     draw: (t) => (
       <>
         <div className="rounded-[12px] bg-gradient-to-b from-[#FFF4D6] to-[#F5E2B0] p-2 text-center text-[#3A2500]">
           <p className="text-[12px] font-black">📏 Limits</p>
           {at(t, 300) && <p className="royale-tick text-[10.5px] font-bold">Each bet: at least 100</p>}
-          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">No maximum · no win cap</p>}
-          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Your balance must cover every bet</p>}
+          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Max 200,000 on each option</p>}
+          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Max 1,000,000 · 40 bets a round</p>}
         </div>
         <div className="mt-1.5 flex flex-col gap-1">
           {at(t, 2400) && <Bubble who="You" text="!bet tirel 300000" right />}
-          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Insufficient coins." />}
+          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Max 200,000 on Tirel a round." />}
         </div>
       </>
     ),
