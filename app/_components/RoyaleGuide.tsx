@@ -157,7 +157,7 @@ const SCENES: Scene[] = [
     draw: (t) => (
       <div className="flex h-full flex-col justify-end gap-1.5">
         {at(t, 500) && <Bubble who="You" text="!start" right />}
-        {at(t, 1600) && <Bubble who="MIG Royale Bot" bot text="MIG Royale started! Red vs Blue. Type !bet [option] [amount] (e.g. !bet red 500). [60 seconds]" />}
+        {at(t, 1600) && <Bubble who="MIG Royale Bot" bot text="MIG Royale started! Red vs Blue. Type !bet [option] [amount] (e.g. !bet red 500). [40 seconds]" />}
         {at(t, 2600) && (
           <div className="royale-tick flex items-center justify-center gap-2 pt-1">
             <Ring s={45 - Math.min(5, Math.floor((t - 2600) / 600))} />
@@ -170,8 +170,8 @@ const SCENES: Scene[] = [
   {
     ch: 0,
     title: "The betting window",
-    cap: "Everyone bets in the same 60 seconds — as often as they like.",
-    desc: "Betting stays open for 60 seconds. Bet with !bet <option> <amount> in chat, or from the game box. You can place several bets on several options; the totals on each side update live for everyone.",
+    cap: "Everyone bets in the same 40 seconds — as often as they like.",
+    desc: "Betting stays open for 40 seconds. Bet with !bet <option> <amount> in chat, or from the game box. You can place several bets on several options; the totals on each side update live for everyone.",
     len: 6500,
     draw: (t) => {
       const red = (at(t, 1200) ? 500 : 0) + (at(t, 3600) ? 1000 : 0);
@@ -395,20 +395,20 @@ const SCENES: Scene[] = [
   {
     ch: 1,
     title: "Bet limits",
-    cap: "Min 100 · max 200,000 an option · 1,000,000 a round · 40 bets.",
-    desc: "Each bet must be at least 100. In one round you can put at most 200,000 on each option (Red, Blue, Jutt, Color, Run, Double Run, Tirel), at most 1,000,000 on all of them together, and place at most 40 bets. Wins are paid in full — there is no win cap.",
+    cap: "Bets 100–20,000 · up to 40 bets a round on any options.",
+    desc: "Each bet is from 100 to 20,000. In one round you can place up to 40 bets, on any options you like — so at most 800,000 a round (40 × 20,000). Wins are paid in full — there is no win cap.",
     len: 6500,
     draw: (t) => (
       <>
         <div className="rounded-[12px] bg-gradient-to-b from-[#FFF4D6] to-[#F5E2B0] p-2 text-center text-[#3A2500]">
           <p className="text-[12px] font-black">📏 Limits</p>
           {at(t, 300) && <p className="royale-tick text-[10.5px] font-bold">Each bet: at least 100</p>}
-          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Max 200,000 on each option</p>}
-          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Max 1,000,000 · 40 bets a round</p>}
+          {at(t, 900) && <p className="royale-tick text-[10.5px] font-bold">Up to 40 bets a round — any options</p>}
+          {at(t, 1500) && <p className="royale-tick text-[10.5px] font-bold">Each bet: at most 20,000 · no win cap</p>}
         </div>
         <div className="mt-1.5 flex flex-col gap-1">
-          {at(t, 2400) && <Bubble who="You" text="!bet tirel 300000" right />}
-          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Max 200,000 on Tirel a round." />}
+          {at(t, 2400) && <Bubble who="You" text="!bet tirel 500 (bet no. 41)" right />}
+          {at(t, 3400) && <Bubble who="MIG Royale Bot" bot text="Limit reached. You may place up to 40 bets in one round." />}
         </div>
       </>
     ),
@@ -417,7 +417,7 @@ const SCENES: Scene[] = [
     ch: 2,
     title: "The reveal",
     cap: "Betting closes, then the cards open: Red first, then Blue.",
-    desc: "When the 60 seconds end the box shows NO MORE BETS and the bot deals both hands face down. Red's three cards open, then Blue's. You can drag Blue's last card up to peek at it yourself. Everyone in the room sees the same result.",
+    desc: "When the 40 seconds end the box shows NO MORE BETS and the bot deals both hands face down. Red's three cards open, then Blue's. You can drag Blue's last card up to peek at it yourself. Everyone in the room sees the same result.",
     len: 7500,
     draw: (t) => {
       const r = count(t, [1900, 2400, 2900]);

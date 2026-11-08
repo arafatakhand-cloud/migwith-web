@@ -459,7 +459,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
   const hands = ROYALE_OPTIONS.filter((o) => !o.side);
   const hot = hands.reduce<string | null>((best, o) => ((state.pool[o.key]?.coins || 0) > (best ? state.pool[best]?.coins || 0 : 0) ? o.key : best), null);
   const RING = 2 * Math.PI * 14;
-  const total = 60; // betting lasts 60 s
+  const total = 40; // betting lasts 40 s
 
   return (
     <div
@@ -639,14 +639,14 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
           <RoyaleGuide />
           <p className="mt-3 text-[12.5px] font-black text-amber-300">📜 Rules</p>
           <ol className="mt-1.5 list-decimal space-y-1 pl-4 text-[#DCE3FF]">
-            <li>Type !start or tap Start. Betting is open for 60 seconds.</li>
+            <li>Type !start or tap Start. Betting is open for 40 seconds.</li>
             <li>Bet on a side — 🔴 Red or 🔵 Blue pays 1.8x (your stake included).</li>
             <li>Or bet on the winning hand: Jutt 2.5x · Color 10x · Run 15x · Double Run 100x · Tirel 150x.</li>
             <li>A hand bet pays only when the WINNING side has that hand.</li>
             <li>Hands from best to worst: Tirel (three alike) › Double Run (pure sequence) › Run (sequence) › Color (same suit) › Jutt (pair) › High Card.</li>
             <li>No ties: if both hands are exactly equal, both sides get new cards (the next cards of the same sealed deck) until one side wins.</li>
             <li>The % under each hand is how often the winning side has it (Jutt 28% · Color 9% · Run 6% · D.Run 0.4% · Tirel 0.5%).</li>
-            <li>Min bet 100 · max 200,000 on each option · max 1,000,000 on all options together and up to 40 bets in a round. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
+            <li>Each bet 100–20,000 · up to 40 bets in a round, on any options. Wins are paid in full (no win cap). Double-tap a tile to bet at once.</li>
             <li>Chat: !bet red 500 · !bet double run 2k · !help</li>
           </ol>
           <p className="mt-2 text-center text-[11px] text-[#9BA6D6]">Tap anywhere to close</p>
@@ -781,8 +781,8 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
                 placeholder="Custom amount"
                 value={CHIPS.includes(amount) ? "" : String(amount)}
                 onChange={(e) => {
-                  const n = Number(e.target.value.replace(/\D/g, "").slice(0, 7));
-                  if (n > 0) setAmount(n);
+                  const n = Number(e.target.value.replace(/\D/g, "").slice(0, 5));
+                  if (n > 0) setAmount(Math.min(n, 20000)); // one bet: at most 20,000
                   else setAmount(CHIPS[0]);
                 }}
                 className={`min-w-0 flex-1 rounded-xl px-3 py-2 text-[12px] font-bold text-[#1B2440] outline-none placeholder:text-[#6B7591] ${
@@ -819,7 +819,7 @@ export function RoyaleTable({ state, footer }: { state: RoyaleState; footer?: Re
 
             <RoyaleRoad history={state.history} compact />
             <p className="mt-0.5 text-center text-[9.5px] font-bold text-[#6B7591]">
-              Bets 100–200k an option · 40 bets a round · double-tap a tile to bet in one go
+              Bets 100–20k · 40 bets a round · double-tap a tile to bet in one go
             </p>
             <RoyaleTodayTop list={state.todayTop} />
           </>
