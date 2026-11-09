@@ -13,6 +13,8 @@ export type SessionMessage = {
   sender: string;
   senderUid: string;
   imageUrl: string;
+  /** ✍️ the words sent with a photo (type "image") */
+  caption?: string;
   audioUrl: string;
   giftName: string;
   moderationColor?: string;

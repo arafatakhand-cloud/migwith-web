@@ -83,6 +83,7 @@ export function ChatBar({
   extra,
   reply,
   onSticker,
+  attachment,
 }: {
   text: string;
   setText: (v: string) => void;
@@ -107,6 +108,8 @@ export function ChatBar({
   reply?: { sender: string; snippet: string; color?: string; onCancel: () => void } | null;
   /** 🎨 send a sticker (the emoji panel gets a Stickers tab) */
   onSticker?: (s: import("../../lib/stickers").PickedSticker) => void;
+  /** 🖼 a picked photo waiting above the bar (C2): sent with the text on ➤ */
+  attachment?: { src: string; onRemove: () => void; onEdit?: () => void } | null;
 }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const classic = useIsClassic();
@@ -143,6 +146,34 @@ export function ChatBar({
 
   return (
     <div>
+    {attachment && (
+      <div className="flex items-center gap-2.5 px-3 pb-1 pt-2">
+        <span className="relative shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={attachment.src} alt="Photo to send" className="h-16 w-16 rounded-xl object-cover shadow-[0_2px_8px_rgba(11,31,58,.2)]" />
+          <button
+            type="button"
+            onClick={attachment.onRemove}
+            aria-label="Remove photo"
+            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B2440] text-[11px] font-black text-white"
+          >
+            ✕
+          </button>
+        </span>
+        <span className="text-[12px] font-bold text-[#5B6585]">
+          1 photo
+          {attachment.onEdit && (
+            <>
+              {" · "}
+              <button type="button" onClick={attachment.onEdit} className="text-[#2563EB]">
+                ✏️ Edit
+              </button>
+            </>
+          )}
+          <span className="block text-[11px] font-semibold text-[#8A97A8]">Write something (optional), then ➤</span>
+        </span>
+      </div>
+    )}
     {reply && (
       <div className="flex items-center gap-2 border-l-[3px] border-[#2F80ED] bg-[#F3F5F9] px-3 py-2">
         <span className="text-base text-[#2F80ED]">↩</span>

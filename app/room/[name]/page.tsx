@@ -172,7 +172,7 @@ import { useIsClassic } from "../../../lib/uiStyle";
 import { CommandListPage } from "../../_components/CommandList";
 import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { PhotoEditor } from "../../_components/PhotoEditor";
-import { BalanceCard, PhotoConfirm, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
+import { BalanceCard, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
 import { watchBlockedNames } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
@@ -404,6 +404,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [roundResult, setRoundResult] = useState<{ round: number; won: number; bet: number } | null>(null);
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
   const [editingPhoto, setEditingPhoto] = useState<File | null>(null);
+  // 🖼 the waiting photo's little preview above the bar (C2)
+  const pendingSrc = useMemo(() => (pendingPhoto ? URL.createObjectURL(pendingPhoto) : ""), [pendingPhoto]);
+  useEffect(() => () => {
+    if (pendingSrc) URL.revokeObjectURL(pendingSrc);
+  }, [pendingSrc]);
+  const photoChip = pendingPhoto
+    ? {
+        src: pendingSrc,
+        onRemove: () => setPendingPhoto(null),
+        // GIFs stay as they are (editing would stop the animation)
+        onEdit: pendingPhoto.type === "image/gif" ? undefined : () => (setEditingPhoto(pendingPhoto), setPendingPhoto(null)),
+      }
+    : null;
   const lastResultRound = useRef(0);
 
   const listRef = useRef<HTMLDivElement>(null);
@@ -724,6 +737,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             sender: String(d.get("sender") || ""),
             senderUid: String(d.get("senderUid") || ""),
             imageUrl: String(d.get("imageUrl") || ""),
+            caption: String(d.get("caption") || ""),
             audioUrl: String(d.get("audioUrl") || ""),
             giftName: String(d.get("giftName") || ""),
             moderationColor: String(d.get("moderationColor") || ""),
@@ -1539,7 +1553,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   };
 
   // 📷 Photo message: same Storage folder and message shape as the app.
-  const sendPhoto = async (file: File | undefined) => {
+  const sendPhoto = async (file: File | undefined, caption = "") => {
     if (!file || !user || !profile || uploading) return;
     if (!perms.canShareMedia) return note(`${roomName}: Photos are not allowed for your role.`);
     if (muted || (silenced && !perms.canRoomWide)) {
@@ -1548,12 +1562,16 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     setUploading(true);
     try {
       const url = await uploadChatImage(`room_images/${storageSafeSegment(roomName)}`, file);
+      // ✍️ C2: the words written with the photo go in the same message (caption);
+      // text keeps a readable line for older apps and previews
+      const cap = caption.trim().slice(0, 1000);
       await addDoc(collection(db, "room_messages", roomName, "messages"), {
-        text: `${profile.username}: 📷 Photo`,
+        text: `${profile.username}: 📷 ${cap || "Photo"}`,
         sender: profile.username,
         senderUid: user.uid,
         type: "image",
         imageUrl: url,
+        ...(cap ? { caption: cap } : {}),
         createdAt: serverTimestamp(),
       });
       stickToBottom.current = true;
@@ -1590,11 +1608,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   const send = async () => {
     const clean = text.trim();
-    if (!clean || !user || !profile || sending) return;
+    if ((!clean && !pendingPhoto) || !user || !profile || sending) return;
     if (autoLeft) {
       // Nothing sent: the room says why and how to come back in.
       note(`${roomName} : You are not in ${roomName} chat room`);
       setNotInRoomOpen(true);
+      return;
+    }
+    // 🖼 a photo is waiting above the bar: it goes with these words as one message
+    if (pendingPhoto) {
+      const f = pendingPhoto;
+      setPendingPhoto(null);
+      setText("");
+      void sendPhoto(f, clean);
       return;
     }
 
@@ -2468,7 +2494,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   setText={setText}
                   inputRef={inputRef}
                   onSend={send}
-                  canSend={!sending && !!text.trim() && !!profile}
+                  canSend={!sending && (!!text.trim() || !!pendingPhoto) && !!profile}
+                  attachment={photoChip}
                   placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message…"}
                   maxLength={1000}
                   disabled={!profile}
@@ -2480,7 +2507,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   }}
                   photo={{
                     // picking a photo never posts it straight away: "Send this photo?" first
-                    onFile: (f: File | undefined) => f && setPendingPhoto(f),
+                    onFile: (f: File | undefined) => f && (setPendingPhoto(f), inputRef.current?.focus()),
                     disabled: !perms.canShareMedia,
                     uploading,
                     title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
@@ -2547,7 +2574,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               setText={setText}
               inputRef={inputRef}
               onSend={send}
-              canSend={!sending && !!text.trim() && !!profile}
+              canSend={!sending && (!!text.trim() || !!pendingPhoto) && !!profile}
+                  attachment={photoChip}
               placeholder={muted ? "You are muted" : silenced ? "Room is silenced" : "Type a message…"}
               maxLength={1000}
               disabled={!profile}
@@ -2559,7 +2587,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               }}
               photo={{
                 // picking a photo never posts it straight away: "Send this photo?" first
-                onFile: (f: File | undefined) => f && setPendingPhoto(f),
+                onFile: (f: File | undefined) => f && (setPendingPhoto(f), inputRef.current?.focus()),
                 disabled: !perms.canShareMedia,
                 uploading,
                 title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
@@ -2706,27 +2734,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {popup && <SimpleDialog title={popup.title} text={popup.text} onClose={() => setPopup(null)} />}
       {balanceCard && <BalanceCard info={balanceCard} onClose={() => setBalanceCard(null)} />}
       {roundResult && <RoundResultCard round={roundResult.round} won={roundResult.won} bet={roundResult.bet} onClose={() => setRoundResult(null)} />}
-      {pendingPhoto && (
-        <PhotoConfirm
-          file={pendingPhoto}
-          onCancel={() => setPendingPhoto(null)}
-          onSend={() => {
-            const f = pendingPhoto;
-            setPendingPhoto(null);
-            void sendPhoto(f);
-          }}
-          // GIFs stay as they are (editing would stop the animation)
-          onEdit={pendingPhoto.type === "image/gif" ? undefined : () => (setEditingPhoto(pendingPhoto), setPendingPhoto(null))}
-        />
-      )}
-      {/* ✏️ edit the photo before it goes to the room */}
+      {/* ✏️ edit the waiting photo; the edited one goes back above the bar */}
       {editingPhoto && (
         <PhotoEditor
           file={editingPhoto}
-          onCancel={() => setEditingPhoto(null)}
+          onCancel={() => (setPendingPhoto(editingPhoto), setEditingPhoto(null))}
           onSend={(f) => {
             setEditingPhoto(null);
-            void sendPhoto(f);
+            setPendingPhoto(f);
+            inputRef.current?.focus();
           }}
         />
       )}
@@ -3918,6 +3934,12 @@ function MessageRow({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.imageUrl} alt="Photo" loading="lazy" className="max-h-64 max-w-full rounded-lg" />
               </button>
+              {/* ✍️ the words sent with the photo */}
+              {m.caption && (
+                <p data-notranslate className={`mt-1 whitespace-pre-wrap break-words ${rightSide ? "text-right" : ""}`}>
+                  {withEmotes(m.caption, 16)}
+                </p>
+              )}
               {stamp}
             </>
           ) : m.type === "sticker" && m.imageUrl ? (
