@@ -241,6 +241,27 @@ export function MigView({
       // closed the share sheet
     }
   };
+  // 📋 copy words (C3): the Mig's own text, or its translation
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // old browsers: a hidden textarea + execCommand
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch {
+        // nothing more to try
+      }
+      ta.remove();
+    }
+    setToast("Copied ✓");
+  };
   const remove = async () => {
     if (!post || !confirm(mine ? "Delete this Mig?" : `Delete ${post.author}'s Mig?`)) return;
     try {
@@ -368,6 +389,24 @@ export function MigView({
                   ↗ Share
                 </button>
               )}
+              {(post.title.trim() || feedPlainText(post.body)) && (
+                <button
+                  type="button"
+                  onClick={() => copyText([post.title.trim(), feedPlainText(post.body)].filter(Boolean).join("\n\n"))}
+                  className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]"
+                >
+                  📋 Copy text
+                </button>
+              )}
+              {tr?.text && (
+                <button
+                  type="button"
+                  onClick={() => copyText([tr.title, tr.text].filter(Boolean).join("\n\n"))}
+                  className="block w-full px-4 py-2.5 text-left hover:bg-[#F1F5FB]"
+                >
+                  🌐 Copy translation
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -414,11 +453,23 @@ export function MigView({
           </div>
           {tr?.text && (
             <div className="mt-3 whitespace-pre-line rounded-2xl border border-[#6366F1]/15 bg-[#EEF2FF] px-3.5 py-3 text-[15px] leading-[1.65] text-[#253A5E]">
-              <div className="mb-1 text-[11px] font-extrabold text-[#4F46E5]">🌐 Translation</div>
-              {tr.text}
+              <div className="mb-1 flex items-center text-[11px] font-extrabold text-[#4F46E5]">
+                🌐 Translation
+                <button
+                  type="button"
+                  onClick={() => copyText([tr.title, tr.text].filter(Boolean).join("\n\n"))}
+                  className="ml-auto rounded-full bg-white px-2.5 py-0.5 text-[11px] font-extrabold text-[#2563EB] shadow-[0_1px_2px_rgba(0,0,0,.06)] active:scale-95"
+                >
+                  📋 Copy
+                </button>
+              </div>
+              {/* long-press / drag to select part of it (the phone's own Copy menu) */}
+              <div className="select-text">{tr.text}</div>
             </div>
           )}
-          <BlogBody body={post.body} mentions={post.mentions} />
+          <div className="select-text">
+            <BlogBody body={post.body} mentions={post.mentions} />
+          </div>
 
           <div className="mt-3 flex gap-2.5">
             <button
