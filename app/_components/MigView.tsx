@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useSenderColors } from "../../lib/senderColors";
 import { PageShell } from "./PageShell";
 import { openReport } from "./ReportDialog";
+import { ReactorsSheet } from "./ReactorsSheet";
 import { TranslateChip, feedPlainText, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgo,
@@ -63,6 +64,7 @@ export function MigView({
   const [toast, setToast] = useState("");
   const [canMod, setCanMod] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [reactors, setReactors] = useState(false);
   const viewed = useRef(false);
   // 🔒 a 👥 Friends / 🔒 Only me post: it comes from the server (no live updates);
   // bump privTick to read it again after a like / comment / change
@@ -496,7 +498,16 @@ export function MigView({
               ↗ Share
             </button>}
           </div>
-          <p className="mt-2 text-right text-[12px] text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</p>
+          <div className="mt-2 flex items-center text-[12px]">
+            {/* 👥 who reacted (same sheet as the Feed) */}
+            {post.likes > 0 && (
+              <button type="button" onClick={() => setReactors(true)} className="font-bold text-[#4F46E5] active:opacity-60">
+                😀 {blogShort(post.likes)} · See who reacted
+              </button>
+            )}
+            <span className="ml-auto text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</span>
+          </div>
+          {reactors && <ReactorsSheet postId={post.id} onClose={() => setReactors(false)} />}
 
           <h3 className="mb-2 mt-3 text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
           <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
