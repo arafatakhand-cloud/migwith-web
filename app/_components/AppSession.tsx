@@ -11,6 +11,7 @@ import { useSpecialColorListener } from "../../lib/specialColor";
 import { useOnlineHeartbeat } from "../../lib/heartbeat";
 import { useAutoLeave } from "../../lib/autoLeave";
 import { useIpCheck } from "../../lib/ipCheck";
+import { DailySpinPopup } from "./DailySpinPopup";
 import { AlertPopup } from "./AlertPopup";
 
 // One sign-in listener and one set of badge listeners for the whole site.
@@ -56,6 +57,8 @@ export function AppSession({ children }: { children: React.ReactNode }) {
       {children}
       {/* 🔔 a new gift / alert pops up on any page, also inside a room */}
       <AlertPopup username={current.user ? current.username : ""} />
+      {/* 🎲 the side menu's Daily Spin opens the wheel on any page */}
+      {uid && <DailySpinPopup uid={uid} auto={false} listen />}
     </SessionContext.Provider>
   );
 }
