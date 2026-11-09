@@ -10,7 +10,10 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#2E93D3",
+    // ⌨️ the installed app's own window colour: it shows for a moment under the
+    // page while the keyboard slides in / out (it was blue, a blue flash). Now the
+    // chat's light colour, like WhatsApp — the page just seems to go on.
+    background_color: "#F3F5F9",
     theme_color: "#0B1F3A",
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
