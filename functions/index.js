@@ -26113,6 +26113,19 @@ function blogPollClean(d) {
 }
 const blogPollOpen = (poll) => !!poll && poll.ended !== true && Date.now() < Number(poll.endsMs || 0);
 
+// 😀 reaction counts { emoji: n } from the real likes/{uid} docs of a post,
+// inside a transaction; `skipUid`'s own doc is left out (the caller adds it back).
+async function blogCountReactions(tx, postRef, skipUid) {
+  const all = await tx.get(postRef.collection("likes"));
+  const counts = {};
+  all.docs.forEach((x) => {
+    if (x.id === skipUid) return;
+    const t = String(x.get("type") || "👍");
+    counts[t] = (counts[t] || 0) + 1;
+  });
+  return counts;
+}
+
 function blogOut(s) {
   const x = { ...s.data() };
   delete x.createdAt;
@@ -26195,14 +26208,26 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
   if (action === "reactors") {
     const pid = String(d.postId || "").trim().slice(0, 100);
     if (!pid) throw new E("invalid-argument", "Which post?");
-    const snap = await (await resolvePost(pid)).collection("likes").limit(300).get();
+    const pref = await resolvePost(pid);
+    const snap = await pref.collection("likes").get();
+    // 🩹 the counter on the post doesn't match the real list (old drift): fix it now
+    const real = {};
+    snap.docs.forEach((x) => { const t = String(x.get("type") || "👍"); real[t] = (real[t] || 0) + 1; });
+    const post = await pref.get();
+    if (post.exists && Number(post.get("likes") || 0) !== snap.size) {
+      await pref.update({
+        likes: snap.size, reactions: real,
+        hot: blogHot(Number(post.get("createdMs") || Date.now()), snap.size, Number(post.get("comments") || 0), Number(post.get("views") || 0)),
+      }).catch(() => {});
+    }
     const reactors = snap.docs
       .map((x) => ({
         username: String(x.get("username") || x.id).slice(0, 60),
         type: String(x.get("type") || "👍"),
         at: x.get("at") && typeof x.get("at").toMillis === "function" ? x.get("at").toMillis() : 0,
       }))
-      .sort((a, b) => b.at - a.at);
+      .sort((a, b) => b.at - a.at)
+      .slice(0, 300);
     return { ok: true, reactors };
   }
   // 🎼 the song library: songs miGlife added (licensed or royalty-free); anyone can list them
@@ -26562,11 +26587,11 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       const [s, l] = await Promise.all([tx.get(postRef), tx.get(likeRef)]);
       if (!s.exists) throw new E("not-found", "That Mig is gone.");
       const prev = l.exists ? String(l.get("type") || "👍") : null;
-      // older posts have no reaction counts yet: their likes all count as 👍
-      const counts = s.get("reactions")
-        ? { ...s.get("reactions") }
-        : { "👍": Number(s.get("likes") || 0) };
-      if (prev) counts[prev] = Math.max(0, Number(counts[prev] || 0) - 1);
+      // BUG FIX (the counter said 3, "who reacted" listed 4): the counts used to be
+      // carried along on the post, and an old-style "like" (no reaction type)
+      // never reached them, so the next reaction rewrote "likes" too low. Now the
+      // counts come from the real likes/{uid} docs every time (mine left out here).
+      const counts = await blogCountReactions(tx, postRef, uid);
       let next = null;
       if (wanted && REACTIONS.includes(wanted) && wanted !== prev) {
         next = wanted;
@@ -26591,11 +26616,17 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const res = await db.runTransaction(async (tx) => {
       const [s, l] = await Promise.all([tx.get(postRef), tx.get(likeRef)]);
       if (!s.exists) throw new E("not-found", "That Mig is gone.");
-      const likes = Math.max(0, Number(s.get("likes") || 0) + (l.exists ? -1 : 1));
+      // counted from the real likes docs (see blogCountReactions), kept with the reactions
+      const counts = await blogCountReactions(tx, postRef, uid);
       if (l.exists) tx.delete(likeRef);
-      else tx.set(likeRef, { username: me, at: FieldValue.serverTimestamp() });
+      else {
+        tx.set(likeRef, { username: me, type: "👍", at: FieldValue.serverTimestamp() });
+        counts["👍"] = Number(counts["👍"] || 0) + 1;
+      }
+      const likes = Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
       tx.update(postRef, {
         likes,
+        reactions: counts,
         hot: blogHot(Number(s.get("createdMs") || Date.now()), likes, Number(s.get("comments") || 0), Number(s.get("views") || 0)),
       });
       return { liked: !l.exists, likes };
