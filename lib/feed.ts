@@ -46,6 +46,8 @@ export type BlogPost = {
   mood: string;
   /** 📊 a poll (null = none) */
   poll: BlogPoll | null;
+  /** 😀 reaction counts on the post: { emoji: count } */
+  reactions: Record<string, number>;
 };
 
 export type BlogComment = {
@@ -133,6 +135,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     placeSub: String(d.placeSub || ""),
     mood: String(d.mood || ""),
     poll: toBlogPoll(d.poll),
+    reactions: reactionCounts(d.reactions),
   };
 }
 export function toBlogPoll(v: unknown): BlogPoll | null {
