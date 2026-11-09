@@ -11,7 +11,18 @@ import { functions } from "../../lib/firebase";
 // amount inside its range and pays it — the wheel only shows where it landed.
 
 type Slice = { min: number; max: number; jackpot?: boolean };
-type SpinReply = { enabled?: boolean; spunToday?: boolean; slices?: Slice[]; slice?: number; amount?: number; already?: boolean };
+type SpinReply = { enabled?: boolean; spunToday?: boolean; nextAt?: number; slices?: Slice[]; slice?: number; amount?: number; already?: boolean };
+
+// 🎲 the side menu's "Daily Spin": opens the wheel any time (also after "Later");
+// already spun today → it says when the next free spin opens
+const OPEN_EVENT = "migwith:dailyspin";
+export function openDailySpin() {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(OPEN_EVENT));
+}
+const leftText = (ms: number) => {
+  const m = Math.max(1, Math.ceil(ms / 60000));
+  return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+};
 
 const dailySpin = httpsCallable<{ action: string }, SpinReply>(functions, "dailySpin");
 // 🫧 clear glass (miglife picked design A): see-through tints, the sky shows through
@@ -112,16 +123,43 @@ export function Wheel({ slices, rotation, spinning }: { slices: Slice[]; rotatio
   );
 }
 
-export function DailySpinPopup({ uid }: { uid: string }) {
+// auto: pops up by itself once a visit (the Lobby / Feed one) · listen: opens from
+// the side menu's 🎲 Daily Spin (the one inside the menu, on every page)
+export function DailySpinPopup({ uid, auto = true, listen = false }: { uid: string; auto?: boolean; listen?: boolean }) {
   const [slices, setSlices] = useState<Slice[]>([]);
   const [open, setOpen] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [won, setWon] = useState<{ amount: number; jackpot: boolean } | null>(null);
   const [error, setError] = useState("");
+  // already spun today (opened from the menu): when the next free spin opens
+  const [nextAt, setNextAt] = useState(0);
+  const [off, setOff] = useState(false);
+
+  // 🎲 opened from the side menu
+  useEffect(() => {
+    if (!uid || !listen) return;
+    const onOpen = () => {
+      setError("");
+      setWon(null);
+      dailySpin({ action: "status" })
+        .then(({ data }) => {
+          setOff(!data?.enabled);
+          if (data?.slices?.length) setSlices(data.slices);
+          setNextAt(data?.spunToday ? Number(data.nextAt) || 0 : 0);
+          setOpen(true);
+        })
+        .catch((e) => {
+          setError(e?.message || "Could not open the spin. Please try again.");
+          setOpen(true);
+        });
+    };
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, [uid, listen]);
 
   useEffect(() => {
-    if (!uid) return;
+    if (!uid || !auto) return;
     // once a visit: "Later" closes it until the web is opened again
     const seen = `${SEEN_KEY}.${uid}`;
     try {
@@ -140,7 +178,7 @@ export function DailySpinPopup({ uid }: { uid: string }) {
     return () => {
       alive = false;
     };
-  }, [uid]);
+  }, [uid, auto]);
 
   const close = () => {
     try {
@@ -193,7 +231,11 @@ export function DailySpinPopup({ uid }: { uid: string }) {
         <div className="mt-3">
           <Wheel slices={slices} rotation={rotation} spinning={spinning} />
         </div>
-        {won ? (
+        {!won && (off || nextAt > 0) ? (
+          <p className="mx-auto mt-3 rounded-[14px] border border-white/90 bg-white/55 px-3 py-2.5 text-[13px] font-extrabold text-[#1E63D6]">
+            {off ? "The daily spin is turned off right now." : `✅ Today's spin is done. Next free spin in ${leftText(nextAt - Date.now())}.`}
+          </p>
+        ) : won ? (
           <div
             className={`mx-auto mt-3 rounded-[14px] border border-white/90 px-3 py-2.5 ${won.jackpot ? "text-[#5A2E00]" : "text-[#1E63D6]"}`}
             style={{ background: won.jackpot ? "linear-gradient(135deg,#FFE38A,#F5B400)" : "rgba(255,255,255,.55)" }}
@@ -208,7 +250,11 @@ export function DailySpinPopup({ uid }: { uid: string }) {
         )}
         {error && <p className="mt-2 text-[12px] font-bold text-[#D32F2F]">{error}</p>}
         <div className="mt-3 flex gap-2.5">
-          {won ? (
+          {!won && (off || nextAt > 0) ? (
+            <button type="button" onClick={() => setOpen(false)} className="h-11 flex-1 rounded-full border-[1.5px] border-white/90 bg-white/45 text-[14px] font-extrabold text-[#1E63D6]">
+              Close
+            </button>
+          ) : won ? (
             <button type="button" onClick={() => setOpen(false)} className="h-11 flex-1 rounded-full text-[15px] font-black text-white shadow-[0_6px_16px_rgba(91,141,239,.45)]"
               style={{ background: "linear-gradient(90deg,#3B82F6,#8B5CF6)" }}>
               Collect

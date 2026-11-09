@@ -22,6 +22,7 @@ const MENU_COLORS: Record<string, string> = {
   Lobby: "#3F55C7",
   Profile: "#12AFC7",
   Wallet: "#E0A800",
+  "Daily Spin": "#8B5CF6",
   Friends: "#22A447",
   Discover: "#7B3FC7",
   "miglife secret": "#E12A2A",
@@ -30,6 +31,7 @@ const MENU_COLORS: Record<string, string> = {
   Settings: "#5B6B8C",
 };
 import { clearRememberedAmounts } from "../../lib/amountMemory";
+import { openDailySpin } from "./DailySpinPopup";
 
 // The app's menu: profile card (level, XP, coins), the page links and Logout.
 // Phones open it from ☰; laptops show it as a sidebar (DesktopSidebar).
@@ -64,6 +66,8 @@ export function MenuPanel() {
     ["/", "🏠", "Lobby", 0],
     ["/profile/me", "👤", "Profile", 0],
     ["/wallet", "👛", "Wallet", 0],
+    // 🎲 opens the Daily Lucky Spin wheel (not a page)
+    ["#spin", "🎲", "Daily Spin", 0],
     ["/friends", "👥", "Friends", badges.requests],
     ["/explore", "🧭", "Discover", 0],
     // The founder tools, like the app's "miglife secret" (founders only).
@@ -151,6 +155,7 @@ export function MenuPanel() {
             <Link
               key={href}
               href={href}
+              onClick={href === "#spin" ? (e) => (e.preventDefault(), openDailySpin()) : undefined}
               className={`relative flex items-center after:absolute after:bottom-0 after:left-[50px] after:right-0 after:h-px after:bg-[#DDE3EA] ${
                 active ? "bg-[#E3EEFB]" : "hover:bg-[#F6F8FB]"
               }`}
@@ -251,6 +256,7 @@ export function MenuPanel() {
             {/* 🎨 the Community page's card: white → own colour, colour icon tile, › chip */}
             <Link
               href={href}
+              onClick={href === "#spin" ? (e) => (e.preventDefault(), openDailySpin()) : undefined}
               className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] active:translate-y-[3px] ${active ? "font-extrabold" : "font-bold"}`}
               style={{
                 borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
