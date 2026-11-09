@@ -16,6 +16,7 @@ import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
 import { placeHere, searchPlaces, type Place } from "../../lib/places";
 import { MigView } from "./MigView";
 import { ReactorsSheet } from "./ReactorsSheet";
+import { PollBox } from "./PollBox";
 import { openReport } from "./ReportDialog";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
@@ -256,6 +257,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cmoodOpen, setCmoodOpen] = useState(false);
   // 😊 my mood for this post ("" = none): "mahin is 😊 happy"
   const [cmood, setCmood] = useState("");
+  // 📊 a poll in the writer (null = none): the text is the question
+  const [cpoll, setCpoll] = useState<{ options: string[]; days: 1 | 3 | 7; multi: boolean } | null>(null);
   // @ mention: while you type "@ab", suggest your friends whose name starts with it
   const mentionMatch = ctext.match(/@([A-Za-z0-9_.\-]{0,20})$/);
   const mentionSuggest = mentionMatch
@@ -332,6 +335,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCvideo("");
     setCplace(null);
     setCmood("");
+    setCpoll(null);
     setCpriv("");
     setCerr("");
     setCdraftNote(false);
@@ -433,7 +437,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -445,7 +449,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
       setToast("Migged ✓");
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 2200);
@@ -458,6 +462,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCpriv(p.privacy);
       setCplace(p.place);
       setCmood(p.mood);
+      setCpoll(p.poll ? { options: p.poll.options, days: (p.poll.days as 1 | 3 | 7) || 3, multi: p.poll.multi } : null);
       cbgKeep.current = p.bg;
       setComposing(true);
       setCerr(blogError(e));
@@ -498,7 +503,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood };
+    // 📊 a poll: the text is the question, and it needs 2 answers or more
+    const pollOpts = cpoll ? cpoll.options.map((o) => o.trim()).filter(Boolean) : [];
+    if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
+    if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
+    const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -521,6 +531,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCpriv(payload.privacy);
         setCplace(payload.place);
         setCmood(payload.mood);
+        setCpoll(payload.poll ? { options: payload.poll.options, days: payload.poll.days, multi: payload.poll.multi } : null);
         cbgKeep.current = payload.bg;
         setComposing(true);
         setToast("Mig taken back");
@@ -1345,6 +1356,54 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   )}
                 </div>
               )}
+              {/* 📊 the poll: answers (2–4), how long, one or several answers */}
+              {cpoll && (
+                <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
+                  <div className="mb-1 flex items-center justify-between px-0.5">
+                    <span className="text-[11.5px] font-extrabold uppercase tracking-wider text-[#4F46E5]">📊 Poll · your text is the question</span>
+                    <button type="button" onClick={() => setCpoll(null)} className="text-[12px] font-bold text-[#8494B2]">
+                      ✕ Remove
+                    </button>
+                  </div>
+                  {cpoll.options.map((o, i) => (
+                    <div key={i} className="mt-1.5 flex items-center gap-1.5">
+                      <input
+                        value={o}
+                        maxLength={60}
+                        onChange={(e) => setCpoll({ ...cpoll, options: cpoll.options.map((x, j) => (j === i ? e.target.value : x)) })}
+                        placeholder={`Answer ${i + 1}`}
+                        className="min-w-0 flex-1 rounded-xl border-[1.5px] border-[#D9DFF0] bg-white px-3 py-2 text-[14px] text-[#1E1B4B] outline-none focus:border-[#6366F1]"
+                      />
+                      {cpoll.options.length > 2 && (
+                        <button type="button" onClick={() => setCpoll({ ...cpoll, options: cpoll.options.filter((_, j) => j !== i) })} aria-label="Remove answer" className="px-1 text-[#8494B2]">
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                  {cpoll.options.length < 4 && (
+                    <button type="button" onClick={() => setCpoll({ ...cpoll, options: [...cpoll.options, ""] })} className="mt-1.5 w-full rounded-xl border-[1.5px] border-dashed border-[#C7D2FE] py-2 text-[13px] font-bold text-[#6366F1]">
+                      ＋ Add answer (max 4)
+                    </button>
+                  )}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {([1, 3, 7] as const).map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setCpoll({ ...cpoll, days: d })}
+                        className={`rounded-full px-3 py-1 text-[12px] font-extrabold ${cpoll.days === d ? "bg-[#1D4ED8] text-white" : "bg-white text-[#4F46E5] shadow-sm"}`}
+                      >
+                        {d} {d === 1 ? "day" : "days"}
+                      </button>
+                    ))}
+                    <label className="ml-auto flex items-center gap-1.5 text-[12px] font-bold text-[#5B6585]">
+                      <input type="checkbox" checked={cpoll.multi} onChange={(e) => setCpoll({ ...cpoll, multi: e.target.checked })} className="h-4 w-4" />
+                      Several answers
+                    </label>
+                  </div>
+                </div>
+              )}
               {cerr && <p className="mt-2 rounded-lg bg-red-50 px-2.5 py-1.5 text-[12.5px] text-red-700">{cerr}</p>}
               {cmoodOpen && (
                 <div className="mt-2.5 rounded-2xl bg-[#F7F8FF] p-2.5">
@@ -1374,12 +1433,25 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               )}
               {/* tools on the left, Post on the right */}
               <div className="mt-3 flex items-center gap-1">
-                <button type="button" disabled={cbusy || cphotos.length >= 10} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
+                <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
                   🖼️
                 </button>
                 {videoOn && !cedit && (
-                  <button type="button" disabled={cbusy || cvideoBusy || !!cvideo} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
+                  <button type="button" disabled={cbusy || cvideoBusy || !!cvideo || !!cpoll} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
                     🎬
+                  </button>
+                )}
+                {/* 📊 Poll (a new Mig only; words, no photos / video) */}
+                {!cedit && (
+                  <button
+                    type="button"
+                    disabled={cbusy || cphotos.length > 0 || !!cvideo}
+                    onClick={() => setCpoll((v) => (v ? null : { options: ["", ""], days: 3, multi: false }))}
+                    aria-label="Add a poll"
+                    title={cphotos.length > 0 || cvideo ? "A poll can't have photos or a video" : "Poll"}
+                    className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#EEF2FF] active:scale-90 disabled:opacity-40 ${cpoll ? "bg-[#EEF2FF]" : ""}`}
+                  >
+                    📊
                   </button>
                 )}
                 <button
@@ -1562,7 +1634,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-5 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1747,7 +1819,7 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -1838,6 +1910,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
             >
               {more ? "Show less ⌃" : "Read more ⌄"}
             </button>
+            {p.poll && <PollBox postId={p.id} poll={p.poll} canEnd={!!onEdit} signedIn={signedIn} />}
             <TranslateLink postId={p.id} />
           </div>
         ) : (
@@ -1845,6 +1918,12 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
             <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
               <RichText text={text || "📷"} />
             </p>
+            {/* 📊 the poll on a white card, readable on every colour */}
+            {p.poll && (
+              <div className="mt-3 w-full rounded-[18px] bg-white/95 p-2.5 text-left shadow-[0_6px_18px_rgba(0,0,0,.15)]">
+                <PollBox postId={p.id} poll={p.poll} canEnd={!!onEdit} signedIn={signedIn} />
+              </div>
+            )}
             {hasWords && <TranslateLink postId={p.id} dark={artInk === "#FFFFFF"} />}
           </div>
         )}
