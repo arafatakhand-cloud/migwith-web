@@ -43,6 +43,7 @@ import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
 import { ZoomImageViewer } from "../../_components/ImageViewer";
 import { StickerImg } from "../../_components/StickerImg";
+import { PhotoEditor } from "../../_components/PhotoEditor";
 import { MORE_REACTIONS, QUICK_REACTIONS } from "../../../lib/reactions";
 
 // 1:1 chat, like the app's PrivateChatPage: bubbles (mine blue, theirs
@@ -58,6 +59,8 @@ type PrivateMessage = {
   giftName: string;
   giftIcon: string;
   imageUrl: string;
+  /** ✍️ the words sent with a photo */
+  caption: string;
   fileUrl: string;
   fileName: string;
   fileSize: number;
@@ -106,6 +109,13 @@ export default function PrivateChatPage() {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [giftOpen, setGiftOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // 🖼 a picked photo waits above the box (C2) and goes with the text on ➤
+  const [pendingPhoto, setPendingPhoto] = useState<File | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState<File | null>(null);
+  const pendingSrc = useMemo(() => (pendingPhoto ? URL.createObjectURL(pendingPhoto) : ""), [pendingPhoto]);
+  useEffect(() => () => {
+    if (pendingSrc) URL.revokeObjectURL(pendingSrc);
+  }, [pendingSrc]);
   const [reply, setReply] = useState<{ label: string; snippet: string } | null>(null);
   const [pickerFor, setPickerFor] = useState<string | null>(null);
   // ＋ more reactions open above the quick ones for this message
@@ -161,6 +171,7 @@ export default function PrivateChatPage() {
           giftName: String(d.get("giftName") || ""),
           giftIcon: String(d.get("giftIcon") || ""),
           imageUrl: String(d.get("imageUrl") || ""),
+          caption: String(d.get("caption") || ""),
           fileUrl: String(d.get("fileUrl") || ""),
           fileName: String(d.get("fileName") || ""),
           fileSize: Number(d.get("fileSize") ?? -1),
@@ -288,10 +299,19 @@ export default function PrivateChatPage() {
 
   const send = async () => {
     const clean = text.trim();
-    if (!clean || !user || !username) return;
+    if ((!clean && !pendingPhoto) || !user || !username) return;
     if (self) return setError("You cannot message yourself.");
     if (blocked) return setError(`You blocked ${friend}. Unblock to send a message.`);
     if (lockedOut) return setError(lockedChatText(friend));
+    // 🖼 a photo is waiting: it goes with these words as one message
+    if (pendingPhoto) {
+      const f = pendingPhoto;
+      setPendingPhoto(null);
+      setText("");
+      setReply(null);
+      void sendPhoto(f, clean);
+      return;
+    }
     // "/gift GiftName [-m message]" — the gift panel does the sending.
     if (/^\/gift\b/i.test(clean)) {
       setText("");
@@ -321,14 +341,21 @@ export default function PrivateChatPage() {
   };
 
   // 📷 Photo: same Storage folder and message shape as the app.
-  const sendPhoto = async (file: File | undefined) => {
+  const sendPhoto = async (file: File | undefined, caption = "") => {
     if (!file || !user || !username || uploading || self) return;
     if (lockedOut) return setError(lockedChatText(friend));
     setUploading(true);
     setError("");
     try {
       const url = await uploadChatImage(`private_images/${storageSafeSegment(chatId)}`, file);
-      await addDoc(collection(db, "private_messages"), { ...base(), text: "📷 Photo", messageType: "image", imageUrl: url });
+      const cap = caption.trim().slice(0, 1000);
+      await addDoc(collection(db, "private_messages"), {
+        ...base(),
+        text: cap ? `📷 ${cap}` : "📷 Photo",
+        messageType: "image",
+        imageUrl: url,
+        ...(cap ? { caption: cap } : {}),
+      });
       stickToBottom.current = true;
     } catch (err: any) {
       setError(err?.message || "Photo could not be sent.");
@@ -341,7 +368,7 @@ export default function PrivateChatPage() {
   const sendFile = async (file: File | undefined) => {
     if (!file || !user || !username || uploading || self) return;
     if (lockedOut) return setError(lockedChatText(friend));
-    if (file.type.startsWith("image/")) return sendPhoto(file);
+    if (file.type.startsWith("image/")) return setPendingPhoto(file);
     const ext = (file.name.split(".").pop() || "").toLowerCase();
     if (file.name.includes(".") && BLOCKED_EXT.has(ext)) return setError(`That type of file (.${ext}) can't be sent.`);
     if (file.size > MAX_FILE_BYTES)
@@ -648,7 +675,13 @@ export default function PrivateChatPage() {
                       }}
                       className="max-h-64 max-w-full rounded-xl"
                     />
-                  ) : m.type === "sticker" && m.imageUrl ? (
+                  ) : null}
+                  {/* ✍️ the words sent with the photo */}
+                  {m.type === "image" && m.imageUrl && m.caption ? (
+                    <p data-notranslate className="mt-1 whitespace-pre-wrap break-words">
+                      {withEmotes(m.caption, 16)}
+                    </p>
+                  ) : m.type === "image" && m.imageUrl ? null : m.type === "sticker" && m.imageUrl ? (
                     // 🎨 a sticker: big, no frame
                     <StickerImg url={m.imageUrl} className="h-28 w-28 object-contain" />
                   ) : m.type === "voice" && m.audioUrl ? (
@@ -734,6 +767,34 @@ export default function PrivateChatPage() {
           </div>
         )}
 
+        {pendingPhoto && (
+          <div className="flex items-center gap-2.5 bg-white px-3.5 pb-1 pt-2">
+            <span className="relative shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pendingSrc} alt="Photo to send" className="h-16 w-16 rounded-xl object-cover shadow-[0_2px_8px_rgba(11,31,58,.2)]" />
+              <button
+                type="button"
+                onClick={() => setPendingPhoto(null)}
+                aria-label="Remove photo"
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B2440] text-[11px] font-black text-white"
+              >
+                ✕
+              </button>
+            </span>
+            <span className="text-[12px] font-bold text-[#5B6585]">
+              1 photo
+              {pendingPhoto.type !== "image/gif" && (
+                <>
+                  {" · "}
+                  <button type="button" onClick={() => (setEditingPhoto(pendingPhoto), setPendingPhoto(null))} className="text-[#2563EB]">
+                    ✏️ Edit
+                  </button>
+                </>
+              )}
+              <span className="block text-[11px] font-semibold text-[#8A97A8]">Write something (optional), then ➤</span>
+            </span>
+          </div>
+        )}
         {reply && (
           <div className="flex items-center bg-white px-3.5 py-2">
             <div className="min-w-0 flex-1">
@@ -782,7 +843,17 @@ export default function PrivateChatPage() {
               </>
             )}
           </div>
-          <input ref={photoRef} type="file" accept="image/*" hidden onChange={(e) => (sendPhoto(e.target.files?.[0]), (e.target.value = ""))} />
+          <input
+            ref={photoRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              e.target.value = "";
+              if (f) (setPendingPhoto(f), inputRef.current?.focus());
+            }}
+          />
           <input ref={fileRef} type="file" hidden onChange={(e) => (sendFile(e.target.files?.[0]), (e.target.value = ""))} />
           {!voiceActive && (
             <div className="min-w-0 flex-1 rounded-[24px] bg-gradient-to-r from-[#5B8DEF] via-[#8B6CF0] to-[#3FB6F2] p-[1.5px] shadow-[0_2px_10px_rgba(91,141,239,.18)]">
@@ -818,7 +889,7 @@ export default function PrivateChatPage() {
               </div>
             </div>
           )}
-          {text.trim() ? (
+          {text.trim() || pendingPhoto ? (
             <button
               type="button"
               onClick={send}
@@ -836,6 +907,14 @@ export default function PrivateChatPage() {
         <div ref={setEmoteSlot} />
       </div>
 
+      {/* ✏️ edit the waiting photo; the edited one goes back above the box */}
+      {editingPhoto && (
+        <PhotoEditor
+          file={editingPhoto}
+          onCancel={() => (setPendingPhoto(editingPhoto), setEditingPhoto(null))}
+          onSend={(f) => (setEditingPhoto(null), setPendingPhoto(f), inputRef.current?.focus())}
+        />
+      )}
       {/* 🔍 pinch / double-tap zoom, like the room photos */}
       {viewImage && <ZoomImageViewer url={viewImage} onClose={() => setViewImage(null)} zIndex={50} />}
 
