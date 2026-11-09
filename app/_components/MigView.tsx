@@ -505,7 +505,14 @@ export function MigView({
             {/* 👥 who reacted (same sheet as the Feed) */}
             {post.likes > 0 && (
               <button type="button" onClick={() => setReactors(true)} className="font-bold text-[#4F46E5] active:opacity-60">
-                😀 {blogShort(post.likes)} · See who reacted
+                {/* the reactions really used, most first (older posts: all 👍) */}
+                {Object.entries(post.reactions || {})
+                  .filter(([, n]) => n > 0)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3)
+                  .map(([e]) => e)
+                  .join("") || "👍"}{" "}
+                {blogShort(post.likes)} · See who reacted
               </button>
             )}
             <span className="ml-auto text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</span>
