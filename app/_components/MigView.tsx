@@ -9,6 +9,7 @@ import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useSenderColors } from "../../lib/senderColors";
 import { PageShell } from "./PageShell";
 import { openReport } from "./ReportDialog";
+import { PollBox } from "./PollBox";
 import { TranslateChip, feedPlainText, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgo,
@@ -469,6 +470,8 @@ export function MigView({
           )}
           <div className="select-text">
             <BlogBody body={post.body} mentions={post.mentions} />
+          {/* 📊 the poll */}
+          {post.poll && <PollBox postId={post.id} poll={post.poll} canEnd={mine || canMod} signedIn={!!user} />}
           </div>
 
           <div className="mt-3 flex gap-2.5">

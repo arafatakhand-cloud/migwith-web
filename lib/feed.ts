@@ -7,6 +7,9 @@ import { functions } from "./firebase";
 // (the `blog` function) does every write — create / edit / delete / like /
 // comment / view. Same in the app (Blog.kt).
 
+/** 📊 a Mig's poll (counts kept by the server) */
+export type BlogPoll = { options: string[]; counts: number[]; total: number; voters: number; multi: boolean; endsMs: number; ended: boolean };
+
 export type BlogPost = {
   id: string;
   authorUid: string;
@@ -41,6 +44,8 @@ export type BlogPost = {
   placeSub: string;
   /** 😊 the writer's mood key ("" = none) — shown as "name is 😊 happy" */
   mood: string;
+  /** 📊 a poll (null = none) */
+  poll: BlogPoll | null;
 };
 
 export type BlogComment = {
@@ -127,6 +132,22 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     place: String(d.place || ""),
     placeSub: String(d.placeSub || ""),
     mood: String(d.mood || ""),
+    poll: toBlogPoll(d.poll),
+  };
+}
+export function toBlogPoll(v: unknown): BlogPoll | null {
+  const p = v as Record<string, unknown> | null | undefined;
+  if (!p || !Array.isArray(p.options) || p.options.length < 2) return null;
+  const options = p.options.map((x) => String(x || ""));
+  const counts = options.map((_, i) => Number((Array.isArray(p.counts) ? p.counts[i] : 0) || 0));
+  return {
+    options,
+    counts,
+    total: Number(p.total || counts.reduce((a, b) => a + b, 0)),
+    voters: Number(p.voters || 0),
+    multi: p.multi === true,
+    endsMs: Number(p.endsMs || 0),
+    ended: p.ended === true,
   };
 }
 export function toBlogComment(id: string, d: Record<string, unknown>): BlogComment {

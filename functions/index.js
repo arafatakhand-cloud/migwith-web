@@ -26092,6 +26092,27 @@ async function blogCanSeePrivate(s, uid, me) {
   return f.exists;
 }
 // a post as plain data for the app / web (timestamps → ms)
+// 📊 Poll on a Mig: 2–4 answers, open 1 / 3 / 7 days, one answer or several.
+// Votes live in {post}/poll_votes/{uid}; the post keeps the counts.
+const BLOG_POLL_DAYS = [1, 3, 7];
+function blogPollClean(d) {
+  const E = functionsV1.https.HttpsError;
+  const p = d && d.poll;
+  if (!p || typeof p !== "object") return null;
+  const seen = new Set();
+  const options = (Array.isArray(p.options) ? p.options : [])
+    .map((x) => String(x || "").replace(/\s+/g, " ").trim().slice(0, 60))
+    .filter((x) => x && !seen.has(x.toLowerCase()) && seen.add(x.toLowerCase()));
+  if (options.length < 2) throw new E("invalid-argument", "A poll needs at least 2 answers.");
+  if (options.length > 4) throw new E("invalid-argument", "A poll can have at most 4 answers.");
+  const days = BLOG_POLL_DAYS.includes(Number(p.days)) ? Number(p.days) : 3;
+  return {
+    options, counts: options.map(() => 0), total: 0, voters: 0,
+    multi: p.multi === true, days, endsMs: Date.now() + days * 86400000, ended: false,
+  };
+}
+const blogPollOpen = (poll) => !!poll && poll.ended !== true && Date.now() < Number(poll.endsMs || 0);
+
 function blogOut(s) {
   const x = { ...s.data() };
   delete x.createdAt;
@@ -26116,6 +26137,7 @@ async function blogMovePost(fromRef, toRef, privacy) {
   };
   await copy(fromRef, toRef, "likes");
   await copy(fromRef, toRef, "views");
+  await copy(fromRef, toRef, "poll_votes");
   const comments = await copy(fromRef, toRef, "comments");
   // 👍 each comment's reactions go along too
   for (const c of comments) {
@@ -26266,6 +26288,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       throw new E("failed-precondition", "Video posts are turned off right now.");
     }
     const privacy = blogPrivacyOf(d);
+    const poll = blogPollClean(d);
     // 🔒 Only me: nobody is told; 👥 Friends: tagged friends may see it, so they are told
     const mentioned = privacy === "me" ? [] : await blogMentionedFriends(me, p.body);
     const shared = await blogSharedMeta(d);
@@ -26278,7 +26301,7 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       const c = rate.exists && rate.get("day") === day ? Number(rate.get("comments") || 0) : 0;
       tx.set(rateRef, { day, posts: n + 1, comments: c });
       tx.set(ref, {
-        ...p, video, ...(shared || {}), ...(privacy ? { privacy } : {}), mentions: mentioned.map((x) => x.name), authorUid: uid, author: me, likes: 0, comments: 0, views: 0,
+        ...p, video, ...(shared || {}), ...(privacy ? { privacy } : {}), ...(poll ? { poll } : {}), mentions: mentioned.map((x) => x.name), authorUid: uid, author: me, likes: 0, comments: 0, views: 0,
         hot: blogHot(now, 0, 0, 0), createdMs: now,
         createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
       });
@@ -26299,6 +26322,17 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const reactions = {};
     snaps.forEach((l, i) => { if (l.exists) reactions[ids[i]] = String(l.get("type") || "👍"); });
     return { ok: true, reactions };
+  }
+
+  // 📊 which answers I picked on each of these polls, in one call (like myReactions)
+  if (action === "myPollVotes") {
+    const ids = (Array.isArray(d.postIds) ? d.postIds : []).map((x) => String(x || "").trim().slice(0, 100)).filter(Boolean).slice(0, 40);
+    if (!ids.length) return { ok: true, votes: {} };
+    const priv = new Set((Array.isArray(d.privateIds) ? d.privateIds : []).map((x) => String(x || "").trim()));
+    const snaps = await db.getAll(...ids.map((id) => db.collection(priv.has(id) ? "blog_private" : "blog_posts").doc(id).collection("poll_votes").doc(uid)));
+    const votes = {};
+    snaps.forEach((v, i) => { if (v.exists && Array.isArray(v.get("choices"))) votes[ids[i]] = v.get("choices").map(Number); });
+    return { ok: true, votes };
   }
 
   // 🔒 the 👥 Friends / 🔒 Only me posts I may see, newest first:
@@ -26463,6 +26497,59 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       await batch.commit().catch(() => {});
     }
     return { ok: true };
+  }
+
+  // 📊 vote on a Mig's poll: choices = the answers' numbers ([] takes my vote back).
+  // While it is open a vote can be changed; the counts are kept on the post.
+  if (action === "pollVote") {
+    const raw = Array.isArray(d.choices) ? d.choices : [];
+    const voteRef = postRef.collection("poll_votes").doc(uid);
+    const res = await db.runTransaction(async (tx) => {
+      const [s, v] = await Promise.all([tx.get(postRef), tx.get(voteRef)]);
+      if (!s.exists) throw new E("not-found", "That Mig is gone.");
+      const poll = s.get("poll");
+      if (!poll || !Array.isArray(poll.options)) throw new E("failed-precondition", "This Mig has no poll.");
+      if (!blogPollOpen(poll)) throw new E("failed-precondition", "This poll has ended.");
+      const n = poll.options.length;
+      let choices = [...new Set(raw.map(Number).filter((x) => Number.isInteger(x) && x >= 0 && x < n))].sort((a, b) => a - b);
+      if (!poll.multi && choices.length > 1) choices = [choices[0]];
+      const prev = v.exists && Array.isArray(v.get("choices")) ? v.get("choices").map(Number) : [];
+      const counts = poll.options.map((_, i) => Number((poll.counts || [])[i] || 0));
+      prev.forEach((i) => { if (i >= 0 && i < n) counts[i] = Math.max(0, counts[i] - 1); });
+      choices.forEach((i) => { counts[i] += 1; });
+      const voters = Math.max(0, Number(poll.voters || 0) - (prev.length ? 1 : 0) + (choices.length ? 1 : 0));
+      const next = { ...poll, counts, total: counts.reduce((a, b) => a + b, 0), voters };
+      tx.update(postRef, { poll: next });
+      if (choices.length) tx.set(voteRef, { username: me, choices, at: FieldValue.serverTimestamp() });
+      else if (v.exists) tx.delete(voteRef);
+      return { poll: next, mine: choices };
+    });
+    return { ok: true, ...res };
+  }
+  // 📊 the writer (or the miGlife team) ends the poll early
+  if (action === "pollEnd") {
+    const s = await postRef.get();
+    if (!s.exists) throw new E("not-found", "That Mig is gone.");
+    const poll = s.get("poll");
+    if (!poll) throw new E("failed-precondition", "This Mig has no poll.");
+    if (s.get("authorUid") !== uid && !(await blogCanModerate(uid, me))) {
+      throw new E("permission-denied", "Only the writer can end this poll.");
+    }
+    const next = { ...poll, ended: true, endsMs: Math.min(Number(poll.endsMs || Date.now()), Date.now()) };
+    await postRef.update({ poll: next });
+    return { ok: true, poll: next };
+  }
+  // 📊 who voted for what (everyone can see it, like the reactions)
+  if (action === "pollVoters") {
+    const snap = await postRef.collection("poll_votes").limit(500).get();
+    const voters = snap.docs
+      .map((x) => ({
+        username: String(x.get("username") || x.id).slice(0, 60),
+        choices: Array.isArray(x.get("choices")) ? x.get("choices").map(Number) : [],
+        at: x.get("at") && typeof x.get("at").toMillis === "function" ? x.get("at").toMillis() : 0,
+      }))
+      .sort((a, b) => b.at - a.at);
+    return { ok: true, voters };
   }
 
   // 😀 React (👍 ❤️ 😂 😮 😢 😡): one reaction per person per post. Put this block
