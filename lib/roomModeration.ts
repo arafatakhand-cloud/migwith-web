@@ -101,6 +101,9 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
   const canManagePrivate = isUserRoom && (isThisRoomOwner || isSuperMod || isAppStaffHere);
   const canAssignSuperMod = isUserRoom && (isThisRoomOwner || isRoomAdmin);
   const canModeratePrivate = isUserRoom && (canManagePrivate || isPrivateMod);
+  // 🛡 A public room's own mod (miglife picked them with /mod): kick, bump,
+  // mute, silence and lock in THIS room only — no ban.
+  const isPublicMod = room.exists && !isUserRoom && room.moderators.includes(me) && !isAppStaffHere;
   return {
     isOwnerUser,
     isHiddenFounder,
@@ -114,19 +117,20 @@ export function roomPerms(room: RoomInfo, uid: string, username: string, role: s
     canModeratePrivate,
     isPrivateSuperMod: isSuperMod,
     isPrivateMod,
+    isPublicMod,
     // 📢 /broadcast: app admin / staff, and in a private room its Owner and
     // Super Mods (not plain Mods) — like the app.
     canBroadcast: isAppStaffHere || (isUserRoom && (isThisRoomOwner || isSuperMod)),
-    canKick: isUserRoom ? canModeratePrivate : isAppStaffHere,
+    canKick: isUserRoom ? canModeratePrivate : isAppStaffHere || isPublicMod,
     canBan: isUserRoom ? canModeratePrivate : isRoomAdmin || isRoomMod,
     canUnban: isUserRoom ? canModeratePrivate : isRoomAdmin,
     // Private rooms: the owner, Super Mods and Mods may mute there too.
-    canMute: isRoomAdmin || isRoomMod || canModeratePrivate,
-    canRoomWide: isRoomAdmin || isRoomMod || canModeratePrivate, // silence / lock
+    canMute: isRoomAdmin || isRoomMod || canModeratePrivate || isPublicMod,
+    canRoomWide: isRoomAdmin || isRoomMod || canModeratePrivate || isPublicMod, // silence / lock
     canSetLevel: isUserRoom ? canManagePrivate : isRoomAdmin || isRoomMod,
     canShareMedia: room.allowMedia || isAppStaffHere || canModeratePrivate,
     /** Not held back by the room lock or entry level. */
-    bypassesEntry: isRoomAdmin || isRoomMod || canModeratePrivate,
+    bypassesEntry: isRoomAdmin || isRoomMod || canModeratePrivate || isPublicMod,
   };
 }
 
@@ -150,25 +154,20 @@ export type ModContext = {
   clearForMe?: () => void;
 };
 
-const changeManagementRole = httpsCallable(functions, "changeManagementRole");
 const clearRoomChatCall = httpsCallable(functions, "clearRoomChat");
+const setPublicRoomModCall = httpsCallable(functions, "setPublicRoomMod");
 
-// /mod and /dmod in an official room change the person's app role (staff /
-// user) — on the server only, like the app.
-async function setAppRole(ctx: ModContext, name: string, role: "staff" | "user") {
+// 🛡 /mod and /dmod in a PUBLIC room (miglife only): a mod of THIS room only.
+// App-wide staff is given from Secret, not from here.
+export async function setPublicRoomMod(ctx: ModContext, name: string, on: boolean) {
   if (key(name) === key(ctx.username)) return ctx.note(`${ctx.roomName}: You cannot change your own role.`);
-  const target = await lookup(ctx, name).catch(() => null);
-  if (!target) return ctx.note(`${ctx.roomName}: User not found: ${name.trim()}`);
   try {
-    await changeManagementRole({
-      targetUid: target.uid,
-      role,
-      operationId: "role_" + crypto.randomUUID().replace(/-/g, ""),
-    });
-    if (role === "staff") ctx.postModeration(`${target.username} is now a moderator of ${ctx.roomName} Chat room.`, "green");
-    else ctx.postModeration(`${target.username} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
+    const res: any = await setPublicRoomModCall({ roomId: ctx.roomName, username: name.trim().replace(/^@/, ""), on });
+    const who = String(res?.data?.username || name.trim());
+    if (on) ctx.postModeration(`${who} is now a moderator of ${ctx.roomName} Chat room.`, "green");
+    else ctx.postModeration(`${who} is no longer a moderator of ${ctx.roomName} chat room.`, "red");
   } catch (e: any) {
-    ctx.note(`${ctx.roomName}: Role update failed. ${e?.message || "Permission denied."}`);
+    ctx.note(`${ctx.roomName}: Moderator update failed. ${e?.message || "Permission denied."}`);
   }
 }
 
@@ -232,7 +231,13 @@ async function isProtected(ctx: ModContext, name: string): Promise<boolean> {
   const appRole = await appRoleOf(name).catch(() => "");
   if (k === key(ctx.username)) return true;
   if (!perms.isUserRoom) {
-    return isMainFounderName(k) || k === key(room.ownerName) || (!perms.isAppStaffHere && STAFF_ROLES.has(appRole));
+    return (
+      isMainFounderName(k) ||
+      k === key(room.ownerName) ||
+      (!perms.isAppStaffHere && STAFF_ROLES.has(appRole)) ||
+      // a public room's mod never acts on another mod of the room
+      (perms.isPublicMod && room.moderators.includes(k))
+    );
   }
   return (
     isMainFounderName(k) ||
@@ -486,7 +491,7 @@ function modHelp(ctx: ModContext): string[] {
   if (p.canMute) lines.push("/mute name   /unmute name");
   if (p.canSetLevel) lines.push("/level 0-100   (entry level, 0 = anyone)");
   if (p.isUserRoom && p.canManagePrivate) lines.push("/mod name   /dmod name");
-  if (!p.isUserRoom && p.isRoomAdmin) lines.push("/mod name   /dmod name   (app moderator)");
+  if (!p.isUserRoom && p.isOwnerUser) lines.push("/mod name   /dmod name   (mod of this room only)");
   if (p.canRoomWide) lines.push("/announcement text   /announcement_off   /announce off");
   if (p.canBroadcast) lines.push("/broadcast text");
   if (p.isRoomAdmin) lines.push("/cc   (clear the room chat for everyone)");
@@ -547,12 +552,12 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
     case "/mod":
     case "/dmod":
       if (!ctx.perms.isUserRoom) {
-        // Public room: /mod makes the person an app moderator (staff) — only
-        // miglife can do that (the server checks too). Say why instead of
-        // silently doing nothing.
-        if (!ctx.perms.isRoomAdmin) ctx.note(`${ctx.roomName}: In public rooms only miGlife can make or remove moderators. In your own private room you can use ${cmd} name.`);
+        // Public room: /mod makes the person a mod of THIS room only — only
+        // miglife can do that (the server checks too). App-wide staff is
+        // given from Secret.
+        if (!ctx.perms.isOwnerUser) ctx.note(`${ctx.roomName}: In public rooms only miGlife can make or remove moderators. In your own private room you can use ${cmd} name.`);
         else if (!arg) ctx.note(`${ctx.roomName}: Usage: ${cmd} username`);
-        else setAppRole(ctx, arg, cmd === "/mod" ? "staff" : "user");
+        else setPublicRoomMod(ctx, arg, cmd === "/mod");
         return true;
       }
       needName(() => setModerator(ctx, arg, cmd === "/mod"));

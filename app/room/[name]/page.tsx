@@ -134,6 +134,7 @@ import {
   roomPerms,
   setEntryLevel,
   setModerator,
+  setPublicRoomMod,
   type ModContext,
   type RoomInfo,
 } from "../../../lib/roomModeration";
@@ -2145,10 +2146,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         ? ["🔰 STAFF", "#FFE4E4", "#B91C1C"]
         : perms.isPrivateSuperMod
           ? ["⭐ SUPER MOD", "#EFE7FF", "#5B2BD6"]
-          : perms.isPrivateMod
+          : perms.isPrivateMod || perms.isPublicMod
             ? ["🛡 MOD", "#DFF7EA", "#15803D"]
             : ["👤 MEMBER", "#E3F3FF", "#0369A1"];
-  const canModMenu = perms.isAppStaffHere || perms.canModeratePrivate;
+  const canModMenu = perms.isAppStaffHere || perms.canModeratePrivate || perms.isPublicMod;
   // 🛡 MODERATION TOOLS page (the app's RoomModerationToolsPage): each tool with
   // a short line saying what it does; the ones that need a name fill the box.
   type ModTool = { icon: string; title: string; desc: string; tint: string; act: () => void };
@@ -2158,7 +2159,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       [
         ...(perms.canKick ? [{ icon: "👢", title: "Kick", desc: "Remove someone from this room", tint: "#FFE8DC", act: () => (closeMenu(), setKickOpen(true)) }] : []),
         { icon: "🔇", title: "Mute", desc: "Stop someone from typing here", tint: "#FFF1D6", act: () => prefill("/mute ") },
-        { icon: "⛔", title: "Ban", desc: "Block someone from this room", tint: "#FFE0E0", act: () => prefill("/ban ") },
+        ...(perms.canBan ? [{ icon: "⛔", title: "Ban", desc: "Block someone from this room", tint: "#FFE0E0", act: () => prefill("/ban ") }] : []),
       ],
     ],
     [
@@ -2178,7 +2179,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           tint: "#EDE7FF",
           act: () => runCommand(silenced ? "/unsilence room" : "/silence room"),
         },
-        { icon: "📌", title: "Announce", desc: "Pin a message on top of the chat", tint: "#E6F7EE", act: () => prefill("/announcement ") },
+        ...(!perms.isPublicMod ? [{ icon: "📌", title: "Announce", desc: "Pin a message on top of the chat", tint: "#E6F7EE", act: () => prefill("/announcement ") }] : []),
         ...(perms.canBroadcast ? [{ icon: "📢", title: "Broadcast", desc: "Send a highlighted notice once", tint: "#FFF4D6", act: () => prefill("/broadcast ") }] : []),
       ],
     ],
@@ -2186,6 +2187,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       "⭐ TEAM",
       [
         ...(perms.isUserRoom && perms.canManagePrivate ? [{ icon: "🛡", title: "Add Mod", desc: "Make someone a moderator", tint: "#E3F3FF", act: () => prefill("/mod ") }] : []),
+        ...(!perms.isUserRoom && perms.isOwnerUser
+          ? [{ icon: "🛡", title: "Add Mod", desc: "A mod of this room only (/dmod name removes)", tint: "#E3F3FF", act: () => prefill("/mod ") }]
+          : []),
         ...(perms.isUserRoom && perms.canAssignSuperMod
           ? [{ icon: "⭐", title: "Add Super Mod", desc: "Make someone a super moderator", tint: "#FFF1CC", act: () => prefill("/smod ") }]
           : []),
@@ -2679,6 +2683,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                                 (roomInfo.moderators.includes(u.username.toLowerCase())
                                   ? ["🛑 Remove Mod", (c: ModContext) => setModerator(c, u.username, false)]
                                   : ["⭐ Make Mod", (c: ModContext) => setModerator(c, u.username, true)]),
+                              !perms.isUserRoom &&
+                                perms.isOwnerUser &&
+                                (roomInfo.moderators.includes(u.username.toLowerCase())
+                                  ? ["🛑 Remove Mod", (c: ModContext) => setPublicRoomMod(c, u.username, false)]
+                                  : ["⭐ Make Mod", (c: ModContext) => setPublicRoomMod(c, u.username, true)]),
                             ].filter(Boolean) as [string, (c: ModContext) => unknown][]
                           ).map(([label, run]) => (
                             <button
@@ -2828,6 +2837,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                       (roomInfo.moderators.includes(u.username.toLowerCase())
                         ? ["🛑 Remove Mod", () => { const c = modCtx(); if (c) setModerator(c, u.username, false); }]
                         : ["⭐ Make Mod", () => { const c = modCtx(); if (c) setModerator(c, u.username, true); }]),
+                    u.uid !== user.uid &&
+                      !perms.isUserRoom &&
+                      perms.isOwnerUser &&
+                      (roomInfo.moderators.includes(u.username.toLowerCase())
+                        ? ["🛑 Remove Mod", () => { const c = modCtx(); if (c) setPublicRoomMod(c, u.username, false); }]
+                        : ["⭐ Make Mod", () => { const c = modCtx(); if (c) setPublicRoomMod(c, u.username, true); }]),
                   ].filter(Boolean) as [string, () => void][]
                 );
                 return (

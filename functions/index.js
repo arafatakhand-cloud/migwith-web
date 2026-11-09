@@ -12627,6 +12627,58 @@ exports.clearRoomChat = functionsV1.runWith({ timeoutSeconds: 120 }).https.onCal
   return { ok: true, deleted };
 });
 
+// 🛡 Public-room mods (miglife, Nov 2026): in a PUBLIC room, miglife's
+// "/mod name" makes that person a mod of THAT room only ("/dmod name" removes
+// them). They can kick, bump, mute, silence and lock there (firestore.rules
+// publicRoomMod) — no ban, and nothing app-wide. Only miglife may call this.
+exports.setPublicRoomMod = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(normalizeUsername(me.get("username")))) {
+    throw new functionsV1.https.HttpsError("permission-denied", "Only miGlife can make or remove mods in public rooms.");
+  }
+  const roomId = String((data && data.roomId) || "").trim();
+  if (!roomId || roomId.length > 100 || roomId.includes("/")) {
+    throw new functionsV1.https.HttpsError("invalid-argument", "Invalid room.");
+  }
+  const on = data && data.on !== false;
+  const name = String((data && data.username) || "").trim().replace(/^@/, "");
+  if (!name) throw new functionsV1.https.HttpsError("invalid-argument", "Write a username.");
+  const roomRef = db.collection("rooms").doc(roomId);
+  const room = await roomRef.get();
+  const rd = room.exists ? room.data() : {};
+  if (room.exists && String(rd.category || "") === "user" && String(rd.privacy || "Private") !== "Public") {
+    throw new functionsV1.https.HttpsError("failed-precondition", "This is a private room. Its owner picks its mods.");
+  }
+  let username = name;
+  if (on) {
+    const userDoc = await findUserDocByUsername(name);
+    if (!userDoc) throw new functionsV1.https.HttpsError("not-found", "User not found: " + name);
+    username = String(userDoc.get("username") || name).trim();
+    if (isMainFounderName(normalizeUsername(username))) {
+      throw new functionsV1.https.HttpsError("failed-precondition", "miGlife is already above every mod.");
+    }
+  }
+  const key = username.toLowerCase();
+  const list = Array.isArray(rd.moderators) ? rd.moderators.map((x) => String(x || "").trim().toLowerCase()).filter(Boolean) : [];
+  if (on && !list.includes(key) && list.length >= 20) {
+    throw new functionsV1.https.HttpsError("resource-exhausted", "A room can have at most 20 mods.");
+  }
+  if (!on && !list.includes(key)) {
+    throw new functionsV1.https.HttpsError("not-found", username + " is not a mod of this room.");
+  }
+  await roomRef.set({
+    ...(room.exists ? {} : { name: roomId }),
+    moderators: on ? FieldValue.arrayUnion(key) : FieldValue.arrayRemove(key),
+    updatedBy: "miglife",
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  await db.collection("founder_admin_log").add({
+    action: on ? "public_room_mod_add" : "public_room_mod_remove", roomId, username, by: "miglife", at: FieldValue.serverTimestamp(),
+  }).catch(() => {});
+  return { ok: true, username };
+});
+
 exports.startLuxuryRound = functionsV1.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   if (LUXURY_BOT_REMOVED) {

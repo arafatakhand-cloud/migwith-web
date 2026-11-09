@@ -1655,6 +1655,43 @@ service cloud.firestore {
           && (isPrivRoomOwner() || isPrivRoomSuperMod() || !(target in privRoomData().get("moderators", [])));
       }
 
+      // ---------------------------------------------------------------------------
+      // PUBLIC rooms: per-room mods that miglife picks with /mod (the
+      // setPublicRoomMod Cloud Function writes rooms/{roomId}.moderators).
+      // They may kick, bump, mute / unmute, lock / unlock and silence /
+      // unsilence THIS room only. No ban. Never against miglife, a founder,
+      // app admins / staff or another mod of the room.
+      // ---------------------------------------------------------------------------
+      function publicRoomMod() {
+        return exists(/databases/$(database)/documents/rooms/$(roomId))
+          && !isUserRoom()
+          && currentUsername().lower() in privRoomData().get("moderators", []);
+      }
+
+      function publicTargetOk(target) {
+        let uid = request.resource.data.get("uid", "");
+        return target != "miglife"
+          && !(target in privRoomData().get("moderators", []))
+          && uid is string && uid.size() > 0
+          && exists(/databases/$(database)/documents/users/$(uid))
+          && get(/databases/$(database)/documents/users/$(uid)).data.get("username", "").lower() == target
+          && !(get(/databases/$(database)/documents/users/$(uid)).data.get("role", "").lower()
+               in ["admin", "administrator", "superadmin", "staff", "owner", "ceo"]);
+      }
+
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(["roomId", "locked", "lockedBy", "silenced", "updatedBy", "updatedAt"])
+        && request.resource.data.get("locked", false) is bool
+        && request.resource.data.get("silenced", false) is bool
+        && publicRoomMod();
+
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(["roomId", "locked", "lockedBy", "silenced", "updatedBy", "updatedAt"])
+        && request.resource.data.get("locked", false) is bool
+        && request.resource.data.get("silenced", false) is bool
+        && publicRoomMod();
+
       // Lock / unlock and silence / unsilence a private room.
       allow create: if signedIn()
         && privateRoomModerates()
@@ -1762,6 +1799,42 @@ service cloud.firestore {
           && founderTargetOk()
           && privateRoomModerates()
           && privateTargetOk(username);
+
+        // 🛡 Public-room mods (picked by miglife): kick / bump and mute / unmute.
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(["uid", "username", "kicked", "kickedAt", "bumped", "updatedBy", "updatedAt"])
+          && request.resource.data.kicked == true
+          && request.resource.data.get("bumped", false) is bool
+          && (!("kickedAt" in request.resource.data) || request.resource.data.kickedAt == request.time)
+          && founderTargetOk()
+          && publicRoomMod()
+          && publicTargetOk(username);
+
+        allow update: if signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["uid", "username", "kicked", "kickedAt", "bumped", "updatedBy", "updatedAt"])
+          && request.resource.data.kicked == true
+          && request.resource.data.get("bumped", false) is bool
+          && (!("kickedAt" in request.resource.data.diff(resource.data).affectedKeys())
+              || request.resource.data.kickedAt == request.time)
+          && founderTargetOk()
+          && publicRoomMod()
+          && publicTargetOk(username);
+
+        allow create: if signedIn()
+          && request.resource.data.keys().hasOnly(["uid", "username", "muted", "updatedBy", "updatedAt"])
+          && request.resource.data.muted is bool
+          && founderTargetOk()
+          && publicRoomMod()
+          && publicTargetOk(username);
+
+        allow update: if signedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(["uid", "username", "muted", "updatedBy", "updatedAt"])
+          && request.resource.data.muted is bool
+          && founderTargetOk()
+          && publicRoomMod()
+          && publicTargetOk(username);
 
         // The kicked (or 👋 bumped) person clears their OWN "kicked" / "bumped"
         // flags after seeing the message, so they can come back in later. (Without
