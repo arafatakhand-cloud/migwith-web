@@ -2679,6 +2679,41 @@ async function grantMentorCoins(targetUid, kind, untilMs) {
   return { amount, ok: true };
 }
 
+// Renews a mentor's term by 30 days (+ the renewal coins and the "renewed"
+// alert). Shared by Secret's Renew and an approved renew request.
+async function renewMentorCore(targetUid) {
+  const E = functionsV1.https.HttpsError;
+  const ref = db.collection("users").doc(targetUid);
+  const snap = await ref.get();
+  if (!snap.exists) throw new E("not-found", "User not found.");
+  const role = normalizeUsername(snap.get("role"));
+  const roles = (snap.get("roles") || []).map((r) => normalizeUsername(r));
+  if (role !== "mentor" && !roles.includes("mentor")) throw new E("failed-precondition", "This user is not a Mentor.");
+  const update = mentorTermUpdate(snap, true);
+  await ref.update(update);
+  const until = update.mentorUntil.toMillis();
+  const username = String(snap.get("username") || "");
+  try {
+    await db.collection("alerts").add({
+      toUsername: username, fromUsername: "miglife",
+      message: `✅ Your Mentorship was renewed — it now runs until ${dhakaDate(until)}.`,
+      type: "mentor_renewal", kind: "mentorship", role: "mentor", renewed: true,
+      // same renewKey as the reminders: this card replaces them on the Alerts page
+      renewKey: `mentor_${targetUid}`, untilMs: until, mentorUsername: username,
+      read: false, createdAt: FieldValue.serverTimestamp(),
+    });
+  } catch (e) { console.error("renewMentorship alert", e?.message); }
+  // a renew request waiting for this mentor is answered by this renewal
+  await db.collection("mentor_renew_requests").doc(targetUid).get().then((r) => {
+    if (r.exists && r.get("status") === "pending") {
+      return r.ref.update({ status: "approved", decidedAt: FieldValue.serverTimestamp(), newUntilMs: until });
+    }
+    return null;
+  }).catch(() => {});
+  const coins = await grantMentorCoins(targetUid, "renew", until).catch(() => null);
+  return { mentorUntil: until, coins, username };
+}
+
 // Founder: renew a mentor's term by 30 days. { targetUid }
 exports.renewMentorship = functionsV1.https.onCall(async (data, context) => {
   await assertSecretOpen(context && context.auth);   // 🔒 miGlife secret must be open
@@ -2690,27 +2725,129 @@ exports.renewMentorship = functionsV1.https.onCall(async (data, context) => {
   if (!isFounderAccount(normalizeUsername(callerSnap.get("username")), callerSnap.get("role"))) {
     throw new E("permission-denied", "Only the Founder can renew a Mentorship.");
   }
-  const ref = db.collection("users").doc(targetUid);
-  const snap = await ref.get();
-  if (!snap.exists) throw new E("not-found", "User not found.");
-  const role = normalizeUsername(snap.get("role"));
-  const roles = (snap.get("roles") || []).map((r) => normalizeUsername(r));
-  if (role !== "mentor" && !roles.includes("mentor")) throw new E("failed-precondition", "This user is not a Mentor.");
-  const update = mentorTermUpdate(snap, true);
-  await ref.update(update);
-  const until = update.mentorUntil.toMillis();
-  try {
-    await db.collection("alerts").add({
-      toUsername: String(snap.get("username") || ""), fromUsername: "miglife",
-      message: `✅ Your Mentorship was renewed — it now runs until ${dhakaDate(until)}.`,
-      type: "mentor_renewal", kind: "mentorship", role: "mentor", renewed: true,
-      // same renewKey as the reminders: this card replaces them on the Alerts page
-      renewKey: `mentor_${targetUid}`, untilMs: until, mentorUsername: String(snap.get("username") || ""),
-      read: false, createdAt: FieldValue.serverTimestamp(),
+  const r = await renewMentorCore(targetUid);
+  return { ok: true, mentorUntil: r.mentorUntil, coins: r.coins };
+});
+
+// 🔁 Mentor renew request (miglife, Nov 2026). One doc per mentor:
+// mentor_renew_requests/{uid} { uid, username, note, status pending |
+// approved | declined | cancelled, untilMs, createdAt, decidedAt, reason }.
+// Read and written only here (no client rules).
+//   mine                       — the mentor: my term + my request
+//   send { note }              — the mentor, from 5 days before the end (or after it ended)
+//   cancel                     — the mentor, while pending
+//   list                       — miglife: pending first, then the latest answered
+//   decide { uid, approve, reason } — miglife: renew 30 days, or decline
+exports.mentorRenewRequest = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const action = String((data && data.action) || "");
+  const me = await db.collection("users").doc(uid).get();
+  const myName = String(me.get("username") || "");
+  const isMentor = (snap) => {
+    const role = normalizeUsername(snap.get("role"));
+    const roles = (snap.get("roles") || []).map((r) => normalizeUsername(r));
+    return role === "mentor" || roles.includes("mentor");
+  };
+  const reqOut = (r) => (r && r.exists ? {
+    uid: r.id, username: String(r.get("username") || ""), note: String(r.get("note") || ""),
+    status: String(r.get("status") || ""), reason: String(r.get("reason") || ""),
+    untilMs: Number(r.get("untilMs") || 0), newUntilMs: Number(r.get("newUntilMs") || 0),
+    createdAtMs: r.get("createdAt")?.toMillis?.() || 0, decidedAtMs: r.get("decidedAt")?.toMillis?.() || 0,
+  } : null);
+  const ref = db.collection("mentor_renew_requests").doc(uid);
+
+  if (action === "mine") {
+    if (!isMentor(me)) return { mentor: false };
+    const until = mentorUntilMs(me);
+    const daysLeft = until ? Math.ceil((until - Date.now()) / DAY_MS) : null;
+    return {
+      mentor: true, untilMs: until, daysLeft, remindDays: MENTOR_REMIND_DAYS,
+      canRequest: daysLeft !== null && daysLeft <= MENTOR_REMIND_DAYS,
+      request: reqOut(await ref.get()),
+    };
+  }
+
+  if (action === "send") {
+    if (!isMentor(me)) throw new E("permission-denied", "Only a Mentor can ask for a renewal.");
+    const until = mentorUntilMs(me);
+    const daysLeft = until ? Math.ceil((until - Date.now()) / DAY_MS) : null;
+    if (daysLeft === null || daysLeft > MENTOR_REMIND_DAYS) {
+      throw new E("failed-precondition", `You can ask for a renewal from ${MENTOR_REMIND_DAYS} days before your Mentorship ends.`);
+    }
+    const note = String((data && data.note) || "").trim().slice(0, 300);
+    await db.runTransaction(async (tx) => {
+      const cur = await tx.get(ref);
+      if (cur.exists && cur.get("status") === "pending") throw new E("already-exists", "Your renewal request is already waiting for miGlife.");
+      tx.set(ref, {
+        uid, username: myName, note, status: "pending", untilMs: until,
+        createdAt: FieldValue.serverTimestamp(), decidedAt: null, reason: "", newUntilMs: 0,
+      });
     });
-  } catch (e) { console.error("renewMentorship alert", e?.message); }
-  const coins = await grantMentorCoins(targetUid, "renew", until).catch(() => null);
-  return { ok: true, mentorUntil: until, coins };
+    const when = dhakaDate(until);
+    const msg = `🔁 Mentor ${myName} asks to renew their Mentorship (${daysLeft > 0 ? `ends ${when}, ${daysLeft} day${daysLeft > 1 ? "s" : ""} left` : `ended ${when}`}).` + (note ? `\n📝 ${note}` : "");
+    await alertFounder(msg, "mentor_renew_request", { requestId: uid, mentorUsername: myName, note, untilMs: until },
+      `mentor_renew_request_${uid}_${Date.now()}`);
+    try {
+      const founder = await findUserDocByUsername(FOUNDER_ALERT_USERNAME);
+      const token = founder ? await fcmTokenOf(founder.id, founder) : null;
+      if (token) {
+        await getMessaging().send({
+          token, data: { type: "mentor_renew_request", title: "🔁 Mentor renewal request", body: msg },
+          android: { priority: "high" },
+        });
+      }
+    } catch (e) { /* the alert is enough */ }
+    return { ok: true };
+  }
+
+  if (action === "cancel") {
+    await db.runTransaction(async (tx) => {
+      const cur = await tx.get(ref);
+      if (!cur.exists || cur.get("status") !== "pending") throw new E("failed-precondition", "No request is waiting.");
+      tx.update(ref, { status: "cancelled", decidedAt: FieldValue.serverTimestamp() });
+    });
+    return { ok: true };
+  }
+
+  // ---- miglife only below ----
+  if (!isMainFounderName(normalizeUsername(myName))) throw new E("permission-denied", "Only miGlife can do that.");
+
+  if (action === "list") {
+    const [pending, recent] = await Promise.all([
+      db.collection("mentor_renew_requests").where("status", "==", "pending").get(),
+      db.collection("mentor_renew_requests").orderBy("createdAt", "desc").limit(40).get(),
+    ]);
+    const seen = new Set();
+    const out = [];
+    for (const d of [...pending.docs, ...recent.docs]) {
+      if (seen.has(d.id)) continue;
+      seen.add(d.id);
+      out.push(reqOut(d));
+    }
+    out.sort((a, b) => (a.status === "pending" ? 0 : 1) - (b.status === "pending" ? 0 : 1) || b.createdAtMs - a.createdAtMs);
+    return { requests: out };
+  }
+
+  if (action === "decide") {
+    const target = String((data && data.uid) || "");
+    if (!target) throw new E("invalid-argument", "Missing uid.");
+    const tref = db.collection("mentor_renew_requests").doc(target);
+    const cur = await tref.get();
+    if (!cur.exists || cur.get("status") !== "pending") throw new E("failed-precondition", "This request was already answered.");
+    if (data && data.approve) {
+      const r = await renewMentorCore(target); // marks the request approved
+      return { ok: true, approved: true, mentorUntil: r.mentorUntil, coins: r.coins };
+    }
+    const reason = String((data && data.reason) || "").trim().slice(0, 200);
+    await tref.update({ status: "declined", reason, decidedAt: FieldValue.serverTimestamp() });
+    await alertUser(String(cur.get("username") || ""),
+      `✖ miGlife declined your Mentorship renewal request.` + (reason ? ` Reason: "${reason}".` : "") + " You can send a new request.",
+      "mentor_renew_declined", { reason });
+    return { ok: true, approved: false };
+  }
+
+  throw new E("invalid-argument", "Unknown action.");
 });
 
 // Every day 10:00 (Bangladesh): mentors whose term ends within 5 days (or has
