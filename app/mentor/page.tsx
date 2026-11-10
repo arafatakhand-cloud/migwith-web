@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MentorTermCard } from "../_components/MentorRenew";
 import { useRouter } from "next/navigation";
 import {
   addDoc,
@@ -119,7 +120,11 @@ export default function MentorDashboardPage() {
       {/* 🌊 on the wave background (WavePage) — the cards float on colour */}
       <section className="mx-auto max-w-4xl pb-10 text-[#0B2A5B]">
         {!ready ? null : panel === "DASHBOARD" ? (
-          <Dashboard me={username} refresh={refresh} />
+          <>
+            {/* 🔁 my term + "Request renewal" */}
+            <MentorTermCard key={refresh} />
+            <Dashboard me={username} refresh={refresh} />
+          </>
         ) : panel === "REPORT" ? (
           <Report me={username} refresh={refresh} />
         ) : (

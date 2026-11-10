@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { RenewDecider } from "../_components/MentorRenew";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -160,6 +161,10 @@ function styleFor(type: string): Style {
       return { icon: "⏳", title: "Mentorship renewal", top: "#FFB74D", bottom: "#E65100", group: "requests" };
     case "merchant_renewal":
       return { icon: "⏳", title: "Merchant renewal", top: "#FFB74D", bottom: "#E65100", group: "requests" };
+    case "mentor_renew_request":
+      return { icon: "🔁", title: "Renewal request", top: "#FFD35A", bottom: "#E0A100", group: "requests" };
+    case "mentor_renew_declined":
+      return { icon: "✖", title: "Mentorship renewal", top: "#FF8A80", bottom: "#C62828", group: "requests" };
     case "merchant_tag_request":
     case "mentor_tag_request":
     case "mentor_request":
@@ -427,7 +432,7 @@ function RenewalCard({ a, isNew, me }: { a: Alert; isNew: boolean; me: string })
     : amMentor
       ? merchantTerm
         ? { href: "/mentor", label: "💼 Renew in Mentor Dashboard" }
-        : { href: chatHref("miglife"), label: "💬 Ask miglife to renew" }
+        : { href: "/mentor", label: "🔁 Request renewal" }
       : a.mentorUsername
         ? { href: chatHref(a.mentorUsername), label: `💬 Message ${a.mentorUsername}` }
         : null;
@@ -957,6 +962,18 @@ export default function AlertsPage() {
                 card = <ColorRequestCard a={a} />;
               } else if ((a.type === "merchant_tag_request" || a.type === "mentor_tag_request") && a.requestId) {
                 card = <TagRequestCard a={a} username={username} uid={user.uid} />;
+              } else if (a.type === "mentor_renew_request" && a.requestId) {
+                card = (
+                  <div className={`my-1.5 rounded-[20px] border-2 border-[#FFD35A] bg-white p-3.5 text-[#16264A] ${isNew ? "shadow-[0_8px_18px_rgba(224,161,0,.3)]" : "shadow-sm"}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[14px] font-extrabold">🔁 Renewal request</span>
+                      <span className="ml-auto text-[11px] text-[#8A96AB]">{shortTime(a.createdAtMs)}</span>
+                      {isNew && <span className="rounded-full bg-[#FFF4D6] px-2 py-0.5 text-[10px] font-extrabold text-[#8A5A00]">NEW</span>}
+                    </div>
+                    <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-[18px] text-[#2E3B4E]">{a.text}</p>
+                    <RenewDecider uid={a.requestId} />
+                  </div>
+                );
               } else if (a.type === "mentor_renewal" || a.type === "merchant_renewal") {
                 card = <RenewalCard a={a} isNew={isNew} me={username} />;
               } else if (a.type === "gift" && a.fromUsername.trim()) {
