@@ -61,6 +61,7 @@ import {
   onAutoLeft,
   postStaleLeaveLineOnce,
   readOpenRooms,
+  waitBackgroundLeave,
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
@@ -930,6 +931,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       // (the app keeps roomEntryAt for as long as the tab is open).
       const rejoining = rejoinRef.current;
       rejoinRef.current = false;
+      // 🔁 the auto leave may still be removing my old spot: wait for it, or
+      // the old spot looks like "still inside" (no "has entered") and its
+      // "has left" lands right after
+      if (rejoining) await waitBackgroundLeave(uid, roomName);
+      if (left || disposed) return;
       const tabSession = isRoomOpen(uid, roomName) && !rejoining ? readRoomSession(uid, roomName) : null;
       let alreadyHere = resumed || !!tabSession;
       let existingMarkerMs = 0;
@@ -968,7 +974,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 visitId: String(existing.get("visitId") || "") || null,
                 hidden: String(existing.get("presenceStatus") || "").trim().toUpperCase() === "INVISIBLE",
               };
-            } else if (fresh) {
+            } else if (fresh && !rejoining) {
               alreadyHere = true;
               visitId = String(existing.get("visitId") || "") || null;
               existingMarkerMs = toMillis(existing.get("entryMarker"));

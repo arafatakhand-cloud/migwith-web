@@ -85,12 +85,34 @@ export function onAutoLeft(cb: () => void): () => void {
   return () => window.removeEventListener(AUTO_LEFT_EVENT, cb);
 }
 
+const backgroundLeaves = new Map<string, Promise<boolean>>();
+
+/** An auto leave of this room still on its way (spot removal + "has left"):
+ *  resolves once it is done (at most 15 s). */
+export async function waitBackgroundLeave(uid: string, name: string): Promise<void> {
+  const p = backgroundLeaves.get(`${uid}|${name}`);
+  if (!p) return;
+  await Promise.race([p, new Promise((r) => setTimeout(r, 15_000))]);
+}
+
 /** Back after a long time away: out of every open room ("has left"), tabs kept. */
 export async function autoLeaveOpenRooms(uid: string) {
   const rooms = readOpenRooms(uid).filter((r) => !isAutoLeft(uid, r));
   // Flag first, so an open room page stops its heartbeat before its spot goes.
   rooms.forEach((r) => setAutoLeftFlag(uid, r, true));
-  const left = await Promise.all(rooms.map((r) => leaveRoomInBackground(uid, r)));
+  const left = await Promise.all(
+    rooms.map((r) => {
+      const p = leaveRoomInBackground(uid, r).catch(() => false);
+      // 🔁 Rejoin waits for this: clicked before the old spot was gone, the
+      // room saw me "still inside" (no "has entered"), then this leave
+      // finished and posted "has left".
+      backgroundLeaves.set(`${uid}|${r}`, p);
+      p.finally(() => {
+        if (backgroundLeaves.get(`${uid}|${r}`) === p) backgroundLeaves.delete(`${uid}|${r}`);
+      });
+      return p;
+    })
+  );
   // BUG FIX ("You are not in this room" while still listed in the room): a
   // /parked spot (or a failed check / delete) keeps me IN — so the tab must not
   // say I'm out.
