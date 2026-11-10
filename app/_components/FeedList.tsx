@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where, getCountFromServer, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { setFollowing, useFollowing } from "../../lib/follow";
@@ -689,6 +689,38 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     io.observe(el);
     return () => io.disconnect();
   });
+
+  // 🔴 live counts: the posts on screen are watched (10 per listener, the
+  // first 40), so likes / reactions / comments / views never go stale — the
+  // list is loaded once, and it showed "😢 4" while the Mig itself had 6.
+  const liveIds = (shown || []).filter((p) => !p.privacy).slice(0, 40).map((p) => p.id).join(",");
+  useEffect(() => {
+    if (!liveIds) return;
+    const list = liveIds.split(",");
+    const offs: (() => void)[] = [];
+    for (let i = 0; i < list.length; i += 10) {
+      offs.push(
+        onSnapshot(
+          query(collection(db, "blog_posts"), where(documentId(), "in", list.slice(i, i + 10))),
+          (snap) => {
+            const fresh = new Map(snap.docs.map((d) => [d.id, toBlogPost(d.id, d.data() as Record<string, unknown>)]));
+            setPosts((cur) =>
+              cur
+                ? cur.map((p) => {
+                    const f = fresh.get(p.id);
+                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
+                      ? { ...p, likes: f.likes, reactions: f.reactions, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
+                      : p;
+                  })
+                : cur
+            );
+          },
+          () => {}
+        )
+      );
+    }
+    return () => offs.forEach((f) => f());
+  }, [liveIds]);
 
   // my reactions for the posts on screen — one call (an older server: one read per post)
   const ids = (shown || []).map((p) => p.id).join(",");
