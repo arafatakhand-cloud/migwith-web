@@ -156,7 +156,18 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
       (s) => setRequests(s.docs),
       () => {}
     );
-    const off2 = onSnapshot(query(collection(db, "mentor_merchants"), where("mentorUsername", "==", me)), (s) => setMerchants(s.docs), () => {});
+    // ⛔ a Merchant whose term ran out is not shown (the server clears the link soon after)
+    const off2 = onSnapshot(
+      query(collection(db, "mentor_merchants"), where("mentorUsername", "==", me)),
+      (s) =>
+        setMerchants(
+          s.docs.filter((d) => {
+            const t = (d.get("expiresAt") as { toMillis?: () => number } | undefined)?.toMillis?.() || 0;
+            return !t || t > Date.now();
+          })
+        ),
+      () => {}
+    );
     const off3 = onSnapshot(query(collection(db, "mentor_tagged"), where("mentorUsername", "==", me)), (s) => setTagged(s.docs), () => {});
     return () => {
       off1();
@@ -287,7 +298,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                     <p className="text-xs text-[#5B6B8C]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
                   </div>
                   {left !== null && (
-                    <span className="rounded-full bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-2.5 py-0.5 text-[11px] font-black text-white">{left}d left</span>
+                    <span className="rounded-full bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-2.5 py-0.5 text-[11px] font-black text-white">{left > 0 ? `${left}d left` : "Ends today"}</span>
                   )}
                 </div>
               );

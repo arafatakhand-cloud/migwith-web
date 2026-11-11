@@ -2492,7 +2492,8 @@ exports.changeManagementRole = functionsV1.https.onCall(async (data, context) =>
 // them), the users they tagged as a Merchant (merchant_tagged — those users are
 // free to be tagged again) and their pending Merchant tag requests are removed.
 // Their old Mentor gets an alert.
-async function endMerchantship(name) {
+// why: "mentor" (made a Mentor), "ended" (the term ran out), "removed" (ended by miGlife)
+async function endMerchantship(name, why = "mentor") {
   if (!name) return;
   const [links, mentorTags, myTags, myReqs] = await Promise.all([
     db.collection("mentor_merchants").where("merchantUsername", "==", name).get(),
@@ -2513,7 +2514,12 @@ async function endMerchantship(name) {
   }
   const oldMentors = [...new Set(links.docs.map((d) => String(d.get("mentorUsername") || "")).filter(Boolean))];
   for (const m of oldMentors) {
-    await alertUser(m, `ℹ️ ${name} was made a Mentor by miGlife, so ${name} is no longer your Merchant.`,
+    const msg = why === "ended"
+      ? `ℹ️ ${name}'s Merchant term ended, so ${name} is no longer your Merchant.`
+      : why === "removed"
+        ? `ℹ️ miGlife ended ${name}'s Merchantship, so ${name} is no longer your Merchant.`
+        : `ℹ️ ${name} was made a Mentor by miGlife, so ${name} is no longer your Merchant.`;
+    await alertUser(m, msg,
       "role_change", { merchantUsername: name }).catch(() => {});
   }
 }
@@ -3057,19 +3063,25 @@ exports.expireMentorMerchantRoles = functionsV1.pubsub
           const ends = links.docs.map((d) => d.get("expiresAt")?.toMillis?.() || 0);
           if (ends.some((t) => t > now)) continue;
           if (ends.some((t) => !t)) continue; // an old link without a date: left alone
-          const q = await db.collection("users").where("usernameLower", "==", name.toLowerCase()).limit(1).get();
-          if (q.empty) continue;
-          const snap = q.docs[0];
-          if (untouchable(snap)) continue;
-          const update = dropRole(snap, "merchant");
-          if (!("role" in update) && !("roles" in update)) continue; // already not a Merchant
-          await snap.ref.update(update);
-          const last = Math.max(...ends);
-          await alertUser(String(snap.get("username") || name),
-            `⛔ Your Merchant term ended on ${dhakaDate(last)}, so your Merchant role was removed. Ask your mentor to renew it.`,
-            "role_change", { role: "user", previousRole: "merchant" }, `merchant_ended_${snap.id}_${last}`).catch(() => {});
-          // 🧹 the role is gone: the Merchant links, tags and requests go with it
-          await endMerchantship(name).catch(() => {});
+          // older accounts have no usernameLower: the exact name too
+          let q = await db.collection("users").where("usernameLower", "==", name.toLowerCase()).limit(1).get();
+          if (q.empty) q = await db.collection("users").where("username", "==", name).limit(1).get();
+          const snap = q.docs[0] || null;
+          if (snap && untouchable(snap)) continue;
+          const update = snap ? dropRole(snap, "merchant") : {};
+          // BUG FIX (ended Merchants stayed in the mentor's Merchants list): the
+          // links were only cleared when the role was taken away right here —
+          // a person whose role was already gone (or not found) kept their
+          // ended links for ever. The links, tags and requests now always go.
+          if (snap && ("role" in update || "roles" in update)) {
+            await snap.ref.update(update);
+            const last = Math.max(...ends);
+            await alertUser(String(snap.get("username") || name),
+              `⛔ Your Merchant term ended on ${dhakaDate(last)}, so your Merchant role was removed. Ask your mentor to renew it.`,
+              "role_change", { role: "user", previousRole: "merchant" }, `merchant_ended_${snap.id}_${last}`).catch(() => {});
+          }
+          // 🧹 the term is over: the Merchant links, tags and requests go with it
+          await endMerchantship(name, "ended").catch(() => {});
         } catch (e) {
           console.error("expireMentorMerchantRoles merchant", name, e?.message);
         }
@@ -25918,7 +25930,7 @@ exports.endMerchantshipByName = functionsV1.runWith({ timeoutSeconds: 300 }).htt
     ...myReqs.docs,
   ].map((d) => d.ref.path);
   if (data?.apply !== true) return { dryRun: true, username: name, count: paths.length, paths };
-  await endMerchantship(name);   // deletes the same records and tells the old Mentors
+  await endMerchantship(name, "removed");   // deletes the same records and tells the old Mentors
   return { dryRun: false, username: name, count: paths.length, paths };
 });
 
