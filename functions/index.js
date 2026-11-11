@@ -4019,18 +4019,27 @@ exports.setIdCreationStatus = functionsV1.https.onCall(async (data, context) => 
   if (!isMainFounderName(callerSnap.get("username"))) {
     throw new functionsV1.https.HttpsError("permission-denied", "Only the Founder can change ID creation.");
   }
-  if (typeof (data && data.enabled) !== "boolean") {
+  // { enabled } switches sign-ups ON / OFF; { dailyIdLimit } (1–50) sets how
+  // many new IDs a day one phone / network may create. Either or both.
+  const hasEnabled = typeof (data && data.enabled) === "boolean";
+  const hasLimit = data && data.dailyIdLimit !== undefined && data.dailyIdLimit !== null;
+  if (!hasEnabled && !hasLimit) {
     throw new functionsV1.https.HttpsError("invalid-argument", "enabled must be true or false.");
   }
-  await db.collection("app_settings").doc("id_creation").set(
-    {
-      otherUserCreationEnabled: data.enabled,
-      updatedBy: normalizeUsername(callerSnap.get("username")),
-      updatedAt: FieldValue.serverTimestamp(),
-    },
-    { merge: true }
-  );
-  return { ok: true, enabled: data.enabled };
+  const update = {
+    updatedBy: normalizeUsername(callerSnap.get("username")),
+    updatedAt: FieldValue.serverTimestamp(),
+  };
+  if (hasEnabled) update.otherUserCreationEnabled = data.enabled;
+  if (hasLimit) {
+    const n = Number(data.dailyIdLimit);
+    if (!Number.isInteger(n) || n < 1 || n > 50) {
+      throw new functionsV1.https.HttpsError("invalid-argument", "The daily ID limit must be a whole number from 1 to 50.");
+    }
+    update.dailyIdLimit = n;
+  }
+  await db.collection("app_settings").doc("id_creation").set(update, { merge: true });
+  return { ok: true, enabled: hasEnabled ? data.enabled : undefined, dailyIdLimit: update.dailyIdLimit };
 });
 
 exports.ceoCreateUserId = functionsV1.https.onCall(async (data, context) => {
