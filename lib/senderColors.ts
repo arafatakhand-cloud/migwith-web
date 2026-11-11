@@ -28,7 +28,7 @@ const LUCKY_PINK = "#FF4FA3";
 /** 🍀 Lucky User who is a Male: orange (Female stays pink). */
 const LUCKY_MALE_ORANGE = "#FB8C00";
 /** 🌍 Country Representative: brown-gold name + a 🌍 badge (like the app). */
-export const COUNTRY_REP_COLOR = "#B58A70";
+export const COUNTRY_REP_COLOR = "#9E6011";
 export const COUNTRY_REP_BADGE = "🌍";
 const ROLE_ALIASES: Record<string, string> = { countryrep: "country_representative", country_rep: "country_representative" };
 const USER_BLUE = "#3984D9";
