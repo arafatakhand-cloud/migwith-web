@@ -55,6 +55,81 @@ async function setIdCreationStatus(args: { enabled: boolean }) {
     }
   }
 }
+const setDailyIdLimitFn = httpsCallable<{ dailyIdLimit: number }, unknown>(functions, "setIdCreationStatus");
+
+// 📵 How many new IDs a day one phone / network may create (default 3).
+function DailyIdLimitCard() {
+  const [limit, setLimit] = useState<number | null>(null);
+  const [draft, setDraft] = useState("");
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "id_creation"),
+        (s) => {
+          const n = Number(s.get("dailyIdLimit"));
+          const v = Number.isInteger(n) && n > 0 ? n : 3;
+          setLimit(v);
+          setDraft((d) => (d === "" ? String(v) : d));
+        },
+        () => setLimit(3)
+      ),
+    []
+  );
+  const n = Number(draft);
+  const valid = Number.isInteger(n) && n >= 1 && n <= 50;
+  const save = async (v: number) => {
+    if (busy) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      try {
+        await setDailyIdLimitFn({ dailyIdLimit: v });
+      } catch (first) {
+        // an older server without dailyIdLimit: the founder may write the setting directly
+        await setDoc(doc(db, "app_settings", "id_creation"), { dailyIdLimit: v, updatedAt: serverTimestamp() }, { merge: true }).catch(() => {
+          throw first;
+        });
+      }
+      setDraft(String(v));
+      setMsg(`✅ Saved — now ${v} new ID${v > 1 ? "s" : ""} a day from the same phone or network.`);
+    } catch (e: any) {
+      setMsg(e?.message || "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 border-t border-[#F1E3BF] pt-3">
+      <p className="text-[15px] font-bold">📵 New IDs a day (same phone / network)</p>
+      <p className="mt-1 text-xs text-gray-500">
+        Now: <b>{limit ?? "…"}</b> a day from the same IP, phone or browser (Bangladesh day, resets at 12 midnight). Your own Create ID is not counted.
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <button type="button" disabled={busy || !valid || n <= 1} onClick={() => setDraft(String(Math.max(1, n - 1)))} className="h-10 w-10 rounded-full bg-[#F4EBD3] text-xl font-black text-[#7A5A00] disabled:opacity-40">−</button>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value.replace(/\D/g, "").slice(0, 2))}
+          inputMode="numeric"
+          className="h-10 w-16 rounded-xl border border-[#E0C27A] text-center text-lg font-extrabold outline-none"
+        />
+        <button type="button" disabled={busy || !valid || n >= 50} onClick={() => setDraft(String(Math.min(50, n + 1)))} className="h-10 w-10 rounded-full bg-[#F4EBD3] text-xl font-black text-[#7A5A00] disabled:opacity-40">+</button>
+        <button
+          type="button"
+          disabled={busy || !valid || n === limit}
+          onClick={() => save(n)}
+          className="ml-auto rounded-full bg-[#E0A82E] px-5 py-2.5 font-extrabold text-black disabled:opacity-40"
+        >
+          {busy ? "Saving…" : "Save"}
+        </button>
+      </div>
+      {!valid && draft !== "" && <p className="mt-1 text-xs font-bold text-[#B3261E]">Choose 1 to 50.</p>}
+      {msg && <p className="mt-2 text-xs font-bold text-[#7A5A00]">{msg}</p>}
+    </div>
+  );
+}
+
 const ceoCreateUserId = httpsCallable<Record<string, string>, { username?: string }>(functions, "ceoCreateUserId");
 const ceoQuickCreateId = httpsCallable<{ migId: string }, { username?: string }>(functions, "ceoQuickCreateId");
 
@@ -338,6 +413,7 @@ export default function SecretPage() {
               }}
             />
           </div>
+          <DailyIdLimitCard />
         </div>
       )}
 
