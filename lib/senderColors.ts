@@ -63,7 +63,7 @@ const cache = new Map<string, Profile>();
 // Also kept on this device, so after a reload (e.g. a language switch) every
 // name has its right colour AT ONCE — no blue first. Refreshed by the lookups.
 const STORE_KEY = "migwith.senderColors";
-const STORE_MAX_AGE = 3 * 86_400_000;
+const STORE_MAX_AGE = 30 * 86_400_000; // a month: names keep their colour even after days away
 const savedAt = new Map<string, number>();
 (() => {
   if (typeof window === "undefined") return;
@@ -83,7 +83,7 @@ function persist() {
   try {
     const now = Date.now();
     const out: Record<string, Profile & { at: number }> = {};
-    const entries = Array.from(cache.entries()).slice(-500);
+    const entries = Array.from(cache.entries()).slice(-1500);
     for (const [k, v] of entries) out[k] = { ...v, at: savedAt.get(k) ?? now };
     localStorage.setItem(STORE_KEY, JSON.stringify(out));
   } catch {}
