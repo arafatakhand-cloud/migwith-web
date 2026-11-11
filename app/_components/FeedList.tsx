@@ -86,7 +86,7 @@ const ROLE_PILLS: Record<string, [string, string, string]> = {
   staff: ["Staff", "#E3F8EA", "#15803D"],
   merchant: ["Merchant", "#FFEBD9", "#C2410C"],
   mentor: ["Mentor", "#F1E8FF", "#7C3AED"],
-  country_representative: ["Country Rep", "#E0F2FE", "#0369A1"],
+  country_representative: ["Country Rep", "#FBEEDB", "#9E6011"],
   executive_board: ["Executive", "#FCE7F3", "#BE185D"],
   elite: ["Elite", "#FEF3C7", "#A16207"],
 };

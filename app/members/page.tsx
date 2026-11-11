@@ -133,7 +133,7 @@ const MANAGEMENT: Category[] = [
   // (the order miGlife asked for: Executive Board, Staff, Admin, …)
   { id: "staff", icon: "🪪", title: "Staff", subtitle: "Staff IDs", color: "#22A447", roles: ["staff"] },
   { id: "admin", icon: "🛡", title: "Admin", subtitle: "Admin IDs", color: "#E0A800", roles: ["admin", "administrator", "superadmin"] },
-  { id: "country_representative", icon: "🌍", title: "Country Representative", subtitle: "Country representatives", color: "#B58A70", roles: ["country_representative", "countryrep", "country_rep"] },
+  { id: "country_representative", icon: "🌍", title: "Country Representative", subtitle: "Country representatives", color: "#9E6011", roles: ["country_representative", "countryrep", "country_rep"] },
   { id: "elite_user", icon: <HonorIcon />, title: "Honor Members", subtitle: "Honor members", color: "#1565D8", roles: ["elite_user", "elite"] },
 ];
 const COMMUNITY: Category[] = [
@@ -146,7 +146,7 @@ const COMMUNITY: Category[] = [
 const NAME_COLORS: Record<string, string> = {
   executive_board: "#8FA2FF",
   admin: "#FFD54F",
-  country_representative: "#E0B89A",
+  country_representative: "#9E6011",
   staff: "#39FF14",
   elite_user: "#00FFFF",
   mentor: "#FF4D4D",
