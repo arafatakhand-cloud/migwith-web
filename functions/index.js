@@ -4023,7 +4023,10 @@ exports.setIdCreationStatus = functionsV1.https.onCall(async (data, context) => 
   // many new IDs a day one phone / network may create. Either or both.
   const hasEnabled = typeof (data && data.enabled) === "boolean";
   const hasLimit = data && data.dailyIdLimit !== undefined && data.dailyIdLimit !== null;
-  if (!hasEnabled && !hasLimit) {
+  // ⏰ { openAt: ms } = switch ID creation ON by itself at that time
+  // (idCreationAutoOpen, every minute); { openAt: 0 } = cancel it.
+  const hasOpenAt = data && data.openAt !== undefined && data.openAt !== null;
+  if (!hasEnabled && !hasLimit && !hasOpenAt) {
     throw new functionsV1.https.HttpsError("invalid-argument", "enabled must be true or false.");
   }
   const update = {
@@ -4038,9 +4041,43 @@ exports.setIdCreationStatus = functionsV1.https.onCall(async (data, context) => 
     }
     update.dailyIdLimit = n;
   }
+  if (hasOpenAt) {
+    const at = Number(data.openAt);
+    if (!Number.isFinite(at) || at < 0) throw new functionsV1.https.HttpsError("invalid-argument", "Pick a valid time.");
+    if (at === 0) update.autoOpenAt = FieldValue.delete();
+    else {
+      if (at < Date.now() - 60_000) throw new functionsV1.https.HttpsError("invalid-argument", "That time has already passed.");
+      if (at > Date.now() + 60 * 86_400_000) throw new functionsV1.https.HttpsError("invalid-argument", "Pick a time within the next 60 days.");
+      update.autoOpenAt = Math.floor(at);
+    }
+  }
+  // switched ON / OFF by hand: a waiting auto-ON is no longer needed
+  if (hasEnabled && !hasOpenAt) update.autoOpenAt = FieldValue.delete();
   await db.collection("app_settings").doc("id_creation").set(update, { merge: true });
   return { ok: true, enabled: hasEnabled ? data.enabled : undefined, dailyIdLimit: update.dailyIdLimit };
 });
+
+// ⏰ Every minute: "Other Users ID Creation" turns ON by itself once the time
+// miglife picked (app_settings/id_creation.autoOpenAt) has come.
+exports.idCreationAutoOpen = functionsV1.pubsub
+  .schedule("every 1 minutes")
+  .timeZone("Asia/Dhaka")
+  .onRun(async () => {
+    const ref = db.collection("app_settings").doc("id_creation");
+    const snap = await ref.get();
+    const at = Number(snap.get("autoOpenAt") || 0);
+    if (!at || at > Date.now()) return null;
+    await ref.set({
+      otherUserCreationEnabled: true,
+      autoOpenAt: FieldValue.delete(),
+      autoOpenedAt: FieldValue.serverTimestamp(),
+      updatedBy: "auto",
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    await alertFounder(`✅ Other Users ID Creation is now ON (opened automatically at ${new Date(at).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}).`,
+      "id_creation_auto_open", {}, `id_creation_auto_open_${at}`);
+    return null;
+  });
 
 exports.ceoCreateUserId = functionsV1.https.onCall(async (data, context) => {
   await assertSecretOpen(context && context.auth);   // 🔒 miGlife secret must be open
@@ -14050,7 +14087,9 @@ exports.createNormalUserId = functionsV1.https.onCall(async (data, context) => {
   // The main founder, signed in on the sign-up page, is exempt from both.
   if (!(await isMigwithCaller(context))) {
     const idCreation = await db.collection("app_settings").doc("id_creation").get();
-    if (idCreation.get("otherUserCreationEnabled") !== true) {
+    const autoOpenAt = Number(idCreation.get("autoOpenAt") || 0);
+    const openNow = idCreation.get("otherUserCreationEnabled") === true || (autoOpenAt > 0 && autoOpenAt <= Date.now());
+    if (!openNow) {
       throw new functionsV1.https.HttpsError("failed-precondition", "ID creation is currently disabled by the founder.");
     }
     if (migId.length < 6 || migId.length > 16) {
