@@ -26389,6 +26389,8 @@ async function blogMovePost(fromRef, toRef, privacy) {
   await db.recursiveDelete(fromRef);
 }
 
+// 🔍 the newest Migs, kept for a minute for the Feed search
+const blogSearchCache = { at: 0, rows: null };
 exports.blog = functionsV1.https.onCall(async (data, context) => {
   const E = functionsV1.https.HttpsError;
   const uid = requireAuth(context);
@@ -26459,6 +26461,49 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       .sort((a, b) => b.at - a.at)
       .slice(0, 300);
     return { ok: true, reactors };
+  }
+  // 🔍 Feed search: 🌍 Everyone Migs (title, text, writer, place) and people (by name).
+  // Firestore has no text search, so the newest Migs are read once a minute (one copy per
+  // server) and searched here; people come from the name index (starts with).
+  if (action === "search") {
+    const q = String(d.q || "").replace(/\s+/g, " ").trim().toLowerCase().slice(0, 40);
+    if (q.length < 2) return { ok: true, posts: [], people: [] };
+    const now = Date.now();
+    if (!blogSearchCache.rows || now - blogSearchCache.at > 60 * 1000) {
+      const snap = await db.collection("blog_posts").orderBy("createdMs", "desc").limit(600).get();
+      blogSearchCache.rows = snap.docs.map((x) => ({
+        id: x.id,
+        author: String(x.get("author") || ""),
+        title: String(x.get("title") || ""),
+        excerpt: String(x.get("excerpt") || ""),
+        place: String(x.get("place") || ""),
+        image: String(x.get("thumb") || x.get("cover") || x.get("firstImage") || ""),
+        bg: Number.isFinite(Number(x.get("bg"))) ? Number(x.get("bg")) : -1,
+        createdMs: Number(x.get("createdMs") || 0),
+        likes: Number(x.get("likes") || 0),
+        comments: Number(x.get("comments") || 0),
+      }));
+      blogSearchCache.at = now;
+    }
+    const words = q.split(" ").filter(Boolean);
+    const posts = blogSearchCache.rows
+      .map((r) => {
+        const hay = `${r.title} ${r.excerpt} ${r.author} ${r.place}`.toLowerCase();
+        if (!words.every((w) => hay.includes(w))) return null;
+        // the writer's name or a place that matches counts most, then the title
+        const score = (r.author.toLowerCase() === q ? 3 : 0) + (r.place.toLowerCase().includes(q) ? 2 : 0) + (r.title.toLowerCase().includes(q) ? 1 : 0);
+        return { ...r, score };
+      })
+      .filter(Boolean)
+      .sort((x, y) => y.score - x.score || y.createdMs - x.createdMs)
+      .slice(0, 40)
+      .map(({ score, ...r }) => r);
+    const ppl = await db.collection("users").where("usernameLower", ">=", q).where("usernameLower", "<", q + "\uf8ff").limit(20).get();
+    const people = ppl.docs
+      .filter((x) => x.get("accountDeleted") !== true && x.get("accountSuspended") !== true)
+      .map((x) => ({ username: String(x.get("username") || ""), level: Number(x.get("level") || 0), photo: String(x.get("photoUrl") || x.get("profilePic") || x.get("avatarUrl") || "") }))
+      .filter((x) => x.username);
+    return { ok: true, posts, people };
   }
   // 🎼 the song library: songs miGlife added (licensed or royalty-free); anyone can list them
   if (action === "songs") {

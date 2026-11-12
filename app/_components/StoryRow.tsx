@@ -154,11 +154,16 @@ export function StoryRow({
     }
   };
 
+  // 🎨 design A: each writer's face in their own colour, a white gap, then the turning ring
+  const FACES = ["#E2457A", "#7C4DFF", "#F59E0B", "#14A3B8", "#2563EB", "#16A34A"];
+  const faceOf = (name: string) => FACES[Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0) % FACES.length];
   const ring = (name: string, extra: React.ReactNode, onClick: () => void) => (
     <button key={name} type="button" onClick={onClick} className="story-item flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
       <span className="story-ring flex h-[62px] w-[62px] items-center justify-center rounded-full p-[2.5px]">
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-[18px] font-black text-[#6366F1]">
-          {extra}
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-white p-[2.5px]">
+          <span className="flex h-full w-full items-center justify-center rounded-full text-[20px] font-black text-white" style={{ background: faceOf(name) }}>
+            {extra}
+          </span>
         </span>
       </span>
       <span className="w-full truncate text-[11.5px] font-bold text-[#1E1B4B]">{name}</span>

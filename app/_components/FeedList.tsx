@@ -11,6 +11,7 @@ import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
 import { StoryDialog, StoryRow } from "./StoryRow";
+import { FeedSearch } from "./FeedSearch";
 import { STORIES_CHANGED } from "../../lib/stories";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
@@ -69,7 +70,7 @@ function RichText({ text, className }: { text: string; className?: string }) {
   );
 }
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
-const TAB_LOOK: "pills" | "underline" | "icons" = "underline"; // Clean Cards (look A)
+const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
 const TAB_ICONS: Record<string, string> = { new: "✨", popular: "🔥", friends: "👥", following: "⭐", mine: "👤" };
 const TABS: [Tab, string][] = [
   ["new", "New"],
@@ -843,6 +844,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
   const [sheetId, setSheetId] = useState("");
+  const [searching, setSearching] = useState(false); // 🔍 the search page
   const openSheet = (id: string) => {
     setSheetId(id);
     try {
@@ -898,6 +900,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             )}
             {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
+                {/* 🔍 search Migs, people and places */}
+                <button
+                  type="button"
+                  onClick={() => setSearching(true)}
+                  aria-label="Search"
+                  title="Search"
+                  className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[21px] transition hover:bg-[#EEF0F8] active:scale-95"
+                >
+                  🔍
+                </button>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
                 <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
                   <Avatar name={username} color={meColor} size={34} ring />
@@ -920,8 +932,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
                 className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition active:scale-95 ${
                   tab === k
-                    ? "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_8px_16px_-8px_rgba(236,72,153,.9)]"
-                    : "bg-[#FFFFFF] text-[#6B6F9A] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
+                    ? "bg-[#2563EB] text-white shadow-[0_8px_16px_-8px_rgba(37,99,235,.9)]"
+                    : "bg-[#FFFFFF] text-[#4B5072] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
                 }`}
               >
                 {k === "popular" ? "🔥 " : ""}
@@ -1704,6 +1716,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             }}
           />
         </MigSheet>
+      )}
+
+      {searching && (
+        <FeedSearch
+          onClose={() => setSearching(false)}
+          onOpen={(id) => {
+            setSearching(false);
+            openSheet(id);
+          }}
+        />
       )}
 
       {sharing && (
