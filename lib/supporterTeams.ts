@@ -49,7 +49,7 @@ export const SUPPORTER_TEAMS: SupporterTeam[] = [
   { id: "roma", mark: "ASR", name: "Roma", short: "ROM", league: "seriea", text: "#8E1F2F", c1: "#8E1F2F", c2: "#F0BC42", kit: "solid" },
   { id: "milan", mark: "ACM", name: "AC Milan", short: "MIL", league: "seriea", text: "#E00A0C", c1: "#FB090B", c2: "#1A1A1A", kit: "stripes" },
   { id: "juventus", mark: "JUVE", name: "Juventus", short: "JUV", league: "seriea", text: "#333333", c1: "#1A1A1A", c2: "#FFFFFF", kit: "stripes" },
-  { id: "bayern", mark: "FCB", name: "Bayern München", short: "FCB", league: "bundesliga", text: "#DC052D", c1: "#DC052D", c2: "#FFFFFF", kit: "solid" },
+  { id: "bayern", mark: "BAY", name: "Bayern München", short: "BAY", league: "bundesliga", text: "#DC052D", c1: "#DC052D", c2: "#FFFFFF", kit: "solid" },
   { id: "dortmund", mark: "BVB", name: "Borussia Dortmund", short: "BVB", league: "bundesliga", text: "#B89A00", c1: "#FDE100", c2: "#1A1A1A", kit: "solid" },
   { id: "leipzig", mark: "RBL", name: "RB Leipzig", short: "RBL", league: "bundesliga", text: "#DD0741", c1: "#FFFFFF", c2: "#DD0741", kit: "solid" },
   { id: "leverkusen", mark: "B04", name: "Bayer Leverkusen", short: "B04", league: "bundesliga", text: "#E32221", c1: "#E32221", c2: "#1A1A1A", kit: "sleeves" },
