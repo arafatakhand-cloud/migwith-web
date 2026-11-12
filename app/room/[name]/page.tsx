@@ -2848,7 +2848,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["clear", "Clear Chat", () => (closeMenu(), clearChat())],
                 ["info", hideGiftShower ? "Show Gift Showers" : "Hide Gift Showers", () => (closeMenu(), toggleHideGiftShower())],
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
-                ["heart", "💭 Feel Gallery", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
+                ["heart", "💭 FeelMig", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],

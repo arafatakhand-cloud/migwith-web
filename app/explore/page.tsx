@@ -16,7 +16,7 @@ const ITEMS: Item[] = [
   { icon: "📰", title: "Feed", subtitle: "Read and share stories", color: "#2563EB", tint: "#E6F0FC", href: "/feed", tab: "community" },
   { icon: "📢", title: "Announcements", subtitle: "miGlife news & updates", color: "#3984D9", tint: "#FFF3D6", href: "/announcements", tab: "community" },
   { icon: "🎁", title: "Gift Gallery", subtitle: "Send gifts to your friends", color: "#E5484D", tint: "#FFE6F2", href: "/gifts", tab: "shop" },
-  { icon: "💭", title: "Feel Gallery", subtitle: "Share how you feel in a room", color: "#2563EB", tint: "#E6F0FC", href: "/feels", tab: "shop" },
+  { icon: "💭", title: "FeelMig", subtitle: "Share how you feel in a room", color: "#2563EB", tint: "#E6F0FC", href: "/feels", tab: "shop" },
   { icon: "👥", title: "Community", subtitle: "Staff, Mentors & Merchants", color: "#7B3FC7", tint: "#EDE6FF", href: "/members", tab: "community" },
   { icon: "🏆", title: "Leader Board", subtitle: "Top game winners across rooms", color: "#D9A400", tint: "#FFF6DD", href: "/leaderboard", tab: "events" },
   { icon: "💎", title: "Luxury Festival", subtitle: "Live festival · top players by spend", color: "#D9A400", tint: "#E3F2FF", href: "/luxury-festival", tab: "events" },

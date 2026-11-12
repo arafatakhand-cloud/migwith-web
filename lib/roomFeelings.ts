@@ -86,7 +86,7 @@ export function feelUsage(list?: { emoji: string; label: string }[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// 💭 Feel Gallery (the "feel" server function): the live list miGlife manages,
+// 💭 FeelMig (the "feel" server function): the live list miGlife manages,
 // and sending a feeling — 5 coins, the server writes the room line.
 // ---------------------------------------------------------------------------
 

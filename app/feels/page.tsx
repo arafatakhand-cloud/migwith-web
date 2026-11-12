@@ -10,7 +10,7 @@ import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
 import { loadFeelings, loadFeelingsToManage, manageFeel, sendFeel, type CatalogFeel } from "../../lib/roomFeelings";
 
-// 💭 Feel Gallery, like the Gift Gallery: every feeling as a card (5 coins each).
+// 💭 FeelMig, like the Gift Gallery: every feeling as a card (5 coins each).
 // Opened from a room (?room=Bangladesh): tap one → pick who it's with, add a
 // message, Send — the server takes the coins and writes the room line.
 // miGlife (the Gift Shops tool): add / edit / delete, upload a picture.
@@ -70,8 +70,8 @@ function FeelGallery() {
         <div className="flex items-center gap-1">
           <BackButton onClick={() => router.back()} className="mr-1.5" />
           <div className="min-w-0 flex-1">
-            <h1 className="text-[25px] font-bold text-[#0B1F3A]">💭 Feel Gallery</h1>
-            <p className="text-xs text-[#68758D]">{room ? `Send a feeling in ${room} · 5 coins` : "Feelings · /feel name feeling · 5 coins"}</p>
+            <h1 className="text-[25px] font-bold text-[#0B1F3A]">💭 FeelMig</h1>
+            <p className="text-xs text-[#68758D]">{room ? `Send a feeling in ${room} · 5 coins` : "Share how you feel · 5 coins"}</p>
           </div>
           {manager && (
             <button
