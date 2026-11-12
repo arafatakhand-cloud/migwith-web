@@ -8,7 +8,7 @@ import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
-import { loadFeelings, loadFeelingsToManage, manageFeel, sendFeel, type CatalogFeel } from "../../lib/roomFeelings";
+import { FEEL_CATEGORIES, loadFeelings, loadFeelingsToManage, manageFeel, sendFeel, type CatalogFeel } from "../../lib/roomFeelings";
 
 // 💭 FeelMig, like the Gift Gallery: every feeling as a card (5 coins each).
 // Opened from a room (?room=Bangladesh): tap one → pick who it's with, add a
@@ -43,6 +43,7 @@ function FeelGallery() {
   const [list, setList] = useState<CatalogFeel[] | null>(null);
   const [manager, setManager] = useState(false);
   const [search, setSearch] = useState("");
+  const [cat, setCat] = useState("All"); // 🗂 Happy · Love · Sad · …
   const [picked, setPicked] = useState<CatalogFeel | null>(null);
   const [editing, setEditing] = useState<{ isNew: boolean; feel: CatalogFeel } | null>(null);
   const [toast, setToast] = useState("");
@@ -60,8 +61,15 @@ function FeelGallery() {
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (list || []).filter((f) => !q || f.label.toLowerCase().includes(q) || f.id.includes(q));
-  }, [list, search]);
+    return (list || []).filter(
+      (f) => (cat === "All" || (f.category || "Other") === cat) && (!q || f.label.toLowerCase().includes(q) || f.id.includes(q))
+    );
+  }, [list, search, cat]);
+  // the tabs: the usual groups, plus any group miGlife made up
+  const cats = useMemo(() => {
+    const extra = [...new Set((list || []).map((f) => f.category || "Other"))].filter((c) => !FEEL_CATEGORIES.includes(c));
+    return ["All", ...FEEL_CATEGORIES.filter((c) => (list || []).some((f) => (f.category || "Other") === c)), ...extra];
+  }, [list]);
 
   if (!user) return null;
   return (
@@ -76,7 +84,7 @@ function FeelGallery() {
           {manager && (
             <button
               type="button"
-              onClick={() => setEditing({ isNew: true, feel: { id: "", label: "", emoji: "💭", imageUrl: "", price: 5, sortOrder: (list?.length || 0) + 1, active: true } })}
+              onClick={() => setEditing({ isNew: true, feel: { id: "", label: "", emoji: "💭", category: cat !== "All" ? cat : "Other", imageUrl: "", price: 5, sortOrder: (list?.length || 0) + 1, active: true } })}
               className="rounded-full bg-[#0B1F3A] px-3 py-2 text-xs font-semibold text-white shadow-[inset_0_2px_0_rgba(255,255,255,.2),0_3px_0_#050F1F,0_5px_0_#03080F,0_8px_10px_rgba(11,31,58,.3)] active:translate-y-[2px]"
             >
               ＋ Add Feel
@@ -103,6 +111,22 @@ function FeelGallery() {
             </button>
           )}
         </label>
+
+        <div className="no-scrollbar -mx-3.5 mt-3 flex gap-2 overflow-x-auto px-3.5 pb-1">
+          {cats.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCat(c)}
+              className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-extrabold transition ${
+                cat === c ? "bg-[#2563EB] text-white shadow-[0_8px_16px_-8px_rgba(37,99,235,.9)]" : "bg-white text-[#4B5072]"
+              }`}
+            >
+              {c}
+              {c !== "All" && list ? ` · ${list.filter((f) => (f.category || "Other") === c).length}` : ""}
+            </button>
+          ))}
+        </div>
 
         {list === null ? (
           <p className="p-4 text-[#0B1F3A]">Loading feelings…</p>
@@ -326,7 +350,7 @@ function EditSheet({ isNew, initial, onClose, onSaved }: { isNew: boolean; initi
     setBusy(true);
     setErr("");
     try {
-      await manageFeel({ action: "save", id, isNew, feel: { label: f.label, emoji: f.emoji, imageUrl: f.imageUrl, price: f.price, sortOrder: f.sortOrder, active: f.active } });
+      await manageFeel({ action: "save", id, isNew, feel: { label: f.label, emoji: f.emoji, category: f.category || "Other", imageUrl: f.imageUrl, price: f.price, sortOrder: f.sortOrder, active: f.active } });
       onSaved();
     } catch (e: any) {
       setErr(e?.message || "Could not save.");
@@ -362,6 +386,19 @@ function EditSheet({ isNew, initial, onClose, onSaved }: { isNew: boolean; initi
             className={field}
           />
         </label>
+      </div>
+      <p className="mt-3 text-[12.5px] font-bold text-[#5B6B8C]">Group</p>
+      <div className="mt-1 flex flex-wrap gap-1.5">
+        {[...FEEL_CATEGORIES, "Other"].map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setF({ ...f, category: c })}
+            className={`rounded-full px-2.5 py-1 text-[12px] font-bold ${(f.category || "Other") === c ? "bg-[#2563EB] text-white" : "bg-[#F1F4F9] text-[#16264A]"}`}
+          >
+            {c}
+          </button>
+        ))}
       </div>
       <div className="mt-3 flex items-center gap-3">
         <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-[#EEF3FB] text-[34px]">
