@@ -369,7 +369,7 @@ export default function RoomsPage() {
   // While searching every folder opens.
   if (classic) {
     // 📋 miglife's order: Favorite rooms (my own rooms + favourites) · Official
-    // rooms · Recent rooms · Game rooms · What's hot. No My Rooms / Private
+    // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
     // Rooms folders — other people's rooms show while searching.
     const base: [string, string, string[]][] = [
       ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
@@ -382,7 +382,7 @@ export default function RoomsPage() {
       .sort(byLive);
     const sections: [string, string, string[]][] = q
       ? [...base, ...(privateSection.length ? [["private", "Private rooms", privateSection] as [string, string, string[]]] : [])]
-      : [...base, ...(classicHot.length ? [["hot", "What's hot", classicHot] as [string, string, string[]]] : [])];
+      : [...base, ...(classicHot.length ? [["hot", "Hot now", classicHot] as [string, string, string[]]] : [])];
     return (
       <PageShell light>
         <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl bg-white pb-6 text-[#16315F] lg:max-w-4xl">
@@ -490,7 +490,7 @@ export default function RoomsPage() {
   // folder as a rounded card with an icon tile, a count chip and a turning
   // arrow, and every room a row with a colour avatar, live dot and "4/30" pill.
   // 📋 miglife's order: Favorite rooms (my own rooms + favourites) · Official
-  // rooms · Recent rooms · Game rooms · What's hot. No My Rooms / Private
+  // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
   // Rooms folders — other people's rooms show while searching.
   const sections: [string, string, string[]][] = [
     ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
@@ -517,7 +517,7 @@ export default function RoomsPage() {
   const hot = [...hotAll.slice(hotStart), ...hotAll.slice(0, hotStart)];
   // 🔥 Hot now is a normal folder like the others, at the bottom (no coloured
   // strip on top any more); only shown while rooms have people.
-  const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "What's hot", hot]] : sections;
+  const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "Hot now", hot]] : sections;
   return (
     <PageShell light>
       {/* 🦋 the Lobby's butterfly picture, very faint, behind the room list */}
