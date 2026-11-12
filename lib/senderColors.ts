@@ -27,6 +27,10 @@ export const SHOP_TEXT_COLORS: Record<string, string> = {
 const LUCKY_PINK = "#FF4FA3";
 /** 🍀 Lucky User who is a Male: orange (Female stays pink). */
 const LUCKY_MALE_ORANGE = "#FB8C00";
+// 🍀 Pink only for someone whose profile says Female. A profile with no gender
+// saved shows "Male" (the profile's default), so it gets the male orange too —
+// before, an empty gender counted as female and many men turned pink.
+const isFemale = (g?: string) => ["female", "f", "woman", "girl", "মহিলা", "নারী"].includes((g || "").trim().toLowerCase());
 /** 🌍 Country Representative: brown-gold name + a 🌍 badge (like the app). */
 export const COUNTRY_REP_COLOR = "#9E6011";
 export const COUNTRY_REP_BADGE = "🌍";
@@ -116,7 +120,7 @@ function colorFor(name: string, p: Profile | undefined, atMs?: number): string {
   // with no line time, pink only while they are Lucky User now
   const lucky = atMs !== undefined ? wasLuckyAt(name, atMs) : !!p && p.luckyUntil > Date.now();
   if (lucky)
-    return (p?.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
+    return isFemale(p?.gender) ? LUCKY_PINK : LUCKY_MALE_ORANGE;
   if (!p) return USER_BLUE;
   if (isMainFounderName(name) || ["owner", "ceo", "executive", "executive_board"].includes(p.role)) {
     return p.shopColor || USER_BLUE;
@@ -289,7 +293,7 @@ export function useSenderColors(names: string[], hot: string[] = []): (name: str
 /** 🍀 The Lucky User's name colour: orange for a male, pink for a female. */
 export function luckyColorOf(name: string): string {
   const p = cache.get(name.trim().toLowerCase());
-  return (p?.gender || "").trim().toLowerCase() === "male" ? LUCKY_MALE_ORANGE : LUCKY_PINK;
+  return isFemale(p?.gender) ? LUCKY_PINK : LUCKY_MALE_ORANGE;
 }
 
 /** A name's own colour WITHOUT the Lucky User rule (for a reply quote of an older line). */
