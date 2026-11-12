@@ -319,12 +319,29 @@ export function StoryRow({
               ))}
             </div>
           ) : (
+            // 🔢 like Facebook: the top reactions and how many, tap → who reacted
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); openReactors(); }}
-              className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-extrabold text-[#16264A] shadow-lg"
+              className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white/90 px-4 py-2 text-[13px] font-extrabold text-[#16264A] shadow-lg"
             >
-              😍 See who reacted
+              {current.reactCount > 0 ? (
+                <>
+                  <span className="text-[17px] tracking-[-2px]">
+                    {Object.entries(current.reactions)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 3)
+                      .map(([e]) => e)
+                      .join("")}
+                  </span>
+                  <span>
+                    {current.reactCount} {current.reactCount === 1 ? "reaction" : "reactions"}
+                  </span>
+                  <span className="text-[#5B6B8C]">· See who</span>
+                </>
+              ) : (
+                "😍 No reactions yet"
+              )}
             </button>
           )}
           {burst && (

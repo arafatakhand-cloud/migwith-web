@@ -26888,11 +26888,20 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       throw new E("not-found", "That story is gone.");
     }
     const rref = sref.collection("reactions").doc(uid);
-    if (!emoji) {
-      await rref.delete();
-      return { ok: true, emoji: "" };
-    }
-    await rref.set({ uid, name: me, emoji, at: FieldValue.serverTimestamp(), atMs: Date.now() });
+    // 🔢 the counts are kept on the story ("❤️😂 12" for the writer, like Facebook)
+    await db.runTransaction(async (tx) => {
+      const [st, prev] = await Promise.all([tx.get(sref), tx.get(rref)]);
+      const counts = { ...(st.get("reactions") || {}) };
+      const was = prev.exists ? String(prev.get("emoji") || "") : "";
+      if (was) counts[was] = Math.max(0, Number(counts[was] || 0) - 1);
+      if (emoji) counts[emoji] = Number(counts[emoji] || 0) + 1;
+      Object.keys(counts).forEach((k) => { if (!counts[k]) delete counts[k]; });
+      const total = Object.values(counts).reduce((x, y) => x + Number(y || 0), 0);
+      if (emoji) tx.set(rref, { uid, name: me, emoji, at: FieldValue.serverTimestamp(), atMs: Date.now() });
+      else tx.delete(rref);
+      tx.update(sref, { reactions: counts, reactCount: total });
+    });
+    if (!emoji) return { ok: true, emoji: "" };
     await alertUser(author, `${emoji} ${me} reacted to your story.`, "story_reaction",
       { fromUsername: me, storyId: sid, emoji }, `story_react_${sid}_${uid}`);
     return { ok: true, emoji };
@@ -26913,6 +26922,12 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     if (!s.exists) throw new E("not-found", "That story is gone.");
     if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can see this.");
     const r = await s.ref.collection("reactions").orderBy("atMs", "desc").limit(300).get();
+    // 🩹 a story from before the counts were kept: count it now
+    if (Number(s.get("reactCount") || 0) !== r.size) {
+      const counts = {};
+      r.docs.forEach((x) => { const e = String(x.get("emoji") || ""); if (e) counts[e] = (counts[e] || 0) + 1; });
+      await s.ref.update({ reactions: counts, reactCount: r.size }).catch(() => {});
+    }
     return { ok: true, reactors: r.docs.map((x) => ({ name: String(x.get("name") || ""), emoji: String(x.get("emoji") || ""), atMs: Number(x.get("atMs") || 0) })) };
   }
   // 📸 my story: change the caption and who can see it, or delete it (only the writer)
