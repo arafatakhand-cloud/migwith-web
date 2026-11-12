@@ -95,9 +95,17 @@ function tabKeyStyle(k: string, on: boolean): React.CSSProperties {
     : { background: `linear-gradient(180deg, #fff, ${light})`, color: ink, boxShadow: `inset 0 2px 0 #fff, 0 4px 0 ${lightLip}, 0 7px 10px -6px ${lightLip}` };
 }
 
-// 🏷 R1: the role as a small 6D chip right beside the name
-const ROLE_ICONS: Record<string, string> = {
-  founder: "👑", superadmin: "👑", admin: "👑", staff: "🛡️", merchant: "💼", mentor: "🎓", country_representative: "🌍", executive_board: "⭐", elite: "💎",
+// 🏷 R2: the role as a small round 6D badge on the picture's corner — [letter, top, bottom, lip]
+const ROLE_DOTS: Record<string, [string, string, string, string]> = {
+  founder: ["👑", "#FDE68A", "#F59E0B", "#B45309"],
+  superadmin: ["👑", "#FDE68A", "#F59E0B", "#B45309"],
+  admin: ["A", "#FCD34D", "#F59E0B", "#B45309"],
+  staff: ["S", "#4ADE80", "#16A34A", "#15803D"],
+  merchant: ["M", "#C084FC", "#9333EA", "#6B21A8"],
+  mentor: ["MT", "#F87171", "#DC2626", "#991B1B"],
+  country_representative: ["CR", "#D6A15E", "#9E6011", "#6B3F0A"],
+  executive_board: ["E", "#F9A8D4", "#DB2777", "#9D174D"],
+  elite: ["E", "#67E8F9", "#0891B2", "#155E75"],
 };
 
 // 🏷 the coloured role pill beside a name (like the app's Feed)
@@ -2029,8 +2037,18 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
     <article className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
           <Avatar name={p.author} color={c} size={42} />
+          {rolePill && ROLE_DOTS[rolePill] && (
+            // 🏷 R2: A (Admin) · S (Staff) · M (Merchant) … on the picture's corner
+            <span
+              title={role}
+              className="absolute -bottom-1.5 -right-1.5 flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white px-[3px] text-[10px] font-black leading-none text-white"
+              style={{ background: `linear-gradient(180deg, ${ROLE_DOTS[rolePill][1]}, ${ROLE_DOTS[rolePill][2]})`, boxShadow: `0 2px 0 ${ROLE_DOTS[rolePill][3]}` }}
+            >
+              {ROLE_DOTS[rolePill][0]}
+            </span>
+          )}
         </Link>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
@@ -2046,16 +2064,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 </span>
               )}
             </span>
-            {role && rolePill && (
-              // 🏷 R1: 👑 Admin / 🛡️ Staff … as a small 6D chip beside the name
-              <span
-                className="ml-1 shrink-0 whitespace-nowrap rounded-[9px] px-[7px] py-[2px] text-[10.5px] font-black"
-                style={{ background: `linear-gradient(180deg, #fff, ${ROLE_PILLS[rolePill][1]})`, color: ROLE_PILLS[rolePill][2], boxShadow: `0 2px 0 ${ROLE_PILLS[rolePill][2]}55` }}
-              >
-                {ROLE_ICONS[rolePill] ? `${ROLE_ICONS[rolePill]} ` : ""}
-                {role}
-              </span>
-            )}
             {!role &&
               (roleImg ? (
                 // eslint-disable-next-line @next/next/no-img-element
