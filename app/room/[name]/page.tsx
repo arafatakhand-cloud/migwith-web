@@ -78,7 +78,7 @@ import {
 } from "../../_components/GiftPanel";
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { isGiftShowerLine, toggleHideGiftShower, useHideGiftShower } from "../../../lib/giftShowerPref";
-import { FEEL_USAGE, parseFeel } from "../../../lib/roomFeelings";
+import { feelUsage, loadFeelings, parseFeel, sendFeel, type CatalogFeel } from "../../../lib/roomFeelings";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ART_BY_EMOJI,
@@ -1751,40 +1751,32 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return;
     }
 
-    // 💭 /feel [name] feeling [-m message] — free, like a gift line (same as the app):
+    // 💭 /feel [name] feeling [-m message] — 5 coins; the server writes the line (same as the app):
     // "<<vip [50] feels 😢 Sad with miglife [44]!>> — "Sorry for that""
     if (/^\/feel(ing)?\b/i.test(clean)) {
       setText("");
-      const { feeling, target: typed, note: feelNote } = parseFeel(clean);
-      if (!feeling) {
-        note(FEEL_USAGE);
-        return;
-      }
-      if (Date.now() - lastFeelAt.current < 10_000) {
-        note("💭 Please wait a few seconds before the next /feel.");
-        return;
-      }
-      const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase()) : undefined;
-      if (typed && !who) {
-        note(`${typed} is not in the room.`);
-        return;
-      }
-      if (who && who.username.toLowerCase() === profile.username.toLowerCase()) {
-        note(`💭 Just type /feel ${feeling.key} for yourself.`);
-        return;
-      }
-      lastFeelAt.current = Date.now();
-      const withWho = who ? ` with ${who.username}${who.level ? ` [${who.level}]` : ""}` : "";
-      addDoc(collection(db, "room_messages", roomName, "messages"), {
-        text: `<<${profile.username} [${profile.level}] feels ${feeling.emoji} ${feeling.label}${withWho}!>>${feelNote ? ` — "${feelNote}"` : ""}`,
-        sender: profile.username,
-        senderUid: user.uid,
-        type: "gift",
-        giftName: "",
-        createdAt: serverTimestamp(),
-        clientCreatedAt: Date.now(),
-      }).catch(() => note("💭 Could not send. Please try again."));
-      stickToBottom.current = true;
+      loadFeelings().then((list) => {
+        const { feeling, target: typed, note: feelNote } = parseFeel(clean, list);
+        if (!feeling) {
+          note(feelUsage(list));
+          return;
+        }
+        if (Date.now() - lastFeelAt.current < 10_000) {
+          note("💭 Please wait a few seconds before the next /feel.");
+          return;
+        }
+        const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase()) : undefined;
+        if (typed && !who) {
+          note(`${typed} is not in the room.`);
+          return;
+        }
+        lastFeelAt.current = Date.now();
+        stickToBottom.current = true;
+        sendFeel(roomName, feeling.key, who?.username || "", feelNote).catch((e: any) => {
+          lastFeelAt.current = 0;
+          note(String(e?.message || "💭 Could not send. Please try again."));
+        });
+      });
       return;
     }
 
@@ -2092,9 +2084,18 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     stickToBottom.current = true;
   };
 
+  // 💭 the feelings too ("feel:<id>" on a /feel line), so an uploaded picture shows like a gift's
+  const [feelCatalog, setFeelCatalog] = useState<CatalogFeel[]>([]);
+  useEffect(() => {
+    loadFeelings().then(setFeelCatalog);
+  }, []);
   const giftByName = useMemo(
-    () => new Map(gifts.map((g) => [g.name.toLowerCase(), { icon: g.icon, imageUrl: g.imageUrl }])),
-    [gifts]
+    () =>
+      new Map([
+        ...gifts.map((g) => [g.name.toLowerCase(), { icon: g.icon, imageUrl: g.imageUrl }] as const),
+        ...feelCatalog.map((f) => [`feel:${f.id}`, { icon: f.emoji, imageUrl: f.imageUrl }] as const),
+      ]),
+    [gifts, feelCatalog]
   );
 
   if (loading || !user) {
@@ -2847,6 +2848,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["clear", "Clear Chat", () => (closeMenu(), clearChat())],
                 ["info", hideGiftShower ? "Show Gift Showers" : "Hide Gift Showers", () => (closeMenu(), toggleHideGiftShower())],
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
+                ["heart", "💭 Feel Gallery", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],

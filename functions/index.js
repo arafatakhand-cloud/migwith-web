@@ -23831,6 +23831,184 @@ exports.toggleSupporterBadge = functionsV1.https.onCall(async (data, context) =>
 // people saw the Edit button and then got storage/unauthorized. The server
 // checks the same tools the page shows (founderPermsOf) and does the write.
 const GIFT_SHOP_ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+// =============================================================================
+// 💭 FEEL GALLERY — "/feel [name] feeling [-m message]", 5 coins each
+// =============================================================================
+// feel_catalog/{id} = { label, emoji, imageUrl, price, sortOrder, active }.
+// Until miGlife saves the first one, the 30 starter feelings below are the list.
+// The room line is written here, in the same transaction as the payment:
+//   "<<vip [50] feels 😢 Sad with miglife [44]!>> — "Sorry for that""
+// (type "gift", giftName "feel:<id>", so the apps swap the emoji for the
+// uploaded picture the same way they do for gifts).
+const FEEL_PRICE = 5;
+const FEEL_ID_RE = /^[a-z0-9_]{2,30}$/;
+const FEEL_DEFAULTS = [
+  ["happy", "😊", "Happy"],
+  ["sad", "😢", "Sad"],
+  ["loved", "😍", "Loved"],
+  ["angry", "😡", "Angry"],
+  ["excited", "🥳", "Excited"],
+  ["sleepy", "😴", "Sleepy"],
+  ["sick", "🤒", "Sick"],
+  ["lonely", "😔", "Lonely"],
+  ["thankful", "🙏", "Thankful"],
+  ["cool", "😎", "Cool"],
+  ["funny", "😂", "Funny"],
+  ["heartbroken", "💔", "Heartbroken"],
+  ["missingyou", "🥺", "Missing you"],
+  ["proud", "🥹", "Proud"],
+  ["blessed", "😇", "Blessed"],
+  ["shy", "😳", "Shy"],
+  ["surprised", "😲", "Surprised"],
+  ["confused", "😕", "Confused"],
+  ["worried", "😟", "Worried"],
+  ["nervous", "😬", "Nervous"],
+  ["bored", "😑", "Bored"],
+  ["hungry", "😋", "Hungry"],
+  ["relaxed", "😌", "Relaxed"],
+  ["crazy", "🤪", "Crazy"],
+  ["motivated", "💪", "Motivated"],
+  ["hopeful", "🤞", "Hopeful"],
+  ["peaceful", "🕊️", "Peaceful"],
+  ["jealous", "😒", "Jealous"],
+  ["sorry", "🙇", "Sorry"],
+  ["lucky", "🍀", "Lucky"],
+];
+async function feelCatalogList() {
+  const snap = await db.collection("feel_catalog").get();
+  if (snap.empty) {
+    return FEEL_DEFAULTS.map(([id, emoji, label], i) => ({ id, label, emoji, imageUrl: "", price: FEEL_PRICE, sortOrder: i, active: true }));
+  }
+  return snap.docs
+    .map((d) => ({
+      id: d.id,
+      label: String(d.get("label") || d.id).slice(0, 30),
+      emoji: String(d.get("emoji") || "💭").slice(0, 16),
+      imageUrl: String(d.get("imageUrl") || ""),
+      price: Math.max(1, Math.floor(Number(d.get("price")) || FEEL_PRICE)),
+      sortOrder: Math.floor(Number(d.get("sortOrder")) || 0),
+      active: d.get("active") !== false,
+    }))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
+}
+exports.feel = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const d = data || {};
+  const action = String(d.action || "");
+
+  if (action === "list") {
+    const all = await feelCatalogList();
+    const manager = d.manage === true && (await hasFounderPerm(uid, "gift_shop"));
+    return { ok: true, manager, feelings: manager ? all : all.filter((f) => f.active) };
+  }
+
+  if (action === "send") {
+    const roomId = String(d.roomId || "").trim().slice(0, 100);
+    if (!roomId || roomId.startsWith("private_")) throw new E("invalid-argument", "💭 /feel works in rooms.");
+    const key = String(d.feeling || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
+    const note = String(d.message || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    const all = await feelCatalogList();
+    const f = all.find((x) => x.active && (x.id === key || x.label.toLowerCase().replace(/[^a-z0-9]/g, "") === key));
+    if (!f) throw new E("not-found", "💭 Unknown feeling. Type /feel to see the list.");
+    const meRef = db.collection("users").doc(uid);
+    const rateRef = db.collection("feel_rate").doc(uid);
+    const [meSnap, rate] = await Promise.all([meRef.get(), rateRef.get()]);
+    const me = String(meSnap.get("username") || "").trim();
+    if (!me) throw new E("failed-precondition", "Your account is not ready yet.");
+    if (Date.now() - Number(rate.get("lastMs") || 0) < 10000) throw new E("resource-exhausted", "💭 Please wait a few seconds before the next /feel.");
+    // 🔇 muted / banned in this room
+    const mod = await db.collection("room_moderation").doc(roomId).collection("users").doc(me.toLowerCase()).get();
+    if (mod.exists && (mod.get("muted") === true || mod.get("banned") === true)) throw new E("permission-denied", "🔇 You can't talk in this room right now.");
+    // 👤 with someone: they must be in the room now
+    let withWho = "";
+    const typed = String(d.target || "").replace(/^@/, "").trim().slice(0, 40);
+    if (typed) {
+      const t = await findUserDocByUsername(typed);
+      const inRoom = t ? (await db.collection("room_presence").doc(roomId).collection("users").doc(t.id).get()).exists : false;
+      if (!t || !inRoom) throw new E("not-found", `${typed} is not in the room.`);
+      if (t.id === uid) throw new E("invalid-argument", `💭 Just type /feel ${f.id} for yourself.`);
+      const lvl = giftUserLevel(t.data() || {});
+      withWho = ` with ${String(t.get("username") || typed)}${lvl > 0 ? ` [${lvl}]` : ""}`;
+    }
+    const lineRef = db.collection("room_messages").doc(roomId).collection("messages").doc();
+    await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(meRef);
+      if (Number(fresh.get("balance") || 0) < f.price) throw new E("failed-precondition", `💭 You need ${f.price} coins for a feeling.`);
+      tx.update(meRef, { balance: FieldValue.increment(-f.price), balanceUpdatedAt: FieldValue.serverTimestamp() });
+      tx.set(rateRef, { lastMs: Date.now() });
+      tx.set(lineRef, {
+        text: `<<${me} [${giftUserLevel(fresh.data() || {})}] feels ${f.emoji} ${f.label}${withWho}!>>${note ? ` — "${note}"` : ""}`,
+        sender: me,
+        senderUid: uid,
+        type: "gift",
+        giftName: `feel:${f.id}`,
+        createdAt: FieldValue.serverTimestamp(),
+        clientCreatedAt: Date.now(),
+      });
+      tx.set(db.collection("feel_events").doc(lineRef.id), {
+        roomId, fromUid: uid, fromUsername: me, toUsername: withWho ? typed : "", feeling: f.id, price: f.price,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    });
+    return { ok: true, price: f.price };
+  }
+
+  // 🛠 miGlife (the Gift Shops tool): add / edit / delete / picture
+  if (!(await hasFounderPerm(uid, "gift_shop"))) throw new E("permission-denied", "You don't have the Gift Shops tool.");
+  const id = String(d.id || "").toLowerCase().trim();
+  if (!FEEL_ID_RE.test(id)) throw new E("invalid-argument", "Name: letters and numbers only (e.g. missingyou).");
+  // the first change turns the starter list into real documents
+  const col = db.collection("feel_catalog");
+  if ((await col.limit(1).get()).empty) {
+    const batch = db.batch();
+    FEEL_DEFAULTS.forEach(([fid, emoji, label], i) => batch.set(col.doc(fid), { label, emoji, imageUrl: "", price: FEEL_PRICE, sortOrder: i, active: true }));
+    await batch.commit();
+  }
+  const ref = col.doc(id);
+  if (action === "upload") {
+    const contentType = String(d.contentType || "").toLowerCase();
+    if (!/^image\/(png|jpeg|jpg|gif|webp)$/.test(contentType)) throw new E("invalid-argument", "Please choose a picture (PNG or JPG).");
+    const buf = Buffer.from(String(d.fileBase64 || ""), "base64");
+    if (buf.length < 50) throw new E("invalid-argument", "The picture is empty.");
+    if (buf.length > 5 * 1024 * 1024) throw new E("invalid-argument", "That picture is too big (over 5 MB).");
+    const ext = contentType.includes("png") ? "png" : contentType.includes("gif") ? "gif" : contentType.includes("webp") ? "webp" : "jpg";
+    const path = `feel_images/${id}.${ext}`;
+    const token = crypto.randomUUID();
+    const bucket = require("firebase-admin/storage").getStorage().bucket();
+    await bucket.file(path).save(buf, {
+      resumable: false,
+      metadata: { contentType, cacheControl: "public, max-age=31536000", metadata: { firebaseStorageDownloadTokens: token } },
+    });
+    return { ok: true, url: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}&v=${Date.now()}` };
+  }
+  if (action === "save") {
+    const g = d.feel || {};
+    const label = String(g.label || "").replace(/\s+/g, " ").trim().slice(0, 30);
+    if (!label) throw new E("invalid-argument", "Write the feeling's name.");
+    const price = Math.floor(Number(g.price ?? FEEL_PRICE));
+    if (!Number.isFinite(price) || price < 1 || price > 1000000) throw new E("invalid-argument", "Price: at least 1 coin.");
+    const imageUrl = String(g.imageUrl || "").trim().slice(0, 1000);
+    if (imageUrl && !/^https:\/\//i.test(imageUrl)) throw new E("invalid-argument", "The picture must be a web link.");
+    if (d.isNew === true && (await ref.get()).exists) throw new E("already-exists", "That feeling already exists.");
+    await ref.set({
+      label,
+      emoji: String(g.emoji || "💭").trim().slice(0, 16) || "💭",
+      imageUrl,
+      price,
+      sortOrder: Math.floor(Number(g.sortOrder) || 0),
+      active: g.active !== false,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { ok: true };
+  }
+  if (action === "delete") {
+    await ref.delete();
+    return { ok: true };
+  }
+  throw new E("invalid-argument", "Unknown action.");
+});
+
 exports.giftShopManage = functionsV1.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const E = functionsV1.https.HttpsError;
