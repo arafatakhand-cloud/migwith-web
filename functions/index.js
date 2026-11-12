@@ -24501,13 +24501,14 @@ exports.feel = functionsV1.https.onCall(async (data, context) => {
     // 🔇 muted / banned in this room
     const mod = await db.collection("room_moderation").doc(roomId).collection("users").doc(me.toLowerCase()).get();
     if (mod.exists && (mod.get("muted") === true || mod.get("banned") === true)) throw new E("permission-denied", "🔇 You can't talk in this room right now.");
-    // 👤 with someone: they must be in the room now
+    // 👤 with someone: any miGlife ID, in the room or not (like a gift)
     let withWho = "";
+    let toUser = null; // 🔔 who gets the alert + push
     const typed = String(d.target || "").replace(/^@/, "").trim().slice(0, 40);
     if (typed) {
       const t = await findUserDocByUsername(typed);
-      const inRoom = t ? (await db.collection("room_presence").doc(roomId).collection("users").doc(t.id).get()).exists : false;
-      if (!t || !inRoom) throw new E("not-found", `${typed} is not in the room.`);
+      if (!t) throw new E("not-found", `💭 User not found: ${typed}`);
+      toUser = t;
       if (t.id === uid) throw new E("invalid-argument", `💭 Just type /feel ${f.id} for yourself.`);
       const lvl = giftUserLevel(t.data() || {});
       withWho = ` with ${String(t.get("username") || typed)}${lvl > 0 ? ` [${lvl}]` : ""}`;
@@ -24532,6 +24533,24 @@ exports.feel = functionsV1.https.onCall(async (data, context) => {
         createdAt: FieldValue.serverTimestamp(),
       });
     });
+    // 🔔 the person it's with: an alert (tap → the room) and a phone push — not if they blocked me
+    if (toUser) {
+      const toName = String(toUser.get("username") || typed);
+      const alertText = `${f.emoji} ${me} feels ${f.label} with you in ${roomId}${note ? `: "${note.slice(0, 80)}"` : ""}`;
+      try {
+        if (!(await hasBlocked(toUser.id, me))) {
+          await alertUser(toName, alertText, "feel", { fromUsername: me, roomName: roomId, feeling: f.id });
+          const token = await fcmTokenOf(toUser.id, toUser);
+          if (token) {
+            await getMessaging().send({
+              token,
+              data: { type: "feel", title: `${f.emoji} ${me} feels ${f.label} with you`, body: note ? note.slice(0, 120) : `in ${roomId}`, roomName: roomId },
+              android: { priority: "high" },
+            }).catch(() => {});
+          }
+        }
+      } catch (e) { /* the room line is enough */ }
+    }
     return { ok: true, price: f.price };
   }
 
