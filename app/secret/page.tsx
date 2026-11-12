@@ -130,6 +130,104 @@ function DailyIdLimitCard() {
   );
 }
 
+const setAutoOpenFn = httpsCallable<{ openAt: number }, unknown>(functions, "setIdCreationStatus");
+const BD_OFFSET = 6 * 3_600_000; // Bangladesh = UTC+6
+// "2026-11-13T20:00" (Bangladesh time) ⇄ ms
+const bdInputToMs = (v: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(v);
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) - BD_OFFSET : NaN;
+};
+const msToBdInput = (ms: number) => new Date(ms + BD_OFFSET).toISOString().slice(0, 16);
+const bdLabel = (ms: number) =>
+  new Date(ms).toLocaleString("en-GB", { timeZone: "Asia/Dhaka", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true });
+
+// ⏰ "Other Users ID Creation" turns ON by itself at the time picked here
+// (Bangladesh time; the server's idCreationAutoOpen checks every minute).
+function AutoOpenCard({ on }: { on: boolean }) {
+  const [at, setAt] = useState(0);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(
+    () =>
+      onSnapshot(
+        doc(db, "app_settings", "id_creation"),
+        (s) => setAt(Number(s.get("autoOpenAt") || 0)),
+        () => {}
+      ),
+    []
+  );
+  // the next 8 PM (Bangladesh)
+  const next8pm = () => {
+    const nowBd = new Date(Date.now() + BD_OFFSET);
+    let t = Date.UTC(nowBd.getUTCFullYear(), nowBd.getUTCMonth(), nowBd.getUTCDate(), 20, 0) - BD_OFFSET;
+    if (t <= Date.now()) t += 86_400_000;
+    return t;
+  };
+  const save = async (ms: number) => {
+    if (busy) return;
+    setBusy(true);
+    setMsg("");
+    try {
+      await setAutoOpenFn({ openAt: ms });
+      setMsg(ms ? `⏰ ID creation will open by itself on ${bdLabel(ms)} (Bangladesh time).` : "Auto ON cancelled.");
+      setDraft("");
+    } catch (e: any) {
+      setMsg(e?.message || "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const draftMs = bdInputToMs(draft);
+  return (
+    <div className="mt-4 border-t border-[#F1E3BF] pt-3">
+      <p className="text-[15px] font-bold">⏰ Turn ON automatically</p>
+      {at > 0 ? (
+        <div className="mt-2 rounded-xl bg-[#FFF6DD] px-3 py-2.5 text-sm">
+          <b>Opens by itself:</b> {bdLabel(at)} <span className="text-xs text-gray-500">(Bangladesh time)</span>
+          <button type="button" disabled={busy} onClick={() => save(0)} className="ml-2 text-xs font-bold text-[#B3261E] underline">
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <p className="mt-1 text-xs text-gray-500">
+          {on ? "It is ON now." : "Pick a time (Bangladesh time) and normal users can create IDs from then on — no need to switch it by hand."}
+        </p>
+      )}
+      {!on && (
+        <div className="mt-2 space-y-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => save(next8pm())}
+            className="w-full rounded-full border border-[#E0A82E] bg-[#FFF6DD] py-2 text-sm font-extrabold text-[#7A5A00] disabled:opacity-40"
+          >
+            🕗 Next 8:00 PM ({bdLabel(next8pm())})
+          </button>
+          <div className="flex items-center gap-2">
+            <input
+              type="datetime-local"
+              value={draft}
+              min={msToBdInput(Date.now())}
+              onChange={(e) => setDraft(e.target.value)}
+              className="h-10 min-w-0 flex-1 rounded-xl border border-[#E0C27A] px-2 text-sm outline-none"
+            />
+            <button
+              type="button"
+              disabled={busy || !Number.isFinite(draftMs) || draftMs < Date.now()}
+              onClick={() => save(draftMs)}
+              className="rounded-full bg-[#E0A82E] px-4 py-2.5 text-sm font-extrabold text-black disabled:opacity-40"
+            >
+              Set
+            </button>
+          </div>
+        </div>
+      )}
+      {msg && <p className="mt-2 text-xs font-bold text-[#7A5A00]">{msg}</p>}
+    </div>
+  );
+}
+
 const ceoCreateUserId = httpsCallable<Record<string, string>, { username?: string }>(functions, "ceoCreateUserId");
 const ceoQuickCreateId = httpsCallable<{ migId: string }, { username?: string }>(functions, "ceoQuickCreateId");
 
@@ -413,6 +511,7 @@ export default function SecretPage() {
               }}
             />
           </div>
+          <AutoOpenCard on={idOn} />
           <DailyIdLimitCard />
         </div>
       )}
