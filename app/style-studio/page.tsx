@@ -57,6 +57,7 @@ export default function StyleStudioPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [sheetId, setSheetId] = useState<string | null>(null); // 🏆 the style whose sheet is open
   // ✏️ miglife renames / re-prices colors (app_settings/shop_overrides)
   const { username } = useCurrentUser();
   const isFounder = isMainFounderName(username);
@@ -114,6 +115,7 @@ export default function StyleStudioPage() {
   };
 
   const confirming = CATALOG.find((c) => c.id === confirmId);
+  const sheet = CATALOG.find((c) => c.id === sheetId);
 
   return (
     <PageShell light>
@@ -162,69 +164,105 @@ export default function StyleStudioPage() {
           </div>
         )}
 
-        <SectionLabel>Shop</SectionLabel>
-        <div className="grid gap-3 md:grid-cols-2">
-          {available.map((c) => {
-            const isPending = pending.has(c.id);
-            const price = priceOf(c);
-            const canAfford = balance !== null && balance >= price;
-            return (
-              <div key={c.id} className="rounded-2xl bg-white p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg" style={{ color: c.color, fontWeight: c.bold ? 900 : 700 }}>
+        {/* 🏆 G · Ranked list: every style by price; tap one → the sheet with its preview and Buy */}
+        <SectionLabel>🏆 Ranked by price</SectionLabel>
+        <ul className="space-y-2">
+          {[...available]
+            .sort((x, y) => priceOf(y) - priceOf(x))
+            .map((c, i) => {
+              const isPending = pending.has(c.id);
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSheetId(c.id)}
+                    className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-white py-2.5 pl-4 pr-3.5 text-left shadow-[0_6px_16px_-12px_rgba(11,42,91,.45)] transition active:scale-[.99]"
+                  >
+                    {/* the style's own colour as a stripe on the left */}
+                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-[5px]" style={{ background: c.color }} />
+                    <span className="w-5 text-center text-[14px] font-black text-[#B0BACB]">{i + 1}</span>
+                    <span className="text-[22px]">{c.badge}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[16px]" style={{ color: c.color, fontWeight: c.bold ? 900 : 700 }}>
+                        {nameOf(c)}
+                      </span>
+                      <span className="block text-[11px] text-[#8A97A8]">
+                        {c.days} days{c.bold ? " · Bold" : ""}
+                        {isPending ? " · ⏳ waiting for approval" : ""}
+                      </span>
+                    </span>
+                    <span className="shrink-0 rounded-full bg-[#FFF4D1] px-2.5 py-1 text-[12px] font-extrabold text-[#8A6A00]">🪙 {priceOf(c).toLocaleString()}</span>
+                  </button>
+                </li>
+              );
+            })}
+        </ul>
+        <p className="mt-4 text-center text-[11px] text-[#8A97A8]">Admin approval is needed when you buy a color.</p>
+      </section>
+
+      {sheet && (() => {
+        const c = sheet;
+        const isPending = pending.has(c.id);
+        const price = priceOf(c);
+        const canAfford = balance !== null && balance >= price;
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-3" onClick={() => setSheetId(null)}>
+            <div className="w-full max-w-md rounded-t-[26px] bg-white px-4 pb-5 pt-2.5 shadow-2xl pb-safe sm:rounded-[26px]" onClick={(e) => e.stopPropagation()}>
+              <div className="mx-auto mb-3 h-[5px] w-10 rounded-full bg-[#D4DDEB]" />
+              <div className="flex items-center gap-3">
+                <span className="text-[34px]">{c.badge}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[22px]" style={{ color: c.color, fontWeight: 900 }}>
                     {nameOf(c)}
                   </span>
-                  <span>{c.badge}</span>
-                  <span className="ml-auto rounded-full border border-[#F5D77A] bg-[#FFF8E1] px-2.5 py-0.5 text-xs font-bold text-[#8A5A00]">
-                    🪙 {price.toLocaleString()}
+                  <span className="block text-[12px] text-[#8A97A8]">
+                    {c.days} days{c.bold ? " · Bold name" : ""}
                   </span>
-                  {isFounder && (
-                    <button type="button" onClick={() => setEditing(c)} aria-label="Edit" className="rounded-lg px-1 text-[15px]">
-                      ✏️
-                    </button>
-                  )}
-                </div>
-                <div className="mt-1.5 flex gap-1.5 text-[11px]">
-                  <span className="rounded-md bg-[#EAF2FC] px-2 py-0.5 text-[#35507E]">{c.days} days</span>
-                  {c.bold && <span className="rounded-md bg-[#EAF2FC] px-2 py-0.5 font-bold text-[#35507E]">BOLD</span>}
-                </div>
-                <div className="mt-2 rounded-xl bg-[#F4F7FB] px-3 py-2 text-sm">
-                  <span className="text-[10px] text-[#999]">Preview </span>
-                  <span style={{ color: c.color, fontWeight: c.bold ? 800 : 600 }}>you:</span>{" "}
-                  <span className="text-[#222]">Hey everyone! 👋</span>
-                </div>
-                {c.description && <p className="mt-1.5 text-[11px] text-[#666]">{c.description}</p>}
-                <p className="mt-2 text-[10px] font-bold tracking-widest text-[#999]">WHAT YOU GET</p>
-                <div className="mt-1 flex flex-wrap gap-1.5 text-[11px]">
-                  <span className="rounded-lg bg-[#FFF3E0] px-2 py-0.5 text-[#B26A00]">🖼 Images</span>
-                  {c.voice ? (
-                    <span className="rounded-lg bg-[#E3F5E6] px-2 py-0.5 text-[#2E7D32]">🎙 Voice</span>
-                  ) : (
-                    <span className="rounded-lg bg-[#EDEDED] px-2 py-0.5 text-[#999]">🚫 No voice</span>
-                  )}
-                  <span className="rounded-lg bg-[#EDEAFB] px-2 py-0.5 text-[#5B4FC7]">🎬 Video soon</span>
-                </div>
-                <button
-                  type="button"
-                  disabled={!ready || !canAfford || isPending || busy === c.id}
-                  onClick={() => setConfirmId(c.id)}
-                  className={`mt-3 w-full rounded-xl border py-2.5 text-sm font-bold ${
-                    canAfford && !isPending ? "border-[#43B65A] bg-[#EFFCEF] text-[#1E7A34]" : "border-[#DDD] bg-white text-[#999]"
-                  }`}
-                >
-                  {busy === c.id
-                    ? "Requesting…"
-                    : isPending
-                      ? "⏳ Waiting for approval"
-                      : canAfford
-                        ? `Buy for 🪙 ${price.toLocaleString()}`
-                        : "Not enough coins"}
+                </span>
+                {isFounder && (
+                  <button type="button" onClick={() => (setSheetId(null), setEditing(c))} aria-label="Edit" className="rounded-lg px-1 text-[16px]">
+                    ✏️
+                  </button>
+                )}
+                <button type="button" onClick={() => setSheetId(null)} aria-label="Close" className="px-1 text-[#8494B2]">
+                  ✕
                 </button>
               </div>
-            );
-          })}
-        </div>
-      </section>
+              {/* your own name, in this colour, the way the room will show it */}
+              <div className="mt-3 rounded-2xl bg-[#F4F7FB] px-3.5 py-3 text-[14px]">
+                <span style={{ color: c.color, fontWeight: c.bold ? 800 : 600 }}>{username || "you"}</span>
+                <span className="text-[#1E2A3B]">: Hey everyone! 👋</span>
+              </div>
+              {c.description && <p className="mt-2 text-[12px] text-[#5B6B8C]">{c.description}</p>}
+              <div className="mt-2.5 flex flex-wrap gap-1.5 text-[12px]">
+                <span className="rounded-full bg-[#FFF3E0] px-2.5 py-1 text-[#B26A00]">🖼 Photos</span>
+                {c.voice ? (
+                  <span className="rounded-full bg-[#E3F5E6] px-2.5 py-1 text-[#2E7D32]">🎤 Voice</span>
+                ) : (
+                  <span className="rounded-full bg-[#EDEDED] px-2.5 py-1 text-[#999]">🚫 No voice</span>
+                )}
+                <span className="rounded-full bg-[#EAF2FC] px-2.5 py-1 text-[#35507E]">🏷 Badge</span>
+                <span className="rounded-full bg-[#EDEAFB] px-2.5 py-1 text-[#5B4FC7]">🎬 Video soon</span>
+              </div>
+              <button
+                type="button"
+                disabled={!ready || !canAfford || isPending || busy === c.id}
+                onClick={() => (setSheetId(null), setConfirmId(c.id))}
+                className="mt-4 w-full rounded-2xl py-3.5 text-[15px] font-black text-white disabled:opacity-50"
+                style={{ background: c.color }}
+              >
+                {busy === c.id
+                  ? "Requesting…"
+                  : isPending
+                    ? "⏳ Waiting for approval"
+                    : canAfford
+                      ? `Buy · 🪙 ${price.toLocaleString()}`
+                      : `Not enough coins · 🪙 ${price.toLocaleString()}`}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-2 pb-safe sm:items-center" onClick={() => setConfirmId(null)}>
