@@ -80,6 +80,34 @@ const TABS: [Tab, string][] = [
   ["mine", "Mine"],
 ];
 
+// 🎨 D3: each Feed tab's colour — [fill, lip, light, light lip, ink]
+const TAB_KEYS: Record<string, [string, string, string, string, string]> = {
+  new: ["#2563EB", "#173EA8", "#DBEAFE", "#93B4F0", "#1D4ED8"],
+  popular: ["#F97316", "#C2410C", "#FFEDD5", "#F5B88A", "#C2410C"],
+  friends: ["#16A34A", "#0F7A36", "#DCFCE7", "#97DDB0", "#15803D"],
+  following: ["#7C3AED", "#5B21B6", "#EDE9FE", "#C4B2F3", "#6D28D9"],
+  mine: ["#DB2777", "#9D174D", "#FCE7F3", "#F2A7C9", "#BE185D"],
+};
+function tabKeyStyle(k: string, on: boolean): React.CSSProperties {
+  const [fill, lip, light, lightLip, ink] = TAB_KEYS[k] || TAB_KEYS.new;
+  return on
+    ? { background: `linear-gradient(180deg, ${fill}CC, ${fill})`, color: "#fff", boxShadow: `inset 0 2px 0 #ffffff55, 0 4px 0 ${lip}, 0 8px 12px -6px ${lip}` }
+    : { background: `linear-gradient(180deg, #fff, ${light})`, color: ink, boxShadow: `inset 0 2px 0 #fff, 0 4px 0 ${lightLip}, 0 7px 10px -6px ${lightLip}` };
+}
+
+// 🏷 R2: the role as a small round 6D badge on the picture's corner — [letter, top, bottom, lip]
+const ROLE_DOTS: Record<string, [string, string, string, string]> = {
+  founder: ["👑", "#FDE68A", "#F59E0B", "#B45309"],
+  superadmin: ["👑", "#FDE68A", "#F59E0B", "#B45309"],
+  admin: ["A", "#FCD34D", "#F59E0B", "#B45309"],
+  staff: ["S", "#4ADE80", "#16A34A", "#15803D"],
+  merchant: ["M", "#C084FC", "#9333EA", "#6B21A8"],
+  mentor: ["MT", "#F87171", "#DC2626", "#991B1B"],
+  country_representative: ["CR", "#D6A15E", "#9E6011", "#6B3F0A"],
+  executive_board: ["E", "#F9A8D4", "#DB2777", "#9D174D"],
+  elite: ["E", "#67E8F9", "#0891B2", "#155E75"],
+};
+
 // 🏷 the coloured role pill beside a name (like the app's Feed)
 const ROLE_PILLS: Record<string, [string, string, string]> = {
   founder: ["Founder", "#FFF4D6", "#B7791F"],
@@ -934,11 +962,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 }}
                 type="button"
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
-                className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition active:scale-95 ${
-                  tab === k
-                    ? "bg-[#2563EB] text-white shadow-[0_8px_16px_-8px_rgba(37,99,235,.9)]"
-                    : "bg-[#FFFFFF] text-[#4B5072] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
-                }`}
+                // 🎨 D3: every tab is a 6D key in its own colour; the chosen one is filled
+                className="mb-1 shrink-0 whitespace-nowrap rounded-[16px] px-4 py-2.5 text-[13.5px] font-black transition active:translate-y-[2px]"
+                style={tabKeyStyle(k, tab === k)}
               >
                 {k === "popular" ? "🔥 " : ""}
                 {label}
@@ -2011,8 +2037,18 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
     <article className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full">
-          <Avatar name={p.author} color={c} size={40} />
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
+          <Avatar name={p.author} color={c} size={42} />
+          {rolePill && ROLE_DOTS[rolePill] && (
+            // 🏷 R2: A (Admin) · S (Staff) · M (Merchant) … on the picture's corner
+            <span
+              title={role}
+              className="absolute -bottom-1.5 -right-1.5 flex h-[21px] min-w-[21px] items-center justify-center rounded-full border-2 border-white px-[3px] text-[10px] font-black leading-none text-white"
+              style={{ background: `linear-gradient(180deg, ${ROLE_DOTS[rolePill][1]}, ${ROLE_DOTS[rolePill][2]})`, boxShadow: `0 2px 0 ${ROLE_DOTS[rolePill][3]}` }}
+            >
+              {ROLE_DOTS[rolePill][0]}
+            </span>
+          )}
         </Link>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
@@ -2042,7 +2078,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 📍 {p.place} ·
               </button>
             )}
-            {role ? `${role} · ` : ""}
             {blogAgoBn(p.createdMs)}
             {p.privacy ? ` · ${blogPrivacyLabel(p.privacy)}` : ""}
             {why && <span className="sr-only"> {why}</span>}
@@ -2055,7 +2090,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               e.stopPropagation();
               onFollow();
             }}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? "bg-[#F1F4F9] text-[#55658F]" : "bg-[#EEF0FF] text-[#4F46E5]"}`}
+            // 🎨 a 6D key: purple "+ Follow", soft grey "Following"
+            className={`mb-1 shrink-0 whitespace-nowrap rounded-[13px] px-3 py-2 text-[12.5px] font-black transition active:translate-y-[2px] ${following ? "bg-gradient-to-b from-white to-[#EEF3FB] text-[#55658F] shadow-[0_3px_0_#C9D8EA]" : "bg-gradient-to-b from-[#818CF8] to-[#6366F1] text-white shadow-[inset_0_2px_0_#ffffff55,0_4px_0_#4338CA]"}`}
           >
             {following ? "Following" : "+ Follow"}
           </button>
@@ -2067,7 +2103,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               type="button"
               aria-label="Mig options"
               onClick={(e) => (e.stopPropagation(), setMenu((v) => !v))}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[18px] font-black leading-none text-[#6B7A99] hover:bg-[#F1F4F9]"
+              className="mb-1 ml-1 flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-white to-[#EEF3FB] text-[17px] font-black leading-none text-[#5B6B8C] shadow-[0_3px_0_#C9D8EA] transition active:translate-y-[2px]"
             >
               ⋯
             </button>
