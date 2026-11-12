@@ -166,7 +166,8 @@ export default function StyleStudioPage() {
 
         {/* 🏆 G · Ranked list: every style by price; tap one → the sheet with its preview and Buy */}
         <SectionLabel>🏆 Ranked by price</SectionLabel>
-        <ul className="space-y-2">
+        {/* B1 · White Keycap: white rows standing on three layers of the style's own colour */}
+        <ul className="space-y-3.5 pb-2">
           {[...available]
             .sort((x, y) => priceOf(y) - priceOf(x))
             .map((c, i) => {
@@ -176,22 +177,34 @@ export default function StyleStudioPage() {
                   <button
                     type="button"
                     onClick={() => setSheetId(c.id)}
-                    className="relative flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-white py-2.5 pl-4 pr-3.5 text-left shadow-[0_6px_16px_-12px_rgba(11,42,91,.45)] transition active:scale-[.99]"
+                    className="flex w-full items-center gap-3 rounded-[18px] py-2.5 pl-3 pr-3 text-left transition active:translate-y-[3px]"
+                    style={{
+                      background: "linear-gradient(180deg,#FFFFFF,#F3F7FC)",
+                      boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${c.color}55, 0 6px 0 ${c.color}40, 0 9px 0 ${c.color}2a, 0 14px 16px -6px ${c.color}66`,
+                    }}
                   >
-                    {/* the style's own colour as a stripe on the left */}
-                    <span aria-hidden className="absolute bottom-0 left-0 top-0 w-[5px]" style={{ background: c.color }} />
-                    <span className="w-5 text-center text-[14px] font-black text-[#B0BACB]">{i + 1}</span>
-                    <span className="text-[22px]">{c.badge}</span>
+                    <span className="w-4 text-center text-[13px] font-black text-[#B5C0D0]">{i + 1}</span>
+                    <span
+                      className="flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full text-[18px]"
+                      style={{ background: `radial-gradient(circle at 35% 30%, #fff, ${c.color}55)`, border: `2px solid ${c.color}` }}
+                    >
+                      {c.badge}
+                    </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[16px]" style={{ color: c.color, fontWeight: c.bold ? 900 : 700 }}>
+                      <span className="block truncate text-[16px]" style={{ color: c.color, fontWeight: 900 }}>
                         {nameOf(c)}
                       </span>
-                      <span className="block text-[11px] text-[#8A97A8]">
+                      <span className="block text-[11.5px] text-[#7A8AA3]">
                         {c.days} days{c.bold ? " · Bold" : ""}
-                        {isPending ? " · ⏳ waiting for approval" : ""}
+                        {isPending ? " · ⏳ waiting" : ""}
                       </span>
                     </span>
-                    <span className="shrink-0 rounded-full bg-[#FFF4D1] px-2.5 py-1 text-[12px] font-extrabold text-[#8A6A00]">🪙 {priceOf(c).toLocaleString()}</span>
+                    <span
+                      className="shrink-0 rounded-full px-2.5 py-1.5 text-[12px] font-extrabold text-[#8A6A00]"
+                      style={{ background: "linear-gradient(180deg,#FFF6D6,#FFE7A0)", boxShadow: "0 3px 0 #D9A92A" }}
+                    >
+                      🪙 {priceOf(c).toLocaleString()}
+                    </span>
                   </button>
                 </li>
               );
