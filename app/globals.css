@@ -1613,6 +1613,8 @@ html {
 /* ✍️ emote writing box: the placeholder shows only while the box is empty */
 .emote-editor:empty::before { content: attr(data-placeholder); color: rgba(63, 67, 115, 0.45); pointer-events: none; }
 .emote-editor:focus { outline: none; }
+/* a space at the end stays a real space (after "/feel name " or "/gift name " the next word starts after it) */
+.emote-editor { white-space: pre-wrap; }
 
 /* ✨ a picked reaction floats up and fades (the feed's reaction picker) */
 @keyframes feed-fly {

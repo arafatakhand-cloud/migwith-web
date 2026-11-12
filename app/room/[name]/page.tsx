@@ -49,6 +49,7 @@ import {
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
+import { FeelPicker } from "../../_components/FeelPicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import {
@@ -2089,6 +2090,26 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   useEffect(() => {
     loadFeelings().then(setFeelCatalog);
   }, []);
+  // 💭 /feel: first the people (or "Just me"), then the feelings to scroll through and pick
+  const [feelSelf, setFeelSelf] = useState(false);
+  const feelStep = useMemo(() => {
+    const t = text.trimStart();
+    if (!/^\/feel(\s|$)/i.test(t)) return null;
+    const words = t.slice(5).trim().split(/\s+/).filter(Boolean);
+    const hasName = !!words[0] && roomUsers.some((u) => u.username.toLowerCase() === words[0].toLowerCase());
+    const rest = hasName ? words.slice(1) : words;
+    const q = rest.join("").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const norm = (f: CatalogFeel) => f.label.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const picked = rest.length > 0 && t.endsWith(" ") && feelCatalog.some((f) => f.id === q || norm(f) === q);
+    const ready = !/\s-m(\s|$)/i.test(t) && !picked && (feelSelf || (hasName && (t.endsWith(" ") || rest.length > 0)));
+    return {
+      name: hasName ? words[0] : "",
+      options: ready ? feelCatalog.filter((f) => !q || f.id.startsWith(q) || norm(f).startsWith(q)) : [],
+    };
+  }, [text, roomUsers, feelCatalog, feelSelf]);
+  useEffect(() => {
+    if (!feelStep) setFeelSelf(false);
+  }, [feelStep]);
   const giftByName = useMemo(
     () =>
       new Map([
@@ -2263,10 +2284,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden border-[#CFE3F5] sm:rounded-2xl sm:border ${classic ? "bg-white" : "room-chat-bg bg-[#FFFFFF]"}`}>
             {/* The chat area: the /gift and @ name lists sit over it (never over the message box). */}
             <div className="relative flex min-h-0 flex-1 flex-col">
-            {giftQuery !== null ? (
+            {feelStep && feelStep.options.length > 0 ? (
+              <FeelPicker
+                feels={feelStep.options}
+                onPick={(f) => {
+                  setText(`/feel ${feelStep.name ? `${feelStep.name} ` : ""}${f.id} `);
+                  inputRef.current?.focus();
+                }}
+              />
+            ) : giftQuery !== null && !(giftQuery.cmd === "/feel" && feelSelf) ? (
               <GiftNamePicker
                 queryText={giftQuery.q}
                 cmd={giftQuery.cmd}
+                onJustMe={
+                  giftQuery.cmd === "/feel"
+                    ? () => {
+                        setFeelSelf(true);
+                        setText("/feel ");
+                        inputRef.current?.focus();
+                      }
+                    : undefined
+                }
                 names={roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== (profile?.username || "").toLowerCase())}
                 onPick={(t) => {
                   setText(t);
