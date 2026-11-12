@@ -231,7 +231,12 @@ function Sheet({ children, onClose }: { children: React.ReactNode; onClose: () =
 function SendSheet({ feel, room, me, myLevel, onClose, onSent }: { feel: CatalogFeel; room: string; me: string; myLevel: number; onClose: () => void; onSent: () => void }) {
   const [people, setPeople] = useState<string[]>([]);
   const [who, setWho] = useState("");
-  const [msg, setMsg] = useState("");
+  // 💬 one of this feeling's own messages is ready; 🎲 gives another, or type your own
+  const pickMsg = (not = "") => {
+    const all = (feel.messages || []).filter((m) => m !== not);
+    return all.length ? all[Math.floor(Math.random() * all.length)] : not;
+  };
+  const [msg, setMsg] = useState(() => pickMsg());
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   useEffect(() => {
@@ -297,12 +302,26 @@ function SendSheet({ feel, room, me, myLevel, onClose, onSent }: { feel: Catalog
             ))}
           </div>
           <p className="mt-3 text-[13px] font-bold text-[#5B6B8C]">Message (optional)</p>
-          <input
-            value={msg}
-            onChange={(e) => setMsg(e.target.value.slice(0, 200))}
-            placeholder="e.g. Sorry for that"
-            className="mt-1.5 w-full rounded-[14px] border-[1.5px] border-[#D4DDEB] px-3 py-2.5 text-[14px] text-[#16264A] outline-none focus:border-[#2563EB]"
-          />
+          <div className="mt-1.5 flex gap-2">
+            <input
+              value={msg}
+              onChange={(e) => setMsg(e.target.value.slice(0, 200))}
+              placeholder="e.g. Sorry for that"
+              className="min-w-0 flex-1 rounded-[14px] border-[1.5px] border-[#D4DDEB] px-3 py-2.5 text-[14px] text-[#16264A] outline-none focus:border-[#2563EB]"
+            />
+            {(feel.messages || []).length > 0 && (
+              <button
+                type="button"
+                onClick={() => setMsg(pickMsg(msg))}
+                aria-label="Another message"
+                title="Another message"
+                className="grid h-[44px] w-[44px] shrink-0 place-items-center rounded-[12px] bg-[#EEF2FF] text-[20px] active:scale-95"
+              >
+                🎲
+              </button>
+            )}
+          </div>
+          {(feel.messages || []).length > 0 && <p className="mt-1 text-[11.5px] text-[#8A97A8]">🎲 = another message · or type your own</p>}
           <div className="mt-3 rounded-[14px] bg-[#F4F7FB] p-2.5 text-center text-[13.5px] font-bold text-[#2563EB]">
             &lt;&lt;{me}
             <span className="text-[#F57C00]">[{myLevel}]</span> feels {feel.emoji} {feel.label}
@@ -327,6 +346,7 @@ function SendSheet({ feel, room, me, myLevel, onClose, onSent }: { feel: Catalog
 /** miGlife: add or change a feeling (name, emoji, picture, price, shown or hidden). */
 function EditSheet({ isNew, initial, onClose, onSaved }: { isNew: boolean; initial: CatalogFeel; onClose: () => void; onSaved: () => void }) {
   const [f, setF] = useState(initial);
+  const [msgText, setMsgText] = useState((initial.messages || []).join("\n"));
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const id = isNew ? f.label.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 30) : f.id;
@@ -350,7 +370,7 @@ function EditSheet({ isNew, initial, onClose, onSaved }: { isNew: boolean; initi
     setBusy(true);
     setErr("");
     try {
-      await manageFeel({ action: "save", id, isNew, feel: { label: f.label, emoji: f.emoji, category: f.category || "Other", imageUrl: f.imageUrl, price: f.price, sortOrder: f.sortOrder, active: f.active } });
+      await manageFeel({ action: "save", id, isNew, feel: { label: f.label, emoji: f.emoji, category: f.category || "Other", messages: msgText.split("\n").map((m) => m.trim()).filter(Boolean).slice(0, 10), imageUrl: f.imageUrl, price: f.price, sortOrder: f.sortOrder, active: f.active } });
       onSaved();
     } catch (e: any) {
       setErr(e?.message || "Could not save.");
@@ -419,6 +439,16 @@ function EditSheet({ isNew, initial, onClose, onSaved }: { isNew: boolean; initi
           </button>
         )}
       </div>
+      <label className="mt-3 block text-[12.5px] font-bold text-[#5B6B8C]">
+        Auto messages (one on each line, up to 10)
+        <textarea
+          value={msgText}
+          onChange={(e) => setMsgText(e.target.value.slice(0, 1600))}
+          rows={4}
+          placeholder={"Some days are just heavier than others…\nI wish I could hug you right now 🤗"}
+          className="mt-1 w-full resize-none rounded-[12px] border border-[#D4DDEB] px-3 py-2 text-[13.5px] text-[#16264A] outline-none focus:border-[#2563EB]"
+        />
+      </label>
       <label className="mt-3 flex items-center gap-2 text-[13px] font-bold text-[#16264A]">
         <input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />
         Shown to everyone

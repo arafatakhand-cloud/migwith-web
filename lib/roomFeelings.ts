@@ -197,7 +197,7 @@ export function feelUsage(list?: { emoji: string; label: string }[]): string {
 // and sending a feeling — 5 coins, the server writes the room line.
 // ---------------------------------------------------------------------------
 
-export type CatalogFeel = { id: string; label: string; emoji: string; category?: string; imageUrl: string; price: number; sortOrder: number; active: boolean };
+export type CatalogFeel = { id: string; label: string; emoji: string; category?: string; messages?: string[]; imageUrl: string; price: number; sortOrder: number; active: boolean };
 
 const feelCall = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "feel");
 let listCache: Promise<CatalogFeel[]> | null = null;
