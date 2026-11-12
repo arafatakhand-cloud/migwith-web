@@ -69,6 +69,11 @@ export function clearAutoLeft(uid: string, name: string) {
   setAutoLeftFlag(uid, name, false);
 }
 
+/** Still out of the room (a Rejoin the server refused): the flag comes back. */
+export function markAutoLeft(uid: string, name: string) {
+  setAutoLeftFlag(uid, name, true);
+}
+
 function setAutoLeftFlag(uid: string, name: string, on: boolean) {
   try {
     if (on) localStorage.setItem(autoLeftKey(uid, name), "1");

@@ -22,8 +22,11 @@ export function NotInRoomPage({
   onClose,
   onRooms,
   onRejoin,
+  error,
 }: {
   room: string;
+  /** why a Rejoin did not work */
+  error?: string;
   onClose: () => void;
   onRooms: () => void;
   /** only after an inactivity auto left: a Rejoin button puts me back in the room */
@@ -70,6 +73,7 @@ export function NotInRoomPage({
         <p className="mt-2.5 text-[13.5px] leading-[19px] text-[#5B6B8C]">
           You can&apos;t see or join this room&apos;s chat now. Open it again from the room list to come back in.
         </p>
+        {error && <p className="mt-2 text-[13px] font-bold text-[#D7261E]">{error}</p>}
         <div className="mt-5 flex gap-2.5">
           <button
             type="button"

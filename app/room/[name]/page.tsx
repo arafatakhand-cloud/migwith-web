@@ -57,6 +57,7 @@ import {
   leaveRoomNow,
   clearAutoLeft,
   isAutoLeft,
+  markAutoLeft,
   isRoomOpen,
   onAutoLeft,
   postStaleLeaveLineOnce,
@@ -355,6 +356,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const [autoLeft, setAutoLeft] = useState(() => !!user && isAutoLeft(user.uid, roomName));
   // ⚠️ "You are not in this room" popup (a message typed after being taken out)
   const [notInRoomOpen, setNotInRoomOpen] = useState(false);
+  // 🔁 Rejoin could not put me back in (shown on the "not in this room" card)
+  const [rejoinError, setRejoinError] = useState("");
   const [text, setText] = useState(initial?.text ?? "");
   const classic = useIsClassic();
   // 📟 Classic: light grey info boxes with dark-red system text (the app's RoomHeaderBrush).
@@ -431,6 +434,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // "has left"), I come back in first — new visit + "has entered" — so the
   // chat never shows "has left" followed by my message. Set by the presence effect.
   const restorePresenceRef = useRef<(() => Promise<void>) | null>(null);
+  // The room entry in progress (presence spot + "has entered"). A message sent
+  // right after Rejoin waits for it — before, it was checked before my spot
+  // was written and said "You are not in this room".
+  const enteringRef = useRef<Promise<void> | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
@@ -721,6 +728,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // this can start a moment before my presence spot is written and be refused —
   // then it tries again shortly (a refused listener never resumes by itself).
   const [chatRetry, setChatRetry] = useState(0);
+  // 🔁 bumped after a Rejoin: the chat listener starts again (while I was out
+  // it was refused and gave up, so the chat stayed frozen at the old lines)
+  const [chatEpoch, setChatEpoch] = useState(0);
   useEffect(() => {
     if (!user) return;
     const q = query(
@@ -760,7 +770,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         }
       }
     );
-  }, [user, roomName, chatRetry]);
+  }, [user, roomName, chatRetry, chatEpoch]);
 
   // Who is in the room.
   useEffect(() => {
@@ -913,7 +923,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       });
     };
 
-    (async () => {
+    const entering = (async () => {
       // Invisible: read the room without showing up in it (same as the app).
       if (hideMe) {
         // No presence doc to stamp, so the browser clock marks the visit.
@@ -1042,6 +1052,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
       visitId = visitId || newVisitId();
 
+      let wrote = true;
       await (presenceWrite = setDoc(
         presenceRef,
         {
@@ -1060,7 +1071,26 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           ...(alreadyHere ? {} : { entryMarker: serverTimestamp() }),
         },
         { merge: true }
-      ).catch((err) => console.error("presence write failed", err)));
+      ).catch((err) => {
+        wrote = false;
+        console.error("presence write failed", err);
+      }));
+      // 🔁 Rejoin, but the server did not take my spot back: still out of the
+      // room — the card comes back and says so (it used to show a dead chat).
+      if (rejoining && !wrote && !alreadyHere) {
+        left = true;
+        if (!disposed) {
+          markAutoLeft(uid, roomName);
+          setRejoinError("Could not join the room again. Please try again.");
+          setAutoLeft(true);
+        }
+        return;
+      }
+      if (rejoining && !disposed) {
+        // the chat listener gave up while I was out: start it again
+        setChatRetry(0);
+        setChatEpoch((n) => n + 1);
+      }
 
       // Where this visit's chat starts.
       if (alreadyHere) {
@@ -1214,6 +1244,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         updateDoc(doc(db, "users", uid), { lastActiveAt: serverTimestamp() }).catch(() => {});
       }, PRESENCE_HEARTBEAT_MS);
     })();
+    const enteringNow = entering.catch(() => {});
+    enteringRef.current = enteringNow;
+    void enteringNow.then(() => {
+      if (enteringRef.current === enteringNow) enteringRef.current = null;
+    });
 
     leaveRef.current = leave;
     // Like the app: closing / reloading the browser is NOT leaving (that posted
@@ -1984,6 +2019,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     awardUserXp(user.uid, 2, "chat_message", 15_000); // like the app
     setSending(true);
     try {
+      // 🔁 still entering (just after Rejoin / opening the room): wait for it
+      const entry = enteringRef.current;
+      if (entry) await Promise.race([entry, new Promise((r) => setTimeout(r, 20_000))]);
       // back in first ("has entered") if I was taken out from another phone / tab
       await restorePresenceRef.current?.();
       // 🚪 Not in the room (my spot is gone and I could not come back in): nothing is
@@ -2923,6 +2961,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       {(notInRoomOpen || autoLeft) && (
         <NotInRoomPage
           room={roomName}
+          error={rejoinError}
           onClose={() => {
             setNotInRoomOpen(false);
             if (user) removeOpenRoom(user.uid, roomName);
@@ -2940,6 +2979,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   rejoinRef.current = true;
                   // a new entry: a lock / entry level applies to it again
                   insideBeforeLockRef.current = false;
+                  setRejoinError("");
+                  // the "You are not in this room" popup of an earlier message goes too
+                  setNotInRoomOpen(false);
                   setSinceMs(null);
                   setAutoLeft(false);
                 }
