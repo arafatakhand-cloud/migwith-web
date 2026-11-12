@@ -26494,6 +26494,53 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     });
     return { ok: true, id: ref.id };
   }
+  // 😍 Story reactions (miglife, Nov 2026): a viewer picks one emoji for a story
+  // (the same again = take it back); the writer gets one alert per person per
+  // story and sees who reacted. blog_stories/{id}/reactions/{uid}.
+  const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
+  if (action === "storyReact") {
+    const sid = String(d.storyId || "").trim().slice(0, 100);
+    if (!sid) throw new E("invalid-argument", "Which story?");
+    const emoji = String(d.emoji || "");
+    if (emoji && !STORY_REACTIONS.includes(emoji)) throw new E("invalid-argument", "Pick a reaction.");
+    const sref = db.collection("blog_stories").doc(sid);
+    const s = await sref.get();
+    if (!s.exists || Number(s.get("expiresAt") || 0) < Date.now()) throw new E("not-found", "That story is gone.");
+    const author = String(s.get("author") || "");
+    const privacy = String(s.get("privacy") || "everyone");
+    if (s.get("authorUid") === uid) throw new E("failed-precondition", "That's your own story.");
+    if (privacy === "only_me") throw new E("not-found", "That story is gone.");
+    if (privacy === "friends" && !(await blogFriendNames(me)).map((x) => x.toLowerCase()).includes(author.toLowerCase())) {
+      throw new E("not-found", "That story is gone.");
+    }
+    const rref = sref.collection("reactions").doc(uid);
+    if (!emoji) {
+      await rref.delete();
+      return { ok: true, emoji: "" };
+    }
+    await rref.set({ uid, name: me, emoji, at: FieldValue.serverTimestamp(), atMs: Date.now() });
+    await alertUser(author, `${emoji} ${me} reacted to your story.`, "story_reaction",
+      { fromUsername: me, storyId: sid, emoji }, `story_react_${sid}_${uid}`);
+    return { ok: true, emoji };
+  }
+  // my reactions on the stories I'm watching → { storyId: emoji }
+  if (action === "myStoryReacts") {
+    const ids = (Array.isArray(d.storyIds) ? d.storyIds : []).map((x) => String(x || "").slice(0, 100)).filter(Boolean).slice(0, 60);
+    const snaps = await Promise.all(ids.map((id) => db.collection("blog_stories").doc(id).collection("reactions").doc(uid).get()));
+    const out = {};
+    snaps.forEach((x, i) => { if (x.exists) out[ids[i]] = String(x.get("emoji") || ""); });
+    return { ok: true, reactions: out };
+  }
+  // the writer: who reacted to my story (newest first)
+  if (action === "storyReactors") {
+    const sid = String(d.storyId || "").trim().slice(0, 100);
+    if (!sid) throw new E("invalid-argument", "Which story?");
+    const s = await db.collection("blog_stories").doc(sid).get();
+    if (!s.exists) throw new E("not-found", "That story is gone.");
+    if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can see this.");
+    const r = await s.ref.collection("reactions").orderBy("atMs", "desc").limit(300).get();
+    return { ok: true, reactors: r.docs.map((x) => ({ name: String(x.get("name") || ""), emoji: String(x.get("emoji") || ""), atMs: Number(x.get("atMs") || 0) })) };
+  }
   // 📸 my story: change the caption and who can see it, or delete it (only the writer)
   if (action === "storyUpdate" || action === "storyDelete") {
     const sid = String(d.storyId || "").trim().slice(0, 100);
