@@ -48,6 +48,8 @@ export type BlogPost = {
   poll: BlogPoll | null;
   /** 😀 reaction counts on the post: { emoji: count } */
   reactions: Record<string, number>;
+  /** 👥 the last two people who reacted, newest first ("anima, vip and 46 others") */
+  reactNames: string[];
 };
 
 export type BlogComment = {
@@ -136,6 +138,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     mood: String(d.mood || ""),
     poll: toBlogPoll(d.poll),
     reactions: reactionCounts(d.reactions),
+    reactNames: Array.isArray(d.reactNames) ? d.reactNames.map((x) => String(x)).filter(Boolean).slice(0, 2) : [],
   };
 }
 export function toBlogPoll(v: unknown): BlogPoll | null {

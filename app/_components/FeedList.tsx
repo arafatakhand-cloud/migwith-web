@@ -567,7 +567,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     let cached: BlogPost[] | null = null;
     try {
       const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
-      if (raw) cached = JSON.parse(raw) as BlogPost[];
+      // an older cache has no reactNames yet
+      if (raw) cached = (JSON.parse(raw) as BlogPost[]).map((p) => ({ ...p, reactNames: Array.isArray(p.reactNames) ? p.reactNames : [] }));
     } catch {
       cached = null;
     }
@@ -710,8 +711,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               cur
                 ? cur.map((p) => {
                     const f = fresh.get(p.id);
-                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
-                      ? { ...p, likes: f.likes, reactions: f.reactions, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
+                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || f.reactNames.join() !== (p.reactNames || []).join() || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
+                      ? { ...p, likes: f.likes, reactions: f.reactions, reactNames: f.reactNames, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
                       : p;
                   })
                 : cur
@@ -763,11 +764,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [reactOf, setReactOf] = useState<Record<string, string>>({});
   const REACTION_LIST = ["👍", "❤️", "😂", "😮", "😢", "😡"];
   // pick one of the six (tap the same one again to take it back)
+  // 👥 me first in "anima, vip and 46 others" when I react, out when I take it back
+  const namesWith = (q: BlogPost, on: boolean) => (username ? (on ? [username, ...(q.reactNames || []).filter((n) => n !== username)] : (q.reactNames || []).filter((n) => n !== username)).slice(0, 2) : q.reactNames || []);
   const react = async (p: BlogPost, emoji: string) => {
     if (!user) return router.push("/login");
     const before = reactOf[p.id] ?? (liked.has(p.id) ? "👍" : null);
     const next = before === emoji ? null : emoji;
     setReactOf((m) => ({ ...m, [p.id]: next ?? "" }));
+    setPosts((list) => (list || []).map((q) => (q.id === p.id ? { ...q, reactNames: namesWith(q, !!next) } : q)));
     setLiked((s) => {
       const x = new Set(s);
       if (next) x.add(p.id);
@@ -793,7 +797,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         else x.delete(p.id);
         return x;
       });
-      setPosts((list) => (list || []).map((q) => (q.id === p.id ? { ...q, likes: n } : q)));
+      setPosts((list) => (list || []).map((q) => (q.id === p.id ? { ...q, likes: n, reactNames: namesWith(q, on) } : q)));
     };
     flip(!was, Math.max(0, p.likes + (was ? -1 : 1))); // at once; the server settles it
     try {
@@ -1677,9 +1681,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             {user && !author && tab !== "mine" && tab !== "saved" && <p className="mt-1 text-sm">Be the first — tap “What's on your mind?”.</p>}
           </div>
         ) : (
-          <div className="space-y-5 px-3.5">
+          <div className="space-y-6 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1917,7 +1921,21 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false }: { p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+// 🎨 K1·M1: three layers of the writer's colour under a card, then a soft shadow
+function depthOf(c: string): string {
+  const hex = /^#[0-9a-f]{6}$/i.test(c) ? c : "#2563EB";
+  return `inset 0 2px 0 #fff, 0 0 0 1px ${hex}1f, 0 3px 0 ${hex}59, 0 6px 0 ${hex}40, 0 9px 0 ${hex}2b, 0 14px 18px -8px ${hex}80`;
+}
+// 👥 "anima, vip and 46 others" / "You and 3 others" / "48 people"
+function reactLine(p: BlogPost, me: string): string {
+  const names = (p.reactNames || []).slice(0, Math.min(2, p.likes)).map((n) => (me && n === me ? "You" : n));
+  const rest = Math.max(0, p.likes - names.length);
+  if (!names.length) return `${blogShort(p.likes)} ${p.likes === 1 ? "person" : "people"}`;
+  const who = names.join(", ");
+  return rest ? `${who} and ${blogShort(rest)} other${rest > 1 ? "s" : ""}` : names.length === 2 ? names.join(" and ") : who;
+}
+
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "" }: { me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -1981,7 +1999,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   // 🤍 Clean Cards (look A): a white card — who wrote it on top, the picture /
   // Text Art in a rounded frame in the middle, the buttons in their own row below,
   // so names and buttons are always easy to read.
-  const btn = "bg-[#F1F4F9] text-[#2E3B4E] hover:bg-[#E8EDF5]";
   const pollOnly = !!p.poll && !media;
   const topReacts = Object.entries(p.reactions || {})
     .filter(([, n]) => n > 0)
@@ -1990,7 +2007,8 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
     .map(([e]) => e)
     .join("");
   return (
-    <article className="relative overflow-hidden rounded-[24px] border border-[#EDF0F5] bg-white shadow-[0_6px_18px_-10px_rgba(11,42,91,.22)]">
+    // 🎨 K1·M1: the card stands on three layers of the writer's own colour (6D)
+    <article className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full">
@@ -2196,14 +2214,20 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
       )}
 
       {/* the reactions people used, then the buttons — on the white card */}
-      {p.likes > 0 && topReacts && (
-        <button type="button" onClick={onReactors} className="block px-4 pt-2.5 text-left text-[12px] font-bold text-[#6B7A99]">
-          {topReacts} {blogShort(p.likes)}
-        </button>
-      )}
-      <div className="px-3 pb-3 pt-2 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
+      {/* 😍😂👍 anima, vip and 46 others ·········· 👁 120 */}
+      <div className="flex items-center gap-2 px-4 pt-2.5 text-[12.5px] font-semibold text-[#5B6B8C]">
+        {p.likes > 0 ? (
+          <button type="button" onClick={onReactors} className="min-w-0 flex-1 truncate text-left">
+            <span className="mr-1 tracking-[-2px]">{topReacts || "👍"}</span> {reactLine(p, me)}
+          </button>
+        ) : (
+          <span className="flex-1" />
+        )}
+        <span className="shrink-0 text-[11.5px] font-bold text-[#8A8FB0]">👁 {blogShort(p.views)}</span>
+      </div>
+      <div className="px-3 pb-3.5 pt-2 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
-          <div className="relative">
+          <div className="relative flex-1">
             {fly && (
               <span key={fly.k} className="feed-fly pointer-events-none absolute bottom-12 left-3 z-30 text-[24px]">
                 {fly.e}
@@ -2246,7 +2270,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 setPick(true);
               }}
               aria-label={liked ? "Unlike" : "Like"}
-              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? "bg-[#FFE4EC] text-[#E11D48]" : btn}`}
+              className={`relative flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] text-[13.5px] font-black transition active:translate-y-[2px] ${liked ? "bg-gradient-to-b from-[#FFE4EC] to-[#FBCFE8] text-[#BE185D] shadow-[0_3px_0_#F472B6] active:shadow-[0_1px_0_#F472B6]" : "bg-gradient-to-b from-white to-[#FFE4EC] text-[#BE185D] shadow-[0_3px_0_#F9A8C0] active:shadow-[0_1px_0_#F9A8C0]"}`}
             >
               {burst > 0 &&
                 ["❤️", "💖", "✨", "💕"].map((h, i) => (
@@ -2255,25 +2279,20 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                   </span>
                 ))}
               <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-                {liked ? reaction || "❤️" : "🤍"}
+                {liked ? reaction || "❤️" : "🤍"} {p.likes > 0 ? blogShort(p.likes) : "Like"}
               </span>
             </button>
           </div>
-          {p.likes > 0 && (
-            <button type="button" onClick={onReactors} aria-label="See who reacted" className="-ml-1 text-[13px] font-extrabold text-[#2E3B4E]">
-              {blogShort(p.likes)}
-            </button>
-          )}
-          <button type="button" onClick={open} aria-label="Comments" className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${btn}`}>
+          {/* 🎨 K1·M3: 💬 blue and ↗ purple 6D buttons next to the pink ❤️ */}
+          <button type="button" onClick={open} aria-label="Comments" className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[13px] bg-gradient-to-b from-white to-[#E3EEFF] text-[13.5px] font-black text-[#1D4ED8] shadow-[0_3px_0_#A9C6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#A9C6F5]">
             💬 {blogShort(p.comments)}
           </button>
           {/* 🔒 a 👥 / 🔒 post can't be shared */}
           {!p.privacy && (
-            <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${btn}`}>
-              ↗
+            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-white to-[#EFE7FF] text-[13.5px] font-black text-[#6D28D9] shadow-[0_3px_0_#C9B6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#C9B6F5]">
+              ↗ Share
             </button>
           )}
-          <span className={`ml-auto pr-1 text-[11.5px] font-bold text-[#8A8FB0]`}>👁 {blogShort(p.views)}</span>
           {/* 🔖 Save lives in the ⋯ menu now */}
         </div>
       </div>
