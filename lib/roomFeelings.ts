@@ -19,6 +19,21 @@ export const ROOM_FEELINGS: Feeling[] = [
   { key: "missingyou", emoji: "🥺", label: "Missing you" },
   { key: "proud", emoji: "🥹", label: "Proud" },
   { key: "blessed", emoji: "😇", label: "Blessed" },
+  { key: "shy", emoji: "😳", label: "Shy" },
+  { key: "surprised", emoji: "😲", label: "Surprised" },
+  { key: "confused", emoji: "😕", label: "Confused" },
+  { key: "worried", emoji: "😟", label: "Worried" },
+  { key: "nervous", emoji: "😬", label: "Nervous" },
+  { key: "bored", emoji: "😑", label: "Bored" },
+  { key: "hungry", emoji: "😋", label: "Hungry" },
+  { key: "relaxed", emoji: "😌", label: "Relaxed" },
+  { key: "crazy", emoji: "🤪", label: "Crazy" },
+  { key: "motivated", emoji: "💪", label: "Motivated" },
+  { key: "hopeful", emoji: "🤞", label: "Hopeful" },
+  { key: "peaceful", emoji: "🕊️", label: "Peaceful" },
+  { key: "jealous", emoji: "😒", label: "Jealous" },
+  { key: "sorry", emoji: "🙇", label: "Sorry" },
+  { key: "lucky", emoji: "🍀", label: "Lucky" },
 ];
 
 // other words people may type for the same feeling
@@ -26,6 +41,7 @@ const ALIASES: Record<string, string> = {
   love: "loved", happiness: "happy", sadness: "sad", upset: "sad", mad: "angry", tired: "sleepy", ill: "sick",
   alone: "lonely", thanks: "thankful", grateful: "thankful", lol: "funny", broken: "heartbroken",
   missing: "missingyou", miss: "missingyou",
+  shocked: "surprised", wow: "surprised", scared: "worried", anxious: "nervous", chill: "relaxed", calm: "peaceful", strong: "motivated", hope: "hopeful", envy: "jealous", apologetic: "sorry",
 };
 
 export function feelingOf(word: string): Feeling | null {
