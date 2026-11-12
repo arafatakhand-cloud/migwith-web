@@ -180,6 +180,7 @@ const HELP =
   "Status: /brb • /away • /afk (🟠 Away) • /busy (🔴 Busy) • /back • /online (🟢 Online)\n" +
   "Info: /whois @user\n" +
   "/me text • /jump • /run • /welcomeall\n" +
+  "Feelings: /feel [name] sad|happy|loved|angry|… [-m message]\n" +
   "/8ball question • /fortune • /roll [max]\n" +
   "/beibei • /challenge • /champion • /cheers • /frenzy • /go • /gold • /huanhuan • /jingjing • /lose • /luck • /medal • /nini • /proud\n" +
   "/record • /taunt • /torch • /win • /winner • /yingying\n" +

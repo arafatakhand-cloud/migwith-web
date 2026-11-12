@@ -78,6 +78,7 @@ import {
 } from "../../_components/GiftPanel";
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { isGiftShowerLine, toggleHideGiftShower, useHideGiftShower } from "../../../lib/giftShowerPref";
+import { FEEL_USAGE, parseFeel } from "../../../lib/roomFeelings";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ART_BY_EMOJI,
@@ -432,6 +433,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // chat never shows "has left" followed by my message. Set by the presence effect.
   const restorePresenceRef = useRef<(() => Promise<void>) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
+  const lastFeelAt = useRef(0); // 💭 /feel: one every 10 seconds
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
   const [farUp, setFarUp] = useState(false);
@@ -1746,6 +1748,43 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           })
           .catch((e: any) => note(`${botLabel}: Could not stop the bot. ${e?.message || "Please try again."}`));
       }
+      return;
+    }
+
+    // 💭 /feel [name] feeling [-m message] — free, like a gift line (same as the app):
+    // "<<vip [50] feels 😢 Sad with miglife [44]!>> — "Sorry for that""
+    if (/^\/feel(ing)?\b/i.test(clean)) {
+      setText("");
+      const { feeling, target: typed, note: feelNote } = parseFeel(clean);
+      if (!feeling) {
+        note(FEEL_USAGE);
+        return;
+      }
+      if (Date.now() - lastFeelAt.current < 10_000) {
+        note("💭 Please wait a few seconds before the next /feel.");
+        return;
+      }
+      const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase()) : undefined;
+      if (typed && !who) {
+        note(`${typed} is not in the room.`);
+        return;
+      }
+      if (who && who.username.toLowerCase() === profile.username.toLowerCase()) {
+        note(`💭 Just type /feel ${feeling.key} for yourself.`);
+        return;
+      }
+      lastFeelAt.current = Date.now();
+      const withWho = who ? ` with ${who.username}${who.level ? ` [${who.level}]` : ""}` : "";
+      addDoc(collection(db, "room_messages", roomName, "messages"), {
+        text: `<<${profile.username} [${profile.level}] feels ${feeling.emoji} ${feeling.label}${withWho}!>>${feelNote ? ` — "${feelNote}"` : ""}`,
+        sender: profile.username,
+        senderUid: user.uid,
+        type: "gift",
+        giftName: "",
+        createdAt: serverTimestamp(),
+        clientCreatedAt: Date.now(),
+      }).catch(() => note("💭 Could not send. Please try again."));
+      stickToBottom.current = true;
       return;
     }
 
