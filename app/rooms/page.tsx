@@ -368,14 +368,21 @@ export default function RoomsPage() {
   // (except Favorites) shows only its 5 busiest rooms; Search finds the rest.
   // While searching every folder opens.
   if (classic) {
-    const sections: [string, string, string[]][] = [
-      ["fav", "Favorites", others.fav.names],
-      ["recent", "Recent", others.recent.names],
-      ["mine", "My Rooms", others.mine.names],
-      ["public", "Public Rooms", publicSection],
-      ["game", "Game Rooms", gameSection.filter(matches)],
-      ["private", "Private Rooms", privateSection],
+    // 📋 miglife's order: Favorite rooms (my own rooms + favourites) · Official
+    // rooms · Recent rooms · Game rooms · What's hot. No My Rooms / Private
+    // Rooms folders — other people's rooms show while searching.
+    const base: [string, string, string[]][] = [
+      ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+      ["public", "Official rooms", publicSection],
+      ["recent", "Recent rooms", others.recent.names],
+      ["game", "Game rooms", gameSection.filter(matches)],
     ];
+    const classicHot = Array.from(new Set([...base.flatMap(([, , n]) => n), ...privateSection]))
+      .filter((n) => live(n) > 0)
+      .sort(byLive);
+    const sections: [string, string, string[]][] = q
+      ? [...base, ...(privateSection.length ? [["private", "Private rooms", privateSection] as [string, string, string[]]] : [])]
+      : [...base, ...(classicHot.length ? [["hot", "What's hot", classicHot] as [string, string, string[]]] : [])];
     return (
       <PageShell light>
         <section className="mx-auto min-h-[calc(100dvh-64px)] max-w-2xl bg-white pb-6 text-[#16315F] lg:max-w-4xl">
@@ -399,7 +406,7 @@ export default function RoomsPage() {
             />
           </div>
           {sections.map(([key, title, allRooms]) => {
-            const isOpen = !!q || (key in classicOpen ? classicOpen[key] : key === "fav" || key === "recent" || key === "public");
+            const isOpen = !!q || (key in classicOpen ? classicOpen[key] : true);
             const limited = key !== "fav" && !q && allRooms.length > 5;
             const expanded = !!showAll[key];
             const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
@@ -482,13 +489,15 @@ export default function RoomsPage() {
   // each, Search finds the rest, and 🔥 Hot now at the bottom), each
   // folder as a rounded card with an icon tile, a count chip and a turning
   // arrow, and every room a row with a colour avatar, live dot and "4/30" pill.
+  // 📋 miglife's order: Favorite rooms (my own rooms + favourites) · Official
+  // rooms · Recent rooms · Game rooms · What's hot. No My Rooms / Private
+  // Rooms folders — other people's rooms show while searching.
   const sections: [string, string, string[]][] = [
-    ["fav", "Favorites", others.fav.names],
-    ["recent", "Recent", others.recent.names],
-    ["mine", "My Rooms", others.mine.names],
-    ["public", "Public Rooms", publicSection],
-    ["game", "Game Rooms", gameSection.filter(matches)],
-    ["private", "Private Rooms", privateSection],
+    ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+    ["public", "Official rooms", publicSection],
+    ["recent", "Recent rooms", others.recent.names],
+    ["game", "Game rooms", gameSection.filter(matches)],
+    ...(q && privateSection.length ? [["private", "Private rooms", privateSection] as [string, string, string[]]] : []),
   ];
   const LOOK: Record<string, [string, string]> = {
     hot: ["🔥", "#FF6B3D"],
@@ -501,14 +510,14 @@ export default function RoomsPage() {
   };
   // every room with people, busiest first; ↻ turns the list by 5 so the
   // next busy rooms come to the top (the rest stay under the ⌄ below)
-  const hotAll = Array.from(new Set(sections.flatMap(([, , names]) => names)))
+  const hotAll = Array.from(new Set([...sections.flatMap(([, , names]) => names), ...privateSection]))
     .filter((n) => live(n) > 0)
     .sort(byLive);
   const hotStart = hotAll.length > 5 ? hotOffset % hotAll.length : 0;
   const hot = [...hotAll.slice(hotStart), ...hotAll.slice(0, hotStart)];
   // 🔥 Hot now is a normal folder like the others, at the bottom (no coloured
   // strip on top any more); only shown while rooms have people.
-  const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "Hot now", hot]] : sections;
+  const shownSections: [string, string, string[]][] = hot.length > 0 && !q ? [...sections, ["hot", "What's hot", hot]] : sections;
   return (
     <PageShell light>
       {/* 🦋 the Lobby's butterfly picture, very faint, behind the room list */}
