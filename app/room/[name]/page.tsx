@@ -2661,6 +2661,19 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     )
                   )}
                   {(() => {
+                    // 🛠️ Staff · 🛒 Merchant · 💼 Mentor: miGlife's uploaded badge picture, else the emoji
+                    const role = String(cachedRoleOf(u.username) ?? "").toLowerCase();
+                    const badge = role === "staff" ? ["🛠️", "Staff"] : role === "merchant" ? ["🛒", "Merchant"] : role === "mentor" ? ["💼", "Mentor"] : null;
+                    if (!badge) return null;
+                    const pic = badgeImages[badge[0]];
+                    return pic ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={pic} alt={badge[1]} title={badge[1]} className="h-[18px] w-[18px] shrink-0 object-contain" />
+                    ) : (
+                      <span className="shrink-0" title={badge[1]}>{badge[0]}</span>
+                    );
+                  })()}
+                  {(() => {
                     const team = supporterTeamOf(u.username);
                     return team ? <SupporterBadge team={team} size={9} /> : null;
                   })()}
