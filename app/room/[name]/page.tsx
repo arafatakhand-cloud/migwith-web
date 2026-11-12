@@ -49,6 +49,7 @@ import {
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
+import { FeelPicker } from "../../_components/FeelPicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
 import { ReactionShakeEmoji } from "../../_components/ReactionShakeEmoji";
 import {
@@ -78,6 +79,7 @@ import {
 } from "../../_components/GiftPanel";
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { isGiftShowerLine, toggleHideGiftShower, useHideGiftShower } from "../../../lib/giftShowerPref";
+import { feelUsage, loadFeelings, parseFeel, sendFeel, type CatalogFeel } from "../../../lib/roomFeelings";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ART_BY_EMOJI,
@@ -432,6 +434,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // chat never shows "has left" followed by my message. Set by the presence effect.
   const restorePresenceRef = useRef<(() => Promise<void>) | null>(null);
   const stickToBottom = useRef(initial?.stickToBottom ?? true);
+  const lastFeelAt = useRef(0); // 💭 /feel: one every 10 seconds
   // How many new lines arrived while you were scrolled up (the ⬇ pill, like the app).
   const [newBelow, setNewBelow] = useState(0);
   const [farUp, setFarUp] = useState(false);
@@ -1749,6 +1752,35 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return;
     }
 
+    // 💭 /feel [name] feeling [-m message] — 5 coins; the server writes the line (same as the app):
+    // "<<vip [50] feels 😢 Sad with miglife [44]!>> — "Sorry for that""
+    if (/^\/feel(ing)?\b/i.test(clean)) {
+      setText("");
+      loadFeelings().then((list) => {
+        const { feeling, target: typed, note: feelNote } = parseFeel(clean, list);
+        if (!feeling) {
+          note(feelUsage(list));
+          return;
+        }
+        if (Date.now() - lastFeelAt.current < 10_000) {
+          note("💭 Please wait a few seconds before the next /feel.");
+          return;
+        }
+        const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase()) : undefined;
+        if (typed && !who) {
+          note(`${typed} is not in the room.`);
+          return;
+        }
+        lastFeelAt.current = Date.now();
+        stickToBottom.current = true;
+        sendFeel(roomName, feeling.key, who?.username || "", feelNote).catch((e: any) => {
+          lastFeelAt.current = 0;
+          note(String(e?.message || "💭 Could not send. Please try again."));
+        });
+      });
+      return;
+    }
+
     // /gift name Gift [-m message] — and "/gift all Gift" (Gift Shower: everyone
     // else in the room). The room line is posted only after the server sent it.
     if (/^\/gift\b/i.test(clean)) {
@@ -2053,9 +2085,38 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     stickToBottom.current = true;
   };
 
+  // 💭 the feelings too ("feel:<id>" on a /feel line), so an uploaded picture shows like a gift's
+  const [feelCatalog, setFeelCatalog] = useState<CatalogFeel[]>([]);
+  useEffect(() => {
+    loadFeelings().then(setFeelCatalog);
+  }, []);
+  // 💭 /feel: first the people (or "Just me"), then the feelings to scroll through and pick
+  const [feelSelf, setFeelSelf] = useState(false);
+  const feelStep = useMemo(() => {
+    const t = text.trimStart();
+    if (!/^\/feel(\s|$)/i.test(t)) return null;
+    const words = t.slice(5).trim().split(/\s+/).filter(Boolean);
+    const hasName = !!words[0] && roomUsers.some((u) => u.username.toLowerCase() === words[0].toLowerCase());
+    const rest = hasName ? words.slice(1) : words;
+    const q = rest.join("").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const norm = (f: CatalogFeel) => f.label.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const picked = rest.length > 0 && t.endsWith(" ") && feelCatalog.some((f) => f.id === q || norm(f) === q);
+    const ready = !/\s-m(\s|$)/i.test(t) && !picked && (feelSelf || (hasName && (t.endsWith(" ") || rest.length > 0)));
+    return {
+      name: hasName ? words[0] : "",
+      options: ready ? feelCatalog.filter((f) => !q || f.id.startsWith(q) || norm(f).startsWith(q)) : [],
+    };
+  }, [text, roomUsers, feelCatalog, feelSelf]);
+  useEffect(() => {
+    if (!feelStep) setFeelSelf(false);
+  }, [feelStep]);
   const giftByName = useMemo(
-    () => new Map(gifts.map((g) => [g.name.toLowerCase(), { icon: g.icon, imageUrl: g.imageUrl }])),
-    [gifts]
+    () =>
+      new Map([
+        ...gifts.map((g) => [g.name.toLowerCase(), { icon: g.icon, imageUrl: g.imageUrl }] as const),
+        ...feelCatalog.map((f) => [`feel:${f.id}`, { icon: f.emoji, imageUrl: f.imageUrl }] as const),
+      ]),
+    [gifts, feelCatalog]
   );
 
   if (loading || !user) {
@@ -2223,10 +2284,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           <div className={`relative flex min-w-0 flex-1 flex-col overflow-hidden border-[#CFE3F5] sm:rounded-2xl sm:border ${classic ? "bg-white" : "room-chat-bg bg-[#FFFFFF]"}`}>
             {/* The chat area: the /gift and @ name lists sit over it (never over the message box). */}
             <div className="relative flex min-h-0 flex-1 flex-col">
-            {giftQuery !== null ? (
+            {feelStep && feelStep.options.length > 0 ? (
+              <FeelPicker
+                feels={feelStep.options}
+                onPick={(f) => {
+                  setText(`/feel ${feelStep.name ? `${feelStep.name} ` : ""}${f.id} `);
+                  inputRef.current?.focus();
+                }}
+              />
+            ) : giftQuery !== null && !(giftQuery.cmd === "/feel" && feelSelf) ? (
               <GiftNamePicker
                 queryText={giftQuery.q}
                 cmd={giftQuery.cmd}
+                onJustMe={
+                  giftQuery.cmd === "/feel"
+                    ? () => {
+                        setFeelSelf(true);
+                        setText("/feel ");
+                        inputRef.current?.focus();
+                      }
+                    : undefined
+                }
                 names={roomUsers.map((u) => u.username).filter((n) => n.toLowerCase() !== (profile?.username || "").toLowerCase())}
                 onPick={(t) => {
                   setText(t);
@@ -2808,6 +2886,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["clear", "Clear Chat", () => (closeMenu(), clearChat())],
                 ["info", hideGiftShower ? "Show Gift Showers" : "Hide Gift Showers", () => (closeMenu(), toggleHideGiftShower())],
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
+                ["heart", "💭 FeelMig", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],

@@ -398,6 +398,7 @@ export default function SecretPage() {
           { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
           { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
+          { icon: "💭", label: "FeelMig", hint: "Add / edit / delete feelings", tint: "#2563EB", href: "/feels", ok: f.can("gift_shop") },
           { icon: "🎁", label: "Gift Contest", hint: "Prize, rules, room and time", tint: "#E12A2A", href: "/gift-contest", ok: f.can("gift_contest") },
           { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
           { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },

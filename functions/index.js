@@ -23831,6 +23831,767 @@ exports.toggleSupporterBadge = functionsV1.https.onCall(async (data, context) =>
 // people saw the Edit button and then got storage/unauthorized. The server
 // checks the same tools the page shows (founderPermsOf) and does the write.
 const GIFT_SHOP_ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
+// =============================================================================
+// 💭 FEEL GALLERY — "/feel [name] feeling [-m message]", 5 coins each
+// =============================================================================
+// feel_catalog/{id} = { label, emoji, imageUrl, price, sortOrder, active }.
+// Until miGlife saves the first one, the 30 starter feelings below are the list.
+// The room line is written here, in the same transaction as the payment:
+//   "<<vip [50] feels 😢 Sad with miglife [44]!>> — "Sorry for that""
+// (type "gift", giftName "feel:<id>", so the apps swap the emoji for the
+// uploaded picture the same way they do for gifts).
+const FEEL_PRICE = 5;
+const FEEL_ID_RE = /^[a-z0-9_]{2,30}$/;
+// [id, emoji, label, category]
+const FEEL_DEFAULTS = [
+  ["happy", "😊", "Happy", "Happy"],
+  ["joyful", "😄", "Joyful", "Happy"],
+  ["cheerful", "😁", "Cheerful", "Happy"],
+  ["excited", "🥳", "Excited", "Happy"],
+  ["thankful", "🙏", "Thankful", "Happy"],
+  ["grateful", "🤲", "Grateful", "Happy"],
+  ["proud", "🥹", "Proud", "Happy"],
+  ["blessed", "😇", "Blessed", "Happy"],
+  ["peaceful", "🕊️", "Peaceful", "Happy"],
+  ["relaxed", "😌", "Relaxed", "Happy"],
+  ["content", "☺️", "Content", "Happy"],
+  ["hopeful", "🤞", "Hopeful", "Happy"],
+  ["optimistic", "🌤️", "Optimistic", "Happy"],
+  ["playful", "😜", "Playful", "Happy"],
+  ["crazy", "🤪", "Crazy", "Happy"],
+  ["funny", "😂", "Funny", "Happy"],
+  ["lucky", "🍀", "Lucky", "Happy"],
+  ["cool", "😎", "Cool", "Happy"],
+  ["confident", "💯", "Confident", "Happy"],
+  ["inspired", "💡", "Inspired", "Happy"],
+  ["motivated", "💪", "Motivated", "Happy"],
+  ["energetic", "⚡", "Energetic", "Happy"],
+  ["determined", "😤", "Determined", "Happy"],
+  ["celebrating", "🎉", "Celebrating", "Happy"],
+  ["festive", "🎊", "Festive", "Happy"],
+  ["satisfied", "😋", "Satisfied", "Happy"],
+  ["loved", "😍", "Loved", "Love"],
+  ["romantic", "🥰", "Romantic", "Love"],
+  ["inlove", "💘", "In love", "Love"],
+  ["affectionate", "😘", "Affectionate", "Love"],
+  ["caring", "🤗", "Caring", "Love"],
+  ["friendly", "🤝", "Friendly", "Love"],
+  ["missingyou", "🥺", "Missing you", "Love"],
+  ["cared", "💞", "Cared for", "Love"],
+  ["sad", "😢", "Sad", "Sad"],
+  ["crying", "😭", "Crying", "Sad"],
+  ["heartbroken", "💔", "Heartbroken", "Sad"],
+  ["lonely", "😔", "Lonely", "Sad"],
+  ["hurt", "🤕", "Hurt", "Sad"],
+  ["disappointed", "😞", "Disappointed", "Sad"],
+  ["down", "😩", "Down", "Sad"],
+  ["gloomy", "🌧️", "Gloomy", "Sad"],
+  ["nostalgic", "🥲", "Nostalgic", "Sad"],
+  ["homesick", "🏠", "Homesick", "Sad"],
+  ["sorry", "🙇", "Sorry", "Sad"],
+  ["regretful", "😓", "Regretful", "Sad"],
+  ["empty", "😶‍🌫️", "Empty", "Sad"],
+  ["betrayed", "🗡️", "Betrayed", "Sad"],
+  ["abandoned", "🚪", "Abandoned", "Sad"],
+  ["rejected", "🙅", "Rejected", "Sad"],
+  ["leftout", "🧍", "Left out", "Sad"],
+  ["grieving", "🖤", "Grieving", "Sad"],
+  ["devastated", "😿", "Devastated", "Sad"],
+  ["numb", "🧊", "Numb", "Sad"],
+  ["hopeless", "🕳️", "Hopeless", "Sad"],
+  ["unloved", "🥀", "Unloved", "Sad"],
+  ["helpless", "🙁", "Helpless", "Sad"],
+  ["melancholy", "🌫️", "Melancholy", "Sad"],
+  ["discouraged", "🫤", "Discouraged", "Sad"],
+  ["angry", "😡", "Angry", "Angry"],
+  ["furious", "🤬", "Furious", "Angry"],
+  ["annoyed", "😒", "Annoyed", "Angry"],
+  ["irritated", "🙄", "Irritated", "Angry"],
+  ["frustrated", "😫", "Frustrated", "Angry"],
+  ["jealous", "😾", "Jealous", "Angry"],
+  ["grumpy", "😠", "Grumpy", "Angry"],
+  ["offended", "😑", "Offended", "Angry"],
+  ["scared", "😨", "Scared", "Fear"],
+  ["shocked", "😱", "Shocked", "Fear"],
+  ["worried", "😟", "Worried", "Fear"],
+  ["nervous", "😬", "Nervous", "Fear"],
+  ["anxious", "😰", "Anxious", "Fear"],
+  ["insecure", "😥", "Insecure", "Fear"],
+  ["overwhelmed", "🫠", "Overwhelmed", "Fear"],
+  ["panicked", "😵", "Panicked", "Fear"],
+  ["surprised", "😲", "Surprised", "Surprise"],
+  ["amazed", "🤩", "Amazed", "Surprise"],
+  ["speechless", "😶", "Speechless", "Surprise"],
+  ["confused", "😕", "Confused", "Surprise"],
+  ["curious", "🧐", "Curious", "Surprise"],
+  ["thoughtful", "🤔", "Thoughtful", "Surprise"],
+  ["mindblown", "🤯", "Mind blown", "Surprise"],
+  ["shy", "😳", "Shy", "Shy"],
+  ["embarrassed", "😅", "Embarrassed", "Shy"],
+  ["ashamed", "🫣", "Ashamed", "Shy"],
+  ["guilty", "😣", "Guilty", "Shy"],
+  ["awkward", "🙃", "Awkward", "Shy"],
+  ["sleepy", "😴", "Sleepy", "Body"],
+  ["tired", "🥱", "Tired", "Body"],
+  ["exhausted", "😪", "Exhausted", "Body"],
+  ["sick", "🤒", "Sick", "Body"],
+  ["hungry", "🍔", "Hungry", "Body"],
+  ["cold", "🥶", "Cold", "Body"],
+  ["hot", "🥵", "Hot", "Body"],
+  ["dizzy", "😵‍💫", "Dizzy", "Body"],
+  ["bored", "🫥", "Bored", "Body"],
+  ["prayerful", "📿", "Prayerful", "Faith"],
+  ["ramadanmubarak", "🌙", "Ramadan Mubarak", "Faith"],
+  ["eidmubarak", "🕌", "Eid Mubarak", "Faith"],
+  ["alhamdulillah", "☝️", "Alhamdulillah", "Faith"],
+];
+// 💬 auto messages: one is picked at random when no "-m message" is written
+const FEEL_MESSAGES = {
+ "happy": [
+  "Today feels like a good day! ☀️",
+  "Smiling for no reason 😄",
+  "Good vibes only ✨",
+  "Life is beautiful right now 💛"
+ ],
+ "joyful": [
+  "My heart is dancing today 💃",
+  "Pure joy, nothing else! 🌈",
+  "Can't stop smiling 😄"
+ ],
+ "cheerful": [
+  "Sending cheer to everyone! 🌻",
+  "Positive mood ON ✅",
+  "Let's make today bright! ☀️"
+ ],
+ "excited": [
+  "Can't wait!! 🤩",
+  "So excited I can't sit still! 🎉",
+  "Something great is coming! 🚀"
+ ],
+ "thankful": [
+  "Thank you so much! 🙏",
+  "Truly grateful for you 💖",
+  "Thanks for always being there 🤝"
+ ],
+ "grateful": [
+  "Alhamdulillah for everything 🤲",
+  "Grateful for every little blessing 🌸",
+  "Counting my blessings today ✨"
+ ],
+ "proud": [
+  "So proud right now! 🥹",
+  "Hard work pays off 💪",
+  "This moment means a lot 🏆"
+ ],
+ "blessed": [
+  "Feeling truly blessed 😇",
+  "Blessed beyond words 🌟",
+  "Every day is a gift 🎁"
+ ],
+ "peaceful": [
+  "Calm mind, happy heart 🕊️",
+  "Peace inside, peace outside 🌿",
+  "Enjoying the quiet moment 🍃"
+ ],
+ "relaxed": [
+  "Chilling mode ON 😌",
+  "No stress today 🛋️",
+  "Taking it easy ☕"
+ ],
+ "content": [
+  "Happy with what I have ☺️",
+  "All good, all fine 👌",
+  "Simple life, happy life 🌼"
+ ],
+ "hopeful": [
+  "Better days are coming 🤞",
+  "Never giving up hope 🌅",
+  "Something good is on the way ✨"
+ ],
+ "optimistic": [
+  "Looking at the bright side 🌤️",
+  "Tomorrow will be even better! 🚀",
+  "Every problem has a solution 💡"
+ ],
+ "playful": [
+  "Who wants to play? 😜",
+  "Feeling a little naughty today 😝",
+  "Fun mode activated 🎈"
+ ],
+ "crazy": [
+  "Don't ask, just vibe 🤪",
+  "A little crazy never hurt anyone 😜",
+  "Too much energy today 🌀"
+ ],
+ "funny": [
+  "Can't stop laughing 😂",
+  "This room is too funny 🤣",
+  "LOL, my stomach hurts 😆"
+ ],
+ "lucky": [
+  "Luck is on my side today 🍀",
+  "Feeling like a winner 🎰",
+  "Lady luck, stay with me! ✨"
+ ],
+ "cool": [
+  "Too cool for school 😎",
+  "Staying chill, staying cool 🧊",
+  "Boss mode ON 😎"
+ ],
+ "confident": [
+  "I've got this 💯",
+  "Nothing can stop me today 💪",
+  "Believe in yourself! ✨"
+ ],
+ "inspired": [
+  "Full of new ideas 💡",
+  "Feeling inspired to do something great ✨",
+  "Big dreams today 🌠"
+ ],
+ "motivated": [
+  "Let's go! 💪",
+  "No excuses today 🔥",
+  "Ready to win the day 🏁"
+ ],
+ "energetic": [
+  "Full battery ⚡",
+  "Can't sit still today 🏃",
+  "Energy level: MAX 🔋"
+ ],
+ "determined": [
+  "I won't stop until I make it 😤",
+  "Focus. Work. Win. 🎯",
+  "Watch me do it 💪"
+ ],
+ "celebrating": [
+  "Party time! 🎉",
+  "Let's celebrate! 🥳",
+  "Cheers to good times 🥂"
+ ],
+ "festive": [
+  "Festive mood everywhere 🎊",
+  "Lights, colours and smiles ✨",
+  "Happy days are here 🎈"
+ ],
+ "satisfied": [
+  "That was perfect 😋",
+  "Mission complete ✅",
+  "Exactly what I needed 👌"
+ ],
+ "loved": [
+  "You make my day better ❤️",
+  "So lucky to have you 🥰",
+  "My heart is full 💕"
+ ],
+ "romantic": [
+  "Love is in the air 💞",
+  "Thinking of someone special 🥰",
+  "Hearts everywhere today 💘"
+ ],
+ "inlove": [
+  "Head over heels 💘",
+  "My heart skipped a beat 💓",
+  "Can't stop thinking about you 😍"
+ ],
+ "affectionate": [
+  "Sending you a big kiss 😘",
+  "Lots of love for you 💕",
+  "You're so sweet 🥰"
+ ],
+ "caring": [
+  "Take care of yourself 🤗",
+  "I'm always here for you 💛",
+  "Sending a warm hug 🫂"
+ ],
+ "friendly": [
+  "Friends forever 🤝",
+  "Good friends make life better 💛",
+  "Hello friend! 👋"
+ ],
+ "missingyou": [
+  "Miss you so much 🥺",
+  "Come back soon 💭",
+  "It's not the same without you 💔"
+ ],
+ "cared": [
+  "Thanks for caring about me 💞",
+  "Feeling so looked after 🥹",
+  "Your care means the world 💖"
+ ],
+ "sad": [
+  "Some days are just heavier than others…",
+  "I wish I could hug you right now 🤗",
+  "It's okay not to be okay. I'm here.",
+  "Sending you a little light today 🕯️"
+ ],
+ "crying": [
+  "Tears won't stop today 😭",
+  "Just need a good cry…",
+  "Some pain can't be put into words 💧"
+ ],
+ "heartbroken": [
+  "My heart is in pieces 💔",
+  "It hurts more than I can say…",
+  "Heartbreak is the worst feeling 🥀"
+ ],
+ "lonely": [
+  "Feeling alone in a crowded room 😔",
+  "Wish someone was here to talk to…",
+  "Lonely night 🌙"
+ ],
+ "hurt": [
+  "That really hurt 🤕",
+  "Words can hurt more than you know…",
+  "Healing takes time 🩹"
+ ],
+ "disappointed": [
+  "Expected more… 😞",
+  "That didn't go as planned",
+  "Oh well, next time maybe"
+ ],
+ "down": [
+  "Not my best day 😩",
+  "Feeling low today…",
+  "Need something to lift me up 🎈"
+ ],
+ "gloomy": [
+  "Grey skies in my heart 🌧️",
+  "Cloudy mood today ☁️",
+  "Waiting for the sun to come back 🌤️"
+ ],
+ "nostalgic": [
+  "Missing the old days 🥲",
+  "Those memories hit different 📸",
+  "Take me back in time ⏳"
+ ],
+ "homesick": [
+  "Missing home so much 🏠",
+  "Nothing beats mom's food 🍛",
+  "Home is where the heart is 💛"
+ ],
+ "sorry": [
+  "I'm really sorry 🙇",
+  "Please forgive me 🙏",
+  "My mistake, I apologize"
+ ],
+ "regretful": [
+  "Wish I could undo that 😓",
+  "Lesson learned, the hard way…",
+  "If only I had known"
+ ],
+ "empty": [
+  "Feeling empty inside 😶‍🌫️",
+  "Nothing feels right today…",
+  "Just numb, nothing more"
+ ],
+ "betrayed": [
+  "Trust broken 🗡️",
+  "Never expected this from you…",
+  "Some people show their true colours"
+ ],
+ "abandoned": [
+  "Left behind again 🚪",
+  "Everyone walks away eventually…",
+  "Waiting for someone who won't come"
+ ],
+ "rejected": [
+  "Not chosen, again 🙅",
+  "It's their loss, I guess",
+  "Rejection hurts, but I'll be okay"
+ ],
+ "leftout": [
+  "Feeling left out 🧍",
+  "Nobody asked me…",
+  "Sitting on the sidelines today"
+ ],
+ "grieving": [
+  "Inna Lillahi wa Inna Ilayhi Raji'un. May Allah grant him Jannah 🤲",
+  "My heart is with you and your family 🖤",
+  "Praying for strength and patience for you 🤲"
+ ],
+ "devastated": [
+  "Completely broken 😿",
+  "This is too much to handle…",
+  "I can't believe this happened"
+ ],
+ "numb": [
+  "Can't feel anything right now 🧊",
+  "Too tired to feel",
+  "Just existing today"
+ ],
+ "hopeless": [
+  "Running out of hope 🕳️",
+  "Don't know what to do anymore…",
+  "Need a miracle right now"
+ ],
+ "unloved": [
+  "Does anyone care? 🥀",
+  "Feeling invisible today…",
+  "Just want to be loved"
+ ],
+ "helpless": [
+  "Nothing I can do 🙁",
+  "Wish I could fix this…",
+  "Need someone to help me"
+ ],
+ "melancholy": [
+  "Quiet and a little sad 🌫️",
+  "Lost in my thoughts tonight",
+  "Rainy mood, soft music 🎵"
+ ],
+ "discouraged": [
+  "Losing motivation 🫤",
+  "Tried my best, still not enough…",
+  "Need a little push to keep going"
+ ],
+ "angry": [
+  "Need a minute to cool down… 😤",
+  "Not my day, don't test me 😠",
+  "Deep breaths… 1… 2… 3…"
+ ],
+ "furious": [
+  "I'm about to explode 🤬",
+  "Don't talk to me right now!",
+  "Seeing red today 🔥"
+ ],
+ "annoyed": [
+  "Seriously?! 😒",
+  "That's so annoying…",
+  "Not again 🙄"
+ ],
+ "irritated": [
+  "Everything is irritating me today 🙄",
+  "Patience level: zero",
+  "Please, just stop"
+ ],
+ "frustrated": [
+  "Nothing is working today 😫",
+  "So frustrating!",
+  "Why is it always like this?!"
+ ],
+ "jealous": [
+  "A little jealous, not gonna lie 😾",
+  "Why not me? 😒",
+  "Green with envy 💚"
+ ],
+ "grumpy": [
+  "Don't talk to me before tea ☕",
+  "Grumpy mode ON 😠",
+  "Leave me alone today"
+ ],
+ "offended": [
+  "That was not nice 😑",
+  "Wow… okay then",
+  "I didn't like that at all"
+ ],
+ "scared": [
+  "That was scary 😨",
+  "My heart is racing!",
+  "Someone hold my hand 🫣"
+ ],
+ "shocked": [
+  "I can't believe it! 😱",
+  "WHAT?! No way!",
+  "Totally shocked right now"
+ ],
+ "worried": [
+  "A bit worried… 😟",
+  "Hope everything turns out okay 🤞",
+  "Can't stop overthinking"
+ ],
+ "nervous": [
+  "Butterflies in my stomach 😬",
+  "Wish me luck! 🍀",
+  "So nervous right now"
+ ],
+ "anxious": [
+  "Mind won't stop racing 😰",
+  "Trying to stay calm…",
+  "Taking it one breath at a time"
+ ],
+ "insecure": [
+  "Not sure about myself today 😥",
+  "Am I good enough?",
+  "Need some confidence"
+ ],
+ "overwhelmed": [
+  "Too much at once 🫠",
+  "Need a break from everything",
+  "My head is full"
+ ],
+ "panicked": [
+  "Help!! 😵",
+  "Don't panic… don't panic…",
+  "Everything is happening at once!"
+ ],
+ "surprised": [
+  "Wow, didn't see that coming! 😲",
+  "What a surprise! 🎁",
+  "Oh my!"
+ ],
+ "amazed": [
+  "That's amazing! 🤩",
+  "Mind = impressed ✨",
+  "Absolutely wonderful!"
+ ],
+ "speechless": [
+  "No words… 😶",
+  "I don't even know what to say",
+  "Left speechless"
+ ],
+ "confused": [
+  "Wait, what? 😕",
+  "I'm so confused right now",
+  "Can someone explain? 🤔"
+ ],
+ "curious": [
+  "Tell me more! 🧐",
+  "Now I really want to know",
+  "What's going on here?"
+ ],
+ "thoughtful": [
+  "Thinking deeply today 🤔",
+  "Lost in thought…",
+  "Some things need time to understand"
+ ],
+ "mindblown": [
+  "My mind is blown 🤯",
+  "That changed everything!",
+  "How is that even possible?!"
+ ],
+ "shy": [
+  "A little shy today 😳",
+  "Don't look at me 🙈",
+  "Blushing right now ☺️"
+ ],
+ "embarrassed": [
+  "That was so embarrassing 😅",
+  "I want to hide right now 🙈",
+  "Let's pretend that didn't happen"
+ ],
+ "ashamed": [
+  "Not proud of that 🫣",
+  "I should have known better",
+  "Feeling bad about it"
+ ],
+ "guilty": [
+  "My bad… 😣",
+  "Feeling guilty about it",
+  "I owe you an apology"
+ ],
+ "awkward": [
+  "Well, that was awkward 🙃",
+  "Awkward silence…",
+  "Didn't know what to say 😬"
+ ],
+ "sleepy": [
+  "Can barely keep my eyes open 😴",
+  "Need my bed right now 🛏️",
+  "Good night everyone 🌙"
+ ],
+ "tired": [
+  "So tired today 🥱",
+  "Long day, need rest",
+  "Running on low battery 🔋"
+ ],
+ "exhausted": [
+  "Completely drained 😪",
+  "Can't do anything more today",
+  "Need a long sleep"
+ ],
+ "sick": [
+  "Not feeling well today 🤒",
+  "Please pray for me 🤲",
+  "Taking rest, get well soon to me"
+ ],
+ "hungry": [
+  "So hungry right now 🍔",
+  "Food first, talk later 🍛",
+  "Who's buying the biryani? 😋"
+ ],
+ "cold": [
+  "It's freezing! 🥶",
+  "Need a blanket and hot tea ☕",
+  "Winter is here ❄️"
+ ],
+ "hot": [
+  "So hot today 🥵",
+  "Need an AC right now!",
+  "Melting in this heat ☀️"
+ ],
+ "dizzy": [
+  "My head is spinning 😵‍💫",
+  "Need to sit down for a bit",
+  "Feeling a little dizzy"
+ ],
+ "bored": [
+  "So bored… 🫥",
+  "Nothing to do today",
+  "Someone entertain me please"
+ ],
+ "prayerful": [
+  "Keep me in your prayers 📿",
+  "Praying for everyone here 🤲",
+  "May Allah make it easy for all of us"
+ ],
+ "ramadanmubarak": [
+  "Ramadan Mubarak to everyone 🌙",
+  "May this Ramadan bring peace and blessings ✨",
+  "Wishing you a blessed Ramadan 🤲"
+ ],
+ "eidmubarak": [
+  "Eid Mubarak to all! 🕌",
+  "May Allah accept our prayers ✨",
+  "Wishing you joy and peace this Eid 🌙"
+ ],
+ "alhamdulillah": [
+  "Alhamdulillah for everything ☝️",
+  "All praise is for Allah 🤲",
+  "Alhamdulillah, always grateful"
+ ]
+};
+const feelMessagesOf = (id, saved) => (Array.isArray(saved) && saved.length ? saved : FEEL_MESSAGES[id] || []).map((m) => String(m).slice(0, 150)).filter(Boolean).slice(0, 10);
+async function feelCatalogList() {
+  const snap = await db.collection("feel_catalog").get();
+  if (snap.empty) {
+    return FEEL_DEFAULTS.map(([id, emoji, label, category], i) => ({ id, label, emoji, category, imageUrl: "", price: FEEL_PRICE, sortOrder: i, active: true, messages: feelMessagesOf(id) }));
+  }
+  return snap.docs
+    .map((d) => ({
+      id: d.id,
+      label: String(d.get("label") || d.id).slice(0, 30),
+      emoji: String(d.get("emoji") || "💭").slice(0, 16),
+      category: String(d.get("category") || "Other").slice(0, 20),
+      imageUrl: String(d.get("imageUrl") || ""),
+      price: Math.max(1, Math.floor(Number(d.get("price")) || FEEL_PRICE)),
+      sortOrder: Math.floor(Number(d.get("sortOrder")) || 0),
+      active: d.get("active") !== false,
+      messages: feelMessagesOf(d.id, d.get("messages")),
+    }))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.label.localeCompare(b.label));
+}
+exports.feel = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const d = data || {};
+  const action = String(d.action || "");
+
+  if (action === "list") {
+    const all = await feelCatalogList();
+    const manager = d.manage === true && (await hasFounderPerm(uid, "gift_shop"));
+    return { ok: true, manager, feelings: manager ? all : all.filter((f) => f.active) };
+  }
+
+  if (action === "send") {
+    const roomId = String(d.roomId || "").trim().slice(0, 100);
+    if (!roomId || roomId.startsWith("private_")) throw new E("invalid-argument", "💭 /feel works in rooms.");
+    const key = String(d.feeling || "").toLowerCase().replace(/[^a-z0-9_]/g, "");
+    let note = String(d.message || "").replace(/\s+/g, " ").trim().slice(0, 200);
+    const all = await feelCatalogList();
+    const f = all.find((x) => x.active && (x.id === key || x.label.toLowerCase().replace(/[^a-z0-9]/g, "") === key));
+    if (!f) throw new E("not-found", "💭 Unknown feeling. Type /feel to see the list.");
+    // 💬 no message written: one of this feeling's own messages, a different one each time
+    if (!note && f.messages.length) note = f.messages[Math.floor(Math.random() * f.messages.length)];
+    const meRef = db.collection("users").doc(uid);
+    const rateRef = db.collection("feel_rate").doc(uid);
+    const [meSnap, rate] = await Promise.all([meRef.get(), rateRef.get()]);
+    const me = String(meSnap.get("username") || "").trim();
+    if (!me) throw new E("failed-precondition", "Your account is not ready yet.");
+    if (Date.now() - Number(rate.get("lastMs") || 0) < 10000) throw new E("resource-exhausted", "💭 Please wait a few seconds before the next /feel.");
+    // 🔇 muted / banned in this room
+    const mod = await db.collection("room_moderation").doc(roomId).collection("users").doc(me.toLowerCase()).get();
+    if (mod.exists && (mod.get("muted") === true || mod.get("banned") === true)) throw new E("permission-denied", "🔇 You can't talk in this room right now.");
+    // 👤 with someone: they must be in the room now
+    let withWho = "";
+    const typed = String(d.target || "").replace(/^@/, "").trim().slice(0, 40);
+    if (typed) {
+      const t = await findUserDocByUsername(typed);
+      const inRoom = t ? (await db.collection("room_presence").doc(roomId).collection("users").doc(t.id).get()).exists : false;
+      if (!t || !inRoom) throw new E("not-found", `${typed} is not in the room.`);
+      if (t.id === uid) throw new E("invalid-argument", `💭 Just type /feel ${f.id} for yourself.`);
+      const lvl = giftUserLevel(t.data() || {});
+      withWho = ` with ${String(t.get("username") || typed)}${lvl > 0 ? ` [${lvl}]` : ""}`;
+    }
+    const lineRef = db.collection("room_messages").doc(roomId).collection("messages").doc();
+    await db.runTransaction(async (tx) => {
+      const fresh = await tx.get(meRef);
+      if (Number(fresh.get("balance") || 0) < f.price) throw new E("failed-precondition", `💭 You need ${f.price} coins for a feeling.`);
+      tx.update(meRef, { balance: FieldValue.increment(-f.price), balanceUpdatedAt: FieldValue.serverTimestamp() });
+      tx.set(rateRef, { lastMs: Date.now() });
+      tx.set(lineRef, {
+        text: `<<${me} [${giftUserLevel(fresh.data() || {})}] feels ${f.emoji} ${f.label}${withWho}!>>${note ? ` — "${note}"` : ""}`,
+        sender: me,
+        senderUid: uid,
+        type: "gift",
+        giftName: `feel:${f.id}`,
+        createdAt: FieldValue.serverTimestamp(),
+        clientCreatedAt: Date.now(),
+      });
+      tx.set(db.collection("feel_events").doc(lineRef.id), {
+        roomId, fromUid: uid, fromUsername: me, toUsername: withWho ? typed : "", feeling: f.id, price: f.price,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+    });
+    return { ok: true, price: f.price };
+  }
+
+  // 🛠 miGlife (the Gift Shops tool): add / edit / delete / picture
+  if (!(await hasFounderPerm(uid, "gift_shop"))) throw new E("permission-denied", "You don't have the Gift Shops tool.");
+  const id = String(d.id || "").toLowerCase().trim();
+  if (!FEEL_ID_RE.test(id)) throw new E("invalid-argument", "Name: letters and numbers only (e.g. missingyou).");
+  // the first change turns the starter list into real documents
+  const col = db.collection("feel_catalog");
+  if ((await col.limit(1).get()).empty) {
+    const batch = db.batch();
+    FEEL_DEFAULTS.forEach(([fid, emoji, label, category], i) => batch.set(col.doc(fid), { label, emoji, category, imageUrl: "", price: FEEL_PRICE, sortOrder: i, active: true, messages: feelMessagesOf(fid) }));
+    await batch.commit();
+  }
+  const ref = col.doc(id);
+  if (action === "upload") {
+    const contentType = String(d.contentType || "").toLowerCase();
+    if (!/^image\/(png|jpeg|jpg|gif|webp)$/.test(contentType)) throw new E("invalid-argument", "Please choose a picture (PNG or JPG).");
+    const buf = Buffer.from(String(d.fileBase64 || ""), "base64");
+    if (buf.length < 50) throw new E("invalid-argument", "The picture is empty.");
+    if (buf.length > 5 * 1024 * 1024) throw new E("invalid-argument", "That picture is too big (over 5 MB).");
+    const ext = contentType.includes("png") ? "png" : contentType.includes("gif") ? "gif" : contentType.includes("webp") ? "webp" : "jpg";
+    const path = `feel_images/${id}.${ext}`;
+    const token = crypto.randomUUID();
+    const bucket = require("firebase-admin/storage").getStorage().bucket();
+    await bucket.file(path).save(buf, {
+      resumable: false,
+      metadata: { contentType, cacheControl: "public, max-age=31536000", metadata: { firebaseStorageDownloadTokens: token } },
+    });
+    return { ok: true, url: `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(path)}?alt=media&token=${token}&v=${Date.now()}` };
+  }
+  if (action === "save") {
+    const g = d.feel || {};
+    const label = String(g.label || "").replace(/\s+/g, " ").trim().slice(0, 30);
+    if (!label) throw new E("invalid-argument", "Write the feeling's name.");
+    const price = Math.floor(Number(g.price ?? FEEL_PRICE));
+    if (!Number.isFinite(price) || price < 1 || price > 1000000) throw new E("invalid-argument", "Price: at least 1 coin.");
+    const imageUrl = String(g.imageUrl || "").trim().slice(0, 1000);
+    if (imageUrl && !/^https:\/\//i.test(imageUrl)) throw new E("invalid-argument", "The picture must be a web link.");
+    if (d.isNew === true && (await ref.get()).exists) throw new E("already-exists", "That feeling already exists.");
+    await ref.set({
+      label,
+      emoji: String(g.emoji || "💭").trim().slice(0, 16) || "💭",
+      category: String(g.category || "Other").trim().slice(0, 20) || "Other",
+      ...(Array.isArray(g.messages) ? { messages: g.messages.map((m) => String(m || "").replace(/\s+/g, " ").trim().slice(0, 150)).filter(Boolean).slice(0, 10) } : {}),
+      imageUrl,
+      price,
+      sortOrder: Math.floor(Number(g.sortOrder) || 0),
+      active: g.active !== false,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { ok: true };
+  }
+  if (action === "delete") {
+    await ref.delete();
+    return { ok: true };
+  }
+  throw new E("invalid-argument", "Unknown action.");
+});
+
 exports.giftShopManage = functionsV1.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
   const E = functionsV1.https.HttpsError;
@@ -26637,11 +27398,20 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       throw new E("not-found", "That story is gone.");
     }
     const rref = sref.collection("reactions").doc(uid);
-    if (!emoji) {
-      await rref.delete();
-      return { ok: true, emoji: "" };
-    }
-    await rref.set({ uid, name: me, emoji, at: FieldValue.serverTimestamp(), atMs: Date.now() });
+    // 🔢 the counts are kept on the story ("❤️😂 12" for the writer, like Facebook)
+    await db.runTransaction(async (tx) => {
+      const [st, prev] = await Promise.all([tx.get(sref), tx.get(rref)]);
+      const counts = { ...(st.get("reactions") || {}) };
+      const was = prev.exists ? String(prev.get("emoji") || "") : "";
+      if (was) counts[was] = Math.max(0, Number(counts[was] || 0) - 1);
+      if (emoji) counts[emoji] = Number(counts[emoji] || 0) + 1;
+      Object.keys(counts).forEach((k) => { if (!counts[k]) delete counts[k]; });
+      const total = Object.values(counts).reduce((x, y) => x + Number(y || 0), 0);
+      if (emoji) tx.set(rref, { uid, name: me, emoji, at: FieldValue.serverTimestamp(), atMs: Date.now() });
+      else tx.delete(rref);
+      tx.update(sref, { reactions: counts, reactCount: total });
+    });
+    if (!emoji) return { ok: true, emoji: "" };
     await alertUser(author, `${emoji} ${me} reacted to your story.`, "story_reaction",
       { fromUsername: me, storyId: sid, emoji }, `story_react_${sid}_${uid}`);
     return { ok: true, emoji };
@@ -26662,6 +27432,12 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     if (!s.exists) throw new E("not-found", "That story is gone.");
     if (s.get("authorUid") !== uid) throw new E("permission-denied", "Only the writer can see this.");
     const r = await s.ref.collection("reactions").orderBy("atMs", "desc").limit(300).get();
+    // 🩹 a story from before the counts were kept: count it now
+    if (Number(s.get("reactCount") || 0) !== r.size) {
+      const counts = {};
+      r.docs.forEach((x) => { const e = String(x.get("emoji") || ""); if (e) counts[e] = (counts[e] || 0) + 1; });
+      await s.ref.update({ reactions: counts, reactCount: r.size }).catch(() => {});
+    }
     return { ok: true, reactors: r.docs.map((x) => ({ name: String(x.get("name") || ""), emoji: String(x.get("emoji") || ""), atMs: Number(x.get("atMs") || 0) })) };
   }
   // 📸 my story: change the caption and who can see it, or delete it (only the writer)

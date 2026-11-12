@@ -21,6 +21,9 @@ export type Story = {
   song: { url: string; title: string; startSec: number } | null;
   /** 📰 a Mig shared to the story: shown as a card, tap opens the Mig */
   sharedPost: { id: string; author: string; text: string; image: string } | null;
+  /** 😍 reactions so far: { emoji: count } and the total (the writer sees "❤️😂 12") */
+  reactions: Record<string, number>;
+  reactCount: number;
 };
 
 /** tells the story row to load again (after a Mig was shared to my story) */
@@ -48,6 +51,8 @@ export async function loadStories(): Promise<Story[]> {
           x.song && typeof x.song.url === "string" && x.song.url
             ? { url: String(x.song.url), title: String(x.song.title || "Song"), startSec: Number(x.song.startSec || 0) }
             : null,
+        reactions: x.reactions && typeof x.reactions === "object" ? (x.reactions as Record<string, number>) : {},
+        reactCount: Number(x.reactCount || 0),
         sharedPost:
           x.sharedPost && typeof x.sharedPost.id === "string" && x.sharedPost.id
             ? { id: String(x.sharedPost.id), author: String(x.sharedPost.author || ""), text: String(x.sharedPost.text || ""), image: String(x.sharedPost.image || "") }

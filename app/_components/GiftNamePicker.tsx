@@ -42,6 +42,7 @@ function letterBg(name: string) {
 
 const TITLES: Record<string, string> = {
   "/gift": "🎁 Send a gift to…",
+  "/feel": "💭 Feel with…",
   "/fr": "👋 Send a friend request to…",
   "/f": "👋 Send a friend request to…",
   "/uf": "💔 Unfriend…",
@@ -53,7 +54,7 @@ export type PickerQuery = { cmd: string; q: string };
 /** The names to list for this text, or null when it isn't "/gift|/fr|/uf|/f [part-of-a-name]". */
 export function giftPickerQuery(text: string): PickerQuery | null {
   const t = text.trimStart();
-  const m = /^(\/gift|\/fr|\/uf|\/f)(\s|$)/i.exec(t);
+  const m = /^(\/gift|\/feel|\/fr|\/uf|\/f)(\s|$)/i.exec(t);
   if (!m) return null;
   const q = t.slice(m[1].length).trimStart();
   return /\s/.test(q) ? null : { cmd: m[1].toLowerCase(), q };
@@ -65,6 +66,7 @@ export function GiftNamePicker({
   names,
   onPick,
   pickText,
+  onJustMe,
 }: {
   queryText: string;
   /** The command the picked name is put after. */
@@ -74,6 +76,8 @@ export function GiftNamePicker({
   onPick: (text: string) => void;
   /** The whole message box text when a name is tapped (default: "<cmd> <name> "). */
   pickText?: (name: string) => string;
+  /** 💭 /feel: the "Just me" row (a feeling of my own, with nobody) */
+  onJustMe?: () => void;
 }) {
   const [, setTick] = useState(0);
   const q = queryText.toLowerCase();
@@ -104,7 +108,7 @@ export function GiftNamePicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  if (list.length === 0) return null;
+  if (list.length === 0 && !(onJustMe && !queryText)) return null;
 
   return (
     <div
@@ -128,6 +132,19 @@ export function GiftNamePicker({
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-bold leading-5 text-[#C2185B]">Everyone</span>
               <span className="block truncate text-[10.5px] text-[#8A5A75]">Gift Shower · /gift all</span>
+            </span>
+          </button>
+        )}
+        {cmd === "/feel" && onJustMe && !queryText && (
+          <button
+            type="button"
+            onClick={onJustMe}
+            className="mx-1.5 mb-1 flex w-[calc(100%-12px)] items-center gap-2 rounded-xl bg-gradient-to-r from-[#E8F0FF] to-[#F3EDFF] px-2.5 py-1.5 text-left active:scale-[.99]"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#60A5FA] to-[#6366F1] text-lg shadow-sm">💭</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[15px] font-bold leading-5 text-[#3730A3]">Just me</span>
+              <span className="block truncate text-[10.5px] text-[#5B6B8C]">A feeling of my own</span>
             </span>
           </button>
         )}
