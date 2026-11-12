@@ -10,7 +10,9 @@ import { setFollowing, useFollowing } from "../../lib/follow";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
-import { StoryRow } from "./StoryRow";
+import { StoryDialog, StoryRow } from "./StoryRow";
+import { FeedSearch } from "./FeedSearch";
+import { STORIES_CHANGED } from "../../lib/stories";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
 import { placeHere, searchPlaces, type Place } from "../../lib/places";
@@ -68,7 +70,7 @@ function RichText({ text, className }: { text: string; className?: string }) {
   );
 }
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
-const TAB_LOOK: "pills" | "underline" | "icons" = "pills";
+const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
 const TAB_ICONS: Record<string, string> = { new: "✨", popular: "🔥", friends: "👥", following: "⭐", mine: "👤" };
 const TABS: [Tab, string][] = [
   ["new", "New"],
@@ -842,6 +844,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
   const [sheetId, setSheetId] = useState("");
+  const [searching, setSearching] = useState(false); // 🔍 the search page
   const openSheet = (id: string) => {
     setSheetId(id);
     try {
@@ -897,6 +900,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             )}
             {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
+                {/* 🔍 search Migs, people and places */}
+                <button
+                  type="button"
+                  onClick={() => setSearching(true)}
+                  aria-label="Search"
+                  title="Search"
+                  className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[21px] transition hover:bg-[#EEF0F8] active:scale-95"
+                >
+                  🔍
+                </button>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
                 <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
                   <Avatar name={username} color={meColor} size={34} ring />
@@ -919,8 +932,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
                 className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-extrabold transition active:scale-95 ${
                   tab === k
-                    ? "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_8px_16px_-8px_rgba(236,72,153,.9)]"
-                    : "bg-[#FFFFFF] text-[#6B6F9A] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
+                    ? "bg-[#2563EB] text-white shadow-[0_8px_16px_-8px_rgba(37,99,235,.9)]"
+                    : "bg-[#FFFFFF] text-[#4B5072] shadow-[0_4px_12px_-8px_rgba(60,64,140,.5)]"
                 }`}
               >
                 {k === "popular" ? "🔥 " : ""}
@@ -1705,9 +1718,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         </MigSheet>
       )}
 
+      {searching && (
+        <FeedSearch
+          onClose={() => setSearching(false)}
+          onOpen={(id) => {
+            setSearching(false);
+            openSheet(id);
+          }}
+        />
+      )}
+
       {sharing && (
         <ShareSheet
           post={sharing}
+          uid={user?.uid}
           onClose={() => setSharing(null)}
           onLink={() => share(sharing)}
           onDone={(msg) => {
@@ -1735,11 +1759,43 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
 // ↗ Share to my wall: a short note (optional) and the post it shares. The post
 // appears on my wall and in the feed, with the original inside it.
-function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose: () => void; onDone: (msg: string) => void; onLink: () => void }) {
+function ShareSheet({ post, uid, onClose, onDone, onLink }: { post: BlogPost; uid?: string; onClose: () => void; onDone: (msg: string) => void; onLink: () => void }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const origin = post.sharedId ? { id: post.sharedId, author: post.sharedAuthor, title: post.sharedTitle } : { id: post.id, author: post.author, title: post.title };
+  // 📸 only 🌍 Everyone Migs can go to a story (everyone who sees the story can open it)
+  const canStory = !post.privacy;
+  const [toStory, setToStory] = useState(false);
+  const sendToStory = async (caption: string, audience: string, song?: { url: string; title: string; startSec: number } | null) => {
+    setToStory(false);
+    setBusy(true);
+    setErr("");
+    try {
+      await blogCall("story", { sharePostId: origin.id, caption, song: song || null, privacy: audience });
+      window.dispatchEvent(new Event(STORIES_CHANGED));
+      onDone("Added to your story ✓");
+    } catch (e) {
+      setErr(blogError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (toStory)
+    return (
+      <StoryDialog
+        uid={uid}
+        title="📸 Add to your story"
+        caption=""
+        audience="everyone"
+        confirmText="Share story"
+        maxLen={140}
+        placeholder="Say something about this Mig… (optional)"
+        hasMedia
+        onClose={() => setToStory(false)}
+        onConfirm={(caption, audience, song) => sendToStory(caption, audience, song)}
+      />
+    );
   const send = async () => {
     setBusy(true);
     setErr("");
@@ -1777,6 +1833,16 @@ function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose
           <div className="mt-0.5 line-clamp-2 text-[13.5px] font-bold text-[#1E1B4B]">{origin.title}</div>
         </div>
         {err && <p className="mt-2 text-[12.5px] text-[#B91C1C]">{err}</p>}
+        {canStory && (
+          <button
+            type="button"
+            onClick={() => setToStory(true)}
+            disabled={busy}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-[#14B88F]/60 bg-[#F3FFFA] py-2.5 text-[14px] font-extrabold text-[#0E7A62] disabled:opacity-60"
+          >
+            📸 Add to my story
+          </button>
+        )}
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={onLink} className="rounded-full border border-[#DDE8F7] px-4 py-2.5 text-[13px] font-bold text-[#4F46E5]">
             🔗 Copy link
@@ -1912,87 +1978,35 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
   };
   // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
   const plain = !media && (p.bg === PLAIN_BG || long);
-  // ⚡ no live blur on each card (about 200 blurs on a long Feed made phones lag):
-  // a see-through tint looks almost the same and costs nothing
-  const glass = plain ? "bg-[#1E1B4B]/[0.06]" : "bg-white/[0.22]";
+  // 🤍 Clean Cards (look A): a white card — who wrote it on top, the picture /
+  // Text Art in a rounded frame in the middle, the buttons in their own row below,
+  // so names and buttons are always easy to read.
+  const btn = "bg-[#F1F4F9] text-[#2E3B4E] hover:bg-[#E8EDF5]";
+  const pollOnly = !!p.poll && !media;
+  const topReacts = Object.entries(p.reactions || {})
+    .filter(([, n]) => n > 0)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([e]) => e)
+    .join("");
   return (
-    <article
-      className="relative overflow-hidden rounded-[28px] shadow-[0_10px_18px_-12px_rgba(40,50,120,.4)]"
-      style={media ? { background: "#0F172A" } : plain ? { background: "#FFFFFF", boxShadow: "0 16px 32px -20px rgba(60,64,140,.5)" } : { background: artBg }}
-    >
-      {/* the picture / video, or the Text Art words */}
-      <div onClick={tapCard} className="relative cursor-pointer select-none">
-        {p.video ? (
-          <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[560px] min-h-[360px] w-full bg-black object-cover" />
-        ) : pic ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={(p.cover && p.thumb) || pic} alt="" loading="lazy" decoding="async" className="block max-h-[560px] min-h-[380px] w-full object-cover" />
-        ) : long ? (
-          <div className="px-5 pb-[84px] pt-[78px] text-left">
-            <div className={`relative ${more ? "" : "max-h-[9.6em] overflow-hidden"}`}>
-              <p className="whitespace-pre-line break-words text-[15px] font-medium leading-[1.6] text-[#1E1B4B]">
-                <RichText text={fullText} />
-              </p>
-              {!more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
-            </div>
-            <button
-              type="button"
-              onClick={(e) => (e.stopPropagation(), setMore((v) => !v))}
-              className="mx-auto mt-1.5 block rounded-full bg-gradient-to-r from-[#EEF0FF] to-[#F5EDFF] px-4 py-1.5 text-[12.5px] font-black text-[#4F46E5] transition active:scale-95"
-            >
-              {more ? "Show less ⌃" : "Read more ⌄"}
-            </button>
-            {p.poll && <PollBox postId={p.id} poll={p.poll} canEnd={!!onEdit} signedIn={signedIn} />}
-            <TranslateLink postId={p.id} />
-          </div>
-        ) : (
-          <div className="flex min-h-[340px] flex-col items-center justify-center px-7 pb-24 pt-20 text-center">
-            <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
-              <RichText text={text || "📷"} />
-            </p>
-            {/* 📊 the poll on a white card, readable on every colour */}
-            {p.poll && (
-              <div className="mt-3 w-full rounded-[18px] bg-white/95 p-2.5 text-left shadow-[0_6px_18px_rgba(0,0,0,.15)]">
-                <PollBox postId={p.id} poll={p.poll} canEnd={!!onEdit} signedIn={signedIn} />
-              </div>
-            )}
-            {hasWords && <TranslateLink postId={p.id} dark={artInk === "#FFFFFF"} />}
-          </div>
-        )}
-        {bigHeart > 0 && (
-          <span key={bigHeart} aria-hidden className="feed-bigheart pointer-events-none absolute left-1/2 top-1/2 text-[96px]">
-            ❤️
-          </span>
-        )}
-        {/* soft dark fade so the white words and buttons can be read */}
-        {media && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[62%] bg-gradient-to-t from-black/75 via-black/30 to-transparent" />}
-        {!plain && <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/30 to-transparent" />}
-      </div>
-
-      {/* 🫧 glass bar on top: who wrote it */}
-      <div className={`absolute left-3 right-3 top-3 flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-1.5 ${plain ? "text-[#1E1B4B]" : "text-white"} ${glass}`}>
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full border-2 border-white/90">
-          <Avatar name={p.author} color={c} size={34} />
+    <article className="relative overflow-hidden rounded-[24px] border border-[#EDF0F5] bg-white shadow-[0_6px_18px_-10px_rgba(11,42,91,.22)]">
+      {/* who wrote it */}
+      <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="shrink-0 rounded-full">
+          <Avatar name={p.author} color={c} size={40} />
         </Link>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
-            <span data-notranslate className="truncate text-[14px] font-extrabold drop-shadow">
+            <span data-notranslate className="truncate text-[14.5px] font-extrabold">
               {p.author}
-              {/* ✔ the gold seal right after the name, before "is 😊 happy" */}
               {verified && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src="/icons/miglife-verified.svg?v=3"
-                  alt="Verified"
-                  title="Verified"
-                  className="ml-1 inline-block h-[16px] w-[16px] align-[-3px]"
-                  style={{ filter: "drop-shadow(0 1px 2px rgba(180,83,9,.45))" }}
-                />
+                <img src="/icons/miglife-verified.svg?v=3" alt="Verified" title="Verified" className="ml-1 inline-block h-[16px] w-[16px] align-[-3px]" />
               )}
-              {/* 😊 "life is 😊 happy" */}
               {blogMood(p.mood) && (
-                <span className="font-semibold">
-                  {" "}is {blogMood(p.mood)![0]} <b className="font-extrabold">{blogMood(p.mood)![1]}</b>
+                <span className="font-semibold text-[#55658F]">
+                  {" "}is {blogMood(p.mood)![0]} <b className="font-extrabold text-[#16264A]">{blogMood(p.mood)![1]}</b>
                 </span>
               )}
             </span>
@@ -2004,10 +2018,9 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 <span className="shrink-0 text-[12px] leading-none">{roleBadge}</span>
               ) : null)}
           </div>
-          <div className={`truncate text-[11px] font-semibold ${plain ? "text-[#7C82A6]" : "text-white/85"}`}>
-            {/* 📍 the place: tap = every post from there */}
+          <div className="truncate text-[11.5px] font-semibold text-[#7C88A6]">
             {p.place && (
-              <button type="button" onClick={(e) => (e.stopPropagation(), onPlace())} className="mr-1 font-extrabold underline-offset-2 hover:underline">
+              <button type="button" onClick={(e) => (e.stopPropagation(), onPlace())} className="mr-1 font-extrabold text-[#55658F] underline-offset-2 hover:underline">
                 📍 {p.place} ·
               </button>
             )}
@@ -2024,7 +2037,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               e.stopPropagation();
               onFollow();
             }}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? (plain ? "bg-[#EEF0F7] text-[#3B4266]" : "bg-white/25 text-white") : plain ? "bg-gradient-to-r from-[#6366F1] to-[#A855F7] text-white" : "bg-[#FFFFFF] text-[#4F46E5]"}`}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-[12px] font-extrabold transition active:scale-95 ${following ? "bg-[#F1F4F9] text-[#55658F]" : "bg-[#EEF0FF] text-[#4F46E5]"}`}
           >
             {following ? "Following" : "+ Follow"}
           </button>
@@ -2036,7 +2049,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               type="button"
               aria-label="Mig options"
               onClick={(e) => (e.stopPropagation(), setMenu((v) => !v))}
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-[18px] font-black leading-none ${plain ? "bg-[#1E1B4B]/[0.06] text-[#3B4266]" : "bg-white/25 text-white"}`}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[18px] font-black leading-none text-[#6B7A99] hover:bg-[#F1F4F9]"
             >
               ⋯
             </button>
@@ -2096,19 +2109,99 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         )}
       </div>
 
-      {/* the words (photo posts) and the glass buttons, floating on the bottom */}
-      <div className={`absolute inset-x-0 bottom-0 px-4 pb-3.5 ${plain ? "text-[#1E1B4B]" : "text-white"}`} onClick={(e) => e.stopPropagation()}>
-        {media && text && (
-          <p onClick={open} className="mb-2.5 line-clamp-3 cursor-pointer text-[14.5px] font-semibold leading-snug drop-shadow">
-            <RichText text={text} />
-          </p>
+      {/* the words of a photo / video Mig, above it */}
+      {media && text && (
+        <p onClick={open} className="cursor-pointer px-4 pb-2.5 text-[14.5px] leading-snug text-[#1E2A44]">
+          <RichText text={text} />
+        </p>
+      )}
+
+      {/* the picture / video, the Text Art, or the words */}
+      <div onClick={tapCard} className={`relative cursor-pointer select-none ${media || (!plain && !pollOnly) ? "mx-2.5 overflow-hidden rounded-[18px]" : ""}`}>
+        {p.video ? (
+          <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[520px] min-h-[300px] w-full bg-black object-cover" />
+        ) : pic ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={(p.cover && p.thumb) || pic} alt="" loading="lazy" decoding="async" className="block max-h-[520px] min-h-[260px] w-full object-cover" />
+        ) : pollOnly ? (
+          // 📊 a poll: the question, then the answers, right on the white card
+          <div className="px-4 pb-1 text-left">
+            {text && (
+              <p className="mb-1 whitespace-pre-line break-words text-[16px] font-extrabold leading-snug text-[#16264A]">
+                📊 <RichText text={text} />
+              </p>
+            )}
+            <PollBox postId={p.id} poll={p.poll!} canEnd={!!onEdit} signedIn={signedIn} />
+            {hasWords && <TranslateLink postId={p.id} />}
+          </div>
+        ) : plain ? (
+          <div className="px-4 pb-1 text-left">
+            <div className={`relative ${long && !more ? "max-h-[9.6em] overflow-hidden" : ""}`}>
+              <p className={`whitespace-pre-line break-words leading-[1.5] text-[#16264A] ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`}>
+                <RichText text={long ? fullText : text} />
+              </p>
+              {long && !more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
+            </div>
+            {long && (
+              <button
+                type="button"
+                onClick={(e) => (e.stopPropagation(), setMore((v) => !v))}
+                className="mt-1.5 rounded-full bg-[#EEF0FF] px-4 py-1.5 text-[12.5px] font-black text-[#4F46E5] transition active:scale-95"
+              >
+                {more ? "Show less ⌃" : "Read more ⌄"}
+              </button>
+            )}
+            {hasWords && <TranslateLink postId={p.id} />}
+          </div>
+        ) : (
+          <div className="flex min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center" style={{ background: artBg }}>
+            <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
+              <RichText text={text || "📷"} />
+            </p>
+            {hasWords && <TranslateLink postId={p.id} dark={artInk === "#FFFFFF"} />}
+            {p.sharedId && (
+              <button type="button" onClick={(e) => (e.stopPropagation(), router.push(`/feed/${p.sharedId}`))} className="mt-3 block w-[88%] rounded-2xl border border-white/50 bg-white/20 p-2.5 text-left" style={{ color: artInk }}>
+                <span className="block text-[11.5px] font-bold opacity-85">↗ {p.sharedAuthor}</span>
+                <span className="mt-0.5 line-clamp-2 block text-[13px] font-bold">{p.sharedTitle}</span>
+              </button>
+            )}
+          </div>
         )}
-        {p.sharedId && (
-          <button type="button" onClick={() => router.push(`/feed/${p.sharedId}`)} className={`mb-2.5 block w-full rounded-2xl p-2.5 text-left ${glass}`}>
-            <span className="block text-[11.5px] font-bold text-white/85">↗ {p.sharedAuthor}</span>
-            <span className="mt-0.5 line-clamp-2 block text-[13px] font-bold">{p.sharedTitle}</span>
+        {bigHeart > 0 && (
+          <span key={bigHeart} aria-hidden className="feed-bigheart pointer-events-none absolute left-1/2 top-1/2 text-[96px]">
+            ❤️
+          </span>
+        )}
+        {media && pic && !p.video && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setViewing(true);
+            }}
+            aria-label="See the full picture"
+            className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-black/35 text-[13px] text-white"
+          >
+            ⤢
           </button>
         )}
+      </div>
+
+      {/* a shared Mig (photo / plain) shows what it shares under it */}
+      {p.sharedId && (media || plain || pollOnly) && (
+        <button type="button" onClick={() => router.push(`/feed/${p.sharedId}`)} className="mx-3 mt-2.5 block w-[calc(100%-1.5rem)] rounded-2xl border border-[#E6EAF2] bg-[#F7F9FC] p-2.5 text-left">
+          <span className="block text-[11.5px] font-bold text-[#7C88A6]">↗ {p.sharedAuthor}</span>
+          <span className="mt-0.5 line-clamp-2 block text-[13px] font-bold text-[#16264A]">{p.sharedTitle}</span>
+        </button>
+      )}
+
+      {/* the reactions people used, then the buttons — on the white card */}
+      {p.likes > 0 && topReacts && (
+        <button type="button" onClick={onReactors} className="block px-4 pt-2.5 text-left text-[12px] font-bold text-[#6B7A99]">
+          {topReacts} {blogShort(p.likes)}
+        </button>
+      )}
+      <div className="px-3 pb-3 pt-2 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2">
           <div className="relative">
             {fly && (
@@ -2153,7 +2246,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                 setPick(true);
               }}
               aria-label={liked ? "Unlike" : "Like"}
-              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? (plain ? "bg-[#FFE4EC] text-[#E11D48]" : "bg-[#FFFFFF] text-[#E11D48]") : glass}`}
+              className={`relative flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${liked ? "bg-[#FFE4EC] text-[#E11D48]" : btn}`}
             >
               {burst > 0 &&
                 ["❤️", "💖", "✨", "💕"].map((h, i) => (
@@ -2167,37 +2260,24 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
             </button>
           </div>
           {p.likes > 0 && (
-            <button type="button" onClick={onReactors} aria-label="See who reacted" className="-ml-1 text-[13px] font-extrabold drop-shadow">
+            <button type="button" onClick={onReactors} aria-label="See who reacted" className="-ml-1 text-[13px] font-extrabold text-[#2E3B4E]">
               {blogShort(p.likes)}
             </button>
           )}
-          <button type="button" onClick={open} aria-label="Comments" className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${glass}`}>
+          <button type="button" onClick={open} aria-label="Comments" className={`flex h-10 items-center gap-1.5 rounded-full px-3.5 text-[13.5px] font-extrabold transition active:scale-95 ${btn}`}>
             💬 {blogShort(p.comments)}
           </button>
           {/* 🔒 a 👥 / 🔒 post can't be shared */}
           {!p.privacy && (
-            <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${glass}`}>
+            <button type="button" onClick={onShare} aria-label="Share" className={`flex h-10 w-10 items-center justify-center rounded-full text-[15px] font-black transition active:scale-95 ${btn}`}>
               ↗
             </button>
           )}
-          <span className={`ml-auto pr-1 text-[11.5px] font-bold ${plain ? "text-[#8A8FB0]" : "text-white/80 drop-shadow"}`}>👁 {blogShort(p.views)}</span>
+          <span className={`ml-auto pr-1 text-[11.5px] font-bold text-[#8A8FB0]`}>👁 {blogShort(p.views)}</span>
           {/* 🔖 Save lives in the ⋯ menu now */}
         </div>
       </div>
 
-      {media && pic && !p.video && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setViewing(true);
-          }}
-          aria-label="See the full picture"
-          className={`absolute right-3 top-[62px] flex h-8 w-8 items-center justify-center rounded-full text-[13px] text-white ${glass}`}
-        >
-          ⤢
-        </button>
-      )}
       {viewing && pic && (
         // 🔍 full-screen picture: tap anywhere to close
         <div

@@ -65,6 +65,8 @@ type Alert = {
   renewed: boolean;
   mentorUsername: string;
   merchantUsername: string;
+  /** 📰 Mig alerts (comments, reactions, replies, mentions, shared to a story): tap opens the Mig */
+  postId: string;
 };
 
 function toAlert(d: { id: string; get: (f: string) => any }): Alert {
@@ -74,6 +76,7 @@ function toAlert(d: { id: string; get: (f: string) => any }): Alert {
     text: String(d.get("message") || d.get("text") || "You have a new alert."),
     read: d.get("read") === true,
     roomName: String(d.get("roomName") || ""),
+    postId: String(d.get("postId") || ""),
     requestId: String(d.get("requestId") || ""),
     fromUsername: String(d.get("fromUsername") || ""),
     resolution: String(d.get("resolution") || ""),
@@ -999,6 +1002,8 @@ export default function AlertsPage() {
                       ? "/secret/reports"
                       : mentionRoom
                       ? roomHref(mentionRoom)
+                      : a.type === "blog" && a.postId
+                      ? `/feed/${encodeURIComponent(a.postId)}`
                       : undefined;
                 card = <AlertRow a={a} isNew={isNew} href={href} />;
               }

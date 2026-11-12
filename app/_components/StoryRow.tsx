@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { blogAgoBn, blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
-import { loadStories, type Story } from "../../lib/stories";
+import { loadStories, STORIES_CHANGED, type Story } from "../../lib/stories";
+import Link from "next/link";
 import { loadSongLibrary, type LibrarySong, STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
 
 export type StorySong = { url: string; title: string; startSec: number };
@@ -12,6 +13,10 @@ export type StorySong = { url: string; title: string; startSec: number };
 // Tap a ring to watch (5 s each). The writer can edit the caption / audience or delete it.
 
 type Audience = "everyone" | "friends" | "only_me";
+
+// 😍 the story reactions (same as the server's list)
+const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
+type StoryReactor = { name: string; emoji: string; atMs: number };
 
 export function StoryRow({
   myUid,
@@ -38,6 +43,10 @@ export function StoryRow({
       .catch(() => setStories([]));
   useEffect(() => {
     reload();
+    // 📰 a Mig was shared to my story from the Feed's share sheet
+    const again = () => reload();
+    window.addEventListener(STORIES_CHANGED, again);
+    return () => window.removeEventListener(STORIES_CHANGED, again);
   }, []);
 
   // 👥 friends-only stories show to the writer and their friends
@@ -60,15 +69,27 @@ export function StoryRow({
   const [editing, setEditing] = useState<Story | null>(null);
   const [index, setIndex] = useState(0);
 
+  // 😍 my reaction on each story being watched, the floating emoji, and (writer) who reacted
+  const [myReacts, setMyReacts] = useState<Record<string, string>>({});
+  const [burst, setBurst] = useState<{ emoji: string; key: number } | null>(null);
+  const [reactors, setReactors] = useState<StoryReactor[] | null>(null);
+  const viewerIds = (viewer || []).map((s) => s.id).join(",");
+  useEffect(() => {
+    if (!viewerIds || !myUid) return;
+    blogCall("myStoryReacts", { storyIds: viewerIds.split(",") })
+      .then((r) => setMyReacts((m) => ({ ...m, ...((r.reactions as Record<string, string>) || {}) })))
+      .catch(() => {});
+  }, [viewerIds, myUid]);
+
   // the viewer moves on by itself after 5 seconds, unless the writer's menu or editor is open
   useEffect(() => {
-    if (!viewer || menu || editing) return;
+    if (!viewer || menu || editing || reactors) return;
     const t = window.setTimeout(() => {
       if (index + 1 < viewer.length) setIndex(index + 1);
       else setViewer(null);
     }, 5000);
     return () => window.clearTimeout(t);
-  }, [viewer, index, menu, editing]);
+  }, [viewer, index, menu, editing, reactors]);
 
   const onFile = async (files: FileList | null) => {
     const f = files?.[0];
@@ -97,6 +118,31 @@ export function StoryRow({
   const current = viewer ? viewer[Math.min(index, viewer.length - 1)] : null;
   const mine = !!current && !!myUid && current.authorUid === myUid;
 
+  const reactTo = async (emoji: string) => {
+    if (!current || mine) return;
+    const was = myReacts[current.id] || "";
+    const next = was === emoji ? "" : emoji;
+    setMyReacts((m) => ({ ...m, [current.id]: next }));
+    if (next) setBurst({ emoji: next, key: Date.now() });
+    try {
+      await blogCall("storyReact", { storyId: current.id, emoji: next });
+    } catch (e) {
+      setMyReacts((m) => ({ ...m, [current.id]: was }));
+      setError(blogError(e));
+    }
+  };
+  const openReactors = async () => {
+    if (!current) return;
+    setReactors([]);
+    try {
+      const r = await blogCall("storyReactors", { storyId: current.id });
+      setReactors((r.reactors as StoryReactor[]) || []);
+    } catch (e) {
+      setReactors(null);
+      setError(blogError(e));
+    }
+  };
+
   const removeCurrent = async () => {
     if (!current || !confirm("Delete this story? It will be gone for everyone.")) return;
     try {
@@ -108,11 +154,16 @@ export function StoryRow({
     }
   };
 
+  // 🎨 design A: each writer's face in their own colour, a white gap, then the turning ring
+  const FACES = ["#E2457A", "#7C4DFF", "#F59E0B", "#14A3B8", "#2563EB", "#16A34A"];
+  const faceOf = (name: string) => FACES[Array.from(name).reduce((a, c) => a + c.charCodeAt(0), 0) % FACES.length];
   const ring = (name: string, extra: React.ReactNode, onClick: () => void) => (
     <button key={name} type="button" onClick={onClick} className="story-item flex w-[68px] shrink-0 flex-col items-center gap-1 text-center">
       <span className="story-ring flex h-[62px] w-[62px] items-center justify-center rounded-full p-[2.5px]">
-        <span className="flex h-full w-full items-center justify-center rounded-full bg-white text-[18px] font-black text-[#6366F1]">
-          {extra}
+        <span className="flex h-full w-full items-center justify-center rounded-full bg-white p-[2.5px]">
+          <span className="flex h-full w-full items-center justify-center rounded-full text-[20px] font-black text-white" style={{ background: faceOf(name) }}>
+            {extra}
+          </span>
         </span>
       </span>
       <span className="w-full truncate text-[11.5px] font-bold text-[#1E1B4B]">{name}</span>
@@ -191,7 +242,31 @@ export function StoryRow({
               }}
             />
           )}
-          {current.url ? (
+          {current.sharedPost ? (
+            // 📰 a shared Mig: a tilted card, tap it to open the Mig
+            <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#14B88F] via-[#2C9BEA] to-[#6366F1] p-7">
+              <Link
+                href={`/feed/${current.sharedPost.id}`}
+                onClick={() => setViewer(null)}
+                className="relative z-10 block w-full max-w-[300px] -rotate-3 overflow-hidden rounded-[22px] bg-white text-left shadow-[0_24px_50px_-18px_rgba(0,0,0,.55)]"
+              >
+                <div className="flex items-center gap-2 px-3.5 pb-2 pt-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#6366F1] text-[14px] font-black text-white">
+                    {current.sharedPost.author.slice(0, 1).toUpperCase() || "?"}
+                  </span>
+                  <span className="truncate text-[14px] font-extrabold text-[#0F2F2A]">{current.sharedPost.author}</span>
+                </div>
+                {current.sharedPost.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={current.sharedPost.image} alt="" className="h-44 w-full object-cover" />
+                )}
+                {current.sharedPost.text && (
+                  <p className="line-clamp-4 px-3.5 py-2.5 text-[14px] font-semibold leading-5 text-[#1E293B]">{current.sharedPost.text}</p>
+                )}
+              </Link>
+              <span className="story-glass relative z-10 rounded-full px-4 py-2 text-[13px] font-extrabold text-white">👆 Tap to see the Mig</span>
+            </div>
+          ) : current.url ? (
             <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
@@ -220,14 +295,67 @@ export function StoryRow({
             </button>
           </div>
           {current.song && (
-            <span className="absolute bottom-3 left-6 right-6 truncate text-center text-[12px] font-bold text-white/90">🎵 {current.song.title}</span>
+            // 🎵 the song, as a glass chip
+            <span className="story-glass absolute bottom-[78px] left-1/2 max-w-[80%] -translate-x-1/2 truncate rounded-full px-3.5 py-1.5 text-center text-[12px] font-bold text-white">
+              🎵 {current.song.title}
+            </span>
           )}
-          {current.url && current.caption && (
-            <p className="story-glass absolute bottom-10 left-6 right-6 rounded-2xl px-4 py-2.5 text-center text-[15px] font-bold text-white">{current.caption}</p>
+          {(current.url || current.sharedPost) && current.caption && (
+            <p className="story-glass absolute bottom-[118px] left-6 right-6 rounded-2xl px-4 py-2.5 text-center text-[15px] font-bold text-white">{current.caption}</p>
+          )}
+          {/* 😍 reactions: viewers pick one; the writer sees who reacted */}
+          {!mine ? (
+            <div className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/35 px-2 py-1.5 backdrop-blur" onClick={(e) => e.stopPropagation()}>
+              {STORY_REACTIONS.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  aria-label={`React ${r}`}
+                  onClick={() => reactTo(r)}
+                  className={`grid h-11 w-11 place-items-center rounded-full text-[24px] transition active:scale-125 ${myReacts[current.id] === r ? "scale-110 bg-white/90 shadow-lg" : "hover:bg-white/15"}`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); openReactors(); }}
+              className="absolute bottom-5 left-1/2 z-10 -translate-x-1/2 rounded-full bg-white/90 px-4 py-2 text-[13px] font-extrabold text-[#16264A] shadow-lg"
+            >
+              😍 See who reacted
+            </button>
+          )}
+          {burst && (
+            <span key={burst.key} className="story-burst pointer-events-none absolute bottom-24 left-1/2 z-20 -translate-x-1/2 text-[72px]" onAnimationEnd={() => setBurst(null)}>
+              {burst.emoji}
+            </span>
+          )}
+          {reactors && (
+            <div className="absolute inset-x-0 bottom-0 z-30 max-h-[60%] overflow-y-auto rounded-t-3xl bg-white p-4 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
+              <div className="mb-2 flex items-center">
+                <p className="text-[16px] font-extrabold">😍 Reactions · {reactors.length}</p>
+                <button type="button" onClick={() => setReactors(null)} className="ml-auto rounded-full bg-[#F1F4F9] px-3 py-1 font-bold">✕</button>
+              </div>
+              {reactors.length === 0 ? (
+                <p className="py-6 text-center text-sm text-[#6B7A99]">No reactions yet.</p>
+              ) : (
+                reactors.map((r) => (
+                  <div key={r.name} className="flex items-center gap-3 border-b border-[#F0F2F6] py-2.5 last:border-0">
+                    <span className="grid h-9 w-9 place-items-center rounded-full font-black text-white" style={{ background: colorOf(r.name) }}>
+                      {r.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    <span className="flex-1 font-bold">{r.name}</span>
+                    <span className="text-[22px]">{r.emoji}</span>
+                  </div>
+                ))
+              )}
+            </div>
           )}
           {menu && (
             <div className="absolute inset-x-6 bottom-24 z-10 rounded-2xl bg-white p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              {current.url && (
+              {(current.url || current.sharedPost) && (
                 <button type="button" onClick={() => { setMenu(false); setEditing(current); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
                   ✏️ Edit caption and audience
                 </button>
@@ -269,7 +397,7 @@ export function StoryRow({
 }
 
 // the caption and the audience (everyone / friends), used to add and to edit a story
-function StoryDialog({
+export function StoryDialog({
   uid,
   title,
   caption: caption0,
