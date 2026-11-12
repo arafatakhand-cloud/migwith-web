@@ -372,8 +372,8 @@ export default function RoomsPage() {
       ["fav", "Favorites", others.fav.names],
       ["recent", "Recent", others.recent.names],
       ["mine", "My Rooms", others.mine.names],
-      ["game", "Game Rooms", gameSection.filter(matches)],
       ["public", "Public Rooms", publicSection],
+      ["game", "Game Rooms", gameSection.filter(matches)],
       ["private", "Private Rooms", privateSection],
     ];
     return (
@@ -486,8 +486,8 @@ export default function RoomsPage() {
     ["fav", "Favorites", others.fav.names],
     ["recent", "Recent", others.recent.names],
     ["mine", "My Rooms", others.mine.names],
-    ["game", "Game Rooms", gameSection.filter(matches)],
     ["public", "Public Rooms", publicSection],
+    ["game", "Game Rooms", gameSection.filter(matches)],
     ["private", "Private Rooms", privateSection],
   ];
   const LOOK: Record<string, [string, string]> = {
