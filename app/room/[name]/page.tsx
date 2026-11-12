@@ -2643,8 +2643,36 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   </Link>
                   {cachedRoleOf(u.username) === "country_representative" && <span className="shrink-0" title="Country Representative">{COUNTRY_REP_BADGE}</span>}
                   {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && (
-                    <span className="shrink-0" title="Administrator">⚙️</span>
+                    // ⚙️ Admin: miGlife's uploaded admin badge when there is one, else a clear blue
+                    // gear badge (the ⚙️ emoji is a faint grey gear on Windows)
+                    badgeImages["⚙️"] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={badgeImages["⚙️"]} alt="Admin" title="Administrator" className="h-[18px] w-[18px] shrink-0 object-contain" />
+                    ) : (
+                      <span
+                        title="Administrator"
+                        aria-label="Administrator"
+                        className="pointer-events-none inline-grid h-[18px] w-[18px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#4C8DFF] to-[#1D4ED8] shadow-[0_1px_0_#173EA8,inset_0_1px_0_rgba(255,255,255,.45)]"
+                      >
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="#fff" aria-hidden>
+                          <path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
+                        </svg>
+                      </span>
+                    )
                   )}
+                  {(() => {
+                    // 🛠️ Staff · 🛒 Merchant · 💼 Mentor: miGlife's uploaded badge picture, else the emoji
+                    const role = String(cachedRoleOf(u.username) ?? "").toLowerCase();
+                    const badge = role === "staff" ? ["🛠️", "Staff"] : role === "merchant" ? ["🛒", "Merchant"] : role === "mentor" ? ["💼", "Mentor"] : null;
+                    if (!badge) return null;
+                    const pic = badgeImages[badge[0]];
+                    return pic ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={pic} alt={badge[1]} title={badge[1]} className="h-[18px] w-[18px] shrink-0 object-contain" />
+                    ) : (
+                      <span className="shrink-0" title={badge[1]}>{badge[0]}</span>
+                    );
+                  })()}
                   {(() => {
                     const team = supporterTeamOf(u.username);
                     return team ? <SupporterBadge team={team} size={9} /> : null;
