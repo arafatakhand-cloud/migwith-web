@@ -153,6 +153,8 @@ function styleFor(type: string): Style {
       return { icon: "💔", title: "Friend removed", top: "#FF8A9A", bottom: "#D6336C", group: "social" };
     case "mention":
       return { icon: "💬", title: "Mention", top: "#B57BFF", bottom: "#7443D1", group: "social" };
+    case "feel":
+      return { icon: "💭", title: "FeelMig", top: "#7FB2FF", bottom: "#2563EB", group: "social" };
     case "game_invite":
     case "tp_invite":
       return { icon: "🎴", title: "Game invite", top: "#9B5DE5", bottom: "#5B2A86", group: "games" };
@@ -994,7 +996,8 @@ export default function AlertsPage() {
                   </FancyCard>
                 );
               } else {
-                const mentionRoom = a.type === "mention" ? inviteRoom(a) : "";
+                // 💭 a /feel with me (and @mentions): tap → that room
+                const mentionRoom = a.type === "mention" || a.type === "feel" ? inviteRoom(a) : "";
                 const href =
                   a.type === "friend_request" || a.type === "friend_request_accepted" || a.type === "friend_removed"
                     ? "/friends"
