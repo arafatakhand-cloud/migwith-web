@@ -2176,7 +2176,6 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
             <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
               <RichText text={text || "📷"} />
             </p>
-            {hasWords && <TranslateLink postId={p.id} dark={artInk === "#FFFFFF"} />}
             {p.sharedId && (
               <button type="button" onClick={(e) => (e.stopPropagation(), router.push(`/feed/${p.sharedId}`))} className="mt-3 block w-[88%] rounded-2xl border border-white/50 bg-white/20 p-2.5 text-left" style={{ color: artInk }}>
                 <span className="block text-[11.5px] font-bold opacity-85">↗ {p.sharedAuthor}</span>
@@ -2204,6 +2203,13 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           </button>
         )}
       </div>
+
+      {/* 🌐 T3: under the Text Art / photo, not on it — the words stay clear */}
+      {hasWords && !plain && !pollOnly && (
+        <div className="px-4 [&>span]:mt-2.5">
+          <TranslateLink postId={p.id} />
+        </div>
+      )}
 
       {/* a shared Mig (photo / plain) shows what it shares under it */}
       {p.sharedId && (media || plain || pollOnly) && (
