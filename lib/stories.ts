@@ -19,7 +19,12 @@ export type Story = {
   text: string;
   /** an optional song; it plays for 30 seconds from startSec */
   song: { url: string; title: string; startSec: number } | null;
+  /** 📰 a Mig shared to the story: shown as a card, tap opens the Mig */
+  sharedPost: { id: string; author: string; text: string; image: string } | null;
 };
+
+/** tells the story row to load again (after a Mig was shared to my story) */
+export const STORIES_CHANGED = "mig-stories-changed";
 
 /** Stories still inside their 24 hours, newest first. Friends-only stories are kept for the caller to filter. */
 export async function loadStories(): Promise<Story[]> {
@@ -43,7 +48,11 @@ export async function loadStories(): Promise<Story[]> {
           x.song && typeof x.song.url === "string" && x.song.url
             ? { url: String(x.song.url), title: String(x.song.title || "Song"), startSec: Number(x.song.startSec || 0) }
             : null,
+        sharedPost:
+          x.sharedPost && typeof x.sharedPost.id === "string" && x.sharedPost.id
+            ? { id: String(x.sharedPost.id), author: String(x.sharedPost.author || ""), text: String(x.sharedPost.text || ""), image: String(x.sharedPost.image || "") }
+            : null,
       } as Story;
     })
-    .filter((s) => s.author && (s.url || s.text));
+    .filter((s) => s.author && (s.url || s.text || s.sharedPost));
 }

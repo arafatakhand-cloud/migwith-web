@@ -10,7 +10,8 @@ import { setFollowing, useFollowing } from "../../lib/follow";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
 import { useBadgeImages } from "../../lib/badgeImages";
-import { StoryRow } from "./StoryRow";
+import { StoryDialog, StoryRow } from "./StoryRow";
+import { STORIES_CHANGED } from "../../lib/stories";
 import { roleBadgesForDoc } from "../../lib/rooms";
 import { uploadChatImage, uploadThumb } from "../../lib/imageUpload";
 import { placeHere, searchPlaces, type Place } from "../../lib/places";
@@ -1708,6 +1709,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       {sharing && (
         <ShareSheet
           post={sharing}
+          uid={user?.uid}
           onClose={() => setSharing(null)}
           onLink={() => share(sharing)}
           onDone={(msg) => {
@@ -1735,11 +1737,43 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
 // ↗ Share to my wall: a short note (optional) and the post it shares. The post
 // appears on my wall and in the feed, with the original inside it.
-function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose: () => void; onDone: (msg: string) => void; onLink: () => void }) {
+function ShareSheet({ post, uid, onClose, onDone, onLink }: { post: BlogPost; uid?: string; onClose: () => void; onDone: (msg: string) => void; onLink: () => void }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const origin = post.sharedId ? { id: post.sharedId, author: post.sharedAuthor, title: post.sharedTitle } : { id: post.id, author: post.author, title: post.title };
+  // 📸 only 🌍 Everyone Migs can go to a story (everyone who sees the story can open it)
+  const canStory = !post.privacy;
+  const [toStory, setToStory] = useState(false);
+  const sendToStory = async (caption: string, audience: string, song?: { url: string; title: string; startSec: number } | null) => {
+    setToStory(false);
+    setBusy(true);
+    setErr("");
+    try {
+      await blogCall("story", { sharePostId: origin.id, caption, song: song || null, privacy: audience });
+      window.dispatchEvent(new Event(STORIES_CHANGED));
+      onDone("Added to your story ✓");
+    } catch (e) {
+      setErr(blogError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (toStory)
+    return (
+      <StoryDialog
+        uid={uid}
+        title="📸 Add to your story"
+        caption=""
+        audience="everyone"
+        confirmText="Share story"
+        maxLen={140}
+        placeholder="Say something about this Mig… (optional)"
+        hasMedia
+        onClose={() => setToStory(false)}
+        onConfirm={(caption, audience, song) => sendToStory(caption, audience, song)}
+      />
+    );
   const send = async () => {
     setBusy(true);
     setErr("");
@@ -1777,6 +1811,16 @@ function ShareSheet({ post, onClose, onDone, onLink }: { post: BlogPost; onClose
           <div className="mt-0.5 line-clamp-2 text-[13.5px] font-bold text-[#1E1B4B]">{origin.title}</div>
         </div>
         {err && <p className="mt-2 text-[12.5px] text-[#B91C1C]">{err}</p>}
+        {canStory && (
+          <button
+            type="button"
+            onClick={() => setToStory(true)}
+            disabled={busy}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-full border-[1.5px] border-[#14B88F]/60 bg-[#F3FFFA] py-2.5 text-[14px] font-extrabold text-[#0E7A62] disabled:opacity-60"
+          >
+            📸 Add to my story
+          </button>
+        )}
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={onLink} className="rounded-full border border-[#DDE8F7] px-4 py-2.5 text-[13px] font-bold text-[#4F46E5]">
             🔗 Copy link

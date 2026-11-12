@@ -26226,6 +26226,26 @@ function blogAlert(batch, toUsername, fromUsername, postId, message) {
     createdAt: FieldValue.serverTimestamp(),
   });
 }
+// 🔔 one alert that is rewritten (and comes back to the top as unread) instead
+// of a new one each time — "anima and 5 others reacted to your Mig"
+async function blogAlertOnce(docId, toUsername, fromUsername, postId, message) {
+  if (!toUsername) return;
+  await db.collection("alerts").doc(docId).set({
+    toUsername, fromUsername, type: "blog", postId, message, read: false,
+    createdAt: FieldValue.serverTimestamp(),
+  }).catch((e) => console.error("blog alert failed", e?.message));
+}
+// 📲 a phone push about a Mig (comments and replies), never to someone who blocked me
+async function blogPush(toUsername, fromName, title, body, postId) {
+  try {
+    const u = await findUserDocByUsername(toUsername);
+    if (!u) return;
+    if (await hasBlocked(u.id, fromName)) return;
+    const token = await fcmTokenOf(u.id, u);
+    if (!token) return;
+    await getMessaging().send({ token, data: { type: "blog_comment", title, body, postId }, android: { priority: "high" } });
+  } catch (e) { /* the alert is enough */ }
+}
 
 // @mentions in a Feed post — only the writer's FRIENDS are notified (at most
 // 10 per post). A name that is not a friend stays a plain link, no alert.
@@ -26462,7 +26482,22 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const url = String(d.url || "").trim();
     const text = String(d.text || "").replace(/\s+/g, " ").trim().slice(0, 280);
     const photo = url !== "";
-    if (!photo && !text) throw new E("invalid-argument", "Write something or add a photo.");
+    // 📰 a Mig shared to my story (🌍 Everyone Migs only), shown as a card in the story
+    let sharedPost = null;
+    const sharePostId = String(d.sharePostId || "").trim().slice(0, 100);
+    if (sharePostId) {
+      const ps = await db.collection("blog_posts").doc(sharePostId).get();
+      if (!ps.exists) throw new E("not-found", "That Mig can't be shared.");
+      sharedPost = {
+        id: ps.id,
+        author: String(ps.get("author") || ""),
+        authorUid: String(ps.get("authorUid") || ""),
+        text: String(ps.get("excerpt") || ps.get("title") || "").replace(/\s+/g, " ").trim().slice(0, 160),
+        image: String(ps.get("thumb") || ps.get("cover") || ps.get("firstImage") || ""),
+        bg: Number.isFinite(Number(ps.get("bg"))) ? Number(ps.get("bg")) : -1,
+      };
+    }
+    if (!photo && !text && !sharedPost) throw new E("invalid-argument", "Write something or add a photo.");
     if (photo && (!url.startsWith(BLOG_IMG_PREFIX) || url.length > 1000 || !url.includes("blog_stories%2F" + uid + "%2F"))) {
       throw new E("invalid-argument", "That story photo can't be used.");
     }
@@ -26486,12 +26521,16 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
     const ref = db.collection("blog_stories").doc();
     await ref.set({
       authorUid: uid, author: me, url, song,
-      text: photo ? "" : text,
-      caption: photo ? String(d.caption || "").replace(/\s+/g, " ").trim().slice(0, 140) : "",
+      ...(sharedPost ? { sharedPost } : {}),
+      text: photo || sharedPost ? "" : text,
+      caption: photo || sharedPost ? String(d.caption || "").replace(/\s+/g, " ").trim().slice(0, 140) : "",
       privacy: ["friends", "only_me"].includes(d.privacy) ? d.privacy : "everyone",
       createdMs: now, expiresAt: now + 24 * 3600 * 1000,
       createdAt: FieldValue.serverTimestamp(),
     });
+    if (sharedPost && sharedPost.authorUid !== uid) {
+      await blogAlertOnce(`story_share_${ref.id}`, sharedPost.author, me, sharedPost.id, `📸 ${me} shared your Mig to their story.`);
+    }
     return { ok: true, id: ref.id };
   }
   // 😍 Story reactions (miglife, Nov 2026): a viewer picks one emoji for a story
@@ -26863,9 +26902,15 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
         likes: total,
         hot: blogHot(Number(s.get("createdMs") || Date.now()), total, Number(s.get("comments") || 0), Number(s.get("views") || 0)),
       });
-      return { reaction: next, reactions: counts, likes: total };
+      return { reaction: next, reactions: counts, likes: total, author: String(s.get("author") || ""), authorUid: s.get("authorUid"), title: String(s.get("title") || s.get("excerpt") || "") };
     });
-    return { ok: true, ...res };
+    // 🔔 the writer: one alert per Mig ("anima and 5 others reacted to your Mig")
+    if (res.reaction && res.authorUid !== uid) {
+      const others = Math.max(0, res.likes - 1);
+      await blogAlertOnce(`blog_react_${postRef.id}`, res.author, me, postRef.id,
+        `${res.reaction} ${me}${others ? ` and ${others} other${others > 1 ? "s" : ""}` : ""} reacted to your Mig: "${res.title.slice(0, 50)}"`);
+    }
+    return { ok: true, reaction: res.reaction, reactions: res.reactions, likes: res.likes };
   }
 
   if (action === "like") {
@@ -26886,9 +26931,14 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
         reactions: counts,
         hot: blogHot(Number(s.get("createdMs") || Date.now()), likes, Number(s.get("comments") || 0), Number(s.get("views") || 0)),
       });
-      return { liked: !l.exists, likes };
+      return { liked: !l.exists, likes, author: String(s.get("author") || ""), authorUid: s.get("authorUid"), title: String(s.get("title") || s.get("excerpt") || "") };
     });
-    return { ok: true, ...res };
+    if (res.liked && res.authorUid !== uid) {
+      const others = Math.max(0, res.likes - 1);
+      await blogAlertOnce(`blog_react_${postRef.id}`, res.author, me, postRef.id,
+        `👍 ${me}${others ? ` and ${others} other${others > 1 ? "s" : ""}` : ""} reacted to your Mig: "${res.title.slice(0, 50)}"`);
+    }
+    return { ok: true, liked: res.liked, likes: res.likes };
   }
 
   if (action === "comment") {
@@ -26918,12 +26968,23 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
         comments,
         hot: blogHot(Number(s.get("createdMs") || Date.now()), Number(s.get("likes") || 0), comments, Number(s.get("views") || 0)),
       });
-      return s;
+      return { s, parentAuthor: parent && parent.exists ? String(parent.get("author") || "") : "", parentUid: parent && parent.exists ? parent.get("authorUid") : null };
     });
-    if (post.get("authorUid") !== uid) {
+    const postAuthor = String(post.s.get("author") || "");
+    const writerIsMe = post.s.get("authorUid") === uid;
+    // ↩ a reply: the person I replied to (if it isn't me)
+    const replyTo = post.parentUid && post.parentUid !== uid ? post.parentAuthor : "";
+    if (!writerIsMe && postAuthor.toLowerCase() !== replyTo.toLowerCase()) {
       const batch = db.batch();
-      blogAlert(batch, String(post.get("author") || ""), me, postId, `💬 ${me} commented on your Mig: "${text.slice(0, 60)}"`);
+      blogAlert(batch, postAuthor, me, postRef.id, `💬 ${me} commented on your Mig: "${text.slice(0, 60)}"`);
       await batch.commit().catch(() => {});
+      await blogPush(postAuthor, me, `💬 ${me} commented on your Mig`, text.slice(0, 100), postRef.id);
+    }
+    if (replyTo) {
+      const batch = db.batch();
+      blogAlert(batch, replyTo, me, postRef.id, `↩ ${me} replied to your comment: "${text.slice(0, 60)}"`);
+      await batch.commit().catch(() => {});
+      await blogPush(replyTo, me, `↩ ${me} replied to your comment`, text.slice(0, 100), postRef.id);
     }
     return { ok: true, commentId: cRef.id };
   }
@@ -26954,9 +27015,14 @@ exports.blog = functionsV1.https.onCall(async (data, context) => {
       Object.keys(counts).forEach((k) => { if (!counts[k]) delete counts[k]; });
       const likes = Object.values(counts).reduce((a, b) => a + Number(b || 0), 0);
       tx.update(cRef, { reactions: counts, likes });
-      return { reaction: next, reactions: counts, likes };
+      return { reaction: next, reactions: counts, likes, author: String(c.get("author") || ""), authorUid: c.get("authorUid"), text: String(c.get("text") || "") };
     });
-    return { ok: true, ...res };
+    // 🔔 the comment's writer: one alert per person per comment
+    if (res.reaction && res.authorUid !== uid) {
+      await blogAlertOnce(`blog_creact_${cRef.id}_${uid}`, res.author, me, postRef.id,
+        `${res.reaction} ${me} reacted to your comment: "${res.text.slice(0, 50)}"`);
+    }
+    return { ok: true, reaction: res.reaction, reactions: res.reactions, likes: res.likes };
   }
   // 👍 which reaction I left on each of these comments of the post (one call)
   if (action === "myCommentReactions") {

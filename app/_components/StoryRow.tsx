@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { blogAgoBn, blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
-import { loadStories, type Story } from "../../lib/stories";
+import { loadStories, STORIES_CHANGED, type Story } from "../../lib/stories";
+import Link from "next/link";
 import { loadSongLibrary, type LibrarySong, STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
 
 export type StorySong = { url: string; title: string; startSec: number };
@@ -42,6 +43,10 @@ export function StoryRow({
       .catch(() => setStories([]));
   useEffect(() => {
     reload();
+    // 📰 a Mig was shared to my story from the Feed's share sheet
+    const again = () => reload();
+    window.addEventListener(STORIES_CHANGED, again);
+    return () => window.removeEventListener(STORIES_CHANGED, again);
   }, []);
 
   // 👥 friends-only stories show to the writer and their friends
@@ -232,7 +237,31 @@ export function StoryRow({
               }}
             />
           )}
-          {current.url ? (
+          {current.sharedPost ? (
+            // 📰 a shared Mig: a tilted card, tap it to open the Mig
+            <div className="flex h-full w-full flex-col items-center justify-center gap-5 bg-gradient-to-br from-[#14B88F] via-[#2C9BEA] to-[#6366F1] p-7">
+              <Link
+                href={`/feed/${current.sharedPost.id}`}
+                onClick={() => setViewer(null)}
+                className="relative z-10 block w-full max-w-[300px] -rotate-3 overflow-hidden rounded-[22px] bg-white text-left shadow-[0_24px_50px_-18px_rgba(0,0,0,.55)]"
+              >
+                <div className="flex items-center gap-2 px-3.5 pb-2 pt-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#38BDF8] to-[#6366F1] text-[14px] font-black text-white">
+                    {current.sharedPost.author.slice(0, 1).toUpperCase() || "?"}
+                  </span>
+                  <span className="truncate text-[14px] font-extrabold text-[#0F2F2A]">{current.sharedPost.author}</span>
+                </div>
+                {current.sharedPost.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={current.sharedPost.image} alt="" className="h-44 w-full object-cover" />
+                )}
+                {current.sharedPost.text && (
+                  <p className="line-clamp-4 px-3.5 py-2.5 text-[14px] font-semibold leading-5 text-[#1E293B]">{current.sharedPost.text}</p>
+                )}
+              </Link>
+              <span className="story-glass relative z-10 rounded-full px-4 py-2 text-[13px] font-extrabold text-white">👆 Tap to see the Mig</span>
+            </div>
+          ) : current.url ? (
             <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
@@ -266,7 +295,7 @@ export function StoryRow({
               🎵 {current.song.title}
             </span>
           )}
-          {current.url && current.caption && (
+          {(current.url || current.sharedPost) && current.caption && (
             <p className="story-glass absolute bottom-[118px] left-6 right-6 rounded-2xl px-4 py-2.5 text-center text-[15px] font-bold text-white">{current.caption}</p>
           )}
           {/* 😍 reactions: viewers pick one; the writer sees who reacted */}
@@ -321,7 +350,7 @@ export function StoryRow({
           )}
           {menu && (
             <div className="absolute inset-x-6 bottom-24 z-10 rounded-2xl bg-white p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              {current.url && (
+              {(current.url || current.sharedPost) && (
                 <button type="button" onClick={() => { setMenu(false); setEditing(current); }} className="block w-full rounded-xl px-3 py-3 text-left font-bold text-[#2563EB] hover:bg-[#F3F6FF]">
                   ✏️ Edit caption and audience
                 </button>
@@ -363,7 +392,7 @@ export function StoryRow({
 }
 
 // the caption and the audience (everyone / friends), used to add and to edit a story
-function StoryDialog({
+export function StoryDialog({
   uid,
   title,
   caption: caption0,
