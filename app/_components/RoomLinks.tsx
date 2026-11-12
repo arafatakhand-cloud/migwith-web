@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { findRoomLinks, youTubeIdOf } from "../../lib/roomLinks";
 
 // 🔗 Room chat links, like the app's RoomLinks.kt.
@@ -67,9 +67,36 @@ export function YouTubePreviewCard({ videoId, onPlay }: { videoId: string; onPla
 
 const openOutside = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
 
+// 📱 the miGlife app's own Play Store link (play.google.com/…?id=app.miglife or market://…)
+const MIGLIFE_PACKAGE = "app.miglife";
+export function isMiglifeAppLink(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const store = u.protocol === "market:" || /(^|\.)play\.google\.com$/i.test(u.hostname);
+    return store && u.searchParams.get("id") === MIGLIFE_PACKAGE;
+  } catch {
+    return false;
+  }
+}
+/**
+ * On an Android phone: opens the miGlife app when it is installed, else its Play Store
+ * page (Chrome's intent link; the app answers "miglife://"). Anywhere else: the Play page.
+ */
+export function openMiglifeApp(playUrl: string) {
+  const android = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+  const page = `https://play.google.com/store/apps/details?id=${MIGLIFE_PACKAGE}`;
+  if (!android) {
+    window.open(playUrl.startsWith("http") ? playUrl : page, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.href = `intent://open#Intent;scheme=miglife;package=${MIGLIFE_PACKAGE};S.browser_fallback_url=${encodeURIComponent(page)};end`;
+}
+
 /** The right popup for a tapped link (null = nothing open). */
 export function RoomLinkDialog({ url, onClose }: { url: string | null; onClose: () => void }) {
   if (!url) return null;
+  // 📱 our own app's link: straight to the app (no "You are leaving miGlife" check)
+  if (isMiglifeAppLink(url)) return <OpenMiglifeApp url={url} onClose={onClose} />;
   const yt = youTubeIdOf(url);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-3" onClick={onClose}>
@@ -158,4 +185,12 @@ function YouTubePlayer({ id, url, onClose }: { id: string; url: string; onClose:
       </p>
     </div>
   );
+}
+
+function OpenMiglifeApp({ url, onClose }: { url: string; onClose: () => void }) {
+  useEffect(() => {
+    openMiglifeApp(url);
+    onClose();
+  }, [url, onClose]);
+  return null;
 }
