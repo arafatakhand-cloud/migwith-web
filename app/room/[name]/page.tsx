@@ -79,7 +79,7 @@ import {
 } from "../../_components/GiftPanel";
 import { hideGameTableLine, useGameTablesVersion } from "../../../lib/gameTables";
 import { isGiftShowerLine, toggleHideGiftShower, useHideGiftShower } from "../../../lib/giftShowerPref";
-import { feelUsage, loadFeelings, parseFeel, sendFeel, type CatalogFeel } from "../../../lib/roomFeelings";
+import { feelUsage, loadFeelings, matchFeeling, parseFeel, sendFeel, type CatalogFeel } from "../../../lib/roomFeelings";
 import { LUXURY_ROOM, LuxuryBetBox, useLuxuryBot } from "../../_components/LuxuryBot";
 import {
   LUXURY_BET_ART_BY_EMOJI,
@@ -1766,14 +1766,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           note("💭 Please wait a few seconds before the next /feel.");
           return;
         }
-        const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase()) : undefined;
-        if (typed && !who) {
-          note(`${typed} is not in the room.`);
-          return;
-        }
+        // 👤 any miGlife ID, in the room or not (like a gift) — the server checks the name
+        const who = typed ? roomUsers.find((u) => u.username.toLowerCase() === typed.toLowerCase())?.username || typed : "";
         lastFeelAt.current = Date.now();
         stickToBottom.current = true;
-        sendFeel(roomName, feeling.key, who?.username || "", feelNote).catch((e: any) => {
+        sendFeel(roomName, feeling.key, who, feelNote).catch((e: any) => {
           lastFeelAt.current = 0;
           note(String(e?.message || "💭 Could not send. Please try again."));
         });
@@ -2096,7 +2093,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     const t = text.trimStart();
     if (!/^\/feel(\s|$)/i.test(t)) return null;
     const words = t.slice(5).trim().split(/\s+/).filter(Boolean);
-    const hasName = !!words[0] && roomUsers.some((u) => u.username.toLowerCase() === words[0].toLowerCase());
+    // the first word is a name: someone in the room, or (like a gift) any ID typed with a space after it
+    const isFeelWord = (w: string) => !!matchFeeling(w, feelCatalog) || /^miss(ing)?$/i.test(w);
+    const hasName =
+      !!words[0] &&
+      (roomUsers.some((u) => u.username.toLowerCase() === words[0].toLowerCase()) || (!isFeelWord(words[0]) && (words.length > 1 || t.endsWith(" "))));
     const rest = hasName ? words.slice(1) : words;
     const q = rest.join("").toLowerCase().replace(/[^a-z0-9]/g, "");
     const norm = (f: CatalogFeel) => f.label.toLowerCase().replace(/[^a-z0-9]/g, "");

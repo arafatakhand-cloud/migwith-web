@@ -24501,13 +24501,12 @@ exports.feel = functionsV1.https.onCall(async (data, context) => {
     // 🔇 muted / banned in this room
     const mod = await db.collection("room_moderation").doc(roomId).collection("users").doc(me.toLowerCase()).get();
     if (mod.exists && (mod.get("muted") === true || mod.get("banned") === true)) throw new E("permission-denied", "🔇 You can't talk in this room right now.");
-    // 👤 with someone: they must be in the room now
+    // 👤 with someone: any miGlife ID, in the room or not (like a gift)
     let withWho = "";
     const typed = String(d.target || "").replace(/^@/, "").trim().slice(0, 40);
     if (typed) {
       const t = await findUserDocByUsername(typed);
-      const inRoom = t ? (await db.collection("room_presence").doc(roomId).collection("users").doc(t.id).get()).exists : false;
-      if (!t || !inRoom) throw new E("not-found", `${typed} is not in the room.`);
+      if (!t) throw new E("not-found", `💭 User not found: ${typed}`);
       if (t.id === uid) throw new E("invalid-argument", `💭 Just type /feel ${f.id} for yourself.`);
       const lvl = giftUserLevel(t.data() || {});
       withWho = ` with ${String(t.get("username") || typed)}${lvl > 0 ? ` [${lvl}]` : ""}`;
