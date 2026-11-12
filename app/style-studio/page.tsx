@@ -33,7 +33,7 @@ const CATALOG: ShopColor[] = [
   { id: "king", name: "Emperor", color: "#12AFC7", badge: "👑", price: 400000, days: 30, bold: true, voice: true, description: "" },
   { id: "queen", name: "Angel", color: "#E91E8C", badge: "👼", price: 300000, days: 30, bold: true, voice: true, description: "" },
   { id: "mafia", name: "Don", color: "#8B5A5A", badge: "🎩", price: 250000, days: 30, bold: false, voice: false, description: "" },
-  { id: "vip", name: "Star", color: "#E5395C", badge: "⭐", price: 300000, days: 40, bold: true, voice: true, description: "Gold username + [STAR] badge" },
+  { id: "vip", name: "Star", color: "#00A383", badge: "⭐", price: 300000, days: 40, bold: true, voice: true, description: "Emerald username + [STAR] badge" },
   { id: "diamond", name: "Platinum", color: "#12AFC7", badge: "💎", price: 200000, days: 30, bold: false, voice: true, description: "Cyan username + [PLATINUM] badge" },
   { id: "premium", name: "Royal", color: "#8BC34A", badge: "🏵️", price: 150000, days: 30, bold: true, voice: true, description: "Deep pink username + [ROYAL] badge" },
   { id: "supporter", name: "Patron", color: "#29B6F6", badge: "🛡️", price: 100000, days: 30, bold: false, voice: true, description: "Pink username + [PATRON] badge" },

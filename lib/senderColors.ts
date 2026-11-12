@@ -17,7 +17,7 @@ export const SHOP_TEXT_COLORS: Record<string, string> = {
   king: "#12AFC7",
   queen: "#E91E8C",
   mafia: "#8B5A5A",
-  vip: "#E5395C",
+  vip: "#00A383", // ⭐ Star: emerald (the old red-pink looked like Mentor red)
   diamond: "#12AFC7",
   premium: "#8BC34A",
   supporter: "#29B6F6",
