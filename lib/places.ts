@@ -64,9 +64,18 @@ export function searchPlaces(q: string): Place[] {
 }
 /** 🎯 my GPS spot → "Dhanmondi" + "Dhaka, Bangladesh" (OpenStreetMap; free, no key) */
 export async function placeHere(): Promise<Place> {
-  const pos = await new Promise<GeolocationPosition>((ok, no) =>
-    navigator.geolocation ? navigator.geolocation.getCurrentPosition(ok, no, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 }) : no(new Error("no gps"))
-  );
+  const ask = (o: PositionOptions) =>
+    new Promise<GeolocationPosition>((ok, no) =>
+      navigator.geolocation ? navigator.geolocation.getCurrentPosition(ok, no, o) : no(new Error("no gps"))
+    );
+  // quick Wi-Fi/network fix first; if that fails (not a "blocked"), try the real GPS for longer
+  let pos: GeolocationPosition;
+  try {
+    pos = await ask({ enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 });
+  } catch (e) {
+    if ((e as { code?: number })?.code === 1) throw e;
+    pos = await ask({ enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  }
   const { latitude, longitude } = pos.coords;
   const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=14&accept-language=en&lat=${latitude.toFixed(4)}&lon=${longitude.toFixed(4)}`);
   const j = (await r.json()) as { address?: Record<string, string> };

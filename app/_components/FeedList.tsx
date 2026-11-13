@@ -1253,8 +1253,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                           setCplace(await placeHere());
                           setCplaceOpen(false);
                           setCplaceQ("");
-                        } catch {
-                          setCplaceBusy("Couldn't find your location — allow location, or pick a place below.");
+                        } catch (err) {
+                          setCplaceBusy(
+                            (err as { code?: number })?.code === 1
+                              ? "Location is blocked for this site — tap 🔒 next to the address and allow Location, or pick a place below."
+                              : "Couldn't find your location — turn on your phone's Location and try again, or pick a place below."
+                          );
                           return;
                         }
                         setCplaceBusy("");
@@ -1395,6 +1399,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     autoFocus
                     value={ctext}
                     onChange={(e) => setCtext(e.target.value)}
+                    spellCheck={false}
+                    autoCorrect="off"
                     onFocus={(e) => {
                       const el = e.currentTarget;
                       window.setTimeout(() => el.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
@@ -1411,6 +1417,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   autoFocus
                   value={ctext}
                   onChange={(e) => setCtext(e.target.value)}
+                  spellCheck={false}
+                  autoCorrect="off"
                   placeholder="Say something about this…"
                   rows={3}
                   className="mt-3 w-full resize-none rounded-2xl bg-[#F6F7FC] px-3.5 py-3 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
