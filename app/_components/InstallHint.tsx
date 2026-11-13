@@ -119,3 +119,67 @@ export function InstallHint() {
     </div>
   );
 }
+
+// 📲 "Install miGlife app" in the side menu: always there (also after the Home
+// card was closed), hidden once miGlife already runs from the Home screen.
+export function InstallMenuButton() {
+  const [state, setState] = useState<{ ios: boolean; standalone: boolean } | null>(null);
+  const [prompt, setPrompt] = useState<InstallPrompt | null>(null);
+  const [tip, setTip] = useState(false);
+  useEffect(() => {
+    const w = window as InstallWindow;
+    const ua = navigator.userAgent;
+    const isIos = /iPhone|iPad|iPod/.test(ua) || (ua.includes("Macintosh") && navigator.maxTouchPoints > 1);
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+    setState({ ios: isIos, standalone });
+    setPrompt(w.__migInstall ?? null);
+    const onReady = () => setPrompt(w.__migInstall ?? null);
+    const onInstalled = () => setState((s) => (s ? { ...s, standalone: true } : s));
+    window.addEventListener("mig-install", onReady);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("mig-install", onReady);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+  if (!state || state.standalone) return null;
+  const install = async () => {
+    if (prompt && !state.ios) {
+      try {
+        await prompt.prompt();
+        await prompt.userChoice.catch(() => null);
+      } catch {
+        setTip(true);
+      }
+      (window as InstallWindow).__migInstall = null;
+      setPrompt(null);
+    } else setTip((v) => !v);
+  };
+  return (
+    <div data-notranslate className="mt-4 px-1">
+      <button
+        type="button"
+        onClick={install}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-[#FF9D2E] to-[#F07A00] px-4 py-2.5 text-[14px] font-black text-white shadow-[0_3px_0_#B85A00] transition active:translate-y-[2px] active:shadow-[0_1px_0_#B85A00]"
+      >
+        📲 Install miGlife app
+      </button>
+      {tip && (
+        <div className="mt-2 rounded-xl bg-white/90 px-3 py-2 text-xs leading-5 text-[#35445F]">
+          {state.ios ? (
+            <ol className="list-decimal space-y-0.5 pl-4">
+              {IOS_STEPS.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          ) : (
+            <p>
+              In Chrome tap <b>⋮</b> (top right), then <b>Add to Home screen</b> or <b>Install app</b> → <b>Install</b>.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

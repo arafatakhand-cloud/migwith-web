@@ -1,6 +1,7 @@
 "use client";
 
 import { openPresencePopup } from "./PresencePopup";
+import { InstallMenuButton } from "./InstallHint";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -178,6 +179,7 @@ export function MenuPanel() {
             </Link>
           );
         })}
+        <InstallMenuButton />
         <FacebookGroupButton />
         {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom, no
             colour, no card (a bright red button invites taps), like the app */}
@@ -290,6 +292,7 @@ export function MenuPanel() {
       })}
     </ul>
 
+    <InstallMenuButton />
     <FacebookGroupButton />
     {/* 🚪 Logout: deliberately quiet — small grey text at the very bottom (like the app) */}
     <button
