@@ -277,8 +277,9 @@ export function Dashboard() {
     <div className="relative isolate overflow-hidden border-b border-[#C9D2DE] bg-gradient-to-b from-white to-[#EEF2F7] text-[#16315F]">
     {/* ⚽ my Supporters Badge team (while it lasts): its crest, faint, behind the strip */}
     {me?.supporter && (
-      <span aria-hidden className="pointer-events-none absolute -top-3.5 right-16 -z-10 rotate-12 opacity-[0.15]">
-        <SupporterJersey team={me.supporter} size={130} />
+      // 🛡 B2: still behind, but clearer and 6D (half see-through)
+      <span aria-hidden className="pointer-events-none absolute -top-3.5 right-16 -z-10 opacity-50">
+        <SupporterJersey team={me.supporter} size={130} depth />
       </span>
     )}
     <div className="flex items-center px-2.5 pb-1.5 pt-2">

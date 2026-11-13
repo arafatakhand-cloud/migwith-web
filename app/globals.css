@@ -1640,3 +1640,16 @@ html[data-theme="dark_night"] .lb-glass {
 /* 😍 a story reaction floats up and fades */
 @keyframes story-burst { 0% { transform: translate(-50%, 0) scale(0.6); opacity: 0; } 20% { opacity: 1; transform: translate(-50%, -20px) scale(1.15); } 100% { transform: translate(-50%, -160px) scale(1); opacity: 0; } }
 .story-burst { animation: story-burst 1.1s ease-out forwards; }
+
+/* 🎨 P1 · 6D profile (Modern / Glass): white cards standing on blue-grey layers,
+   like the 6D Feed cards. Wins over the Glass theme's see-through boxes. */
+.pf6d-card.pf6d-card.pf6d-card {
+  background: linear-gradient(180deg, #fff, #f5f8fd) !important;
+  border: 0 !important;
+  box-shadow: inset 0 2px 0 #fff, 0 3px 0 #d6e2f2, 0 6px 0 #c9d8ea, 0 10px 16px -8px rgba(11, 42, 91, 0.33) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.pf6d-tile.pf6d-tile.pf6d-tile {
+  border: 0 !important;
+}

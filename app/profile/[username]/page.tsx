@@ -132,6 +132,15 @@ const PRESENCE_DOT: Record<Profile["presence"], [string, string]> = {
 
 // One rounded "bubble" tile in its own colour (the app's migTile): big round
 // corners, glossy dome, a shine dot and an icon on top.
+// 🎨 P1: a small coloured 6D chip in the profile's details card
+function Chip6d({ bg, fg, lip, children }: { bg: string; fg: string; lip: string; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex max-w-full items-center truncate rounded-full px-2.5 py-[5px] text-[12px] font-extrabold" style={{ background: bg, color: fg, boxShadow: `0 2px 0 ${lip}` }}>
+      {children}
+    </span>
+  );
+}
+
 function Tile({ value, label, tint, icon, onClick }: { value: string; label: string; tint: string; icon: string; onClick?: () => void }) {
   // 📟 Classic: same colours, numbers and white text as Modern, but a classic
   // box: square corners, flat, no gloss.
@@ -139,32 +148,30 @@ function Tile({ value, label, tint, icon, onClick }: { value: string; label: str
   if (!classic) {
     // ✨ Modern (design 7+8 B): a white card with a navy top band (icon) and a
     // line in the tile's colour, the number in that colour — solid, never see-through.
-    const deep = `color-mix(in srgb, ${tint} 78%, black)`;
+    // 🎨 P1 · 6D: a white tile standing on two layers of its own colour, the number in that colour
+    const deep = `color-mix(in srgb, ${tint} 85%, black)`;
     const body = (
       <>
-        <span
-          className="relative block overflow-hidden pb-[6px] pt-[5px] text-[16px] leading-[19px]"
-          style={{ background: "linear-gradient(180deg, #1b2d55, #0e1a38)" }}
-        >
-          <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/15 to-transparent" />
-          <span className="relative">{icon}</span>
-          {/* the tile's own colour as a line under the navy band */}
-          <span className="absolute inset-x-0 bottom-0 h-[3px]" style={{ background: tint }} />
-        </span>
-        <span className="block pt-[3px] text-[19px] font-black leading-[22px]" style={{ color: deep }}>
+        <span className="block pt-[7px] text-[16px] leading-[19px]">{icon}</span>
+        <span className="block text-[19px] font-black leading-[22px]" style={{ color: deep }}>
           {value}
         </span>
-        <span className="block truncate px-0.5 pb-[5px] text-[11.5px] font-bold leading-[15px] text-[#5B6B8C]">{label}</span>
+        <span className="block truncate px-0.5 pb-[6px] text-[11.5px] font-bold leading-[15px] text-[#5B6B8C]">{label}</span>
       </>
     );
-    const cls7 =
-      "pf-tile7 relative block min-w-0 overflow-hidden rounded-[18px] border-[1.5px] border-white bg-white text-center shadow-[0_6px_14px_rgba(40,80,140,.16)]";
+    const style6d = {
+      background: `linear-gradient(180deg, #fff, color-mix(in srgb, ${tint} 8%, white))`,
+      boxShadow: `inset 0 2px 0 #fff, 0 3px 0 color-mix(in srgb, ${tint} 55%, transparent), 0 6px 0 color-mix(in srgb, ${tint} 30%, transparent), 0 10px 12px -8px color-mix(in srgb, ${tint} 60%, transparent)`,
+    } as CSSProperties;
+    const cls7 = "pf-tile7 pf6d-tile relative mb-1.5 block min-w-0 overflow-hidden rounded-[18px] text-center";
     return onClick ? (
-      <button type="button" onClick={onClick} className={`${cls7} transition active:translate-y-0.5 active:scale-[.97]`}>
+      <button type="button" onClick={onClick} style={style6d} className={`${cls7} transition active:translate-y-0.5`}>
         {body}
       </button>
     ) : (
-      <div className={cls7}>{body}</div>
+      <div style={style6d} className={cls7}>
+        {body}
+      </div>
     );
   }
   const style = {
@@ -905,35 +912,36 @@ export default function ProfilePage() {
 
         <div className="px-4 pt-[18px]">
           {/* the details, in a glass box with the team's crest faint behind */}
-          <div className="pf-info-glass relative overflow-hidden rounded-[20px] px-3.5 py-3 text-[14px] leading-[1.75] text-[#0B2A5B]">
+          {/* 🎨 P1: a white 6D card, each detail a small coloured 6D chip */}
+          <div className="pf-info-glass pf6d-card relative overflow-hidden rounded-[20px] px-3 py-3 text-[14px] leading-[1.75] text-[#0B2A5B]">
             {team && (
               <span className="pointer-events-none absolute -right-4 -top-6 rotate-12 opacity-[0.17]" aria-hidden>
                 <SupporterJersey team={team} size={150} />
               </span>
             )}
             <div className="relative">
-              <p className="flex items-center gap-1.5">
-                <span
-                  className="h-[13px] w-[13px] rounded-full border"
-                  style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})`, borderColor: dot[1] }}
-                />
-                {profile.presence}
-              </p>
-              {team && <p className="truncate">⚽ {team.name} supporter</p>}
-              {(profile.relationship || facts.length > 0) && (
-                <p className="truncate">
-                  {profile.relationship ? `💍 ${profile.relationship}` : "👤"}
-                  {facts.length > 0 ? `${profile.relationship ? " · " : " "}${facts.join(", ")}` : ""}
-                </p>
-              )}
-              {(profile.country || profile.memberSince) && (
-                <p className="truncate">
-                  {profile.country ? `📍 ${profile.country}` : ""}
-                  {profile.country && profile.memberSince ? " · " : ""}
-                  {profile.memberSince ? `🗓 Member since ${profile.memberSince}` : ""}
-                </p>
-              )}
-              {taggedDays !== null && <p className="truncate">🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}</p>}
+              <div className="flex flex-wrap gap-1.5 pb-1 leading-none">
+                <Chip6d bg="#DCFCE7" fg="#15803D" lip="#97DDB0">
+                  <span
+                    className="mr-1 inline-block h-[10px] w-[10px] rounded-full align-[-1px]"
+                    style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})` }}
+                  />
+                  {profile.presence}
+                </Chip6d>
+                {team && <Chip6d bg="#DBEAFE" fg="#1D4ED8" lip="#93B4F0">⚽ {team.name}</Chip6d>}
+                {(profile.relationship || facts.length > 0) && (
+                  <Chip6d bg="#E0F2FE" fg="#0369A1" lip="#9CCFF0">
+                    {[profile.relationship ? `💙 ${profile.relationship}` : "", facts.join(", ")].filter(Boolean).join(" · ")}
+                  </Chip6d>
+                )}
+                {profile.country && <Chip6d bg="#FFE4E6" fg="#BE123C" lip="#F9B4BF">📍 {profile.country}</Chip6d>}
+                {profile.memberSince && <Chip6d bg="#EDE9FE" fg="#6D28D9" lip="#C4B2F3">🗓 Since {profile.memberSince}</Chip6d>}
+                {taggedDays !== null && (
+                  <Chip6d bg="#FEF3C7" fg="#A16207" lip="#EBCB7A">
+                    🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}
+                  </Chip6d>
+                )}
+              </div>
               {/* 🎵 Profile Song — plays once when the profile opens */}
               <ProfileSongChip username={username} />
               {bubble && (
@@ -949,7 +957,7 @@ export default function ProfilePage() {
             {isOwn ? (
               <Link
                 href="/profile/edit"
-                className="flex h-[44px] flex-1 items-center justify-center rounded-full bg-gradient-to-r from-[#FF8A3D] to-[#F2552C] text-[16px] font-extrabold text-white shadow-[0_6px_14px_rgba(242,85,44,.35)]"
+                className="flex h-[44px] flex-1 items-center justify-center rounded-[16px] bg-gradient-to-b from-[#FF9A4D] to-[#EA580C] text-[16px] font-extrabold text-white shadow-[inset_0_2px_0_rgba(255,255,255,.35),0_4px_0_#B8430A,0_8px_14px_-6px_#B8430A] transition active:translate-y-[2px]"
               >
                 ✎ Edit Profile
               </Link>
@@ -959,10 +967,10 @@ export default function ProfilePage() {
                   type="button"
                   disabled={!!busy}
                   onClick={() => toggleMine("following", !isFollowing)}
-                  className={`h-[44px] flex-1 rounded-full text-[16px] font-extrabold text-white disabled:opacity-60 ${
+                  className={`h-[44px] flex-1 rounded-[16px] text-[16px] font-extrabold text-white transition active:translate-y-[2px] disabled:opacity-60 ${
                     isFollowing
-                      ? "bg-gradient-to-r from-[#9AA5B5] to-[#6B7A99]"
-                      : "bg-gradient-to-r from-[#FF8A3D] to-[#F2552C] shadow-[0_6px_14px_rgba(242,85,44,.35)]"
+                      ? "bg-gradient-to-b from-[#A8B3C3] to-[#6B7A99] shadow-[0_4px_0_#55657F]"
+                      : "bg-gradient-to-b from-[#FF9A4D] to-[#EA580C] shadow-[inset_0_2px_0_rgba(255,255,255,.35),0_4px_0_#B8430A,0_8px_14px_-6px_#B8430A]"
                   }`}
                 >
                   {busy === "following" ? "…" : isFollowing ? "Unfollow" : "Follow"}
@@ -1015,14 +1023,14 @@ export default function ProfilePage() {
         )}
 
         {/* 4 × 2 grid of number tiles */}
-        <div className="mt-px space-y-2 bg-white px-2 py-2">
-          <div className="grid grid-cols-4 gap-1.5">
+        <div className={`mt-px space-y-1.5 px-2 py-2 ${classic ? "bg-white" : ""}`}>
+          <div className="grid grid-cols-4 gap-2">
             <Tile value={String(friends)} label="Friends" icon="👥" tint="#1E88E5" />
             <Tile value={String(giftCount)} label="Gifts" icon="🎁" tint="#E91E63" />
             <Tile value={String(followers)} label="Followers" icon="💜" tint="#8E24AA" />
             <Tile value={String(profile.following)} label="Following" icon="➕" tint="#00897B" />
           </div>
-          <div className="grid grid-cols-4 gap-1.5">
+          <div className="grid grid-cols-4 gap-2">
             <Tile value={String(badges.count)} label="Badges" icon="🏅" tint="#F08C00" onClick={badges.open} />
             {/* Any old number stored on the profile, plus the real votes. Only the owner sees who. */}
             {/* tap: your own → who voted; someone else's → vote / remove your vote (like the app) */}
@@ -1046,7 +1054,7 @@ export default function ProfilePage() {
         {/* 📰 this person's Feed posts */}
         <Link
           href={`/feed?author=${encodeURIComponent(username)}`}
-          className="mt-2 flex items-center gap-3 bg-white px-3.5 py-[11px] text-[15px] font-semibold text-[#0B2A5B]"
+          className={`mt-2 flex items-center gap-3 px-3.5 py-[11px] text-[15px] font-semibold text-[#0B2A5B] ${classic ? "bg-white" : "pf6d-card mx-3 rounded-[16px]"}`}
         >
           <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FC] text-lg">📝</span>
           <span data-notranslate className="min-w-0 flex-1 truncate">
@@ -1056,10 +1064,17 @@ export default function ProfilePage() {
         </Link>
 
         {/* Gift history, under a dark section bar */}
-        <h2 data-notranslate className="pf-bar mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
-          {username}&apos;s Gift History
-        </h2>
-        <ul className="bg-white py-1">
+        {classic ? (
+          <h2 data-notranslate className="pf-bar mt-2 bg-gradient-to-b from-[#3C3C3C] to-[#1E1E1E] px-2.5 py-[7px] text-[15px] font-bold text-white">
+            {username}&apos;s Gift History
+          </h2>
+        ) : (
+          // 🎨 P1: a plain title instead of the dark bar, the gifts in a white 6D card
+          <h2 data-notranslate className="mx-3 mb-2 mt-4 text-[15px] font-black text-[#1E1B4B]">
+            🎁 {username}&apos;s Gift History
+          </h2>
+        )}
+        <ul className={classic ? "bg-white py-1" : "pf6d-card mx-3 mb-4 overflow-hidden rounded-[18px] py-1"}>
           {gifts.length === 0 ? (
             <li className="flex items-center gap-3 px-3.5 py-[11px] text-sm text-[#0B2A5B]">
               <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-[#E6F0FB] text-xl">🎁</span>
