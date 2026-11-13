@@ -12,7 +12,16 @@ import { useSupporterImages } from "../../lib/supporterImages";
 const SHIELD = "M20 2 L37 7 V22 C37 33 29.5 40.5 20 44 C10.5 40.5 3 33 3 22 V7 Z";
 const LIGHT_KITS = ["#FFFFFF", "#FDE100", "#6CABDD", "#12A0D7"];
 
-export function SupporterJersey({ team, size = 18 }: { team: SupporterTeam; size?: number }) {
+// 🛡 a hex colour made darker (for the 6D layers under the crest)
+function darker(hex: string, f: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const ch = (v: number) => Math.round(v * (1 - f)).toString(16).padStart(2, "0");
+  return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
+}
+
+export function SupporterJersey({ team, size = 18, depth = false }: { team: SupporterTeam; size?: number; depth?: boolean }) {
   const id = `c${useId().replace(/:/g, "")}`;
   const picture = useSupporterImages()[team.id];
   if (picture)
@@ -28,7 +37,12 @@ export function SupporterJersey({ team, size = 18 }: { team: SupporterTeam; size
   const fs = L <= 2 ? 10.5 : L === 3 ? 8.6 : L === 4 ? 7.2 : 6.4;
   const tl = L <= 2 ? 11 : L === 3 ? 15.5 : L === 4 ? 17 : 18;
   return (
-    <svg width={size} height={size} viewBox="0 0 40 46" className="inline-block shrink-0 align-middle" aria-hidden>
+    <svg width={size} height={size} viewBox={depth ? "0 0 40 52" : "0 0 40 46"} className="inline-block shrink-0 align-middle" aria-hidden>
+      {/* 🛡 6D: three darker shields under it (the Lobby card's crest) */}
+      {depth &&
+        [3, 2, 1].map((i) => (
+          <path key={i} d={SHIELD} transform={`translate(0 ${i * 1.7})`} fill={darker(light ? team.text : team.c1, 0.18 * i)} />
+        ))}
       <defs>
         <clipPath id={id}>
           <path d={SHIELD} />

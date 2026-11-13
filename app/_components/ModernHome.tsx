@@ -218,8 +218,9 @@ export function ModernHomeTop({
         <span aria-hidden className="aurora-light aurora-b" />
         <span aria-hidden className="aurora-light aurora-c" />
         {supporter && (
-          <span className="pointer-events-none absolute right-16 -top-5 rotate-12 opacity-[0.17]" aria-hidden>
-            <SupporterJersey team={supporter} size={150} />
+          // 🛡 B2: still behind, but clearer and 6D (half see-through)
+          <span className="pointer-events-none absolute right-16 -top-5 opacity-50" aria-hidden>
+            <SupporterJersey team={supporter} size={150} depth />
           </span>
         )}
         <div className="relative flex items-center">
