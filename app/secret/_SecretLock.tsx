@@ -2,21 +2,32 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "../../lib/firebase";
+import { auth, functions } from "../../lib/firebase";
 import { input } from "./_Shell";
 
 // 🔒 miGlife SECRET LOCK (the app's SecretLock.kt). The miGlife account has a
 // personal Secret PIN, checked on the SERVER (secretLock in index.js). Every
 // founder / secret function refuses to run until the secret is opened on this
 // sign-in, so the web opens it with the Secret PIN (no fingerprint here).
-// Open for 5 minutes on screen; leaving the page (tab hidden) locks it again.
+// miglife (Nov 2026): "once per session is fine, not again and again" — open
+// for this sign-in until log out / a new log in (max 7 days, like the server).
 
 type Status = { hasPin?: boolean; trusted?: boolean; open?: boolean; lockedUntil?: number };
 const secretLock = httpsCallable<Record<string, unknown>, Status & { ok?: boolean }>(functions, "secretLock");
 
-const OPEN_FOR_MS = 5 * 60_000;
+const OPEN_FOR_MS = 7 * 24 * 60 * 60_000;
 let unlockedAt = 0;
-const isOpenHere = () => unlockedAt > 0 && Date.now() - unlockedAt < OPEN_FOR_MS;
+// the sign-in it was opened on (a new log in asks again — the server does the same)
+let openSignIn = "";
+const signInKey = () => {
+  const u = auth.currentUser;
+  return u ? `${u.uid}:${u.metadata.lastSignInTime || ""}` : "";
+};
+const isOpenHere = () => unlockedAt > 0 && Date.now() - unlockedAt < OPEN_FOR_MS && openSignIn === signInKey();
+const markOpen = () => {
+  unlockedAt = Date.now();
+  openSignIn = signInKey();
+};
 
 /** This browser's own random key (the server only keeps its hash). */
 function deviceKey(): string {
@@ -47,22 +58,7 @@ export function SecretLockGate({ onBack, children }: { onBack: () => void; child
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // the screen locks itself after 5 minutes, and when the page is hidden
-  useEffect(() => {
-    if (!open) return;
-    const lock = () => {
-      if (unlockedAt) secretLock({ action: "lock" }).catch(() => {});
-      unlockedAt = 0;
-      setOpen(false);
-    };
-    const t = setTimeout(lock, Math.max(0, OPEN_FOR_MS - (Date.now() - unlockedAt)));
-    const onHide = () => document.visibilityState === "hidden" && lock();
-    document.addEventListener("visibilitychange", onHide);
-    return () => {
-      clearTimeout(t);
-      document.removeEventListener("visibilitychange", onHide);
-    };
-  }, [open]);
+  // (no longer locks after 5 minutes or when the tab is hidden — miglife: once per sign-in)
 
   useEffect(() => {
     if (open) return;
@@ -71,7 +67,7 @@ export function SecretLockGate({ onBack, children }: { onBack: () => void; child
         setHasPin(data?.hasPin === true);
         // already open on this sign-in (opened a moment ago) → straight in
         if (data?.hasPin && data.open) {
-          unlockedAt = Date.now();
+          markOpen();
           setOpen(true);
         }
       })
@@ -92,7 +88,7 @@ export function SecretLockGate({ onBack, children }: { onBack: () => void; child
       .then(() => {
         setPin("");
         setPin2("");
-        unlockedAt = Date.now();
+        markOpen();
         setOpen(true);
       })
       .catch((e) => {
