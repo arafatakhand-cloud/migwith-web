@@ -23,6 +23,7 @@ import { useIsClassic } from "../../lib/uiStyle";
 // Creation" switched on (app_settings/id_creation); the server checks again.
 
 const sendCode = httpsCallable(functions, "sendEmailVerificationCode");
+const checkId = httpsCallable(functions, "checkMigIdAvailable");
 const verifyCode = httpsCallable(functions, "verifyEmailVerificationCode");
 const createId = httpsCallable<Record<string, unknown>, { username?: string }>(functions, "createNormalUserId");
 const setSecurityPin = httpsCallable(functions, "setSecurityPin");
@@ -83,7 +84,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false);
   const [countryOpen, setCountryOpen] = useState(false);
   const [resendWait, setResendWait] = useState(0);
-  const [busy, setBusy] = useState<"" | "sending" | "verifying" | "creating">("");
+  const [busy, setBusy] = useState<"" | "checking" | "sending" | "verifying" | "creating">("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
@@ -132,13 +133,24 @@ export default function RegisterPage() {
   const confirmOk = confirm.length > 0 && confirm === password;
 
   // Step 1 → 2: MIG ID and password.
-  const nextFromStep1 = () => {
+  const nextFromStep1 = async () => {
     setError("");
     if (!isFounder && !enabled) return setError("ID creation is currently disabled by the founder.");
     if (!idOk)
       return setError(`MIG ID must be ${minLen}-${maxLen} characters and contain at least 1 English letter. Allowed: A-Z, a-z, 0-9, . _ -`);
     if (password.length < 6) return setError("Password must be at least 6 characters.");
     if (password !== confirm) return setError("Passwords do not match.");
+    // 🆔 ask the server right away whether this MIG ID is free (before the email step)
+    if (busy) return;
+    setBusy("checking");
+    try {
+      await checkId({ migId: cleanId });
+    } catch (e: any) {
+      // an older server without this check: carry on, the next steps check again
+      if (e?.code !== "functions/not-found") return setError(e?.message || "Could not check the MIG ID. Please try again.");
+    } finally {
+      setBusy("");
+    }
     setStep(2);
   };
 
@@ -243,7 +255,7 @@ export default function RegisterPage() {
   const off = !!busy;
   const ci = countryInfoFor(country);
   const [pwN, pwLabel, pwColor] = strengthOf(password);
-  const busyLabel = busy === "sending" ? "Sending code…" : busy === "verifying" ? "Verifying…" : "Creating your ID…";
+  const busyLabel = busy === "checking" ? "Checking MIG ID…" : busy === "sending" ? "Sending code…" : busy === "verifying" ? "Verifying…" : "Creating your ID…";
   const back = () => {
     if (off) return;
     setError("");
