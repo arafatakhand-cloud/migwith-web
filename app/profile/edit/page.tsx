@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { r2Upload } from "../../../lib/r2Upload";
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { PageShell } from "../../_components/PageShell";
@@ -91,10 +92,14 @@ export default function EditProfilePage() {
     setUploading(kind);
     setError("");
     try {
-      const path = kind === "photo" ? `profile_pictures/${user.uid}.jpg` : `cover_pictures/${user.uid}.jpg`;
-      const r = ref(storage, path);
-      await uploadBytes(r, file, { contentType: file.type });
-      const url = await getDownloadURL(r);
+      // ☁️ R2 first; Firebase Storage when R2 is not set up
+      let url = await r2Upload(kind === "photo" ? "profile_picture" : "cover_picture", file);
+      if (!url) {
+        const path = kind === "photo" ? `profile_pictures/${user.uid}.jpg` : `cover_pictures/${user.uid}.jpg`;
+        const r = ref(storage, path);
+        await uploadBytes(r, file, { contentType: file.type });
+        url = await getDownloadURL(r);
+      }
       if (kind === "photo") await setDoc(doc(db, "users", user.uid), { photoUrl: url }, { merge: true });
       else await saveProfileDetails(user.uid, username, { coverPhotoUrl: url });
       if (kind === "photo") setPhotoUrl(url);

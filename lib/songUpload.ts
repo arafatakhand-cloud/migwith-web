@@ -3,6 +3,7 @@
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "./firebase";
 import { blogCall } from "./feed";
+import { r2Upload } from "./r2Upload";
 
 // 🎵 A story song: a short audio file the writer chooses (their own, or one they have the right to use).
 // It goes to blog_music/<uid>/…; the story plays its first 30 seconds.
@@ -15,10 +16,13 @@ const SONG_TYPES = ["audio/mpeg", "audio/mp4", "audio/aac", "audio/ogg", "audio/
 export async function uploadStorySong(uid: string, file: File): Promise<{ url: string; title: string }> {
   if (!SONG_TYPES.includes(file.type)) throw new Error("Please choose an MP3, M4A, AAC, OGG or WAV song.");
   if (file.size > MAX_SONG_BYTES) throw new Error("That song is over 6 MB. Please choose a shorter one.");
+  const title = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Song";
+  // ☁️ R2 first; Firebase Storage when R2 is not set up
+  const r2 = await r2Upload("song", file);
+  if (r2) return { url: r2, title };
   const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "") : "mp3";
   const r = ref(storage, `blog_music/${uid}/${crypto.randomUUID()}.${ext || "mp3"}`);
   await uploadBytes(r, file, { contentType: file.type });
-  const title = file.name.replace(/\.[^.]+$/, "").slice(0, 60) || "Song";
   return { url: await getDownloadURL(r), title };
 }
 

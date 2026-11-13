@@ -2,6 +2,7 @@
 
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { auth, storage } from "./firebase";
+import { r2KindForFolder, r2Upload } from "./r2Upload";
 
 // Photo messages: shrink the picture in the browser (like the app does
 // before uploading), then upload it to Storage and return its URL.
@@ -47,6 +48,12 @@ export async function uploadChatImage(folder: string, file: File): Promise<strin
     throw new Error(`That photo is ${sizeLabel(body.size)}. The limit is 10 MB — please send a smaller one.`);
   }
   const contentType = body.type && body.type.startsWith("image/") ? body.type : "image/jpeg";
+  // ☁️ R2 first for room / Feed / story photos (private chats stay on Firebase)
+  const r2k = r2KindForFolder(folder);
+  if (r2k) {
+    const url = await r2Upload(r2k.kind, body, contentType, r2k.extra);
+    if (url) return url;
+  }
   const send = async () => {
     const r = ref(storage, `${folder}/${crypto.randomUUID()}.jpg`);
     await uploadBytes(r, body, { contentType });
@@ -91,6 +98,11 @@ export async function uploadThumb(folder: string, file: File, side = 720): Promi
     bitmap.close();
     const blob: Blob | null = await new Promise((resolve) => canvas.toBlob((b) => resolve(b), "image/jpeg", 0.74));
     if (!blob) return "";
+    const r2k = r2KindForFolder(folder);
+    if (r2k) {
+      const url = await r2Upload(r2k.kind, blob, "image/jpeg", { ...(r2k.extra || {}), thumb: true });
+      if (url) return url;
+    }
     const r = ref(storage, `${folder}/thumb_${crypto.randomUUID()}.jpg`);
     await uploadBytes(r, blob, { contentType: "image/jpeg" });
     return await getDownloadURL(r);

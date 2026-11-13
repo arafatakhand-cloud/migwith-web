@@ -125,6 +125,7 @@ import type { PickedSticker } from "../../../lib/stickers";
 import { StickerImg } from "../../_components/StickerImg";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage";
+import { r2Upload } from "../../../lib/r2Upload";
 import {
   EMPTY_ROOM,
   banUser,
@@ -1644,10 +1645,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       throw new Error(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
     }
     const type = audio.type || "audio/webm";
-    const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
-    const r = storageRef(storage, `room_audio/${storageSafeSegment(roomName)}/${crypto.randomUUID()}.${ext}`);
-    await uploadBytes(r, audio, { contentType: type });
-    const url = await getDownloadURL(r);
+    // ☁️ R2 first; Firebase Storage when R2 is not set up
+    let url = await r2Upload("room_audio", audio, type, { room: storageSafeSegment(roomName) });
+    if (!url) {
+      const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+      const r = storageRef(storage, `room_audio/${storageSafeSegment(roomName)}/${crypto.randomUUID()}.${ext}`);
+      await uploadBytes(r, audio, { contentType: type });
+      url = await getDownloadURL(r);
+    }
     await addDoc(collection(db, "room_messages", roomName, "messages"), {
       text: `${profile.username}: 🎤 Voice message`,
       sender: profile.username,

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { r2Upload } from "../../../lib/r2Upload";
 import { functions, storage } from "../../../lib/firebase";
 import { useFounderPerms } from "../../../lib/founder";
 import { blogCall } from "../../../lib/feed";
@@ -75,10 +76,14 @@ export default function StorySongsPage() {
     setBusy(true);
     setMsg("");
     try {
-      const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "") : "mp3";
-      const r = ref(storage, `blog_music_library/${crypto.randomUUID()}.${ext || "mp3"}`);
-      await uploadBytes(r, file, { contentType: file.type || "audio/mpeg" });
-      const url = await getDownloadURL(r);
+      // ☁️ R2 first; Firebase Storage when R2 is not set up
+      let url = await r2Upload("song_library", file, file.type || "audio/mpeg");
+      if (!url) {
+        const ext = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase().replace(/[^a-z0-9]/g, "") : "mp3";
+        const r = ref(storage, `blog_music_library/${crypto.randomUUID()}.${ext || "mp3"}`);
+        await uploadBytes(r, file, { contentType: file.type || "audio/mpeg" });
+        url = await getDownloadURL(r);
+      }
       await addLibrarySong({ title: title.trim(), artist: artist.trim(), category, url });
       setFile(null);
       setTitle("");
