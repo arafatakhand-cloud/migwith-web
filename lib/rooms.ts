@@ -225,6 +225,9 @@ export function officialRoomDefaultDescription(roomName: string): string {
 export function isAutoRoomDescription(roomName: string, stored: string): boolean {
   const t = stored.trim();
   if (!t || t === LEGACY_DEFAULT_DESCRIPTION.trim()) return true;
+  // 🎰 an old saved Luxury Bet welcome with the old characters (Laila, Majnu, Romeo …)
+  // → the new welcome (King, Queen, Prince, Fairy, Wizard, Angel)
+  if (roomName === "🎰 Luxury Bet" && /majnu/i.test(t)) return true;
   if (!isOfficialRoomName(roomName)) return false;
   const n = roomName.trim().toLowerCase();
   const l = t.toLowerCase();
