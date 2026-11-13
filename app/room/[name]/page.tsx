@@ -242,6 +242,12 @@ function saveEntry(uid: string, room: string, mark: EntryMark) {
 // 👢 A kicked person can't come back into the room for this long (same in the app; the rules enforce it).
 const KICK_MINUTES = 30;
 
+// ⌨️ typing when you switched rooms (swipe / tab): the next room's message box
+// takes the cursor, like the app. (A phone browser may still want one tap
+// before it shows the keyboard; on a computer the cursor is simply there.)
+const roomTypingCarry = { at: 0 };
+const isRoomBox = (t: EventTarget | null) => t instanceof HTMLElement && t.classList.contains("emote-editor");
+
 // 👢👋🚫🔓🔇🔊 kick / bump / ban / unban / mute lines (like the app)
 /** Shrinks its line's text (down to 4 px smaller) until it fits on ONE line,
  *  instead of breaking in two on a phone. If even 4 px smaller is still more
@@ -426,6 +432,43 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<EmoteEditorHandle>(null);
+  useEffect(() => {
+    let focused = isRoomBox(document.activeElement);
+    let blurAt = 0;
+    const fin = (e: FocusEvent) => {
+      if (isRoomBox(e.target)) focused = true;
+    };
+    const fout = (e: FocusEvent) => {
+      if (isRoomBox(e.target)) {
+        focused = false;
+        blurAt = Date.now();
+      }
+    };
+    document.addEventListener("focusin", fin);
+    document.addEventListener("focusout", fout);
+    // came here from another room while typing → the cursor goes into this room's box
+    // (tried a few times: the box shows only once the room has opened)
+    const timers: number[] = [];
+    if (Date.now() - roomTypingCarry.at < 2500) {
+      roomTypingCarry.at = 0;
+      for (const ms of [120, 450, 1000, 1800]) {
+        timers.push(
+          window.setTimeout(() => {
+            // only while nothing else has the cursor (never steal it from another box)
+            const now = document.activeElement;
+            if (!now || now === document.body) inputRef.current?.focus();
+          }, ms)
+        );
+      }
+    }
+    return () => {
+      document.removeEventListener("focusin", fin);
+      document.removeEventListener("focusout", fout);
+      timers.forEach((t) => window.clearTimeout(t));
+      // leaving this room while its box had the cursor (or had it a moment ago)
+      if (focused || Date.now() - blurAt < 1500) roomTypingCarry.at = Date.now();
+    };
+  }, [roomName]);
   // Leaves this room now (the ✕ on the room tab).
   const leaveRef = useRef<(() => void) | null>(null);
   // Called before each message I send. If my spot went missing while this tab
