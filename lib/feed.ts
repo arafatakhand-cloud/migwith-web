@@ -50,6 +50,10 @@ export type BlogPost = {
   reactions: Record<string, number>;
   /** 👥 the last two people who reacted, newest first ("anima, vip and 46 others") */
   reactNames: string[];
+  /** 🤝 MigMates who said yes ("miglife — with anima and vip") */
+  mates: string[];
+  /** 🤝 MigMates still asked (only the writer sees them) */
+  matesPending: string[];
 };
 
 export type BlogComment = {
@@ -139,6 +143,8 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     poll: toBlogPoll(d.poll),
     reactions: reactionCounts(d.reactions),
     reactNames: Array.isArray(d.reactNames) ? d.reactNames.map((x) => String(x)).filter(Boolean).slice(0, 2) : [],
+    mates: Array.isArray(d.mates) ? d.mates.map((x) => String(x)).filter(Boolean) : [],
+    matesPending: Array.isArray(d.matesPending) ? d.matesPending.map((x) => String(x)).filter(Boolean) : [],
   };
 }
 export function toBlogPoll(v: unknown): BlogPoll | null {
