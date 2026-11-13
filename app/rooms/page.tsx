@@ -278,6 +278,12 @@ export default function RoomsPage() {
     recent: { names: recent.filter(matches), empty: "No recent rooms yet." },
     mine: { names: myRooms.map((r) => r.name).filter(matches), empty: "You haven't created any rooms yet." },
   };
+  // ⭐ BUG FIX (miglife: Favorite rooms listed every country room with an empty ☆):
+  // public rooms (official / made by miglife) count in Favorites only when starred.
+  const publicSet = new Set(publicSection);
+  const favSection = Array.from(
+    new Set([...others.mine.names.filter((n) => !publicSet.has(n) && !OFFICIAL_COUNTRY_ROOMS.includes(n)), ...others.fav.names])
+  );
   const subtitle = (name: string) => {
     if (OFFICIAL_COUNTRY_ROOMS.includes(name)) return "Official room";
     if (gameSet.has(name)) return "Game room";
@@ -372,7 +378,7 @@ export default function RoomsPage() {
     // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
     // Rooms folders — other people's rooms show while searching.
     const base: [string, string, string[]][] = [
-      ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+      ["fav", "Favorite rooms", favSection],
       ["public", "Official rooms", publicSection],
       ["recent", "Recent rooms", others.recent.names],
       ["game", "Game rooms", gameSection.filter(matches)],
@@ -493,7 +499,7 @@ export default function RoomsPage() {
   // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
   // Rooms folders — other people's rooms show while searching.
   const sections: [string, string, string[]][] = [
-    ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+    ["fav", "Favorite rooms", favSection],
     ["public", "Official rooms", publicSection],
     ["recent", "Recent rooms", others.recent.names],
     ["game", "Game rooms", gameSection.filter(matches)],
