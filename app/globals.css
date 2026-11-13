@@ -1554,7 +1554,7 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
 html:not([data-theme="dark_night"]) .chat-name { color: var(--name-light); }
 /* 🛡 Admin yellow keeps its colour but gets a dark-gold edge, so it reads on light bubbles */
 .admin-edge { -webkit-text-stroke: 0.5px #7A5A00; text-shadow: 0 1px 0 #7A5A00, 0 0 1.5px rgba(122, 90, 0, 0.6); }
-.staff-edge { -webkit-text-stroke: 0.5px #0B4A03; text-shadow: 0 1px 0 #0B4A03, 0 0 1.5px rgba(11, 74, 3, 0.6); }
+.staff-edge { -webkit-text-stroke: 0.6px #D50000; text-shadow: 0 1px 0 #D50000, 0 0 2px rgba(213, 0, 0, 0.6); }
 
 /* 🌙 Dark Night: the profile page is a lighter slate (not near-black), and its
    details box is a light glass with dark text, so the words can be read. */
