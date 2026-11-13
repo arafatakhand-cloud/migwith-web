@@ -417,7 +417,10 @@ export function Dashboard() {
         />
       )}
 
-      {classic && <InstallHint />}
+      {/* 📲 every theme (it was Classic only — Glass, the default, never showed it) */}
+      <div className="relative z-10">
+        <InstallHint />
+      </div>
 
       {/* Rows — Classic only: Modern ends with the friend cards, like the app's Lobby */}
       {classic && (
