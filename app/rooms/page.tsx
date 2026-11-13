@@ -68,6 +68,9 @@ function capacityForLevel(level: number): number {
 // Rooms shows it at once (no "0/50" while it counts again), and re-reads only
 // after ROOMS_FRESH_MS or a ↻.
 const ROOMS_FRESH_MS = 30_000;
+// 📂 BUG FIX (miglife: "fold a folder, change tab, come back → it opens by itself")
+const roomFolds: { classic: Record<string, boolean>; modern: Record<string, boolean> } = { classic: {}, modern: {} };
+
 const roomsMemory: {
   uid: string;
   userRooms: UserRoom[];
@@ -100,8 +103,13 @@ export default function RoomsPage() {
   const [counts, setCounts] = useState<Record<string, number>>(roomsMemory.counts);
   const [maxes, setMaxes] = useState<Record<string, number>>(roomsMemory.maxes);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
-  const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
+  // 📂 folded / open is kept while the site is open (it reset to "all open" after every tab change)
+  const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>(roomFolds.classic);
+  const [modernOpen, setModernOpen] = useState<Record<string, boolean>>(roomFolds.modern);
+  useEffect(() => {
+    roomFolds.classic = classicOpen;
+    roomFolds.modern = modernOpen;
+  }, [classicOpen, modernOpen]);
   // Which folders show ALL their rooms (the ⌄ button under the top 5).
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
   // 🔥 Hot now's ↻ moves on to the next 5 busy rooms (the rest stay under ⌄)
@@ -278,6 +286,14 @@ export default function RoomsPage() {
     recent: { names: recent.filter(matches), empty: "No recent rooms yet." },
     mine: { names: myRooms.map((r) => r.name).filter(matches), empty: "You haven't created any rooms yet." },
   };
+  // ⭐ BUG FIX (miglife: Favorite rooms listed every country room with an empty ☆):
+  // public rooms (official / made by miglife) count in Favorites only when starred.
+  const publicSet = new Set(publicSection);
+  // 🕘 the rooms I visited last come first (newest on top), then the other favourites
+  const seenAt = new Map(recent.map((r, i) => [r, i] as const));
+  const favSection = Array.from(
+    new Set([...others.mine.names.filter((n) => !publicSet.has(n) && !OFFICIAL_COUNTRY_ROOMS.includes(n)), ...others.fav.names])
+  ).sort((a, b) => (seenAt.get(a) ?? 1e9) - (seenAt.get(b) ?? 1e9));
   const subtitle = (name: string) => {
     if (OFFICIAL_COUNTRY_ROOMS.includes(name)) return "Official room";
     if (gameSet.has(name)) return "Game room";
@@ -372,7 +388,7 @@ export default function RoomsPage() {
     // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
     // Rooms folders — other people's rooms show while searching.
     const base: [string, string, string[]][] = [
-      ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+      ["fav", "Favorite rooms", favSection],
       ["public", "Official rooms", publicSection],
       ["recent", "Recent rooms", others.recent.names],
       ["game", "Game rooms", gameSection.filter(matches)],
@@ -407,9 +423,9 @@ export default function RoomsPage() {
           </div>
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : true);
-            const limited = key !== "fav" && !q && allRooms.length > 5;
+            const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
             const expanded = !!showAll[key];
-            const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
+            const rooms = limited ? (key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
             return (
               <div key={key}>
                 <button
@@ -493,7 +509,7 @@ export default function RoomsPage() {
   // rooms · Recent rooms · Game rooms · Hot now. No My Rooms / Private
   // Rooms folders — other people's rooms show while searching.
   const sections: [string, string, string[]][] = [
-    ["fav", "Favorite rooms", Array.from(new Set([...others.mine.names, ...others.fav.names]))],
+    ["fav", "Favorite rooms", favSection],
     ["public", "Official rooms", publicSection],
     ["recent", "Recent rooms", others.recent.names],
     ["game", "Game rooms", gameSection.filter(matches)],
@@ -555,9 +571,9 @@ export default function RoomsPage() {
 
         {shownSections.map(([key, title, allRooms]) => {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
-          const limited = key !== "fav" && !q && allRooms.length > 5;
+          const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
           const expanded = !!showAll[key];
-          const rooms = limited ? (key === "hot" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
+          const rooms = limited ? (key === "hot" || key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
