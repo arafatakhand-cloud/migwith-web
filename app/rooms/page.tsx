@@ -68,6 +68,9 @@ function capacityForLevel(level: number): number {
 // Rooms shows it at once (no "0/50" while it counts again), and re-reads only
 // after ROOMS_FRESH_MS or a ↻.
 const ROOMS_FRESH_MS = 30_000;
+// 📂 BUG FIX (miglife: "fold a folder, change tab, come back → it opens by itself")
+const roomFolds: { classic: Record<string, boolean>; modern: Record<string, boolean> } = { classic: {}, modern: {} };
+
 const roomsMemory: {
   uid: string;
   userRooms: UserRoom[];
@@ -100,8 +103,13 @@ export default function RoomsPage() {
   const [counts, setCounts] = useState<Record<string, number>>(roomsMemory.counts);
   const [maxes, setMaxes] = useState<Record<string, number>>(roomsMemory.maxes);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>({});
-  const [modernOpen, setModernOpen] = useState<Record<string, boolean>>({});
+  // 📂 folded / open is kept while the site is open (it reset to "all open" after every tab change)
+  const [classicOpen, setClassicOpen] = useState<Record<string, boolean>>(roomFolds.classic);
+  const [modernOpen, setModernOpen] = useState<Record<string, boolean>>(roomFolds.modern);
+  useEffect(() => {
+    roomFolds.classic = classicOpen;
+    roomFolds.modern = modernOpen;
+  }, [classicOpen, modernOpen]);
   // Which folders show ALL their rooms (the ⌄ button under the top 5).
   const [showAll, setShowAll] = useState<Record<string, boolean>>({});
   // 🔥 Hot now's ↻ moves on to the next 5 busy rooms (the rest stay under ⌄)
