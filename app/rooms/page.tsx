@@ -421,7 +421,7 @@ export default function RoomsPage() {
           </div>
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : true);
-            const limited = key !== "fav" && !q && allRooms.length > 5;
+            const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
             const expanded = !!showAll[key];
             const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
             return (
@@ -569,7 +569,7 @@ export default function RoomsPage() {
 
         {shownSections.map(([key, title, allRooms]) => {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
-          const limited = key !== "fav" && !q && allRooms.length > 5;
+          const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
           const expanded = !!showAll[key];
           const rooms = limited ? (key === "hot" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
