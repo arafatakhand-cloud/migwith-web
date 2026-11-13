@@ -25,9 +25,10 @@ export const ACH_METALS: { face: string[]; ring: string }[] = [
 
 export const EVENT_METAL = 11;
 
-export type AchCategory = "SOCIAL" | "GIFT" | "GAMES" | "LEVEL" | "SPECIAL";
+export type AchCategory = "SOCIAL" | "FEED" | "GIFT" | "GAMES" | "LEVEL" | "SPECIAL";
 export const ACH_CATEGORIES: [AchCategory, string][] = [
   ["SOCIAL", "💬 Social"],
+  ["FEED", "📰 Feed"],
   ["GIFT", "🎁 Gift"],
   ["GAMES", "🎮 Games"],
   ["LEVEL", "⭐ Level & Time"],
@@ -87,6 +88,12 @@ export const ACH_SERIES: AchSeries[] = [
   { id: "voucher", field: "vouchers", title: "Voucher Hunter", emoji: "🎟️", steps: [10, 100], category: "SPECIAL", goal: "Catch %s vouchers" },
   { id: "mentor", field: "isMentor", title: "Mentor's Pick", emoji: "🧑‍🏫", steps: [1], category: "SPECIAL", goal: "Be a Mentor", soloMetal: 8 },
   { id: "merchant", field: "isMerchant", title: "Merchant Pro", emoji: "🏪", steps: [1], category: "SPECIAL", goal: "Be a Merchant", soloMetal: 7 },
+  // 📰 Feed (miglife Nov 2026) — counted by the server's blog function
+  { id: "writer", field: "feedPosts", title: "Mig Writer", emoji: "📰", steps: [10, 100, 1000], category: "FEED", goal: "Write %s Migs" },
+  { id: "migstar", field: "feedLikesGot", title: "Mig Star", emoji: "🌠", steps: [100, 1000, 10000], category: "FEED", goal: "Get %s reactions on your Migs" },
+  { id: "reactor", field: "feedLikesGiven", title: "Cheerleader", emoji: "👍", steps: [100, 1000, 10000], category: "FEED", goal: "React to %s Migs" },
+  { id: "commenter", field: "feedComments", title: "Commenter", emoji: "🗨️", steps: [50, 500, 5000], category: "FEED", goal: "Write %s comments on Migs" },
+  { id: "sharer", field: "feedShares", title: "Sharer", emoji: "🔁", steps: [10, 100, 1000], category: "FEED", goal: "Share %s Migs" },
 ];
 
 /** 1 · 10 · … · 1000 → "1K" · 10K · 1M */
