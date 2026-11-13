@@ -295,6 +295,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     ? friends.filter((f) => f.toLowerCase().startsWith(mentionMatch[1].toLowerCase()) && f.toLowerCase() !== mentionMatch[1].toLowerCase()).slice(0, 6)
     : [];
   const pickMention = (name: string) => setCtext((t) => t.replace(/@[A-Za-z0-9_.\-]{0,20}$/, `@${name} `));
+  // 📣 @all: tells every friend (shown first while typing "@", "@a", "@al")
+  const mentionAll = !!mentionMatch && friends.length > 0 && "all".startsWith(mentionMatch[1].toLowerCase()) && mentionMatch[1].toLowerCase() !== "all";
+  // 🤝 MigMates: friends added to this Mig ("— with anima and vip"); they approve first
+  const [cmates, setCmates] = useState<string[]>([]);
+  const [cmatesOpen, setCmatesOpen] = useState(false);
+  const [cmatesQ, setCmatesQ] = useState("");
   const [ccatOpen, setCcatOpen] = useState(false);
   // 🔒 who can see the new post: '' = 🌍 Everyone, 'friends', 'me'
   const [cpriv, setCpriv] = useState<"" | "friends" | "me">("");
@@ -367,6 +373,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCmood("");
     setCpoll(null);
     setCpriv("");
+    setCmates([]);
     setCerr("");
     setCdraftNote(false);
   };
@@ -399,6 +406,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCpriv(p.privacy);
     setCplace(p.place ? { name: p.place, sub: p.placeSub, icon: "📍" } : null);
     setCmood(p.mood);
+    setCmates([...(p.mates || []), ...(p.matesPending || [])]);
     setCerr("");
     setCdraftNote(false);
     cbgKeep.current = p.bg >= 0 ? p.bg : PLAIN_BG;
@@ -467,7 +475,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[] }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -479,10 +487,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
-      setToast("Migged ✓");
+      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      // 📣 @all works once every 6 hours
+      setToast((r as { allSkipped?: boolean }).allSkipped ? "Migged ✓ · 📣 @all works once every 6 hours" : "Migged ✓");
       setReload((n) => n + 1);
-      window.setTimeout(() => setToast(""), 2200);
+      window.setTimeout(() => setToast(""), 3200);
     } catch (e) {
       // the post did not go: bring the text back so nothing is lost
       setCtext(p.text);
@@ -492,6 +501,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCpriv(p.privacy);
       setCplace(p.place);
       setCmood(p.mood);
+      setCmates(p.mates || []);
       setCpoll(p.poll ? { options: p.poll.options, days: (p.poll.days as 1 | 3 | 7) || 3, multi: p.poll.multi } : null);
       cbgKeep.current = p.bg;
       setComposing(true);
@@ -515,7 +525,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
       await blogCall("edit", {
         postId: cedit.id, title, body, cover, category: ccat,
-        place: cplace?.name || "", placeSub: cplace?.sub || "", mood: cmood,
+        place: cplace?.name || "", placeSub: cplace?.sub || "", mood: cmood, mates: cmates,
         ...(thumb ? { thumb } : {}), ...(cover || cvideo ? {} : { bg: cbg }),
       });
       clearWriter();
@@ -538,7 +548,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
     if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
     const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -561,6 +571,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCpriv(payload.privacy);
         setCplace(payload.place);
         setCmood(payload.mood);
+        setCmates(payload.mates);
         setCpoll(payload.poll ? { options: payload.poll.options, days: payload.poll.days, multi: payload.poll.multi } : null);
         cbgKeep.current = payload.bg;
         setComposing(true);
@@ -596,7 +607,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     try {
       const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
       // an older cache has no reactNames yet
-      if (raw) cached = (JSON.parse(raw) as BlogPost[]).map((p) => ({ ...p, reactNames: Array.isArray(p.reactNames) ? p.reactNames : [] }));
+      if (raw) cached = (JSON.parse(raw) as BlogPost[]).map((p) => ({ ...p, reactNames: Array.isArray(p.reactNames) ? p.reactNames : [], mates: Array.isArray(p.mates) ? p.mates : [], matesPending: Array.isArray(p.matesPending) ? p.matesPending : [] }));
     } catch {
       cached = null;
     }
@@ -739,8 +750,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               cur
                 ? cur.map((p) => {
                     const f = fresh.get(p.id);
-                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || f.reactNames.join() !== (p.reactNames || []).join() || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
-                      ? { ...p, likes: f.likes, reactions: f.reactions, reactNames: f.reactNames, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
+                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || f.reactNames.join() !== (p.reactNames || []).join() || f.mates.join() !== (p.mates || []).join() || f.matesPending.join() !== (p.matesPending || []).join() || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
+                      ? { ...p, likes: f.likes, reactions: f.reactions, reactNames: f.reactNames, mates: f.mates, matesPending: f.matesPending, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
                       : p;
                   })
                 : cur
@@ -850,6 +861,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
 
   // 🔒 change who can see one of my Migs, from its card
+  // 🤝 take my name off someone's Mig
+  const removeMeAsMate = async (p: BlogPost) => {
+    try {
+      await blogCall("mateRemove", { postId: p.id });
+      setPosts((list) => (list || []).map((q) => (q.id === p.id ? { ...q, mates: (q.mates || []).filter((n) => n.toLowerCase() !== username.toLowerCase()) } : q)));
+      setToast("Removed from MigMates ✓");
+    } catch (e) {
+      setToast(blogError(e));
+    }
+  };
   const setMigPrivacy = async (p: BlogPost, k: "" | "friends" | "me") => {
     setPosts((cur) => (cur ? cur.map((x) => (x.id === p.id ? { ...x, privacy: k } : x)) : cur));
     try {
@@ -1073,6 +1094,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-black leading-snug text-[#1E1B4B]">
                     {username}
+                    {cmates.length > 0 && cpriv !== "me" && (
+                      <button type="button" onClick={() => setCmatesOpen(true)} className="ml-1 text-left font-semibold text-[#4B4F7A]">
+                        — with <b className="font-black text-[#1E1B4B]">{withLine(cmates)}</b>
+                      </button>
+                    )}
                     {/* 😊 M1: "mahin is 😊 happy" — tap to change, ✕ to take it off */}
                     {blogMood(cmood) && (
                       <span className="font-semibold text-[#4B4F7A]">
@@ -1151,6 +1177,57 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     <button type="button" onClick={() => (setCloseAsk(false), clearWriter(), dropDraft(), setComposing(false))} className="mt-2 h-10 w-full rounded-2xl bg-[#FEF2F2] text-[14px] font-extrabold text-[#DC2626]">
                       Discard
                     </button>
+                  </div>
+                </div>
+              )}
+              {cmatesOpen && (
+                // 🤝 MigMates: tick friends; each one approves before their name shows
+                <div className="fixed inset-0 z-[60] flex items-end justify-center bg-[#0B1F3A]/40 sm:items-center sm:p-4" onClick={() => setCmatesOpen(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="flex max-h-[80dvh] w-full max-w-md flex-col rounded-t-[26px] bg-[#FFFFFF] p-4 shadow-2xl sm:rounded-[26px]">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[17px] font-black text-[#1E1B4B]">🤝 Add MigMates</span>
+                      <button type="button" onClick={() => setCmatesOpen(false)} className="rounded-full bg-[#2563EB] px-4 py-1.5 text-[13px] font-black text-white shadow-[0_3px_0_#173EA8]">
+                        Done{cmates.length ? ` · ${cmates.length}` : ""}
+                      </button>
+                    </div>
+                    <p className="mb-2 text-[12px] font-semibold text-[#8A8FB0]">Each friend says ✓ Join first — then their name shows on your Mig.</p>
+                    <input
+                      value={cmatesQ}
+                      onChange={(e) => setCmatesQ(e.target.value)}
+                      placeholder="🔎 Search friends"
+                      className="h-11 rounded-2xl bg-[#F4F6FD] px-3.5 text-[14px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
+                    />
+                    {cmates.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {cmates.map((n) => (
+                          <button key={n} type="button" onClick={() => setCmates((m) => m.filter((x) => x !== n))} className="rounded-full bg-[#EEF4FF] px-2.5 py-1 text-[12px] font-extrabold text-[#2563EB]">
+                            {n} ✕
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+                      {friends.length === 0 && <p className="py-6 text-center text-[13px] text-[#8A8FB0]">Add friends first to make them MigMates.</p>}
+                      {friends
+                        .filter((f) => !cmatesQ.trim() || f.toLowerCase().includes(cmatesQ.trim().toLowerCase()))
+                        .slice(0, 200)
+                        .map((f) => {
+                          const on = cmates.some((x) => x.toLowerCase() === f.toLowerCase());
+                          return (
+                            <button
+                              key={f}
+                              type="button"
+                              disabled={!on && cmates.length >= 20}
+                              onClick={() => setCmates((m) => (on ? m.filter((x) => x.toLowerCase() !== f.toLowerCase()) : [...m, f]))}
+                              className="flex w-full items-center gap-3 border-b border-[#F0F1F7] px-1 py-2 text-left disabled:opacity-40"
+                            >
+                              <Avatar name={f} color={colorOf(f)} size={34} />
+                              <span className="min-w-0 flex-1 truncate text-[14px] font-extrabold text-[#1E1B4B]">{f}</span>
+                              <span className={`flex h-[22px] w-[22px] items-center justify-center rounded-[7px] text-[13px] font-black ${on ? "bg-[#2563EB] text-white" : "border-2 border-[#C9D3E3]"}`}>{on ? "✓" : ""}</span>
+                            </button>
+                          );
+                        })}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1285,8 +1362,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   }
                 }}
               />
-              {mentionSuggest.length > 0 && (
+              {(mentionSuggest.length > 0 || mentionAll) && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {mentionAll && (
+                    <button
+                      type="button"
+                      onClick={() => pickMention("all")}
+                      title="Tell all your friends (once every 6 hours)"
+                      className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FFEDD5] to-[#FED7AA] px-3 py-1.5 text-[13px] font-extrabold text-[#C2410C] shadow-sm ring-1 ring-[#FDBA74] transition hover:scale-[1.03]"
+                    >
+                      📣 @all <span className="font-semibold text-[#C2410C]/75">· all {friends.length} friends</span>
+                    </button>
+                  )}
                   {mentionSuggest.map((f) => (
                     <button
                       key={f}
@@ -1541,6 +1628,21 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 >
                   😊
                 </button>
+                {/* 🤝 MigMates (not on a 🔒 Only me Mig) */}
+                {cpriv !== "me" && (
+                  <button
+                    type="button"
+                    onClick={() => setCmatesOpen(true)}
+                    aria-label="Add MigMates"
+                    title="MigMates"
+                    className={`relative flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#EEF4FF] active:scale-90 ${cmates.length ? "bg-[#EEF4FF]" : ""}`}
+                  >
+                    🤝
+                    {cmates.length > 0 && (
+                      <span className="absolute -right-0.5 -top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#2563EB] px-1 text-[10px] font-black text-white">{cmates.length}</span>
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
@@ -1709,7 +1811,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-6 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} />
+              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1952,6 +2054,11 @@ function depthOf(c: string): string {
   const hex = /^#[0-9a-f]{6}$/i.test(c) ? c : "#2563EB";
   return `inset 0 2px 0 #fff, 0 0 0 1px ${hex}1f, 0 3px 0 ${hex}59, 0 6px 0 ${hex}40, 0 9px 0 ${hex}2b, 0 14px 18px -8px ${hex}80`;
 }
+// 🤝 "anima" / "anima and vip" / "anima, vip and 3 others"
+function withLine(names: string[]): string {
+  if (names.length <= 2) return names.join(" and ");
+  return `${names.slice(0, 2).join(", ")} and ${names.length - 2} other${names.length - 2 > 1 ? "s" : ""}`;
+}
 // 👥 "anima, vip and 46 others" / "You and 3 others" / "48 people"
 function reactLine(p: BlogPost, me: string): string {
   const names = (p.reactNames || []).slice(0, Math.min(2, p.likes)).map((n) => (me && n === me ? "You" : n));
@@ -1961,7 +2068,7 @@ function reactLine(p: BlogPost, me: string): string {
   return rest ? `${who} and ${blogShort(rest)} other${rest > 1 ? "s" : ""}` : names.length === 2 ? names.join(" and ") : who;
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "" }: { me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -2052,7 +2159,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         </Link>
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
-            <span data-notranslate className="truncate text-[14.5px] font-extrabold">
+            <span data-notranslate className="line-clamp-2 min-w-0 break-words text-[14.5px] font-extrabold leading-tight">
               {p.author}
               {verified && (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -2061,6 +2168,21 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
               {blogMood(p.mood) && (
                 <span className="font-semibold text-[#55658F]">
                   {" "}is {blogMood(p.mood)![0]} <b className="font-extrabold text-[#16264A]">{blogMood(p.mood)![1]}</b>
+                </span>
+              )}
+              {p.mates?.length > 0 && (
+                // 🤝 MigMates who said yes
+                <span className="font-semibold text-[#55658F]">
+                  {" "}— with{" "}
+                  {p.mates.slice(0, 2).map((n, i) => (
+                    <span key={n}>
+                      {i > 0 ? (p.mates.length === 2 ? " and " : ", ") : ""}
+                      <Link href={`/profile/${encodeURIComponent(n)}`} onClick={(e) => e.stopPropagation()} className="font-extrabold text-[#16264A] hover:underline">
+                        {n}
+                      </Link>
+                    </span>
+                  ))}
+                  {p.mates.length > 2 && <b className="font-extrabold text-[#16264A]"> and {p.mates.length - 2} other{p.mates.length - 2 > 1 ? "s" : ""}</b>}
                 </span>
               )}
             </span>
@@ -2097,7 +2219,7 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
           </button>
         )}
         {/* ⋯ my Mig: Edit · Privacy · Save · Delete — someone else's: Save · Report */}
-        {(onEdit || canReport) && (
+        {(onEdit || canReport || onRemoveMate) && (
           <div className="relative shrink-0">
             <button
               type="button"
@@ -2134,6 +2256,11 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
                       ))}
                     </div>
                   )}
+                  {onRemoveMate && (
+                    <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onRemoveMate())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
+                      🤝 Remove me from MigMates
+                    </button>
+                  )}
                   <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onSave())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
                     {saved ? "🔖 Unsave" : "🔖 Save"}
                   </button>
@@ -2163,6 +2290,10 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
         )}
       </div>
 
+      {onEdit && p.matesPending?.length > 0 && (
+        // 🤝 only the writer sees who has not said yes yet
+        <div className="mx-3.5 mb-2 rounded-xl bg-[#FFF7E6] px-3 py-1.5 text-[12px] font-bold text-[#B45309]">⏳ Waiting: {p.matesPending.join(", ")}</div>
+      )}
       {/* the words of a photo / video Mig, above it */}
       {media && text && (
         <p onClick={open} className="cursor-pointer px-4 pb-2.5 text-[14.5px] leading-snug text-[#1E2A44]">

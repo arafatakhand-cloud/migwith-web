@@ -961,6 +961,8 @@ export default function AlertsPage() {
                     </Link>
                   </FancyCard>
                 );
+              } else if (a.type === "blog_mate_req" && a.postId) {
+                card = <MateRequestCard a={a} isNew={isNew} />;
               } else if (a.type === "birthday") {
                 card = <BirthdayCard a={a} />;
               } else if (a.type === "color_purchase_request" && a.requestId) {
@@ -1026,5 +1028,52 @@ export default function AlertsPage() {
         </div>
       </section>
     </PageShell>
+  );
+}
+
+// 🤝 "anima wants to add you as a MigMate" — ✓ Join / ✕ No thanks (blog mateRespond)
+const blogMateCall = httpsCallable<Record<string, unknown>, { ok?: boolean; changed?: boolean }>(functions, "blog");
+function MateRequestCard({ a, isNew }: { a: { id: string; text: string; postId: string; createdAtMs: number }; isNew: boolean }) {
+  const [done, setDone] = useState<"" | "yes" | "no">("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const answer = async (accept: boolean) => {
+    setBusy(true);
+    setErr("");
+    try {
+      await blogMateCall({ action: "mateRespond", postId: a.postId, accept });
+      setDone(accept ? "yes" : "no");
+      await updateDoc(doc(db, "alerts", a.id), { read: true }).catch(() => {});
+    } catch (e) {
+      setErr(String((e as { message?: string })?.message || "Something went wrong."));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className={`my-1.5 rounded-[20px] border-2 border-[#BFD7F2] bg-white p-3.5 text-[#16264A] ${isNew ? "shadow-[0_8px_18px_rgba(37,99,235,.25)]" : "shadow-sm"}`}>
+      <div className="flex items-center gap-2">
+        <span className="text-[14px] font-extrabold">🤝 MigMates</span>
+        <span className="ml-auto text-[11px] text-[#8A96AB]">{new Date(a.createdAtMs).toLocaleString()}</span>
+        {isNew && <span className="rounded-full bg-[#EEF4FF] px-2 py-0.5 text-[10px] font-extrabold text-[#2563EB]">NEW</span>}
+      </div>
+      <p className="mt-1 whitespace-pre-wrap break-words text-[13px] leading-[18px] text-[#2E3B4E]">{a.text}</p>
+      {done ? (
+        <p className="mt-2 text-[13px] font-bold text-[#15803D]">{done === "yes" ? "✓ You joined — your name shows on this Mig." : "✕ Not added."}</p>
+      ) : (
+        <div className="mt-2.5 flex gap-2">
+          <button type="button" disabled={busy} onClick={() => answer(true)} className="flex-1 rounded-xl bg-gradient-to-b from-[#4ADE80] to-[#16A34A] py-2 text-[13px] font-black text-white shadow-[0_3px_0_#15803D] disabled:opacity-50">
+            ✓ Join
+          </button>
+          <button type="button" disabled={busy} onClick={() => answer(false)} className="flex-1 rounded-xl bg-gradient-to-b from-white to-[#FEE2E2] py-2 text-[13px] font-black text-[#DC2626] shadow-[0_3px_0_#F5B4B4] disabled:opacity-50">
+            ✕ No thanks
+          </button>
+        </div>
+      )}
+      <Link href={`/feed/${encodeURIComponent(a.postId)}`} className="mt-2 inline-block text-[12px] font-bold text-[#2563EB]">
+        See the Mig ›
+      </Link>
+      {err && <p className="mt-1 text-[12px] font-bold text-[#DC2626]">{err}</p>}
+    </div>
   );
 }

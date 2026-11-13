@@ -7,6 +7,7 @@ import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "fire
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { useSenderColors } from "../../lib/senderColors";
+import { useFriends } from "../../lib/privateChat";
 import { PageShell } from "./PageShell";
 import { openReport } from "./ReportDialog";
 import { ReactorsSheet } from "./ReactorsSheet";
@@ -59,6 +60,8 @@ export function MigView({
   const [liked, setLiked] = useState(false);
   const [likeBusy, setLikeBusy] = useState(false);
   const [text, setText] = useState("");
+  // 💬 @mention in a comment: people in this Mig first, then my friends
+  const myFriends = useFriends(username || "");
   const [sending, setSending] = useState(false);
   // ↩ the top comment I am replying to (null = a new top comment)
   const [replyTo, setReplyTo] = useState<BlogComment | null>(null);
@@ -427,6 +430,20 @@ export function MigView({
                 is {blogMood(post.mood)![0]} <b>{blogMood(post.mood)![1]}</b>
               </span>
             )}
+            {(post.mates || []).length > 0 && (
+              // 🤝 MigMates who said yes
+              <span className="font-semibold text-[#3B4266]">
+                — with{" "}
+                {post.mates.map((n, i) => (
+                  <span key={n}>
+                    {i > 0 ? (i === post.mates.length - 1 ? " and " : ", ") : ""}
+                    <Link href={`/profile/${encodeURIComponent(n)}`} className="font-bold text-[#1E3A6E] hover:underline">
+                      {n}
+                    </Link>
+                  </span>
+                ))}
+              </span>
+            )}
             <span className="shrink-0">
               · {blogAgo(post.createdMs)}
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
@@ -536,7 +553,7 @@ export function MigView({
                     <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
                       {c.author}
                     </Link>
-                    <span className="break-words">{c.text}</span>
+                    <span className="break-words">{commentWithMentions(c.text)}</span>
                     {/* 👍❤️ 5 — the reactions on this comment, on the bubble's corner */}
                     {c.likes > 0 && (
                       <span className="absolute -bottom-2.5 right-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-bold text-[#5A6F93] shadow-[0_1px_4px_rgba(0,0,0,.18)]">
@@ -629,6 +646,39 @@ export function MigView({
             <button type="button" onClick={() => { setReplyTo(null); setText(""); }} className="text-[#8494B2]">✕</button>
           </div>
         )}
+        {user && (() => {
+          // 💬 typing "@an…" → people in this Mig (writer, MigMates, commenters), then friends
+          const m = text.match(/@([A-Za-z0-9_.\-]{0,20})$/);
+          if (!m) return null;
+          const q = m[1].toLowerCase();
+          const me = (username || "").toLowerCase();
+          const inMig = Array.from(new Set([post.author, ...(post.mates || []), ...comments.map((c) => c.author)])).filter((n) => n && n.toLowerCase() !== me);
+          const seen = new Set(inMig.map((n) => n.toLowerCase()));
+          const pool = [...inMig.map((n) => [n, "in this Mig"] as const), ...myFriends.filter((n) => !seen.has(n.toLowerCase()) && n.toLowerCase() !== me).map((n) => [n, "friend"] as const)];
+          const list = pool.filter(([n]) => n.toLowerCase().startsWith(q) && n.toLowerCase() !== q).slice(0, 6);
+          if (!list.length) return null;
+          return (
+            <div className="mx-auto mb-1.5 max-w-2xl overflow-hidden rounded-2xl border border-[#E5EAF5] bg-white shadow-[0_10px_24px_-12px_rgba(11,42,91,.5)]">
+              {list.map(([n, why]) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => {
+                    setText((t) => t.replace(/@[A-Za-z0-9_.\-]{0,20}$/, `@${n} `));
+                    document.getElementById("blog-comment")?.focus();
+                  }}
+                  className="flex w-full items-center gap-2.5 border-b border-[#F0F1F7] px-3 py-2 text-left last:border-0 hover:bg-[#F4F8FD]"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: colorOf(n) || "#2563EB" }}>
+                    {n.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="flex-1 text-[13.5px] font-extrabold text-[#1E1B4B]">@{n}</span>
+                  <span className="text-[11px] font-semibold text-[#8A94B0]">{why}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
         <div className="mx-auto flex max-w-2xl gap-2">
           {user ? (
             <>
@@ -714,4 +764,17 @@ function inline(line: string, mentions: string[] = []): React.ReactNode[] {
       );
     return part;
   });
+}
+
+// 💬 a comment's @names in blue, tap → their profile
+function commentWithMentions(text: string) {
+  return text.split(/(@[A-Za-z0-9_.\-]{2,30})/g).map((part, i) =>
+    part.length > 1 && part[0] === "@" && part.toLowerCase() !== "@all" ? (
+      <Link key={i} href={`/profile/${encodeURIComponent(part.slice(1))}`} onClick={(e) => e.stopPropagation()} className="font-extrabold text-[#2563EB] hover:underline">
+        {part}
+      </Link>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  );
 }

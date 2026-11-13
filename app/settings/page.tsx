@@ -206,6 +206,7 @@ export default function SettingsPage() {
                 }
               />
               <Row icon="🚫" tint="#E12A2A" title="Blocked users" subtitle="People you have blocked" value={String(blocked.length)} onClick={() => setDialog("blocked")} />
+              <MatesReviewRow />
             </Group>
 
             <Group title="Security">
@@ -624,3 +625,35 @@ function SendDialog({ kind, onClose, onDone }: { kind: "help" | "feedback"; onCl
   );
 }
 
+// 🤝 MigMates: when ON (default), a friend adding me to their Mig needs my ✓ Join first
+const mateSettingCall = httpsCallable<{ action: string; review?: boolean }, { review?: boolean }>(functions, "blog");
+function MatesReviewRow() {
+  const [on, setOn] = useState<boolean | null>(null);
+  useEffect(() => {
+    mateSettingCall({ action: "mateSetting" })
+      .then((r) => setOn(r.data?.review !== false))
+      .catch(() => setOn(true));
+  }, []);
+  return (
+    <Row
+      icon="🤝"
+      tint="#2563EB"
+      title="Review MigMates"
+      subtitle="Friends who add you to their Mig need your ✓ Join first"
+      right={
+        <Switch
+          on={on !== false}
+          disabled={on === null}
+          onChange={async (v) => {
+            setOn(v);
+            try {
+              await mateSettingCall({ action: "mateSetting", review: v });
+            } catch {
+              setOn(!v);
+            }
+          }}
+        />
+      }
+    />
+  );
+}
