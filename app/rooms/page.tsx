@@ -289,9 +289,11 @@ export default function RoomsPage() {
   // ⭐ BUG FIX (miglife: Favorite rooms listed every country room with an empty ☆):
   // public rooms (official / made by miglife) count in Favorites only when starred.
   const publicSet = new Set(publicSection);
+  // 🕘 the rooms I visited last come first (newest on top), then the other favourites
+  const seenAt = new Map(recent.map((r, i) => [r, i] as const));
   const favSection = Array.from(
     new Set([...others.mine.names.filter((n) => !publicSet.has(n) && !OFFICIAL_COUNTRY_ROOMS.includes(n)), ...others.fav.names])
-  );
+  ).sort((a, b) => (seenAt.get(a) ?? 1e9) - (seenAt.get(b) ?? 1e9));
   const subtitle = (name: string) => {
     if (OFFICIAL_COUNTRY_ROOMS.includes(name)) return "Official room";
     if (gameSet.has(name)) return "Game room";
@@ -423,7 +425,7 @@ export default function RoomsPage() {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : true);
             const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
             const expanded = !!showAll[key];
-            const rooms = limited ? [...allRooms].sort(byLive).slice(0, expanded ? undefined : 5) : allRooms;
+            const rooms = limited ? (key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
             return (
               <div key={key}>
                 <button
@@ -571,7 +573,7 @@ export default function RoomsPage() {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
           const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
           const expanded = !!showAll[key];
-          const rooms = limited ? (key === "hot" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
+          const rooms = limited ? (key === "hot" || key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
