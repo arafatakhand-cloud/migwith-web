@@ -8,20 +8,28 @@ import { db } from "./firebase";
 // there; LowCard / Ludo win fireworks are not affected.
 export const winFxKey = (room: string) => room.trim().toLowerCase();
 
+// 🃏 LowCard has its own list now (app_settings/win_fx.lowcardRooms), the same way.
+export type WinFxField = "cricketRooms" | "lowcardRooms";
+
 /** The rooms switched ON (lowercase); null while loading. */
 export function useCricketWinFxRooms(): Set<string> | null {
+  return useWinFxRooms("cricketRooms");
+}
+
+/** The rooms switched ON for one game's win fireworks (lowercase); null while loading. */
+export function useWinFxRooms(field: WinFxField): Set<string> | null {
   const [rooms, setRooms] = useState<Set<string> | null>(null);
   useEffect(
     () =>
       onSnapshot(
         doc(db, "app_settings", "win_fx"),
         (s) => {
-          const list = s.get("cricketRooms");
+          const list = s.get(field);
           setRooms(new Set(Array.isArray(list) ? list.map((x) => winFxKey(String(x ?? ""))).filter(Boolean) : []));
         },
         () => setRooms(new Set())
       ),
-    []
+    [field]
   );
   return rooms;
 }
