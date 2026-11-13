@@ -132,6 +132,31 @@ export default function RegisterPage() {
   const idOk = idRe.test(cleanId);
   const confirmOk = confirm.length > 0 && confirm === password;
 
+  // 🆔 live check while typing: 0.6 s after the last key, ask the server if the ID is free
+  const [idState, setIdState] = useState<{ id: string; s: "checking" | "free" | "taken" | "bad"; msg?: string } | null>(null);
+  useEffect(() => {
+    if (!idOk) return setIdState(null);
+    const id = cleanId.toLowerCase();
+    let gone = false;
+    const t = window.setTimeout(async () => {
+      setIdState({ id, s: "checking" });
+      try {
+        await checkId({ migId: id });
+        if (!gone) setIdState({ id, s: "free" });
+      } catch (e: any) {
+        if (gone) return;
+        if (e?.code === "functions/already-exists") setIdState({ id, s: "taken" });
+        else if (e?.code === "functions/invalid-argument") setIdState({ id, s: "bad", msg: e?.message });
+        else setIdState(null); // offline / older server: say nothing, Next checks again
+      }
+    }, 600);
+    return () => {
+      gone = true;
+      window.clearTimeout(t);
+    };
+  }, [cleanId, idOk]);
+  const liveId = idState && idState.id === cleanId.toLowerCase() ? idState : null;
+
   // Step 1 → 2: MIG ID and password.
   const nextFromStep1 = async () => {
     setError("");
@@ -140,6 +165,7 @@ export default function RegisterPage() {
       return setError(`MIG ID must be ${minLen}-${maxLen} characters and contain at least 1 English letter. Allowed: A-Z, a-z, 0-9, . _ -`);
     if (password.length < 6) return setError("Password must be at least 6 characters.");
     if (password !== confirm) return setError("Passwords do not match.");
+    if (liveId?.s === "taken") return setError("This MIG ID is already taken. Please choose another.");
     // 🆔 ask the server right away whether this MIG ID is free (before the email step)
     if (busy) return;
     setBusy("checking");
@@ -337,12 +363,18 @@ export default function RegisterPage() {
               <Field
                 icon="🆔"
                 label={`MIG ID (${minLen}-${maxLen} CHARACTERS)`}
-                right={cleanId && <span className="pr-1 text-base">{idOk ? "✅" : "⚠️"}</span>}
+                right={
+                  cleanId && (
+                    <span className="pr-1 text-base">
+                      {!idOk || liveId?.s === "taken" || liveId?.s === "bad" ? "⚠️" : liveId?.s === "free" ? "✅" : liveId?.s === "checking" ? "⏳" : "✅"}
+                    </span>
+                  )
+                }
               >
                 <input
                   value={migId}
                   onChange={(e) => {
-                    setMigId(e.target.value.replace(/[^A-Za-z0-9._-]/g, "").slice(0, maxLen));
+                    setMigId(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, maxLen));
                     setError("");
                   }}
                   placeholder="Letters, numbers, . _ -"
@@ -351,8 +383,14 @@ export default function RegisterPage() {
                   className={fieldInput}
                 />
               </Field>
-              <p className="mt-1 pl-3 text-[11px] text-[#7D88A3]">
-                {cleanId.length} / {maxLen}
+              <p className="mt-1 flex items-center gap-2 pl-3 text-[11px] text-[#7D88A3]">
+                <span>
+                  {cleanId.length} / {maxLen}
+                </span>
+                {liveId?.s === "checking" && <span className="font-bold text-[#9EA9C0]">Checking…</span>}
+                {liveId?.s === "free" && <span className="font-bold text-[#6BF0A0]">✓ {cleanId.toLowerCase()} is available</span>}
+                {liveId?.s === "taken" && <span className="font-bold text-[#FF9A9A]">✗ {cleanId.toLowerCase()} is already taken — choose another</span>}
+                {liveId?.s === "bad" && <span className="font-bold text-[#FF9A9A]">✗ {liveId.msg || "This MIG ID can't be used"}</span>}
               </p>
             </div>
             <Field
