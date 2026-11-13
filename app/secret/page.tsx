@@ -9,7 +9,7 @@ import { useFounderPerms } from "../../lib/founder";
 import { countryWithFlag } from "../../lib/countries";
 import { CountryPickerDialog } from "../_components/CountryPicker";
 import { OFFICIAL_COUNTRY_ROOMS } from "../../lib/rooms";
-import { winFxKey } from "../../lib/cricketWinFx";
+import { winFxKey, type WinFxField } from "../../lib/cricketWinFx";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { FounderShell, input } from "./_Shell";
 import {
@@ -249,7 +249,8 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 // fireworks play ONLY in the rooms switched ON here. The list lives in
 // app_settings/win_fx.cricketRooms; the server writes "CONGRATULATIONS"
 // (fireworks) in those rooms and "Congratulations" (no fireworks) elsewhere.
-function CricketWinFxCard() {
+// 🃏 LowCard Win Effect: the same card for LowCard (app_settings/win_fx.lowcardRooms).
+function CricketWinFxCard({ field = "cricketRooms", game = "Cricket", icon = "🎆" }: { field?: WinFxField; game?: string; icon?: string }) {
   const { username } = useCurrentUser();
   const [rooms, setRooms] = useState<string[] | null>(null);
   const [allRooms, setAllRooms] = useState<string[]>([]);
@@ -261,12 +262,12 @@ function CricketWinFxCard() {
       onSnapshot(
         doc(db, "app_settings", "win_fx"),
         (s) => {
-          const list = s.get("cricketRooms");
+          const list = s.get(field);
           setRooms(Array.isArray(list) ? list.filter((x): x is string => typeof x === "string" && !!x.trim()) : []);
         },
         () => setRooms([])
       ),
-    []
+    [field]
   );
   useEffect(() => {
     getDocs(collection(db, "rooms"))
@@ -285,11 +286,16 @@ function CricketWinFxCard() {
     if (turnOn) next.add(winFxKey(name));
     else next.delete(winFxKey(name));
     try {
-      await setDoc(doc(db, "app_settings", "win_fx"), {
-        cricketRooms: [...next].sort(),
-        updatedAt: serverTimestamp(),
-        updatedBy: username || "miglife",
-      });
+      // merge: the Cricket and LowCard lists live in the same doc
+      await setDoc(
+        doc(db, "app_settings", "win_fx"),
+        {
+          [field]: [...next].sort(),
+          updatedAt: serverTimestamp(),
+          updatedBy: username || "miglife",
+        },
+        { merge: true }
+      );
       setNote({ text: turnOn ? `✅ ON in "${name}"` : `⛔ OFF in "${name}"`, bad: false });
       if (turnOn) setQ("");
     } catch (e: any) {
@@ -313,9 +319,11 @@ function CricketWinFxCard() {
   ).slice(0, 60);
   return (
     <div className="space-y-2.5 rounded-[18px] border-[1.5px] border-[#FF6F00] bg-white p-4">
-      <p className="text-[17px] font-extrabold">🎆 Cricket Win Effect</p>
+      <p className="text-[17px] font-extrabold">
+        {icon} {game} Win Effect
+      </p>
       <p className="text-xs text-gray-500">
-        When someone wins Cricket, the whole room gets fireworks — but ONLY in the rooms switched ON here. Every other room shows no effect.
+        When someone wins {game}, the whole room gets fireworks — but ONLY in the rooms switched ON here. Every other room shows no effect.
       </p>
       <div className="flex items-center gap-2">
         <input value={q} onChange={(e) => setQ(e.target.value.slice(0, 60))} placeholder="🔎 Search room" className={`${input} flex-1`} />
@@ -418,6 +426,7 @@ export default function SecretPage() {
           { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
           // (🎲 Luxury Bot Tiers removed — Luxury Bot Official is gone; Luxury Bet replaced it)
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
+          { icon: "🃏", label: "LowCard Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#7C3AED", key: "lowcard_winfx", ok: f.isMigwith },
           { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.isMigwith },
         ],
       ],
@@ -534,6 +543,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
       {f.isMigwith && tool === "level" && <LevelCurveCard />}
       {f.isMigwith && tool === "cricket_winfx" && <CricketWinFxCard />}
+      {f.isMigwith && tool === "lowcard_winfx" && <CricketWinFxCard key="lowcard" field="lowcardRooms" game="LowCard" icon="🃏" />}
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
       {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}

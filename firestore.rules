@@ -293,14 +293,16 @@ service cloud.firestore {
     //
     // =========================================================
 
-    // 🎆 Cricket win fireworks: which rooms have it ON (miglife secret).
+    // 🎆 Cricket / 🃏 LowCard win fireworks: which rooms have it ON (miglife secret).
     // Everyone signed in reads it; only miglife changes it.
     match /app_settings/win_fx {
       allow read: if signedIn();
       allow create, update: if isOwner()
-        && request.resource.data.keys().hasOnly(["cricketRooms", "updatedAt", "updatedBy"])
-        && request.resource.data.cricketRooms is list
-        && request.resource.data.cricketRooms.size() <= 300;
+        && request.resource.data.keys().hasOnly(["cricketRooms", "lowcardRooms", "updatedAt", "updatedBy"])
+        && (!("cricketRooms" in request.resource.data)
+            || (request.resource.data.cricketRooms is list && request.resource.data.cricketRooms.size() <= 300))
+        && (!("lowcardRooms" in request.resource.data)
+            || (request.resource.data.lowcardRooms is list && request.resource.data.lowcardRooms.size() <= 300));
       allow delete: if false;
     }
 
