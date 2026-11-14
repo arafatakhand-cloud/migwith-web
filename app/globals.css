@@ -1655,3 +1655,6 @@ html[data-theme="dark_night"] .lb-glass {
 .pf6d-tile.pf6d-tile.pf6d-tile {
   border: 0 !important;
 }
+
+/* ❤️ story reactions open above the heart (StoryRow, M1) */
+@keyframes story-bloom { from { opacity: 0; transform: translateY(14px) scale(.6); } to { opacity: 1; transform: none; } }
