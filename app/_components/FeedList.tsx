@@ -22,6 +22,7 @@ import { PollBox } from "./PollBox";
 import { openReport } from "./ReportDialog";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
+import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -279,6 +280,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cvideoBusy, setCvideoBusy] = useState(false);
   // 🎬 miGlife's switch: when video is OFF the Video button is hidden
   const [videoOn, setVideoOn] = useState(true);
+  // 📰🎬 only people Share Permissions allows (the Feed column) see the 🎬 button
+  const feedVideo = useFeedVideoAllowed(user?.uid, username);
   useEffect(() => {
     blogCall("videoStatus")
       .then((r) => setVideoOn(r.videoEnabled !== false))
@@ -1358,7 +1361,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   setCerr("");
                   setCvideoBusy(true);
                   try {
-                    setCvideo(await uploadBlogVideo(user.uid, f));
+                    setCvideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds));
                   } catch (err) {
                     setCerr(err instanceof Error ? err.message : blogError(err));
                   } finally {
@@ -1606,7 +1609,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
                   🖼️
                 </button>
-                {videoOn && !cedit && (
+                {videoOn && feedVideo.allowed && !cedit && (
                   <button type="button" disabled={cbusy || cvideoBusy || !!cvideo || !!cpoll} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
                     🎬
                   </button>

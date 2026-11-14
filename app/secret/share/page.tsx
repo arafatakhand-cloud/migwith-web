@@ -6,10 +6,13 @@ import { uploadIcon } from "../../../lib/iconUpload";
 import { functions } from "../../../lib/firebase";
 
 // Saved by the server (not straight into Firestore), so a rules hiccup can't block miglife.
-const ceoSetMediaPermission = httpsCallable<{ roleKey: string; picture: boolean; voice: boolean; video: boolean }, { ok: boolean }>(
+const ceoSetMediaPermission = httpsCallable<{ roleKey: string; picture: boolean; voice: boolean; video: boolean; feedVideo: boolean }, { ok: boolean }>(
   functions,
   "ceoSetMediaPermission"
 );
+const ceoSetVideoRules = httpsCallable<{ maxSeconds: number }, { ok: boolean }>(functions, "ceoSetVideoRules");
+// ⏱️ the longest video (rooms + Feed) miglife allows
+const VIDEO_LENGTHS: [number, string][] = [[15, "15 sec"], [30, "30 sec"], [60, "1 min"], [120, "2 min"], [180, "3 min"], [300, "5 min"]];
 const ceoSetBadgeImage = httpsCallable<{ docId: string; key: string; url: string }, { ok: boolean }>(functions, "ceoSetBadgeImage");
 const ceoGetSharePermissions = httpsCallable<
   Record<string, never>,
@@ -45,7 +48,7 @@ const ROLES: [string, string, string][] = [
   ["OWNER", "Owner", "👑"],
 ];
 
-type Perm = { picture: boolean; voice: boolean; video: boolean };
+type Perm = { picture: boolean; voice: boolean; video: boolean; feedVideo: boolean };
 
 export default function SharePermissionsPage() {
   const f = useFounderPerms();
@@ -54,6 +57,7 @@ export default function SharePermissionsPage() {
   const [levelBadges, setLevelBadges] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState<string | null>(null);
   const [status, setStatus] = useState("");
+  const [maxSec, setMaxSec] = useState(60);
 
   // Read by the server (ceoGetSharePermissions) — shows exactly what is saved.
   const load = () =>
@@ -62,8 +66,10 @@ export default function SharePermissionsPage() {
         const out: Record<string, Perm> = {};
         ROLES.forEach(([k]) => {
           const m = ((data.permissions || {})[k] || {}) as Record<string, unknown>;
-          out[k] = { picture: m.picture === true, voice: m.voice === true, video: m.video === true };
+          out[k] = { picture: m.picture === true, voice: m.voice === true, video: m.video === true, feedVideo: m.feedVideo === true };
         });
+        const ms = Number((data.permissions || {}).videoMaxSeconds || 0);
+        setMaxSec(VIDEO_LENGTHS.some(([v]) => v === ms) ? ms : 60);
         setPerms(out);
         setBadges((data.badgeImages || {}) as Record<string, string>);
         setLevelBadges((data.levelBadgeImages || {}) as Record<string, string>);
@@ -130,22 +136,49 @@ export default function SharePermissionsPage() {
 
   return (
     <FounderShell title="🔐 Share Permissions" allowed={f.can("share_permissions")} loaded={f.loaded}>
+      {/* ⏱️ the longest video anyone may share (rooms + Feed) */}
+      <div className="rounded-2xl bg-white p-3">
+        <p className="text-sm font-extrabold">⏱️ Video length (longest)</p>
+        <p className="text-xs text-[#6C87B0]">For room videos and Feed videos</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {VIDEO_LENGTHS.map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                const prev = maxSec;
+                setMaxSec(v);
+                ceoSetVideoRules({ maxSeconds: v })
+                  .then(() => setStatus(`Saved: videos up to ${label}.`))
+                  .catch((e) => {
+                    setMaxSec(prev);
+                    setStatus(e?.message || "Could not save.");
+                  });
+              }}
+              className={`rounded-full px-3.5 py-1.5 text-[13px] font-bold ${maxSec === v ? "bg-gradient-to-r from-[#14B8A6] to-[#0EA5E9] text-white shadow" : "bg-[#F1F5F9] text-[#334155]"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="overflow-hidden rounded-2xl bg-white">
         <div className="flex items-center px-3 py-2 text-xs font-bold text-[#6C87B0]">
           <span className="flex-1">Role</span>
-          <span className="w-12 text-center">Pic</span>
-          <span className="w-12 text-center">Voice</span>
-          <span className="w-12 text-center">Video</span>
+          <span className="w-11 text-center">Pic</span>
+          <span className="w-11 text-center">Voice</span>
+          <span className="w-11 text-center">🎬 Room</span>
+          <span className="w-11 text-center">📰 Feed</span>
         </div>
         {ROLES.map(([k, label, icon]) => {
-          const p = perms[k] || { picture: false, voice: false, video: false };
+          const p = perms[k] || { picture: false, voice: false, video: false, feedVideo: false };
           return (
             <div key={k} className="flex items-center border-t border-[#EEF2F7] px-3 py-2 text-sm">
               <span className="flex-1">
                 {icon} {label}
               </span>
-              {(["picture", "voice", "video"] as const).map((field) => (
-                <span key={field} className="flex w-12 justify-center">
+              {(["picture", "voice", "video", "feedVideo"] as const).map((field) => (
+                <span key={field} className="flex w-11 justify-center">
                   <input type="checkbox" checked={p[field]} onChange={(e) => setPerm(k, { ...p, [field]: e.target.checked })} className="h-5 w-5" />
                 </span>
               ))}

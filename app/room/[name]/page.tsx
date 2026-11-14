@@ -143,7 +143,7 @@ import {
   type RoomInfo,
 } from "../../../lib/roomModeration";
 import { isMainFounderName, useFounderPerms } from "../../../lib/founder";
-import { shareAllowed, shareKeysOf, type ShareTable } from "../../../lib/sharePerms";
+import { shareAllowed, shareKeysOf, videoLengthLabel, videoMaxSecondsOf, videoSecondsOf, type ShareTable } from "../../../lib/sharePerms";
 import { useBadgeImages } from "../../../lib/badgeImages";
 import { chatPx, useChatTextSize } from "../../../lib/chatTextSize";
 import { withEmotes } from "../../_components/Emote";
@@ -1617,10 +1617,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       return note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
     }
     if (!["video/mp4", "video/webm", "video/quicktime"].includes(file.type)) return note(`${roomName}: Please choose an MP4, WebM or MOV video.`);
-    if (file.size > 50 * 1024 * 1024) return note(`${roomName}: That video is over 50 MB. Please send a shorter one.`);
+    if (file.size > 50 * 1024 * 1024) return note(`${roomName}: That video is over 50 MB. Please send a shorter one (or send it from the app — it makes videos smaller).`);
+    // ⏱️ miglife's longest-video limit
+    const maxSec = videoMaxSecondsOf(shareTable);
+    const secs = await videoSecondsOf(file);
+    if (secs > maxSec + 1) {
+      const m = Math.floor(secs / 60), r = Math.round(secs % 60);
+      return note(`${roomName}: ⏱️ This video is ${m}:${String(r).padStart(2, "0")} long — videos can be at most ${videoLengthLabel(maxSec)}.`);
+    }
     setUploading(true);
     try {
-      const url = await r2Upload("room_video", file, file.type, { room: storageSafeSegment(roomName) });
+      const url = await r2Upload("room_video", file, file.type, { room: storageSafeSegment(roomName), ...(secs ? { seconds: Math.round(secs) } : {}) });
       if (!url) throw new Error("Video sharing is not ready yet. Please try again later.");
       const cap = text.trim().slice(0, 1000);
       await addDoc(collection(db, "room_messages", roomName, "messages"), {

@@ -9,6 +9,7 @@ import { useRequireLogin } from "../../../lib/useRequireLogin";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { uploadChatImage } from "../../../lib/imageUpload";
 import { uploadBlogVideo } from "../../../lib/videoUpload";
+import { useFeedVideoAllowed } from "../../../lib/feedVideoPerm";
 import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
@@ -63,6 +64,8 @@ function BlogWrite() {
   const [video, setVideo] = useState("");
   // 🎬 miGlife can switch video posts off; then the Video button is hidden
   const [videoOn, setVideoOn] = useState(true);
+  // 📰🎬 only people Share Permissions allows (the Feed column) see the 🎬 button
+  const feedVideo = useFeedVideoAllowed(user?.uid, username);
   useEffect(() => {
     blogCall("videoStatus")
       .then((r) => setVideoOn(r.videoEnabled !== false))
@@ -202,7 +205,7 @@ function BlogWrite() {
     setError("");
     setBusy("Uploading video…");
     try {
-      setVideo(await uploadBlogVideo(user.uid, f));
+      setVideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds));
     } catch (e) {
       setError(e instanceof Error ? e.message : blogError(e));
     } finally {
@@ -490,7 +493,7 @@ function BlogWrite() {
             <Tool label="Add photos" onClick={() => photoInput.current?.click()}>
               📷
             </Tool>
-            {videoOn && (
+            {videoOn && feedVideo.allowed && (
               <Tool label="Add video" onClick={() => videoInput.current?.click()}>
                 🎬
               </Tool>
