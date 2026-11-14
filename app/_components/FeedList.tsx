@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, type QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
 import { setFollowing, useFollowing } from "../../lib/follow";
@@ -24,6 +24,7 @@ import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { VideoEditor } from "./VideoEditor";
 import { Reels } from "./Reels";
+import { PhotoMenu, PhotoViewer, photosOf } from "./PhotoViewer";
 import { useBlockSets } from "../../lib/blocks";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
@@ -177,6 +178,36 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [reactorsOf, setReactorsOf] = useState<BlogPost | null>(null);
   // ↗ the post I am sharing to my wall (null = closed)
   const [sharing, setSharing] = useState<BlogPost | null>(null);
+  // 🖼 P2: a Mig's photos full screen · P1: the hold-a-photo sheet · 🙈 the Migs I hid
+  const [photoView, setPhotoView] = useState<{ p: BlogPost; i: number } | null>(null);
+  const [photoMenu, setPhotoMenu] = useState<{ p: BlogPost; photo: string } | null>(null);
+  const [hiddenIds, setHiddenIds] = useState<string[]>([]);
+  useEffect(() => {
+    if (!user) return;
+    return onSnapshot(doc(db, "hidden_posts", user.uid), (s) => setHiddenIds(((s.get("ids") as string[]) || []).map(String)), () => {});
+  }, [user]);
+  const toggleHidden = async (p: BlogPost) => {
+    if (!user) return;
+    const on = !hiddenIds.includes(p.id);
+    const next = on ? [...hiddenIds, p.id].slice(-1000) : hiddenIds.filter((x) => x !== p.id);
+    setHiddenIds(next);
+    try {
+      await setDoc(doc(db, "hidden_posts", user.uid), { ids: next, updatedAt: serverTimestamp() });
+      setToast(on ? "🙈 Hidden. You won't see this Mig in your Feed." : "This Mig is back in your Feed.");
+    } catch (e) {
+      setToast(blogError(e));
+    }
+  };
+  const whyOf = (p: BlogPost) =>
+    user && p.authorUid === user.uid
+      ? "It's your own Mig."
+      : followed.includes(p.author)
+        ? `You follow ${p.author}.`
+        : friends.some((f) => f.toLowerCase() === p.author.toLowerCase())
+          ? `${p.author} is your friend.`
+          : p.likes >= 10
+            ? "Many people like it on miGlife right now."
+            : "It's a new Mig on miGlife.";
   const [posts, setPosts] = useState<BlogPost[] | null>(null);
   // ⚡ 12 posts at first; the next 12 only when you scroll near the bottom
   // (Popular / New fetch the next page from the server; the other tabs show more of their list)
@@ -1852,8 +1883,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-6 px-3.5">
-            {(shown || []).filter((p) => !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+            {(shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
+              <FeedCard key={p.id} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1871,6 +1902,35 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       </section>
 
       {reactorsOf && <ReactorsSheet postId={reactorsOf.id} onClose={() => setReactorsOf(null)} />}
+      {photoView && (
+        <PhotoViewer
+          post={photoView.p}
+          photos={photosOf(photoView.p)}
+          start={photoView.i}
+          reaction={reactOf[photoView.p.id] || (liked.has(photoView.p.id) ? "👍" : "")}
+          saved={savedIds.has(photoView.p.id)}
+          onLike={() => like(photoView.p)}
+          onComments={() => (openSheet(photoView.p.id), setPhotoView(null))}
+          onShare={() => setSharing(photoView.p)}
+          onSave={() => toggleSave(photoView.p)}
+          onMenu={(photo) => setPhotoMenu({ p: photoView.p, photo })}
+          onClose={() => setPhotoView(null)}
+        />
+      )}
+      {photoMenu && (
+        <PhotoMenu
+          post={photoMenu.p}
+          photo={photoMenu.photo}
+          saved={savedIds.has(photoMenu.p.id)}
+          why={whyOf(photoMenu.p)}
+          hidden={hiddenIds.includes(photoMenu.p.id)}
+          onSave={() => toggleSave(photoMenu.p)}
+          onShare={() => setSharing(photoMenu.p)}
+          onHide={() => (toggleHidden(photoMenu.p), setPhotoView(null))}
+          onClose={() => setPhotoMenu(null)}
+          toast={setToast}
+        />
+      )}
       {reelsStart !== null && (
         <Reels
           startId={reelsStart}
@@ -1939,7 +1999,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         </div>
       )}
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-40 -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
+        <div className="fixed bottom-24 left-1/2 z-[99] -translate-x-1/2 rounded-full bg-[#1E1B4B]/90 px-4 py-2 text-[13px] font-semibold text-white">{toast}</div>
       )}
     </div>
   );
@@ -2003,7 +2063,7 @@ function ShareSheet({ post, uid, onClose, onDone, onLink }: { post: BlogPost; ui
     }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
+    <div className="fixed inset-0 z-[97] flex items-end justify-center bg-black/40 p-3" onClick={onClose}>
       <div className="w-full max-w-md rounded-[24px] bg-white p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-[16px] font-black text-[#1E1B4B]">Share to your wall</h3>
@@ -2124,7 +2184,7 @@ function reactLine(p: BlogPost, me: string): string {
   return rest ? `${who} and ${blogShort(rest)} other${rest > 1 ? "s" : ""}` : names.length === 2 ? names.join(" and ") : who;
 }
 
-function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -2166,8 +2226,24 @@ function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rol
   // short words get big letters; a long text gets normal ones
   const artSize = text.length <= 60 ? "text-[26px]" : text.length <= 140 ? "text-[21px]" : "text-[16px]";
   const role = rolePill && ROLE_PILLS[rolePill] ? ROLE_PILLS[rolePill][0] : "";
-  // one tap opens the post; a quick second tap likes it with a big heart
+  // 🖼 hold a photo (½ s) → the photo sheet (P1)
+  const held = useRef(false);
+  const holdTimer = useRef(0);
+  const holdStart = () => {
+    held.current = false;
+    if (!pic || p.video || !onPhotoMenu) return;
+    holdTimer.current = window.setTimeout(() => {
+      held.current = true;
+      onPhotoMenu(pic);
+    }, 500);
+  };
+  const holdEnd = () => window.clearTimeout(holdTimer.current);
+  // one tap opens the post (a photo: full screen, P2); a quick second tap likes it with a big heart
   const tapCard = () => {
+    if (held.current) {
+      held.current = false;
+      return;
+    }
     const now = Date.now();
     if (now - lastTap.current < 320) {
       lastTap.current = 0;
@@ -2180,7 +2256,7 @@ function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rol
     }
     lastTap.current = now;
     window.setTimeout(() => {
-      if (lastTap.current === now) open();
+      if (lastTap.current === now) (pic && !p.video && onPhoto ? onPhoto(0) : open());
     }, 330);
   };
   // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
@@ -2378,7 +2454,19 @@ function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rol
           <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[520px] min-h-[300px] w-full bg-black object-cover" />
         ) : pic ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={(p.cover && p.thumb) || pic} alt="" loading="lazy" decoding="async" className="block max-h-[520px] min-h-[260px] w-full object-cover" />
+          <img
+            src={(p.cover && p.thumb) || pic}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onPointerDown={holdStart}
+            onPointerUp={holdEnd}
+            onPointerLeave={holdEnd}
+            onPointerCancel={holdEnd}
+            onContextMenu={(e) => onPhotoMenu && (e.preventDefault(), holdEnd(), (held.current = true), onPhotoMenu(pic))}
+            className="block max-h-[520px] min-h-[260px] w-full select-none object-cover [-webkit-touch-callout:none]"
+          />
         ) : pollOnly ? (
           // 📊 a poll: the question, then the answers, right on the white card
           <div className="px-4 pb-1 text-left">
