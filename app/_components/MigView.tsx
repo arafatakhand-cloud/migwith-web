@@ -11,6 +11,7 @@ import { useFriends } from "../../lib/privateChat";
 import { PageShell } from "./PageShell";
 import { openReport } from "./ReportDialog";
 import { ReactorsSheet } from "./ReactorsSheet";
+import { ViewersSheet } from "./ViewersSheet";
 import { PollBox } from "./PollBox";
 import { TranslateChip, feedPlainText, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -69,6 +70,7 @@ export function MigView({
   const [canMod, setCanMod] = useState(false);
   const [menu, setMenu] = useState(false);
   const [reactors, setReactors] = useState(false);
+  const [viewers, setViewers] = useState(false);
   const viewed = useRef(false);
   // 🔒 a 👥 Friends / 🔒 Only me post: it comes from the server (no live updates);
   // bump privTick to read it again after a like / comment / change
@@ -491,6 +493,18 @@ export function MigView({
             <BlogBody body={post.body} mentions={post.mentions} />
           {/* 📊 the poll */}
           {post.poll && <PollBox postId={post.id} poll={post.poll} canEnd={mine || canMod} signedIn={!!user} />}
+          {/* 🎬 the post's video (it was missing on this page before) */}
+          {post.video && (
+            <video
+              src={post.video}
+              poster={post.thumb || undefined}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              className="mt-3 block max-h-[560px] w-full rounded-2xl bg-black object-contain"
+            />
+          )}
           </div>
 
           <div className="mt-3 flex gap-2.5">
@@ -532,9 +546,17 @@ export function MigView({
                 {blogShort(post.likes)} · See who reacted
               </button>
             )}
-            <span className="ml-auto text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</span>
+            {/* 👁 the writer taps → who saw the post */}
+            {mine ? (
+              <button type="button" onClick={() => setViewers(true)} className="ml-auto font-bold text-[#4F46E5] active:opacity-60">
+                👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"} · See who
+              </button>
+            ) : (
+              <span className="ml-auto text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</span>
+            )}
           </div>
           {reactors && <ReactorsSheet postId={post.id} onClose={() => setReactors(false)} />}
+          {viewers && <ViewersSheet postId={post.id} onClose={() => setViewers(false)} />}
 
           <h3 className="mb-2 mt-3 text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
           <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>

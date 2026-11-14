@@ -14,12 +14,20 @@ export function useFeedVideoAllowed(uid?: string | null, username?: string | nul
   useEffect(() => {
     if (!uid) return;
     let gone = false;
-    Promise.all([getDoc(doc(db, "app_settings", "media_sharing_permissions")), getDoc(doc(db, "users", uid))])
-      .then(([t, u]) => {
+    Promise.all([
+      getDoc(doc(db, "app_settings", "media_sharing_permissions")),
+      getDoc(doc(db, "users", uid)),
+      // 👑 founders (miglife secret → Founders) may always share videos
+      getDoc(doc(db, "founders", uid)).then((f) => f.exists()).catch(() => false),
+    ])
+      .then(([t, u, isFounder]) => {
         if (gone) return;
         const table = (t.data() as ShareTable) || {};
         const keys = shareKeysOf(presenceBadgesForDoc(u.data() || {}));
-        setOut({ allowed: isMainFounderName(username) || shareAllowed(table, keys, "feedVideo"), maxSeconds: videoMaxSecondsOf(table) });
+        setOut({
+          allowed: isMainFounderName(username || String(u.data()?.username || "")) || isFounder || shareAllowed(table, keys, "feedVideo"),
+          maxSeconds: videoMaxSecondsOf(table),
+        });
       })
       .catch(() => {});
     return () => {

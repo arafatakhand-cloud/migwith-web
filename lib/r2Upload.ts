@@ -14,7 +14,7 @@ import { functions } from "./firebase";
 
 export type R2Kind =
   | "feed_video" | "feed_image" | "story_image" | "song" | "song_library"
-  | "room_image" | "room_audio" | "room_video" | "profile_picture" | "cover_picture";
+  | "room_image" | "room_audio" | "room_video" | "profile_picture" | "cover_picture" | "story_video";
 
 const r2UploadUrl = httpsCallable<Record<string, unknown>, { r2?: boolean; uploadUrl?: string; publicUrl?: string }>(
   functions,

@@ -22,6 +22,8 @@ import { PollBox } from "./PollBox";
 import { openReport } from "./ReportDialog";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
+import { VideoEditor } from "./VideoEditor";
+import { Reels } from "./Reels";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
@@ -282,6 +284,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [videoOn, setVideoOn] = useState(true);
   // 📰🎬 only people Share Permissions allows (the Feed column) see the 🎬 button
   const feedVideo = useFeedVideoAllowed(user?.uid, username);
+  const [cvideoEdit, setCvideoEdit] = useState<File | null>(null);
+  // 🎬 Reels: the post to start with ("" = the newest video); null = closed
+  const [reelsStart, setReelsStart] = useState<string | null>(null);
   useEffect(() => {
     blogCall("videoStatus")
       .then((r) => setVideoOn(r.videoEnabled !== false))
@@ -1354,21 +1359,34 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 type="file"
                 accept="video/mp4,video/webm,video/quicktime"
                 hidden
-                onChange={async (e) => {
+                onChange={(e) => {
                   const f = e.target.files?.[0];
                   e.target.value = "";
-                  if (!f || !user) return;
-                  setCerr("");
-                  setCvideoBusy(true);
-                  try {
-                    setCvideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds));
-                  } catch (err) {
-                    setCerr(err instanceof Error ? err.message : blogError(err));
-                  } finally {
-                    setCvideoBusy(false);
-                  }
+                  // ✂️ the video editor first
+                  if (f && user) setCvideoEdit(f);
                 }}
               />
+              {cvideoEdit && (
+                <VideoEditor
+                  file={cvideoEdit}
+                  maxSec={feedVideo.maxSeconds}
+                  sendLabel="Done"
+                  onCancel={() => setCvideoEdit(null)}
+                  onDone={async (f, secs) => {
+                    setCvideoEdit(null);
+                    if (!user) return;
+                    setCerr("");
+                    setCvideoBusy(true);
+                    try {
+                      setCvideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds, secs));
+                    } catch (err) {
+                      setCerr(err instanceof Error ? err.message : blogError(err));
+                    } finally {
+                      setCvideoBusy(false);
+                    }
+                  }}
+                />
+              )}
               {(mentionSuggest.length > 0 || mentionAll) && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {mentionAll && (
@@ -1700,6 +1718,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             >
               <Avatar name={username} color={meColor} size={40} ring />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
+              {/* 🎬 Reels: every Feed video, full screen */}
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => (e.stopPropagation(), setReelsStart(""))}
+                className="shrink-0 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] px-3 py-1.5 text-[12.5px] font-extrabold text-white"
+              >
+                🎬 Reels
+              </span>
             </button>
           ) : (
             <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
@@ -1822,7 +1849,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         ) : (
           <div className="space-y-6 px-3.5">
             {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+              <FeedCard key={p.id} p={p} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1840,6 +1867,19 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       </section>
 
       {reactorsOf && <ReactorsSheet postId={reactorsOf.id} onClose={() => setReactorsOf(null)} />}
+      {reelsStart !== null && (
+        <Reels
+          startId={reelsStart}
+          myUid={user?.uid}
+          myName={username}
+          followed={followed}
+          onFollow={(name) => (user ? toggleFollow(name) : router.push("/login"))}
+          colorOf={colorOf}
+          onClose={() => setReelsStart(null)}
+          onComments={(id) => (setReelsStart(null), openSheet(id))}
+          onProfile={(name) => (setReelsStart(null), router.push(`/profile/${encodeURIComponent(name)}`))}
+        />
+      )}
       {sheetId && (
         <MigSheet onClose={closeSheet}>
           <MigView
@@ -2079,7 +2119,7 @@ function reactLine(p: BlogPost, me: string): string {
   return rest ? `${who} and ${blogShort(rest)} other${rest > 1 ? "s" : ""}` : names.length === 2 ? names.join(" and ") : who;
 }
 
-function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -2314,7 +2354,22 @@ function FeedCard({ p, color, liked, verified, why = "", roleBadge, rolePill = "
 
       {/* the picture / video, the Text Art, or the words */}
       <div onClick={tapCard} className={`relative cursor-pointer select-none ${media || (!plain && !pollOnly) ? "mx-2.5 overflow-hidden rounded-[18px]" : ""}`}>
-        {p.video ? (
+        {p.video && onReels ? (
+          // 🎬 tap ▶ → Reels, starting with this video
+          <button
+            type="button"
+            onClick={(e) => (e.stopPropagation(), onReels())}
+            aria-label="Play video"
+            className="relative block h-[320px] w-full bg-gradient-to-br from-[#0F172A] via-[#312E81] to-[#0F172A]"
+          >
+            {p.thumb && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={p.thumb} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            )}
+            {!p.thumb && <video src={`${p.video}#t=0.5`} muted playsInline preload="metadata" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
+            <span className="absolute left-1/2 top-1/2 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/25 text-[26px] text-white backdrop-blur">▶</span>
+          </button>
+        ) : p.video ? (
           <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[520px] min-h-[300px] w-full bg-black object-cover" />
         ) : pic ? (
           // eslint-disable-next-line @next/next/no-img-element

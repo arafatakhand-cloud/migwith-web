@@ -11,6 +11,8 @@ export type Story = {
   authorUid: string;
   author: string;
   url: string;
+  /** 🎬 a video story */
+  video?: boolean;
   createdMs: number;
   expiresAt: number;
   caption: string;
@@ -24,6 +26,8 @@ export type Story = {
   /** 😍 reactions so far: { emoji: count } and the total (the writer sees "❤️😂 12") */
   reactions: Record<string, number>;
   reactCount: number;
+  /** 👁 how many saw it (the writer sees who) */
+  viewCount?: number;
 };
 
 /** tells the story row to load again (after a Mig was shared to my story) */
@@ -42,6 +46,8 @@ export async function loadStories(): Promise<Story[]> {
         authorUid: String(x.authorUid || ""),
         author: String(x.author || ""),
         url: String(x.url || ""),
+        // 🎬 a video story (made in the video editor)
+        video: x.video === true || /\.(mp4|webm|mov)(\?|$)/i.test(String(x.url || "")),
         createdMs: Number(x.createdMs || 0),
         expiresAt: Number(x.expiresAt || 0),
         caption: String(x.caption || ""),
@@ -53,6 +59,7 @@ export async function loadStories(): Promise<Story[]> {
             : null,
         reactions: x.reactions && typeof x.reactions === "object" ? (x.reactions as Record<string, number>) : {},
         reactCount: Number(x.reactCount || 0),
+        viewCount: Number(x.viewCount || 0),
         sharedPost:
           x.sharedPost && typeof x.sharedPost.id === "string" && x.sharedPost.id
             ? { id: String(x.sharedPost.id), author: String(x.sharedPost.author || ""), text: String(x.sharedPost.text || ""), image: String(x.sharedPost.image || "") }

@@ -6,6 +6,9 @@ import { uploadChatImage } from "../../lib/imageUpload";
 import { loadStories, STORIES_CHANGED, type Story } from "../../lib/stories";
 import Link from "next/link";
 import { loadSongLibrary, type LibrarySong, STORY_SONG_SECONDS, uploadStorySong } from "../../lib/songUpload";
+import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
+import { r2Upload } from "../../lib/r2Upload";
+import { VideoEditor } from "./VideoEditor";
 
 export type StorySong = { url: string; title: string; startSec: number };
 
@@ -84,10 +87,12 @@ export function StoryRow({
   // the viewer moves on by itself after 5 seconds, unless the writer's menu or editor is open
   useEffect(() => {
     if (!viewer || menu || editing || reactors) return;
+    // 🎬 a video story moves on when the video ends (5 min at most)
+    const isVideo = !!viewer[Math.min(index, viewer.length - 1)]?.video;
     const t = window.setTimeout(() => {
       if (index + 1 < viewer.length) setIndex(index + 1);
       else setViewer(null);
-    }, 5000);
+    }, isVideo ? 300_000 : 5000);
     return () => window.clearTimeout(t);
   }, [viewer, index, menu, editing, reactors]);
 
@@ -117,6 +122,12 @@ export function StoryRow({
 
   const current = viewer ? viewer[Math.min(index, viewer.length - 1)] : null;
   const mine = !!current && !!myUid && current.authorUid === myUid;
+  // 👁 tell the server I saw this story (once per person; the writer sees who)
+  const currentId = current?.id || "";
+  useEffect(() => {
+    if (!currentId || mine || !myUid) return;
+    blogCall("storyView", { storyId: currentId }).catch(() => {});
+  }, [currentId, mine, myUid]);
 
   const reactTo = async (emoji: string) => {
     if (!current || mine) return;
@@ -135,8 +146,8 @@ export function StoryRow({
     if (!current) return;
     setReactors([]);
     try {
-      const r = await blogCall("storyReactors", { storyId: current.id });
-      setReactors((r.reactors as StoryReactor[]) || []);
+      const r = await blogCall("storyViewers", { storyId: current.id });
+      setReactors((r.viewers as StoryReactor[]) || []);
     } catch (e) {
       setReactors(null);
       setError(blogError(e));
@@ -216,6 +227,7 @@ export function StoryRow({
           maxLen={280}
           placeholder="What's on your mind?"
           allowPhoto
+          allowVideo
           onClose={() => setTextDraft(false)}
           onConfirm={(text, audience, song, photoUrl) => {
             setTextDraft(false);
@@ -266,6 +278,17 @@ export function StoryRow({
               </Link>
               <span className="story-glass relative z-10 rounded-full px-4 py-2 text-[13px] font-extrabold text-white">👆 Tap to see the Mig</span>
             </div>
+          ) : current.url && current.video ? (
+            // 🎬 plays once, then the next story (a song mutes it)
+            <video
+              key={current.id}
+              src={current.url}
+              autoPlay
+              playsInline
+              muted={!!current.song}
+              onEnded={() => (viewer && index + 1 < viewer.length ? setIndex(index + 1) : setViewer(null))}
+              className="max-h-full max-w-full object-contain"
+            />
           ) : current.url ? (
             <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
           ) : (
@@ -325,8 +348,10 @@ export function StoryRow({
               onClick={(e) => { e.stopPropagation(); openReactors(); }}
               className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white/90 px-4 py-2 text-[13px] font-extrabold text-[#16264A] shadow-lg"
             >
+              <span>👁 {current.viewCount || 0}</span>
               {current.reactCount > 0 ? (
                 <>
+                  <span className="text-[#5B6B8C]">·</span>
                   <span className="text-[17px] tracking-[-2px]">
                     {Object.entries(current.reactions)
                       .sort((a, b) => b[1] - a[1])
@@ -334,13 +359,11 @@ export function StoryRow({
                       .map(([e]) => e)
                       .join("")}
                   </span>
-                  <span>
-                    {current.reactCount} {current.reactCount === 1 ? "reaction" : "reactions"}
-                  </span>
+                  <span>{current.reactCount}</span>
                   <span className="text-[#5B6B8C]">· See who</span>
                 </>
               ) : (
-                "😍 No reactions yet"
+                <span className="text-[#5B6B8C]">· See who</span>
               )}
             </button>
           )}
@@ -352,18 +375,21 @@ export function StoryRow({
           {reactors && (
             <div className="absolute inset-x-0 bottom-0 z-30 max-h-[60%] overflow-y-auto rounded-t-3xl bg-white p-4 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
               <div className="mb-2 flex items-center">
-                <p className="text-[16px] font-extrabold">😍 Reactions · {reactors.length}</p>
+                <p className="text-[16px] font-extrabold">👁 Seen by · {reactors.length}</p>
                 <button type="button" onClick={() => setReactors(null)} className="ml-auto rounded-full bg-[#F1F4F9] px-3 py-1 font-bold">✕</button>
               </div>
               {reactors.length === 0 ? (
-                <p className="py-6 text-center text-sm text-[#6B7A99]">No reactions yet.</p>
+                <p className="py-6 text-center text-sm text-[#6B7A99]">No one has seen it yet.</p>
               ) : (
                 reactors.map((r) => (
                   <div key={r.name} className="flex items-center gap-3 border-b border-[#F0F2F6] py-2.5 last:border-0">
                     <span className="grid h-9 w-9 place-items-center rounded-full font-black text-white" style={{ background: colorOf(r.name) }}>
                       {r.name.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="flex-1 font-bold">{r.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{r.name}</span>
+                      {r.atMs > 0 && <span className="block text-[11.5px] font-normal text-[#6B7A99]">{blogAgoBn(r.atMs)}</span>}
+                    </span>
                     <span className="text-[22px]">{r.emoji}</span>
                   </div>
                 ))
@@ -425,6 +451,7 @@ export function StoryDialog({
   onClose,
   onConfirm,
   allowPhoto = false,
+  allowVideo = false,
   hasMedia = false,
 }: {
   uid?: string;
@@ -440,12 +467,19 @@ export function StoryDialog({
   allowPhoto?: boolean;
   /** the photo is already chosen (the add-photo flow) */
   hasMedia?: boolean;
+  /** 🎬 a video story may be added here too (people allowed Feed videos) */
+  allowVideo?: boolean;
 }) {
   const [caption, setCaption] = useState(caption0);
   const [audience, setAudience] = useState<Audience>(audience0);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoBusy, setPhotoBusy] = useState(false);
   const photoInput = useRef<HTMLInputElement>(null);
+  // 🎬 a video story: picked → video editor → uploaded; its link goes where a photo's would
+  const [isVideo, setIsVideo] = useState(false);
+  const [videoEdit, setVideoEdit] = useState<File | null>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const feedVideo = useFeedVideoAllowed(allowVideo ? uid : null, null);
   // Share works only with text or a photo
   const canShare = hasMedia || !!photoUrl || caption.trim().length > 0;
   // 🎵 an optional song (plays for the first 30 seconds of the story)
@@ -495,13 +529,52 @@ export function StoryDialog({
                 }
               }}
             />
+            <input
+              ref={videoInput}
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f && uid) setVideoEdit(f);
+              }}
+            />
+            {videoEdit && (
+              <VideoEditor
+                file={videoEdit}
+                maxSec={feedVideo.maxSeconds}
+                sendLabel="Done"
+                onCancel={() => setVideoEdit(null)}
+                onDone={async (f, secs) => {
+                  setVideoEdit(null);
+                  setPhotoBusy(true);
+                  setSongErr("");
+                  try {
+                    if (f.size > 50 * 1024 * 1024) throw new Error("That video is over 50 MB. Please trim it shorter.");
+                    const url = await r2Upload("story_video", f, f.type, { seconds: Math.round(secs) });
+                    if (!url) throw new Error("Video stories are not ready yet.");
+                    setPhotoUrl(url);
+                    setIsVideo(true);
+                  } catch (err) {
+                    setSongErr(err instanceof Error ? err.message : "Could not add the video.");
+                  } finally {
+                    setPhotoBusy(false);
+                  }
+                }}
+              />
+            )}
             {photoUrl ? (
               <div className="relative overflow-hidden rounded-2xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photoUrl} alt="Story photo" className="h-36 w-full object-cover" />
+                {isVideo ? (
+                  <video src={photoUrl} muted autoPlay loop playsInline className="h-36 w-full bg-black object-cover" />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photoUrl} alt="Story photo" className="h-36 w-full object-cover" />
+                )}
                 <button
                   type="button"
-                  onClick={() => setPhotoUrl(null)}
+                  onClick={() => (setPhotoUrl(null), setIsVideo(false))}
                   aria-label="Remove photo"
                   className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/55 text-[13px] font-bold text-white backdrop-blur"
                 >
@@ -516,7 +589,18 @@ export function StoryDialog({
                 className="flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#14B88F]/60 bg-[#F3FFFA] py-3 text-[13px] font-extrabold text-[#0E7A62] transition hover:bg-[#E8FBF4] disabled:opacity-50"
               >
                 <span aria-hidden>📷</span>
-                {photoBusy ? "Adding photo…" : "Add a photo"}
+                {photoBusy ? "Adding…" : "Add a photo"}
+              </button>
+            )}
+            {!photoUrl && allowVideo && feedVideo.allowed && (
+              <button
+                type="button"
+                disabled={photoBusy}
+                onClick={() => videoInput.current?.click()}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-[#7C3AED]/60 bg-[#FAF5FF] py-3 text-[13px] font-extrabold text-[#7C3AED] transition hover:bg-[#F3E8FF] disabled:opacity-50"
+              >
+                <span aria-hidden>🎬</span>
+                Add a video
               </button>
             )}
           </div>
