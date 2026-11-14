@@ -176,7 +176,8 @@ export function AppDownloadLinkCard() {
       <p className="text-[17px] font-extrabold">📲 Android App Download Link</p>
       <p className="text-xs text-gray-500">
         Shared by the app&apos;s Invite Friends. The web&apos;s &quot;Download Android App&quot; button uses the direct APK (app_config/latest
-        apkUrl, same as the app&apos;s Update page) and falls back to this link only when there is no APK link.
+        apkUrl, same as the app&apos;s Update page) and falls back to this link only when there is no APK link. A Google Play link
+        (https://play.google.com/…) is used first and shows &quot;GET IT ON Google Play&quot;.
       </p>
       <input
         value={link}

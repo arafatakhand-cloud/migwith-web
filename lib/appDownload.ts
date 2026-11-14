@@ -35,6 +35,8 @@ export function useAppDownload(): { url: string; version: string } {
       b();
     };
   }, []);
+  // ▶ a Google Play link (Secret → App Download Link) always wins over the direct APK
+  if (/^https:\/\/play\.google\.com\//.test(invite)) return { url: invite, version: "" };
   return { url: apk || invite, version: apk ? version : "" };
 }
 
