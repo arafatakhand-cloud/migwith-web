@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { editChanged, feValues, renderEditedVideo, TEXT_SIZE, VIDEO_FILTERS, type VideoEdit } from "../../lib/videoEdit";
 import { videoLengthLabel } from "../../lib/sharePerms";
+import { loadSongLibrary, type LibrarySong } from "../../lib/songUpload";
 
 // ✂️ Video editor (miglife, design V1 · dark): opens after a video is picked —
 // Feed, rooms and stories — before it is sent. ✂️ Trim (the yellow ends; a long
 // video starts cut to miglife's limit) · 🔇 Mute · Aa Text (drag it anywhere) ·
-// 🎨 Filter. The preview shows everything live; Send makes the real file
+// 🎨 Filter · 🎵 Music (a library song or one from this computer, mixed in;
+// with 🔇 Mute only the song is heard). The preview shows everything live; Send makes the real file
 // (lib/videoEdit.ts) and gives it back with its length in seconds.
 
 const TEXT_COLORS = ["#FFFFFF", "#FACC15", "#F472B6", "#38BDF8", "#111111"];
@@ -49,7 +51,31 @@ export function VideoEditor({
   const [tx, setTx] = useState(0.5);
   const [ty, setTy] = useState(0.18);
   const [tcolor, setTcolor] = useState("#FFFFFF");
-  const [tool, setTool] = useState<"trim" | "mute" | "text" | "filter">("trim");
+  const [tool, setTool] = useState<"trim" | "mute" | "text" | "filter" | "music">("trim");
+  // 🎵 the song (a file, so it can be mixed in) and the library
+  const [music, setMusic] = useState<{ blob: Blob; title: string; url: string } | null>(null);
+  const [library, setLibrary] = useState<LibrarySong[] | null>(null);
+  const [songBusy, setSongBusy] = useState("");
+  const songRef = useRef<HTMLAudioElement>(null);
+  const songInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (tool === "music" && library === null) loadSongLibrary().then(setLibrary).catch(() => setLibrary([]));
+  }, [tool, library]);
+  useEffect(() => () => { if (music) URL.revokeObjectURL(music.url); }, [music]);
+  const chooseSong = (blob: Blob, title: string) => setMusic({ blob, title, url: URL.createObjectURL(blob) });
+  const chooseLibrary = async (s: LibrarySong) => {
+    setSongBusy(s.id);
+    setErr("");
+    try {
+      const r = await fetch(s.url);
+      if (!r.ok) throw new Error();
+      chooseSong(await r.blob(), s.artist ? `${s.title} · ${s.artist}` : s.title);
+    } catch {
+      setErr("This song can't be added here. Please choose a song from your computer.");
+    } finally {
+      setSongBusy("");
+    }
+  };
   const [pos, setPos] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [boxW, setBoxW] = useState(0);
@@ -123,6 +149,17 @@ export function VideoEditor({
       if (dragging.current) return;
       setPos(v.currentTime);
       if (!v.paused && (v.currentTime >= se.current.end || v.currentTime < se.current.start - 0.4)) v.currentTime = se.current.start;
+      // 🎵 the song at the same place as the cut part
+      const a = songRef.current;
+      if (a && a.src) {
+        if (v.paused) a.pause();
+        else {
+          const len = a.duration && Number.isFinite(a.duration) ? a.duration : 0;
+          const want = len ? Math.max(0, v.currentTime - se.current.start) % len : 0;
+          if (Math.abs(a.currentTime - want) > 0.45) a.currentTime = want;
+          if (a.paused) void a.play().catch(() => {});
+        }
+      }
     }, 80);
     return () => window.clearInterval(t);
   }, []);
@@ -206,7 +243,9 @@ export function VideoEditor({
     const edit: VideoEdit = {
       startSec: start, endSec: end, durationSec: dur, mute, filter, text: text.trim(), textX: tx, textY: ty, textColor: tcolor,
       videoW: size.w, videoH: size.h,
+      music: music?.blob || null,
     };
+    songRef.current?.pause();
     vid.current?.pause();
     setPlaying(false);
     if (!editChanged(edit)) return onDone(file, dur);
@@ -304,6 +343,7 @@ export function VideoEditor({
               </span>
             )}
             <span className="pointer-events-none absolute bottom-2.5 right-3 rounded-lg bg-black/50 px-2 py-0.5 text-[12px]">
+              {music ? "🎵 " : ""}
               {mute ? "🔇 " : ""}
               {fmt(pos - start)} / {fmt(end - start)}
             </span>
@@ -348,6 +388,7 @@ export function VideoEditor({
             ["mute", mute ? "🔇" : "🔊", mute ? "Muted" : "Mute", mute],
             ["text", "Aa", "Text", tool === "text"],
             ["filter", "🎨", "Filter", tool === "filter" || filter !== "normal"],
+            ["music", "🎵", "Music", tool === "music" || !!music],
           ] as const
         ).map(([k, icon, label, on]) => (
           <button
@@ -367,6 +408,50 @@ export function VideoEditor({
 
       <div className="flex h-[96px] items-center px-4 py-2.5">
         {tool === "trim" && <p className="text-[13px] opacity-60">Drag the yellow ends to choose the part to keep.</p>}
+        {tool === "music" && (
+          <div className="w-full">
+            <input
+              ref={songInput}
+              type="file"
+              accept="audio/*"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) chooseSong(f, f.name.replace(/\.[^.]+$/, "").slice(0, 40) || "My song");
+              }}
+            />
+            {music ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-bold">🎵 {music.title}</span>
+                  <button type="button" onClick={() => setMusic(null)} className="rounded-full px-2.5 py-1 text-[12.5px] font-bold text-[#FCA5A5]">✕ Remove</button>
+                </div>
+                <p className="mt-1 text-[12px] opacity-60">
+                  {mute ? "Only the song is heard (🔇 the video's own sound is off)." : "The song plays with the video's sound. Tap 🔇 Mute to hear only the song."}
+                </p>
+              </>
+            ) : (
+              <div className="no-scrollbar flex gap-2 overflow-x-auto">
+                <button type="button" onClick={() => songInput.current?.click()} className="shrink-0 rounded-full px-3 py-[7px] text-[13px] font-bold" style={{ background: GRAD }}>
+                  💻 From computer
+                </button>
+                {library === null && <span className="shrink-0 py-[7px] text-[13px] opacity-50">Loading songs…</span>}
+                {(library || []).map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    disabled={!!songBusy}
+                    onClick={() => chooseLibrary(s)}
+                    className="max-w-[200px] shrink-0 truncate rounded-full bg-white/10 px-3 py-[7px] text-[13px] disabled:opacity-50"
+                  >
+                    {songBusy === s.id ? "⏳" : "🎵"} {s.title}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         {tool === "mute" && <p className="text-[13px] opacity-70">{mute ? "🔇 The video will be sent without sound. Tap Mute again to keep the sound." : "🔊 The sound is kept."}</p>}
         {tool === "text" && (
           <div className="w-full">
@@ -410,6 +495,7 @@ export function VideoEditor({
         )}
       </div>
 
+      {music && <audio ref={songRef} src={music.url} loop preload="auto" />}
       {err && <p className="px-4 pb-3 text-[13px] text-[#FCA5A5]">{err}</p>}
 
       {making !== null && (

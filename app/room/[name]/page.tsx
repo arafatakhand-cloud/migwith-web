@@ -733,7 +733,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const picAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "picture");
   const voiceAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "voice");
   // 🎬 room video: only the rows miglife switched "video" on for (the server checks again)
-  const videoAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "video");
+  // 👑 founders (miglife secret → Founders) may always share videos
+  const videoAllowed = isMainFounderName(profile?.username) || founder.isHiddenFounder || shareAllowed(shareTable, shareKeys, "video");
   const perms = useMemo(
     () => {
       const p = roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder);

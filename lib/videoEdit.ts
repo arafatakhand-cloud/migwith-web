@@ -19,10 +19,12 @@ export type VideoEdit = {
   textColor: string;
   videoW: number;
   videoH: number;
+  /** 🎵 a song mixed in (plays from its start, repeats if the video is longer) */
+  music?: Blob | null;
 };
 
 export const editChanged = (e: VideoEdit) =>
-  e.startSec > 0.3 || e.endSec < e.durationSec - 0.3 || e.mute || e.filter !== "normal" || e.text.trim() !== "";
+  e.startSec > 0.3 || e.endSec < e.durationSec - 0.3 || e.mute || e.filter !== "normal" || e.text.trim() !== "" || !!e.music;
 
 // key, label, 3×3 colour matrix (row-major) — the same numbers as the app
 const sat = (s: number) => {
@@ -74,7 +76,7 @@ function pickMime(): string {
   const options = [
     "video/mp4;codecs=avc1.42E01F,mp4a.40.2",
     "video/mp4;codecs=avc1,mp4a",
-    "video/mp4",
+    // (a plain "video/mp4" may hold VP9 — some phones can't play that; WebM then)
     "video/webm;codecs=vp9,opus",
     "video/webm;codecs=vp8,opus",
     "video/webm",
@@ -98,6 +100,8 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
   v.preload = "auto";
   v.crossOrigin = "anonymous";
   let ac: AudioContext | null = null;
+  let song: HTMLAudioElement | null = null;
+  let songUrl = "";
   try {
     await once(v, "loadedmetadata");
     const vw = v.videoWidth || e.videoW || 1280;
@@ -128,12 +132,25 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
       (v as any)._svg = svg;
     }
     const stream = canvas.captureStream(30);
-    if (!e.mute) {
+    if (!e.mute || e.music) {
       ac = new AudioContext();
       await ac.resume().catch(() => {});
-      const src = ac.createMediaElementSource(v);
       const dest = ac.createMediaStreamDestination();
-      src.connect(dest);
+      if (!e.mute) ac.createMediaElementSource(v).connect(dest);
+      else v.muted = true;
+      if (e.music) {
+        // 🎵 the song, mixed in
+        songUrl = URL.createObjectURL(e.music);
+        song = new Audio(songUrl);
+        song.loop = true;
+        song.preload = "auto";
+        await new Promise<void>((res) => {
+          song!.addEventListener("canplay", () => res(), { once: true });
+          song!.addEventListener("error", () => res(), { once: true });
+          window.setTimeout(res, 5000);
+        });
+        ac.createMediaElementSource(song).connect(dest);
+      }
       dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
     } else {
       v.muted = true;
@@ -165,12 +182,14 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
     draw();
     rec.start(500);
     await v.play();
+    if (song) await song.play().catch(() => {});
     await new Promise<void>((resolve) => {
       let done = false;
       const finish = () => {
         if (done) return;
         done = true;
         v.pause();
+        song?.pause();
         resolve();
       };
       const tick = () => {
@@ -202,6 +221,8 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
     return new File([blob], `video.${type === "video/mp4" ? "mp4" : "webm"}`, { type });
   } finally {
     (v as any)._svg?.remove();
+    song?.pause();
+    if (songUrl) URL.revokeObjectURL(songUrl);
     v.pause();
     v.removeAttribute("src");
     v.load();
