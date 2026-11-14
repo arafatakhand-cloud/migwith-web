@@ -34,7 +34,7 @@ export type ExtraContext = {
   isRoomAdmin: boolean;
   note: (text: string) => void;
   /** a popup only I see (block / unblock) */
-  popup?: (text: string) => void;
+  popup?: (p: { name: string; blocked: boolean }) => void;
 };
 
 const errMsg = (e: any) => e?.message || "Please try again.";
@@ -172,7 +172,7 @@ export function handleExtraCommand(clean: string, ctx: ExtraContext): boolean {
         .then(() =>
           // 🚫 a popup only I see ("You have blocked …!"), not a line in the room
           ctx.popup
-            ? ctx.popup(on ? `You have blocked ${arg}!` : `You have unblocked ${arg}!`)
+            ? ctx.popup({ name: arg, blocked: on })
             : ctx.note(
                 on
                   ? `${ctx.roomName}: ${arg} has been blocked. Their messages are now hidden for you.`

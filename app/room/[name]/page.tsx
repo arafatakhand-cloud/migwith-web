@@ -1632,7 +1632,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // ✂️ a picked video waits in the video editor until Send
   const [editVideo, setEditVideo] = useState<File | null>(null);
   // 🚫 "You have blocked …!" — a popup only I see
-  const [blockPopup, setBlockPopup] = useState<string | null>(null);
+  const [blockPopup, setBlockPopup] = useState<{ name: string; blocked: boolean } | null>(null);
+  useEffect(() => {
+    if (!blockPopup) return;
+    const t = window.setTimeout(() => setBlockPopup(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [blockPopup]);
   const sendVideo = async (file: File, knownSecs?: number) => {
     if (!user || !profile || uploading) return;
     if (!videoAllowed) return note(`${roomName}: 🔒 Video sharing is not allowed for your role.`);
@@ -2390,15 +2395,27 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   return (
     <PageShell light bottomNav={false}>
       {blockPopup && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 px-8" onClick={() => setBlockPopup(null)}>
-          <div className="w-full max-w-[260px] rounded-2xl bg-white px-5 pb-5 pt-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <span className="mx-auto grid h-[72px] w-[72px] place-items-center rounded-full border-[5px] border-[#1F3A5F] text-[44px] font-black leading-none text-[#1F3A5F]">!</span>
-            <p className="mt-4 text-[13px] text-[#9AA3AF]">{blockPopup}</p>
-            <button type="button" autoFocus onClick={() => setBlockPopup(null)} className="mt-4 w-full rounded-md bg-[#1F3A5F] py-2.5 text-[15px] font-bold text-white">
-              Ok
+        // 🚫 B3: a small dark card at the bottom (only I see it; goes by itself after 4 s)
+        <>
+          <div className="fixed inset-0 z-[94] bg-slate-900/25" onClick={() => setBlockPopup(null)} />
+          <div className="fixed inset-x-3.5 bottom-[max(22px,env(safe-area-inset-bottom))] z-[95] mx-auto flex max-w-md items-center gap-3 rounded-[20px] bg-[#111827]/[.94] p-3.5 text-white shadow-[0_14px_34px_rgba(0,0,0,.4)]">
+            <span
+              className="grid h-11 w-11 flex-none place-items-center rounded-[14px] text-[22px]"
+              style={{ background: blockPopup.blocked ? "linear-gradient(135deg,#F43F5E,#F97316)" : "linear-gradient(135deg,#10B981,#22C55E)" }}
+            >
+              {blockPopup.blocked ? "🚫" : "✓"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[14px]">
+                {blockPopup.name} {blockPopup.blocked ? "blocked" : "unblocked"}
+              </b>
+              <span className="block text-[11.5px] opacity-70">{blockPopup.blocked ? "You won't see each other" : "You can see each other again"}</span>
+            </span>
+            <button type="button" autoFocus onClick={() => setBlockPopup(null)} className="flex-none rounded-[10px] bg-white px-3 py-2 text-[12.5px] font-extrabold text-[#111]">
+              OK
             </button>
           </div>
-        </div>
+        </>
       )}
       {editVideo && (
         <VideoEditor
