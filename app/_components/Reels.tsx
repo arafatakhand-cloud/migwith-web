@@ -191,6 +191,9 @@ function Reel({
   const tapTimer = useRef(0);
   // ⏩ drag the line at the bottom to move through the video (TikTok-style)
   const [seeking, setSeeking] = useState<number | null>(null);
+  // ⏱ T1: where it is and how long it is ("0:12 / 0:45")
+  const [cur, setCur] = useState(0);
+  const [len, setLen] = useState(0);
   const bar = useRef<HTMLDivElement>(null);
   const lenOf = (v: HTMLVideoElement) => (Number.isFinite(v.duration) && v.duration > 0 ? v.duration : v.seekable.length ? v.seekable.end(v.seekable.length - 1) : 0);
   const seekTo = (clientX: number) => {
@@ -247,9 +250,11 @@ function Reel({
           playsInline
           preload={active ? "auto" : "metadata"}
           onTimeUpdate={(e) => {
+            const l = lenOf(e.currentTarget);
+            setCur(e.currentTarget.currentTime);
+            if (l) setLen(l);
             if (seeking !== null) return;
-            const len = lenOf(e.currentTarget);
-            setProg(len ? e.currentTarget.currentTime / len : 0);
+            setProg(l ? e.currentTarget.currentTime / l : 0);
           }}
           className="absolute inset-0 h-full w-full object-contain"
         />
@@ -306,7 +311,7 @@ function Reel({
       </div>
 
       {/* bottom left */}
-      <div className="absolute bottom-7 left-4 right-[84px]">
+      <div className="absolute bottom-9 left-4 right-[84px]">
         <div className="flex items-center gap-2">
           <button type="button" onClick={onProfile} className="text-[15px] font-extrabold">{p.author}</button>
           {following !== null && (
@@ -330,6 +335,12 @@ function Reel({
             {fmt(seeking * lenOf(vid.current))} <span className="opacity-60">/ {fmt(lenOf(vid.current))}</span>
           </span>
         </div>
+      )}
+      {/* ⏱ T1: the time, just above the line */}
+      {active && len > 0 && seeking === null && (
+        <span className="pointer-events-none absolute bottom-[7px] left-4 text-[11.5px] font-extrabold tabular-nums [text-shadow:0_1px_3px_rgba(0,0,0,.8)]">
+          {fmt(cur)} / {fmt(len)}
+        </span>
       )}
       {/* the progress line: drag it to move through the video */}
       <div

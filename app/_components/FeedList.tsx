@@ -2124,6 +2124,35 @@ function reactLine(p: BlogPost, me: string): string {
   return rest ? `${who} and ${blogShort(rest)} other${rest > 1 ? "s" : ""}` : names.length === 2 ? names.join(" and ") : who;
 }
 
+// ⏱ "🎬 0:45" on a Feed video: its length, read from the file's first bytes (kept for the visit)
+const videoLens = new Map<string, number>();
+function VideoLenBadge({ src }: { src: string }) {
+  const [len, setLen] = useState(() => videoLens.get(src) || 0);
+  useEffect(() => {
+    if (len) return;
+    const v = document.createElement("video");
+    v.preload = "metadata";
+    v.muted = true;
+    v.onloadedmetadata = () => {
+      const d = Number.isFinite(v.duration) ? v.duration : 0;
+      if (d > 0) (videoLens.set(src, d), setLen(d));
+      v.removeAttribute("src");
+      v.load();
+    };
+    v.src = src;
+    return () => {
+      v.onloadedmetadata = null;
+    };
+  }, [src, len]);
+  if (!len) return null;
+  const s = Math.round(len);
+  return (
+    <span className="pointer-events-none absolute bottom-2.5 right-2.5 rounded-lg bg-black/65 px-2 py-0.5 text-[11.5px] font-extrabold tabular-nums text-white">
+      🎬 {Math.floor(s / 60)}:{String(s % 60).padStart(2, "0")}
+    </span>
+  );
+}
+
 function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
@@ -2373,6 +2402,8 @@ function FeedCard({ p, onReels, color, liked, verified, why = "", roleBadge, rol
             )}
             {!p.thumb && <video src={`${p.video}#t=0.5`} muted playsInline preload="metadata" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />}
             <span className="absolute left-1/2 top-1/2 grid h-16 w-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/25 text-[26px] text-white backdrop-blur">▶</span>
+            {/* ⏱ how long the video is */}
+            <VideoLenBadge src={p.video} />
           </button>
         ) : p.video ? (
           <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[520px] min-h-[300px] w-full bg-black object-cover" />
