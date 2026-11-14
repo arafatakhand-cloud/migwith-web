@@ -39,7 +39,7 @@ import { useIsClassic } from "../../../lib/uiStyle";
 import { GiftImg } from "../../_components/GiftImg";
 import { openReport } from "../../_components/ReportDialog";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
-import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
+import { PHOTO_BG, PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
 import { saveBlockedNames, watchBlockedBy, watchBlockedNames } from "../../../lib/blocks";
 import { ZoomImageViewer } from "../../_components/ImageViewer";
 import { StickerImg } from "../../_components/StickerImg";
@@ -518,21 +518,36 @@ export default function PrivateChatPage() {
 
   return (
     <PageShell light bottomNav={false}>
-      <div className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col bg-gradient-to-b from-[#D6ECFB] to-[#BFE0F7] sm:my-3 sm:overflow-hidden sm:rounded-3xl">
-        {/* Header */}
-        <div className="flex items-center gap-2.5 rounded-b-3xl bg-gradient-to-r from-[#0B2A5B] to-[#15589B] px-3.5 py-2 shadow-lg">
+      {/* 💬 C3 (2026-11): a soft mint page with a faint dot pattern */}
+      <div
+        className="mx-auto flex h-screen-minus-bar max-w-3xl flex-col sm:my-3 sm:overflow-hidden sm:rounded-3xl"
+        style={
+          classic
+            ? { background: "linear-gradient(180deg, #D6ECFB, #BFE0F7)" }
+            : {
+                backgroundColor: "#EAF6F3",
+                backgroundImage: "radial-gradient(rgba(20,184,143,.12) 1.1px, transparent 1.3px), linear-gradient(180deg, #EAF6F3, #E3F1F4)",
+                backgroundSize: "22px 22px, 100% 100%",
+              }
+        }
+      >
+        {/* Header: teal → blue, like the top bar */}
+        <div
+          className="flex items-center gap-2.5 rounded-b-3xl px-3.5 py-2 shadow-lg"
+          style={{ background: classic ? "linear-gradient(90deg, #0B2A5B, #15589B)" : "linear-gradient(90deg, #14B88F, #2C9BEA)" }}
+        >
           <BackButton variant="dark" onClick={leaveChat} />
           <span className="relative h-11 w-11 shrink-0">
-            <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-[#FFE08A] bg-gradient-to-br from-[#E9C55A] to-[#D4AF37] text-lg font-extrabold text-white">
+            <span className="flex h-full w-full items-center justify-center rounded-full border-2 border-white/85 bg-gradient-to-br from-white/35 to-[#0E7C8C]/55 text-lg font-extrabold text-white">
               {(friend[0] || "?").toUpperCase()}
             </span>
-            {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-[#0B2A5B] bg-[#4CD97B]" />}
+            {online && <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white bg-[#3DDC84]" />}
           </span>
           <div className="min-w-0 flex-1">
             <Link href={`/profile/${encodeURIComponent(friend)}`} className="block truncate text-[19px] font-bold text-white" data-notranslate>
               {friend || "Chat"}
             </Link>
-            <p className={`truncate text-[11px] ${online ? "text-[#4CD97B]" : "text-[#B9C4DD]"}`}>{status}</p>
+            <p className={`truncate text-[11px] ${online ? "text-[#E6FFF6]" : "text-white/80"}`}>{online ? "● Active now" : status}</p>
           </div>
         </div>
 
@@ -548,8 +563,13 @@ export default function PrivateChatPage() {
           className="min-h-0 flex-1 space-y-2 overflow-y-auto overflow-x-hidden overscroll-x-none px-3.5 py-3"
         >
           {visible.length === 0 && <p className="pt-10 text-center text-[15px] text-[#35507E]">Say hi to {friend} 👋</p>}
-          {visible.map((m) => {
+          {visible.map((m, i) => {
             const mine = m.from.toLowerCase() === username.toLowerCase();
+            // 📅 "Today" / "Yesterday" / "12 Nov 2026" when the day changes
+            const day = dayKey(m.createdAtMs);
+            const showDay = !classic && day !== "" && day !== dayKey(visible[i - 1]?.createdAtMs ?? 0);
+            // 🖼 a photo / sticker alone: no bubble, just the picture
+            const barePic = !classic && !!m.imageUrl && ((m.type === "image" && !m.caption) || m.type === "sticker");
             const label = mine ? "You" : friend;
             // 📟 Classic: every line on the LEFT as "name: message", your own name
             // too, no bubbles (blue for you, orange for them).
@@ -562,10 +582,17 @@ export default function PrivateChatPage() {
               quote = body.slice(2, body.indexOf("\n"));
               body = body.slice(body.indexOf("\n") + 1);
             }
-            const ink = mineRight ? "text-white" : "text-[#12233F]";
-            const sub = mineRight ? "text-white/75" : "text-[#6D7A90]";
+            const ink = mineRight && !barePic ? "text-white" : "text-[#12233F]";
+            const sub = mineRight && !barePic ? "text-white/75" : "text-[#6D7A90]";
             return (
               <div key={m.id} className={`flex flex-col ${mineRight ? "items-end" : "items-start"}`}>
+                {showDay && (
+                  <div className="flex w-full justify-center py-1.5">
+                    <span className="rounded-[10px] bg-white px-3 py-1 text-[11px] font-semibold text-[#0E8F74] shadow-[0_1px_3px_rgba(11,42,91,.12)]">
+                      {dayLabel(m.createdAtMs)}
+                    </span>
+                  </div>
+                )}
                 {pickerFor === m.id && moreFor === m.id && (
                   <div className="mb-1 grid w-[248px] grid-cols-8 gap-0.5 rounded-[18px] bg-[#1E2A47] p-1.5">
                     {MORE_REACTIONS.map((e) => (
@@ -656,9 +683,11 @@ export default function PrivateChatPage() {
                   className={`cursor-pointer select-none ${
                     classic
                       ? "w-full px-1 py-[3px]"
-                      : mine
-                        ? "max-w-[260px] rounded-[18px] rounded-br-[4px] bg-gradient-to-br from-[#3B8BE6] to-[#1F63C4] px-3.5 py-2.5 shadow-sm"
-                        : "max-w-[260px] rounded-[18px] rounded-bl-[4px] bg-gradient-to-br from-white to-[#F1F7FD] px-3.5 py-2.5 shadow-sm"
+                      : barePic
+                        ? "max-w-[260px]"
+                        : mine
+                          ? "max-w-[260px] rounded-[18px] rounded-br-[4px] bg-gradient-to-br from-[#14B88F] to-[#2C9BEA] px-3.5 py-2.5 shadow-[0_2px_6px_rgba(20,140,160,.25)]"
+                          : "max-w-[260px] rounded-[18px] rounded-bl-[4px] bg-white px-3.5 py-2.5 shadow-[0_1px_3px_rgba(11,42,91,.10)]"
                   }`}
                 >
                   {/* Classic: "name:" over pictures, files and gifts (text lines get it at the start). */}
@@ -668,7 +697,7 @@ export default function PrivateChatPage() {
                     </p>
                   )}
                   {quote && (
-                    <p className={`mb-1.5 line-clamp-2 rounded-lg px-2 py-1 text-xs ${mineRight ? "bg-black/[0.18] text-white/85" : "bg-[#1F63C4]/10 text-[#12233F]/85"}`}>
+                    <p className={`mb-1.5 line-clamp-2 rounded-lg px-2 py-1 text-xs ${mineRight ? "bg-white/20 text-white/90" : "bg-[#14B88F]/10 text-[#12233F]/85"}`}>
                       {quote}
                     </p>
                   )}
@@ -682,7 +711,7 @@ export default function PrivateChatPage() {
                         e.stopPropagation();
                         setViewImage(m.imageUrl);
                       }}
-                      className="max-h-64 max-w-full rounded-xl"
+                      className="max-h-64 max-w-full rounded-2xl shadow-[0_2px_8px_rgba(11,42,91,.15)]"
                     />
                   ) : null}
                   {/* ✍️ the words sent with the photo */}
@@ -743,15 +772,16 @@ export default function PrivateChatPage() {
                   {m.createdAtMs > 0 && <p className={`mt-0.5 text-[9px] ${sub}`}>{timeLabel(m.createdAtMs)}</p>}
                 </div>
                 {Object.keys(m.reactions).length > 0 && (
-                  <div className="mt-1 flex gap-1">
+                  <div className="relative z-[1] -mt-1.5 flex gap-1 px-2">
                     {Object.entries(m.reactions).map(([e, uids]) => (
                       <button
                         key={e}
                         type="button"
                         onClick={() => react(m, e)}
-                        className={`rounded-xl px-2 py-0.5 text-xs text-white ${uids.includes(user.uid) ? "bg-[#3984D9]/40" : "bg-[#1E2A47]"}`}
+                        className={`rounded-xl px-1.5 py-0.5 text-xs font-semibold text-[#35507E] shadow-[0_1px_4px_rgba(11,42,91,.18)] ${uids.includes(user.uid) ? "bg-[#E3FAF3] ring-1 ring-[#14B88F]" : "bg-white"}`}
                       >
-                        <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
+                        <ReactionShakeEmoji emoji={e} count={uids.length} />
+                        {uids.length > 1 ? ` ${uids.length}` : ""}
                       </button>
                     ))}
                   </div>
@@ -869,14 +899,18 @@ export default function PrivateChatPage() {
           />
           <input ref={fileRef} type="file" hidden onChange={(e) => (sendFile(e.target.files?.[0]), (e.target.value = ""))} />
           {!voiceActive && (
-            <div className="min-w-0 flex-1 rounded-[24px] bg-gradient-to-r from-[#5B8DEF] via-[#8B6CF0] to-[#3FB6F2] p-[1.5px] shadow-[0_2px_10px_rgba(91,141,239,.18)]">
-              <div className="flex min-h-[36px] items-end gap-1 rounded-[22.5px] bg-[#F7FAFF] py-[2px] pl-1 pr-1.5">
+            /* 💬 C3: the same message box as room chat (ChatBar) */
+            <div
+              className="keep-round min-w-0 flex-1 rounded-[21px] p-[1.5px]"
+              style={{ background: classic ? "linear-gradient(90deg, #FF9D2E, #F07A00)" : "linear-gradient(90deg, #5B8DEF, #8B6CF0, #3FB6F2)" }}
+            >
+              <div className="chat-field keep-round flex min-h-[34px] items-end gap-1 rounded-[19.5px] bg-white py-[2px] pl-[2px] pr-1">
                 <button
                   type="button"
                   onClick={() => photoRef.current?.click()}
                   disabled={uploading || self}
-                  className="flex h-[32px] w-[32px] shrink-0 items-center justify-center rounded-full text-white disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, #EC4677, #C13A93, #9B3DAB)" }}
+                  className="glass-shine flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full text-sm text-white disabled:opacity-40"
+                  style={PHOTO_BG}
                   aria-label="Send a photo"
                 >
                   {uploading ? "⏳" : <PhotoGlyph />}
@@ -893,10 +927,10 @@ export default function PrivateChatPage() {
                       send();
                     }
                   }}
-                  placeholder="Message…"
-                  className="my-[5px] h-[22px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-[22px] text-[#12233F] outline-none placeholder:text-[13px] placeholder:text-[#8A9BB5]"
+                  placeholder="Type a message…"
+                  className="my-[4px] h-5 min-w-0 flex-1 resize-none overflow-y-auto bg-transparent px-1.5 py-0 text-[15px] leading-5 text-[#0B2A5B] outline-none placeholder:text-[13px] placeholder:text-[#7A8599]/80"
                 />
-                <span className="flex h-[32px] shrink-0 items-center">
+                <span className="flex h-[28px] shrink-0 items-center">
                   <EmojiPicker inputRef={inputRef} value={text} onChange={setText} inline dockTo={emoteSlot} onSticker={sendSticker} />
                 </span>
               </div>
@@ -905,8 +939,10 @@ export default function PrivateChatPage() {
           {text.trim() || pendingPhoto ? (
             <button
               type="button"
+              onPointerDown={(e) => e.preventDefault()}
+              onMouseDown={(e) => e.preventDefault()}
               onClick={send}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white active:scale-95"
+              className="chat-send-shine glass-shine relative flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full text-white active:scale-95"
               style={SEND_BG}
               aria-label="Send"
             >
@@ -948,4 +984,19 @@ export default function PrivateChatPage() {
       )}
     </PageShell>
   );
+}
+
+// 📅 C3 day chips
+function dayKey(ms: number): string {
+  if (!ms) return "";
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+function dayLabel(ms: number): string {
+  const now = Date.now();
+  const k = dayKey(ms);
+  if (k === dayKey(now)) return "Today";
+  if (k === dayKey(now - 86_400_000)) return "Yesterday";
+  return new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
