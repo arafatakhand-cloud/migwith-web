@@ -423,7 +423,7 @@ export default function SecretPage() {
       [
         "🎮 Games",
         [
-          { icon: "🎰", label: "Luxury Bet", hint: "Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
+          { icon: "🎰", label: "Luxury Bet", hint: "🤖 Auto players · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
           { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
           // (🎲 Luxury Bot Tiers removed — Luxury Bot Official is gone; Luxury Bet replaced it)
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
@@ -547,8 +547,8 @@ export default function SecretPage() {
       {f.isMigwith && tool === "lowcard_winfx" && <CricketWinFxCard key="lowcard" field="lowcardRooms" game="LowCard" icon="🃏" />}
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
-      {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
       {f.isMigwith && tool === "luxury_bet" && <LuxuryAutoPlayersCard />}
+      {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
       {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
       {f.isMigwith && tool === "daily_rewards" && <DailyGameRewardsCard />}
       {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}

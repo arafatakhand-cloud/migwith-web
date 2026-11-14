@@ -1196,7 +1196,7 @@ export function LuxuryAutoPlayersCard() {
       });
       setOn(!!data.on);
       setNames((data.usernames || []).join(", "));
-      setMsg(data.on ? "✅ On — they bet every round; new rounds start by themselves." : "Off.");
+      setMsg(data.on ? "✅ On — they bid all through every round; new rounds start by themselves." : "Off.");
     } catch (e: any) {
       setMsg(e?.message || "Could not save.");
     } finally {
@@ -1204,7 +1204,7 @@ export function LuxuryAutoPlayersCard() {
     }
   };
   return (
-    <Section title="🤖 Auto players" hint="These IDs bet every round by themselves (a random character) and a new round starts when one ends. They show 🤖 after the name. Their own coins are used; an ID with too few coins sits out.">
+    <Section title="🤖 Auto players" hint="These IDs bet every round by themselves (a random character) and a new round starts when one ends. A small 🎰 shows after their name. Their own coins are used; an ID with too few coins sits out.">
       <input value={names} onChange={(e) => setNames(e.target.value)} placeholder="lion, wow" className={input} />
       <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Bet each round (min 100)" className={input} inputMode="numeric" />
       <div className="flex gap-2">
