@@ -40,6 +40,9 @@ type CatalogGift = {
   sortOrder: number;
 };
 
+// 💸💎 under this many coins = "Low price", this many or more = "High price" (same as the app)
+const GIFT_PRICE_SPLIT = 100;
+
 const bool = (v: unknown, d: boolean) => (typeof v === "boolean" ? v : d);
 
 // 🎁 A Staff / Admin id can get the Gift Shops tool from its role or its own
@@ -91,6 +94,8 @@ export default function GiftShopsPage() {
   const [gifts, setGifts] = useState<CatalogGift[] | null>(null);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  // ⬆⬇ price order of both parts (true = Low → High)
+  const [lowFirst, setLowFirst] = useState(true);
   const [editing, setEditing] = useState<{ id: string; initial: CatalogGift | null } | null>(null);
 
   useEffect(() => {
@@ -125,6 +130,13 @@ export default function GiftShopsPage() {
   // 🔍 everyone can search the gifts by name
   const q = search.trim().toLowerCase();
   const shown = (gifts || []).filter((g) => !q || g.name.toLowerCase().includes(q));
+  // 💸💎 G2 (miglife): two parts — low price, then high price — each ordered by price
+  const byPrice = [...shown].sort((a, b) => (lowFirst ? a.price - b.price : b.price - a.price) || a.sortOrder - b.sortOrder);
+  const giftParts: [string, string, CatalogGift[], boolean][] = [
+    ["💸 Low price gifts", `under ${GIFT_PRICE_SPLIT}`, byPrice.filter((g) => g.price < GIFT_PRICE_SPLIT), true],
+    ["💎 High price gifts", `${GIFT_PRICE_SPLIT}+`, byPrice.filter((g) => g.price >= GIFT_PRICE_SPLIT), false],
+  ];
+  if (!lowFirst) giftParts.reverse();
 
   const save = async (id: string, isNew: boolean, data: Record<string, unknown>) => {
     try {
@@ -197,6 +209,21 @@ export default function GiftShopsPage() {
           )}
         </label>
 
+        {/* ⬆⬇ price order */}
+        <div className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[#68758D]">
+          Price:
+          {([[true, "⬆ Low → High"], [false, "⬇ High → Low"]] as const).map(([lf, label]) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setLowFirst(lf)}
+              className={`rounded-full px-3 py-1.5 font-bold ${lowFirst === lf ? "bg-[#14213D] text-white" : "border border-[#DBE4F3] bg-white text-[#0B1F3A]"}`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {error && <p className="mt-2.5 rounded-[14px] bg-[#FFE8E8] p-3 text-xs text-[#9E2B2B]">{error}</p>}
 
         {gifts === null ? (
@@ -206,8 +233,16 @@ export default function GiftShopsPage() {
         ) : shown.length === 0 ? (
           <p className="py-10 text-center text-sm text-[#5B6B8C]">No gift matches &quot;{search}&quot;.</p>
         ) : (
-          <ul className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
-            {shown.map((g) => (
+          <>
+          {giftParts.map(([title, pill, list, low]) => list.length > 0 && (
+          <div key={title}>
+          <div className="mb-1 mt-4 flex items-center gap-2">
+            <span className="text-[15px] font-black text-[#0B1F3A]">{title}</span>
+            <span className={`rounded-full px-2 py-0.5 text-[11px] font-extrabold ${low ? "bg-[#DCFCE7] text-[#15803D]" : "bg-[#EDE9FE] text-[#6D28D9]"}`}>{pill}</span>
+            <span className="ml-auto text-[11.5px] font-bold text-[#68758D]">{list.length} gift{list.length === 1 ? "" : "s"}</span>
+          </div>
+          <ul className="mt-1 grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+            {list.map((g) => (
               <li key={g.id} className="relative py-1">
                 <div
                   // 🫧 6D: stacked depth under each gift card, a top shine
@@ -274,6 +309,9 @@ export default function GiftShopsPage() {
               </li>
             ))}
           </ul>
+          </div>
+          ))}
+          </>
         )}
       </section>
 
