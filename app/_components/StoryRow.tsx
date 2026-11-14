@@ -28,8 +28,8 @@ type Audience = "everyone" | "friends" | "only_me";
 
 // 😍 the story reactions (same as the server's list)
 const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
-// ↩️ quick replies (miglife M1: Bangla and English)
-const QUICK_REPLIES = ["😍 দারুণ!", "🔥 জোস", "💖 ভালো লাগলো", "👏 Amazing", "😂 Haha", "💯 Perfect"];
+// ↩️ quick replies (miglife M2: chat bubbles, Bangla and English together)
+const QUICK_REPLIES = ["😍 দারুণ! · Awesome", "🔥 জোস · Fire", "💖 ভালো লাগলো · So nice"];
 type StoryReactor = { name: string; emoji: string; atMs: number };
 type Group = { author: string; items: Story[]; unseen: number };
 
@@ -663,20 +663,22 @@ function StoryViewer({
           </button>
         ) : (
           <>
-            {/* M1 · quick replies (Bangla + English), slide sideways for more */}
-            <div className="no-scrollbar absolute bottom-[74px] left-0 right-0 z-10 flex gap-2 overflow-x-auto px-3">
-              {QUICK_REPLIES.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  disabled={sending}
-                  onClick={() => sendReply(q)}
-                  className="shrink-0 rounded-2xl bg-white px-3 py-1.5 text-[12.5px] font-extrabold text-[#4C1D95] shadow-[0_4px_10px_rgba(0,0,0,.2)] disabled:opacity-60"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+            {/* M2 · quick replies as chat bubbles, bottom left (Bangla + English) */}
+            {!typing && !bloom && (
+              <div className="absolute bottom-[78px] left-3 z-10 flex flex-col items-start gap-2">
+                {QUICK_REPLIES.map((q) => (
+                  <button
+                    key={q}
+                    type="button"
+                    disabled={sending}
+                    onClick={() => sendReply(q)}
+                    className="rounded-[14px] rounded-bl-[4px] bg-gradient-to-r from-[#7C3AED] to-[#DB2777] px-3 py-1.5 text-[12.5px] font-extrabold text-white shadow-[0_4px_10px_rgba(0,0,0,.25)] disabled:opacity-60"
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* the reply box · ❤️ (or Send while writing) */}
             <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 bg-gradient-to-b from-transparent to-black/50 px-3 pb-4 pt-2">
               <input
@@ -688,11 +690,7 @@ function StoryViewer({
                 placeholder={`💬 Reply to ${current.author}…`}
                 className="min-w-0 flex-1 rounded-full border-[1.5px] border-white/55 bg-white/20 px-4 py-2.5 text-[14px] text-white outline-none backdrop-blur placeholder:text-white/80"
               />
-              {reply.trim() ? (
-                <button type="button" disabled={sending} onClick={() => sendReply(reply)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[18px] font-black text-[#7C3AED] disabled:opacity-60" aria-label="Send">
-                  ➤
-                </button>
-              ) : (
+              {(
                 <div className="relative shrink-0">
                   {bloom && (
                     <div className="absolute bottom-14 right-0 flex flex-col gap-1.5">
@@ -720,6 +718,16 @@ function StoryViewer({
                   </button>
                 </div>
               )}
+              {/* ➤ always there (M2) */}
+              <button
+                type="button"
+                disabled={sending || !reply.trim()}
+                onClick={() => sendReply(reply)}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[18px] font-black text-[#7C3AED] disabled:opacity-70"
+                aria-label="Send"
+              >
+                ➤
+              </button>
             </div>
           </>
         )}
