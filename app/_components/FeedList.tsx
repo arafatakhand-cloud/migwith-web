@@ -286,7 +286,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 📰🎬 only people Share Permissions allows (the Feed column) see the 🎬 button
   const feedVideo = useFeedVideoAllowed(user?.uid, username);
   const [cvideoEdit, setCvideoEdit] = useState<File | null>(null);
-  // 🎬 Reels: the post to start with ("" = the newest video); null = closed
+  // 🎬 MigClips: the post to start with ("" = the newest video); null = closed
   const [reelsStart, setReelsStart] = useState<string | null>(null);
   // 🚫 a block works both ways: their Migs are hidden from me, mine from them
   const blockSets = useBlockSets(user?.uid);
@@ -973,6 +973,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[21px] transition hover:bg-[#EEF0F8] active:scale-95"
                 >
                   🔍
+                </button>
+                {/* 🎬 MigClips: every Feed video, full screen */}
+                <button
+                  type="button"
+                  onClick={() => setReelsStart("")}
+                  aria-label="MigClips"
+                  title="MigClips"
+                  className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#DB2777] text-[18px] shadow-[0_4px_10px_rgba(219,39,119,.35)] transition active:scale-95"
+                >
+                  🎬
                 </button>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
                 <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
@@ -1721,15 +1731,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             >
               <Avatar name={username} color={meColor} size={40} ring />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
-              {/* 🎬 Reels: every Feed video, full screen */}
-              <span
-                role="button"
-                tabIndex={0}
-                onClick={(e) => (e.stopPropagation(), setReelsStart(""))}
-                className="shrink-0 rounded-full bg-gradient-to-r from-[#7C3AED] to-[#DB2777] px-3 py-1.5 text-[12.5px] font-extrabold text-white"
-              >
-                🎬 Reels
-              </span>
             </button>
           ) : (
             <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
