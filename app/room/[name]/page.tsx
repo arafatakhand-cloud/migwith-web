@@ -283,6 +283,25 @@ function FitOneLine({ base, grow = false, children }: { base: number; grow?: boo
 
 // A name colour readable on a white card: very light ones (admin yellow, staff
 // neon green, cyan…) get a little darker; the rest stay as they are.
+// 🎰 Luxury Bet's own players ("lion 🎰 placed …", "-wow 🎰 has won …"): the 🎰
+// after the name is drawn small and light (miglife), the rest as usual.
+const HOUSE_MARK_RE = / 🎰(?= (?:placed|has won) )/g;
+function withHouseMark(text: string, key: string, render: (s: string, k: string) => ReactNode): ReactNode {
+  if (!text.includes("🎰")) return render(text, key);
+  const parts = text.split(HOUSE_MARK_RE);
+  if (parts.length === 1) return render(text, key);
+  return parts.map((p, i) => (
+    <Fragment key={`${key}h${i}`}>
+      {i > 0 && (
+        <span aria-label="Luxury Bet player" className="mx-[2px] inline-block align-middle text-[0.62em] leading-none opacity-40">
+          🎰
+        </span>
+      )}
+      {render(p, `${key}h${i}`)}
+    </Fragment>
+  ));
+}
+
 function inkOnWhite(c: string): string {
   // Only the Staff neon green is deepened (the other colours stay as they are).
   if (c.toUpperCase() === "#39FF14") return "color-mix(in srgb, #39FF14 65%, black)";
@@ -4214,7 +4233,7 @@ function MessageRow({
               >
                 {/* 🔗 links first: blue + underlined + tappable, and emote codes inside a link stay text */}
                 {withLinks(brandMiglife(body), "b", onLink, (seg, k) => (
-                  <Fragment key={k}>{withEmotes(seg, fontPx, (t, k2) => withMentions(t, `${k}${k2}`))}</Fragment>
+                  <Fragment key={k}>{withEmotes(seg, fontPx, (t, k2) => withHouseMark(t, `${k}${k2}`, (x, k3) => withMentions(x, k3)))}</Fragment>
                 ))}
               </span>
               {(!rightSide || ownWraps) && stamp}
