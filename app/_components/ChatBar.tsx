@@ -286,8 +286,8 @@ export function ChatBar({
           </div>
       )}
 
-          {text.trim() && !voiceActive ? (
-            // ➤ send
+          {(text.trim() || attachment) && !voiceActive ? (
+            // ➤ send (also for a waiting photo with nothing written — it goes alone)
             <button
               type="button"
               // Like the app: tapping ➤ never takes the focus off the message box,
