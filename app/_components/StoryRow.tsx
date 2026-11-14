@@ -28,7 +28,8 @@ type Audience = "everyone" | "friends" | "only_me";
 
 // 😍 the story reactions (same as the server's list)
 const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
-const QUICK_REPLIES = ["Love it ❤️", "✨✨", "🔥"];
+// ↩️ quick replies (miglife M1: Bangla and English)
+const QUICK_REPLIES = ["😍 দারুণ!", "🔥 জোস", "💖 ভালো লাগলো", "👏 Amazing", "😂 Haha", "💯 Perfect"];
 type StoryReactor = { name: string; emoji: string; atMs: number };
 type Group = { author: string; items: Story[]; unseen: number };
 
@@ -332,7 +333,9 @@ function StoryViewer({
   const [sending, setSending] = useState(false);
   const [myReacts, setMyReacts] = useState<Record<string, string>>({});
   const [burst, setBurst] = useState<{ emoji: string; key: number } | null>(null);
-  const paused = held || typing || menu || strip || !!editing || !!reactors;
+  // ❤️ M1: the heart opens the reactions in a column above it
+  const [bloom, setBloom] = useState(false);
+  const paused = held || typing || menu || strip || !!editing || !!reactors || bloom;
 
   // progress of the current story (0…1), driven by a clock (videos: by the video)
   const [prog, setProg] = useState(0);
@@ -660,40 +663,61 @@ function StoryViewer({
           </button>
         ) : (
           <>
-            <div className="absolute bottom-[74px] left-3 right-3 z-10 flex justify-center gap-2">
+            {/* M1 · quick replies (Bangla + English), slide sideways for more */}
+            <div className="no-scrollbar absolute bottom-[74px] left-0 right-0 z-10 flex gap-2 overflow-x-auto px-3">
               {QUICK_REPLIES.map((q) => (
-                <button key={q} type="button" disabled={sending} onClick={() => sendReply(q)} className="story-glass rounded-full px-3.5 py-1.5 text-[13px] font-bold text-white disabled:opacity-60">
+                <button
+                  key={q}
+                  type="button"
+                  disabled={sending}
+                  onClick={() => sendReply(q)}
+                  className="shrink-0 rounded-2xl bg-white px-3 py-1.5 text-[12.5px] font-extrabold text-[#4C1D95] shadow-[0_4px_10px_rgba(0,0,0,.2)] disabled:opacity-60"
+                >
                   {q}
                 </button>
               ))}
             </div>
-            <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 bg-black/80 px-3 py-3">
+            {/* the reply box · ❤️ (or Send while writing) */}
+            <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-2 bg-gradient-to-b from-transparent to-black/50 px-3 pb-4 pt-2">
               <input
                 value={reply}
                 onChange={(e) => setReply(e.target.value.slice(0, 500))}
-                onFocus={() => setTyping(true)}
+                onFocus={() => (setTyping(true), setBloom(false))}
                 onBlur={() => !reply && setTyping(false)}
                 onKeyDown={(e) => e.key === "Enter" && sendReply(reply)}
-                placeholder="Send message…"
-                className="min-w-0 flex-1 rounded-full border border-white/40 bg-transparent px-4 py-2 text-[14px] text-white outline-none placeholder:text-white/60"
+                placeholder={`💬 Reply to ${current.author}…`}
+                className="min-w-0 flex-1 rounded-full border-[1.5px] border-white/55 bg-white/20 px-4 py-2.5 text-[14px] text-white outline-none backdrop-blur placeholder:text-white/80"
               />
               {reply.trim() ? (
-                <button type="button" disabled={sending} onClick={() => sendReply(reply)} className="rounded-full bg-white px-4 py-2 text-[13px] font-extrabold text-black disabled:opacity-60">
-                  Send
+                <button type="button" disabled={sending} onClick={() => sendReply(reply)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-[18px] font-black text-[#7C3AED] disabled:opacity-60" aria-label="Send">
+                  ➤
                 </button>
               ) : (
-                <div className="no-scrollbar flex max-w-[55%] gap-0.5 overflow-x-auto">
-                  {STORY_REACTIONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      aria-label={`React ${r}`}
-                      onClick={() => react(r)}
-                      className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-[23px] transition active:scale-125 ${myReacts[current.id] === r ? "scale-110 bg-white/90" : ""}`}
-                    >
-                      {r}
-                    </button>
-                  ))}
+                <div className="relative shrink-0">
+                  {bloom && (
+                    <div className="absolute bottom-14 right-0 flex flex-col gap-1.5">
+                      {[...STORY_REACTIONS].reverse().map((r, k) => (
+                        <button
+                          key={r}
+                          type="button"
+                          aria-label={`React ${r}`}
+                          onClick={() => (react(r), setBloom(false))}
+                          className={`grid h-10 w-10 place-items-center rounded-full bg-white text-[21px] shadow-[0_4px_10px_rgba(0,0,0,.25)] transition ${myReacts[current.id] === r ? "ring-2 ring-[#DB2777]" : ""}`}
+                          style={{ animation: `story-bloom .22s ease-out ${k * 0.03}s both` }}
+                        >
+                          {r}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setBloom((b) => !b)}
+                    aria-label="React"
+                    className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#F43F5E] to-[#DB2777] text-[20px] shadow-[0_6px_14px_rgba(219,39,119,.4)]"
+                  >
+                    {myReacts[current.id] || "❤️"}
+                  </button>
                 </div>
               )}
             </div>
