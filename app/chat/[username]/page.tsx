@@ -40,7 +40,7 @@ import { GiftImg } from "../../_components/GiftImg";
 import { openReport } from "../../_components/ReportDialog";
 import { VoiceRecorder } from "../../_components/VoiceRecorder";
 import { PhotoGlyph, SEND_BG, SendGlyph } from "../../_components/ChatBar";
-import { saveBlockedNames, watchBlockedNames } from "../../../lib/blocks";
+import { saveBlockedNames, watchBlockedBy, watchBlockedNames } from "../../../lib/blocks";
 import { ZoomImageViewer } from "../../_components/ImageViewer";
 import { StickerImg } from "../../_components/StickerImg";
 import { PhotoEditor } from "../../_components/PhotoEditor";
@@ -126,6 +126,8 @@ export default function PrivateChatPage() {
   const [viewImage, setViewImage] = useState<string | null>(null);
   // 🚫 I blocked this person (users/{me}.blockedUsers): their messages are hidden and I can't write to them.
   const [blockedList, setBlockedList] = useState<string[]>([]);
+  // 🚫 a block works both ways: this person blocked ME → I don't see them and can't write
+  const [blockedByList, setBlockedByList] = useState<string[]>([]);
 
   // 🔒 They locked their profile and I am not their friend → I can't write to them.
   // null = still checking
@@ -220,7 +222,12 @@ export default function PrivateChatPage() {
     if (!user) return;
     return watchBlockedNames(user.uid, setBlockedList);
   }, [user]);
+  useEffect(() => {
+    if (!user) return;
+    return watchBlockedBy(user.uid, setBlockedByList);
+  }, [user]);
   const blocked = blockedList.some((b) => b.trim().toLowerCase() === friend.toLowerCase());
+  const blockedMe = blockedByList.some((b) => b.trim().toLowerCase() === friend.toLowerCase());
   const setBlock = async (on: boolean) => {
     if (!user) return;
     const next = on
@@ -270,7 +277,7 @@ export default function PrivateChatPage() {
   }, []);
 
   const visible = messages.filter(
-    (m) => (m.createdAtMs || Number.MAX_SAFE_INTEGER) > clearedAt && !(blocked && m.from.toLowerCase() === friend.toLowerCase())
+    (m) => (m.createdAtMs || Number.MAX_SAFE_INTEGER) > clearedAt && !((blocked || blockedMe) && m.from.toLowerCase() === friend.toLowerCase())
   );
 
   // Keeps the newest message in view: after every new message, and again
@@ -302,6 +309,7 @@ export default function PrivateChatPage() {
     if ((!clean && !pendingPhoto) || !user || !username) return;
     if (self) return setError("You cannot message yourself.");
     if (blocked) return setError(`You blocked ${friend}. Unblock to send a message.`);
+    if (blockedMe) return setError(`You can't message ${friend}.`);
     if (lockedOut) return setError(lockedChatText(friend));
     // 🖼 a photo is waiting: it goes with these words as one message
     if (pendingPhoto) {
@@ -403,6 +411,7 @@ export default function PrivateChatPage() {
   const sendVoice = async (audio: Blob, seconds: number) => {
     if (!user || !username || self) return;
     if (blocked) throw new Error(`You blocked ${friend}. Unblock to send a message.`);
+    if (blockedMe) throw new Error(`You can't message ${friend}.`);
     if (lockedOut) throw new Error(lockedChatText(friend));
     const type = audio.type || "audio/webm";
     const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
@@ -754,7 +763,11 @@ export default function PrivateChatPage() {
 
         {error && <p className="px-3.5 py-1 text-xs text-[#B3261E]">{error}</p>}
 
-        {lockedOut && !blocked && (
+        {blockedMe && !blocked && (
+          <div className="bg-[#F3F4F6] px-3.5 py-2 text-[13px] font-semibold text-[#4B5563]">🚫 You can&apos;t message {friend}.</div>
+        )}
+
+        {lockedOut && !blocked && !blockedMe && (
           <div className="bg-[#FFF8E1] px-3.5 py-2 text-[13px] font-semibold text-[#7A5A00]">{lockedChatText(friend)}</div>
         )}
 
@@ -900,7 +913,7 @@ export default function PrivateChatPage() {
               <SendGlyph />
             </button>
           ) : (
-            <VoiceRecorder size="lg" disabled={self || blocked || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
+            <VoiceRecorder size="lg" disabled={self || blocked || blockedMe || uploading} onSend={sendVoice} onError={setError} onActive={setVoiceActive} />
           )}
         </div>
         <div className="pb-safe" />

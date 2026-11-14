@@ -180,7 +180,7 @@ import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { PhotoEditor } from "../../_components/PhotoEditor";
 import { BalanceCard, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
-import { watchBlockedNames } from "../../../lib/blocks";
+import { useBlockSets } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
 
 // 🔒 Same words as the app's toasts for a locked room / a level too low.
@@ -1335,11 +1335,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [messages, localNotes, myUid, sinceMs]);
 
   // People I blocked (user_blocks/{uid}, /block): their lines are hidden for me, like the app.
-  const [blockedNames, setBlockedNames] = useState<string[]>([]);
-  useEffect(() => {
-    if (!myUid) return;
-    return watchBlockedNames(myUid, (names) => setBlockedNames(names.map((x) => x.toLowerCase())));
-  }, [myUid]);
+  // 🚫 a block works both ways: the people who blocked ME are hidden too
+  const blockSets = useBlockSets(myUid);
+  const blockedNames = useMemo(() => [...blockSets.hidden], [blockSets]);
 
   // Live "is a game running?" line for game rooms (and chat rooms with a game
   // bot on), shown under the 📢 announcement — only to someone who has no line
@@ -1633,6 +1631,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎬 Video message (R2, room_videos/<room>/…): only people Share Permissions allows.
   // ✂️ a picked video waits in the video editor until Send
   const [editVideo, setEditVideo] = useState<File | null>(null);
+  // 🚫 "You have blocked …!" — a popup only I see
+  const [blockPopup, setBlockPopup] = useState<{ name: string; blocked: boolean } | null>(null);
+  useEffect(() => {
+    if (!blockPopup) return;
+    const t = window.setTimeout(() => setBlockPopup(null), 4000);
+    return () => window.clearTimeout(t);
+  }, [blockPopup]);
   const sendVideo = async (file: File, knownSecs?: number) => {
     if (!user || !profile || uploading) return;
     if (!videoAllowed) return note(`${roomName}: 🔒 Video sharing is not allowed for your role.`);
@@ -1763,6 +1768,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         isFounder: isMainFounderName(profile.username),
         isRoomAdmin: perms.isRoomAdmin,
         note,
+        popup: setBlockPopup,
       })
     ) {
       setText("");
@@ -2388,6 +2394,29 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   return (
     <PageShell light bottomNav={false}>
+      {blockPopup && (
+        // 🚫 B3: a small dark card at the bottom (only I see it; goes by itself after 4 s)
+        <>
+          <div className="fixed inset-0 z-[94] bg-slate-900/25" onClick={() => setBlockPopup(null)} />
+          <div className="fixed inset-x-3.5 bottom-[max(22px,env(safe-area-inset-bottom))] z-[95] mx-auto flex max-w-md items-center gap-3 rounded-[20px] bg-[#111827]/[.94] p-3.5 text-white shadow-[0_14px_34px_rgba(0,0,0,.4)]">
+            <span
+              className="grid h-11 w-11 flex-none place-items-center rounded-[14px] text-[22px]"
+              style={{ background: blockPopup.blocked ? "linear-gradient(135deg,#F43F5E,#F97316)" : "linear-gradient(135deg,#10B981,#22C55E)" }}
+            >
+              {blockPopup.blocked ? "🚫" : "✓"}
+            </span>
+            <span className="min-w-0 flex-1">
+              <b className="block truncate text-[14px]">
+                {blockPopup.name} {blockPopup.blocked ? "blocked" : "unblocked"}
+              </b>
+              <span className="block text-[11.5px] opacity-70">{blockPopup.blocked ? "You won't see each other" : "You can see each other again"}</span>
+            </span>
+            <button type="button" autoFocus onClick={() => setBlockPopup(null)} className="flex-none rounded-[10px] bg-white px-3 py-2 text-[12.5px] font-extrabold text-[#111]">
+              OK
+            </button>
+          </div>
+        </>
+      )}
       {editVideo && (
         <VideoEditor
           file={editVideo}

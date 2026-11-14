@@ -9,6 +9,7 @@ import { loadSongLibrary, type LibrarySong, STORY_SONG_SECONDS, uploadStorySong 
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { r2Upload } from "../../lib/r2Upload";
 import { VideoEditor } from "./VideoEditor";
+import { useBlockSets } from "../../lib/blocks";
 
 export type StorySong = { url: string; title: string; startSec: number };
 
@@ -52,15 +53,17 @@ export function StoryRow({
     return () => window.removeEventListener(STORIES_CHANGED, again);
   }, []);
 
+  // 🚫 a block works both ways: their stories are hidden from me
+  const blockSets = useBlockSets(myUid);
   // 👥 friends-only stories show to the writer and their friends
   const visible = useMemo(() => {
     const mine = new Set(friends);
-    return (stories || []).filter((s) => {
+    return (stories || []).filter((s) => !blockSets.hidden.has(s.author.toLowerCase())).filter((s) => {
       if (s.privacy === "only_me") return s.author === myName;
       if (s.privacy === "friends") return s.author === myName || mine.has(s.author);
       return true;
     });
-  }, [stories, friends, myName]);
+  }, [stories, friends, myName, blockSets]);
 
   const byAuthor = useMemo(() => {
     const m = new Map<string, Story[]>();
