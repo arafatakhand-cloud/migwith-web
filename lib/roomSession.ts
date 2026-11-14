@@ -16,6 +16,8 @@ export type SessionMessage = {
   /** ✍️ the words sent with a photo (type "image") */
   caption?: string;
   audioUrl: string;
+  /** 🎬 a room video (type "video", on R2) */
+  videoUrl?: string;
   giftName: string;
   moderationColor?: string;
   createdAtMs: number;

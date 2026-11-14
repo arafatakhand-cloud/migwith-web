@@ -28,7 +28,7 @@ export function shareKeysOf(badgeEmojis: string[]): string[] {
 }
 
 /** Picture / voice allowed for this user, from the table (highest row wins). */
-export function shareAllowed(table: ShareTable | null, keys: string[], what: "picture" | "voice"): boolean {
+export function shareAllowed(table: ShareTable | null, keys: string[], what: "picture" | "voice" | "video"): boolean {
   if (!table) return false;
   const best = keys.map((k) => ORDER.indexOf(k)).filter((i) => i >= 0).sort((a, b) => b - a)[0];
   if (best === undefined) return false;

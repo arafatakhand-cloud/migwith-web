@@ -98,7 +98,7 @@ export function ChatBar({
   /** ⋮ tapped — gets the button's spot on screen, so the menu can open right above it. */
   onMore?: (anchor?: DOMRect) => void;
   giftDisabled?: boolean;
-  photo: { onFile: (f: File | undefined) => void; disabled: boolean; uploading: boolean; title: string };
+  photo: { onFile: (f: File | undefined) => void; disabled: boolean; uploading: boolean; title: string; accept?: string };
   /** The <VoiceRecorder>; while it records it takes over the row. */
   voice: React.ReactNode;
   voiceActive: boolean;
@@ -248,7 +248,7 @@ export function ChatBar({
                 {photo.uploading ? "⏳" : <PhotoGlyph />}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={photo.accept || "image/*"}
                   className="hidden"
                   onChange={(e) => {
                     photo.onFile(e.target.files?.[0]);

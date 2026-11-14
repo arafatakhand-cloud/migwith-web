@@ -712,6 +712,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const shareKeys = useMemo(() => shareKeysOf(profile?.badges || []), [profile?.badges]);
   const picAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "picture");
   const voiceAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "voice");
+  // 🎬 room video: only the rows miglife switched "video" on for (the server checks again)
+  const videoAllowed = isMainFounderName(profile?.username) || shareAllowed(shareTable, shareKeys, "video");
   const perms = useMemo(
     () => {
       const p = roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder);
@@ -788,6 +790,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             imageUrl: String(d.get("imageUrl") || ""),
             caption: String(d.get("caption") || ""),
             audioUrl: String(d.get("audioUrl") || ""),
+            videoUrl: String(d.get("videoUrl") || ""),
             giftName: String(d.get("giftName") || ""),
             moderationColor: String(d.get("moderationColor") || ""),
             reactions: Object.fromEntries(
@@ -1603,6 +1606,39 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     } catch (err: any) {
       console.error(err);
       note(`${roomName}: Sticker could not be sent.`);
+    }
+  };
+
+  // 🎬 Video message (R2, room_videos/<room>/…): only people Share Permissions allows.
+  const sendVideo = async (file: File) => {
+    if (!user || !profile || uploading) return;
+    if (!videoAllowed) return note(`${roomName}: 🔒 Video sharing is not allowed for your role.`);
+    if (muted || (silenced && !perms.canRoomWide)) {
+      return note(muted ? "🔇 You are muted in this room." : "🔇 This room is currently silenced.");
+    }
+    if (!["video/mp4", "video/webm", "video/quicktime"].includes(file.type)) return note(`${roomName}: Please choose an MP4, WebM or MOV video.`);
+    if (file.size > 50 * 1024 * 1024) return note(`${roomName}: That video is over 50 MB. Please send a shorter one.`);
+    setUploading(true);
+    try {
+      const url = await r2Upload("room_video", file, file.type, { room: storageSafeSegment(roomName) });
+      if (!url) throw new Error("Video sharing is not ready yet. Please try again later.");
+      const cap = text.trim().slice(0, 1000);
+      await addDoc(collection(db, "room_messages", roomName, "messages"), {
+        text: `${profile.username}: 🎬 ${cap || "Video"}`,
+        sender: profile.username,
+        senderUid: user.uid,
+        type: "video",
+        videoUrl: url,
+        ...(cap ? { caption: cap } : {}),
+        createdAt: serverTimestamp(),
+      });
+      if (cap) setText("");
+      stickToBottom.current = true;
+    } catch (err: any) {
+      console.error(err);
+      note(`${roomName}: ${err?.message || "Video could not be sent."}`);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -2644,10 +2680,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   }}
                   photo={{
                     // picking a photo never posts it straight away: "Send this photo?" first
-                    onFile: (f: File | undefined) => f && (setPendingPhoto(f), inputRef.current?.focus()),
-                    disabled: !perms.canShareMedia,
+                    onFile: (f: File | undefined) =>
+                      f && (f.type.startsWith("video/") ? void sendVideo(f) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
+                    disabled: !perms.canShareMedia && !videoAllowed,
                     uploading,
-                    title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
+                    accept: videoAllowed ? (perms.canShareMedia ? "image/*,video/*" : "video/*") : "image/*",
+                    title: videoAllowed ? (perms.canShareMedia ? "Send a photo or video" : "Send a video") : perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
                   }}
                   voice={
                     <VoiceRecorder
@@ -2724,10 +2762,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               }}
               photo={{
                 // picking a photo never posts it straight away: "Send this photo?" first
-                onFile: (f: File | undefined) => f && (setPendingPhoto(f), inputRef.current?.focus()),
-                disabled: !perms.canShareMedia,
+                onFile: (f: File | undefined) =>
+                  f && (f.type.startsWith("video/") ? void sendVideo(f) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
+                disabled: !perms.canShareMedia && !videoAllowed,
                 uploading,
-                title: perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
+                accept: videoAllowed ? (perms.canShareMedia ? "image/*,video/*" : "video/*") : "image/*",
+                title: videoAllowed ? (perms.canShareMedia ? "Send a photo or video" : "Send a video") : perms.canShareMedia ? "Send a photo" : "Photos are not allowed for your role",
               }}
               voice={
                 <VoiceRecorder
@@ -3940,7 +3980,7 @@ function MessageRow({
   }
 
   // 🔗 The first YouTube link of a normal message gets a thumbnail card.
-  const ytLink = m.type === "image" || m.type === "voice" ? null : firstYouTubeLink(body);
+  const ytLink = m.type === "image" || m.type === "voice" || m.type === "video" ? null : firstYouTubeLink(body);
   // Own messages sit on the right in EVERY room, game rooms included (like the
   // app) — except in the Classic style, where every line is on the left.
   const rightSide = mine && !classic;
@@ -3965,12 +4005,14 @@ function MessageRow({
         ? "🎨 Sticker"
       : m.type === "voice" && m.audioUrl
         ? "🎤 Voice message"
+      : m.type === "video" && m.videoUrl
+        ? "🎬 Video"
         : body.length > 60
           ? body.slice(0, 60) + "…"
           : body;
 
   // Reactions work on real chat lines only (not local notices or the room's own lines).
-  const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice" || m.type === "sticker");
+  const canReact = !m.local && !isRoomLine && !!m.id && (m.type === "chat" || m.type === "image" || m.type === "voice" || m.type === "video" || m.type === "sticker");
   const holdHandlers = holdFor(canReact);
 
   // ⏰ "Room : You have been auto left …" / "Room : You are not in Room chat room":
@@ -4048,7 +4090,7 @@ function MessageRow({
               mineSide={rightSide}
               reactions={m.reactions || {}}
               myUid={myUid}
-              copyText={m.type === "image" || m.type === "voice" ? "" : body}
+              copyText={m.type === "image" || m.type === "voice" || m.type === "video" ? "" : body}
               onTranslate={
                 m.id && !m.local && m.type !== "image" && m.type !== "voice" && /\p{L}/u.test(plainBody)
                   ? () => {
@@ -4066,7 +4108,7 @@ function MessageRow({
                         targetUsername: m.sender,
                         roomId: roomName,
                         messageId: m.id,
-                        preview: m.type === "image" ? "📷 Photo" : m.type === "voice" ? "🎤 Voice" : plainBody.slice(0, 200),
+                        preview: m.type === "image" ? "📷 Photo" : m.type === "voice" ? "🎤 Voice" : m.type === "video" ? "🎬 Video" : plainBody.slice(0, 200),
                       });
                     }
                   : undefined
@@ -4128,6 +4170,24 @@ function MessageRow({
           ) : m.type === "voice" && m.audioUrl ? (
             <>
               <audio controls src={m.audioUrl} className={`mt-1 h-9 max-w-full ${rightSide ? "ml-auto" : ""}`} />
+              {stamp}
+            </>
+          ) : m.type === "video" && m.videoUrl ? (
+            <>
+              {/* 🎬 a video: plays right in the bubble (only its first frame loads until ▶) */}
+              <video
+                controls
+                playsInline
+                preload="metadata"
+                src={`${m.videoUrl}#t=0.1`}
+                onClick={(e) => e.stopPropagation()}
+                className={`mt-1 block max-h-72 w-[260px] max-w-full rounded-xl bg-black ${rightSide ? "ml-auto" : ""}`}
+              />
+              {m.caption && (
+                <p data-notranslate className={`mt-1 whitespace-pre-wrap break-words ${rightSide ? "text-right" : ""}`}>
+                  {withEmotes(m.caption, 16)}
+                </p>
+              )}
               {stamp}
             </>
           ) : (
