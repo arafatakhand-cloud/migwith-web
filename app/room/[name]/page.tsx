@@ -1631,6 +1631,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // 🎬 Video message (R2, room_videos/<room>/…): only people Share Permissions allows.
   // ✂️ a picked video waits in the video editor until Send
   const [editVideo, setEditVideo] = useState<File | null>(null);
+  // 🚫 "You have blocked …!" — a popup only I see
+  const [blockPopup, setBlockPopup] = useState<string | null>(null);
   const sendVideo = async (file: File, knownSecs?: number) => {
     if (!user || !profile || uploading) return;
     if (!videoAllowed) return note(`${roomName}: 🔒 Video sharing is not allowed for your role.`);
@@ -1761,6 +1763,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         isFounder: isMainFounderName(profile.username),
         isRoomAdmin: perms.isRoomAdmin,
         note,
+        popup: setBlockPopup,
       })
     ) {
       setText("");
@@ -2386,6 +2389,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   return (
     <PageShell light bottomNav={false}>
+      {blockPopup && (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 px-8" onClick={() => setBlockPopup(null)}>
+          <div className="w-full max-w-[260px] rounded-2xl bg-white px-5 pb-5 pt-6 text-center shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <span className="mx-auto grid h-[72px] w-[72px] place-items-center rounded-full border-[5px] border-[#1F3A5F] text-[44px] font-black leading-none text-[#1F3A5F]">!</span>
+            <p className="mt-4 text-[13px] text-[#9AA3AF]">{blockPopup}</p>
+            <button type="button" autoFocus onClick={() => setBlockPopup(null)} className="mt-4 w-full rounded-md bg-[#1F3A5F] py-2.5 text-[15px] font-bold text-white">
+              Ok
+            </button>
+          </div>
+        </div>
+      )}
       {editVideo && (
         <VideoEditor
           file={editVideo}
