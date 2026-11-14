@@ -122,6 +122,12 @@ export function StoryRow({
 
   const current = viewer ? viewer[Math.min(index, viewer.length - 1)] : null;
   const mine = !!current && !!myUid && current.authorUid === myUid;
+  // 👁 tell the server I saw this story (once per person; the writer sees who)
+  const currentId = current?.id || "";
+  useEffect(() => {
+    if (!currentId || mine || !myUid) return;
+    blogCall("storyView", { storyId: currentId }).catch(() => {});
+  }, [currentId, mine, myUid]);
 
   const reactTo = async (emoji: string) => {
     if (!current || mine) return;
@@ -140,8 +146,8 @@ export function StoryRow({
     if (!current) return;
     setReactors([]);
     try {
-      const r = await blogCall("storyReactors", { storyId: current.id });
-      setReactors((r.reactors as StoryReactor[]) || []);
+      const r = await blogCall("storyViewers", { storyId: current.id });
+      setReactors((r.viewers as StoryReactor[]) || []);
     } catch (e) {
       setReactors(null);
       setError(blogError(e));
@@ -342,8 +348,10 @@ export function StoryRow({
               onClick={(e) => { e.stopPropagation(); openReactors(); }}
               className="absolute bottom-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full bg-white/90 px-4 py-2 text-[13px] font-extrabold text-[#16264A] shadow-lg"
             >
+              <span>👁 {current.viewCount || 0}</span>
               {current.reactCount > 0 ? (
                 <>
+                  <span className="text-[#5B6B8C]">·</span>
                   <span className="text-[17px] tracking-[-2px]">
                     {Object.entries(current.reactions)
                       .sort((a, b) => b[1] - a[1])
@@ -351,13 +359,11 @@ export function StoryRow({
                       .map(([e]) => e)
                       .join("")}
                   </span>
-                  <span>
-                    {current.reactCount} {current.reactCount === 1 ? "reaction" : "reactions"}
-                  </span>
+                  <span>{current.reactCount}</span>
                   <span className="text-[#5B6B8C]">· See who</span>
                 </>
               ) : (
-                "😍 No reactions yet"
+                <span className="text-[#5B6B8C]">· See who</span>
               )}
             </button>
           )}
@@ -369,18 +375,21 @@ export function StoryRow({
           {reactors && (
             <div className="absolute inset-x-0 bottom-0 z-30 max-h-[60%] overflow-y-auto rounded-t-3xl bg-white p-4 text-[#16264A]" onClick={(e) => e.stopPropagation()}>
               <div className="mb-2 flex items-center">
-                <p className="text-[16px] font-extrabold">😍 Reactions · {reactors.length}</p>
+                <p className="text-[16px] font-extrabold">👁 Seen by · {reactors.length}</p>
                 <button type="button" onClick={() => setReactors(null)} className="ml-auto rounded-full bg-[#F1F4F9] px-3 py-1 font-bold">✕</button>
               </div>
               {reactors.length === 0 ? (
-                <p className="py-6 text-center text-sm text-[#6B7A99]">No reactions yet.</p>
+                <p className="py-6 text-center text-sm text-[#6B7A99]">No one has seen it yet.</p>
               ) : (
                 reactors.map((r) => (
                   <div key={r.name} className="flex items-center gap-3 border-b border-[#F0F2F6] py-2.5 last:border-0">
                     <span className="grid h-9 w-9 place-items-center rounded-full font-black text-white" style={{ background: colorOf(r.name) }}>
                       {r.name.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="flex-1 font-bold">{r.name}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-bold">{r.name}</span>
+                      {r.atMs > 0 && <span className="block text-[11.5px] font-normal text-[#6B7A99]">{blogAgoBn(r.atMs)}</span>}
+                    </span>
                     <span className="text-[22px]">{r.emoji}</span>
                   </div>
                 ))

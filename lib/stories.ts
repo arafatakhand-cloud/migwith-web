@@ -26,6 +26,8 @@ export type Story = {
   /** 😍 reactions so far: { emoji: count } and the total (the writer sees "❤️😂 12") */
   reactions: Record<string, number>;
   reactCount: number;
+  /** 👁 how many saw it (the writer sees who) */
+  viewCount?: number;
 };
 
 /** tells the story row to load again (after a Mig was shared to my story) */
@@ -57,6 +59,7 @@ export async function loadStories(): Promise<Story[]> {
             : null,
         reactions: x.reactions && typeof x.reactions === "object" ? (x.reactions as Record<string, number>) : {},
         reactCount: Number(x.reactCount || 0),
+        viewCount: Number(x.viewCount || 0),
         sharedPost:
           x.sharedPost && typeof x.sharedPost.id === "string" && x.sharedPost.id
             ? { id: String(x.sharedPost.id), author: String(x.sharedPost.author || ""), text: String(x.sharedPost.text || ""), image: String(x.sharedPost.image || "") }
