@@ -491,6 +491,18 @@ export function MigView({
             <BlogBody body={post.body} mentions={post.mentions} />
           {/* 📊 the poll */}
           {post.poll && <PollBox postId={post.id} poll={post.poll} canEnd={mine || canMod} signedIn={!!user} />}
+          {/* 🎬 the post's video (it was missing on this page before) */}
+          {post.video && (
+            <video
+              src={post.video}
+              poster={post.thumb || undefined}
+              controls
+              autoPlay
+              playsInline
+              preload="metadata"
+              className="mt-3 block max-h-[560px] w-full rounded-2xl bg-black object-contain"
+            />
+          )}
           </div>
 
           <div className="mt-3 flex gap-2.5">
