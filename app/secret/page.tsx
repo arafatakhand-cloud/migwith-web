@@ -392,6 +392,7 @@ export default function SecretPage() {
         "🛡 Safety & Rooms",
         [
           { icon: "🔐", label: "Share Permissions", hint: "Who can share pictures / voice / video", tint: "#00897B", href: "/secret/share", ok: f.can("share_permissions") },
+          { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.isMigwith },
           { icon: "ℹ", label: "Room Info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
           { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
           { icon: "🚩", label: "Reports", hint: "What users reported · handle within 24h", tint: "#D93025", href: "/secret/reports", ok: f.can("reports") },
