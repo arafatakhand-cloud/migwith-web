@@ -7,7 +7,7 @@ import { db } from "../../lib/firebase";
 import { blogAgoBn, blogCall, blogError, blogShort, toBlogPost, type BlogPost } from "../../lib/feed";
 import { ViewersSheet } from "./ViewersSheet";
 
-// 🎬 Reels (miglife, design R1): every public Feed video, full screen, one at a
+// 🎬 MigClips (miglife, design R1; it was "Reels"): every public Feed video, full screen, one at a
 // time. Scroll / swipe up = next, down = back. Tap = pause / play, double tap = ❤️.
 // Right side: the writer (+ follow), ❤️, 💬 (opens the post), ↗ share, 👁 views
 // (the writer: who saw it). Bottom: name, Follow, the words. Thin line = progress.
@@ -136,7 +136,7 @@ export function Reels({
 
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="fixed inset-0 z-[80] bg-black text-white" role="dialog" aria-label="Reels">
+    <div className="fixed inset-0 z-[80] bg-black text-white" role="dialog" aria-label="MigClips">
       {reels === null && <p className="absolute inset-0 grid place-items-center opacity-70">Loading videos…</p>}
       {reels && reels.length === 0 && <p className="absolute inset-0 grid place-items-center opacity-70">No videos yet.</p>}
       <div ref={box} className="no-scrollbar h-full snap-y snap-mandatory overflow-y-scroll">
@@ -165,7 +165,7 @@ export function Reels({
         <button type="button" onClick={onClose} aria-label="Back" className="pointer-events-auto rounded-full px-3 text-[30px] font-bold leading-none [text-shadow:0_2px_6px_rgba(0,0,0,.6)]">
           ‹
         </button>
-        <span className="text-[18px] font-extrabold [text-shadow:0_2px_6px_rgba(0,0,0,.6)]">🎬 Reels</span>
+        <span className="text-[18px] font-extrabold [text-shadow:0_2px_6px_rgba(0,0,0,.6)]">🎬 MigClips</span>
         <span className="ml-auto hidden text-[12px] opacity-70 sm:block">↑ ↓ scroll · Esc closes</span>
       </div>
       {toast && <p className="absolute bottom-24 left-1/2 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[13px]">{toast}</p>}
@@ -189,6 +189,21 @@ function Reel({
   const [more, setMore] = useState(false);
   const lastTap = useRef(0);
   const tapTimer = useRef(0);
+  // ⏩ drag the line at the bottom to move through the video (TikTok-style)
+  const [seeking, setSeeking] = useState<number | null>(null);
+  const bar = useRef<HTMLDivElement>(null);
+  const lenOf = (v: HTMLVideoElement) => (Number.isFinite(v.duration) && v.duration > 0 ? v.duration : v.seekable.length ? v.seekable.end(v.seekable.length - 1) : 0);
+  const seekTo = (clientX: number) => {
+    const el = bar.current, v = vid.current;
+    if (!el || !v) return;
+    const r = el.getBoundingClientRect();
+    const f = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
+    setSeeking(f);
+    setProg(f);
+    const len = lenOf(v);
+    if (len) v.currentTime = f * len;
+  };
+  const fmt = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 
   useEffect(() => {
     const v = vid.current;
@@ -231,7 +246,11 @@ function Reel({
           loop
           playsInline
           preload={active ? "auto" : "metadata"}
-          onTimeUpdate={(e) => setProg(e.currentTarget.duration ? e.currentTarget.currentTime / e.currentTarget.duration : 0)}
+          onTimeUpdate={(e) => {
+            if (seeking !== null) return;
+            const len = lenOf(e.currentTarget);
+            setProg(len ? e.currentTarget.currentTime / len : 0);
+          }}
           className="absolute inset-0 h-full w-full object-contain"
         />
       ) : (
@@ -248,6 +267,15 @@ function Reel({
         </span>
       )}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-b from-transparent to-black/75" />
+
+      {/* W1: the MigClips mark and the writer's ID, fixed in the corner */}
+      <div className="pointer-events-none absolute left-4 top-[58px] opacity-85 [text-shadow:0_1px_4px_rgba(0,0,0,.6)]">
+        <span className="flex items-center gap-1.5 text-[15px] font-black">
+          <span className="grid h-5 w-5 place-items-center rounded-md bg-gradient-to-br from-[#7C3AED] to-[#DB2777] text-[11px]">🎬</span>
+          MigClips
+        </span>
+        <span className="ml-[26px] block text-[11.5px] font-bold">@{p.author}</span>
+      </div>
 
       {/* right side */}
       <div className="absolute bottom-[110px] right-2.5 flex flex-col items-center gap-4">
@@ -295,8 +323,34 @@ function Reel({
         <p className="mt-1 text-[12px] opacity-70">{blogAgoBn(p.createdMs)}</p>
       </div>
 
-      <div className="absolute inset-x-0 bottom-0 h-[3px] bg-white/25">
-        <div className="h-full bg-white" style={{ width: `${Math.min(100, prog * 100)}%` }} />
+      {/* ⏩ while dragging: the big time in the middle */}
+      {seeking !== null && vid.current && (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center bg-black/35">
+          <span className="whitespace-nowrap text-[30px] font-extrabold [text-shadow:0_2px_8px_rgba(0,0,0,.7)]">
+            {fmt(seeking * lenOf(vid.current))} <span className="opacity-60">/ {fmt(lenOf(vid.current))}</span>
+          </span>
+        </div>
+      )}
+      {/* the progress line: drag it to move through the video */}
+      <div
+        ref={bar}
+        onPointerDown={(e) => {
+          if (!active) return;
+          e.stopPropagation();
+          (e.target as HTMLElement).setPointerCapture(e.pointerId);
+          seekTo(e.clientX);
+        }}
+        onPointerMove={(e) => seeking !== null && seekTo(e.clientX)}
+        onPointerUp={() => setSeeking(null)}
+        onPointerCancel={() => setSeeking(null)}
+        className="absolute inset-x-0 bottom-0 flex h-7 touch-none items-end"
+      >
+        <div className={`relative w-full bg-white/25 transition-[height] ${seeking !== null ? "mx-3.5 mb-3 h-1.5 rounded-full" : "h-[3px]"}`}>
+          <div className={`h-full bg-white ${seeking !== null ? "rounded-full" : ""}`} style={{ width: `${Math.min(100, prog * 100)}%` }} />
+          {seeking !== null && (
+            <span className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-[0_0_0_6px_rgba(255,255,255,.25)]" style={{ left: `${Math.min(100, prog * 100)}%` }} />
+          )}
+        </div>
       </div>
     </section>
   );
