@@ -21,6 +21,10 @@ export type VideoEdit = {
   videoH: number;
   /** 🎵 a song mixed in (plays from its start, repeats if the video is longer) */
   music?: Blob | null;
+  /** 🎚 song edit: where in the song it starts (sec), and the two volumes (0..1) */
+  musicStartSec?: number;
+  musicVol?: number;
+  videoVol?: number;
 };
 
 export const editChanged = (e: VideoEdit) =>
@@ -136,20 +140,34 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
       ac = new AudioContext();
       await ac.resume().catch(() => {});
       const dest = ac.createMediaStreamDestination();
-      if (!e.mute) ac.createMediaElementSource(v).connect(dest);
-      else v.muted = true;
+      if (!e.mute) {
+        // 🎚 the video's own sound, quieter when asked
+        const g = ac.createGain();
+        g.gain.value = e.music ? Math.min(1, Math.max(0, e.videoVol ?? 1)) : 1;
+        ac.createMediaElementSource(v).connect(g).connect(dest);
+      } else v.muted = true;
       if (e.music) {
         // 🎵 the song, mixed in
         songUrl = URL.createObjectURL(e.music);
         song = new Audio(songUrl);
-        song.loop = true;
+        // repeats from the chosen start point (not from 0:00)
+        song.loop = false;
+        const s0 = Math.max(0, e.musicStartSec ?? 0);
+        song.addEventListener("ended", () => {
+          if (!song) return;
+          song.currentTime = s0;
+          void song.play().catch(() => {});
+        });
         song.preload = "auto";
         await new Promise<void>((res) => {
           song!.addEventListener("canplay", () => res(), { once: true });
           song!.addEventListener("error", () => res(), { once: true });
           window.setTimeout(res, 5000);
         });
-        ac.createMediaElementSource(song).connect(dest);
+        const sg = ac.createGain();
+        sg.gain.value = Math.min(1, Math.max(0, e.musicVol ?? 1));
+        ac.createMediaElementSource(song).connect(sg).connect(dest);
+        if (s0 > 0 && Number.isFinite(song.duration) && s0 < song.duration - 1) song.currentTime = s0;
       }
       dest.stream.getAudioTracks().forEach((t) => stream.addTrack(t));
     } else {

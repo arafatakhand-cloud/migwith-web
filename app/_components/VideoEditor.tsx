@@ -57,6 +57,20 @@ export function VideoEditor({
   const [library, setLibrary] = useState<LibrarySong[] | null>(null);
   const [songBusy, setSongBusy] = useState("");
   const songRef = useRef<HTMLAudioElement>(null);
+  // 🎚 song edit: start point (sec), song length, song / video volume
+  const [songStart, setSongStart] = useState(0);
+  const [songLen, setSongLen] = useState(0);
+  const [songVol, setSongVol] = useState(1);
+  const [videoVol, setVideoVol] = useState(1);
+  const songCfg = useRef({ start: 0, vol: 1 });
+  songCfg.current = { start: songStart, vol: songVol };
+  useEffect(() => {
+    setSongStart(0);
+    setSongLen(0);
+  }, [music?.url]);
+  useEffect(() => {
+    if (vid.current) vid.current.volume = videoVol;
+  }, [videoVol]);
   const songInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (tool === "music" && library === null) loadSongLibrary().then(setLibrary).catch(() => setLibrary([]));
@@ -154,8 +168,11 @@ export function VideoEditor({
       if (a && a.src) {
         if (v.paused) a.pause();
         else {
-          const len = a.duration && Number.isFinite(a.duration) ? a.duration : 0;
-          const want = len ? Math.max(0, v.currentTime - se.current.start) % len : 0;
+          a.volume = songCfg.current.vol;
+          const full = a.duration && Number.isFinite(a.duration) ? a.duration : 0;
+          const s0 = full ? Math.min(songCfg.current.start, Math.max(0, full - 1)) : 0;
+          const len = full - s0;
+          const want = len > 0 ? s0 + (Math.max(0, v.currentTime - se.current.start) % len) : 0;
           if (Math.abs(a.currentTime - want) > 0.45) a.currentTime = want;
           if (a.paused) void a.play().catch(() => {});
         }
@@ -244,6 +261,9 @@ export function VideoEditor({
       startSec: start, endSec: end, durationSec: dur, mute, filter, text: text.trim(), textX: tx, textY: ty, textColor: tcolor,
       videoW: size.w, videoH: size.h,
       music: music?.blob || null,
+      musicStartSec: music ? songStart : 0,
+      musicVol: songVol,
+      videoVol,
     };
     songRef.current?.pause();
     vid.current?.pause();
@@ -406,7 +426,7 @@ export function VideoEditor({
         ))}
       </div>
 
-      <div className="flex h-[96px] items-center px-4 py-2.5">
+      <div className={`flex ${tool === "music" && music ? "h-[168px]" : "h-[96px]"} items-center px-4 py-2.5`}>
         {tool === "trim" && <p className="text-[13px] opacity-60">Drag the yellow ends to choose the part to keep.</p>}
         {tool === "music" && (
           <div className="w-full">
@@ -427,9 +447,45 @@ export function VideoEditor({
                   <span className="min-w-0 flex-1 truncate text-[14px] font-bold">🎵 {music.title}</span>
                   <button type="button" onClick={() => setMusic(null)} className="rounded-full px-2.5 py-1 text-[12.5px] font-bold text-[#FCA5A5]">✕ Remove</button>
                 </div>
-                <p className="mt-1 text-[12px] opacity-60">
-                  {mute ? "Only the song is heard (🔇 the video's own sound is off)." : "The song plays with the video's sound. Tap 🔇 Mute to hear only the song."}
-                </p>
+                {/* 🎚 song edit */}
+                {songLen > 1 ? (
+                  <label className="mt-1.5 block text-[12px] opacity-80">
+                    ▶ Song starts at {clock(songStart)} / {clock(songLen)}
+                    <input
+                      type="range"
+                      min={0}
+                      max={Math.max(0, songLen - 1)}
+                      step={0.5}
+                      value={Math.min(songStart, Math.max(0, songLen - 1))}
+                      onChange={(ev) => setSongStart(Number(ev.target.value))}
+                      className="mt-1 block w-full accent-[#A78BFA]"
+                    />
+                  </label>
+                ) : (
+                  <p className="mt-1.5 text-[12px] opacity-50">Loading the song…</p>
+                )}
+                <div className="mt-2 flex gap-4">
+                  <label className="min-w-0 flex-1 text-[12px] opacity-80">
+                    🎵 Song {Math.round(songVol * 100)}%
+                    <input type="range" min={0} max={1} step={0.05} value={songVol} onChange={(ev) => setSongVol(Number(ev.target.value))} className="mt-1 block w-full accent-[#A78BFA]" />
+                  </label>
+                  <label className="min-w-0 flex-1 text-[12px] opacity-80">
+                    {mute ? "🔇 Video sound off" : `🎬 Video sound ${Math.round(videoVol * 100)}%`}
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={mute ? 0 : videoVol}
+                      onChange={(ev) => {
+                        const x = Number(ev.target.value);
+                        setVideoVol(x);
+                        if (mute && x > 0) setMute(false);
+                      }}
+                      className="mt-1 block w-full accent-[#A78BFA]"
+                    />
+                  </label>
+                </div>
               </>
             ) : (
               <div className="no-scrollbar flex gap-2 overflow-x-auto">
@@ -495,7 +551,18 @@ export function VideoEditor({
         )}
       </div>
 
-      {music && <audio ref={songRef} src={music.url} loop preload="auto" />}
+      {music && (
+        <audio
+          ref={songRef}
+          src={music.url}
+          loop
+          preload="auto"
+          onLoadedMetadata={(ev) => {
+            const d = ev.currentTarget.duration;
+            if (Number.isFinite(d)) setSongLen(d);
+          }}
+        />
+      )}
       {err && <p className="px-4 pb-3 text-[13px] text-[#FCA5A5]">{err}</p>}
 
       {making !== null && (
@@ -509,4 +576,10 @@ export function VideoEditor({
       )}
     </div>
   );
+}
+
+// 0:42 style time for the song edit
+function clock(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
