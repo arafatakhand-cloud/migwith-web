@@ -20,7 +20,7 @@ import {
   PrivateEmailsCard,
   TransferLimitsCard,
 } from "./_MainFounderCards";
-import { LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
+import { LuxuryAutoPlayersCard, LuxuryBetAuditCard, LuxuryBetControlCard } from "./_LuxuryBetTools";
 import { AccountDeleteCard } from "./_AccountDeleteCard";
 import { WatchdogSpeedCard } from "./_WatchdogSpeedCard";
 import { DailyGameRewardsCard } from "./_DailyGameRewardsCard";
@@ -548,6 +548,7 @@ export default function SecretPage() {
       {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
       {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
       {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
+      {f.isMigwith && tool === "luxury_bet" && <LuxuryAutoPlayersCard />}
       {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
       {f.isMigwith && tool === "daily_rewards" && <DailyGameRewardsCard />}
       {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}

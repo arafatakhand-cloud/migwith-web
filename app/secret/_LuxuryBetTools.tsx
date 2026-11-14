@@ -1165,3 +1165,57 @@ export function LuxuryBetAuditCard() {
     </div>
   );
 }
+
+// 🤖 Auto players: chosen IDs bet every round by themselves (shown with 🤖 after
+// the name) and a new round starts when one ends, so the room never stops.
+const autoCall = httpsCallable<Record<string, unknown>, { on?: boolean; usernames?: string[]; amount?: number }>(functions, "ceoLbAutoPlayers");
+export function LuxuryAutoPlayersCard() {
+  const [on, setOn] = useState(false);
+  const [names, setNames] = useState("");
+  const [amount, setAmount] = useState("100");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  useEffect(() => {
+    autoCall({ action: "get" })
+      .then(({ data }) => {
+        setOn(!!data.on);
+        setNames((data.usernames || []).join(", "));
+        setAmount(String(data.amount || 100));
+      })
+      .catch((e) => setMsg(e?.message || "Could not load."));
+  }, []);
+  const save = async (nextOn: boolean) => {
+    setBusy(true);
+    setMsg("");
+    try {
+      const { data } = await autoCall({
+        action: "set",
+        on: nextOn,
+        usernames: names.split(/[,\s]+/).map((x) => x.trim()).filter(Boolean),
+        amount: Number(amount) || 100,
+      });
+      setOn(!!data.on);
+      setNames((data.usernames || []).join(", "));
+      setMsg(data.on ? "✅ On — they bet every round; new rounds start by themselves." : "Off.");
+    } catch (e: any) {
+      setMsg(e?.message || "Could not save.");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Section title="🤖 Auto players" hint="These IDs bet every round by themselves (a random character) and a new round starts when one ends. They show 🤖 after the name. Their own coins are used; an ID with too few coins sits out.">
+      <input value={names} onChange={(e) => setNames(e.target.value)} placeholder="lion, wow" className={input} />
+      <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="Bet each round (min 100)" className={input} inputMode="numeric" />
+      <div className="flex gap-2">
+        <button type="button" disabled={busy} onClick={() => save(true)} className={`flex-1 rounded-xl py-2.5 text-sm font-extrabold text-white disabled:opacity-60 ${on ? "bg-[#16A34A]" : "bg-[#2563EB]"}`}>
+          {on ? "✓ On — save changes" : "Turn on"}
+        </button>
+        <button type="button" disabled={busy || !on} onClick={() => save(false)} className="flex-1 rounded-xl bg-[#FEE2E2] py-2.5 text-sm font-extrabold text-[#B91C1C] disabled:opacity-50">
+          Turn off
+        </button>
+      </div>
+      {msg && <p className="text-xs text-[#475569]">{msg}</p>}
+    </Section>
+  );
+}
