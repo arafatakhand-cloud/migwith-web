@@ -21,11 +21,14 @@ export function RoomInfoCards({
   manager,
   description,
   people,
+  autoPlayers = [],
   locked,
 }: {
   manager: string;
   description: string;
   people: string[];
+  /** 🎰 Luxury Bet's auto players — their own labelled line, never mixed with real people */
+  autoPlayers?: string[];
   locked: ReactNode;
 }) {
   const w = splitWelcome(description);
@@ -55,6 +58,11 @@ export function RoomInfoCards({
           {people.length > 0 && (
             <p data-notranslate className="mt-1 text-[14px] font-semibold leading-[20px] text-[#1E293B]">
               {people.join(", ")}
+            </p>
+          )}
+          {autoPlayers.length > 0 && (
+            <p data-notranslate className="mt-1 text-[12.5px] font-semibold leading-[18px] text-[#B45309]">
+              🎰 Auto players: {autoPlayers.join(", ")}
             </p>
           )}
         </div>

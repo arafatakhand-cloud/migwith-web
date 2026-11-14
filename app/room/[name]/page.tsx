@@ -606,6 +606,22 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [roundResult]);
   // 🎰 Luxury Bet (only in the Luxury Bet room) — run by the server.
   const luxuryBet = useLuxuryBet(roomName === LUXURY_BET_ROOM, user?.uid, note);
+  // 🎰 Luxury Bet's auto players (the house's players): a labelled line under the people here
+  const [lbAutoNames, setLbAutoNames] = useState<string[]>([]);
+  useEffect(() => {
+    if (roomName !== LUXURY_BET_ROOM || !user) {
+      setLbAutoNames([]);
+      return;
+    }
+    return onSnapshot(
+      doc(db, "app_settings", "lb_auto_public"),
+      (snap) => {
+        const d = snap.data();
+        setLbAutoNames(d?.on === true && Array.isArray(d.usernames) ? d.usernames.map((n: unknown) => String(n || "").trim()).filter(Boolean) : []);
+      },
+      () => setLbAutoNames([]),
+    );
+  }, [roomName, user]);
   // Eye button: show only my own Luxury Bet bet lines.
   // 👁 "only my bets": kept per room for this browser tab, so going to another
   // room and back doesn't show the hidden bids again (like the app)
@@ -2551,6 +2567,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 <div className={`${infoBox} px-3.5 py-2.5 text-[16px] leading-[21px]`}>
                   <p>👫 Currently in this room:</p>
                   {roomUsers.length > 0 && <p className={`mt-1 ${classic ? "text-[#16315F]" : "text-black"}`}>{roomUsers.map((u) => brandMiglife(u.username)).join(", ")}</p>}
+                  {lbAutoNames.length > 0 && <p className="mt-1 text-[14px]" data-notranslate>🎰 Auto players: {lbAutoNames.join(", ")}</p>}
                 </div>
                   </>
                 ) : (
@@ -2559,6 +2576,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     manager={isMainFounderName(roomInfo.ownerName) ? MIGLIFE_DISPLAY_NAME : roomInfo.ownerName || MIGLIFE_DISPLAY_NAME}
                     description={roomDescription}
                     people={roomUsers.map((u) => brandMiglife(u.username))}
+                    autoPlayers={lbAutoNames}
                     locked={
                       locked && (
                         <p className="rounded-xl border border-[#D85A30] bg-[#4A1B0C] px-3.5 py-2.5 text-[13px] font-bold text-[#F0997B]">
