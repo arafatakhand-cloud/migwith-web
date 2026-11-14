@@ -24,6 +24,7 @@ import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
 import { VideoEditor } from "./VideoEditor";
 import { Reels } from "./Reels";
+import { useBlockSets } from "../../lib/blocks";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
@@ -287,6 +288,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cvideoEdit, setCvideoEdit] = useState<File | null>(null);
   // 🎬 Reels: the post to start with ("" = the newest video); null = closed
   const [reelsStart, setReelsStart] = useState<string | null>(null);
+  // 🚫 a block works both ways: their Migs are hidden from me, mine from them
+  const blockSets = useBlockSets(user?.uid);
   useEffect(() => {
     blogCall("videoStatus")
       .then((r) => setVideoOn(r.videoEnabled !== false))
@@ -1848,7 +1851,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-6 px-3.5">
-            {(shown || []).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
+            {(shown || []).filter((p) => !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
               <FeedCard key={p.id} p={p} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
@@ -1870,6 +1873,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       {reelsStart !== null && (
         <Reels
           startId={reelsStart}
+          hidden={blockSets.hidden}
           myUid={user?.uid}
           myName={username}
           followed={followed}

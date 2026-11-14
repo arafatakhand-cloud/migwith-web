@@ -39,7 +39,7 @@ import { useBadgeImages } from "../../../lib/badgeImages";
 import { RainbowName } from "../../_components/RainbowName";
 import { useSpecialColors } from "../../../lib/specialColor";
 import { useIsClassic } from "../../../lib/uiStyle";
-import { getBlockedNames, getProfileDetails, setBlocked } from "../../../lib/blocks";
+import { getBlockedNames, getProfileDetails, setBlocked, useBlockSets } from "../../../lib/blocks";
 
 const getFriendCount = httpsCallable<{ username: string }, { count: number; footprints?: number; voters?: number }>(functions, "getFriendCount");
 
@@ -207,6 +207,8 @@ export default function ProfilePage() {
   // "/profile/me" opens your own profile.
   const username = raw === "me" ? me : raw;
   const isOwn = !!me && sameName(username, me);
+  // 🚫 a block works both ways: neither of us sees the other's profile
+  const blockSets = useBlockSets(user?.uid);
   const classic = useIsClassic();
   const badgeImages = useBadgeImages(!!user);
   // 📟 Classic: the main button keeps its colour with navy text and a light frame (like the app).
@@ -589,6 +591,32 @@ export default function ProfilePage() {
     ]);
     menu.push([isBlocked ? `✓ Unblock ${username}` : `🚫 Block ${username}`, () => toggleMine("blockedUsers", !isBlocked), isBlocked ? "" : "text-rose-600"]);
     menu.push([`🚩 Report ${username}`, () => openReport({ kind: "user", targetUsername: username }), "text-rose-600"]);
+  }
+
+  const lowName = username.toLowerCase();
+  if (!isOwn && (blockSets.mine.has(lowName) || blockSets.by.has(lowName))) {
+    const iBlocked = blockSets.mine.has(lowName);
+    return (
+      <PageShell light>
+        <div className="mx-auto max-w-md px-6 pt-20 text-center text-[#475569]">
+          <div className="text-5xl">🚫</div>
+          <p className="mt-3 text-[17px] font-bold text-[#1E293B]">{iBlocked ? `You blocked ${username}` : "This profile isn't available"}</p>
+          <p className="mt-1 text-[13.5px]">
+            {iBlocked ? "You won't see each other's messages, Migs, stories or profile." : "The link may be broken, or the profile may have been removed."}
+          </p>
+          {iBlocked && (
+            <button
+              type="button"
+              disabled={busy === "blockedUsers"}
+              onClick={() => toggleMine("blockedUsers", false)}
+              className="mt-5 rounded-full bg-[#2563EB] px-6 py-2.5 font-bold text-white disabled:opacity-60"
+            >
+              ✓ Unblock {username}
+            </button>
+          )}
+        </div>
+      </PageShell>
+    );
   }
 
   return (

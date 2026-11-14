@@ -16,6 +16,7 @@ const plain = (s: string) => s.replace(/<[^>]+>/g, " ").replace(/[*_#>`~]/g, "")
 
 export function Reels({
   startId,
+  hidden,
   myUid,
   myName,
   followed,
@@ -26,6 +27,8 @@ export function Reels({
   onProfile,
 }: {
   startId: string;
+  /** 🚫 blocked either way (lower-case names): not shown */
+  hidden?: Set<string>;
   myUid?: string;
   myName: string;
   followed: string[];
@@ -49,7 +52,7 @@ export function Reels({
       .then(async (snap) => {
         const list = snap.docs
           .map((d) => toBlogPost(d.id, d.data()))
-          .filter((p) => p.video && !p.privacy)
+          .filter((p) => p.video && !p.privacy && !hidden?.has(p.author.toLowerCase()))
           .sort((a, b) => b.createdMs - a.createdMs);
         if (gone) return;
         setReels(list);

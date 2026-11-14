@@ -12,6 +12,7 @@ import { PageShell } from "./PageShell";
 import { openReport } from "./ReportDialog";
 import { ReactorsSheet } from "./ReactorsSheet";
 import { ViewersSheet } from "./ViewersSheet";
+import { useBlockSets } from "../../lib/blocks";
 import { PollBox } from "./PollBox";
 import { TranslateChip, feedPlainText, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -55,6 +56,8 @@ export function MigView({
   const router = useRouter();
   const Shell = sheet ? SheetFrame : PageFrame;
   const { user, username } = useCurrentUser();
+  // 🚫 a block works both ways: their Mig and their comments are hidden
+  const blockSets = useBlockSets(user?.uid);
   const [post, setPost] = useState<BlogPost | null | undefined>(undefined);
   const tr = useFeedTranslation(String(id || ""));
   const [comments, setComments] = useState<BlogComment[]>([]);
@@ -302,7 +305,7 @@ export function MigView({
         </div>
       </Shell>
     );
-  if (post === null)
+  if (post === null || (!!user && post.authorUid !== user.uid && blockSets.hidden.has(post.author.toLowerCase())))
     return (
       <Shell>
         <div className="mx-auto max-w-2xl px-3 pt-16 text-center text-[#5A6F93]">
@@ -561,7 +564,7 @@ export function MigView({
           <h3 className="mb-2 mt-3 text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
           <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
             {comments.length === 0 && <p className="text-[13px] text-[#6B7FA6]">No comments yet. Say something nice!</p>}
-            {comments.map((c) => {
+            {comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())).map((c) => {
               const cc = colorOf(c.author) || "#2563EB";
               const canDel = !!user && (c.authorUid === user.uid || mine || canMod);
               const isReply = !!c.replyTo;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -22,6 +23,35 @@ export function watchBlockedNames(uid: string, onChange: (names: string[]) => vo
     (s) => onChange(clean(s.get("names"))),
     () => onChange([])
   );
+}
+
+/** 🚫 Live list of the people who blocked ME (kept by the server, only I read it). */
+export function watchBlockedBy(uid: string, onChange: (names: string[]) => void): () => void {
+  return onSnapshot(
+    doc(db, "user_blocked_by", uid),
+    (s) => onChange(clean(s.get("names"))),
+    () => onChange([])
+  );
+}
+
+/**
+ * 🚫 A block works BOTH ways (miglife): the people I blocked and the people who
+ * blocked me — neither side sees the other. All names lower-case.
+ */
+export function useBlockSets(uid?: string | null): { mine: Set<string>; by: Set<string>; hidden: Set<string> } {
+  const [mine, setMine] = useState<string[]>([]);
+  const [by, setBy] = useState<string[]>([]);
+  useEffect(() => {
+    if (!uid) return;
+    const a = watchBlockedNames(uid, setMine);
+    const b = watchBlockedBy(uid, setBy);
+    return () => (a(), b());
+  }, [uid]);
+  return useMemo(() => {
+    const m = new Set(mine.map((x) => x.trim().toLowerCase()));
+    const b = new Set(by.map((x) => x.trim().toLowerCase()));
+    return { mine: m, by: b, hidden: new Set([...m, ...b]) };
+  }, [mine, by]);
 }
 
 export async function saveBlockedNames(uid: string, names: string[]): Promise<void> {

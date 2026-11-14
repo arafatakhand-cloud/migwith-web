@@ -180,7 +180,7 @@ import { WhoisPopup, type WhoisInfo } from "../../_components/WhoisPopup";
 import { PhotoEditor } from "../../_components/PhotoEditor";
 import { BalanceCard, RoundResultCard, SimpleDialog, WarningDialog, type BalanceInfo } from "../../_components/RoomPopups";
 import { GiftImg } from "../../_components/GiftImg";
-import { watchBlockedNames } from "../../../lib/blocks";
+import { useBlockSets } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
 
 // 🔒 Same words as the app's toasts for a locked room / a level too low.
@@ -1335,11 +1335,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   }, [messages, localNotes, myUid, sinceMs]);
 
   // People I blocked (user_blocks/{uid}, /block): their lines are hidden for me, like the app.
-  const [blockedNames, setBlockedNames] = useState<string[]>([]);
-  useEffect(() => {
-    if (!myUid) return;
-    return watchBlockedNames(myUid, (names) => setBlockedNames(names.map((x) => x.toLowerCase())));
-  }, [myUid]);
+  // 🚫 a block works both ways: the people who blocked ME are hidden too
+  const blockSets = useBlockSets(myUid);
+  const blockedNames = useMemo(() => [...blockSets.hidden], [blockSets]);
 
   // Live "is a game running?" line for game rooms (and chat rooms with a game
   // bot on), shown under the 📢 announcement — only to someone who has no line
