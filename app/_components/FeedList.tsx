@@ -22,6 +22,7 @@ import { PollBox } from "./PollBox";
 import { openReport } from "./ReportDialog";
 import { PhotoCropDialog } from "./PhotoCropDialog";
 import { uploadBlogVideo } from "../../lib/videoUpload";
+import { VideoEditor } from "./VideoEditor";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
@@ -282,6 +283,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [videoOn, setVideoOn] = useState(true);
   // 📰🎬 only people Share Permissions allows (the Feed column) see the 🎬 button
   const feedVideo = useFeedVideoAllowed(user?.uid, username);
+  const [cvideoEdit, setCvideoEdit] = useState<File | null>(null);
   useEffect(() => {
     blogCall("videoStatus")
       .then((r) => setVideoOn(r.videoEnabled !== false))
@@ -1354,21 +1356,34 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 type="file"
                 accept="video/mp4,video/webm,video/quicktime"
                 hidden
-                onChange={async (e) => {
+                onChange={(e) => {
                   const f = e.target.files?.[0];
                   e.target.value = "";
-                  if (!f || !user) return;
-                  setCerr("");
-                  setCvideoBusy(true);
-                  try {
-                    setCvideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds));
-                  } catch (err) {
-                    setCerr(err instanceof Error ? err.message : blogError(err));
-                  } finally {
-                    setCvideoBusy(false);
-                  }
+                  // ✂️ the video editor first
+                  if (f && user) setCvideoEdit(f);
                 }}
               />
+              {cvideoEdit && (
+                <VideoEditor
+                  file={cvideoEdit}
+                  maxSec={feedVideo.maxSeconds}
+                  sendLabel="Done"
+                  onCancel={() => setCvideoEdit(null)}
+                  onDone={async (f, secs) => {
+                    setCvideoEdit(null);
+                    if (!user) return;
+                    setCerr("");
+                    setCvideoBusy(true);
+                    try {
+                      setCvideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds, secs));
+                    } catch (err) {
+                      setCerr(err instanceof Error ? err.message : blogError(err));
+                    } finally {
+                      setCvideoBusy(false);
+                    }
+                  }}
+                />
+              )}
               {(mentionSuggest.length > 0 || mentionAll) && (
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {mentionAll && (

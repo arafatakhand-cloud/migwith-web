@@ -19,7 +19,7 @@ export function useFeedVideoAllowed(uid?: string | null, username?: string | nul
         if (gone) return;
         const table = (t.data() as ShareTable) || {};
         const keys = shareKeysOf(presenceBadgesForDoc(u.data() || {}));
-        setOut({ allowed: isMainFounderName(username) || shareAllowed(table, keys, "feedVideo"), maxSeconds: videoMaxSecondsOf(table) });
+        setOut({ allowed: isMainFounderName(username || String(u.data()?.username || "")) || shareAllowed(table, keys, "feedVideo"), maxSeconds: videoMaxSecondsOf(table) });
       })
       .catch(() => {});
     return () => {

@@ -14,11 +14,12 @@ import { videoLengthLabel, videoSecondsOf } from "./sharePerms";
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 const VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
 /** Uploads one video for a feed post and returns its link. */
-export async function uploadBlogVideo(uid: string, file: File, maxSeconds = 300): Promise<string> {
+export async function uploadBlogVideo(uid: string, file: File, maxSeconds = 300, knownSeconds?: number): Promise<string> {
   if (!VIDEO_TYPES.includes(file.type)) throw new Error("Please choose an MP4, WebM or MOV video.");
   if (file.size > MAX_VIDEO_BYTES) throw new Error("That video is over 50 MB. Please send a shorter one (or post it from the app — it makes videos smaller).");
   // ⏱️ miglife's longest-video limit
-  const secs = await videoSecondsOf(file);
+  // (a file made by the video editor has no length inside it yet: the editor tells it)
+  const secs = knownSeconds ?? (await videoSecondsOf(file));
   if (secs > maxSeconds + 1) {
     const m = Math.floor(secs / 60), r = Math.round(secs % 60);
     throw new Error(`⏱️ This video is ${m}:${String(r).padStart(2, "0")} long — videos can be at most ${videoLengthLabel(maxSeconds)}.`);

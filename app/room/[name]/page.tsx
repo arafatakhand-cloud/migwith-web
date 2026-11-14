@@ -48,6 +48,7 @@ import {
   roomDeviceId,
 } from "../../../lib/rooms";
 import { ChatBar } from "../../_components/ChatBar";
+import { VideoEditor } from "../../_components/VideoEditor";
 import { GiftNamePicker, giftPickerQuery } from "../../_components/GiftNamePicker";
 import { FeelPicker } from "../../_components/FeelPicker";
 import { SwipeToReply } from "../../_components/SwipeToReply";
@@ -1629,7 +1630,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   };
 
   // 🎬 Video message (R2, room_videos/<room>/…): only people Share Permissions allows.
-  const sendVideo = async (file: File) => {
+  // ✂️ a picked video waits in the video editor until Send
+  const [editVideo, setEditVideo] = useState<File | null>(null);
+  const sendVideo = async (file: File, knownSecs?: number) => {
     if (!user || !profile || uploading) return;
     if (!videoAllowed) return note(`${roomName}: 🔒 Video sharing is not allowed for your role.`);
     if (muted || (silenced && !perms.canRoomWide)) {
@@ -1639,7 +1642,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     if (file.size > 50 * 1024 * 1024) return note(`${roomName}: That video is over 50 MB. Please send a shorter one (or send it from the app — it makes videos smaller).`);
     // ⏱️ miglife's longest-video limit
     const maxSec = videoMaxSecondsOf(shareTable);
-    const secs = await videoSecondsOf(file);
+    const secs = knownSecs ?? (await videoSecondsOf(file));
     if (secs > maxSec + 1) {
       const m = Math.floor(secs / 60), r = Math.round(secs % 60);
       return note(`${roomName}: ⏱️ This video is ${m}:${String(r).padStart(2, "0")} long — videos can be at most ${videoLengthLabel(maxSec)}.`);
@@ -2384,6 +2387,17 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
   return (
     <PageShell light bottomNav={false}>
+      {editVideo && (
+        <VideoEditor
+          file={editVideo}
+          maxSec={videoMaxSecondsOf(shareTable)}
+          onCancel={() => setEditVideo(null)}
+          onDone={(f, secs) => {
+            setEditVideo(null);
+            void sendVideo(f, secs);
+          }}
+        />
+      )}
       <ImageViewerHost />
       <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
       {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} onClose={() => setReactors(null)} />}
@@ -2707,7 +2721,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   photo={{
                     // picking a photo never posts it straight away: "Send this photo?" first
                     onFile: (f: File | undefined) =>
-                      f && (f.type.startsWith("video/") ? void sendVideo(f) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
+                      f && (f.type.startsWith("video/") ? (videoAllowed ? setEditVideo(f) : note(`${roomName}: 🔒 Video sharing is not allowed for your role.`)) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
                     disabled: !perms.canShareMedia && !videoAllowed,
                     uploading,
                     accept: videoAllowed ? (perms.canShareMedia ? "image/*,video/*" : "video/*") : "image/*",
@@ -2789,7 +2803,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
               photo={{
                 // picking a photo never posts it straight away: "Send this photo?" first
                 onFile: (f: File | undefined) =>
-                  f && (f.type.startsWith("video/") ? void sendVideo(f) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
+                  f && (f.type.startsWith("video/") ? (videoAllowed ? setEditVideo(f) : note(`${roomName}: 🔒 Video sharing is not allowed for your role.`)) : perms.canShareMedia ? (setPendingPhoto(f), inputRef.current?.focus()) : note(`${roomName}: Photos are not allowed for your role.`)),
                 disabled: !perms.canShareMedia && !videoAllowed,
                 uploading,
                 accept: videoAllowed ? (perms.canShareMedia ? "image/*,video/*" : "video/*") : "image/*",

@@ -11,6 +11,8 @@ export type Story = {
   authorUid: string;
   author: string;
   url: string;
+  /** 🎬 a video story */
+  video?: boolean;
   createdMs: number;
   expiresAt: number;
   caption: string;
@@ -42,6 +44,8 @@ export async function loadStories(): Promise<Story[]> {
         authorUid: String(x.authorUid || ""),
         author: String(x.author || ""),
         url: String(x.url || ""),
+        // 🎬 a video story (made in the video editor)
+        video: x.video === true || /\.(mp4|webm|mov)(\?|$)/i.test(String(x.url || "")),
         createdMs: Number(x.createdMs || 0),
         expiresAt: Number(x.expiresAt || 0),
         caption: String(x.caption || ""),

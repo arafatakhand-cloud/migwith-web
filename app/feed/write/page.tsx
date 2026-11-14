@@ -10,6 +10,7 @@ import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { uploadChatImage } from "../../../lib/imageUpload";
 import { uploadBlogVideo } from "../../../lib/videoUpload";
 import { useFeedVideoAllowed } from "../../../lib/feedVideoPerm";
+import { VideoEditor } from "../../_components/VideoEditor";
 import { PageShell } from "../../_components/PageShell";
 import { BLOG_CATEGORIES, blogCall, blogError } from "../../../lib/feed";
 import { cachedPhotoOf, useSenderColors } from "../../../lib/senderColors";
@@ -199,13 +200,14 @@ function BlogWrite() {
     });
   };
 
-  const uploadVideo = async (files: FileList | null) => {
-    const f = files?.[0];
+  // ✂️ a picked video opens in the video editor first
+  const [videoEdit, setVideoEdit] = useState<File | null>(null);
+  const uploadVideo = async (f: File | undefined, secs?: number) => {
     if (!f || !user) return;
     setError("");
     setBusy("Uploading video…");
     try {
-      setVideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds));
+      setVideo(await uploadBlogVideo(user.uid, f, feedVideo.maxSeconds, secs));
     } catch (e) {
       setError(e instanceof Error ? e.message : blogError(e));
     } finally {
@@ -267,7 +269,19 @@ function BlogWrite() {
   return (
     <PageShell light>
       <input ref={photoInput} type="file" accept="image/*" multiple hidden onChange={(e) => (upload(e.target.files), (e.target.value = ""))} />
-      <input ref={videoInput} type="file" accept="video/mp4,video/webm,video/quicktime" hidden onChange={(e) => (uploadVideo(e.target.files), (e.target.value = ""))} />
+      <input ref={videoInput} type="file" accept="video/mp4,video/webm,video/quicktime" hidden onChange={(e) => (e.target.files?.[0] && setVideoEdit(e.target.files[0]), (e.target.value = ""))} />
+      {videoEdit && (
+        <VideoEditor
+          file={videoEdit}
+          maxSec={feedVideo.maxSeconds}
+          sendLabel="Done"
+          onCancel={() => setVideoEdit(null)}
+          onDone={(f, secs) => {
+            setVideoEdit(null);
+            void uploadVideo(f, secs);
+          }}
+        />
+      )}
 
       {/* dimmed backdrop + the sheet */}
       <div className="fixed inset-0 z-40 bg-[#0F1D3A]/30 backdrop-blur-[3px]" onClick={close} />
