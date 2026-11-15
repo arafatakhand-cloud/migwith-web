@@ -260,7 +260,8 @@ export function ChatBar({
               <EmoteEditor
                 ref={inputRef}
                 value={text}
-                onChange={(v) => setText(v.replace(/[\r\n]+/g, " ").slice(0, maxLength))}
+                onChange={(v) => setText(v.replace(/\u200B/g, "").replace(/\r/g, "").slice(0, maxLength))}
+                newLineOnEnter
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
