@@ -224,7 +224,8 @@ export async function leaveRoomInBackground(uid: string, name: string): Promise<
   if (!presence.exists()) return true; // never entered (invisible) or already gone
   const me = await getDoc(doc(db, "users", uid)).catch(() => null);
   const username = String(presence.get("username") || me?.get("username") || "");
-  const level = Number(presence.get("level") || me?.get("level") || 1);
+  // 🐞 the higher of the visit's level and the profile's ("[1] has left" bug)
+  const level = Math.max(Number(presence.get("level") || 0), Number(me?.get("level") || 0), 1);
   // "has left" only for someone really shown in the room: their presence doc
   // exists (checked above) and is not INVISIBLE — the room decided who may hide.
   const quiet = String(presence.get("presenceStatus") || "").toUpperCase() === "INVISIBLE";
@@ -288,6 +289,11 @@ export async function postStaleLeaveLineOnce(
     if ((await getDocFromServer(ref)).exists()) return;
   } catch {
     // can't tell — try to write it; the rules / same id keep it single
+  }
+  // 🐞 a level of 1 may just be "not known" — the person's profile has the real one
+  if (!(level > 1)) {
+    const u = await getDoc(doc(db, "users", uid)).catch(() => null);
+    level = Math.max(level || 1, Number(u?.get("level") || 0));
   }
   await setDoc(ref, {
     text: presenceLine(roomId, name, level, false, badges),
