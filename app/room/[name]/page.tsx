@@ -4539,6 +4539,9 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
   const winner = /Congratulations (.+?)! You are/i.exec(text)?.[1]?.trim() || "Lucky User";
   const coins = Number(/and (\d+) coins/i.exec(text)?.[1] || 5000);
   const isMaleLucky = luckyColorOf(winner) === "#FB8C00";
+  // 🍀 Smart Lucky User lines: pink until the next Lucky User, picked by lottery from N chatters
+  const tillNext = /until the next Lucky User/i.test(text);
+  const chatters = Number(/from (\d+) chatters/i.exec(text)?.[1] || 0);
   return (
     <div className="rounded-[20px] bg-gradient-to-r from-[#43C77A] via-[#FF6FB1] to-[#F2B53A] p-[1.5px] shadow-[0_6px_18px_rgba(255,111,177,0.35)]">
       <div className="lucky-shimmer relative overflow-hidden rounded-[19px] bg-gradient-to-br from-[#E8FFF3] via-[#FFEEF7] to-[#FFF6DC] px-3.5 py-3">
@@ -4555,8 +4558,8 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
           {[
             // 🧡 a male Lucky User gets an Orange ID, a female one a Pink ID
             isMaleLucky
-              ? ["🧡", "Orange ID 3h", "#FB8C00", "#A35A00"]
-              : ["💗", "Pink ID 3h", "#FF6FB1", "#B2477F"],
+              ? ["🧡", tillNext ? "Orange ID till next" : "Orange ID 3h", "#FB8C00", "#A35A00"]
+              : ["💗", tillNext ? "Pink ID till next" : "Pink ID 3h", "#FF6FB1", "#B2477F"],
             ["⬆️", "+1 Level", "#3B8BF0", "#2D5FA6"],
             ["🪙", `+${coins.toLocaleString()}`, "#E0A21B", "#96701E"],
           ].map(([icon, label, accent, ink]) => (
@@ -4570,6 +4573,12 @@ function LuckyCard({ text, time }: { text: string; time: string }) {
             </span>
           ))}
         </div>
+        {tillNext && (
+          <div className="mt-2 text-xs text-[#7A6A88]">
+            {chatters > 0 && <p>Picked by lottery from {chatters} chatters</p>}
+            <p>⏳ Next Lucky User: any time!</p>
+          </div>
+        )}
         {time && <p className="mt-1.5 text-right text-[10px] text-[#9A8FA6]">{time}</p>}
       </div>
     </div>

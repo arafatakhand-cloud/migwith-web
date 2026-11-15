@@ -2,24 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
-import { db } from "../../lib/firebase";
+import { auth, db } from "../../lib/firebase";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { PageShell } from "../_components/PageShell";
 import { PageTitle, SectionLabel } from "../_components/LightCards";
 
 // Explore › Lucky User, like the app: lucky_rounds (written only by the
-// pickBangladeshLuckyUser function) — the current winner, a countdown to the
-// next pick at every 3-hour mark, and the previous winners.
+// luckyUserTick function) — the current winner (pink until the next one), MY
+// own Lucky points (lucky_live, only mine), and the previous winners. The pick
+// comes at a random time every few hours, so there is no countdown.
+
+type Live = { room: string; points: number; tickets: number; chancePct: number; firstTimer: boolean; eligible: boolean; winsWeek: number };
 
 type Round = { uid: string; username: string; windowEnd: number; coins: number };
-
-const SLOT_MS = 3 * 60 * 60 * 1000;
-
-function clock(ms: number): string {
-  const t = Math.max(0, Math.floor(ms / 1000));
-  const p = (n: number) => String(n).padStart(2, "0");
-  return `${p(Math.floor(t / 3600))}:${p(Math.floor((t % 3600) / 60))}:${p(t % 60)}`;
-}
 
 export default function LuckyUserPage() {
   const ready = useRequireLogin();
@@ -27,6 +22,35 @@ export default function LuckyUserPage() {
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const [photo, setPhoto] = useState("");
+  // 🍀 Smart Lucky User settings + my own live points
+  const [luckyRooms, setLuckyRooms] = useState<string[]>(["Bangladesh"]);
+  const [luckyCoins, setLuckyCoins] = useState(5000);
+  const [maxHours, setMaxHours] = useState(5);
+  const [live, setLive] = useState<Record<string, Live>>({});
+  useEffect(() => {
+    if (!ready) return;
+    return onSnapshot(doc(db, "app_settings", "lucky_user"), (s) => {
+      const r = s.get("rooms");
+      if (Array.isArray(r) && r.length) setLuckyRooms(r.map(String));
+      if (typeof s.get("coins") === "number") setLuckyCoins(s.get("coins"));
+      if (typeof s.get("maxHours") === "number") setMaxHours(s.get("maxHours"));
+    }, () => {});
+  }, [ready]);
+  const myUid = auth.currentUser?.uid;
+  useEffect(() => {
+    if (!ready || !myUid) return;
+    const offs = luckyRooms.map((room) =>
+      onSnapshot(doc(db, "lucky_live", room, "users", myUid), (s) => {
+        setLive((o) => {
+          const n = { ...o };
+          if (s.exists()) n[room] = s.data() as Live;
+          else delete n[room];
+          return n;
+        });
+      }, () => {})
+    );
+    return () => offs.forEach((o) => o());
+  }, [ready, myUid, luckyRooms]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -57,9 +81,11 @@ export default function LuckyUserPage() {
     );
   }, [ready]);
 
-  const current = rounds?.[0] && now < rounds[0].windowEnd + SLOT_MS ? rounds[0] : null;
+  // pink until the next Lucky User (the server also ends it then)
+  const current = rounds?.[0] && now < rounds[0].windowEnd + (maxHours + 3) * 3600_000 ? rounds[0] : null;
   const history = (rounds || []).filter((r) => r !== current).slice(0, 20);
-  const nextPickAt = (Math.floor(now / SLOT_MS) + 1) * SLOT_MS;
+  const liveRoom = luckyRooms.find((r) => live[r]);
+  const mine = liveRoom ? live[liveRoom] : null;
 
   const currentUid = current?.uid;
   useEffect(() => {
@@ -73,7 +99,7 @@ export default function LuckyUserPage() {
   return (
     <PageShell light>
       <section className="mx-auto max-w-2xl px-3 pb-10 sm:px-6">
-        <PageTitle title="Lucky User" subtitle="Every 3 hours · Bangladesh room" />
+        <PageTitle title="Lucky User" subtitle={`Random time · ${luckyRooms.join(", ")}`} />
 
         {/* Current Lucky User */}
         <div className="flex flex-col items-center rounded-3xl border-2 border-[#FF6FB1]/60 bg-gradient-to-br from-[#E8FFF3] via-[#FFEEF7] to-[#FFF6DC] p-5 text-center shadow-[0_8px_24px_rgba(255,111,177,0.25)]">
@@ -94,7 +120,7 @@ export default function LuckyUserPage() {
               <p data-notranslate className="mt-2 text-2xl font-black text-[#E8327E]">
                 {current.username}
               </p>
-              <p className="text-xs font-semibold text-[#5B6B8C]">💗 Pink ID ends in {clock(current.windowEnd + SLOT_MS - now)}</p>
+              <p className="text-xs font-semibold text-[#5B6B8C]">💗 Pink ID until the next Lucky User</p>
             </>
           ) : (
             <>
@@ -105,16 +131,35 @@ export default function LuckyUserPage() {
           )}
         </div>
 
-        {/* Countdown */}
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-[#7FB3FF]/40 bg-white px-4 py-3.5 shadow-sm">
-          <span className="text-2xl">⏳</span>
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-[#5B6B8C]">Next Lucky User in</p>
-            <p className="text-2xl font-black tracking-wide text-[#2F6BEA]">{clock(nextPickAt - now)}</p>
-          </div>
-          <p className="text-xs text-[#5B6B8C]">
-            {new Date(nextPickAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
-          </p>
+        {/* 🍀 My Lucky Points (only mine — how points are counted is never shown) */}
+        <div className="mt-3 rounded-2xl border border-[#FF6FB1]/40 bg-white px-4 py-3.5 shadow-sm">
+          <p className="text-sm font-black text-[#0B2A5B]">🍀 My Lucky Points</p>
+          <p className="text-xs text-[#5B6B8C]">Round is on… the winner can be announced any time!</p>
+          {!mine ? (
+            <p className="mt-2 text-[13px] font-semibold text-[#0B2A5B]">💬 Chat in {luckyRooms.join(" or ")} to take part.</p>
+          ) : (
+            <>
+              <div className="mt-1 flex items-end gap-1.5">
+                <span className="text-[32px] font-black leading-none text-[#E8327E]">{mine.points}</span>
+                <span className="pb-0.5 text-sm font-bold text-[#5B6B8C]">points</span>
+                {luckyRooms.length > 1 && <span className="ml-auto pb-1 text-[11px] text-[#5B6B8C]">{liveRoom}</span>}
+              </div>
+              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#F3E3EC]">
+                <div className="h-full bg-gradient-to-r from-[#FF7AB8] to-[#D6338A]" style={{ width: `${Math.min(100, Math.max(3, mine.points))}%` }} />
+              </div>
+              <p className="mt-1.5 text-[13px] text-[#0B2A5B]">
+                {!mine.eligible
+                  ? "🔒 You can't win this round — keep chatting for the next one!"
+                  : mine.tickets <= 0
+                    ? "🎟️ A few more good chats to get your first tickets!"
+                    : `🎟️ ${Math.round(mine.tickets)} tickets · about ${Math.round(mine.chancePct)}% chance to win`}
+              </p>
+              {mine.firstTimer && mine.eligible && <p className="text-xs text-[#0E9F8E]">✨ First-timer bonus: tickets ×2</p>}
+              <p className="text-[10px] text-[#5B6B8C]">Updates every 30 minutes</p>
+            </>
+          )}
+          <p className="mt-2 text-xs text-[#5B6B8C]">💡 Chat more and talk with more people to raise your chance!</p>
+          {mine && mine.winsWeek > 0 && <p className="text-xs text-[#5B6B8C]">🏅 Wins this week: {mine.winsWeek}</p>}
         </div>
 
         {/* Rewards */}
@@ -122,9 +167,9 @@ export default function LuckyUserPage() {
           <p className="text-sm font-black text-[#0B2A5B]">What the Lucky User gets</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
             {[
-              ["💗", "Pink ID", "3 hours"],
+              ["💗", "Pink ID", "Till next"],
               ["⬆️", "+1 Level", "Bonus"],
-              ["🪙", "+5,000", "Coins"],
+              ["🪙", `+${luckyCoins.toLocaleString()}`, "Coins"],
             ].map(([i, t, s]) => (
               <div key={t} className="rounded-xl bg-white py-2.5 text-center">
                 <p className="text-xl">{i}</p>
@@ -134,7 +179,7 @@ export default function LuckyUserPage() {
             ))}
           </div>
           <p className="mt-2 text-xs leading-5 text-[#5B6B8C]">
-            💬 Chat in the Bangladesh room. Every 3 hours the most active chatter becomes the Lucky User automatically.
+            💬 Chat in {luckyRooms.join(" or ")}. At a random time every few hours a lottery picks the Lucky User — the more you really chat with people, the better your chance.
           </p>
         </div>
 
