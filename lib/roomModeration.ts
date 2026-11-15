@@ -452,6 +452,10 @@ async function setAnnouncement(ctx: ModContext, message: string, minutes?: numbe
   const before = await getDoc(ref).catch(() => null);
   const prevText = String(before?.get("announcement") || "");
   const prevBy = String(before?.get("announcementBy") || "");
+  // 📢 one announcement at a time: a new one only after the old one is turned off
+  if (message && prevText) {
+    return ctx.note(`${ctx.roomName}: An announcement is already on. Turn it off first with /announce off, then set the new one.`);
+  }
   try {
     await setDoc(
       ref,
