@@ -24,7 +24,19 @@ type Props = {
   placeholder: string;
   className?: string;
   disabled?: boolean;
+  /** ↵ chat boxes: on a phone Enter makes a new line (only ➤ sends); on a computer
+   *  Shift+Enter makes a new line and Enter goes to onKeyDown (sends) */
+  newLineOnEnter?: boolean;
 };
+
+// a phone / tablet (touch screen, no mouse): Enter there means "new line"
+function touchOnly(): boolean {
+  try {
+    return window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(any-pointer: fine)").matches;
+  } catch {
+    return false;
+  }
+}
 
 // 🖼 the picture shown in the writing box. A MIGLIFE Animated emote is an
 // 18-frame strip, and an animated Google emoji is a Lottie file — shown as an
@@ -69,7 +81,8 @@ function render(el: HTMLElement, value: string) {
 function toCodes(node: Node): string {
   let out = "";
   node.childNodes.forEach((n) => {
-    if (n.nodeType === Node.TEXT_NODE) out += n.textContent ?? "";
+    // (\u200B only holds a new line open at the very end — never part of the value)
+    if (n.nodeType === Node.TEXT_NODE) out += (n.textContent ?? "").replace(/\u200B/g, "");
     else if (n instanceof HTMLImageElement && n.dataset.code) out += n.dataset.code;
     else if (n instanceof HTMLBRElement) out += "\n";
     else if (n instanceof HTMLElement) {
@@ -120,7 +133,7 @@ function setCaretAt(el: HTMLElement, pos: number) {
 }
 
 export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEditor(
-  { value, onChange, onCaret, onKeyDown, placeholder, className, disabled },
+  { value, onChange, onCaret, onKeyDown, placeholder, className, disabled, newLineOnEnter },
   ref
 ) {
   const box = useRef<HTMLDivElement>(null);
@@ -174,7 +187,24 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
         onChange(toCodes(e.currentTarget));
         report();
       }}
-      onKeyDown={(e) => onKeyDown?.(e)}
+      onKeyDown={(e) => {
+        // ↵ a new line where the caret is (the value gets it as "\n")
+        if (newLineOnEnter && e.key === "Enter" && !e.nativeEvent.isComposing && (e.shiftKey || touchOnly())) {
+          e.preventDefault();
+          const el = e.currentTarget;
+          const pos = caretOffset(el);
+          const now = toCodes(el);
+          const next = now.slice(0, pos) + "\n" + now.slice(pos);
+          render(el, next);
+          // a new line at the very end needs something after it to show
+          if (pos === now.length) el.appendChild(document.createTextNode("\u200B"));
+          setCaretAt(el, pos + 1);
+          onChange(next);
+          report();
+          return;
+        }
+        onKeyDown?.(e);
+      }}
       onKeyUp={report}
       onMouseUp={report}
       onPaste={(e: ClipboardEvent<HTMLDivElement>) => {

@@ -581,7 +581,8 @@ export function handleModCommand(clean: string, ctx: ModContext): boolean {
       }
       const words = rest.split(/\s+/);
       const mins = cmd === "/announce" && words.length > 1 ? Number(words[words.length - 1]) : NaN;
-      if (Number.isInteger(mins) && mins > 0) setAnnouncement(ctx, words.slice(0, -1).join(" "), mins);
+      // 📢 the announcement keeps its own lines; only the minutes at the end come off
+      if (Number.isInteger(mins) && mins > 0) setAnnouncement(ctx, rest.slice(0, rest.lastIndexOf(words[words.length - 1])).trimEnd(), mins);
       else setAnnouncement(ctx, rest);
       return true;
     }
