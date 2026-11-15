@@ -12,7 +12,10 @@ import { PageTitle, SectionLabel } from "../_components/LightCards";
 // own Lucky points (lucky_live, only mine), and the previous winners. The pick
 // comes at a random time every few hours, so there is no countdown.
 
-type Live = { room: string; points: number; tickets: number; chancePct: number; firstTimer: boolean; eligible: boolean; winsWeek: number };
+type Live = { room: string; level: number; firstTimer: boolean; eligible: boolean; winsWeek: number };
+const LEVELS = ["Low", "Good", "Very good", "Great"];
+const LEVEL_ICON = ["🌱", "🙂", "🔥", "🌟"];
+const LEVEL_FILL = ["#FF9AC8", "#FF7AB8", "#E84E9A", "#D6338A"];
 
 type Round = { uid: string; username: string; windowEnd: number; coins: number };
 
@@ -131,30 +134,33 @@ export default function LuckyUserPage() {
           )}
         </div>
 
-        {/* 🍀 My Lucky Points (only mine — how points are counted is never shown) */}
+        {/* 🍀 My Lucky Chance (only my own level — no numbers, never how points are counted) */}
         <div className="mt-3 rounded-2xl border border-[#FF6FB1]/40 bg-white px-4 py-3.5 shadow-sm">
-          <p className="text-sm font-black text-[#0B2A5B]">🍀 My Lucky Points</p>
+          <p className="text-sm font-black text-[#0B2A5B]">🍀 My Lucky Chance</p>
           <p className="text-xs text-[#5B6B8C]">Round is on… the winner can be announced any time!</p>
           {!mine ? (
             <p className="mt-2 text-[13px] font-semibold text-[#0B2A5B]">💬 Chat in {luckyRooms.join(" or ")} to take part.</p>
           ) : (
             <>
-              <div className="mt-1 flex items-end gap-1.5">
-                <span className="text-[32px] font-black leading-none text-[#E8327E]">{mine.points}</span>
-                <span className="pb-0.5 text-sm font-bold text-[#5B6B8C]">points</span>
-                {luckyRooms.length > 1 && <span className="ml-auto pb-1 text-[11px] text-[#5B6B8C]">{liveRoom}</span>}
+              {/* ②-B: only a level — no points or numbers (the server sends none) */}
+              <div className="mt-1 flex items-center">
+                <span className="text-[26px] font-black text-[#E8327E]">
+                  {mine.eligible ? `${LEVELS[Math.min(3, Math.max(0, mine.level))]} ${LEVEL_ICON[Math.min(3, Math.max(0, mine.level))]}` : "Next round 🔒"}
+                </span>
+                {luckyRooms.length > 1 && <span className="ml-auto text-[11px] text-[#5B6B8C]">{liveRoom}</span>}
               </div>
-              <div className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#F3E3EC]">
-                <div className="h-full bg-gradient-to-r from-[#FF7AB8] to-[#D6338A]" style={{ width: `${Math.min(100, Math.max(3, mine.points))}%` }} />
+              <div className="mt-2 flex gap-1.5">
+                {LEVELS.map((n, i) => (
+                  <span key={n} className="h-2.5 flex-1 rounded-full" style={{ background: mine.eligible && i <= mine.level ? LEVEL_FILL[i] : "#F3E3EC" }} />
+                ))}
               </div>
-              <p className="mt-1.5 text-[13px] text-[#0B2A5B]">
-                {!mine.eligible
-                  ? "🔒 You can't win this round — keep chatting for the next one!"
-                  : mine.tickets <= 0
-                    ? "🎟️ A few more good chats to get your first tickets!"
-                    : `🎟️ ${Math.round(mine.tickets)} tickets · about ${Math.round(mine.chancePct)}% chance to win`}
-              </p>
-              {mine.firstTimer && mine.eligible && <p className="text-xs text-[#0E9F8E]">✨ First-timer bonus: tickets ×2</p>}
+              <div className="mt-1 flex justify-between text-[10px] text-[#5B6B8C]">
+                {LEVELS.map((n) => (
+                  <span key={n}>{n}</span>
+                ))}
+              </div>
+              {!mine.eligible && <p className="mt-1 text-xs text-[#0B2A5B]">You can&apos;t win this round — keep chatting for the next one!</p>}
+              {mine.firstTimer && mine.eligible && <p className="text-xs text-[#0E9F8E]">✨ First-timer bonus on</p>}
               <p className="text-[10px] text-[#5B6B8C]">Updates every 30 minutes</p>
             </>
           )}
