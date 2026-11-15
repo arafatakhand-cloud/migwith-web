@@ -14,6 +14,8 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  startAfter,
+  type QueryDocumentSnapshot,
   Timestamp,
   where,
   type DocumentData,
@@ -193,10 +195,23 @@ export default function WalletPage() {
 
   const [balance, setBalance] = useState<number | null>(null);
   const [role, setRole] = useState("");
-  const [txs, setTxs] = useState<{ id: string; data: DocumentData }[]>([]);
+  const [liveTxs, setTxs] = useState<{ id: string; data: DocumentData }[]>([]);
+  // 📜 older coin lines, read page by page when a category has too few entries
+  // among the newest 30 (a busy player's newest 30 are all bets, so Other /
+  // Transfers looked empty)
+  const [olderTxs, setOlderTxs] = useState<{ id: string; data: DocumentData }[]>([]);
+  const lastSnap = useRef<QueryDocumentSnapshot | null>(null);
+  const [olderDone, setOlderDone] = useState(false);
+  const [olderBusy, setOlderBusy] = useState(false);
+  const autoPages = useRef(0);
+  const txs = useMemo(() => {
+    const seen = new Set(liveTxs.map((t) => t.id));
+    return [...liveTxs, ...olderTxs.filter((t) => !seen.has(t.id))];
+  }, [liveTxs, olderTxs]);
   const [gifts, setGifts] = useState<{ id: string; data: DocumentData }[]>([]);
   const [todayTx, setTodayTx] = useState<DocumentData[]>([]);
   const [todayGifts, setTodayGifts] = useState<DocumentData[]>([]);
+  const olderLoaded = useRef(false);
   const todayGiftParts = useRef<{ gift_activity: DocumentData[]; gift_activity_private: DocumentData[] }>({ gift_activity: [], gift_activity_private: [] });
 
   const [showTransfer, setShowTransfer] = useState(false);
@@ -252,7 +267,11 @@ export default function WalletPage() {
       }),
       onSnapshot(
         query(collection(userRef, "coin_transactions"), orderBy("createdAt", "desc"), limit(30)),
-        (s) => setTxs(s.docs.map((d) => ({ id: d.id, data: d.data() }))),
+        (s) => {
+          setTxs(s.docs.map((d) => ({ id: d.id, data: d.data() })));
+          if (!olderLoaded.current) lastSnap.current = s.docs[s.docs.length - 1] ?? null;
+          if (s.docs.length < 30) setOlderDone(true);
+        },
         (e) => console.error("transactions", e)
       ),
       onSnapshot(
@@ -368,6 +387,37 @@ export default function WalletPage() {
   // 🗂 the chosen category, and what it adds up to
   const [cat, setCat] = useState<"all" | ActCat>("all");
   const shownItems = useMemo(() => (cat === "all" ? items : items.filter((it) => it.cat === cat)), [items, cat]);
+
+  // 📜 the next 100 older coin lines
+  const loadOlder = async () => {
+    if (!user || olderBusy || olderDone || !lastSnap.current) return;
+    setOlderBusy(true);
+    try {
+      const s = await getDocs(
+        query(collection(db, "users", user.uid, "coin_transactions"), orderBy("createdAt", "desc"), startAfter(lastSnap.current), limit(100))
+      );
+      olderLoaded.current = true;
+      if (s.docs.length) lastSnap.current = s.docs[s.docs.length - 1];
+      setOlderTxs((o) => [...o, ...s.docs.map((d) => ({ id: d.id, data: d.data() }))]);
+      if (s.docs.length < 100) setOlderDone(true);
+    } catch (e) {
+      console.error("older transactions", e);
+      setOlderDone(true);
+    } finally {
+      setOlderBusy(false);
+    }
+  };
+  // a category (not gifts — they have their own list) with under 10 entries reads
+  // older pages by itself, up to 5 pages (500 lines) each time a category is picked
+  useEffect(() => {
+    autoPages.current = 0;
+  }, [cat]);
+  useEffect(() => {
+    if (cat === "all" || cat === "gifts" || olderBusy || olderDone || shownItems.length >= 10 || autoPages.current >= 5) return;
+    autoPages.current += 1;
+    loadOlder();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cat, shownItems.length, olderBusy, olderDone]);
   const summary = useMemo(() => {
     let inSum = 0;
     let outSum = 0;
@@ -626,7 +676,9 @@ export default function WalletPage() {
           <div className="h-[7px]" />
 
           {grouped.length === 0 ? (
-            <p className="p-2.5 text-[13px] text-[#35507E]">{cat === "all" ? "No activity yet." : "Nothing in this category yet."}</p>
+            <p className="p-2.5 text-[13px] text-[#35507E]">
+              {olderBusy ? "Looking further back…" : cat === "all" ? "No activity yet." : "Nothing in this category yet."}
+            </p>
           ) : (
             grouped.map(([day, list]) => (
               <div key={day}>
@@ -636,6 +688,17 @@ export default function WalletPage() {
                 ))}
               </div>
             ))
+          )}
+          {/* 📜 older lines (the list starts with the newest 30) */}
+          {cat !== "gifts" && !olderDone && (
+            <button
+              type="button"
+              onClick={() => loadOlder()}
+              disabled={olderBusy}
+              className="mx-auto mt-2 block rounded-full bg-white px-5 py-2 text-[13px] font-bold text-[#2B5FD9] shadow-[0_2px_0_#C9D8EE] disabled:opacity-60"
+            >
+              {olderBusy ? "Loading…" : "⬇ Load older"}
+            </button>
           )}
         </section>
       </div>
