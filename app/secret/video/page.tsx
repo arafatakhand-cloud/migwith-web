@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "../../../lib/firebase";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db, functions } from "../../../lib/firebase";
+import { forgetVideoQuality, type VideoQualityKey } from "../../../lib/videoQuality";
 import { useFounderPerms } from "../../../lib/founder";
 import { blogCall } from "../../../lib/feed";
 import { FounderShell, card } from "../_Shell";
@@ -72,6 +74,55 @@ export default function FeedVideoPage() {
 
         {msg && <p className={`text-sm ${msg.error ? "text-[#B91C1C]" : "text-[#2E7D32]"}`}>{msg.text}</p>}
       </div>
+      <QualityCard />
     </FounderShell>
+  );
+}
+
+// 🎞 Video quality (app_settings/video_quality) — the Android app and the web use it
+const QUALITIES: [VideoQualityKey, string, string][] = [
+  ["good", "Good", "720p · ~10 MB for 30 s"],
+  ["balanced", "Balanced", "720p · ~6 MB for 30 s"],
+  ["light", "Light", "480p · ~3.5 MB for 30 s"],
+];
+function QualityCard() {
+  const [q, setQ] = useState<VideoQualityKey | null>(null);
+  const [msg, setMsg] = useState("");
+  useEffect(() => {
+    getDoc(doc(db, "app_settings", "video_quality"))
+      .then((s) => setQ((["good", "balanced", "light"].includes(s.get("quality")) ? s.get("quality") : "light") as VideoQualityKey))
+      .catch(() => setQ("light"));
+  }, []);
+  const choose = async (k: VideoQualityKey, title: string) => {
+    setQ(k);
+    setMsg("");
+    try {
+      await setDoc(doc(db, "app_settings", "video_quality"), { quality: k, updatedAt: serverTimestamp() });
+      forgetVideoQuality();
+      setMsg(`✅ Saved: ${title}`);
+    } catch (e) {
+      setMsg("❌ " + (e instanceof Error ? e.message : "Could not save."));
+    }
+  };
+  return (
+    <div className={`${card} mt-3 space-y-2`}>
+      <p className="text-[15px] font-extrabold text-[#1E3A6E]">🎞 Video quality</p>
+      <p className="text-xs text-[#5B6B8C]">Heavy videos are made lighter before they are uploaded. Lighter = smaller files and smoother playing on mobile data.</p>
+      {QUALITIES.map(([k, title, sub]) => (
+        <button
+          key={k}
+          type="button"
+          onClick={() => choose(k, title)}
+          className={`flex w-full items-center gap-3 rounded-xl border-[1.5px] px-3.5 py-2.5 text-left ${q === k ? "border-[#14B88F] bg-[#E3F7EF]" : "border-transparent bg-[#F4F7FB]"}`}
+        >
+          <span className={q === k ? "text-[#14B88F]" : "text-[#5B6B8C]"}>{q === k ? "◉" : "○"}</span>
+          <span className="flex-1">
+            <span className="block text-sm font-bold text-[#1E3A6E]">{title}</span>
+            <span className="block text-xs text-[#5B6B8C]">{sub}</span>
+          </span>
+        </button>
+      ))}
+      {msg && <p className={`text-sm ${msg.startsWith("❌") ? "text-[#B91C1C]" : "text-[#2E7D32]"}`}>{msg}</p>}
+    </div>
   );
 }

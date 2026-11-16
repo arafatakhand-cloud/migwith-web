@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { editChanged, feValues, renderEditedVideo, TEXT_SIZE, VIDEO_FILTERS, type VideoEdit } from "../../lib/videoEdit";
 import { videoLengthLabel } from "../../lib/sharePerms";
 import { loadSongLibrary, type LibrarySong } from "../../lib/songUpload";
+import { getVideoQuality } from "../../lib/videoQuality";
 
 // ✂️ Video editor (miglife, design V1 · dark): opens after a video is picked —
 // Feed, rooms and stories — before it is sent. ✂️ Trim (the yellow ends; a long
@@ -268,9 +269,12 @@ export function VideoEditor({
     songRef.current?.pause();
     vid.current?.pause();
     setPlaying(false);
-    // 📶 Q3: an unedited video goes as it is only when it is already light
-    // (≤ ~1.2 Mbps); a heavy phone clip is made 480p · ~0.8 Mbps first
-    const light = dur > 0 && (file.size * 8) / dur <= 1_200_000;
+    // 🎞 an unedited video goes as it is only when it is already light enough for the
+    // chosen quality (Secret → Feed Video); a heavy phone clip is made lighter first
+    const q = await getVideoQuality();
+    edit.maxBits = q.maxBits;
+    edit.shortSide = q.shortSide;
+    const light = dur > 0 && (file.size * 8) / dur <= q.threshold;
     if (!editChanged(edit) && light) return onDone(file, dur);
     setErr("");
     setMaking(0);
