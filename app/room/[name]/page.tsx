@@ -2884,7 +2884,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     // gear badge (the ⚙️ emoji is a faint grey gear on Windows)
                     badgeImages["⚙️"] ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={badgeImages["⚙️"]} alt="Admin" title="Administrator" className="h-[18px] w-[18px] shrink-0 object-contain" />
+                      <img src={badgeImages["⚙️"]} alt="Admin" title="Administrator" className="h-[18px] w-[18px] shrink-0 rounded-full object-cover" />
                     ) : (
                       <span
                         title="Administrator"
@@ -2905,7 +2905,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     const pic = badgeImages[badge[0]];
                     return pic ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={pic} alt={badge[1]} title={badge[1]} className="h-[18px] w-[18px] shrink-0 object-contain" />
+                      <img src={pic} alt={badge[1]} title={badge[1]} className="h-[18px] w-[18px] shrink-0 rounded-full object-cover" />
                     ) : (
                       <span className="shrink-0" title={badge[1]}>{badge[0]}</span>
                     );
