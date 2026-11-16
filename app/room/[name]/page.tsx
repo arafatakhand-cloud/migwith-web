@@ -3613,15 +3613,27 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
   let clean = text;
   const shower = /^<<(?:🎁|💝)\*GIFT SHOWER\*/.exec(clean);
   if (shower) {
-    out.push(<span key="gs<">{"<<"}</span>, <span key="gs-icon" className="mx-0.5">💝</span>);
+    out.push(<span key="gs<">{"<<"}</span>, <span key="gs-icon" className="gift-6d mx-0.5">💝</span>);
     clean = clean.slice(shower[0].length - "*GIFT SHOWER*".length);
   }
   const pushSegment = (seg: string) => {
-    if (giftIcon && giftImage && seg.includes(giftIcon)) {
+    // 🎁 6D (miglife's pick "A"): the gift itself stands up — darker layers + a soft shadow under it
+    if (giftIcon && seg.includes(giftIcon)) {
       seg.split(giftIcon).forEach((piece, i) => {
         if (i > 0)
           out.push(
-            <GiftImg key={`g${k++}`} src={giftImage} fallback={giftIcon} className="mx-0.5 inline h-[1.4em] w-[1.4em] object-contain align-middle" />
+            giftImage ? (
+              <GiftImg
+                key={`g${k++}`}
+                src={giftImage}
+                fallback={<span className="gift-6d">{giftIcon}</span>}
+                className="gift-6d mx-0.5 inline h-[1.4em] w-[1.4em] object-contain align-middle"
+              />
+            ) : (
+              <span key={`g${k++}`} className="gift-6d mx-0.5">
+                {giftIcon}
+              </span>
+            )
           );
         if (piece) out.push(...emotesIn(piece));
       });
