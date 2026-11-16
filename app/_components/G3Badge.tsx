@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 // 🪙 G3 badges (miglife, 2026-11): every badge is a round coin in a silver ring
 // with a soft shine. Role badges are letters — A Admin (gold) · S Staff (green) · EB Executive Board (black, gold letters) ·
@@ -41,10 +41,14 @@ function Ring({ size, title, glow, children }: { size: string; title?: string; g
 
 /** A role letter coin (A / S / MT / CR / M). */
 export function G3Letter({ k, size = "1.45em" }: { k: string; size?: string }) {
+  // a gradient id of its OWN for every coin: with one shared id ("g3A") the
+  // browser used the first one in the page — when that copy sat in a hidden
+  // panel the gradient was not drawn and every coin showed white
+  const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const c = LETTERS[k];
   if (!c) return null;
   const fs = c.t.length === 1 ? 17 : 12.5;
-  const id = `g3${k}`;
+  const id = `g3${k}${uid}`;
   return (
     <Ring size={size} title={ROLE_NAME[k]} glow={c.glow}>
       <svg viewBox="0 0 40 40" width="100%" height="100%" aria-label={ROLE_NAME[k]} role="img">
