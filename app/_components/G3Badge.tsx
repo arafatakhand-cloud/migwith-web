@@ -8,6 +8,9 @@ import { useId, useState } from "react";
 // same everywhere (room enter/left lines, the people list, profile, Feed). Other
 // badges (Color Shop) keep their uploaded picture, else their emoji, in the ring.
 
+/** 📏 one size for every badge, everywhere (miglife: "সব যায়গায় সমান") */
+export const G3_SIZE = "22px";
+
 type Letter = { t: string; outer: string; top: string; bottom: string; ring: string; fg?: string; glow: string };
 // deep colours + a coloured glow (miglife: "আরো উজ্জ্বল", then "গাঢ়")
 const LETTERS: Record<string, Letter> = {
@@ -40,7 +43,7 @@ function Ring({ size, title, glow, children }: { size: string; title?: string; g
 }
 
 /** A role letter coin (A / S / MT / CR / M). */
-export function G3Letter({ k, size = "1.45em" }: { k: string; size?: string }) {
+export function G3Letter({ k, size = G3_SIZE }: { k: string; size?: string }) {
   // a gradient id of its OWN for every coin: with one shared id ("g3A") the
   // browser used the first one in the page — when that copy sat in a hidden
   // panel the gradient was not drawn and every coin showed white
@@ -86,7 +89,7 @@ export function G3Letter({ k, size = "1.45em" }: { k: string; size?: string }) {
 
 const failed = new Set<string>();
 /** Any other badge: its uploaded picture (round) or its emoji, in the ring. */
-export function G3Pic({ src, emoji, size = "1.45em" }: { src?: string; emoji: string; size?: string }) {
+export function G3Pic({ src, emoji, size = G3_SIZE }: { src?: string; emoji: string; size?: string }) {
   const [bad, setBad] = useState(() => !!src && failed.has(src));
   return (
     <Ring size={size}>
@@ -108,7 +111,7 @@ export function G3Pic({ src, emoji, size = "1.45em" }: { src?: string; emoji: st
 }
 
 /** The right G3 badge for a badge emoji: a letter coin for a role, else picture / emoji. */
-export function G3BadgeFor({ emoji, images, size }: { emoji: string; images?: Record<string, string>; size?: string }) {
+export function G3BadgeFor({ emoji, images, size = G3_SIZE }: { emoji: string; images?: Record<string, string>; size?: string }) {
   const k = g3LetterFor(emoji);
   if (k) return <G3Letter k={k} size={size} />;
   const src = images?.[emoji] ?? images?.[emoji.replace(/️/g, "")];

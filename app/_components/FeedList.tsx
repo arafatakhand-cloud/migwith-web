@@ -2349,7 +2349,7 @@ function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, wh
               )}
             </span>
             {/* 🪙 G3 role coin (A / S / MT / CR / M) or the badge picture / emoji in the ring */}
-            {!role && roleBadge ? <G3BadgeFor emoji={roleBadge} images={roleImg ? { [roleBadge]: roleImg } : {}} size="18px" /> : null}
+            {!role && roleBadge ? <G3BadgeFor emoji={roleBadge} images={roleImg ? { [roleBadge]: roleImg } : {}} /> : null}
           </div>
           <div className="truncate text-[11.5px] font-semibold text-[#7C88A6]">
             {p.place && (

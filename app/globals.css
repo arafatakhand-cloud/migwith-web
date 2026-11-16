@@ -1664,14 +1664,14 @@ html[data-theme="dark_night"] .lb-glass {
   position: relative;
   display: inline-block;
   flex: none;
-  width: var(--g3, 1.45em);
-  height: var(--g3, 1.45em);
+  width: var(--g3, 22px);
+  height: var(--g3, 22px);
   margin: 0 2px;
   padding: 2px;
   border-radius: 9999px;
   vertical-align: middle;
   background: linear-gradient(145deg, #ffffff, #eef3fb 50%, #b8c7dd);
-  box-shadow: 0 2px 4px rgba(11, 42, 91, 0.3), 0 0 7px color-mix(in srgb, var(--g3glow, transparent) 65%, transparent);
+  box-shadow: 0 1px 3px rgba(11, 42, 91, 0.3), 0 0 3px color-mix(in srgb, var(--g3glow, transparent) 55%, transparent);
 }
 .g3-badge .g3-in {
   display: flex;
@@ -1685,7 +1685,7 @@ html[data-theme="dark_night"] .lb-glass {
   box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.3);
 }
 .g3-badge .g3-in svg { display: block; }
-.g3-badge .g3-emo { font-size: calc(var(--g3, 1.45em) * 0.6); line-height: 1; }
+.g3-badge .g3-emo { font-size: calc(var(--g3, 22px) * 0.7); line-height: 1; }
 .g3-badge .g3-shine {
   position: absolute;
   left: 22%;

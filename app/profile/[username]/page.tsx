@@ -725,7 +725,7 @@ export default function ProfilePage() {
                   className={`shrink-0 text-[13px] font-bold ${team ? "rounded-full bg-white/90 px-2 py-0.5 shadow-sm" : ""}`}
                   style={{ color: shownRole.color }}
                 >
-                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} size="22px" />{" "}
+                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />{" "}
                   {shownRole.label}
                 </span>
               )}
@@ -911,7 +911,7 @@ export default function ProfilePage() {
                   className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-bold shadow-sm"
                   style={{ color: shownRole.color }}
                 >
-                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} size="20px" />
+                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
                   {shownRole.label}
                 </span>
               )}
