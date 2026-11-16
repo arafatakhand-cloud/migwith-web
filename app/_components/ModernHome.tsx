@@ -148,7 +148,7 @@ function roleInk(label: string): string {
   if (r === "merchant") return "#9C27B0";
   if (r === "mentor") return "#E0102F";
   // (Founder stays the plain blue, like a normal user)
-  if (r === "admin" || r === "administrator") return "#B8900A";
+  if (r === "admin" || r === "administrator") return "#FFBF00";
   if (r === "staff") return "#1FA80E";
   if (r === "elite" || r === "elite user") return "#0097A7";
   if (r === "country rep") return "#9A6E52";

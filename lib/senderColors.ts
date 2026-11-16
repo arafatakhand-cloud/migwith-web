@@ -42,7 +42,7 @@ function roleColor(role: string): string {
     case "admin":
     case "administrator":
     case "superadmin":
-      return "#FFD600";
+      return "#FFBF00";
     case "staff":
       return "#25A60D"; // Staff = deep green, same as the app (the neon one was hard to read);
     case "mentor":
