@@ -37,18 +37,19 @@ export function SupporterJersey({ team, size = 18, depth = false }: { team: Supp
   const fs = L <= 2 ? 10.5 : L === 3 ? 8.6 : L === 4 ? 7.2 : 6.4;
   const tl = L <= 2 ? 11 : L === 3 ? 15.5 : L === 4 ? 17 : 18;
   return (
-    <svg width={size} height={size} viewBox={depth ? "0 0 40 52" : "0 0 40 46"} className="inline-block shrink-0 align-middle" aria-hidden>
-      {/* 🛡 6D: three darker shields under it (the Lobby card's crest) */}
+    <svg width={size} height={size} viewBox={depth ? "-2 0 44 56" : "0 0 40 46"} className="inline-block shrink-0 align-middle" aria-hidden>
+      {/* 🛡 6D: a soft shadow and three darker shields stacked under the crest */}
+      {depth && <ellipse cx="20" cy="52" rx="15" ry="2.6" fill="rgba(0,0,0,.22)" />}
       {depth &&
         [3, 2, 1].map((i) => (
-          <path key={i} d={SHIELD} transform={`translate(0 ${i * 1.7})`} fill={darker(light ? team.text : team.c1, 0.18 * i)} />
+          <path key={i} d={SHIELD} transform={`translate(0 ${i * 2.3})`} fill={darker(light ? team.text : team.c1, 0.16 + 0.14 * i)} />
         ))}
       <defs>
         <clipPath id={id}>
           <path d={SHIELD} />
         </clipPath>
         <linearGradient id={`${id}g`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fff" stopOpacity=".35" />
+          <stop offset="0" stopColor="#fff" stopOpacity={depth ? ".5" : ".35"} />
           <stop offset=".5" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
       </defs>
