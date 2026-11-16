@@ -4,7 +4,7 @@ import { useState } from "react";
 
 // 🪙 G3 badges (miglife, 2026-11): every badge is a round coin in a silver ring
 // with a soft shine. Role badges are letters — A Admin (gold) · S Staff (blue) ·
-// MT Mentor (red) · CR Country Representative (teal) · M Merchant (purple) — the
+// MT Mentor (red) · CR Country Representative (brown) · M Merchant (purple) — the
 // same everywhere (room enter/left lines, the people list, profile, Feed). Other
 // badges (Color Shop) keep their uploaded picture, else their emoji, in the ring.
 
@@ -13,7 +13,7 @@ const LETTERS: Record<string, Letter> = {
   A: { t: "A", outer: "#FFD54A", top: "#FFB300", bottom: "#F57C00", ring: "#FFF3B0" },
   S: { t: "S", outer: "#4ADE80", top: "#2EBD3A", bottom: "#25A60D", ring: "#DCFCE7" },
   MT: { t: "MT", outer: "#FF8A80", top: "#E53935", bottom: "#B71C1C", ring: "#FFE0DE" },
-  CR: { t: "CR", outer: "#5EEAD4", top: "#14B8A6", bottom: "#0F766E", ring: "#CCFBF1" },
+  CR: { t: "CR", outer: "#D9A066", top: "#B7791F", bottom: "#9E6011", ring: "#F5E1C8" },
   M: { t: "M", outer: "#C084FC", top: "#8B3FE8", bottom: "#5B21B6", ring: "#E9D5FF" },
 };
 /** role badge emoji → its letter coin */
