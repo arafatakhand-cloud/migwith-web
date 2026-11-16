@@ -100,18 +100,38 @@ const LUCKY_PINK_MS = 3 * 60 * 60 * 1000;
 // written inside one of those 3-hour windows stays pink, even after someone else
 // becomes Lucky User; lines outside them are the person's normal colour.
 const luckyHistory = new Map<string, number[]>();
+// 🍀 Smart Lucky User (2026-11): "pink ID until the next Lucky User" — every
+// announcement in time order, so a line is pink when the latest announcement
+// before it named this person
+const luckyAll: { s: number; k: string; tillNext: boolean }[] = [];
 export function noteLuckyAnnouncements(lines: { text: string; createdAtMs: number }[]) {
   for (const l of lines) {
     const m = /Congratulations (.+?)! You are the Lucky User/i.exec(l.text);
     if (!m || !l.createdAtMs) continue;
     const k = m[1].trim().toLowerCase();
+    const tillNext = /until the next Lucky User/i.test(l.text);
+    if (tillNext) {
+      if (!luckyAll.some((x) => x.s === l.createdAtMs && x.k === k)) {
+        luckyAll.push({ s: l.createdAtMs, k, tillNext });
+        luckyAll.sort((a, b) => a.s - b.s);
+      }
+      continue;
+    }
     const starts = luckyHistory.get(k) ?? [];
     if (!starts.includes(l.createdAtMs)) starts.push(l.createdAtMs);
     luckyHistory.set(k, starts);
+    if (!luckyAll.some((x) => x.s === l.createdAtMs && x.k === k)) {
+      luckyAll.push({ s: l.createdAtMs, k, tillNext: false });
+      luckyAll.sort((a, b) => a.s - b.s);
+    }
   }
 }
 function wasLuckyAt(name: string, atMs: number): boolean {
-  const starts = luckyHistory.get(name.trim().toLowerCase());
+  const key = name.trim().toLowerCase();
+  let latest: (typeof luckyAll)[number] | undefined;
+  for (const x of luckyAll) if (x.s <= atMs) latest = x;
+  if (latest && latest.tillNext && latest.k === key) return true;
+  const starts = luckyHistory.get(key);
   return !!starts && starts.some((s) => atMs >= s && atMs < s + LUCKY_PINK_MS);
 }
 
