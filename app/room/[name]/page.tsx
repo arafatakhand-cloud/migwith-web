@@ -3617,23 +3617,18 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
     clean = clean.slice(shower[0].length - "*GIFT SHOWER*".length);
   }
   const pushSegment = (seg: string) => {
-    // 🎁 6D (miglife's pick "A"): the gift itself stands up — darker layers + a soft shadow under it
     if (giftIcon && seg.includes(giftIcon)) {
       seg.split(giftIcon).forEach((piece, i) => {
         if (i > 0)
           out.push(
-            giftImage ? (
-              <GiftImg
-                key={`g${k++}`}
-                src={giftImage}
-                fallback={<span className="gift-6d">{giftIcon}</span>}
-                className="gift-6d mx-0.5 inline h-[1.4em] w-[1.4em] object-contain align-middle"
-              />
-            ) : (
-              <span key={`g${k++}`} className="gift-6d mx-0.5">
-                {giftIcon}
-              </span>
-            )
+            // 🎁 B (miglife): the gift bigger, on a white 6D tile, so its picture can be made out
+            <span key={`g${k++}`} className="gift-tile">
+              {giftImage ? (
+                <GiftImg src={giftImage} fallback={<span className="gift-tile-emo">{giftIcon}</span>} className="h-[2.4em] w-[2.4em] object-contain" />
+              ) : (
+                <span className="gift-tile-emo">{giftIcon}</span>
+              )}
+            </span>
           );
         if (piece) out.push(...emotesIn(piece));
       });
