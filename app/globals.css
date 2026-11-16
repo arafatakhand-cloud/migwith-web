@@ -1719,3 +1719,7 @@ html[data-theme="dark_night"] .lb-glass {
 }
 .gift-tile img { border-radius: 0.45em; }
 .gift-tile-emo { display: inline-grid; place-items: center; font-size: 1.7em; width: 1.41em; height: 1.41em; line-height: 1; }
+/* 💭 /feel line (miglife's pick "B"): a smaller tile, so the line and its message stay together */
+.gift-tile-sm { margin: 0 0.2em 0.3em; padding: 0.1em; border-radius: 0.45em; box-shadow: 0 2px 0 #c9d6ea, 0 3px 0 #b3c3dc, 0 4px 0 #9fb2cf, 0 6px 6px rgba(0, 0, 0, 0.18); }
+.gift-tile-sm img { width: 1.6em !important; height: 1.6em !important; border-radius: 0.35em; }
+.gift-tile-sm .gift-tile-emo { font-size: 1.15em; }
