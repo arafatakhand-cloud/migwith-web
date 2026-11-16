@@ -11,7 +11,7 @@ import { useState } from "react";
 type Letter = { t: string; outer: string; top: string; bottom: string; ring: string };
 const LETTERS: Record<string, Letter> = {
   A: { t: "A", outer: "#FFD54A", top: "#FFB300", bottom: "#F57C00", ring: "#FFF3B0" },
-  S: { t: "S", outer: "#64B5F6", top: "#2F80ED", bottom: "#1D4ED8", ring: "#DBEAFE" },
+  S: { t: "S", outer: "#4ADE80", top: "#2EBD3A", bottom: "#25A60D", ring: "#DCFCE7" },
   MT: { t: "MT", outer: "#FF8A80", top: "#E53935", bottom: "#B71C1C", ring: "#FFE0DE" },
   CR: { t: "CR", outer: "#5EEAD4", top: "#14B8A6", bottom: "#0F766E", ring: "#CCFBF1" },
   M: { t: "M", outer: "#C084FC", top: "#8B3FE8", bottom: "#5B21B6", ring: "#E9D5FF" },

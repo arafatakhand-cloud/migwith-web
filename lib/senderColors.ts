@@ -17,9 +17,9 @@ export const SHOP_TEXT_COLORS: Record<string, string> = {
   king: "#12AFC7",
   queen: "#E91E8C",
   mafia: "#8B5A5A",
-  vip: "#00A383", // ⭐ Star: emerald (the old red-pink looked like Mentor red)
-  diamond: "#12AFC7",
-  premium: "#8BC34A",
+  vip: "#1E40AF", // ⭐ Star: sapphire blue (no green in Style Studio — green = Staff)
+  diamond: "#6B8299", // 💎 Platinum: silver (was the same cyan as Emperor)
+  premium: "#5B4BDB", // 🏵️ Royal: indigo (was light green = looked like Staff)
   supporter: "#29B6F6",
   streamer: "#C2185B",
 };
