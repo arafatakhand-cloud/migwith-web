@@ -1552,7 +1552,7 @@ html.is-swiping :is([data-swipe-body], [data-shell-copy]) * {
    on the light chat backgrounds (where a neon / pale name is hard to read). */
 .chat-name { color: var(--name-dark); }
 html:not([data-theme="dark_night"]) .chat-name { color: var(--name-light); }
-/* Admin name: plain yellow #FFD600, no border (miglife picked "Y1" — the brown edge looked blurry) */
+/* Admin name: plain amber #FFBF00, no border (miglife picked "Y1" — the brown edge looked blurry) */
 .admin-edge { -webkit-text-stroke: 0; text-shadow: none; }
 
 /* 🌙 Dark Night: the profile page is a lighter slate (not near-black), and its

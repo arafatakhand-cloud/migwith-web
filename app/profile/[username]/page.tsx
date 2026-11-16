@@ -104,7 +104,7 @@ function ageFrom(dob: string): number {
 function roleInfo(raw: string): { label: string; color: string; icon?: string } | null {
   const key = raw.trim().toLowerCase().replace(/[- ]/g, "_");
   if (["owner", "ceo", "executive", "executive_board"].includes(key)) return { label: "Owner", color: "#D4AF37" };
-  if (["admin", "administrator", "superadmin"].includes(key)) return { label: "Admin", color: "#CBA400" };
+  if (["admin", "administrator", "superadmin"].includes(key)) return { label: "Admin", color: "#FFBF00" };
   if (key === "staff") return { label: "Staff", color: "#1E9E4F" };
   if (key === "mentor") return { label: "Mentor", color: "#E0303F" };
   if (key === "merchant") return { label: "Merchant", color: "#9C27B0" };
