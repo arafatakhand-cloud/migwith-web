@@ -25,6 +25,9 @@ export type VideoEdit = {
   musicStartSec?: number;
   musicVol?: number;
   videoVol?: number;
+  /** 🎞 the chosen quality (lib/videoQuality.ts): the most bits per second and the short side */
+  maxBits?: number;
+  shortSide?: number;
 };
 
 export const editChanged = (e: VideoEdit) =>
@@ -110,10 +113,11 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
     await once(v, "loadedmetadata");
     const vw = v.videoWidth || e.videoW || 1280;
     const vh = v.videoHeight || e.videoH || 720;
-    // short side 720 (or 480 for long parts), even numbers
+    // 📶 Q3 "light" (miglife): short side 480, ~0.8 Mbps — a 30 s clip is ~3.5 MB and
+    // plays smoothly on mobile data (even numbers)
     const secs = Math.max(1, e.endSec - e.startSec);
-    const bits = Math.min(4_000_000, Math.max(500_000, Math.floor((45 * 1024 * 1024 * 8) / secs) - 128_000));
-    const short = Math.min(bits >= 1_400_000 ? 720 : 480, Math.min(vw, vh));
+    const bits = Math.min(e.maxBits || 800_000, Math.max(350_000, Math.floor((45 * 1024 * 1024 * 8) / secs) - 96_000));
+    const short = Math.min(e.shortSide || 480, Math.min(vw, vh));
     const scale = short / Math.min(vw, vh);
     const W = Math.floor((vw * scale) / 2) * 2;
     const H = Math.floor((vh * scale) / 2) * 2;
@@ -173,7 +177,7 @@ export async function renderEditedVideo(file: File, e: VideoEdit, onProgress: (p
     } else {
       v.muted = true;
     }
-    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bits, audioBitsPerSecond: 128_000 });
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bits, audioBitsPerSecond: 96_000 });
     const chunks: Blob[] = [];
     rec.ondataavailable = (ev) => ev.data.size && chunks.push(ev.data);
     const stopped = new Promise<void>((res) => (rec.onstop = () => res()));
