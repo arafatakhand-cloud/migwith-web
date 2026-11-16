@@ -268,7 +268,10 @@ export function VideoEditor({
     songRef.current?.pause();
     vid.current?.pause();
     setPlaying(false);
-    if (!editChanged(edit)) return onDone(file, dur);
+    // 📶 Q3: an unedited video goes as it is only when it is already light
+    // (≤ ~1.2 Mbps); a heavy phone clip is made 480p · ~0.8 Mbps first
+    const light = dur > 0 && (file.size * 8) / dur <= 1_200_000;
+    if (!editChanged(edit) && light) return onDone(file, dur);
     setErr("");
     setMaking(0);
     try {
