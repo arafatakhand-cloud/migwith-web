@@ -3,18 +3,20 @@
 import { useState } from "react";
 
 // 🪙 G3 badges (miglife, 2026-11): every badge is a round coin in a silver ring
-// with a soft shine. Role badges are letters — A Admin (gold) · S Staff (blue) ·
+// with a soft shine. Role badges are letters — A Admin (gold) · S Staff (green) · EB Executive Board (black, gold letters) ·
 // MT Mentor (red) · CR Country Representative (brown) · M Merchant (purple) — the
 // same everywhere (room enter/left lines, the people list, profile, Feed). Other
 // badges (Color Shop) keep their uploaded picture, else their emoji, in the ring.
 
-type Letter = { t: string; outer: string; top: string; bottom: string; ring: string };
+type Letter = { t: string; outer: string; top: string; bottom: string; ring: string; fg?: string; glow: string };
+// deep colours + a coloured glow (miglife: "আরো উজ্জ্বল", then "গাঢ়")
 const LETTERS: Record<string, Letter> = {
-  A: { t: "A", outer: "#FFD54A", top: "#FFB300", bottom: "#F57C00", ring: "#FFF3B0" },
-  S: { t: "S", outer: "#4ADE80", top: "#2EBD3A", bottom: "#25A60D", ring: "#DCFCE7" },
-  MT: { t: "MT", outer: "#FF8A80", top: "#E53935", bottom: "#B71C1C", ring: "#FFE0DE" },
-  CR: { t: "CR", outer: "#D9A066", top: "#B7791F", bottom: "#9E6011", ring: "#F5E1C8" },
-  M: { t: "M", outer: "#C084FC", top: "#8B3FE8", bottom: "#5B21B6", ring: "#E9D5FF" },
+  A: { t: "A", outer: "#FFD54F", top: "#F59E0B", bottom: "#E07B00", ring: "#FFF3B0", glow: "#FFC107" },
+  S: { t: "S", outer: "#5BD96B", top: "#22A314", bottom: "#167A08", ring: "#DCFCE7", glow: "#3EE04F" },
+  MT: { t: "MT", outer: "#FF6B6B", top: "#E0102A", bottom: "#B80016", ring: "#FFE0DE", glow: "#FF5252" },
+  CR: { t: "CR", outer: "#D6964A", top: "#9A5A12", bottom: "#6E3E06", ring: "#F5E1C8", glow: "#E39B3C" },
+  M: { t: "M", outer: "#C77DFF", top: "#8E2DC8", bottom: "#6A1B9A", ring: "#E9D5FF", glow: "#C266FF" },
+  EB: { t: "EB", outer: "#4B5563", top: "#1F2937", bottom: "#0B0F19", ring: "#FFE066", fg: "#FFE066", glow: "#9CA3AF" },
 };
 /** role badge emoji → its letter coin */
 const ROLE_LETTER: Record<string, string> = {
@@ -23,13 +25,14 @@ const ROLE_LETTER: Record<string, string> = {
   "💼": "MT", "🎓": "MT",
   "🌍": "CR",
   "🛒": "M",
+  "🏛️": "EB", "🏛": "EB",
 };
 export const g3LetterFor = (emoji: string): string | undefined => ROLE_LETTER[emoji] ?? ROLE_LETTER[emoji.replace(/️/g, "")];
-const ROLE_NAME: Record<string, string> = { A: "Administrator", S: "Staff", MT: "Mentor", CR: "Country Representative", M: "Merchant" };
+const ROLE_NAME: Record<string, string> = { A: "Administrator", S: "Staff", MT: "Mentor", CR: "Country Representative", M: "Merchant", EB: "Executive Board" };
 
-function Ring({ size, title, children }: { size: string; title?: string; children: React.ReactNode }) {
+function Ring({ size, title, glow, children }: { size: string; title?: string; glow?: string; children: React.ReactNode }) {
   return (
-    <span className="g3-badge" style={{ ["--g3" as string]: size }} title={title}>
+    <span className="g3-badge" style={{ ["--g3" as string]: size, ...(glow ? { ["--g3glow" as string]: glow } : {}) }} title={title}>
       <span className="g3-in">{children}</span>
       <i className="g3-shine" />
     </span>
@@ -43,7 +46,7 @@ export function G3Letter({ k, size = "1.45em" }: { k: string; size?: string }) {
   const fs = c.t.length === 1 ? 17 : 12.5;
   const id = `g3${k}`;
   return (
-    <Ring size={size} title={ROLE_NAME[k]}>
+    <Ring size={size} title={ROLE_NAME[k]} glow={c.glow}>
       <svg viewBox="0 0 40 40" width="100%" height="100%" aria-label={ROLE_NAME[k]} role="img">
         <defs>
           <linearGradient id={`${id}o`} x1="0" y1="0" x2="0" y2="1">
@@ -63,7 +66,7 @@ export function G3Letter({ k, size = "1.45em" }: { k: string; size?: string }) {
           textAnchor="middle"
           fontSize={fs}
           fontWeight={900}
-          fill="#FFF"
+          fill={c.fg ?? "#FFF"}
           fontFamily="Arial, sans-serif"
           letterSpacing="-0.5"
           stroke="rgba(0,0,0,.25)"
