@@ -40,6 +40,7 @@ import {
   leaveDocId,
   newVisitId,
   presenceBadgesForDoc,
+  roleBadgesFor,
   presenceLine,
   roomHref,
   resolveRoomDescription,
@@ -192,7 +193,7 @@ type ChatMessage = SessionMessage;
 // 🚫 the reject toasts already shown (kept across tab switches, so a tab coming back never repeats one)
 const shownRejectIds = new Set<string>();
 
-type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number; parkedUntil?: number };
+type RoomUser = { uid: string; username: string; level: number; lastSeenMs: number; parkedUntil?: number; badges?: string[] };
 
 // invisible: logged in as Invisible (users.isInvisible) — no presence doc,
 // no heartbeat, no "has entered/left". quiet: that, or Presence Status
@@ -3099,8 +3100,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 return (
                   <li key={u.uid} className="relative">
                     <div className="flex items-center gap-2 px-3.5 py-[9px]">
-                      <span className="min-w-0 flex-1 truncate text-[13.5px]" style={{ color: owner ? "#E0388A" : inkOnWhite(colorOf(u.username)) }}>
-                        {u.username}
+                      <span className="flex min-w-0 flex-1 items-center gap-0.5">
+                        <span className="min-w-0 truncate text-[13.5px]" style={{ color: owner ? "#E0388A" : inkOnWhite(colorOf(u.username)) }}>
+                          {u.username}
+                        </span>
+                        {/* 🪙 G3 badges: role coins (A / S / MT / CR / M / EB) + Style Studio badges, like the app */}
+                        {[...new Set(u.badges?.length ? u.badges : roleBadgesFor(cachedRoleOf(u.username)))].slice(0, 4).map((b) => (
+                          <G3BadgeFor key={b} emoji={b} images={badgeImages} size="20px" />
+                        ))}
                       </span>
                       <button
                         type="button"
@@ -4526,6 +4533,8 @@ function presenceList(docs: QueryDocumentSnapshot[]) {
       // /park (paid): the spot stays listed until parkedUntil passes, however
       // old lastSeen is — the same rule as the app's list and the server.
       parkedUntil: Number(d.get("parkedUntil") || 0),
+      // 🪙 role + Style Studio badges (written on the presence spot by the app / web)
+      badges: (Array.isArray(d.get("shopBadges")) ? (d.get("shopBadges") as unknown[]) : []).map(String).filter(Boolean),
     }));
 }
 
