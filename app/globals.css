@@ -1670,8 +1670,8 @@ html[data-theme="dark_night"] .lb-glass {
   padding: 2px;
   border-radius: 9999px;
   vertical-align: middle;
-  background: linear-gradient(145deg, #ffffff, #c9d6ea);
-  box-shadow: 0 2px 5px rgba(11, 42, 91, 0.35);
+  background: linear-gradient(145deg, #ffffff, #eef3fb 50%, #b8c7dd);
+  box-shadow: 0 2px 4px rgba(11, 42, 91, 0.3), 0 0 7px color-mix(in srgb, var(--g3glow, transparent) 65%, transparent);
 }
 .g3-badge .g3-in {
   display: flex;
@@ -1694,5 +1694,5 @@ html[data-theme="dark_night"] .lb-glass {
   height: 28%;
   border-radius: 9999px;
   pointer-events: none;
-  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%);
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%);
 }
