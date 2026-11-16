@@ -1696,3 +1696,10 @@ html[data-theme="dark_night"] .lb-glass {
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 70%);
 }
+
+/* 🎁 Gift icons in room lines, 6D (miglife's pick "A"): darker layers + a soft shadow under the gift */
+.gift-6d {
+  display: inline-block;
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.28)) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.24)) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.2))
+    drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
+}
