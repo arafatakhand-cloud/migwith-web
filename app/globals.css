@@ -1703,3 +1703,19 @@ html[data-theme="dark_night"] .lb-glass {
   filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.28)) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.24)) drop-shadow(0 1px 0 rgba(0, 0, 0, 0.2))
     drop-shadow(0 4px 4px rgba(0, 0, 0, 0.25));
 }
+
+/* 🎁 Gift in a room line (miglife's pick "B"): bigger, on a white 6D tile with
+   blue-grey layers under it, so a detailed gift picture can be made out */
+.gift-tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0.15em 0.25em 0.5em;
+  padding: 0.18em;
+  border-radius: 0.6em;
+  background: #fff;
+  vertical-align: middle;
+  box-shadow: 0 2px 0 #c9d6ea, 0 4px 0 #b3c3dc, 0 6px 0 #9fb2cf, 0 8px 8px rgba(0, 0, 0, 0.2);
+}
+.gift-tile img { border-radius: 0.45em; }
+.gift-tile-emo { display: inline-grid; place-items: center; font-size: 1.7em; width: 1.41em; height: 1.41em; line-height: 1; }
