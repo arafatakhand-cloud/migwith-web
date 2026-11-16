@@ -1,5 +1,6 @@
 "use client";
 
+import { G3BadgeFor } from "../../_components/G3Badge";
 import { useEffect, useState, type CSSProperties } from "react";
 import { SupporterJersey } from "../../_components/SupporterBadge";
 import { ProfileSongChip } from "../../_components/ProfileSongs";
@@ -724,12 +725,7 @@ export default function ProfilePage() {
                   className={`shrink-0 text-[13px] font-bold ${team ? "rounded-full bg-white/90 px-2 py-0.5 shadow-sm" : ""}`}
                   style={{ color: shownRole.color }}
                 >
-                  {roleBadgeUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={roleBadgeUrl} alt="" className="mr-1 inline-block h-5 w-5 rounded-full object-cover align-[-4px]" />
-                  ) : (
-                    <>{roleEmoji} </>
-                  )}
+                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} size="22px" />{" "}
                   {shownRole.label}
                 </span>
               )}
@@ -915,12 +911,7 @@ export default function ProfilePage() {
                   className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-bold shadow-sm"
                   style={{ color: shownRole.color }}
                 >
-                  {roleBadgeUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={roleBadgeUrl} alt="" className="inline-block h-[18px] w-[18px] rounded-full object-cover" />
-                  ) : (
-                    <>{roleEmoji}</>
-                  )}
+                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} size="20px" />
                   {shownRole.label}
                 </span>
               )}

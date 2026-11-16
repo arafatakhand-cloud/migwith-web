@@ -1658,3 +1658,41 @@ html[data-theme="dark_night"] .lb-glass {
 
 /* ❤️ story reactions open above the heart (StoryRow, M1) */
 @keyframes story-bloom { from { opacity: 0; transform: translateY(14px) scale(.6); } to { opacity: 1; transform: none; } }
+
+/* 🪙 G3 badges (app/_components/G3Badge.tsx): a round coin in a silver ring with a shine */
+.g3-badge {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: var(--g3, 1.45em);
+  height: var(--g3, 1.45em);
+  margin: 0 2px;
+  padding: 2px;
+  border-radius: 9999px;
+  vertical-align: middle;
+  background: linear-gradient(145deg, #ffffff, #c9d6ea);
+  box-shadow: 0 2px 5px rgba(11, 42, 91, 0.35);
+}
+.g3-badge .g3-in {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #ffffff, #e3eaf6);
+  box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.3);
+}
+.g3-badge .g3-in svg { display: block; }
+.g3-badge .g3-emo { font-size: calc(var(--g3, 1.45em) * 0.6); line-height: 1; }
+.g3-badge .g3-shine {
+  position: absolute;
+  left: 22%;
+  top: 12%;
+  width: 48%;
+  height: 28%;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 70%);
+}
