@@ -2881,14 +2881,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     {u.username}
                   </Link>
                   {/* 🪙 G3 role coins: CR Country Rep · A Admin · S Staff · M Merchant · MT Mentor */}
-                  {cachedRoleOf(u.username) === "country_representative" && <G3Letter k="CR" size="20px" />}
-                  {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && <G3Letter k="A" size="20px" />}
+                  {cachedRoleOf(u.username) === "country_representative" && <G3Letter k="CR" />}
+                  {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && <G3Letter k="A" />}
                   {(() => {
                     // 🛠️ Staff · 🛒 Merchant · 💼 Mentor: miGlife's uploaded badge picture, else the emoji
                     const role = String(cachedRoleOf(u.username) ?? "").toLowerCase();
                     const badge = role === "staff" ? ["🛠️", "Staff"] : role === "merchant" ? ["🛒", "Merchant"] : role === "mentor" ? ["💼", "Mentor"] : null;
                     if (!badge) return null;
-                    return <G3BadgeFor emoji={badge[0]} images={badgeImages} size="20px" />;
+                    return <G3BadgeFor emoji={badge[0]} images={badgeImages} />;
                   })()}
                   {(() => {
                     const team = supporterTeamOf(u.username);
@@ -2896,13 +2896,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   })()}
                   {(() => {
                     const k = u.username.toLowerCase();
-                    if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <G3Pic emoji="👑" size="20px" />;
-                    if (roomInfo.superMods.includes(k)) return <G3Pic emoji="🌟" size="20px" />;
+                    if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <G3Pic emoji="👑" />;
+                    if (roomInfo.superMods.includes(k)) return <G3Pic emoji="🌟" />;
                     if (roomInfo.moderators.includes(k))
                       return (
                         <span
                           title="Moderator"
-                          className="pointer-events-none inline-grid h-[18px] min-w-[18px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#FFB74D] to-[#F57C00] px-1.5 text-[10px] font-black leading-none text-white shadow-[0_1px_0_#C25E00,inset_0_1px_0_rgba(255,255,255,.45)]"
+                          className="pointer-events-none inline-grid h-[22px] min-w-[22px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#FFB74D] to-[#F57C00] px-1.5 text-[11px] font-black leading-none text-white shadow-[0_1px_0_#C25E00,inset_0_1px_0_rgba(255,255,255,.45)]"
                         >
                           M
                         </span>
@@ -3106,7 +3106,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                         </span>
                         {/* 🪙 G3 badges: role coins (A / S / MT / CR / M / EB) + Style Studio badges, like the app */}
                         {[...new Set(u.badges?.length ? u.badges : roleBadgesFor(cachedRoleOf(u.username)))].slice(0, 4).map((b) => (
-                          <G3BadgeFor key={b} emoji={b} images={badgeImages} size="20px" />
+                          <G3BadgeFor key={b} emoji={b} images={badgeImages} />
                         ))}
                       </span>
                       <button
