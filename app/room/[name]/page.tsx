@@ -3605,7 +3605,7 @@ function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
 // swapped for its uploaded picture when there is one. The "<< … >>" around it
 // stays, like the app.
-function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number): ReactNode[] {
+function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number, feel = false): ReactNode[] {
   const out: ReactNode[] = [];
   let k = 0;
   // 💝 every Gift Shower starts with the same 💝 (older lines say 🎁 — and when the
@@ -3622,7 +3622,7 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
         if (i > 0)
           out.push(
             // 🎁 B (miglife): the gift bigger, on a white 6D tile, so its picture can be made out
-            <span key={`g${k++}`} className="gift-tile">
+            <span key={`g${k++}`} className={feel ? "gift-tile gift-tile-sm" : "gift-tile"}>
               {giftImage ? (
                 <GiftImg src={giftImage} fallback={<span className="gift-tile-emo">{giftIcon}</span>} className="h-[2.4em] w-[2.4em] object-contain" />
               ) : (
@@ -3944,7 +3944,7 @@ function MessageRow({
           style={{ fontSize: fontPx, color: giftLineColor(m.id || m.text) }}
         >
           {/* "name[51]" — no space before the level, like the app */}
-          {giftLine(m.text.replace(/ \[/g, "["), gift?.icon || "", gift?.imageUrl || "", fontPx)}
+          {giftLine(m.text.replace(/ \[/g, "["), gift?.icon || "", gift?.imageUrl || "", fontPx, /^feel:/i.test(String(m.giftName || "")))}
         </p>
       </div>
     );
