@@ -1,5 +1,6 @@
 "use client";
 
+import { G3BadgeFor, G3Letter, G3Pic } from "../../_components/G3Badge";
 import type { User } from "firebase/auth";
 import type { EmoteEditorHandle } from "../../_components/EmoteEditor";
 import { createPortal } from "react-dom";
@@ -67,7 +68,7 @@ import {
   removeOpenRoom,
 } from "../../../lib/openRooms";
 import { readRoomSession, writeRoomSession, type SessionMessage } from "../../../lib/roomSession";
-import { COUNTRY_REP_BADGE, cachedRoleOf, luckyColorOf, nameColorWithoutLucky, noteLuckyAnnouncements, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
+import { cachedRoleOf, luckyColorOf, nameColorWithoutLucky, noteLuckyAnnouncements, supporterTeamOf, useSenderColors } from "../../../lib/senderColors";
 import { SupporterBadge } from "../../_components/SupporterBadge";
 import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
@@ -2878,37 +2879,15 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   >
                     {u.username}
                   </Link>
-                  {cachedRoleOf(u.username) === "country_representative" && <span className="shrink-0" title="Country Representative">{COUNTRY_REP_BADGE}</span>}
-                  {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && (
-                    // ⚙️ Admin: miGlife's uploaded admin badge when there is one, else a clear blue
-                    // gear badge (the ⚙️ emoji is a faint grey gear on Windows)
-                    badgeImages["⚙️"] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={badgeImages["⚙️"]} alt="Admin" title="Administrator" className="h-[18px] w-[18px] shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span
-                        title="Administrator"
-                        aria-label="Administrator"
-                        className="pointer-events-none inline-grid h-[18px] w-[18px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#4C8DFF] to-[#1D4ED8] shadow-[0_1px_0_#173EA8,inset_0_1px_0_rgba(255,255,255,.45)]"
-                      >
-                        <svg viewBox="0 0 24 24" width="12" height="12" fill="#fff" aria-hidden>
-                          <path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" />
-                        </svg>
-                      </span>
-                    )
-                  )}
+                  {/* 🪙 G3 role coins: CR Country Rep · A Admin · S Staff · M Merchant · MT Mentor */}
+                  {cachedRoleOf(u.username) === "country_representative" && <G3Letter k="CR" size="20px" />}
+                  {["admin", "administrator"].includes(String(cachedRoleOf(u.username) ?? "").toLowerCase()) && <G3Letter k="A" size="20px" />}
                   {(() => {
                     // 🛠️ Staff · 🛒 Merchant · 💼 Mentor: miGlife's uploaded badge picture, else the emoji
                     const role = String(cachedRoleOf(u.username) ?? "").toLowerCase();
                     const badge = role === "staff" ? ["🛠️", "Staff"] : role === "merchant" ? ["🛒", "Merchant"] : role === "mentor" ? ["💼", "Mentor"] : null;
                     if (!badge) return null;
-                    const pic = badgeImages[badge[0]];
-                    return pic ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={pic} alt={badge[1]} title={badge[1]} className="h-[18px] w-[18px] shrink-0 rounded-full object-cover" />
-                    ) : (
-                      <span className="shrink-0" title={badge[1]}>{badge[0]}</span>
-                    );
+                    return <G3BadgeFor emoji={badge[0]} images={badgeImages} size="20px" />;
                   })()}
                   {(() => {
                     const team = supporterTeamOf(u.username);
@@ -2916,8 +2895,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   })()}
                   {(() => {
                     const k = u.username.toLowerCase();
-                    if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <span title="Room owner">👑</span>;
-                    if (roomInfo.superMods.includes(k)) return <span title="Super Mod">🌟</span>;
+                    if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <G3Pic emoji="👑" size="20px" />;
+                    if (roomInfo.superMods.includes(k)) return <G3Pic emoji="🌟" size="20px" />;
                     if (roomInfo.moderators.includes(k))
                       return (
                         <span
@@ -3501,48 +3480,6 @@ function luxuryLine(text: string): ReactNode | null {
   );
 }
 
-// One badge picture; if it can't load (deleted / bad link / offline), its emoji
-// is shown instead, so the badge never turns into an empty gap. A failed
-// picture is remembered for this visit, so other lines (and redraws) show the
-// emoji straight away instead of trying and blinking again (like the app).
-const failedBadgeUrls = new Set<string>();
-// A badge picture in an enter / left line: its 15 px place is kept from the
-// start (the line never jumps), and the picture fades in once loaded.
-const loadedBadgeUrls = new Set<string>();
-function BadgeImg({ src, emoji }: { src: string; emoji: string }) {
-  const [failed, setFailed] = useState(() => failedBadgeUrls.has(src));
-  const [loaded, setLoaded] = useState(() => loadedBadgeUrls.has(src));
-  if (failed || failedBadgeUrls.has(src)) return <BadgeEmoji emoji={emoji} />;
-  return (
-    // 🔍 bigger (1.5 × the text), a small gap on each side; ⭕ round (miglife's
-    // choice): the picture fills a circle — like the app
-    <span className="relative mx-[2px] inline-block h-[1.5em] w-[1.5em] shrink-0 overflow-hidden rounded-full align-middle" style={{ background: loaded ? undefined : "rgba(0,0,0,.08)" }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={emoji}
-        referrerPolicy="no-referrer"
-        decoding="async"
-        ref={(el) => {
-          // already in the browser's cache: show it at once
-          if (el && el.complete && el.naturalWidth > 0 && !loaded) {
-            loadedBadgeUrls.add(src);
-            setLoaded(true);
-          }
-        }}
-        onLoad={() => {
-          loadedBadgeUrls.add(src);
-          setLoaded(true);
-        }}
-        onError={() => {
-          failedBadgeUrls.add(src);
-          setFailed(true);
-        }}
-        className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-200 ${loaded ? "opacity-100" : "opacity-0"}`}
-      />
-    </span>
-  );
-}
 
 // The badges in "name [12] 🎓 💎 has entered." drawn as miglife's uploaded
 // pictures when there are any (the app's badge_images swap). Every badge —
@@ -3563,22 +3500,14 @@ function withBadgeImages(text: string, images: Record<string, string>): ReactNod
     const at = m.index ?? 0;
     if (at > last) out.push(region.slice(last, at));
     const e = m[0];
-    const src = images[e] ?? images[e.replace(/\uFE0F/g, "")];
-    out.push(src ? <BadgeImg key={from + at} src={src} emoji={e} /> : <BadgeEmoji key={from + at} emoji={e} />);
+    // 🪙 G3: a role is its letter coin (A / S / MT / CR / M); other badges their picture or emoji, in the ring
+    out.push(<G3BadgeFor key={from + at} emoji={e} images={images} />);
     last = at + e.length;
   }
   out.push(region.slice(last), text.slice(to));
   return out;
 }
 
-// A badge with no uploaded picture: the emoji in the same box as BadgeImg.
-function BadgeEmoji({ emoji }: { emoji: string }) {
-  return (
-    <span className="mx-[2px] inline-flex h-[1.5em] w-[1.5em] shrink-0 items-center justify-center align-middle leading-none">
-      <span style={{ fontSize: "1.2em" }}>{emoji}</span>
-    </span>
-  );
-}
 
 // "🎰 Luxury Bet: …" — the bot name in orange, the rest in blue. In the
 // Result, the row made only of character icons (👑👑👸👸🐼🐼) is drawn bigger.

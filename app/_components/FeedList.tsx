@@ -1,5 +1,6 @@
 "use client";
 
+import { G3BadgeFor } from "./G3Badge";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -2347,13 +2348,8 @@ function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, wh
                 </span>
               )}
             </span>
-            {!role &&
-              (roleImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={roleImg} alt="" title="Role badge" className="h-4 w-4 shrink-0 rounded-full object-cover" />
-              ) : roleBadge ? (
-                <span className="shrink-0 text-[12px] leading-none">{roleBadge}</span>
-              ) : null)}
+            {/* 🪙 G3 role coin (A / S / MT / CR / M) or the badge picture / emoji in the ring */}
+            {!role && roleBadge ? <G3BadgeFor emoji={roleBadge} images={roleImg ? { [roleBadge]: roleImg } : {}} size="18px" /> : null}
           </div>
           <div className="truncate text-[11.5px] font-semibold text-[#7C88A6]">
             {p.place && (
