@@ -53,6 +53,10 @@ export function PostGiftSheet({ post, uid, onClose, onSent }: { post: BlogPost; 
           <b className="text-[16px] text-[#0B2A5B]" data-notranslate>🎁 Gift for {post.author}</b>
           <span className="text-[12.5px] font-bold text-[#B8860B]">🪙 {balance === null ? "…" : balance.toLocaleString()}</span>
         </div>
+        {/* 💰 the writer gets half of the gift's price (the server's POST_GIFT_SHARE_PCT) */}
+        <p className="mt-1 text-[12px] font-semibold text-[#0E7A62]" data-notranslate>
+          💰 {post.author} gets 50%{sel ? ` · 🪙 ${Math.floor(sel.price / 2).toLocaleString()}` : ""}
+        </p>
         <div className="mt-3 grid min-h-0 flex-1 grid-cols-4 gap-2 overflow-y-auto pr-0.5">
           {gifts.length === 0 && !err && <p className="col-span-full py-6 text-center text-sm text-[#6B819C]">Loading gifts…</p>}
           {gifts.map((g) => {
