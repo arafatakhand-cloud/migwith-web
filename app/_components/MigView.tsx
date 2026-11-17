@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -127,6 +128,29 @@ export function MigView({
   // 👍 my reaction on each comment, and the comment whose reaction row is open
   const [cReact, setCReact] = useState<Record<string, string>>({});
   const [cPick, setCPick] = useState("");
+  const [giftOpen, setGiftOpen] = useState(false);
+  const [givers, setGivers] = useState(false);
+  // ⭐ Top / 🕒 New / 📜 Old, and the most-liked main comment (2+ reactions)
+  const [cSort, setCSort] = useState<"top" | "new" | "old">("top");
+  const topCommentId = useMemo(() => {
+    let best: BlogComment | null = null;
+    for (const c of comments) if (!c.replyTo && c.likes >= 2 && (!best || c.likes > best.likes)) best = c;
+    return best ? best.id : "";
+  }, [comments]);
+  // 📌 the writer pins one main comment (again = unpin)
+  const pinComment = async (cid: string) => {
+    if (!post) return;
+    const before = post.pinnedComment;
+    setPost({ ...post, pinnedComment: cid });
+    try {
+      await blogCall("pinComment", { postId: post.id, commentId: cid });
+      setToast(cid ? "📌 Comment pinned" : "Unpinned");
+      if (isPrivate) setPrivTick((n) => n + 1);
+    } catch (e) {
+      setPost((p) => (p ? { ...p, pinnedComment: before } : p));
+      setToast(blogError(e));
+    }
+  };
   const holdRef = useRef<number | null>(null);
   const cIds = comments.map((c) => c.id).join(",");
   useEffect(() => {
@@ -558,26 +582,73 @@ export function MigView({
               <span className="ml-auto text-[#6B7FA6]">👁 {blogShort(post.views)} {post.views === 1 ? "view" : "views"}</span>
             )}
           </div>
+          {/* 🎁 gifts on this Mig: 🏆 Top Gifters, and a gift to the writer */}
+          {(post.gifts > 0 || (user && !mine && post.privacy !== "me")) && (
+            <div className="-mx-3 mt-1 flex items-center gap-2 pr-3">
+              <div className="min-w-0 flex-1">{post.gifts > 0 && <PostGiftBar p={post} onOpen={() => setGivers(true)} />}</div>
+              {user && !mine && post.privacy !== "me" && (
+                <button type="button" onClick={() => setGiftOpen(true)} className="mt-2.5 h-9 shrink-0 rounded-[12px] bg-gradient-to-b from-[#FFF8E1] to-[#FFE7A8] px-3.5 text-[13px] font-black text-[#9A6B00] shadow-[0_3px_0_#E8C66A] transition active:translate-y-[2px] active:shadow-[0_1px_0_#E8C66A]">
+                  🎁 Gift
+                </button>
+              )}
+            </div>
+          )}
+          {giftOpen && user && (
+            <PostGiftSheet
+              post={post}
+              uid={user.uid}
+              onClose={() => setGiftOpen(false)}
+              onSent={(icon) => {
+                setToast(`${icon} Gift sent to ${post.author}`);
+                if (isPrivate) setPrivTick((n) => n + 1);
+              }}
+            />
+          )}
+          {givers && <PostGiversSheet post={post} onClose={() => setGivers(false)} onProfile={(n) => router.push(`/profile/${encodeURIComponent(n)}`)} />}
           {reactors && <ReactorsSheet postId={post.id} onClose={() => setReactors(false)} />}
           {viewers && <ViewersSheet postId={post.id} onClose={() => setViewers(false)} />}
 
-          <h3 className="mb-2 mt-3 text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
+          <div className="mb-2 mt-3 flex items-center gap-2">
+            <h3 className="text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
+            {/* ⭐ Top · 🕒 New · 📜 Old (a pinned comment always comes first) */}
+            {comments.length > 1 && (
+              <span className="ml-auto flex gap-1">
+                {(["top", "new", "old"] as const).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setCSort(k)}
+                    className={`rounded-full px-2.5 py-1 text-[11.5px] font-bold ${cSort === k ? "bg-[#0B2A5B] text-white" : "bg-[#EEF3FA] text-[#4A6280]"}`}
+                  >
+                    {k === "top" ? "⭐ Top" : k === "new" ? "🕒 New" : "📜 Old"}
+                  </button>
+                ))}
+              </span>
+            )}
+          </div>
           <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
             {comments.length === 0 && <p className="text-[13px] text-[#6B7FA6]">No comments yet. Say something nice!</p>}
-            {comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())).map((c) => {
+            {orderComments(comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())), cSort, post.pinnedComment).map((c) => {
               const cc = colorOf(c.author) || "#2563EB";
               const canDel = !!user && (c.authorUid === user.uid || mine || canMod);
               const isReply = !!c.replyTo;
+              const pinned = !isReply && c.id === post.pinnedComment;
+              const top = !isReply && !pinned && c.id === topCommentId;
               return (
                 <div key={c.id} className={`flex gap-2 ${isReply ? "ml-9" : ""}`}>
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: cc }}>
                     {c.author.slice(0, 1).toUpperCase()}
                   </span>
                   <div className="relative min-w-0">
-                  <div className="relative min-w-0 rounded-xl bg-white px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)]">
-                    <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
-                      {c.author}
-                    </Link>
+                  <div className={`relative min-w-0 rounded-xl px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)] ${pinned ? "border-[1.5px] border-[#9BE3CC] bg-[#ECFBF6]" : top ? "border-[1.5px] border-[#F3DB95] bg-[#FFFBEA]" : "bg-white"}`}>
+                    <span className="flex items-center gap-1.5">
+                      <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
+                        {c.author}
+                      </Link>
+                      {c.authorUid === post.authorUid && <span className="text-[11px]" title="Writer">✍️</span>}
+                      {pinned && <span className="rounded-md bg-[#14B88F] px-1.5 text-[10.5px] font-extrabold text-white">📌 Pinned</span>}
+                      {top && <span className="rounded-md bg-[#F5A300] px-1.5 text-[10.5px] font-extrabold text-white">⭐ Top</span>}
+                    </span>
                     <span className="break-words">{commentWithMentions(c.text)}</span>
                     {/* 👍❤️ 5 — the reactions on this comment, on the bubble's corner */}
                     {c.likes > 0 && (
@@ -647,6 +718,11 @@ export function MigView({
                           className="font-semibold text-[#2563EB]"
                         >
                           Reply
+                        </button>
+                      )}
+                      {mine && !isReply && (
+                        <button type="button" onClick={() => pinComment(pinned ? "" : c.id)} className="font-semibold text-[#0E7A62]">
+                          {pinned ? "Unpin" : "📌 Pin"}
                         </button>
                       )}
                       {canDel && (
@@ -802,4 +878,26 @@ function commentWithMentions(text: string) {
       <span key={i}>{part}</span>
     )
   );
+}
+
+// 💬 main comments in the chosen order (📌 pinned first), each followed by its replies (oldest first)
+function orderComments(list: BlogComment[], sort: "top" | "new" | "old", pinned: string): BlogComment[] {
+  const mains = list.filter((c) => !c.replyTo);
+  const ids = new Set(mains.map((c) => c.id));
+  const replies = new Map<string, BlogComment[]>();
+  const orphans: BlogComment[] = [];
+  for (const c of list) {
+    if (!c.replyTo) continue;
+    if (!ids.has(c.replyTo)) orphans.push(c);
+    else replies.set(c.replyTo, [...(replies.get(c.replyTo) || []), c]);
+  }
+  mains.sort((a, b) => {
+    if (a.id === pinned) return -1;
+    if (b.id === pinned) return 1;
+    if (sort === "top") return b.likes - a.likes || (replies.get(b.id)?.length || 0) - (replies.get(a.id)?.length || 0) || a.createdMs - b.createdMs;
+    return sort === "new" ? b.createdMs - a.createdMs : a.createdMs - b.createdMs;
+  });
+  const out: BlogComment[] = [];
+  for (const m of mains) out.push(m, ...(replies.get(m.id) || []).sort((a, b) => a.createdMs - b.createdMs));
+  return [...out, ...orphans.sort((a, b) => a.createdMs - b.createdMs)];
 }

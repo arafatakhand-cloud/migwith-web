@@ -54,6 +54,13 @@ export type BlogPost = {
   mates: string[];
   /** 🤝 MigMates still asked (only the writer sees them) */
   matesPending: string[];
+  /** 🎁 gifts on the post: how many, their coins, the last 3 givers and the last gift's icon */
+  gifts: number;
+  giftCoins: number;
+  giftBy: string[];
+  giftLast: string;
+  /** 📌 the main comment the writer pinned ('' = none) */
+  pinnedComment: string;
 };
 
 export type BlogComment = {
@@ -145,6 +152,11 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     reactNames: Array.isArray(d.reactNames) ? d.reactNames.map((x) => String(x)).filter(Boolean).slice(0, 2) : [],
     mates: Array.isArray(d.mates) ? d.mates.map((x) => String(x)).filter(Boolean) : [],
     matesPending: Array.isArray(d.matesPending) ? d.matesPending.map((x) => String(x)).filter(Boolean) : [],
+    gifts: Number(d.gifts || 0),
+    giftCoins: Number(d.giftCoins || 0),
+    giftBy: Array.isArray(d.giftBy) ? d.giftBy.map((x) => String(x)).filter(Boolean).slice(0, 3) : [],
+    giftLast: String(d.giftLast || ""),
+    pinnedComment: String(d.pinnedComment || ""),
   };
 }
 export function toBlogPoll(v: unknown): BlogPoll | null {
