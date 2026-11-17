@@ -74,6 +74,8 @@ export const ENTRY_FX: EntryFx[] = [
   { id: "spell", name: "Spell Circle", emoji: "🔮", category: "🚀 Legend", price: 410000, banner: ["#1A0538", "#5E35B1"], ink: "#EDE7F6", accent: "#B388FF", subtitle: "appears from a magic circle" },
   { id: "saturn", name: "Saturn Rings", emoji: "🪐", category: "🚀 Legend", price: 430000, banner: ["#14072B", "#3B1D7A"], ink: "#F3E5F5", accent: "#FFCC80", subtitle: "orbits in from space" },
   { id: "unicorn", name: "Starlight Unicorn", emoji: "🦄", category: "🐉 Mythic", price: 460000, banner: ["#2A0B4A", "#C2185B"], ink: "#FCE4EC", accent: "#FFF59D", subtitle: "gallops on a rainbow" },
+  // 💻 Hacker Breach (2026-11): its own full-screen show (HackerBreachShow) — code rain, terminal log, ACCESS GRANTED, typewriter
+  { id: "hacker", name: "Hacker Breach", emoji: "💻", category: "💎 Exclusive", price: 480000, banner: ["#000000", "#002B12"], ink: "#C8FFDC", accent: "#00FF66", subtitle: "has infiltrated the room" },
   { id: "samurai", name: "Samurai Slash", emoji: "⚔️", category: "💎 Exclusive", price: 650000, banner: ["#1A0000", "#5B0F0F"], ink: "#FFEBEE", accent: "#FFFFFF", subtitle: "cuts in like a samurai" },
 ];
 
@@ -269,6 +271,7 @@ const DURATION = 3.4;
 
 /** The effect + the "✦ GRAND ENTRY ✦" banner with the name (fills its parent). */
 export function EntryFxShow({ fx, name, seed }: { fx: EntryFx; name: string; seed: number }) {
+  if (fx.id === "hacker") return <HackerBreachShow name={name} />;
   const lateIn = fx.id === "carpet" ? 0.7 : fx.id === "galaxy" ? 0.5 : 0.15;
   const ringAt = 0.55 + (fx.id === "carpet" ? 0.55 : fx.id === "galaxy" ? 0.35 : 0);
   return (
@@ -1919,5 +1922,139 @@ function Chip({ text, color }: { text: string; color: string }) {
     <span className="rounded-[7px] px-1.5 py-0.5 text-[9px] font-bold" style={{ color, background: rgba(color, 0.12) }}>
       {text}
     </span>
+  );
+}
+
+// ---------------------------------------------------------------- 💻 Hacker Breach
+// A "system breach" in the 3.4 s every entry effect has: radium code rain on
+// black (CRT lines, flicker, vignette), a fast terminal log, ACCESS GRANTED //
+// ROOT with an RGB-split glitch, "> root@miglife:~# user NAME has infiltrated the
+// room" typed out with a █ cursor, then a CRT power-off. Calmer with
+// prefers-reduced-motion (slow rain, no glitch / flashing).
+const HK_GLYPHS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン0123456789ABCDEF<>/|{}[]#$%&*+=";
+const HK_LOG = (n: string) => [
+  "> [INIT] Establishing encrypted tunnel to miglife_node...",
+  "> [BYPASS] Firewall layer 3... ",
+  `> [INJECT] Spoofing session token for ${n}... `,
+  "> [ELEVATE] sudo -u root ./miglife --stealth ... ",
+];
+const HK_OK = ["", "OVERRIDDEN", "OK", "GRANTED"];
+
+function HackerBreachShow({ name }: { name: string }) {
+  const cv = useRef<HTMLCanvasElement>(null);
+  const [t, setT] = useState(0); // seconds since start (10 steps a second is enough for the text)
+  const user = name.slice(0, 27);
+  useEffect(() => {
+    const c = cv.current;
+    const ctx = c?.getContext("2d");
+    if (!c || !ctx) return;
+    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const pick = () => HK_GLYPHS[(Math.random() * HK_GLYPHS.length) | 0];
+    let W = 0, H = 0, FS = 15;
+    type Col = { y: number; v: number; wait: number; len: number; ch: string };
+    let cols: Col[] = [];
+    const newCol = (start: boolean): Col => ({
+      y: start ? -Math.random() * H * 0.6 : -Math.random() * 120,
+      v: (reduced ? 0.25 : 0.6) + Math.random() * (reduced ? 0.3 : 0.9),
+      wait: start ? 0 : Math.random() * 40,
+      len: 8 + ((Math.random() * 22) | 0),
+      ch: pick(),
+    });
+    const size = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      W = c.clientWidth; H = c.clientHeight;
+      c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      FS = W < 520 ? 14 : 16;
+      const n = Math.ceil(W / FS);
+      cols = Array.from({ length: n }, (_, i) => cols[i] || newCol(true));
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, W, H);
+    };
+    size();
+    window.addEventListener("resize", size);
+    const start = performance.now();
+    let last = start, raf = 0, shown = -1;
+    const frame = (now: number) => {
+      const dt = Math.min(48, now - last) / 16.67;
+      last = now;
+      const sec = (now - start) / 1000;
+      const step = Math.floor(sec * 20);
+      if (step !== shown) { shown = step; setT(sec); }
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.font = `bold ${FS}px "Courier New", monospace`;
+      ctx.textBaseline = "top";
+      for (let i = 0; i < cols.length; i++) {
+        const col = cols[i];
+        if (col.wait > 0) { col.wait -= dt; continue; }
+        const prev = Math.floor(col.y / FS);
+        col.y += col.v * dt * (FS / 6);
+        const row = Math.floor(col.y / FS);
+        const x = i * FS;
+        if (row !== prev) {
+          ctx.fillStyle = "#00ff66";
+          ctx.fillText(col.ch, x, prev * FS);
+          col.ch = pick();
+        }
+        if (Math.random() < 0.02) {
+          ctx.fillStyle = "rgba(0,255,102,.85)";
+          ctx.fillText(pick(), x, (row - 1 - ((Math.random() * col.len) | 0)) * FS);
+        }
+        ctx.shadowColor = "#00ff66";
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = "#c8ffdc";
+        ctx.fillText(col.ch, x, row * FS);
+        ctx.shadowBlur = 0;
+        if (row * FS > H + col.len * FS) cols[i] = newCol(false);
+      }
+      if (sec < DURATION) raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", size);
+    };
+  }, []);
+
+  const log = HK_LOG(user);
+  const msg = `> root@miglife:~# user ${user} has infiltrated the room`;
+  // 0–0.85 s log · 0.85 s ACCESS GRANTED · 1.1–2.3 s typed · 3.0 s CRT off
+  const typed = t < 1.1 ? 0 : Math.min(msg.length, Math.ceil(((t - 1.1) / 1.2) * msg.length));
+  return (
+    <div className={`hkx absolute inset-0 overflow-hidden bg-black ${t >= 3.0 ? "hkx-off" : ""}`} aria-label={`${user} has infiltrated the room`}>
+      <canvas ref={cv} className="absolute inset-0 h-full w-full" />
+      <div className="hkx-scan" />
+      <div className="hkx-flick" />
+      <div className="hkx-vig" />
+      <div className="absolute inset-0 flex flex-col items-center justify-center px-[4vw]">
+        {t < 0.85 ? (
+          <div className="hkx-log">
+            {log.map((l, i) =>
+              t >= i * 0.2 ? (
+                <div key={i}>
+                  {l}
+                  {HK_OK[i] ? <span className="text-[#c8ffdc]">{HK_OK[i]}</span> : null}
+                </div>
+              ) : null
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="hkx-head" data-t="ACCESS GRANTED">
+              ACCESS GRANTED
+              <small>{"// ROOT"}</small>
+            </div>
+            {typed > 0 && (
+              <div className="hkx-type">
+                {msg.slice(0, typed)}
+                <span className="hkx-cur">█</span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }

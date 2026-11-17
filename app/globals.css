@@ -1723,3 +1723,44 @@ html[data-theme="dark_night"] .lb-glass {
 .gift-tile-sm { margin: 0 0.2em 0.3em; padding: 0.1em; border-radius: 0.45em; box-shadow: 0 2px 0 #c9d6ea, 0 3px 0 #b3c3dc, 0 4px 0 #9fb2cf, 0 6px 6px rgba(0, 0, 0, 0.18); }
 .gift-tile-sm img { width: 1.6em !important; height: 1.6em !important; border-radius: 0.35em; }
 .gift-tile-sm .gift-tile-emo { font-size: 1.15em; }
+
+/* 💻 Hacker Breach entry effect (EntryEffects.tsx → HackerBreachShow) */
+.hkx { font-family: "Courier New", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.hkx-scan, .hkx-vig, .hkx-flick { position: absolute; inset: 0; pointer-events: none; }
+.hkx-scan { background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px); }
+.hkx-vig { background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.85) 100%); }
+.hkx-flick { background: rgba(0, 255, 102, 0.025); animation: hkx-flick 0.12s steps(2) infinite; }
+@keyframes hkx-flick { 50% { opacity: 0.35; } }
+.hkx-log { width: min(720px, 92vw); color: #00ff66; font-size: clamp(11px, 2.6vw, 15px); line-height: 1.55; text-shadow: 0 0 6px rgba(0, 255, 102, 0.7);
+  background: rgba(0, 0, 0, 0.55); padding: 10px 12px; border-left: 2px solid #00ff66; }
+.hkx-log div { white-space: pre-wrap; word-break: break-word; animation: hkx-in 0.12s ease-out; }
+@keyframes hkx-in { from { opacity: 0; transform: translateX(-6px); } }
+.hkx-head { position: relative; font-weight: 900; letter-spacing: 0.04em; text-align: center; color: #eafff2; font-size: clamp(30px, 9vw, 88px); line-height: 1.05;
+  text-shadow: 0 0 10px #00ff66, 0 0 26px #00ff66, 0 0 48px rgba(0, 255, 102, 0.6);
+  animation: hkx-slam 0.28s cubic-bezier(0.2, 1.6, 0.4, 1) both, hkx-jump 0.8s steps(1) 0.3s infinite; }
+.hkx-head small { display: block; font-size: 0.32em; letter-spacing: 0.3em; color: #00ff66; margin-top: 0.35em; }
+.hkx-head::before, .hkx-head::after { content: attr(data-t); position: absolute; left: 0; right: 0; top: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0.8; }
+.hkx-head::before { color: #ff0055; transform: translate(-3px, 0); animation: hkx-g1 0.8s steps(1) infinite; }
+.hkx-head::after { color: #00ffff; transform: translate(3px, 0); animation: hkx-g2 0.8s steps(1) infinite; }
+@keyframes hkx-slam { from { transform: scale(2.2); opacity: 0; filter: blur(6px); } }
+@keyframes hkx-jump { 0%, 70%, 100% { transform: none; } 72% { transform: translate(4px, -2px) skewX(-6deg); } 76% { transform: translate(-3px, 1px); } }
+@keyframes hkx-g1 {
+  0% { clip-path: inset(10% 0 70% 0); transform: translate(-6px, -2px); } 20% { clip-path: inset(55% 0 20% 0); transform: translate(5px, 1px); }
+  40% { clip-path: inset(30% 0 45% 0); transform: translate(-3px, 0); } 60% { clip-path: inset(80% 0 5% 0); transform: translate(7px, 2px); }
+  80% { clip-path: inset(0 0 0 0); transform: translate(-3px, 0); } }
+@keyframes hkx-g2 {
+  0% { clip-path: inset(65% 0 15% 0); transform: translate(6px, 2px); } 20% { clip-path: inset(5% 0 75% 0); transform: translate(-5px, -1px); }
+  40% { clip-path: inset(40% 0 35% 0); transform: translate(4px, 0); } 60% { clip-path: inset(15% 0 60% 0); transform: translate(-7px, -2px); }
+  80% { clip-path: inset(0 0 0 0); transform: translate(3px, 0); } }
+.hkx-type { margin-top: 1.4em; width: min(760px, 94vw); color: #00ff66; font-size: clamp(12px, 3vw, 18px); text-align: center;
+  text-shadow: 0 0 8px rgba(0, 255, 102, 0.8); white-space: pre-wrap; word-break: break-word; }
+.hkx-cur { animation: hkx-blink 1s steps(1) infinite; }
+@keyframes hkx-blink { 50% { opacity: 0; } }
+.hkx-off { animation: hkx-off 0.4s cubic-bezier(0.7, 0, 0.9, 0.4) forwards; }
+@keyframes hkx-off { 55% { transform: scale(1, 0.006); filter: brightness(3); } 100% { transform: scale(0, 0.004); filter: brightness(6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .hkx-flick, .hkx-head, .hkx-head::before, .hkx-head::after { animation: none; }
+  .hkx-head::before, .hkx-head::after { opacity: 0.35; }
+  .hkx-off { animation: hkx-fade 0.4s ease forwards; }
+  @keyframes hkx-fade { to { opacity: 0; } }
+}
