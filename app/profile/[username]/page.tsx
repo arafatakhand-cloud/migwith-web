@@ -897,38 +897,44 @@ export default function ProfilePage() {
               LV {profile.level} {badgeForLevel(profile.level)}
             </span>
           </div>
-          <div className="min-w-0 flex-1 pb-1.5">
-            {special.has(username) ? (
-              <RainbowName name={username} style={special.styleOf(username)} className="block truncate text-[23px]" />
-            ) : (
-              <p data-notranslate className="truncate text-[23px] font-black leading-tight text-[#1E63D6]">
-                {username}
-              </p>
+        </div>
+        {/* ✨ (miglife "A · 6D"): the name and chips on their own lines UNDER the photo, so the
+            cover's curve never cuts the name; a thick 6D name and chips standing on a coloured lip */}
+        <div className="px-4 pt-4">
+          {special.has(username) ? (
+            <RainbowName name={username} style={special.styleOf(username)} className="block truncate text-[27px]" />
+          ) : (
+            <p
+              data-notranslate
+              className="truncate bg-gradient-to-r from-[#1D4ED8] to-[#7C3AED] bg-clip-text pb-1 text-[27px] font-black leading-tight text-transparent"
+              style={{ filter: "drop-shadow(0 1px 0 rgba(67,56,202,.55)) drop-shadow(0 1px 0 rgba(49,46,158,.55)) drop-shadow(0 1px 0 rgba(30,27,107,.5))" }}
+            >
+              {username}
+            </p>
+          )}
+          {profile.fullName && !sameName(profile.fullName, username) && (
+            <p data-notranslate className="mt-0.5 truncate text-[13px] font-semibold text-[#35507E]">{profile.fullName}</p>
+          )}
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {shownRole && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                style={{ color: shownRole.color, boxShadow: `0 3px 0 color-mix(in srgb, ${shownRole.color} 65%, transparent), 0 5px 0 color-mix(in srgb, ${shownRole.color} 35%, transparent)` }}
+              >
+                <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
+                {shownRole.label}
+              </span>
             )}
-            {profile.fullName && !sameName(profile.fullName, username) && (
-              <p data-notranslate className="truncate text-[13px] text-[#35507E]">{profile.fullName}</p>
+            {team && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                style={{ color: team.text, boxShadow: `0 3px 0 color-mix(in srgb, ${team.text} 65%, transparent), 0 5px 0 color-mix(in srgb, ${team.text} 35%, transparent)` }}
+                title={`${team.name} supporter`}
+              >
+                <SupporterJersey team={team} size={16} />
+                {team.mark} supporter
+              </span>
             )}
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {shownRole && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-bold shadow-sm"
-                  style={{ color: shownRole.color }}
-                >
-                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
-                  {shownRole.label}
-                </span>
-              )}
-              {team && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-extrabold shadow-sm"
-                  style={{ color: team.text }}
-                  title={`${team.name} supporter`}
-                >
-                  <SupporterJersey team={team} size={16} />
-                  {team.mark}
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
