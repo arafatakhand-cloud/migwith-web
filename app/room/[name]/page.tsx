@@ -3605,7 +3605,7 @@ function queueGiftShower<T>(run: () => Promise<T>): Promise<T> {
 // Gift announcement: pink, "[level]" tags in amber, the gift's own icon
 // swapped for its uploaded picture when there is one. The "<< … >>" around it
 // stays, like the app.
-function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number, feel = false): ReactNode[] {
+function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: number, _feel = false): ReactNode[] {
   const out: ReactNode[] = [];
   let k = 0;
   // 💝 every Gift Shower starts with the same 💝 (older lines say 🎁 — and when the
@@ -3621,8 +3621,8 @@ function giftLine(text: string, giftIcon: string, giftImage: string, fontPx: num
       seg.split(giftIcon).forEach((piece, i) => {
         if (i > 0)
           out.push(
-            // 🎁 B (miglife): the gift bigger, on a white 6D tile, so its picture can be made out
-            <span key={`g${k++}`} className={feel ? "gift-tile gift-tile-sm" : "gift-tile"}>
+            // 🎁 A (miglife): the gift on a small white 6D tile that fits inside the line (the big one covered the next line)
+            <span key={`g${k++}`} className="gift-tile gift-tile-sm">
               {giftImage ? (
                 <GiftImg src={giftImage} fallback={<span className="gift-tile-emo">{giftIcon}</span>} className="h-[2.4em] w-[2.4em] object-contain" />
               ) : (
@@ -3940,7 +3940,7 @@ function MessageRow({
             right edge, whatever names / gift fill it. */}
         <p
           // 🎁 gift / Gift Shower: bold, every line centred, normal size (like the app)
-          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-center font-bold leading-snug"
+          className="w-full whitespace-pre-wrap break-words rounded-[9px] px-[7px] py-[7px] text-center font-bold leading-[1.8]"
           style={{ fontSize: fontPx, color: giftLineColor(m.id || m.text) }}
         >
           {/* "name[51]" — no space before the level, like the app */}
