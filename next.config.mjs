@@ -11,7 +11,8 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
-  { key: "Permissions-Policy", value: "camera=(), geolocation=(), microphone=(self), payment=()" },
+  // 📍 geolocation=(self): the Feed's 🎯 "Use my current location" needs it (it was "()" = blocked for everyone, so GPS never worked)
+  { key: "Permissions-Policy", value: "camera=(), geolocation=(self), microphone=(self), payment=()" },
 ];
 
 /** @type {import('next').NextConfig} */
