@@ -933,44 +933,50 @@ export default function ProfilePage() {
         </div>
 
         <div className="px-4 pt-[18px]">
-          {/* the details, in a glass box with the team's crest faint behind */}
-          {/* 🎨 P1: a white 6D card, each detail a small coloured 6D chip */}
-          <div className="pf-info-glass pf6d-card relative overflow-hidden rounded-[20px] px-3 py-3 text-[14px] leading-[1.75] text-[#0B2A5B]">
+          {/* 💬 (miglife "B"): the status message first, as a navy chat bubble */}
+          {bubble && (
+            <div className="mb-3 rounded-[18px] rounded-bl-[6px] bg-[#0B2A5B] px-3.5 py-2.5 text-white shadow-[0_4px_0_#051634]">
+              <span className="block text-[10.5px] font-bold tracking-wide opacity-70">💬 STATUS</span>
+              <p data-notranslate className="whitespace-pre-wrap text-[14px] leading-snug">{bubble}</p>
+            </div>
+          )}
+          {/* the details: a tidy list (icon · label · value) on a white 6D card, the team's crest faint behind */}
+          <div className="pf-info-glass pf6d-card relative overflow-hidden rounded-[20px] px-3.5 py-1 text-[#0B2A5B]">
             {team && (
               <span className="pointer-events-none absolute -right-4 -top-6 rotate-12 opacity-[0.17]" aria-hidden>
                 <SupporterJersey team={team} size={150} />
               </span>
             )}
             <div className="relative">
-              <div className="flex flex-wrap gap-1.5 pb-1 leading-none">
-                <Chip6d bg="#DCFCE7" fg="#15803D" lip="#97DDB0">
-                  <span
-                    className="mr-1 inline-block h-[10px] w-[10px] rounded-full align-[-1px]"
-                    style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})` }}
-                  />
-                  {profile.presence}
-                </Chip6d>
-                {team && <Chip6d bg="#DBEAFE" fg="#1D4ED8" lip="#93B4F0">⚽ {team.name}</Chip6d>}
-                {(profile.relationship || facts.length > 0) && (
-                  <Chip6d bg="#E0F2FE" fg="#0369A1" lip="#9CCFF0">
-                    {[profile.relationship ? `💙 ${profile.relationship}` : "", facts.join(", ")].filter(Boolean).join(" · ")}
-                  </Chip6d>
-                )}
-                {profile.country && <Chip6d bg="#FFE4E6" fg="#BE123C" lip="#F9B4BF">📍 {profile.country}</Chip6d>}
-                {profile.memberSince && <Chip6d bg="#EDE9FE" fg="#6D28D9" lip="#C4B2F3">🗓 Since {profile.memberSince}</Chip6d>}
-                {taggedDays !== null && (
-                  <Chip6d bg="#FEF3C7" fg="#A16207" lip="#EBCB7A">
-                    🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}
-                  </Chip6d>
-                )}
-              </div>
+              {(() => {
+                const rows: [React.ReactNode, string, React.ReactNode, string?][] = [
+                  [
+                    <span key="d" className="inline-block h-[12px] w-[12px] rounded-full" style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})` }} />,
+                    "Status",
+                    profile.presence,
+                    profile.presence === "Online" ? "#15803D" : profile.presence === "Offline" ? "#6B7A99" : "#B45309",
+                  ],
+                ];
+                if (team) rows.push(["⚽", "Supports", team.name]);
+                const rel = [profile.relationship, facts.join(", ")].filter(Boolean).join(" · ");
+                if (rel) rows.push(["💙", "Relationship", rel]);
+                if (profile.country) rows.push(["📍", "From", profile.country]);
+                if (profile.memberSince) rows.push(["🗓", "Joined", profile.memberSince]);
+                if (taggedDays !== null) rows.push(["🎓", "Tagged", isOwn && taggedDays > 0 ? `${taggedDays}d left` : "Yes", "#A16207"]);
+                return rows.map(([icon, label, value, color], i) => (
+                  <div key={label} className={`flex items-center gap-3 py-2.5 ${i < rows.length - 1 ? "border-b border-[#EEF3F8]" : ""}`}>
+                    <span className="flex w-5 justify-center text-[15px]">{icon}</span>
+                    <span className="w-[92px] shrink-0 text-[12.5px] font-bold text-[#6B7FA0]">{label}</span>
+                    <span className="ml-auto min-w-0 truncate text-right text-[13.5px] font-extrabold" style={{ color: color || "#0B2A5B" }} data-notranslate>
+                      {value}
+                    </span>
+                  </div>
+                ));
+              })()}
               {/* 🎵 Profile Song — plays once when the profile opens */}
-              <ProfileSongChip username={username} />
-              {bubble && (
-                <p data-notranslate className="mt-1.5 whitespace-pre-wrap rounded-xl bg-white/60 px-2.5 py-1.5 text-[13.5px] leading-snug text-[#0B2A5B]">
-                  💬 {bubble}
-                </p>
-              )}
+              <div className="pb-2">
+                <ProfileSongChip username={username} />
+              </div>
             </div>
           </div>
 
