@@ -531,22 +531,26 @@ export function LuxuryBetTable({
               title="Repeat last bet"
               onClick={() => state.lastBet && state.bet(state.lastBet.character, state.lastBet.amount)}
               disabled={!state.lastBet}
-              className={circle}
+              // (miglife: a bigger ↻, easier to tap during a round)
+              className={`${circle} !h-8 !w-8 text-[20px] font-black`}
               style={{ background: skin.chip, borderColor: skin.accent, color: skin.accent }}
             >
               ↻
             </button>
           </>
         )}
-        <button
-          type="button"
-          title="Bet box colours"
-          onClick={() => setShowStyles(true)}
-          className={`${circle} border-0 text-[13px]`}
-          style={{ background: `linear-gradient(135deg, ${skin.accent}, ${skin.accent2})` }}
-        >
-          🎨
-        </button>
+        {/* 🎨 box colours — only between rounds (during a round: just ↻ · 👁 · −) */}
+        {!open && state.inFlight === 0 && (
+          <button
+            type="button"
+            title="Bet box colours"
+            onClick={() => setShowStyles(true)}
+            className={`${circle} border-0 text-[13px]`}
+            style={{ background: `linear-gradient(135deg, ${skin.accent}, ${skin.accent2})` }}
+          >
+            🎨
+          </button>
+        )}
         <button
           type="button"
           title={onlyMine ? "Showing only my bets" : "Showing everyone's bets"}
