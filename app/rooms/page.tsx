@@ -326,52 +326,95 @@ export default function RoomsPage() {
           onClick={() => !creating && setShowCreate(false)}
         >
           <div
-            className="w-full max-w-md space-y-3 rounded-3xl bg-white p-5 text-[#0B2A5B] shadow-2xl"
+            // ✨ (miglife "A"): a card with a live preview of the room's row in the list, a live
+            // "name is available" check, letter counts, how many people fit, and your Level +
+            // how many more rooms you can make at the bottom (same as the app)
+            className="w-full max-w-md rounded-[26px] border-2 border-white bg-white p-[18px] text-[#0B2A5B] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-lg font-black">➕ Create a Chat Room</h2>
-            <p className="text-xs text-[#5B6B8C]">
-              Level {MIN_LEVEL_TO_CREATE}+ · up to {MAX_ROOMS_PER_USER} rooms · you are Level {level || "…"}
-              {!isFounder && level >= MIN_LEVEL_TO_CREATE && ` · holds ${capacityForLevel(level)} people`}
-            </p>
-            <input
-              value={newName}
-              onChange={(e) => {
-                setNewName(e.target.value.slice(0, MAX_NAME));
-                setCreateError("");
-              }}
-              placeholder={`Room name (${MIN_NAME}–${MAX_NAME} characters)`}
-              className="w-full rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
-            />
-            <textarea
-              value={newDesc}
-              onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
-              placeholder="Description"
-              rows={3}
-              className="w-full resize-none rounded-xl border border-[#D5E3F5] bg-[#F4F9FF] px-4 py-3 text-sm outline-none placeholder:text-[#8A9BBC] focus:border-[#2F80ED]"
-            />
-            {createError && <p className="text-center text-sm text-rose-600">{createError}</p>}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowCreate(false)}
-                disabled={creating}
-                className="flex-1 rounded-xl border border-[#D5E3F5] py-3 text-sm font-bold text-[#5B6B8C]"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={create}
-                disabled={creating}
-                className="flex-1 rounded-xl bg-[#2F80ED] py-3 text-sm font-black text-white disabled:opacity-50"
-              >
-                {creating ? "Creating…" : "Create"}
-              </button>
-            </div>
-            <p className="text-center text-[11px] text-[#8A9BBC]">
-              In your room: /kick /ban /unban /lock /silence room /level /mod — type /modhelp
-            </p>
+            {(() => {
+              const nm = newName.trim();
+              const cap = isFounder ? 50 : capacityForLevel(level);
+              const all = [...OFFICIAL_COUNTRY_ROOMS, ...OFFICIAL_GAME_ROOMS, LUXURY_BET_ROOM, ...userRooms.map((r) => r.name)];
+              const hint: [string, boolean] | null = !nm
+                ? null
+                : nm.length < MIN_NAME
+                  ? [`At least ${MIN_NAME} characters`, false]
+                  : nm.includes("/") || nm === "." || nm === ".." || (nm.startsWith("__") && nm.endsWith("__")) || isBannedRoomName(nm)
+                    ? ["✗ That name isn't allowed", false]
+                    : all.some((n) => n.toLowerCase() === nm.toLowerCase())
+                      ? ["✗ This room already exists", false]
+                      : ["✓ This name is available", true];
+              const left = Math.max(0, MAX_ROOMS_PER_USER - myRooms.length);
+              const footer = isFounder
+                ? "miGlife · Public rooms, no limit"
+                : level > 0 && level < MIN_LEVEL_TO_CREATE
+                  ? `Level ${level} · Reach Level ${MIN_LEVEL_TO_CREATE} to create a room`
+                  : left === 0
+                    ? `Level ${level || "…"} · You have made all ${MAX_ROOMS_PER_USER} rooms`
+                    : `Level ${level || "…"} · You can create ${left} more room${left === 1 ? "" : "s"}`;
+              return (
+                <>
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#14B88F] to-[#2C9BEA] text-2xl shadow-[0_3px_0_#0C7F67]">💬</span>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="text-[18px] font-black leading-tight">Create a chat room</h2>
+                      <p className="text-[12px] font-semibold text-[#6B7FA0]">Your own place to hang out</p>
+                    </div>
+                    <button type="button" aria-label="Close" disabled={creating} onClick={() => setShowCreate(false)} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F5FB] font-black text-[#6B7FA0]">
+                      ✕
+                    </button>
+                  </div>
+                  {/* 👀 how the room will look in the Chat Rooms list */}
+                  <div className="mt-3.5 flex items-center gap-2.5 rounded-[18px] border-[1.5px] border-dashed border-[#9BD9C5] bg-gradient-to-r from-[#ECFBF6] to-[#EAF4FD] px-3 py-2.5">
+                    <span className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[13px] bg-gradient-to-b from-[#3AC0A0] to-[#14866E] text-[19px] font-black text-white shadow-[0_3px_0_#0B5E4D]">
+                      {nm.slice(0, 1).toUpperCase() || "?"}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`block truncate text-[14.5px] font-bold ${nm ? "text-[#0B2A5B]" : "text-[#9AA8BC]"}`} data-notranslate>{nm || "Your room"}</span>
+                      <span className="block truncate text-[11.5px] text-[#6B7FA0]" data-notranslate>by {username} · {isFounder ? "Public" : "Private"}</span>
+                    </span>
+                    <span className="rounded-full bg-[#E6F9F1] px-2.5 py-0.5 text-[12px] font-extrabold text-[#0E7A62]">0/{cap}</span>
+                  </div>
+                  <div className="mb-1.5 mt-3.5 flex justify-between text-[12px] font-extrabold text-[#4A6280]">
+                    <span>🏷️ Room name</span>
+                    <span>{newName.length}/{MAX_NAME}</span>
+                  </div>
+                  <input
+                    value={newName}
+                    onChange={(e) => {
+                      setNewName(e.target.value.slice(0, MAX_NAME));
+                      setCreateError("");
+                    }}
+                    placeholder="Room name"
+                    className="w-full rounded-[14px] border-2 border-[#E3EAF3] bg-[#F7FAFD] px-3.5 py-3 text-[15px] outline-none placeholder:text-[#9AA8BC] focus:border-[#2C9BEA] focus:bg-white focus:shadow-[0_0_0_4px_rgba(44,155,234,.12)]"
+                  />
+                  {hint && <p className={`mt-1.5 text-[11.5px] font-extrabold ${hint[1] ? "text-[#0E9F6E]" : "text-[#DC2626]"}`}>{hint[0]}</p>}
+                  <div className="mb-1.5 mt-3 flex justify-between text-[12px] font-extrabold text-[#4A6280]">
+                    <span>📝 Description</span>
+                    <span>{newDesc.length}/300</span>
+                  </div>
+                  <textarea
+                    value={newDesc}
+                    onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
+                    placeholder="What is your room about?"
+                    rows={3}
+                    className="w-full resize-none rounded-[14px] border-2 border-[#E3EAF3] bg-[#F7FAFD] px-3.5 py-3 text-[15px] outline-none placeholder:text-[#9AA8BC] focus:border-[#2C9BEA] focus:bg-white focus:shadow-[0_0_0_4px_rgba(44,155,234,.12)]"
+                  />
+                  <span className="mt-3 inline-block rounded-xl bg-[#EEF5FF] px-2.5 py-1 text-[11.5px] font-extrabold text-[#1D4ED8]">👥 Up to {cap} people</span>
+                  {createError && <p className="mt-2.5 text-center text-sm text-rose-600">{createError}</p>}
+                  <button
+                    type="button"
+                    onClick={create}
+                    disabled={creating}
+                    className="mt-3.5 h-[50px] w-full rounded-2xl bg-gradient-to-b from-[#2C9BEA] to-[#1A78C8] text-[16px] font-black text-white shadow-[0_4px_0_#13589A] transition active:translate-y-[2px] active:shadow-[0_2px_0_#13589A] disabled:opacity-60"
+                  >
+                    {creating ? "Creating…" : "✨ Create room"}
+                  </button>
+                  <p className="mt-2.5 text-center text-[11.5px] font-semibold text-[#8A97AE]">{footer}</p>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
