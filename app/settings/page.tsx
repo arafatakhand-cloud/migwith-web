@@ -209,6 +209,8 @@ export default function SettingsPage() {
               <MatesReviewRow />
             </Group>
 
+            <PostNotifGroup />
+
             <Group title="Security">
               <Row icon="❓" tint="#7B1FB8" title="Security question" subtitle="Needed to change your password or PIN" onClick={() => setDialog("question")} />
               <Row icon="🔐" tint="#D4A017" title="Change password" subtitle="Update your login password" onClick={() => setDialog("gate")} />
@@ -655,5 +657,116 @@ function MatesReviewRow() {
         />
       }
     />
+  );
+}
+
+// 🔔 Notifications › friends' new posts (the 🔔 on a friend's profile): on / off,
+// quiet hours (held for one morning notification), how many a day, and the
+// friends whose bell is on.
+type PostNotif = { on: boolean; quietOn: boolean; quietFrom: number; quietTo: number; maxDay: number };
+const blogFn = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "blog");
+const hourLabel = (h: number) => `${((h + 11) % 12) + 1} ${h < 12 ? "AM" : "PM"}`;
+function PostNotifGroup() {
+  const [p, setP] = useState<PostNotif | null>(null);
+  const [bells, setBells] = useState<{ author: string; mode: string }[] | null>(null);
+  const [showBells, setShowBells] = useState(false);
+  useEffect(() => {
+    blogFn({ action: "postNotif" })
+      .then((r) => setP(r.data as unknown as PostNotif))
+      .catch(() => setP({ on: true, quietOn: true, quietFrom: 23, quietTo: 7, maxDay: 4 }));
+    blogFn({ action: "bellList" })
+      .then((r) => setBells(((r.data as { bells?: { author: string; mode: string }[] }).bells) || []))
+      .catch(() => setBells([]));
+  }, []);
+  const change = async (patch: Partial<PostNotif>) => {
+    if (!p) return;
+    const before = p;
+    setP({ ...p, ...patch });
+    try {
+      const r = await blogFn({ action: "postNotif", ...patch });
+      setP(r.data as unknown as PostNotif);
+    } catch {
+      setP(before);
+    }
+  };
+  const turnOff = async (author: string) => {
+    setBells((b) => (b || []).filter((x) => x.author !== author));
+    try {
+      await blogFn({ action: "bell", author, mode: "off" });
+    } catch {
+      /* it comes back next time the page opens */
+    }
+  };
+  const sel = "rounded-lg bg-[#EAF4FD] px-2 py-1.5 text-[13px] font-bold text-[#1A78C8] outline-none disabled:opacity-50";
+  return (
+    <Group title="Notifications">
+      <Row
+        icon="📰"
+        tint="#14B88F"
+        title="Friends' new posts"
+        subtitle="Tap 🔔 on a friend's profile to get them"
+        right={<Switch on={p?.on !== false} disabled={!p} onChange={(v) => change({ on: v })} />}
+      />
+      <Row
+        icon="🌙"
+        tint="#5B4BDB"
+        title="Quiet at night"
+        subtitle={p ? `${hourLabel(p.quietFrom)} – ${hourLabel(p.quietTo)}: sent together in the morning` : "…"}
+        right={<Switch on={p?.quietOn !== false} disabled={!p || !p.on} onChange={(v) => change({ quietOn: v })} />}
+      />
+      {p?.on && p.quietOn && (
+        <Row
+          icon="⏰"
+          tint="#5B4BDB"
+          title="Quiet hours"
+          right={
+            <span className="flex shrink-0 items-center gap-1">
+              <select className={sel} value={p.quietFrom} onChange={(e) => change({ quietFrom: Number(e.target.value) })}>
+                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
+              </select>
+              <span className="text-[#6B7A99]">–</span>
+              <select className={sel} value={p.quietTo} onChange={(e) => change({ quietTo: Number(e.target.value) })}>
+                {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{hourLabel(h)}</option>)}
+              </select>
+            </span>
+          }
+        />
+      )}
+      <Row
+        icon="📊"
+        tint="#E8820C"
+        title="At most a day"
+        subtitle="Posts close together come as one"
+        right={
+          <select className={sel} disabled={!p || !p.on} value={p?.maxDay ?? 4} onChange={(e) => change({ maxDay: Number(e.target.value) })}>
+            {[2, 3, 4, 6, 10].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        }
+      />
+      <Row
+        icon="🔔"
+        tint="#F5A300"
+        title="Friends with 🔔 on"
+        subtitle="Mentions (@you) always come, whatever this says"
+        value={bells === null ? "…" : String(bells.length)}
+        onClick={() => setShowBells((v) => !v)}
+      />
+      {showBells && (
+        <div className="rounded-[18px] border border-[#F5A30038] bg-white px-3 py-1">
+          {bells && bells.length === 0 && <p className="py-3 text-center text-[13px] text-[#6B7A99]">No one yet — open a friend&apos;s profile and tap 🔔.</p>}
+          {(bells || []).map((b) => (
+            <div key={b.author} className="flex items-center gap-2 border-b border-[#EEF3F8] py-2 last:border-0">
+              <Link href={`/profile/${encodeURIComponent(b.author)}`} className="min-w-0 flex-1 truncate text-[14px] font-bold text-[#0B2A5B]" data-notranslate>
+                {b.author}
+              </Link>
+              <span className="text-[12px] text-[#6B7A99]">{b.mode === "media" ? "⭐ Photos & videos" : "🔔 All posts"}</span>
+              <button type="button" onClick={() => turnOff(b.author)} className="rounded-lg bg-[#F1F5FB] px-2 py-1 text-[12px] font-bold text-rose-600">
+                Off
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Group>
   );
 }

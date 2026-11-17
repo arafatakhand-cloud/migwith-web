@@ -29,6 +29,7 @@ import { httpsCallable } from "firebase/functions";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { chatHref } from "../../../lib/privateChat";
 import { useFriendRequests } from "../../../lib/friends";
+import { PostBellButton } from "../../_components/PostBell";
 import { latestGifts } from "../../../lib/giftActivity";
 import { openReport } from "../../_components/ReportDialog";
 import { PageShell } from "../../_components/PageShell";
@@ -809,6 +810,8 @@ export default function ProfilePage() {
                   >
                     {hasVoted ? "❤️" : "🤍"}
                   </button>
+                  {/* 🔔 notify me about this friend's new posts */}
+                  {relation === "friend" && <PostBellButton username={username} classic={classic} />}
                   {/* ••• Add Friend / Block / Report (was the "More" tile) */}
                   <div className="relative">
                     <button
