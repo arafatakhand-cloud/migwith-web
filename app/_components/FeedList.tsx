@@ -2,7 +2,7 @@
 
 import { G3BadgeFor } from "./G3Badge";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -29,6 +29,7 @@ import { PhotoMenu, PhotoViewer, photosOf } from "./PhotoViewer";
 import { useBlockSets } from "../../lib/blocks";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
+import { PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgoBn,
@@ -179,6 +180,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [reactorsOf, setReactorsOf] = useState<BlogPost | null>(null);
   // ↗ the post I am sharing to my wall (null = closed)
   const [sharing, setSharing] = useState<BlogPost | null>(null);
+  // 🎁 the Mig I am sending a gift on / whose 🏆 Top Gifters are open
+  const [giftFor, setGiftFor] = useState<BlogPost | null>(null);
+  const [giversOf, setGiversOf] = useState<BlogPost | null>(null);
   // 🖼 P2: a Mig's photos full screen · P1: the hold-a-photo sheet · 🙈 the Migs I hid
   const [photoView, setPhotoView] = useState<{ p: BlogPost; i: number } | null>(null);
   const [photoMenu, setPhotoMenu] = useState<{ p: BlogPost; photo: string } | null>(null);
@@ -277,6 +281,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     return () => window.removeEventListener("resize", place);
   }, [tab]);
   const friendsKey = friends.join(",");
+  const friendSet = useMemo(() => new Set(friends.map((n) => n.toLowerCase())), [friends]);
+  // ❤️ whose Migs I react to most (this browser only) — they come a little sooner in Popular
+  const [likedAuthors, setLikedAuthors] = useState<Record<string, number>>({});
+  useEffect(() => setLikedAuthors(readLikedAuthors()), []);
+  const bumpLikedAuthor = (name: string) => setLikedAuthors(bumpLiked(name));
+  const whyFor = (p: BlogPost) =>
+    p.likes >= 10 ? "🔥 Trending" : friendSet.has(p.author.toLowerCase()) && p.author !== username ? "👥 Friend" : (likedAuthors[p.author.toLowerCase()] || 0) >= 3 ? "❤️ You often like" : tab === "new" ? "🆕 New" : "";
   const followed = useFollowing(user?.uid);
   // 💜 how many members follow me (for my wall on the Mine tab)
   const [myFollowers, setMyFollowers] = useState<number | null>(null);
@@ -625,6 +636,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
 
   const [fresh, setFresh] = useState(0);
+  const [freshBy, setFreshBy] = useState<string[]>([]);
+  // ✓ "you've seen everything new": the newest Mig of my last visit (time-ordered tabs)
+  const seenTab = !author && !placeView && (tab === "new" || tab === "friends" || tab === "following");
+  const [seenMs, setSeenMs] = useState(0);
+  useEffect(() => {
+    if (!seenTab || !posts || !posts.length) return;
+    const key = `migwith.feedSeen.${tab}`;
+    const newest = Math.max(...posts.map((p) => p.createdMs));
+    try {
+      const before = Number(localStorage.getItem(key) || 0);
+      setSeenMs((cur) => cur || before || 0);
+      if (newest > before) localStorage.setItem(key, String(newest));
+    } catch {
+      // storage blocked: no divider
+    }
+  }, [seenTab, tab, posts]);
+  useEffect(() => setSeenMs(0), [tab]);
   const newestKnown = useMemo(() => (posts && posts.length ? Math.max(...posts.map((p) => p.createdMs)) : 0), [posts]);
   useEffect(() => {
     if (author || !newestKnown || (tab !== "popular" && tab !== "new")) return;
@@ -634,11 +662,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       try {
         const snap = await getDocs(query(col, where("createdMs", ">", newestKnown), limit(20)));
         setFresh(snap.size);
+        setFreshBy([...new Set(snap.docs.map((d) => String(d.get("author") || "")).filter(Boolean))].slice(0, 3));
       } catch {
         // quiet: the banner is only a nicety
       }
     };
-    const id = window.setInterval(tick, 90_000);
+    const id = window.setInterval(tick, 45_000);
     return () => window.clearInterval(id);
   }, [author, newestKnown, tab]);
 
@@ -793,8 +822,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               cur
                 ? cur.map((p) => {
                     const f = fresh.get(p.id);
-                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || f.reactNames.join() !== (p.reactNames || []).join() || f.mates.join() !== (p.mates || []).join() || f.matesPending.join() !== (p.matesPending || []).join() || JSON.stringify(f.poll) !== JSON.stringify(p.poll))
-                      ? { ...p, likes: f.likes, reactions: f.reactions, reactNames: f.reactNames, mates: f.mates, matesPending: f.matesPending, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
+                    return f && (f.likes !== p.likes || f.comments !== p.comments || f.views !== p.views || JSON.stringify(f.reactions) !== JSON.stringify(p.reactions) || f.reactNames.join() !== (p.reactNames || []).join() || f.mates.join() !== (p.mates || []).join() || f.matesPending.join() !== (p.matesPending || []).join() || JSON.stringify(f.poll) !== JSON.stringify(p.poll) || f.gifts !== p.gifts || f.pinnedComment !== p.pinnedComment)
+                      ? { ...p, gifts: f.gifts, giftCoins: f.giftCoins, giftBy: f.giftBy, giftLast: f.giftLast, pinnedComment: f.pinnedComment, likes: f.likes, reactions: f.reactions, reactNames: f.reactNames, mates: f.mates, matesPending: f.matesPending, comments: f.comments, views: Math.max(f.views, p.views), poll: f.poll ?? p.poll }
                       : p;
                   })
                 : cur
@@ -850,6 +879,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const namesWith = (q: BlogPost, on: boolean) => (username ? (on ? [username, ...(q.reactNames || []).filter((n) => n !== username)] : (q.reactNames || []).filter((n) => n !== username)).slice(0, 2) : q.reactNames || []);
   const react = async (p: BlogPost, emoji: string) => {
     if (!user) return router.push("/login");
+    bumpLikedAuthor(p.author);
     const before = reactOf[p.id] ?? (liked.has(p.id) ? "👍" : null);
     const next = before === emoji ? null : emoji;
     setReactOf((m) => ({ ...m, [p.id]: next ?? "" }));
@@ -871,6 +901,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   const like = async (p: BlogPost) => {
     if (!user) return router.push("/login");
+    if (!liked.has(p.id)) bumpLikedAuthor(p.author);
     const was = liked.has(p.id);
     const flip = (on: boolean, n: number) => {
       setLiked((s) => {
@@ -1845,11 +1876,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             type="button"
             onClick={() => {
               setFresh(0);
+              setFreshBy([]);
               setReload((n) => n + 1);
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
-            className="feed-pop mx-3.5 mt-2 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#38BDF8] via-[#6366F1] to-[#A855F7] py-2 text-[13px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(99,102,241,.7)]"
+            // ↑ new Migs: floats at the top while you read (the page never jumps by itself)
+            className="feed-pop sticky top-[76px] z-20 mx-auto mt-2 flex w-max items-center justify-center gap-2 rounded-full bg-gradient-to-b from-[#2C9BEA] to-[#1A78C8] px-4 py-2 text-[13px] font-extrabold text-white shadow-[0_3px_0_#13589A,0_6px_14px_rgba(0,0,0,.2)] transition active:translate-y-[2px] active:shadow-[0_1px_0_#13589A]"
           >
-            ↑ {fresh >= 20 ? "20+" : fresh} new Mig{fresh === 1 ? "" : "s"} — tap to view
+            {freshBy.length > 0 && (
+              <span className="flex pl-1.5">
+                {freshBy.map((n) => (
+                  <span key={n} className="-ml-1.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-white text-[9px] font-black" style={{ background: colorOf(n) }}>
+                    {n.slice(0, 1).toUpperCase()}
+                  </span>
+                ))}
+              </span>
+            )}
+            ↑ {fresh >= 20 ? "20+" : fresh} new Mig{fresh === 1 ? "" : "s"}
           </button>
         )}
 
@@ -1884,8 +1927,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-6 px-3.5">
-            {(shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)).map((p) => (
-              <FeedCard key={p.id} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={p.likes >= 10 ? "🔥 Trending" : tab === "new" ? "🆕 New" : ""} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+            {rankFeed((shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)), !author && !placeView && tab === "popular", friendSet, likedAuthors).map((p, i, arr) => (
+              <Fragment key={p.id}>
+              {seenTab && seenMs > 0 && p.createdMs <= seenMs && i > 0 && arr[i - 1].createdMs > seenMs && (
+                <div className="flex items-center gap-2 text-[12.5px] font-extrabold text-[#14B88F]">
+                  <span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />✓ You&apos;re all caught up<span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />
+                </div>
+              )}
+              <FeedCard key={p.id} onGift={user && p.authorUid !== user.uid && p.privacy !== "me" ? () => setGiftFor(p) : undefined} onGifts={() => setGiversOf(p)} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={whyFor(p)} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+              </Fragment>
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
               <p className="py-6 text-center text-sm text-[#6B6F9A]">No photo Migs in this tab yet.</p>
@@ -1977,6 +2027,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         />
       )}
 
+      {giftFor && user && (
+        <PostGiftSheet
+          post={giftFor}
+          uid={user.uid}
+          onClose={() => setGiftFor(null)}
+          onSent={(icon, coins) => {
+            // at once (the live listener settles it)
+            const id = giftFor.id;
+            setPosts((cur) => cur && cur.map((x) => (x.id === id ? { ...x, gifts: x.gifts + 1, giftCoins: x.giftCoins + coins, giftLast: icon, giftBy: [username, ...x.giftBy.filter((n) => n !== username)].slice(0, 3) } : x)));
+            setToast(`${icon} Gift sent to ${giftFor.author}`);
+          }}
+        />
+      )}
+      {giversOf && <PostGiversSheet post={giversOf} onClose={() => setGiversOf(null)} onProfile={(n) => router.push(`/profile/${encodeURIComponent(n)}`)} />}
       {sharing && (
         <ShareSheet
           post={sharing}
@@ -2214,7 +2278,7 @@ function VideoLenBadge({ src }: { src: string }) {
   );
 }
 
-function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   const [pick, setPick] = useState(false);
@@ -2572,6 +2636,8 @@ function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, wh
         </button>
       )}
 
+      {/* 🎁 14 gifts · Nila, Tania … (tap: 🏆 Top Gifters) */}
+      {onGifts && <PostGiftBar p={p} onOpen={onGifts} />}
       {/* the reactions people used, then the buttons — on the white card */}
       {/* 😍😂👍 anima, vip and 46 others ·········· 👁 120 */}
       <div className="flex items-center gap-2 px-4 pt-2.5 text-[12.5px] font-semibold text-[#5B6B8C]">
@@ -2652,6 +2718,12 @@ function FeedCard({ p, onPhoto, onPhotoMenu, onReels, color, liked, verified, wh
               ↗ Share
             </button>
           )}
+          {/* 🎁 a gift to the writer (not on my own Mig) */}
+          {onGift && (
+            <button type="button" onClick={onGift} aria-label="Send a gift" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-[#FFF8E1] to-[#FFE7A8] text-[13.5px] font-black text-[#9A6B00] shadow-[0_3px_0_#E8C66A] transition active:translate-y-[2px] active:shadow-[0_1px_0_#E8C66A]">
+              🎁 Gift
+            </button>
+          )}
           {/* 🔖 Save lives in the ⋯ menu now */}
         </div>
       </div>
@@ -2707,4 +2779,53 @@ function MigSheet({ children, onClose }: { children: React.ReactNode; onClose: (
       </div>
     </div>
   );
+}
+
+// ❤️ how often I reacted to each writer (localStorage; small and only a nicety)
+const LIKED_KEY = "migwith.likedAuthors";
+function readLikedAuthors(): Record<string, number> {
+  try {
+    const v = JSON.parse(localStorage.getItem(LIKED_KEY) || "{}");
+    return v && typeof v === "object" ? (v as Record<string, number>) : {};
+  } catch {
+    return {};
+  }
+}
+function bumpLiked(name: string): Record<string, number> {
+  const m = readLikedAuthors();
+  const k = name.toLowerCase();
+  m[k] = Math.min(50, (m[k] || 0) + 1);
+  // keep the 200 most liked writers
+  const top = Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 200);
+  const out = Object.fromEntries(top);
+  try {
+    localStorage.setItem(LIKED_KEY, JSON.stringify(out));
+  } catch {
+    // storage blocked
+  }
+  return out;
+}
+// 🧭 Popular, a little smarter: friends and writers I often like move up a few
+// places, and one writer never shows twice in a row (their next Mig waits a bit).
+function rankFeed(list: BlogPost[], on: boolean, friends: Set<string>, liked: Record<string, number>): BlogPost[] {
+  if (!on || list.length < 3) return list;
+  const scored = list.map((p, i) => {
+    const a = p.author.toLowerCase();
+    return { p, s: -i + (friends.has(a) ? 3 : 0) + Math.min(liked[a] || 0, 5) * 0.6 };
+  });
+  scored.sort((x, y) => y.s - x.s);
+  const out: BlogPost[] = [];
+  const wait: BlogPost[] = [];
+  for (const { p } of scored) {
+    const last = out[out.length - 1];
+    if (last && last.author === p.author) {
+      wait.push(p);
+      continue;
+    }
+    out.push(p);
+    // a waiting Mig goes in as soon as it is not next to its own writer
+    const j = wait.findIndex((w) => w.author !== p.author);
+    if (j >= 0) out.push(...wait.splice(j, 1));
+  }
+  return [...out, ...wait];
 }
