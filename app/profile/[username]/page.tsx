@@ -897,80 +897,92 @@ export default function ProfilePage() {
               LV {profile.level} {badgeForLevel(profile.level)}
             </span>
           </div>
-          <div className="min-w-0 flex-1 pb-1.5">
-            {special.has(username) ? (
-              <RainbowName name={username} style={special.styleOf(username)} className="block truncate text-[23px]" />
-            ) : (
-              <p data-notranslate className="truncate text-[23px] font-black leading-tight text-[#1E63D6]">
-                {username}
-              </p>
+        </div>
+        {/* ✨ (miglife "A · 6D"): the name and chips on their own lines UNDER the photo, so the
+            cover's curve never cuts the name; a thick 6D name and chips standing on a coloured lip */}
+        <div className="px-4 pt-4">
+          {special.has(username) ? (
+            <RainbowName name={username} style={special.styleOf(username)} className="block truncate text-[27px]" />
+          ) : (
+            <p
+              data-notranslate
+              className="truncate bg-gradient-to-r from-[#1D4ED8] to-[#7C3AED] bg-clip-text pb-1 text-[27px] font-black leading-tight text-transparent"
+              style={{ filter: "drop-shadow(0 1px 0 rgba(67,56,202,.55)) drop-shadow(0 1px 0 rgba(49,46,158,.55)) drop-shadow(0 1px 0 rgba(30,27,107,.5))" }}
+            >
+              {username}
+            </p>
+          )}
+          {profile.fullName && !sameName(profile.fullName, username) && (
+            <p data-notranslate className="mt-0.5 truncate text-[13px] font-semibold text-[#35507E]">{profile.fullName}</p>
+          )}
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {shownRole && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                style={{ color: shownRole.color, boxShadow: `0 3px 0 color-mix(in srgb, ${shownRole.color} 65%, transparent), 0 5px 0 color-mix(in srgb, ${shownRole.color} 35%, transparent)` }}
+              >
+                <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
+                {shownRole.label}
+              </span>
             )}
-            {profile.fullName && !sameName(profile.fullName, username) && (
-              <p data-notranslate className="truncate text-[13px] text-[#35507E]">{profile.fullName}</p>
+            {team && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                style={{ color: team.text, boxShadow: `0 3px 0 color-mix(in srgb, ${team.text} 65%, transparent), 0 5px 0 color-mix(in srgb, ${team.text} 35%, transparent)` }}
+                title={`${team.name} supporter`}
+              >
+                <SupporterJersey team={team} size={16} />
+                {team.mark} supporter
+              </span>
             )}
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {shownRole && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-bold shadow-sm"
-                  style={{ color: shownRole.color }}
-                >
-                  <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
-                  {shownRole.label}
-                </span>
-              )}
-              {team && (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full border border-white/90 bg-white px-2.5 py-[3px] text-[12.5px] font-extrabold shadow-sm"
-                  style={{ color: team.text }}
-                  title={`${team.name} supporter`}
-                >
-                  <SupporterJersey team={team} size={16} />
-                  {team.mark}
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
         <div className="px-4 pt-[18px]">
-          {/* the details, in a glass box with the team's crest faint behind */}
-          {/* 🎨 P1: a white 6D card, each detail a small coloured 6D chip */}
-          <div className="pf-info-glass pf6d-card relative overflow-hidden rounded-[20px] px-3 py-3 text-[14px] leading-[1.75] text-[#0B2A5B]">
+          {/* 💬 (miglife "B"): the status message first, as a navy chat bubble */}
+          {bubble && (
+            <div className="mb-3 rounded-[18px] rounded-bl-[6px] bg-[#0B2A5B] px-3.5 py-2.5 text-white shadow-[0_4px_0_#051634]">
+              <span className="block text-[10.5px] font-bold tracking-wide opacity-70">💬 STATUS</span>
+              <p data-notranslate className="whitespace-pre-wrap text-[14px] leading-snug">{bubble}</p>
+            </div>
+          )}
+          {/* the details: a tidy list (icon · label · value) on a white 6D card, the team's crest faint behind */}
+          <div className="pf-info-glass pf6d-card relative overflow-hidden rounded-[20px] px-3.5 py-1 text-[#0B2A5B]">
             {team && (
               <span className="pointer-events-none absolute -right-4 -top-6 rotate-12 opacity-[0.17]" aria-hidden>
                 <SupporterJersey team={team} size={150} />
               </span>
             )}
             <div className="relative">
-              <div className="flex flex-wrap gap-1.5 pb-1 leading-none">
-                <Chip6d bg="#DCFCE7" fg="#15803D" lip="#97DDB0">
-                  <span
-                    className="mr-1 inline-block h-[10px] w-[10px] rounded-full align-[-1px]"
-                    style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})` }}
-                  />
-                  {profile.presence}
-                </Chip6d>
-                {team && <Chip6d bg="#DBEAFE" fg="#1D4ED8" lip="#93B4F0">⚽ {team.name}</Chip6d>}
-                {(profile.relationship || facts.length > 0) && (
-                  <Chip6d bg="#E0F2FE" fg="#0369A1" lip="#9CCFF0">
-                    {[profile.relationship ? `💙 ${profile.relationship}` : "", facts.join(", ")].filter(Boolean).join(" · ")}
-                  </Chip6d>
-                )}
-                {profile.country && <Chip6d bg="#FFE4E6" fg="#BE123C" lip="#F9B4BF">📍 {profile.country}</Chip6d>}
-                {profile.memberSince && <Chip6d bg="#EDE9FE" fg="#6D28D9" lip="#C4B2F3">🗓 Since {profile.memberSince}</Chip6d>}
-                {taggedDays !== null && (
-                  <Chip6d bg="#FEF3C7" fg="#A16207" lip="#EBCB7A">
-                    🎓 {isOwn && taggedDays > 0 ? `Tagged · ${taggedDays}d left` : "Tagged"}
-                  </Chip6d>
-                )}
-              </div>
+              {(() => {
+                const rows: [React.ReactNode, string, React.ReactNode, string?][] = [
+                  [
+                    <span key="d" className="inline-block h-[12px] w-[12px] rounded-full" style={{ background: `radial-gradient(circle at 35% 35%, ${dot[0]}, ${dot[1]})` }} />,
+                    "Status",
+                    profile.presence,
+                    profile.presence === "Online" ? "#15803D" : profile.presence === "Offline" ? "#6B7A99" : "#B45309",
+                  ],
+                ];
+                if (team) rows.push(["⚽", "Supports", team.name]);
+                const rel = [profile.relationship, facts.join(", ")].filter(Boolean).join(" · ");
+                if (rel) rows.push(["💙", "Relationship", rel]);
+                if (profile.country) rows.push(["📍", "From", profile.country]);
+                if (profile.memberSince) rows.push(["🗓", "Joined", profile.memberSince]);
+                if (taggedDays !== null) rows.push(["🎓", "Tagged", isOwn && taggedDays > 0 ? `${taggedDays}d left` : "Yes", "#A16207"]);
+                return rows.map(([icon, label, value, color], i) => (
+                  <div key={label} className={`flex items-center gap-3 py-2.5 ${i < rows.length - 1 ? "border-b border-[#EEF3F8]" : ""}`}>
+                    <span className="flex w-5 justify-center text-[15px]">{icon}</span>
+                    <span className="w-[92px] shrink-0 text-[12.5px] font-bold text-[#6B7FA0]">{label}</span>
+                    <span className="ml-auto min-w-0 truncate text-right text-[13.5px] font-extrabold" style={{ color: color || "#0B2A5B" }} data-notranslate>
+                      {value}
+                    </span>
+                  </div>
+                ));
+              })()}
               {/* 🎵 Profile Song — plays once when the profile opens */}
-              <ProfileSongChip username={username} />
-              {bubble && (
-                <p data-notranslate className="mt-1.5 whitespace-pre-wrap rounded-xl bg-white/60 px-2.5 py-1.5 text-[13.5px] leading-snug text-[#0B2A5B]">
-                  💬 {bubble}
-                </p>
-              )}
+              <div className="pb-2">
+                <ProfileSongChip username={username} />
+              </div>
             </div>
           </div>
 
