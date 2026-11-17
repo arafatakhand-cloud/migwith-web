@@ -334,7 +334,7 @@ export function PillTabStrip({ items, colors, className = "" }: { items: PillTab
           </span>
         </>
       );
-      const cls = "flex h-[34px] shrink-0 items-center px-2.5";
+      const cls = `flex h-[34px] shrink-0 items-center px-2.5${overlay ? "" : " tab-6d"}`;
       if (overlay) {
         return (
           <span key={item.key} className={cls} aria-hidden>
@@ -360,7 +360,7 @@ export function PillTabStrip({ items, colors, className = "" }: { items: PillTab
   return (
     <div ref={scroller} className={`no-scrollbar min-w-0 overflow-x-auto ${className}`}>
       <div ref={row} className="relative flex w-max items-center gap-0.5 p-1">
-        <span className="pointer-events-none absolute left-0 top-[calc(50%-17px)] h-[34px] rounded-full" style={pillStyle} />
+        <span className="pill-6d pointer-events-none absolute left-0 top-[calc(50%-17px)] h-[34px] rounded-full" style={pillStyle} />
         {renderRow(false)}
         <div className="pointer-events-none absolute inset-0 flex items-center gap-0.5 p-1" style={clipStyle}>
           {renderRow(true)}

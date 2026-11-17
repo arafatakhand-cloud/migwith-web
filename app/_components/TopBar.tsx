@@ -512,15 +512,16 @@ export function TopBar() {
   };
   return (
     <>
+      <div className="topbar-6d-wrap">
       <div
-        className="flex items-center px-2 py-1.5 sm:px-4"
+        className="topbar-6d flex items-center px-2 py-1.5 sm:px-4"
         style={{ background: "linear-gradient(90deg, #14B88F, #2C9BEA)" }}
       >
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Menu"
-          className={`glass-shine mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/[0.18] lg:hidden ${
+          className={`glass-shine btn-6d mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/35 bg-white/[0.18] lg:hidden ${
             hasUnread ? "pill-alert-blink" : "text-white"
           }`}
         >
@@ -528,6 +529,7 @@ export function TopBar() {
         </button>
         <PillTabStrip items={pillTabs("Chat Rooms")} colors={colors} className="min-w-0 flex-1" />
         {/* No 🔔 / বাংলা here, like the app (alerts: the ☰ glows; language: Settings). */}
+      </div>
       </div>
 
       {/* Side menu — in <body>, so nothing in the header can box it in */}

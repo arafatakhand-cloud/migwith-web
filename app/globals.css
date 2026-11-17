@@ -1764,3 +1764,68 @@ html[data-theme="dark_night"] .lb-glass {
   .hkx-off { animation: hkx-fade 0.4s ease forwards; }
   @keyframes hkx-fade { to { opacity: 0; } }
 }
+
+/* 🧱 6D top bar (miglife "B", like the app): the bar is a thick block — rounded
+   bottom, 3 solid darker layers under it and one light soft shadow (box-shadow
+   only, cheap on low-end phones). The ☰ button and the white pill have their
+   own layers, and pressing a button sinks it into its block. Modern only. */
+html:not([data-ui="classic"]) .topbar-6d-wrap {
+  /* the block's side: 9px of darker teal → darker blue under the bar, with two
+     faint lines so it reads as 3 layers, and one light soft shadow */
+  border-radius: 0 0 18px 18px;
+  padding-bottom: 9px;
+  margin-bottom: 4px;
+  background:
+    linear-gradient(transparent calc(100% - 6px), rgba(0, 0, 0, 0.12) calc(100% - 6px), rgba(0, 0, 0, 0.12) calc(100% - 5px), transparent calc(100% - 5px), transparent calc(100% - 3px), rgba(0, 0, 0, 0.12) calc(100% - 3px), rgba(0, 0, 0, 0.12) calc(100% - 2px), transparent calc(100% - 2px)),
+    linear-gradient(90deg, #0C7F67, #1B6FB4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.14);
+}
+html:not([data-ui="classic"]) .topbar-6d {
+  position: relative;
+  border-radius: 0 0 18px 18px;
+  padding-bottom: 10px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+html:not([data-ui="classic"]) .topbar-6d::before {
+  /* a thin top gloss so the bar reads as a raised block */
+  content: "";
+  position: absolute;
+  inset: 0 0 50% 0;
+  border-radius: inherit;
+  background: linear-gradient(rgba(255, 255, 255, 0.22), transparent);
+  pointer-events: none;
+}
+html:not([data-ui="classic"]) .topbar-6d .btn-6d,
+html[data-theme="glass"]:not([data-ui="classic"]) .topbar-6d .btn-6d.glass-shine {
+  transition: transform 90ms ease-out, box-shadow 90ms ease-out;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 1px 0 #0F8C73,
+    0 2px 0 #0C7A64,
+    0 3px 0 #0A6857,
+    0 4px 0 #085848,
+    0 6px 6px rgba(0, 0, 0, 0.16) !important;
+}
+html:not([data-ui="classic"]) .topbar-6d .btn-6d:active,
+html[data-theme="glass"]:not([data-ui="classic"]) .topbar-6d .btn-6d.glass-shine:active {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.6),
+    0 1px 0 #0A6857,
+    0 2px 3px rgba(0, 0, 0, 0.16) !important;
+}
+html:not([data-ui="classic"]) .topbar-6d .pill-6d {
+  box-shadow: 0 1px 0 #C5D2E3, 0 2px 0 #B1C0D5, 0 3px 0 #9EAFC7, 0 4px 5px rgba(0, 0, 0, 0.12);
+}
+html:not([data-ui="classic"]) .topbar-6d .tab-6d .pill-slot {
+  transition: transform 90ms ease-out;
+}
+html:not([data-ui="classic"]) .topbar-6d .tab-6d:active .pill-slot {
+  transform: translateY(2px);
+}
+/* the 6D bar's rounded corners and layers sit over the page, not a white strip */
+html:not([data-ui="classic"]) header[data-topbar]:has(.topbar-6d-wrap) {
+  background: transparent;
+  border-bottom: 0;
+  box-shadow: none;
+}
