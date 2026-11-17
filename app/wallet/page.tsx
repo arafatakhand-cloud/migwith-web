@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { WalletSecuritySheet } from "../_components/WalletSecurity";
 import { useRouter } from "next/navigation";
 import {
   addDoc,
@@ -728,21 +729,16 @@ export default function WalletPage() {
         </div>
       )}
 
+      {/* 🛡️ (miglife "A"): one sheet over the Wallet — question, then PIN, then Transfer */}
       {showPinPrompt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={() => setShowPinPrompt(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 text-[#0B2A5B]" onClick={(e) => e.stopPropagation()}>
-            <p className="text-lg font-black">🔐 Security PIN needed</p>
-            <p className="mt-2 text-sm">You haven&apos;t set your own Security PIN yet. Set it up first to transfer coins safely.</p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" onClick={() => setShowPinPrompt(false)} className="rounded-lg px-3 py-2 text-sm font-bold text-[#5B6B8C]">
-                Later
-              </button>
-              <Link href="/security" className="rounded-lg bg-[#2F80ED] px-4 py-2 text-sm font-black text-white">
-                Set PIN
-              </Link>
-            </div>
-          </div>
-        </div>
+        <WalletSecuritySheet
+          onClose={() => setShowPinPrompt(false)}
+          onDone={() => {
+            setShowPinPrompt(false);
+            setPinNeedsSetup(false);
+            setShowTransfer(true);
+          }}
+        />
       )}
 
       {/* Transfer Coins dialog, like the app */}
