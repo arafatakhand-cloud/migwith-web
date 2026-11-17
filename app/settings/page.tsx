@@ -209,6 +209,7 @@ export default function SettingsPage() {
               <MatesReviewRow />
             </Group>
 
+            <StoryAutoGroup />
             <PostNotifGroup />
 
             <Group title="Security">
@@ -767,6 +768,44 @@ function PostNotifGroup() {
           ))}
         </div>
       )}
+    </Group>
+  );
+}
+
+// 📖 Feed & Story: is "Also share to my story" ticked when I write a Mig?
+function StoryAutoGroup() {
+  const [p, setP] = useState<{ always: boolean; mediaOnly: boolean } | null>(null);
+  useEffect(() => {
+    blogFn({ action: "storyAuto" })
+      .then((r) => setP({ always: r.data?.always === true, mediaOnly: r.data?.mediaOnly === true }))
+      .catch(() => setP({ always: false, mediaOnly: false }));
+  }, []);
+  const change = async (patch: { always?: boolean; mediaOnly?: boolean }) => {
+    if (!p) return;
+    const before = p;
+    setP({ ...p, ...patch });
+    try {
+      await blogFn({ action: "storyAuto", ...patch });
+    } catch {
+      setP(before);
+    }
+  };
+  return (
+    <Group title="Feed & Story">
+      <Row
+        icon="📖"
+        tint="#14B88F"
+        title="New Migs to my story too"
+        subtitle="The “Also share to my story” box starts ticked (5 a day)"
+        right={<Switch on={p?.always === true} disabled={!p} onChange={(v) => change({ always: v })} />}
+      />
+      <Row
+        icon="🖼️"
+        tint="#2F80ED"
+        title="Only photo & video Migs"
+        subtitle="Words-only Migs start unticked"
+        right={<Switch on={p?.mediaOnly === true} disabled={!p || !p.always} onChange={(v) => change({ mediaOnly: v })} />}
+      />
     </Group>
   );
 }

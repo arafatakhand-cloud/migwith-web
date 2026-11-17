@@ -358,6 +358,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [ccatOpen, setCcatOpen] = useState(false);
   // 🔒 who can see the new post: '' = 🌍 Everyone, 'friends', 'me'
   const [cpriv, setCpriv] = useState<"" | "friends" | "me">("");
+  // 📖 "Also share to my story": null = follow Settings (always / photos & videos only)
+  const [cstory, setCstory] = useState<boolean | null>(null);
+  const [storyPrefs, setStoryPrefs] = useState<{ always: boolean; mediaOnly: boolean; used: number; max: number } | null>(null);
+  useEffect(() => {
+    if (!user) return;
+    blogCall("storyAuto")
+      .then((r) => setStoryPrefs({ always: r.always === true, mediaOnly: r.mediaOnly === true, used: Number(r.used || 0), max: Number(r.max || 5) }))
+      .catch(() => setStoryPrefs(null)); // an older server: no box
+  }, [user]);
   const [cprivOpen, setCprivOpen] = useState(false);
   // 📍 where I am (optional) and its picker
   const [cplace, setCplace] = useState<Place | null>(null);
@@ -427,6 +436,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCmood("");
     setCpoll(null);
     setCpriv("");
+    setCstory(null);
     setCmates([]);
     setCerr("");
     setCdraftNote(false);
@@ -529,7 +539,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[] }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean }) => {
     // no title box: the title is the first line of the text
     const first = p.text.trim().split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
@@ -541,9 +551,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }) });
+      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}) });
+      const st = (r as { story?: boolean }).story;
+      if (st === true) setStoryPrefs((x) => (x ? { ...x, used: x.used + 1 } : x));
+      const storyNote = st === true ? " · 📖 also in your story" : st === false ? " · 📖 today's 5 stories are used up" : "";
       // 📣 @all works once every 6 hours
-      setToast((r as { allSkipped?: boolean }).allSkipped ? "Migged ✓ · 📣 @all works once every 6 hours" : "Migged ✓");
+      setToast(((r as { allSkipped?: boolean }).allSkipped ? "Migged ✓ · 📣 @all works once every 6 hours" : "Migged ✓") + storyNote);
       setReload((n) => n + 1);
       window.setTimeout(() => setToast(""), 3200);
     } catch (e) {
@@ -556,6 +569,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCplace(p.place);
       setCmood(p.mood);
       setCmates(p.mates || []);
+      setCstory(p.alsoStory ?? null);
       setCpoll(p.poll ? { options: p.poll.options, days: (p.poll.days as 1 | 3 | 7) || 3, multi: p.poll.multi } : null);
       cbgKeep.current = p.bg;
       setComposing(true);
@@ -594,6 +608,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCbusy(false);
     }
   };
+  // 📖 is the "Also share to my story" box ticked? (never for 🔒 Only me / when today's 5 are used)
+  const storyFull = !!storyPrefs && storyPrefs.used >= storyPrefs.max;
+  const storyAllowed = !!storyPrefs && !cedit && cpriv !== "me" && !storyFull;
+  const storyDefault = !!storyPrefs && storyPrefs.always && (!storyPrefs.mediaOnly || cphotos.length > 0 || !!cvideo);
+  const storyOn = storyAllowed && (cstory ?? storyDefault);
   const publishInline = () => {
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
@@ -602,7 +621,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
     if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
     const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -626,6 +645,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCplace(payload.place);
         setCmood(payload.mood);
         setCmates(payload.mates);
+        setCstory(payload.alsoStory);
         setCpoll(payload.poll ? { options: payload.poll.options, days: payload.poll.days, multi: payload.poll.multi } : null);
         cbgKeep.current = payload.bg;
         setComposing(true);
@@ -1697,6 +1717,22 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     ))}
                   </div>
                 </div>
+              )}
+              {/* 📖 Also share to my story (the same card a shared Mig shows; 24 hours) */}
+              {storyPrefs && !cedit && (
+                <button
+                  type="button"
+                  disabled={!storyAllowed}
+                  onClick={() => setCstory(!storyOn)}
+                  className={`mt-3 flex w-full items-center gap-2.5 rounded-xl border-[1.5px] px-3 py-2 text-left transition disabled:opacity-50 ${storyOn ? "border-[#9BE3CC] bg-[#ECFBF6]" : "border-[#E3EAF3] bg-[#F7FAFD]"}`}
+                >
+                  <span className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[14px] font-black ${storyOn ? "bg-[#14B88F] text-white" : "border-2 border-[#C9D5E2] bg-white"}`}>{storyOn ? "✓" : ""}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] font-bold text-[#0E7A62]">📖 Also share to my story</span>
+                    <span className="block text-[11.5px] text-[#4D7D70]">{cpriv === "me" ? "Not for 🔒 Only me Migs" : storyFull ? "Today's 5 are used — try tomorrow" : "Stays 24 hours · tap it to open this Mig"}</span>
+                  </span>
+                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-[#0E7A62]">today {storyPrefs.used}/{storyPrefs.max}</span>
+                </button>
               )}
               {/* tools on the left, Post on the right */}
               <div className="mt-3 flex items-center gap-1">
