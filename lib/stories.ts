@@ -2,6 +2,7 @@
 
 import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { db } from "./firebase";
+import { readOverlays, type StoryOverlay } from "../app/_components/StoryOverlays";
 
 // 📸 Stories: one photo each, shown for 24 hours (the server sets expiresAt).
 // A story has an optional caption and an audience: "everyone" or "friends".
@@ -28,6 +29,8 @@ export type Story = {
   reactCount: number;
   /** 👁 how many saw it (the writer sees who) */
   viewCount?: number;
+  /** ✍️ words and stickers on the story */
+  overlays?: StoryOverlay[];
 };
 
 /** tells the story row to load again (after a Mig was shared to my story) */
@@ -60,6 +63,7 @@ export async function loadStories(): Promise<Story[]> {
         reactions: x.reactions && typeof x.reactions === "object" ? (x.reactions as Record<string, number>) : {},
         reactCount: Number(x.reactCount || 0),
         viewCount: Number(x.viewCount || 0),
+        overlays: readOverlays(x.overlays),
         sharedPost:
           x.sharedPost && typeof x.sharedPost.id === "string" && x.sharedPost.id
             ? { id: String(x.sharedPost.id), author: String(x.sharedPost.author || ""), text: String(x.sharedPost.text || ""), image: String(x.sharedPost.image || "") }

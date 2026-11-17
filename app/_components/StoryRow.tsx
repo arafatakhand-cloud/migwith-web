@@ -13,6 +13,7 @@ import { r2Upload } from "../../lib/r2Upload";
 import { VideoEditor } from "./VideoEditor";
 import { useBlockSets } from "../../lib/blocks";
 import { openReport } from "./ReportDialog";
+import { StoryDecorEditor, StoryOverlayLayer, type StoryOverlay } from "./StoryOverlays";
 
 export type StorySong = { url: string; title: string; startSec: number };
 
@@ -30,7 +31,7 @@ type Audience = "everyone" | "friends" | "only_me";
 const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
 // ↩️ quick replies (miglife M2: chat bubbles, Bangla and English together)
 const QUICK_REPLIES = ["😍 দারুণ! · Awesome", "🔥 জোস · Fire", "💖 ভালো লাগলো · So nice"];
-type StoryReactor = { name: string; emoji: string; atMs: number };
+type StoryReactor = { name: string; emoji: string; atMs: number; replied?: boolean };
 type Group = { author: string; items: Story[]; unseen: number };
 
 const STORY_MS = 5000;
@@ -164,7 +165,7 @@ export function StoryRow({
     }
   };
 
-  const publish = async (data: { url?: string; caption?: string; text?: string; song?: StorySong | null }, privacy: Audience) => {
+  const publish = async (data: { url?: string; caption?: string; text?: string; song?: StorySong | null; overlays?: StoryOverlay[] }, privacy: Audience) => {
     setError("");
     try {
       await blogCall("story", { ...data, privacy });
@@ -237,11 +238,12 @@ export function StoryRow({
           maxLen={140}
           placeholder="Write a caption… (optional)"
           hasMedia
+          mediaUrl={draft}
           onClose={() => setDraft(null)}
-          onConfirm={(caption, audience, song) => {
+          onConfirm={(caption, audience, song, _photo, overlays) => {
             const url = draft;
             setDraft(null);
-            publish({ url, caption, song }, audience);
+            publish({ url, caption, song, overlays }, audience);
           }}
         />
       )}
@@ -258,11 +260,11 @@ export function StoryRow({
           allowPhoto
           allowVideo
           onClose={() => setTextDraft(false)}
-          onConfirm={(text, audience, song, photoUrl) => {
+          onConfirm={(text, audience, song, photoUrl, overlays) => {
             setTextDraft(false);
             // a photo in a text story: the photo is the story, the text is its caption
-            if (photoUrl) publish({ url: photoUrl, caption: text, song }, audience);
-            else publish({ text, song }, audience);
+            if (photoUrl) publish({ url: photoUrl, caption: text, song, overlays }, audience);
+            else publish({ text, song, overlays }, audience);
           }}
         />
       )}
@@ -580,6 +582,9 @@ function StoryViewer({
           )}
         </div>
 
+        {/* ✍️ the writer's words and stickers */}
+        <StoryOverlayLayer key={`ov_${current.id}`} overlays={current.overlays} />
+
         {/* one bar per story */}
         <div className="pointer-events-none absolute left-2.5 right-2.5 top-2.5 flex gap-1">
           {grp.items.map((s, k) => (
@@ -746,11 +751,28 @@ function StoryViewer({
               <p className="text-[16px] font-extrabold">👁 Seen by · {reactors.length}</p>
               <button type="button" onClick={() => setReactors(null)} className="ml-auto rounded-full bg-[#F1F4F9] px-3 py-1 font-bold">✕</button>
             </div>
+            {/* the reactions and replies, counted */}
+            {reactors.length > 0 && (
+              <div className="mb-1 flex flex-wrap gap-1.5">
+                {Object.entries(
+                  reactors.reduce<Record<string, number>>((m, r) => (r.emoji ? { ...m, [r.emoji]: (m[r.emoji] || 0) + 1 } : m), {})
+                )
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([e, n]) => (
+                    <span key={e} className="rounded-full bg-[#F1F4F9] px-2.5 py-0.5 text-[12px] font-bold">
+                      {e} {n}
+                    </span>
+                  ))}
+                {reactors.some((r) => r.replied) && (
+                  <span className="rounded-full bg-[#E8F7EE] px-2.5 py-0.5 text-[12px] font-bold text-[#16A34A]">💬 {reactors.filter((r) => r.replied).length} reply</span>
+                )}
+              </div>
+            )}
             {reactors.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#6B7A99]">No one has seen it yet.</p>
             ) : (
               reactors.map((r) => (
-                <div key={r.name} className="flex items-center gap-3 border-b border-[#F0F2F6] py-2.5 last:border-0">
+                <Link key={r.name} href={`/profile/${encodeURIComponent(r.name)}`} onClick={onClose} className="flex items-center gap-3 border-b border-[#F0F2F6] py-2.5 last:border-0">
                   <span className="grid h-9 w-9 place-items-center rounded-full font-black text-white" style={{ background: colorOf(r.name) }}>
                     {r.name.slice(0, 1).toUpperCase()}
                   </span>
@@ -758,8 +780,9 @@ function StoryViewer({
                     <span className="block truncate font-bold">{r.name}</span>
                     {r.atMs > 0 && <span className="block text-[11.5px] font-normal text-[#6B7A99]">{blogAgoBn(r.atMs)}</span>}
                   </span>
+                  {r.replied && <span className="rounded-lg bg-[#E8F7EE] px-1.5 py-0.5 text-[10.5px] font-extrabold text-[#16A34A]">💬 reply</span>}
                   <span className="text-[22px]">{r.emoji}</span>
-                </div>
+                </Link>
               ))
             )}
           </div>
@@ -844,6 +867,7 @@ export function StoryDialog({
   allowPhoto = false,
   allowVideo = false,
   hasMedia = false,
+  mediaUrl = null,
 }: {
   uid?: string;
   title: string;
@@ -853,7 +877,9 @@ export function StoryDialog({
   maxLen?: number;
   placeholder?: string;
   onClose: () => void;
-  onConfirm: (caption: string, audience: Audience, song?: StorySong | null, photoUrl?: string | null) => void;
+  onConfirm: (caption: string, audience: Audience, song?: StorySong | null, photoUrl?: string | null, overlays?: StoryOverlay[]) => void;
+  /** the photo already chosen (the add-photo flow), shown under the words and stickers */
+  mediaUrl?: string | null;
   /** a text story may also get a photo, added right here */
   allowPhoto?: boolean;
   /** the photo is already chosen (the add-photo flow) */
@@ -880,8 +906,34 @@ export function StoryDialog({
   const [library, setLibrary] = useState<LibrarySong[] | null>(null);
   const [showLib, setShowLib] = useState(false);
   const songInput = useRef<HTMLInputElement>(null);
+  // ✍️ words and stickers on the story
+  const [overlays, setOverlays] = useState<StoryOverlay[]>([]);
+  const [decor, setDecor] = useState(false);
+  const media = photoUrl || mediaUrl;
+  const mediaVideo = !!photoUrl && isVideo;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#0B1F3A]/35 p-3 backdrop-blur-[2px]" onClick={onClose}>
+      {decor && (
+        <StoryDecorEditor
+          initial={overlays}
+          onCancel={() => setDecor(false)}
+          onDone={(xs) => (setOverlays(xs), setDecor(false))}
+          background={
+            media ? (
+              mediaVideo ? (
+                <video src={media} muted autoPlay loop playsInline className="max-h-full max-w-full object-contain" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={media} alt="" className="max-h-full max-w-full object-contain" />
+              )
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
+                {caption}
+              </div>
+            )
+          }
+        />
+      )}
       <div className="w-full max-w-md overflow-hidden rounded-[28px] bg-white shadow-[0_24px_60px_-20px_rgba(11,31,58,.45)]" onClick={(e) => e.stopPropagation()}>
         {/* 🌿 a thin mint → sky strip, the Feed's colours */}
         <div className="h-1.5 w-full bg-gradient-to-r from-[#14B88F] to-[#2C9BEA]" />
@@ -996,6 +1048,18 @@ export function StoryDialog({
             )}
           </div>
         )}
+        {/* ✍️ words & stickers on the story (a photo / video story, or a text one) */}
+        {(media || caption.trim()) && (
+          <button
+            type="button"
+            onClick={() => setDecor(true)}
+            className="mt-3 flex w-full items-center gap-2 rounded-2xl bg-gradient-to-r from-[#FFF1F7] to-[#F3E8FF] px-3.5 py-2.5 text-left text-[13.5px] font-extrabold text-[#7C3AED]"
+          >
+            <span className="text-[17px]">Aa 😊</span>
+            <span className="flex-1">Text & stickers</span>
+            {overlays.length > 0 && <span className="rounded-full bg-[#7C3AED] px-2 py-0.5 text-[11px] text-white">{overlays.length}</span>}
+          </button>
+        )}
         <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-[#F1F6F4] p-1">
           {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
             <button
@@ -1087,7 +1151,7 @@ export function StoryDialog({
           <button
             type="button"
             disabled={!canShare || photoBusy}
-            onClick={() => onConfirm(caption.trim(), audience, song, photoUrl)}
+            onClick={() => onConfirm(caption.trim(), audience, song, photoUrl, overlays)}
             className="rounded-full bg-gradient-to-r from-[#14B88F] to-[#2C9BEA] px-6 py-2.5 font-extrabold text-white shadow-[0_10px_20px_-10px_rgba(20,184,143,.8)] transition enabled:hover:brightness-105 disabled:cursor-not-allowed disabled:bg-none disabled:bg-[#D9E2E0] disabled:text-[#8AA79F] disabled:shadow-none"
           >
             {confirmText}

@@ -2016,12 +2016,12 @@ function ShareSheet({ post, uid, onClose, onDone, onLink }: { post: BlogPost; ui
   // 📸 only 🌍 Everyone Migs can go to a story (everyone who sees the story can open it)
   const canStory = !post.privacy;
   const [toStory, setToStory] = useState(false);
-  const sendToStory = async (caption: string, audience: string, song?: { url: string; title: string; startSec: number } | null) => {
+  const sendToStory = async (caption: string, audience: string, song?: { url: string; title: string; startSec: number } | null, overlays?: unknown[]) => {
     setToStory(false);
     setBusy(true);
     setErr("");
     try {
-      await blogCall("story", { sharePostId: origin.id, caption, song: song || null, privacy: audience });
+      await blogCall("story", { sharePostId: origin.id, caption, song: song || null, privacy: audience, overlays: overlays || [] });
       window.dispatchEvent(new Event(STORIES_CHANGED));
       onDone("Added to your story ✓");
     } catch (e) {
@@ -2042,7 +2042,7 @@ function ShareSheet({ post, uid, onClose, onDone, onLink }: { post: BlogPost; ui
         placeholder="Say something about this Mig… (optional)"
         hasMedia
         onClose={() => setToStory(false)}
-        onConfirm={(caption, audience, song) => sendToStory(caption, audience, song)}
+        onConfirm={(caption, audience, song, _p, overlays) => sendToStory(caption, audience, song, overlays)}
       />
     );
   const send = async () => {
