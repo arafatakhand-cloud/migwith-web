@@ -21,7 +21,7 @@ function darker(hex: string, f: number): string {
   return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`;
 }
 
-export function SupporterJersey({ team, size = 18, depth = false }: { team: SupporterTeam; size?: number; depth?: boolean }) {
+export function SupporterJersey({ team, size = 18, depth = true }: { team: SupporterTeam; size?: number; depth?: boolean }) {
   const id = `c${useId().replace(/:/g, "")}`;
   const picture = useSupporterImages()[team.id];
   if (picture)
@@ -38,7 +38,7 @@ export function SupporterJersey({ team, size = 18, depth = false }: { team: Supp
   const tl = L <= 2 ? 11 : L === 3 ? 15.5 : L === 4 ? 17 : 18;
   return (
     <svg width={size} height={size} viewBox={depth ? "-2 0 44 56" : "0 0 40 46"} className="inline-block shrink-0 align-middle" aria-hidden>
-      {/* 🛡 6D: a soft shadow and three darker shields stacked under the crest */}
+      {/* 🛡 6D everywhere (miglife): a soft shadow and three darker shields stacked under the crest */}
       {depth && <ellipse cx="20" cy="52" rx="15" ry="2.6" fill="rgba(0,0,0,.22)" />}
       {depth &&
         [3, 2, 1].map((i) => (
