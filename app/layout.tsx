@@ -29,6 +29,10 @@ export const viewport: Viewport = {
   // The phone's top status bar on every page: the blue header colour (iPhone Safari
   // and Android Chrome tint their bar with this).
   themeColor: "#0B1A33",
+  // 🌙 the browser must not repaint miGlife dark on its own (Chrome "Auto dark mode",
+  // Samsung Internet dark mode …) — every phone showed different colours. miGlife has
+  // its own themes (Dark Night …).
+  colorScheme: "only light",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
