@@ -396,6 +396,7 @@ export default function SecretPage() {
           { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
           { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
           { icon: "⚡", label: "Quick Create ID", hint: "Type only the ID name → Create", tint: "#F59E0B", key: "quick_id", ok: f.isMigwith },
+          { icon: "🧪", label: "Review Account", hint: "Google Play's test ID — nothing reaches real people", tint: "#0F766E", href: "/secret/review-account", ok: f.isMigwith },
           { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },
           { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.isMigwith },
         ],
