@@ -7,6 +7,7 @@ import { Translator } from "./_components/Translator";
 import { BrandName } from "./_components/BrandName";
 import { RainbowFavicon } from "./_components/RainbowFavicon";
 import { LoginWelcomeSplash } from "./_components/LoginWelcome";
+import { FbGroupPopup } from "./_components/FbGroupPopup";
 import { BootSplash } from "./_components/BootSplash";
 import { BOOT_SPLASH_SCRIPT } from "../lib/bootSplash";
 
@@ -86,6 +87,7 @@ export default function RootLayout({
         <BrandName />
         <RainbowFavicon />
         <LoginWelcomeSplash />
+        <FbGroupPopup />
       </body>
     </html>
   );
