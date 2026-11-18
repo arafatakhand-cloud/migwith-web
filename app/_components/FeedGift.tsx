@@ -110,8 +110,8 @@ export function PostGiftBar({ p, onOpen }: { p: BlogPost; onOpen: () => void }) 
     if (p.gifts > before.current) setFly(Date.now());
     before.current = p.gifts;
   }, [p.gifts]);
-  if (p.gifts <= 0) return null;
-  const names = p.giftBy.slice(0, 2);
+  if (!(p.gifts > 0)) return null;
+  const names = (p.giftBy || []).slice(0, 2);
   const others = Math.max(0, p.gifts - names.length);
   return (
     <button

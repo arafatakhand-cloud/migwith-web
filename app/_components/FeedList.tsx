@@ -699,8 +699,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     let cached: BlogPost[] | null = null;
     try {
       const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
-      // an older cache has no reactNames yet
-      if (raw) cached = (JSON.parse(raw) as BlogPost[]).map((p) => ({ ...p, reactNames: Array.isArray(p.reactNames) ? p.reactNames : [], mates: Array.isArray(p.mates) ? p.mates : [], matesPending: Array.isArray(p.matesPending) ? p.matesPending : [] }));
+      // an older cache has no reactNames / gift fields yet (🐞 "t.giftBy is undefined"
+      // crashed the Feed for anyone whose browser kept a feed from before Post Gifts)
+      if (raw)
+        cached = (JSON.parse(raw) as BlogPost[]).map((p) => ({
+          ...p,
+          reactNames: Array.isArray(p.reactNames) ? p.reactNames : [],
+          mates: Array.isArray(p.mates) ? p.mates : [],
+          matesPending: Array.isArray(p.matesPending) ? p.matesPending : [],
+          gifts: Number(p.gifts) || 0,
+          giftCoins: Number(p.giftCoins) || 0,
+          giftBy: Array.isArray(p.giftBy) ? p.giftBy : [],
+          giftLast: typeof p.giftLast === "string" ? p.giftLast : "",
+          pinnedComment: typeof p.pinnedComment === "string" ? p.pinnedComment : "",
+        }));
     } catch {
       cached = null;
     }
@@ -2072,7 +2084,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           onSent={(icon, coins) => {
             // at once (the live listener settles it)
             const id = giftFor.id;
-            setPosts((cur) => cur && cur.map((x) => (x.id === id ? { ...x, gifts: x.gifts + 1, giftCoins: x.giftCoins + coins, giftLast: icon, giftBy: [username, ...x.giftBy.filter((n) => n !== username)].slice(0, 3) } : x)));
+            setPosts((cur) => cur && cur.map((x) => (x.id === id ? { ...x, gifts: x.gifts + 1, giftCoins: x.giftCoins + coins, giftLast: icon, giftBy: [username, ...(x.giftBy || []).filter((n) => n !== username)].slice(0, 3) } : x)));
             setToast(`${icon} Gift sent to ${giftFor.author}`);
           }}
         />
