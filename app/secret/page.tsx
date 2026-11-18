@@ -398,6 +398,7 @@ export default function SecretPage() {
           { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
           { icon: "🚩", label: "Reports", hint: "What users reported · handle within 24h", tint: "#D93025", href: "/secret/reports", ok: f.can("reports") },
           { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
+          { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
           { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
         ],
       ],
@@ -430,6 +431,7 @@ export default function SecretPage() {
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
           { icon: "🃏", label: "LowCard Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#7C3AED", key: "lowcard_winfx", ok: f.isMigwith },
           { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.isMigwith },
+          { icon: "🎲", label: "House Bots", hint: "Rafi• Nila•… keep LowCard & Cricket playing", tint: "#0F9D58", href: "/secret/house-bots", ok: f.isMigwith },
         ],
       ],
       [

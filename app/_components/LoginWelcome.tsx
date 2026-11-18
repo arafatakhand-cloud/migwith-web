@@ -1,5 +1,7 @@
 "use client";
 
+import { requestFbGroupPopup } from "./FbGroupPopup";
+
 import { useEffect, useState } from "react";
 
 // ✨ Welcome splash, shown once right after logging in (the app's
@@ -13,6 +15,7 @@ const WORDS = "Join the Fun!";
 
 /** Called by the login page just before it opens Home. */
 export function requestWelcomeSplash() {
+  requestFbGroupPopup();   // 📘 the Facebook group card comes after the animation
   try {
     sessionStorage.setItem(FLAG, "1");
   } catch {
