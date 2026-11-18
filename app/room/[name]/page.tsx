@@ -358,6 +358,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // the photo perk is for VIP / miglife only (not the 🎂 birthday colour)
   const specialHasMe = specialColors.paid(profile?.username);
   const [messages, setMessages] = useState<ChatMessage[]>(initial?.messages ?? []);
+  // 🧪 a Play review account's room lines (room_review_messages): only miGlife sees them, marked 🧪
+  const [reviewMessages, setReviewMessages] = useState<ChatMessage[]>([]);
   // Start of this visit (see savedEntry); null until known.
   const [sinceMs, setSinceMs] = useState<number | null>(initial?.sinceMs ?? null);
   const [localNotes, setLocalNotes] = useState<ChatMessage[]>(initial?.localNotes ?? []);
@@ -787,6 +789,39 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       setBlocked(ROOM_LOCKED_MSG);
     }
   }, [profile, roomLoaded, modLoaded, perms.bypassesEntry, roomInfo.lockLevel, locked, sinceMs]);
+
+  // 🧪 miGlife only: the Play review account's lines in this room (nobody else
+  // can read them — they are kept apart from room_messages). Same as the app.
+  const iAmMiglife = isMainFounderName(profile?.username);
+  useEffect(() => {
+    if (!user || !iAmMiglife) {
+      setReviewMessages([]);
+      return;
+    }
+    const q = query(collection(db, "room_review_messages", roomName, "messages"), orderBy("createdAt", "asc"), limitToLast(60));
+    return onSnapshot(
+      q,
+      (snap) =>
+        setReviewMessages(
+          snap.docs.map((d) => ({
+            id: `review_${d.id}`,
+            text: `${String(d.get("text") || "")} 🧪`,
+            type: String(d.get("type") || "chat"),
+            sender: String(d.get("sender") || ""),
+            senderUid: String(d.get("senderUid") || ""),
+            imageUrl: "",
+            caption: "",
+            audioUrl: "",
+            videoUrl: "",
+            giftName: String(d.get("giftName") || ""),
+            moderationColor: "",
+            reactions: {},
+            createdAtMs: toMillis(d.get("createdAt", { serverTimestamps: "estimate" })),
+          }))
+        ),
+      () => setReviewMessages([])
+    );
+  }, [user, iAmMiglife, roomName]);
 
   // Live chat — the latest 150 messages, same collection the app uses.
   // 🔒 The server lets only people IN the room read its chat: opening a room,
@@ -1322,7 +1357,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   const myUid = user?.uid;
   const shown = useMemo(() => {
     const last = new Map<string, { type: string; at: number }>();
-    return [...messages.filter((m) => sinceMs !== null && m.createdAtMs > sinceMs), ...localNotes]
+    return [...messages, ...reviewMessages].filter((m) => sinceMs !== null && m.createdAtMs > sinceMs).concat(localNotes)
       .sort((a, b) => a.createdAtMs - b.createdAtMs)
       .filter((m) => {
         if (m.type !== "room_entry" && m.type !== "room_leave") return true;
@@ -1334,7 +1369,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         last.set(who, { type: m.type, at: m.createdAtMs });
         return keep;
       });
-  }, [messages, localNotes, myUid, sinceMs]);
+  }, [messages, reviewMessages, localNotes, myUid, sinceMs]);
 
   // People I blocked (user_blocks/{uid}, /block): their lines are hidden for me, like the app.
   // 🚫 a block works both ways: the people who blocked ME are hidden too
