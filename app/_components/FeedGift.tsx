@@ -171,3 +171,21 @@ export function PostGiversSheet({ post, onClose, onProfile }: { post: BlogPost; 
     </div>
   );
 }
+
+// 🎁 Our own gift box (pink box, gold bow and ribbon) — looks the same on every
+// phone, unlike the 🎁 emoji. Used on the Gift buttons.
+export function GiftBoxIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" className="shrink-0">
+      <defs>
+        <linearGradient id="gbxBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF7AB6" /><stop offset="1" stopColor="#DB2777" /></linearGradient>
+        <linearGradient id="gbxLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#FF9BC8" /><stop offset="1" stopColor="#EC4899" /></linearGradient>
+      </defs>
+      <path d="M12 8.6C10.4 6 7.6 4.4 6.3 5.6c-1.2 1.2.2 3.2 5.7 3.4z" fill="#F59E0B" />
+      <path d="M12 8.6c1.6-2.6 4.4-4.2 5.7-3 1.2 1.2-.2 3.2-5.7 3.4z" fill="#FBBF24" />
+      <rect x="4.3" y="12.6" width="15.4" height="8.6" rx="1.6" fill="url(#gbxBody)" />
+      <rect x="3" y="8.8" width="18" height="4.4" rx="1.3" fill="url(#gbxLid)" />
+      <rect x="10.8" y="8.8" width="2.4" height="12.4" fill="#FCD34D" />
+    </svg>
+  );
+}

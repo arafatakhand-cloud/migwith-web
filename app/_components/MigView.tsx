@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
+import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -588,7 +588,7 @@ export function MigView({
               <div className="min-w-0 flex-1">{post.gifts > 0 && <PostGiftBar p={post} onOpen={() => setGivers(true)} />}</div>
               {user && !mine && post.privacy !== "me" && (
                 <button type="button" onClick={() => setGiftOpen(true)} className="mt-2.5 h-9 shrink-0 rounded-[12px] bg-gradient-to-b from-[#FFF8E1] to-[#FFE7A8] px-3.5 text-[13px] font-black text-[#9A6B00] shadow-[0_3px_0_#E8C66A] transition active:translate-y-[2px] active:shadow-[0_1px_0_#E8C66A]">
-                  🎁 Gift
+                  <span className="flex items-center gap-1"><GiftBoxIcon size={17} /> Gift</span>
                 </button>
               )}
             </div>

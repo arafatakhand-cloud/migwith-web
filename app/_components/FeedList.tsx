@@ -29,7 +29,7 @@ import { PhotoMenu, PhotoViewer, photosOf } from "./PhotoViewer";
 import { useBlockSets } from "../../lib/blocks";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
-import { PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
+import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
 import {
   blogAgoBn,
@@ -2757,7 +2757,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           {/* 🎁 a gift to the writer (not on my own Mig) */}
           {onGift && (
             <button type="button" onClick={onGift} aria-label="Send a gift" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-[#FFF8E1] to-[#FFE7A8] text-[13.5px] font-black text-[#9A6B00] shadow-[0_3px_0_#E8C66A] transition active:translate-y-[2px] active:shadow-[0_1px_0_#E8C66A]">
-              🎁 Gift
+              <GiftBoxIcon /> Gift
             </button>
           )}
           {/* 🔖 Save lives in the ⋯ menu now */}
