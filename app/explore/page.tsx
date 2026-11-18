@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { PageShell } from "../_components/PageShell";
-import { PageTitle, PastelCard, SectionLabel } from "../_components/LightCards";
+import Link from "next/link";
+import { PageTitle, PastelCard } from "../_components/LightCards";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useIsClassic } from "../../lib/uiStyle";
 
@@ -90,28 +91,17 @@ export default function ExplorePage() {
             </div>
             {SECTIONS.filter(([id]) => tab === "all" || tab === id || (id === "news" && tab === "community")).map(([id, label]) => (
               <div key={id}>
-                <SectionLabel>{label}</SectionLabel>
+                {/* 🎨 look A (miglife): the same list, 6D — a section name with a raised icon chip + count … */}
+                <div className="mb-2 mt-4 flex items-center gap-2 px-0.5">
+                  <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[9px] bg-white text-[14px] shadow-[0_2px_0_#BFD0E6]">{label.split(" ")[0]}</span>
+                  <span className="flex-1 text-[12px] font-black tracking-[1px] text-[#0B2A5B]">{label.slice(label.indexOf(" ") + 1)}</span>
+                  <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#5B6B86]">{items.filter((i) => inSection(i, id)).length}</span>
+                </div>
                 <div className="grid gap-2.5 md:grid-cols-2">
                   {items
                     .filter((i) => inSection(i, id))
                     .map((i) => (
-                      <PastelCard
-                        key={i.title}
-                        icon={i.icon}
-                        title={i.title}
-                        subtitle={i.subtitle}
-                        color={i.color}
-                        href={i.href}
-                        note={i.note}
-                        right={
-                          LIVE.has(i.title) ? (
-                            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#E3F7EA] px-2 py-0.5 text-[10px] font-black text-[#16A34A]">
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#16A34A]" />
-                              LIVE
-                            </span>
-                          ) : undefined
-                        }
-                      />
+                      <DiscoverRow6D key={i.title} item={i} live={LIVE.has(i.title)} />
                     ))}
                 </div>
               </div>
@@ -120,5 +110,41 @@ export default function ExplorePage() {
         )}
       </section>
     </PageShell>
+  );
+}
+
+// … and each item a raised white card on a lip of its own colour: a solid colour
+// icon (lip + shine), the name and one line, a coloured › button. Same as the
+// app (DiscoverRow6D).
+function DiscoverRow6D({ item: i, live }: { item: Item; live: boolean }) {
+  return (
+    <Link
+      href={i.href || "#"}
+      className="flex items-center gap-3 rounded-[18px] bg-gradient-to-b from-white to-[#F6F9FD] px-3 py-[11px] transition active:translate-y-[3px]"
+      style={{ boxShadow: `0 4px 0 ${i.color}59, 0 10px 16px -12px ${i.color}` }}
+    >
+      <span
+        className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] text-[22px]"
+        style={{ background: `linear-gradient(${i.color}E0, ${i.color})`, boxShadow: `0 3px 0 ${i.color}99` }}
+      >
+        <span aria-hidden className="absolute inset-x-[5px] top-[3px] h-3 rounded-lg bg-gradient-to-b from-white/45 to-white/0" />
+        <span className="relative">{i.icon}</span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-[15px] font-extrabold text-[#16264A]">{i.title}</span>
+          {live && (
+            <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#E3F7EA] px-1.5 py-px text-[9px] font-black text-[#16A34A]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#16A34A]" />
+              LIVE
+            </span>
+          )}
+        </span>
+        <span className="block truncate text-[12px] text-[#5B6B86]">{i.subtitle}</span>
+      </span>
+      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[18px] font-black" style={{ background: `${i.color}21`, color: i.color }}>
+        ›
+      </span>
+    </Link>
   );
 }
