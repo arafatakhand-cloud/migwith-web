@@ -407,6 +407,7 @@ export default function SecretPage() {
           { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.isMigwith },
           { icon: "🍀", label: "Lucky User", hint: "Random-time lottery · rooms, prize, fairness", tint: "#14B88F", href: "/secret/lucky", ok: f.isMigwith },
           { icon: "ℹ", label: "Room Info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
+          { icon: "🏠", label: "Rooms by ID", hint: "Type a MIG ID → every room it created", tint: "#0D9488", href: "/secret/rooms-by-id", ok: f.can("room_info") },
           { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
           { icon: "🚩", label: "Reports", hint: "What users reported · handle within 24h", tint: "#D93025", href: "/secret/reports", ok: f.can("reports") },
           { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
