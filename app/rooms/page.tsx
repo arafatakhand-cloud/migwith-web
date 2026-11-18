@@ -201,7 +201,7 @@ export default function RoomsPage() {
   const create = async () => {
     if (!user || creating) return;
     const room = newName.trim();
-    const description = newDesc.trim().slice(0, 300);
+    const description = newDesc.trim().slice(0, 100);
     setCreateError("");
     if (level < MIN_LEVEL_TO_CREATE)
       return setCreateError(`You need to reach Level ${MIN_LEVEL_TO_CREATE} to create a chat room.`);
@@ -392,11 +392,11 @@ export default function RoomsPage() {
                   {hint && <p className={`mt-1.5 text-[11.5px] font-extrabold ${hint[1] ? "text-[#0E9F6E]" : "text-[#DC2626]"}`}>{hint[0]}</p>}
                   <div className="mb-1.5 mt-3 flex justify-between text-[12px] font-extrabold text-[#4A6280]">
                     <span>📝 Description</span>
-                    <span>{newDesc.length}/300</span>
+                    <span>{newDesc.length}/100</span>
                   </div>
                   <textarea
                     value={newDesc}
-                    onChange={(e) => setNewDesc(e.target.value.slice(0, 300))}
+                    onChange={(e) => setNewDesc(e.target.value.slice(0, 100))}
                     placeholder="What is your room about?"
                     rows={3}
                     className="w-full resize-none rounded-[14px] border-2 border-[#E3EAF3] bg-[#F7FAFD] px-3.5 py-3 text-[15px] outline-none placeholder:text-[#9AA8BC] focus:border-[#2C9BEA] focus:bg-white focus:shadow-[0_0_0_4px_rgba(44,155,234,.12)]"
