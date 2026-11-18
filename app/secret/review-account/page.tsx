@@ -11,13 +11,17 @@ import { FounderShell, card } from "../_Shell";
 // rooms, messages / gifts / Feed posts not sent). Same as the app (ReviewAccountTool).
 
 type Acc = { username: string; balance: number };
-type Res = { ok: boolean; accounts: Acc[] };
+type LogLine = { username: string; kind: string; where: string; text: string; at: number; device: string };
+type Res = { ok: boolean; accounts: Acc[]; log: LogLine[] };
+const KIND_ICON = (k: string) =>
+  k === "open" ? "📲" : k.startsWith("room") ? "💬" : k === "private" ? "✉️" : k === "mail" ? "📧" : k === "gift" ? "🎁" : k === "feed" ? "📰" : "•";
 const reviewAccountAdmin = httpsCallable<{ action: string; username?: string; on?: boolean }, Res>(functions, "reviewAccountAdmin");
 
 export default function ReviewAccountPage() {
   const f = useFounderPerms();
   const [q, setQ] = useState("");
   const [list, setList] = useState<Acc[] | null>(null);
+  const [log, setLog] = useState<LogLine[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
 
@@ -25,7 +29,9 @@ export default function ReviewAccountPage() {
     setBusy(true);
     setMsg(null);
     try {
-      setList((await reviewAccountAdmin(data)).data.accounts || []);
+      const r = (await reviewAccountAdmin(data)).data;
+      setList(r.accounts || []);
+      setLog(r.log || []);
       if (ok) {
         setMsg({ text: ok, error: false });
         setQ("");
@@ -95,6 +101,39 @@ export default function ReviewAccountPage() {
               >
                 Turn off
               </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* 👀 what the review account did — only miGlife sees this */}
+      <div className="mb-1 mt-5 flex items-center gap-2">
+        <p className="flex-1 text-[11px] font-extrabold tracking-wide text-[#5B6B8C]">👀 ACTIVITY · {log.length}</p>
+        <button type="button" disabled={busy} onClick={() => call({ action: "list" })} className="text-[12px] font-bold text-[#1E3A6E]">
+          ↻ Refresh
+        </button>
+        {log.length > 0 && (
+          <button type="button" disabled={busy} onClick={() => call({ action: "clearLog" }, "Activity cleared")} className="text-[12px] font-bold text-[#B91C1C]">
+            🗑 Clear
+          </button>
+        )}
+      </div>
+      <p className="mb-2 text-[11.5px] text-[#5B6B8C]">Everything the review account sent or tried. Nobody else saw any of it.</p>
+      {log.length === 0 ? (
+        <p className="text-[12.5px] text-[#5B6B8C]">Nothing yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {log.map((e, i) => (
+            <div key={i} className={`${card} flex gap-2`}>
+              <span className="text-lg">{KIND_ICON(e.kind)}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[11.5px] font-bold text-[#0F766E]">
+                  @{e.username} · {e.where}
+                </span>
+                <span className="block whitespace-pre-wrap break-words text-[13.5px] text-[#1E3A6E]">{e.text}</span>
+                <span className="block text-[10.5px] text-[#5B6B8C]">
+                  {[e.at ? new Date(e.at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "", e.device].filter(Boolean).join(" · ")}
+                </span>
+              </span>
             </div>
           ))}
         </div>
