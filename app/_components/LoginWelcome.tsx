@@ -74,10 +74,13 @@ const BUBBLES: { emoji: string; from: string; to: string; tail: "left" | "right"
 // bubble with a tail at the bottom-left (100 × 96 box); flipped for the right
 const BUBBLE_PATH = "M30 4H70Q96 4 96 30V50Q96 76 70 76H46L26 93L30 76Q4 75 4 50V30Q4 4 30 4Z";
 
-export function ChatBubbleRow({ scale = 0.82 }: { scale?: number }) {
+// even: all the same size in a straight row (the login page, like the app's
+// MigChatBubbleRow(even = true)); otherwise the lively mixed sizes (the splash).
+export function ChatBubbleRow({ scale = 0.82, even = false }: { scale?: number; even?: boolean }) {
   return (
-    <div className="flex items-end justify-center gap-2" aria-hidden>
-      {BUBBLES.map((b, i) => {
+    <div className={`flex items-end justify-center ${even ? "gap-3" : "gap-2"}`} aria-hidden>
+      {BUBBLES.map((b0, i) => {
+        const b = even ? { ...b0, size: 66, lift: 0 } : b0;
         const sz = b.size * scale;
         return (
           <span key={i} className="mig-bubble relative inline-block" style={{ marginBottom: b.lift * scale, animationDelay: `${i * 0.35}s` }}>

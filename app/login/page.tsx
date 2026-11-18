@@ -12,7 +12,7 @@ import {
 import { doc, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
-import { MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
+import { ChatBubbleRow, MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
 import { migAliasEmail } from "../../lib/migAlias";
 import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
 
@@ -145,8 +145,10 @@ export default function LoginPage() {
         <p className="login-ink mt-5 text-[24px] font-extrabold tracking-tight text-white">Join the Fun!</p>
         <p className="login-sub mt-1 text-[13px] text-white/75">Log in to continue chatting</p>
 
-        {/* the app's five chat bubbles */}
-        <LoginBubbles />
+        {/* the app's five chat bubbles, bobbing one after another (same as the app) */}
+        <div className="mt-5 w-full">
+          <ChatBubbleRow scale={0.68} even />
+        </div>
 
         {/* clean white fields with an icon, like a modern login form */}
         {/* a real form, so the browser recognises the ID + password and offers to save / fill them */}
@@ -395,33 +397,3 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
-/** The app's five glossy chat bubbles (chat, smile, friends, gift, love). */
-function LoginBubbles() {
-  const bubbles: [string, string, string, number][] = [
-    ["💬", "#5AB2FF", "#2F80ED", 0],
-    ["😄", "#FFB15C", "#F07A1A", 0],
-    ["👥", "#5FD47A", "#22A447", 0],
-    ["💝", "#B98BFF", "#7B4BE0", 0],
-    ["❤️", "#FF8DB8", "#E8457E", 0],
-  ];
-  return (
-    <div className="mt-5 flex w-full items-end justify-center gap-3">
-      {bubbles.map(([e, a, b, lift], i) => (
-        <span key={i} className="relative" style={{ marginBottom: lift * 5 }}>
-          <span
-            className="relative z-10 flex h-[42px] w-[48px] items-center justify-center rounded-[14px] border-2 border-white/90 text-[20px] shadow-[0_6px_14px_-6px_rgba(20,40,90,.5)]"
-            style={{ background: `linear-gradient(180deg, ${a}, ${b})` }}
-          >
-            <span className="absolute left-1.5 right-1.5 top-1 h-2.5 rounded-full bg-white/35" />
-            <span className="relative">{e}</span>
-          </span>
-          {/* the bubble's little tail */}
-          <span
-            className={`absolute -bottom-[6px] h-3 w-3 rotate-45 border-b-2 border-r-2 border-white/90 ${i % 2 ? "right-3" : "left-3"}`}
-            style={{ background: b }}
-          />
-        </span>
-      ))}
-    </div>
-  );
-}
