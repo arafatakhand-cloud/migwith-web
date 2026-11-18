@@ -1,6 +1,6 @@
 "use client";
 
-import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 import { extraSocialMessage } from "./socialExtra";
@@ -387,10 +387,28 @@ const BANGLA_SONGS: [string, string][] = [
   ["a Rajanikanta song", "মায়ের দেওয়া মোটা কাপড় মাথায় তুলে নে রে ভাই"],
 ];
 
+// 🎤 miGlife's own lines (miGlife secret → Sing Lines, app_settings/sing_lines),
+// read at most every 10 min; they join the Bangla songs. Same as the app (SingLines).
+let customSongs: [string, string][] = [];
+let customSongsAt = 0;
+export function refreshCustomSongs(force = false) {
+  if (!force && Date.now() - customSongsAt < 10 * 60_000) return;
+  customSongsAt = Date.now();
+  getDoc(doc(db, "app_settings", "sing_lines"))
+    .then((d) => {
+      const lines = (d.data()?.lines || []) as { kind?: string; line?: string }[];
+      customSongs = lines.filter((l) => String(l.line || "").trim()).map((l) => [String(l.kind || "a Bangla song"), String(l.line).trim()]);
+    })
+    .catch(() => {
+      customSongsAt = 0;
+    });
+}
+
 /** "life is singing a pop song, "…"" (or "… for sabuj, "…"") */
 export function singLine(username: string, target: string): string {
+  refreshCustomSongs();
   let kind: string, line: string;
-  if (Math.random() < 0.5) [kind, line] = pickRandom(BANGLA_SONGS);
+  if (Math.random() < 0.5) [kind, line] = pickRandom(BANGLA_SONGS.concat(customSongs));
   else {
     const [genre, l] = pickRandom(SONGS);
     [kind, line] = [`a ${genre} song`, l];
