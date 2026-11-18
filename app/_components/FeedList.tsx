@@ -29,6 +29,7 @@ import { PhotoMenu, PhotoViewer, photosOf } from "./PhotoViewer";
 import { useBlockSets } from "../../lib/blocks";
 import { useFeedVideoAllowed } from "../../lib/feedVideoPerm";
 import { PageTitle } from "./LightCards";
+import { MigLifeMark } from "./MigLifeMark";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { TranslateChip, TranslateLink, useFeedTranslateToggle, useFeedTranslation } from "./FeedTranslate";
 import {
@@ -1828,7 +1829,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               onClick={() => setComposing(true)}
               className="group mx-3.5 mb-4 mt-1 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[22px] bg-[#FFFFFF] py-2.5 pl-3 pr-2.5 text-left shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition duration-200 active:scale-[.99]"
             >
-              <Avatar name={username} color={meColor} size={40} ring />
+              <MigLifeMark size={40} />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
             </button>
           ) : (
