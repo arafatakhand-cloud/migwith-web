@@ -41,7 +41,7 @@ function Avatar({ name, photo, size, ring }: { name: string; photo: string; size
   );
 }
 
-/** One stats tile (the app's HomeStatTile). */
+// the line icons of the stats card
 // Style E: a plain line glyph (no coloured disc) with a coloured bar on the top edge.
 const STAT_GLYPHS: Record<string, React.ReactNode> = {
   mail: (
@@ -77,69 +77,57 @@ const STAT_GLYPHS: Record<string, React.ReactNode> = {
   ),
 };
 
-function StatTile({
+// 🎨 one slim cell of the 6D stats card: a colour 6D icon tile (gloss on top,
+// a darker lip underneath) + the number and the name. Something new: a pulsing
+// red dot on the tile and the number in the tile's colour.
+function StatCell6D({
   href,
-  icon,
   glyph,
   value,
   label,
-  accent,
-  accent2,
+  top,
+  bottom,
+  lip,
   highlight = false,
-  live = false,
+  divider = false,
   onClick,
 }: {
-  onClick?: (e: React.MouseEvent) => void;
   href: string;
-  icon: string;
   glyph: keyof typeof STAT_GLYPHS;
   value: number;
   label: string;
-  accent: string;
-  accent2: string;
+  top: string;
+  bottom: string;
+  lip: string;
   highlight?: boolean;
-  live?: boolean;
+  divider?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`relative flex min-w-0 flex-1 flex-col items-center rounded-full py-2 transition-transform active:scale-[0.93] ${highlight ? "" : "glass-shine stat-glass"}`}
-      style={{
-        // (the Glass theme's .stat-glass washes the tile with this colour)
-        ["--accent" as string]: accent,
-        // 🫧 5D: white to pale blue, with a stacked depth shadow under the pill
-        background: highlight ? `linear-gradient(${accent}1A, ${accent2}0A)` : "linear-gradient(180deg, #FFFFFF, #EAF2FB)",
-        border: highlight ? "1.6px solid transparent" : "1px solid #E3ECF7",
-        boxShadow: highlight ? undefined : `0 2px 0 #C9D8EA, 0 4px 0 #B7C9E0, 0 8px 12px ${accent}33`,
-        ...(highlight
-          ? {
-              backgroundImage: `linear-gradient(rgba(255,255,255,.6), rgba(255,255,255,.6)), linear-gradient(${accent}1A, ${accent2}0A), linear-gradient(135deg, ${accent}, ${accent2})`,
-              backgroundOrigin: "border-box",
-              backgroundClip: "padding-box, padding-box, border-box",
-              boxShadow: `0 4px 12px ${accent}55`,
-            }
-          : {}),
-      }}
-    >
-      <span className="relative flex h-[24px] w-[24px] items-center justify-center">
-        {(highlight || live) && <span aria-hidden className="stat-pulse absolute inset-0 rounded-full" style={{ background: accent }} />}
-        <span className="relative flex h-[24px] w-[24px] items-center justify-center" style={{ color: accent, filter: `drop-shadow(0 2px 1px ${accent}55)` }} aria-label={icon}>
-          <svg viewBox="0 0 24 24" className="h-[20px] w-[20px]" fill="none" stroke="currentColor" strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round">
+    <Link href={href} onClick={onClick} aria-label={`${label}: ${value}`} className="relative flex min-w-0 flex-1 items-center justify-center gap-1.5 py-0.5 transition-transform active:scale-[0.92]">
+      {divider && <span aria-hidden className="absolute left-0 top-1/2 h-[30px] w-px -translate-y-1/2 bg-[#E1E8F2]" />}
+      <span className="relative shrink-0">
+        <span
+          className="relative flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[10px]"
+          style={{ background: `linear-gradient(${top},${bottom})`, boxShadow: `0 3px 0 ${lip}` }}
+        >
+          <span aria-hidden className="absolute inset-x-1 top-0.5 h-[9px] rounded-md bg-gradient-to-b from-white/50 to-white/0" />
+          <svg viewBox="0 0 24 24" className="relative h-[16px] w-[16px] text-white" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
             {STAT_GLYPHS[glyph]}
           </svg>
         </span>
-        {highlight && <span className="stat-dot absolute -right-[3px] -top-[2px] h-[9px] w-[9px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
+        {highlight && <span className="stat-dot absolute -right-[3px] -top-[3px] h-[10px] w-[10px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
       </span>
-      <span className="mt-1 text-[14px] font-black leading-tight" style={{ color: highlight ? accent : "#16264A" }}>
-        {value > 999 ? "999+" : value}
-      </span>
-      <span className={`mt-0.5 max-w-full truncate px-0.5 text-[10px] ${highlight ? "font-bold" : "font-medium"}`} style={{ color: highlight ? accent : "#5A6E8C" }}>
-        {label}
+      <span className="min-w-0 leading-none">
+        <span className="block text-[17px] font-black leading-[18px]" style={{ color: lip }}>
+          {value > 999 ? "999+" : value}
+        </span>
+        <span className="block truncate text-[10px] font-bold leading-[12px] text-[#5B6B86]">{label}</span>
       </span>
     </Link>
   );
 }
+
 
 // 🎨 The role chip's writing in the role's own colour (the app's role colours;
 // the light ones a shade darker so they read on the white chip).
@@ -307,19 +295,26 @@ export function ModernHomeTop({
 
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
           its tile up with a glowing border and a pulsing dot; Online pulses
-          while friends are online (the app's HomeStatTile). */}
-      <div className="mh-stats glass-card relative mx-2.5 mb-1.5 flex gap-2 rounded-[22px] p-2.5">
-        <StatTile href="/mail" icon="✉️" glyph="mail" value={unreadEmails} label={unreadEmails > 0 ? "New mail" : "Email"} accent="#2E86DE" accent2="#5B5BF0" highlight={unreadEmails > 0} />
-        <StatTile href="/alerts" icon="🔔" glyph="bell" value={unreadAlerts} label={unreadAlerts > 0 ? "New alerts" : "Alerts"} accent="#FF9F1C" accent2="#FF5E62" highlight={unreadAlerts > 0} />
-        <StatTile href="/friends" icon="👥" glyph="users" value={friends.length} label="Friends" accent="#8E5CF5" accent2="#D6336C" />
-        <StatTile
+          while friends are online (see StatCell6D below). */}
+      {/* 🎨 6D C2 (miglife): all four in ONE raised white card, slim cells — a
+          colour 6D icon tile on the left, the number + name on the right, thin
+          lines between them. Same as the app (HomeStatCell6D). */}
+      <div
+        className="mh-stats6d relative mx-2.5 mb-2 flex items-center rounded-[22px] px-1 py-2.5"
+        style={{ background: "linear-gradient(180deg,#FFFFFF,#EEF4FB)", boxShadow: "0 4px 0 #B9CCE4, 0 10px 16px -8px rgba(30,60,110,.35)" }}
+      >
+        <StatCell6D href="/mail" glyph="mail" value={unreadEmails} label="Email" top="#5AB2FF" bottom="#2F6FE0" lip="#1A48A8" highlight={unreadEmails > 0} />
+        <StatCell6D divider href="/alerts" glyph="bell" value={unreadAlerts} label="Alerts" top="#FFD15C" bottom="#F59E0B" lip="#B86E00" highlight={unreadAlerts > 0} />
+        <StatCell6D divider href="/friends" glyph="users" value={friends.length} label="Friends" top="#C3A8FF" bottom="#7C4DEB" lip="#4F25B0" />
+        <StatCell6D
+          divider
           href="/messages"
-          icon="💬"
           glyph="chat"
           value={unreadChats}
-          label={unreadChats > 0 ? "New chat" : "Chat"}
-          accent="#0EA5E9"
-          accent2="#2563EB"
+          label="Chat"
+          top="#5FE0C6"
+          bottom="#14A88C"
+          lip="#0B6E5C"
           highlight={unreadChats > 0}
           onClick={(e) => {
             // 💬 C2: who sent new messages — one person opens their inbox at once,
