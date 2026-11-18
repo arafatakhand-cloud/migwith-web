@@ -357,6 +357,16 @@ function CricketWinFxCard({ field = "cricketRooms", game = "Cricket", icon = "�
   );
 }
 
+// 📁 each tool group's folder colour (Team blue, Safety red, Coins green, Games purple, Danger slate)
+function folderColor(title: string): string {
+  if (/team/i.test(title)) return "#2563EB";
+  if (/safety/i.test(title)) return "#DC2626";
+  if (/coin/i.test(title)) return "#16A34A";
+  if (/game/i.test(title)) return "#7C3AED";
+  if (/danger/i.test(title)) return "#475569";
+  return "#0EA5E9";
+}
+
 export default function SecretPage() {
   const f = useFounderPerms();
   const [idOn, setIdOn] = useState(false);
@@ -364,6 +374,8 @@ export default function SecretPage() {
   const [createOpen, setCreateOpen] = useState(false);
   // 🧰 Which Founder Tool is open (null = the tools list).
   const [tool, setTool] = useState<string | null>(null);
+  // 📁 which tool folders are open (Team & Users to start with)
+  const [openFolders, setOpenFolders] = useState<string[]>(["👥 Team & Users"]);
 
   useEffect(() => {
     if (!f.isAnyFounder) return;
@@ -455,51 +467,80 @@ export default function SecretPage() {
       loaded={f.loaded}
       onBack={openTool ? () => setTool(null) : undefined}
     >
+      {/* 📁 D · Folders (miglife): each group is a coloured 6D folder that shows
+          its first icons; tap it to open its list. Same as the app (SecretFolder). */}
       {!openTool && (
-        <div className="space-y-1.5 rounded-[22px] border border-[#E0A82E] bg-white p-3.5 shadow-md">
-          <div className="flex items-center gap-2">
-            <span className="text-[22px]">🧰</span>
-            <div>
-              <p className="text-lg font-extrabold">Founder Tools</p>
-              <p className="text-[11px] text-[#5B6B8C]">{allTools.length} tools</p>
-            </div>
-          </div>
-          {groups.map(([groupTitle, list]) => (
-            <div key={groupTitle} className="space-y-2">
-              <p className="pl-0.5 pt-2 text-[11px] font-bold uppercase tracking-[1px] text-[#5B6B8C]">{groupTitle}</p>
-              {list.map((t) => {
-                const body = (
-                  <>
-                    <span
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[18px]"
-                      style={{ background: `linear-gradient(135deg, ${t.tint}3D, ${t.tint}12)`, borderColor: `${t.tint}4D` }}
-                    >
-                      {t.icon}
+        <div className="space-y-3">
+          <p className="pl-0.5 text-[12px] font-bold text-[#5B6B8C]">🧰 Founder Tools · {allTools.length} tools</p>
+          {groups.map(([groupTitle, list]) => {
+            const c = folderColor(groupTitle);
+            const icon = groupTitle.split(" ")[0];
+            const name = groupTitle.slice(icon.length).trim();
+            const isOpen = openFolders.includes(groupTitle);
+            const toggle = () => setOpenFolders((o) => (o.includes(groupTitle) ? o.filter((x) => x !== groupTitle) : [...o, groupTitle]));
+            return (
+              <div key={groupTitle} className="overflow-hidden rounded-[20px] bg-white" style={{ boxShadow: `0 4px 0 ${c}73, 0 10px 18px -12px ${c}` }}>
+                <button
+                  type="button"
+                  onClick={toggle}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-white"
+                  style={{ background: `linear-gradient(135deg, ${c}, ${c}CC)` }}
+                >
+                  <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-white/[0.22] text-[20px]">{icon}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15.5px] font-extrabold">{name}</span>
+                    <span className="block text-[11.5px] text-white/85">
+                      {list.length} tool{list.length === 1 ? "" : "s"}
                     </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-bold text-[#0B2A5B]">{t.label}</span>
-                      <span className="block truncate text-[11px] text-[#5B6B8C]">{t.hint}</span>
-                    </span>
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold" style={{ background: `${t.tint}24`, color: t.tint }}>
-                      ›
-                    </span>
-                  </>
-                );
-                // 🎨 the Community page's card: white → the tool's colour
-                const cls = "flex w-full items-center gap-3 rounded-[18px] border px-2.5 py-2.5 text-left transition hover:brightness-[.98]";
-                const style = { borderColor: `${t.tint}38`, background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${t.tint}1A)`, boxShadow: `0 3px 10px ${t.tint}1F` };
-                return t.href ? (
-                  <Link key={t.label} href={t.href} className={cls} style={style}>
-                    {body}
-                  </Link>
-                ) : (
-                  <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls} style={style}>
-                    {body}
+                  </span>
+                  <span className="text-[12px]">{isOpen ? "▲" : "▼"}</span>
+                </button>
+                {!isOpen ? (
+                  <button type="button" onClick={toggle} className="flex w-full gap-1.5 px-3.5 py-2.5" aria-label={`Open ${name}`}>
+                    {list.slice(0, 6).map((t) => (
+                      <span key={t.label} className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[16px]" style={{ background: `${t.tint}24` }}>
+                        {t.icon}
+                      </span>
+                    ))}
+                    {list.length > 6 && (
+                      <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#F1F5FB] text-[11px] font-extrabold text-[#5B6B8C]">+{list.length - 6}</span>
+                    )}
                   </button>
-                );
-              })}
-            </div>
-          ))}
+                ) : (
+                  <div>
+                    {list.map((t, i) => {
+                      const body = (
+                        <>
+                          <span
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[16px]"
+                            style={{ background: `linear-gradient(${t.tint}E6, ${t.tint})`, boxShadow: `0 2px 0 ${t.tint}8C` }}
+                          >
+                            {t.icon}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14px] font-bold text-[#1E3A6E]">{t.label}</span>
+                            <span className="block truncate text-[11.5px] text-[#5B6B8C]">{t.hint}</span>
+                          </span>
+                          <span className="text-[20px] text-[#9AA8C2]">›</span>
+                        </>
+                      );
+                      const cls = `flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left transition hover:bg-[#F6F9FD] ${i > 0 ? "border-t border-[#EEF2F7]" : ""}`;
+                      return t.href ? (
+                        <Link key={t.label} href={t.href} className={cls}>
+                          {body}
+                        </Link>
+                      ) : (
+                        <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls}>
+                          {body}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
