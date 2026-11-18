@@ -82,6 +82,7 @@ export function AlertPopup({ username }: { username: string }) {
         >
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/20 text-2xl">{p.icon}</span>
           <span className="min-w-0 flex-1">
+            {p.gift && <span className="block text-[11px] font-extrabold uppercase tracking-wide text-white/90">💝 New Gift</span>}
             <span className="block text-[14px] font-bold leading-5">{p.text}</span>
             {p.note && <span className="block truncate text-[12.5px] text-white/85">{p.note}</span>}
           </span>
