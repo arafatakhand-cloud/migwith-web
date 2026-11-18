@@ -387,17 +387,19 @@ const BANGLA_SONGS: [string, string][] = [
   ["a Rajanikanta song", "মায়ের দেওয়া মোটা কাপড় মাথায় তুলে নে রে ভাই"],
 ];
 
-// 🎤 miGlife's own lines (miGlife secret → Sing Lines, app_settings/sing_lines),
-// read at most every 10 min; they join the Bangla songs. Same as the app (SingLines).
-let customSongs: [string, string][] = [];
+// 🎤 miGlife's own WHOLE /sing messages (miGlife secret → Sing Lines,
+// app_settings/sing_lines), read at most every 10 min: {name} = the singer,
+// {to} = who they sing for. About one /sing in three uses one of them.
+// Same as the app (SingLines).
+let customSongs: string[] = [];
 let customSongsAt = 0;
 export function refreshCustomSongs(force = false) {
   if (!force && Date.now() - customSongsAt < 10 * 60_000) return;
   customSongsAt = Date.now();
   getDoc(doc(db, "app_settings", "sing_lines"))
     .then((d) => {
-      const lines = (d.data()?.lines || []) as { kind?: string; line?: string }[];
-      customSongs = lines.filter((l) => String(l.line || "").trim()).map((l) => [String(l.kind || "a Bangla song"), String(l.line).trim()]);
+      const lines = (d.data()?.lines || []) as { text?: string }[];
+      customSongs = lines.map((l) => String(l.text || "").trim()).filter((t) => t.includes("{name}"));
     })
     .catch(() => {
       customSongsAt = 0;
@@ -407,8 +409,13 @@ export function refreshCustomSongs(force = false) {
 /** "life is singing a pop song, "…"" (or "… for sabuj, "…"") */
 export function singLine(username: string, target: string): string {
   refreshCustomSongs();
+  if (customSongs.length && Math.random() < 1 / 3) {
+    return pickRandom(customSongs)
+      .split("{name}").join(username)
+      .split("{to}").join(target && target !== "everyone" ? target : "everyone");
+  }
   let kind: string, line: string;
-  if (Math.random() < 0.5) [kind, line] = pickRandom(BANGLA_SONGS.concat(customSongs));
+  if (Math.random() < 0.5) [kind, line] = pickRandom(BANGLA_SONGS);
   else {
     const [genre, l] = pickRandom(SONGS);
     [kind, line] = [`a ${genre} song`, l];

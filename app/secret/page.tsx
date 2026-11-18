@@ -413,7 +413,7 @@ export default function SecretPage() {
           { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
           { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
           { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
-          { icon: "🎤", label: "Sing Lines", hint: "Your own song lines for /sing in rooms", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
+          { icon: "🎤", label: "Sing Lines", hint: "Write your own whole /sing messages", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
         ],
       ],
       [
