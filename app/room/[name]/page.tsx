@@ -350,7 +350,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
   // YouTube → plays here in a popup).
   const [pendingLink, setPendingLink] = useState<string | null>(null);
   // Own message → who reacted with an emoji.
-  const [reactors, setReactors] = useState<{ emoji: string; uids: string[] } | null>(null);
+  const [reactors, setReactors] = useState<{ emoji: string; uids: string[]; at?: DOMRect } | null>(null);
   // This open tab's saved session (lib/roomSession): coming back to the tab
   // shows the same chat, draft and scroll position, like the app.
   const [initial] = useState(() => (user && isRoomOpen(user.uid, roomName) ? readRoomSession(user.uid, roomName) : null));
@@ -2473,7 +2473,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
       )}
       <ImageViewerHost />
       <RoomLinkDialog url={pendingLink} onClose={() => setPendingLink(null)} />
-      {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} onClose={() => setReactors(null)} />}
+      {reactors && <ReactorsDialog emoji={reactors.emoji} uids={reactors.uids} at={reactors.at} onClose={() => setReactors(null)} />}
       {/* 📱 On a phone the room fills the screen edge to edge, like the app
           (no frame or margins); on a bigger screen it sits in a framed card. */}
       <div className="relative mx-auto flex h-screen-minus-bar max-w-5xl flex-col sm:px-6 sm:py-3">
@@ -2680,7 +2680,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   onLink={setPendingLink}
                   myUid={user.uid}
                   onReact={(emoji) => setRoomReaction(m, emoji)}
-                  onShowReactors={(emoji, uids) => setReactors({ emoji, uids })}
+                  onShowReactors={(emoji, uids, at) => setReactors({ emoji, uids, at })}
                   onReply={(sender, snippet) => {
                     setReplyTo({ sender, snippet });
                     inputRef.current?.focus();
@@ -3752,8 +3752,8 @@ function MessageRow({
   myUid: string;
   /** Long-press picker: react with this emoji (same emoji again clears it). */
   onReact: (emoji: string) => void;
-  /** Own message: who reacted with this emoji. */
-  onShowReactors: (emoji: string, uids: string[]) => void;
+  /** Who reacted with this emoji (anyone can look). */
+  onShowReactors: (emoji: string, uids: string[], at?: DOMRect) => void;
 }) {
   // 🌈 miglife + Special Edition Colour holders: rainbow names. (A hook, so it
   // must run before any of the early returns below.)
@@ -3836,9 +3836,13 @@ function MessageRow({
           return (
             <span
               key={e}
-              className={`text-[13px] leading-4 ${byMe ? "font-bold" : ""} ${mine ? "cursor-pointer" : ""}`}
+              className={`cursor-pointer text-[13px] leading-4 ${byMe ? "font-bold" : ""}`}
               style={{ color: byMe ? LINK_BLUE : "#68758D" }}
-              onClick={mine ? () => onShowReactors(e, uids) : undefined}
+              // 👥 anyone can see who reacted (miglife, 2026-11) — a small pop-up above the reaction
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onShowReactors(e, uids, (ev.currentTarget as HTMLElement).getBoundingClientRect());
+              }}
             >
               <ReactionShakeEmoji emoji={e} count={uids.length} /> {uids.length}
             </span>
@@ -4493,37 +4497,100 @@ function ReactionPicker({
   );
 }
 
-// Own message: who reacted with an emoji (names looked up once).
-function ReactorsDialog({ emoji, uids, onClose }: { emoji: string; uids: string[]; onClose: () => void }) {
-  const [names, setNames] = useState<Record<string, string>>({});
+// 👥 Who reacted with an emoji — anyone can look (miglife, 2026-11, design B3):
+// a small card right above the reaction, a big emoji bubble on top, the faces
+// stacked, then a 3D row per person (name + level, tap → profile).
+const REACTOR_COLORS = ["#7C3AED", "#16A34A", "#EA8A0B", "#2563EB", "#E5484D", "#0891B2", "#DB2777", "#65A30D"];
+const reactorColor = (name: string) => {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return REACTOR_COLORS[h % REACTOR_COLORS.length];
+};
+function ReactorsDialog({ emoji, uids, at, onClose }: { emoji: string; uids: string[]; at?: DOMRect; onClose: () => void }) {
+  const router = useRouter();
+  const [people, setPeople] = useState<Record<string, { name: string; level: number }>>({});
   useEffect(() => {
     let alive = true;
     uids.forEach((uid) =>
       getDoc(doc(db, "profiles", uid))
-        .then((s) => alive && setNames((n) => ({ ...n, [uid]: String(s.get("username") || "Unknown") })))
+        .then((s) => alive && setPeople((n) => ({ ...n, [uid]: { name: String(s.get("username") || "Unknown"), level: Math.max(1, Math.floor(Number(s.get("level")) || 1)) } })))
         .catch(() => {})
     );
     return () => {
       alive = false;
     };
   }, [uids]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  // where: above the reaction when there is room, else under it; kept on screen
+  const W = 280;
+  const vw = typeof window !== "undefined" ? window.innerWidth : 400;
+  const vh = typeof window !== "undefined" ? window.innerHeight : 800;
+  const estH = 120 + Math.min(uids.length, 6) * 50;
+  const left = at ? Math.max(10, Math.min(at.left - 20, vw - W - 10)) : (vw - W) / 2;
+  const above = at ? at.top - estH - 14 > 10 : true;
+  const top = at ? (above ? Math.max(40, at.top - 14) : at.bottom + 40) : vh / 2;
+  const tailLeft = at ? Math.max(18, Math.min(at.left + at.width / 2 - left - 8, W - 34)) : W / 2 - 8;
+  const list = uids.map((u) => ({ uid: u, ...(people[u] || { name: "", level: 0 }) }));
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
-      <div className="w-full max-w-xs rounded-2xl bg-white p-4 text-[#0B1F3A]" onClick={(e) => e.stopPropagation()}>
-        <p className="text-lg font-extrabold">
-          {emoji} {uids.length}
+    <div className="fixed inset-0 z-[100]" onClick={onClose}>
+      <div
+        className="absolute rounded-[24px] bg-white px-3 pb-2.5 pt-7 text-[#14284B] shadow-[0_18px_40px_rgba(11,31,58,.25)]"
+        style={{ width: W, left, top, transform: at ? (above ? "translateY(-100%)" : "none") : "translateY(-50%)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* the big emoji bubble */}
+        <span className="absolute left-1/2 top-0 flex h-[52px] w-[52px] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-[3px] border-white bg-gradient-to-b from-[#FFF7DA] to-[#FFE19A] text-[28px] shadow-[0_6px_16px_rgba(234,169,46,.45)]">
+          {emoji}
+        </span>
+        <button type="button" onClick={onClose} aria-label="Close" className="absolute right-3 top-2.5 text-[15px] text-[#8494B2]">
+          ✕
+        </button>
+        <p className="text-center text-[15px] font-black">
+          {uids.length} {uids.length === 1 ? "person" : "people"}
         </p>
-        <ul className="mt-2 max-h-72 space-y-1.5 overflow-y-auto">
-          {uids.length === 0 && <li className="text-sm text-[#8A96AB]">Nobody has this reaction now.</li>}
-          {uids.map((u) => (
-            <li key={u} className="text-[15px] font-semibold">
-              {names[u] || "…"}
+        {uids.length > 0 && (
+          <div className="mb-1.5 mt-1 flex justify-center" data-notranslate>
+            {list.slice(0, 6).map((p) => (
+              <span
+                key={p.uid}
+                className="-mx-[5px] flex h-[30px] w-[30px] items-center justify-center rounded-full border-[2.5px] border-white text-[12px] font-extrabold text-white"
+                style={{ background: reactorColor(p.name || p.uid) }}
+              >
+                {(p.name || "·").slice(0, 1).toUpperCase()}
+              </span>
+            ))}
+          </div>
+        )}
+        <ul className="max-h-[280px] space-y-1.5 overflow-y-auto" data-notranslate>
+          {uids.length === 0 && <li className="py-3 text-center text-sm text-[#8A96AB]">Nobody has this reaction now.</li>}
+          {list.map((p) => (
+            <li key={p.uid}>
+              <button
+                type="button"
+                disabled={!p.name}
+                onClick={() => (onClose(), router.push(`/profile/${encodeURIComponent(p.name)}`))}
+                className="flex w-full items-center gap-2.5 rounded-[14px] bg-gradient-to-b from-[#FBFCFF] to-[#F2F6FC] px-2 py-1.5 text-left shadow-[0_2px_0_#E1E9F5]"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold text-white" style={{ background: reactorColor(p.name || p.uid) }}>
+                  {(p.name || "·").slice(0, 1).toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] font-extrabold">{p.name || "…"}</span>
+                {p.level > 0 && <span className="rounded-full bg-[#EAF2FF] px-2 py-0.5 text-[10.5px] font-extrabold text-[#1D4ED8]">Lv {p.level}</span>}
+              </button>
             </li>
           ))}
         </ul>
-        <button type="button" onClick={onClose} className="mt-3 w-full rounded-xl bg-[#2F80ED] py-2 font-bold text-white">
-          Close
-        </button>
+        {/* the little arrow to the reaction */}
+        {at && (
+          <span
+            className={`absolute h-[16px] w-[16px] rotate-45 rounded-[3px] bg-white ${above ? "-bottom-[7px]" : "-top-[7px]"}`}
+            style={{ left: tailLeft }}
+          />
+        )}
       </div>
     </div>
   );
