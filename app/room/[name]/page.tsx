@@ -1492,6 +1492,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         if (bet && bet[1].trim().toLowerCase() !== myName) return false;
       }
       return true;
+    }).map((m) => {
+      // 🚫 a reply to someone I blocked: the quote ("↩ name: text") is taken off,
+      // so their name and words never show (miglife, 2026-11)
+      if (!blocked.size || !m.text.includes("↩ ")) return m;
+      const q = /^([^\n:]{1,40}): ↩ ([^\n:]{1,40}): [^\n]*\n/.exec(m.text);
+      if (!q || !blocked.has(q[2].trim().toLowerCase())) return m;
+      return { ...m, text: `${q[1]}: ${m.text.slice(q[0].length)}` };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shown, onlyMyBets, myName, blockedNames, myUid, tableGame, tablesVersion, hideBots, hideGiftShower, roomName, royalePrefs]);
