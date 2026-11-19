@@ -271,7 +271,7 @@ export default function ProfilePage() {
     if (!user || !username) return;
     setProfile(null);
     setNotFound(false);
-    getDocs(query(collection(db, "users"), where("username", "==", username), limit(1)))
+    getDocs(query(collection(db, "profiles"), where("username", "==", username), limit(1)))
       .then(async (snap) => {
         const d = snap.docs[0];
         if (!d) {
@@ -324,7 +324,7 @@ export default function ProfilePage() {
   // Counts and gift history.
   useEffect(() => {
     if (!user || !username) return;
-    const users = collection(db, "users");
+    const users = collection(db, "profiles");
     getDocs(query(users, where("following", "array-contains", username)))
       .then((s) => setFollowers(s.size))
       .catch(() => {});

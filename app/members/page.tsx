@@ -203,7 +203,7 @@ export default function MembersPage() {
   useEffect(() => {
     if (!ready) return;
     Promise.all([
-      getDocs(query(collection(db, "users"), limit(500))),
+      getDocs(query(collection(db, "profiles"), limit(500))),
       // 🏪 a Merchant with another role too (Country Representative …) is still
       // listed under Merchant while their Merchant Program record runs
       getDocs(collection(db, "mentor_merchants")).catch(() => null),
@@ -230,7 +230,7 @@ export default function MembersPage() {
     const v = input.trim();
     if (!v) return null;
     for (const field of ["username", "migId"]) {
-      const snap = await getDocs(query(collection(db, "users"), where(field, "==", v), limit(1))).catch(() => null);
+      const snap = await getDocs(query(collection(db, "profiles"), where(field, "==", v), limit(1))).catch(() => null);
       const d = snap?.docs[0];
       if (d) return toMember(d.id, d.data());
     }

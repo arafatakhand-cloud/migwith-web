@@ -94,7 +94,7 @@ export function GiftNamePicker({
       for (let i = 0; i < missing.length; i += 10) {
         const chunk = missing.slice(i, i + 10);
         try {
-          const snap = await getDocs(query(collection(db, "users"), where("username", "in", chunk)));
+          const snap = await getDocs(query(collection(db, "profiles"), where("username", "in", chunk)));
           snap.docs.forEach((d) => photos.set(String(d.get("username") || ""), photoOf(d.data())));
         } catch {
           // no photo: the first letter is shown

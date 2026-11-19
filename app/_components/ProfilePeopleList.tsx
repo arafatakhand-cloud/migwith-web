@@ -67,7 +67,7 @@ export function ProfilePeopleList({
       const photos = new Map<string, string>();
       for (let i = 0; i < rows.length; i += 30) {
         const ids = rows.slice(i, i + 30).map((r) => r.uid);
-        const us = await getDocs(query(collection(db, "users"), where(documentId(), "in", ids))).catch(() => null);
+        const us = await getDocs(query(collection(db, "profiles"), where(documentId(), "in", ids))).catch(() => null);
         us?.docs.forEach((u) => photos.set(u.id, photoOf(u.data())));
       }
       setPeople(

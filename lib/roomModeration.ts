@@ -199,7 +199,7 @@ async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; use
   const clean = name.trim().replace(/^@/, "");
   const here = ctx.people.find((p) => key(p.username) === key(clean));
   if (here) return here;
-  const users = collection(db, "users");
+  const users = collection(db, "profiles");
   for (const q of [
     query(users, where("usernameLower", "==", key(clean)), limit(1)),
     query(users, where("username", "==", clean), limit(1)),
@@ -212,7 +212,7 @@ async function lookup(ctx: ModContext, name: string): Promise<{ uid: string; use
 }
 
 async function appRoleOf(name: string): Promise<string> {
-  const users = collection(db, "users");
+  const users = collection(db, "profiles");
   for (const q of [
     query(users, where("usernameLower", "==", key(name)), limit(1)),
     query(users, where("username", "==", name.trim()), limit(1)),

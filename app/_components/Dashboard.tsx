@@ -118,7 +118,7 @@ export function Dashboard() {
     if (fr.friends.length === 0) return;
     const chunks: string[][] = [];
     for (let i = 0; i < fr.friends.length; i += 30) chunks.push(fr.friends.slice(i, i + 30));
-    Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c)))))
+    Promise.all(chunks.map((c) => getDocs(query(collection(db, "profiles"), where("username", "in", c)))))
       .then((snaps) => {
         const next: Record<string, Friend> = {};
         snaps.forEach((s) =>

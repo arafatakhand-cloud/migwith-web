@@ -1214,7 +1214,7 @@ async function loadOnlineFriends(uid: string): Promise<string[]> {
   const friends = [...fromMe, ...toMe].filter((n) => n && !seen.has(n.toLowerCase()) && seen.add(n.toLowerCase()));
   const chunks: string[][] = [];
   for (let i = 0; i < friends.length; i += 10) chunks.push(friends.slice(i, i + 10));
-  const docs = (await Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c)))))).flatMap((q) => q.docs);
+  const docs = (await Promise.all(chunks.map((c) => getDocs(query(collection(db, "profiles"), where("username", "in", c)))))).flatMap((q) => q.docs);
   return docs
     .filter((d) => isOnlineNow(d.data()))
     .map((d) => String(d.get("username") || ""))

@@ -85,9 +85,9 @@ export default function RoomInfoPage() {
       if (!target) return setError("Type the new owner's username.");
       setSaving(true);
       try {
-        let found = (await getDocs(query(collection(db, "users"), where("username", "==", target), limit(1)))).docs[0];
+        let found = (await getDocs(query(collection(db, "profiles"), where("username", "==", target), limit(1)))).docs[0];
         if (!found && target !== target.toLowerCase())
-          found = (await getDocs(query(collection(db, "users"), where("username", "==", target.toLowerCase()), limit(1)))).docs[0];
+          found = (await getDocs(query(collection(db, "profiles"), where("username", "==", target.toLowerCase()), limit(1)))).docs[0];
         if (!found) {
           setSaving(false);
           return setError(`No user named "${target}".`);

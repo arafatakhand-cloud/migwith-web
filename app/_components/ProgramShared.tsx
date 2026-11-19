@@ -99,7 +99,7 @@ export function dayRange(day: string): { start: Timestamp; end: Timestamp } {
 export async function uidsFor(names: string[], into = new Map<string, string>()): Promise<Map<string, string>> {
   const need = Array.from(new Set(names.filter((n) => n && !into.has(n))));
   for (let i = 0; i < need.length; i += 10) {
-    const s = await getDocs(query(collection(db, "users"), where("username", "in", need.slice(i, i + 10))));
+    const s = await getDocs(query(collection(db, "profiles"), where("username", "in", need.slice(i, i + 10))));
     s.docs.forEach((u) => into.set(String(u.get("username")), u.id));
   }
   return into;

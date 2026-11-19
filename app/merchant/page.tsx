@@ -90,7 +90,7 @@ export default function MerchantPage() {
   useEffect(() => {
     if (step !== "PICK" || mentors) return;
     (async () => {
-      const snap = await getDocs(query(collection(db, "users"), where("role", "==", "mentor"), limit(30)));
+      const snap = await getDocs(query(collection(db, "profiles"), where("role", "==", "mentor"), limit(30)));
       const list: Mentor[] = snap.docs
         .map((d) => ({
           username: String(d.get("username") || "").trim(),

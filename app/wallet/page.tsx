@@ -483,7 +483,7 @@ export default function WalletPage() {
       // Who may send to whom (same rule as the app): a mentor → anyone;
       // a merchant → anyone except a mentor; a normal user → normal users only.
       if (role === "merchant" || role === "user" || role === "") {
-        const toRole = lower((await getDoc(doc(db, "users", target.uid))).get("role"));
+        const toRole = lower((await getDoc(doc(db, "profiles", target.uid))).get("role"));
         if (role === "merchant" && toRole === "mentor") throw new Error("Merchants can't transfer coins to a mentor.");
         if (role !== "merchant" && toRole && toRole !== "user")
           throw new Error("You can only transfer coins to a normal user.");

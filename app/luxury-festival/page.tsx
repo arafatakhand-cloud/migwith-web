@@ -127,7 +127,7 @@ export default function LuxuryFestivalPage() {
     const want = photoKey.split(",").filter((u) => u && !(u in photos));
     if (!want.length) return;
     let gone = false;
-    Promise.all(want.map((u) => getDoc(doc(db, "users", u)).then((s) => [u, profileImageUrl(s.data())] as const).catch(() => [u, ""] as const))).then(
+    Promise.all(want.map((u) => getDoc(doc(db, "profiles", u)).then((s) => [u, profileImageUrl(s.data())] as const).catch(() => [u, ""] as const))).then(
       (got) => !gone && setPhotos((p) => ({ ...p, ...Object.fromEntries(got) }))
     );
     return () => {

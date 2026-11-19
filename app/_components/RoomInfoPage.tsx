@@ -261,7 +261,7 @@ export function RoomInfoPage({
       const out: Record<string, [string, string]> = {};
       for (let i = 0; i < missing.length; i += 10) {
         try {
-          const snap = await getDocs(query(collection(db, "users"), where("usernameLower", "in", missing.slice(i, i + 10))));
+          const snap = await getDocs(query(collection(db, "profiles"), where("usernameLower", "in", missing.slice(i, i + 10))));
           snap.docs.forEach((d) => {
             const written = String(d.get("username") || "").trim();
             const key = String(d.get("usernameLower") || "") || lc(written);

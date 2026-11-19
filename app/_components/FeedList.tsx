@@ -239,7 +239,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       const roles: Record<string, string> = {};
       for (let i = 0; i < names.length; i += 10) {
         try {
-          const snap = await getDocs(query(collection(db, "users"), where("username", "in", names.slice(i, i + 10))));
+          const snap = await getDocs(query(collection(db, "profiles"), where("username", "in", names.slice(i, i + 10))));
           snap.docs.forEach((d) => {
             const name = String(d.data().username || "");
             if (d.data().verified === true) found.add(name);
@@ -294,7 +294,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [myFollowers, setMyFollowers] = useState<number | null>(null);
   useEffect(() => {
     if (tab !== "mine" || !username) return;
-    getCountFromServer(query(collection(db, "users"), where("following", "array-contains", username)))
+    getCountFromServer(query(collection(db, "profiles"), where("following", "array-contains", username)))
       .then((c) => setMyFollowers(c.data().count))
       .catch(() => {});
   }, [tab, username]);

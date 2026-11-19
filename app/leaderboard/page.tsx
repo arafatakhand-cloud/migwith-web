@@ -69,7 +69,7 @@ function periodStart(period: string): Timestamp {
 }
 
 async function photoByUsername(name: string): Promise<string> {
-  const snap = await getDocs(query(collection(db, "users"), where("username", "==", name), limit(1)));
+  const snap = await getDocs(query(collection(db, "profiles"), where("username", "==", name), limit(1)));
   return snap.docs[0] ? photoOf(snap.docs[0]) : "";
 }
 
@@ -119,7 +119,7 @@ async function load(r: Ranking, period: string): Promise<{ rows: Row[]; mySpend:
   }
 
   // Top Level: not time based.
-  const snap = await getDocs(query(collection(db, "users"), orderBy("level", "desc"), limit(20)));
+  const snap = await getDocs(query(collection(db, "profiles"), orderBy("level", "desc"), limit(20)));
   return {
     rows: snap.docs.map((d, i) => ({
       name: String(d.get("username") || "Player"),
@@ -191,7 +191,7 @@ export default function LeaderboardPage() {
     let gone = false;
     const chunks: string[][] = [];
     for (let i = 0; i < want.length; i += 10) chunks.push(want.slice(i, i + 10));
-    Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c))).catch(() => null))).then((snaps) => {
+    Promise.all(chunks.map((c) => getDocs(query(collection(db, "profiles"), where("username", "in", c))).catch(() => null))).then((snaps) => {
       if (gone) return;
       const got: Record<string, string> = Object.fromEntries(want.map((n) => [n, ""]));
       snaps.forEach((q) => q?.docs.forEach((d) => (got[String(d.get("username") || "")] = photoOf(d))));

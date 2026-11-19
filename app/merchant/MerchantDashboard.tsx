@@ -168,7 +168,7 @@ function Dashboard({
       .then((s) => setPendingTo(s.empty ? "" : String(s.docs[0].get("toMentor") || "?")))
       .catch(() => {});
     if (mentor && !isMainFounderName(mentor))
-      getDocs(query(collection(db, "users"), where("username", "==", mentor), limit(1)))
+      getDocs(query(collection(db, "profiles"), where("username", "==", mentor), limit(1)))
         .then((s) => {
           const u = s.docs[0];
           const roles = u ? [u.get("role"), ...((u.get("roles") as unknown[]) || [])].map((r) => String(r || "").trim().toLowerCase()) : [];
@@ -413,7 +413,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
     setBusy(true);
     setError("");
     try {
-      const snap = await getDocs(query(collection(db, "users"), where("username", "==", name), limit(1)));
+      const snap = await getDocs(query(collection(db, "profiles"), where("username", "==", name), limit(1)));
       const u = snap.docs[0];
       if (!u) throw new Error("User not found.");
       if (lc(String(u.get("role") || "")) === "mentor") throw new Error("A merchant cannot tag a mentor.");

@@ -2221,7 +2221,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     recipientLevel ??= roomUsers.find((u) => u.username.toLowerCase() === r.recipient.toLowerCase())?.level;
     if (recipientLevel === undefined) {
       try {
-        const snap = await getDocs(query(collection(db, "users"), where("username", "==", r.recipient), limit(1)));
+        const snap = await getDocs(query(collection(db, "profiles"), where("username", "==", r.recipient), limit(1)));
         const lvl = Number(snap.docs[0]?.get("level"));
         if (lvl > 0) recipientLevel = Math.floor(lvl);
       } catch {
@@ -4506,7 +4506,7 @@ function ReactorsDialog({ emoji, uids, onClose }: { emoji: string; uids: string[
   useEffect(() => {
     let alive = true;
     uids.forEach((uid) =>
-      getDoc(doc(db, "users", uid))
+      getDoc(doc(db, "profiles", uid))
         .then((s) => alive && setNames((n) => ({ ...n, [uid]: String(s.get("username") || "Unknown") })))
         .catch(() => {})
     );

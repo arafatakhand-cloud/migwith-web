@@ -400,7 +400,7 @@ function Compose({
       const isSupport = toClean.toLowerCase() === SUPPORT_LABEL.toLowerCase();
       const lookupName = isSupport ? "miglife" : toClean;
       // Exact username first, then the same name in any upper/lower case.
-      const users = collection(db, "users");
+      const users = collection(db, "profiles");
       let found = (await getDocs(query(users, where("username", "==", lookupName), limit(1)))).docs[0];
       if (!found) found = (await getDocs(query(users, where("usernameLower", "==", lookupName.toLowerCase()), limit(1)))).docs[0];
       const recipient = found ? String(found.get("username") || "").trim() || lookupName : "";

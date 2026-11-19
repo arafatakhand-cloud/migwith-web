@@ -341,7 +341,7 @@ function BlockedDialog({
     if (blocked.some((b) => b.toLowerCase() === q.toLowerCase())) return setError("User is already blocked.");
     setBusy(true);
     try {
-      const snap = await getDocs(query(collection(db, "users"), where("username", "==", q), limit(1)));
+      const snap = await getDocs(query(collection(db, "profiles"), where("username", "==", q), limit(1)));
       const d = snap.docs[0];
       if (!d) return setError("User not found.");
       if (d.id === uid) return setError("You cannot block yourself.");

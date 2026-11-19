@@ -258,7 +258,7 @@ export function useSenderColors(names: string[], hot: string[] = []): (name: str
       for (let i = 0; i < missing.length; i += 10) {
         const chunk = missing.slice(i, i + 10);
         try {
-          const snap = await getDocs(query(collection(db, "users"), where("username", "in", chunk)));
+          const snap = await getDocs(query(collection(db, "profiles"), where("username", "in", chunk)));
           const now = Date.now();
           snap.docs.forEach((d) => {
             const name = String(d.get("username") || "").trim();

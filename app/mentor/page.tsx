@@ -379,7 +379,7 @@ function TagUserDialog({ me, onClose, onDone }: { me: string; onClose: () => voi
     setBusy(true);
     setError("");
     try {
-      const snap = await getDocs(query(collection(db, "users"), where("username", "==", name), limit(1)));
+      const snap = await getDocs(query(collection(db, "profiles"), where("username", "==", name), limit(1)));
       const u = snap.docs[0];
       if (!u) throw new Error("User not found.");
       if (lc(String(u.get("role") || "")) === "merchant") throw new Error("A mentor cannot tag a merchant.");

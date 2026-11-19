@@ -198,7 +198,7 @@ const checkUserTag = httpsCallable<{ username: string }, { username?: string; ta
 export async function findUserByName(name: string): Promise<{ uid: string; username: string } | null> {
   const clean = name.trim().replace(/^@/, "");
   if (!clean) return null;
-  const users = collection(db, "users");
+  const users = collection(db, "profiles");
   for (const q of [
     query(users, where("username", "==", clean), limit(1)),
     query(users, where("usernameLower", "==", clean.toLowerCase()), limit(1)),

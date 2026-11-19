@@ -213,7 +213,7 @@ export default function GiftContestPage() {
     let gone = false;
     const chunks: string[][] = [];
     for (let i = 0; i < want.length; i += 10) chunks.push(want.slice(i, i + 10));
-    Promise.all(chunks.map((c) => getDocs(query(collection(db, "users"), where("username", "in", c))).catch(() => null))).then((snaps) => {
+    Promise.all(chunks.map((c) => getDocs(query(collection(db, "profiles"), where("username", "in", c))).catch(() => null))).then((snaps) => {
       if (gone) return;
       const got: Record<string, string> = Object.fromEntries(want.map((n) => [n, ""]));
       snaps.forEach((q) => q?.docs.forEach((d) => (got[String(d.get("username") || "")] = profileImageUrl(d.data()))));
