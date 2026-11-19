@@ -415,6 +415,7 @@ export default function SecretPage() {
           { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
           { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
           { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
+          { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
           { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
           { icon: "🔒", label: "Profile Lock", hint: "Lock country changes (on / off)", tint: "#0B1F3A", href: "/secret/profile-lock", ok: f.isMigwith },
           { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.isMigwith },

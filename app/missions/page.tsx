@@ -159,7 +159,8 @@ export default function MissionsPage() {
 
         {d && (
           <p className="mt-4 text-center text-[12px] font-bold text-[#5B6B8C]">
-            ⭐ Your Season Points: <b className="text-[#7C3AED]">{d.spTotal.toLocaleString()} SP</b> · the Season Pass is coming soon
+            ⭐ Your Season Points: <b className="text-[#7C3AED]">{d.spTotal.toLocaleString()} SP</b> ·{" "}
+            <a href="/season" className="text-[#EA580C] underline">🎟 Season Pass ›</a>
           </p>
         )}
         {toast && (
