@@ -29,7 +29,10 @@ import {
   daysLeft,
   EarningPanel,
   lc,
+  ProgHero,
   ProgramBar,
+  StatTiles,
+  TermBar,
   WavePage,
   spendBetween,
   todayStr,
@@ -235,54 +238,29 @@ function Dashboard({
   const today = live?.today ?? stored.today;
   const endsMs = toMs(merchantDoc?.get("expiresAt"));
   const termOn = left === null ? !!merchantDoc : left > 0 || endsMs > Date.now();
-  const termPct = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
   return (
     <div className="space-y-3 px-3 py-3">
       {msg && <p className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[#174EA6] shadow-sm">{msg}</p>}
 
-      {/* 🏪 Merchant status (design 2): ACTIVE dot, mentor, all-time earned,
-          days remaining and a 30-day term bar with the end date */}
-      <div className="rounded-3xl border-[1.5px] border-white bg-white p-4 text-[#0B2A5B]" style={{ boxShadow: "0 5px 0 #b9cdee, 0 16px 30px rgba(40,80,160,.16)" }}>
-        <div className="flex items-center gap-3">
-          <span className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-[26px]" style={{ background: "linear-gradient(135deg,#34d399,#059669)", boxShadow: "0 4px 0 #047857" }}>
-            🏪
-          </span>
-          <div className="min-w-0">
-            <p className={`flex items-center gap-1.5 text-[11px] font-black tracking-[.6px] ${termOn ? "text-[#059669]" : "text-[#D32F2F]"}`}>
-              <i className="h-2 w-2 rounded-full" style={{ background: termOn ? "#10b981" : "#ef4444", boxShadow: `0 0 0 3px ${termOn ? "rgba(16,185,129,.2)" : "rgba(239,68,68,.2)"}` }} />
-              {termOn ? "ACTIVE" : "ENDED"}
-            </p>
-            <p className="text-[19px] font-black leading-6">Merchant</p>
-          </div>
-          <div className="ml-auto text-right text-[10.5px] font-bold text-[#5B6B8C]">
-            Mentor
-            <p data-notranslate className="text-[13px] font-black text-[#1565D8]">{mentor ? `@${mentor}` : "—"}</p>
-          </div>
-        </div>
-        <div className="mt-3.5 grid grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-[#F3F7FE] px-3 py-2.5" title={`${amount(stored.allTime)} coins`}>
-            <p className="text-[10.5px] font-bold text-[#5B6B8C]">All-time earned</p>
-            <p className="text-[17px] font-black text-[#1565D8]">{shortCoins(stored.allTime)} 🪙</p>
-          </div>
-          <div className="rounded-2xl bg-[#F3F7FE] px-3 py-2.5">
-            <p className="text-[10.5px] font-bold text-[#5B6B8C]">Days remaining</p>
-            <p className={`text-[17px] font-black ${termOn ? "text-[#059669]" : "text-[#D32F2F]"}`}>{left === null ? "—" : `${left} day${left === 1 ? "" : "s"}`}</p>
-          </div>
-        </div>
-        {left !== null && (
-          <>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-md bg-[#E6EEFA]">
-              <div className="h-full rounded-md" style={{ width: `${termPct}%`, background: "linear-gradient(90deg,#34d399,#3B82F6)" }} />
-            </div>
-            <div className="mt-1 flex justify-between text-[10.5px] font-bold text-[#5B6B8C]">
-              <span>Term · 30 days</span>
-              {endsMs > 0 && <span>ends {new Date(endsMs).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short", year: "numeric" })}</span>}
-            </div>
-          </>
-        )}
+      {/* 🫧 Design A: the ring of days left, mentor and end date */}
+      <div className="-mx-3">
+        <ProgHero
+          green
+          days={left}
+          tag="🏪 MERCHANT"
+          title={!termOn ? "Term ended" : left !== null && left <= 5 ? "Term ends soon" : "Merchant active"}
+          sub={`${mentor ? `Mentor @${mentor}` : "No mentor yet"}${endsMs > 0 ? ` · ends ${new Date(endsMs).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka", day: "numeric", month: "short" })}` : ""}`}
+        />
+        <StatTiles
+          items={[
+            { value: String(tagged.length), label: "🏷 Tagged" },
+            { value: shortCoins(today), label: "🪙 Today", color: "#B45309" },
+            { value: shortCoins(stored.allTime), label: "💰 All-time", color: "#1D4ED8" },
+          ]}
+        />
       </div>
 
-      <div className="rounded-3xl border-[1.5px] border-white bg-white p-4 text-[#0B2A5B]" style={{ boxShadow: "0 4px 0 #cfdcf0, 0 12px 26px rgba(40,80,160,.12)" }}>
+      <div className="rounded-[22px] bg-white/70 p-3.5 text-[#14284B]" style={{ boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #C6D6EE, 0 10px 18px rgba(30,60,120,.12)" }}>
         <div className="flex items-center gap-2.5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] bg-[#E7FAF2] text-xl">🏷️</span>
           <div className="min-w-0 flex-1">
@@ -311,12 +289,15 @@ function Dashboard({
               const name = String(t.get("taggedUsername") || "");
               const d = daysLeft(t.get("expiresAt"));
               return (
-                <li key={t.id} className="flex items-center gap-2 rounded-xl bg-[#EAF1FC] px-2 py-2">
-                  <span className="w-5 text-[10px] text-[#5B6B8C]">{i + 1}.</span>
-                  <Avatar name={name} size="h-8 w-8" />
+                <li key={t.id} className="flex items-center gap-2.5 rounded-[18px] bg-white px-3 py-2.5 shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]">
+                  <Avatar name={name} size="h-10 w-10" />
                   <div className="min-w-0 flex-1">
-                    <p data-notranslate className="truncate text-xs font-bold">@{name}</p>
-                    <p className="text-[10px] text-[#1E63D6]">2.5% bonus{d !== null && ` · ${d}d left`}</p>
+                    <div className="flex items-center gap-2">
+                      <p data-notranslate className="min-w-0 flex-1 truncate text-[14px] font-extrabold">@{name}</p>
+                      <span className="shrink-0 rounded-full bg-[#E8F0FE] px-2.5 py-1 text-[10.5px] font-extrabold text-[#1D4ED8]">2.5%</span>
+                    </div>
+                    <p className="text-[11px] text-[#5B6B8C]">{d !== null ? `${d}d left` : "Tagged"} · #{i + 1}</p>
+                    <TermBar left={d} />
                   </div>
                   <button type="button" disabled={busy.has(t.id)} onClick={() => remove(t)} className="px-1 text-[10px] font-bold text-rose-600 disabled:opacity-40">
                     REMOVE
@@ -328,8 +309,8 @@ function Dashboard({
         )}
       </div>
 
-      <div className="rounded-3xl border border-[#D5E3F5] bg-white p-4 text-[#0B2A5B] shadow-sm">
-        <p className="font-bold">📈 Team Bonus</p>
+      <div className="rounded-[20px] bg-gradient-to-br from-[#FFF7E0] to-[#FFE7A6] p-4 text-[#6A4A00] shadow-[0_3px_0_#E7C569,0_8px_14px_rgba(180,120,0,.18)]">
+        <p className="font-black">📈 Team Bonus</p>
         <div className="mt-2 grid grid-cols-3 gap-2">
           {[
             ["Today", today, "text-[#1E63D6]"],
@@ -338,16 +319,16 @@ function Dashboard({
             ["Pending", live ? Math.max(live.today, stored.pending) : stored.pending, "text-[#C98A0C]"],
           ].map(([l, v, c]) => (
             <div key={l as string}>
-              <p className="text-[11px] text-[#5B6B8C]">{l}</p>
-              <p className={`text-sm font-bold ${c}`}>{amount(v as number)}</p>
+              <p className="text-[11px] font-bold text-[#92600A]">{l}</p>
+              <p className={`text-[15px] font-black ${c}`}>{amount(v as number)}</p>
             </div>
           ))}
         </div>
-        <p className="mt-2 rounded-xl bg-[#EAF1FC] px-3 py-2 text-[10px] text-[#5B6B8C]">🕐 Auto-credited daily at 12:00 AM Bangladesh time</p>
+        <p className="mt-2 rounded-xl bg-white/60 px-3 py-2 text-[10px] font-bold text-[#92600A]">🕐 Auto-credited daily at 12:00 AM Bangladesh time</p>
       </div>
 
-      <div className="flex items-center gap-3 rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
-        <Avatar name={mentor || "?"} />
+      <div className="flex items-center gap-3 rounded-[18px] bg-white p-3.5 text-[#14284B] shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]">
+        <Avatar name={mentor || "?"} size="h-10 w-10" />
         <div>
           <p className="text-[11px] text-[#5B6B8C]">Your Mentor</p>
           <p data-notranslate className="font-bold text-[#1E63D6]">{mentor ? `@${mentor}` : "Not linked yet"}</p>
@@ -374,8 +355,8 @@ function Dashboard({
           Choose another mentor →
         </button>
       ) : (
-        <button type="button" onClick={renew} disabled={renewing || !mentor} className="w-full rounded-2xl bg-gradient-to-r from-[#5A8FD6] to-[#2F6ABD] py-3 text-sm font-black text-white shadow disabled:opacity-50">
-          {renewing ? "Requesting…" : "Request Renewal"}
+        <button type="button" onClick={renew} disabled={renewing || !mentor} className="w-full rounded-2xl bg-gradient-to-b from-[#22C55E] to-[#15803D] py-3.5 text-sm font-black text-white shadow-[0_4px_0_#126B33] active:translate-y-[2px] disabled:opacity-50">
+          {renewing ? "Requesting…" : "🔄 Request renewal"}
         </button>
       )}
 

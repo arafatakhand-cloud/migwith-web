@@ -839,3 +839,123 @@ function short(n: number) {
   return amount(n);
 }
 
+
+/* ------------------------------------------------------------------------- */
+/* 🫧 Design A (6D Glass, miglife 2026-11): Mentor & Merchant dashboards.    */
+/* ------------------------------------------------------------------------- */
+
+/** Today's trail total (the same number the Report / Earning tabs show). */
+export async function todayTrailTotal(kind: "mentor" | "merchant"): Promise<number> {
+  const r = await getTrailReport({ beneficiaryType: kind, date: todayStr() });
+  return Number(r.data?.total || 0);
+}
+
+/** The big card: a ring of days left, a role tag, a title and a line under it. */
+export function ProgHero({
+  days,
+  total = 30,
+  tag,
+  title,
+  sub,
+  green = false,
+  children,
+}: {
+  days: number | null;
+  total?: number;
+  tag: string;
+  title: string;
+  sub: string;
+  green?: boolean;
+  children?: ReactNode;
+}) {
+  const pct = days === null ? 0 : Math.max(0, Math.min(100, (days / total) * 100));
+  const bg = green
+    ? "linear-gradient(135deg,#065F46,#059669 55%,#0EA5E9)"
+    : "linear-gradient(135deg,#1E3A8A,#2563EB 55%,#7C3AED)";
+  const shadow = green
+    ? "0 5px 0 #054D39,0 10px 0 rgba(5,77,57,.3),0 18px 26px rgba(5,150,105,.32)"
+    : "0 5px 0 #17307A,0 10px 0 rgba(23,48,122,.3),0 18px 26px rgba(37,99,235,.32)";
+  return (
+    <div className="relative mx-3 mb-4 mt-1 overflow-hidden rounded-[24px] p-4 text-white" style={{ background: bg, boxShadow: shadow }}>
+      <span className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" />
+      <div className="relative flex items-center gap-3.5">
+        <div
+          className="flex h-[78px] w-[78px] shrink-0 items-center justify-center rounded-full"
+          style={{ background: `conic-gradient(#FFD15A 0 ${pct}%, rgba(255,255,255,.22) 0)` }}
+        >
+          <div className={`flex h-[62px] w-[62px] flex-col items-center justify-center rounded-full ${green ? "bg-[#047857]" : "bg-[#2348A8]"}`}>
+            <span className="text-[22px] font-black leading-6">{days === null ? "—" : days}</span>
+            <span className="text-[9px] font-bold opacity-80">{days === 1 ? "DAY" : "DAYS"}</span>
+          </div>
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-[10px] font-extrabold tracking-[.8px]">{tag}</span>
+          <p className="mt-1.5 text-[20px] font-black leading-6">{title}</p>
+          <p className="text-[12px] text-white/85">{sub}</p>
+        </div>
+      </div>
+      {children && <div className="relative mt-3">{children}</div>}
+    </div>
+  );
+}
+
+/** Three small 3D number tiles under the hero. */
+export function StatTiles({ items }: { items: { value: string; label: string; color?: string }[] }) {
+  return (
+    <div className="mx-3 mb-1 grid grid-cols-3 gap-2.5">
+      {items.map((s) => (
+        <div
+          key={s.label}
+          className="rounded-[18px] bg-white/90 px-2.5 py-2.5 shadow-[inset_0_2px_0_#fff,0_3px_0_#C6D6EE,0_6px_0_#B3C7E6,0_10px_14px_rgba(30,60,120,.15)]"
+        >
+          <p className="truncate text-[20px] font-black leading-6" style={{ color: s.color || "#14284B" }}>
+            {s.value}
+          </p>
+          <p className="truncate text-[10.5px] font-bold text-[#5B6B8C]">{s.label}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The thin green → amber → red bar of a term's days left. */
+export function TermBar({ left, total = 30 }: { left: number | null; total?: number }) {
+  if (left === null) return null;
+  const pct = Math.max(3, Math.min(100, (left / total) * 100));
+  const bg = left <= 3 ? "linear-gradient(90deg,#F87171,#DC2626)" : left <= 7 ? "linear-gradient(90deg,#FBBF24,#D97706)" : "linear-gradient(90deg,#22C55E,#16A34A)";
+  return (
+    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E3ECF7]">
+      <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: bg }} />
+    </div>
+  );
+}
+
+/** "12d left" pill: blue, amber in the last week, red in the last 3 days. */
+export function LeftPill({ left }: { left: number | null }) {
+  if (left === null) return null;
+  const cls = left <= 3 ? "bg-[#FDE2E2] text-[#C62828]" : left <= 7 ? "bg-[#FFF1D6] text-[#B45309]" : "bg-[#E8F0FE] text-[#1D4ED8]";
+  return <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10.5px] font-extrabold ${cls}`}>{left > 0 ? `${left}d left` : "Ends today"}</span>;
+}
+
+/** The gold "Today's bonus" card (live, from the trail report). */
+export function TodayBonusCard({ kind, note, refresh = 0 }: { kind: "mentor" | "merchant"; note: ReactNode; refresh?: number }) {
+  const [v, setV] = useState<number | null>(null);
+  useEffect(() => {
+    let alive = true;
+    todayTrailTotal(kind)
+      .then((n) => alive && setV(n))
+      .catch(() => alive && setV(null));
+    return () => {
+      alive = false;
+    };
+  }, [kind, refresh]);
+  return (
+    <div className="mx-3 mt-3 flex items-center rounded-[20px] bg-gradient-to-br from-[#FFF7E0] to-[#FFE7A6] p-3.5 shadow-[0_3px_0_#E7C569,0_8px_14px_rgba(180,120,0,.18)]">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-extrabold tracking-[.5px] text-[#92600A]">TODAY&apos;S BONUS</p>
+        <p className="text-[22px] font-black text-[#6A4A00]">🪙 {v === null ? "—" : amount(v)}</p>
+      </div>
+      <div className="text-right text-[11px] font-bold leading-4 text-[#92600A]">{note}</div>
+    </div>
+  );
+}

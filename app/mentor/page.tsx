@@ -42,6 +42,10 @@ import {
   trailReport,
   uidsFor,
   checkTagFree,
+  StatTiles,
+  TodayBonusCard,
+  TermBar,
+  LeftPill,
 } from "../_components/ProgramShared";
 import { isMainFounderName } from "../../lib/founder";
 import { useTransferLimits } from "../../lib/transferLimits";
@@ -233,8 +237,18 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
 
   const reject = (req: DocumentSnapshot) => withBusy(req.id, () => updateDoc(req.ref, { status: "rejected" }));
 
+  const card3d = "bg-white shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]";
   return (
     <>
+      {/* 🫧 Design A: the numbers at a glance + today's bonus */}
+      <StatTiles
+        items={[
+          { value: String(merchants.length), label: "🏪 Merchants" },
+          { value: String(tagged.filter((t) => String(t.get("status") || "active") === "active").length), label: "🏷 Tagged" },
+          { value: String(requests.length), label: "📨 Requests", color: requests.length ? "#DC2626" : undefined },
+        ]}
+      />
+      <TodayBonusCard kind="mentor" refresh={refresh} note={<>3% direct<br />0.5% via merchants</>} />
       <div className="flex px-3 pt-3">
         <GradientTabs
           small
@@ -293,15 +307,16 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
               const name = String(m.get("merchantUsername") || "");
               const left = daysLeft(m.get("expiresAt"));
               return (
-                <div key={m.id} className="flex items-center gap-3 rounded-2xl bg-white shadow-sm px-3 py-2.5 text-[#0B2A5B]">
-                  <Avatar name={name} size="h-9 w-9" />
+                <div key={m.id} className={`flex items-center gap-3 rounded-[18px] px-3 py-2.5 text-[#14284B] ${card3d}`}>
+                  <Avatar name={name} size="h-10 w-10" />
                   <div className="min-w-0 flex-1">
-                    <p data-notranslate className="truncate font-bold">@{name}</p>
-                    <p className="text-xs text-[#5B6B8C]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
+                    <div className="flex items-center gap-2">
+                      <p data-notranslate className="min-w-0 flex-1 truncate text-[14px] font-extrabold">@{name}</p>
+                      <LeftPill left={left} />
+                    </div>
+                    <p className="text-[11px] text-[#5B6B8C]">{counts[name] ?? Number(m.get("taggedUsersCount") || 0)} tagged users</p>
+                    <TermBar left={left} />
                   </div>
-                  {left !== null && (
-                    <span className="rounded-full bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD] px-2.5 py-0.5 text-[11px] font-black text-white">{left > 0 ? `${left}d left` : "Ends today"}</span>
-                  )}
                 </div>
               );
             })
@@ -330,7 +345,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                   // the ring: how much of the 30-day tag is left
                   const part = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
                   return (
-                    <div key={t.id} className="relative rounded-2xl bg-white shadow-sm p-3 text-center">
+                    <div key={t.id} className={`relative rounded-[18px] p-3 text-center ${card3d}`}>
                       {/* a Merchant's own tag stays while they are your Merchant (it would come back) */}
                       {!(String(t.get("source") || "") === "merchant" && merchants.some((m) => String(m.get("merchantUsername") || "") === name)) && <button
                         type="button"
@@ -351,9 +366,9 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                         </span>
                       </div>
                       <p data-notranslate className="mt-1 truncate text-[13px] font-bold">@{name}</p>
-                      <p className="text-[10px] text-[#5B6B8C]">
-                        {status === "active" ? (left !== null ? `${left} days left` : "Tagged") : status}
-                      </p>
+                      <div className="mt-1 flex justify-center">
+                        {status === "active" ? (left !== null ? <LeftPill left={left} /> : <span className="text-[10px] text-[#5B6B8C]">Tagged</span>) : <span className="rounded-full bg-[#F1F5F9] px-2.5 py-1 text-[10.5px] font-extrabold text-[#64748B]">{status}</span>}
+                      </div>
                     </div>
                   );
                 })}

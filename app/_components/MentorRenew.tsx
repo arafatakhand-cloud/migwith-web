@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../lib/firebase";
+import { ProgHero } from "./ProgramShared";
 
 // 🔁 Mentor renew request (same server function as the app): the mentor asks
 // from 5 days before the end (or after it ended); miGlife renews 30 days or
@@ -71,21 +72,14 @@ export function MentorTermCard() {
       setBusy(false);
     }
   };
-  // the bar: days left out of the 30-day term
-  const pct = Math.max(0, Math.min(100, (days / 30) * 100));
-
+  // 🫧 Design A: the ring of days left out of the 30-day term
   return (
-    <div className="mx-3 mb-3 mt-1 rounded-[20px] bg-gradient-to-br from-[#2B5FD9] to-[#1B2A5C] p-4 text-white shadow-lg">
-      <p className="text-[11px] font-extrabold uppercase tracking-[1px] text-white/75">My Mentorship</p>
-      <p className="mt-0.5 text-[22px] font-black leading-7">
-        {ended ? "Ended" : days === 1 ? "1 day left" : `${days} days left`}
-      </p>
-      <p className="text-[12px] text-white/80">
-        {ended ? "Ended" : "Ends"} {dhakaDate(mine.untilMs)}
-      </p>
-      <div className="my-2.5 h-[7px] overflow-hidden rounded-full bg-white/20">
-        <span className="block h-full rounded-full bg-[#FFB020]" style={{ width: `${pct}%` }} />
-      </div>
+    <ProgHero
+      days={Math.max(0, days)}
+      tag="🧑‍🏫 MENTOR"
+      title={ended ? "Mentorship ended" : days <= (mine.remindDays ?? 5) ? "Ends soon" : "Mentorship active"}
+      sub={`${ended ? "Ended" : "Ends"} ${dhakaDate(mine.untilMs)}`}
+    >
 
       {pending ? (
         <>
@@ -132,7 +126,7 @@ export function MentorTermCard() {
         </p>
       )}
       {msg && <p className="mt-2 text-[12.5px] font-bold text-[#FFD1D1]">{msg}</p>}
-    </div>
+    </ProgHero>
   );
 }
 
