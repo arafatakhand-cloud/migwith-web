@@ -106,9 +106,24 @@ function StatCell6D({
   return (
     <Link href={href} onClick={onClick} aria-label={`${label}: ${value}`} className="relative flex min-w-0 flex-1 items-center justify-center gap-1.5 py-0.5 transition-transform active:scale-[0.92]">
       {divider && <span aria-hidden className="absolute left-0 top-1/2 h-[30px] w-px -translate-y-1/2 bg-[#E1E8F2]" />}
+      {/* ✨ design B (miglife 2026-11): something new → the cell glows in its own
+          colour and slowly breathes (2 s), a NEW chip on top, the bell swings.
+          Same as the app (HomeStatCell6D). */}
+      {highlight && (
+        <>
+          <span
+            aria-hidden
+            className="stat-glow pointer-events-none absolute inset-x-[3px] -inset-y-[5px] rounded-[14px]"
+            style={{ background: `linear-gradient(${top}33,${top}66)`, border: `1.5px solid ${top}`, boxShadow: `0 0 14px ${bottom}88` }}
+          />
+          <span className="pointer-events-none absolute -top-[13px] left-1/2 z-10 -translate-x-1/2 rounded-md bg-gradient-to-r from-[#EF4444] to-[#F97316] px-[5px] py-px text-[7.5px] font-black leading-[9px] tracking-wide text-white">
+            NEW
+          </span>
+        </>
+      )}
       <span className="relative shrink-0">
         <span
-          className="relative flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[10px]"
+          className={`relative flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[10px]${highlight && glyph === "bell" ? " stat-bell" : ""}`}
           style={{ background: `linear-gradient(${top},${bottom})`, boxShadow: `0 3px 0 ${lip}` }}
         >
           <span aria-hidden className="absolute inset-x-1 top-0.5 h-[9px] rounded-md bg-gradient-to-b from-white/50 to-white/0" />
@@ -116,9 +131,8 @@ function StatCell6D({
             {STAT_GLYPHS[glyph]}
           </svg>
         </span>
-        {highlight && <span className="stat-dot absolute -right-[3px] -top-[3px] h-[10px] w-[10px] rounded-full border-[1.5px] border-white bg-[#FF3B3B]" />}
       </span>
-      <span className="min-w-0 leading-none">
+      <span className="relative min-w-0 leading-none">
         <span className="block text-[17px] font-black leading-[18px]" style={{ color: lip }}>
           {value > 999 ? "999+" : value}
         </span>
