@@ -30,6 +30,9 @@ import {
   EarningPanel,
   lc,
   ProgHero,
+  DonutSplit,
+  RankedRows,
+  SectionRow,
   ProgramBar,
   StatTiles,
   TermBar,
@@ -511,47 +514,14 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
       <DateBar day={day} setDay={setDay} gold />
       <>
           {error && <p className="text-xs text-rose-600">⚠ Could not load: {error}</p>}
-          <div className="rounded-3xl bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
-            <p className="text-xs font-bold text-white/80">TOTAL BONUS · {label}</p>
-            <p className="text-2xl font-black text-white">🪙 {amount(total)}</p>
-            <p className="text-[11px] font-bold text-white/80">2.5% Merchant Bonus</p>
-            {rows !== null && total === 0 && <p className="mt-2 rounded-xl bg-white/10 px-3 py-2 text-center text-xs">No bonus on this date</p>}
-          </div>
-          <div className="rounded-3xl bg-white p-4 text-[#0B2A5B] shadow-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-[#1E63D6]">♟</span>
-              <p className="flex-1 font-bold">From my tagged users</p>
-              <p className="text-xs font-bold text-[#5B6B8C]">
-                {active} active / {(rows || []).length}
-              </p>
-            </div>
-            {rows === null ? (
-              // still filling in: a quiet blank
-              <div className="h-12" />
-            ) : rows.length === 0 ? (
-              <p className="mt-2 text-xs text-[#5B6B8C]">No tagged users</p>
-            ) : (
-              <ul className="mt-2 divide-y divide-[#E3ECF7]">
-                {rows.map((r) => (
-                  <li key={r.username} className="flex items-center gap-3 py-2">
-                    <Avatar name={r.username} size="h-8 w-8" />
-                    <div className="min-w-0 flex-1">
-                      <p data-notranslate className="truncate text-sm font-bold">@{r.username}</p>
-                      <p className="text-xs text-[#5B6B8C]">spend 🪙{amount(r.spend)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[11px] font-bold text-[#1E63D6]">2.5%</p>
-                      <p className="text-sm font-bold text-[#16A34A]">🪙{amount(r.earning)}</p>
-                    </div>
-                  </li>
-                ))}
-                <li className="flex justify-between pt-2 text-sm font-bold">
-                  <span>Total bonus</span>
-                  <span className="text-[#16A34A]">🪙{amount(total)}</span>
-                </li>
-              </ul>
-            )}
-          </div>
+          {/* 📊 design 2: the day's total + top earners, in green */}
+          <DonutSplit
+            total={total}
+            parts={[{ label: "Tagged users · 2.5%", value: total, color: "#059669" }]}
+            note={rows === null ? undefined : `${active} of ${(rows || []).length} spent · 🪙 ${amount((rows || []).reduce((a, r) => a + r.spend, 0))}`}
+          />
+          <SectionRow title={<>🏆 Top earners · {label}</>} right={`${active} active / ${(rows || []).length}`} />
+          <RankedRows rows={rows || []} rate="2.5%" color="linear-gradient(90deg,#34D399,#059669)" ready={rows !== null} empty="No tagged users" />
         </>
     </div>
   );

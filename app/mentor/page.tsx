@@ -46,6 +46,9 @@ import {
   TodayBonusCard,
   TermBar,
   LeftPill,
+  DonutSplit,
+  RankedRows,
+  SectionRow,
 } from "../_components/ProgramShared";
 import { isMainFounderName } from "../../lib/founder";
 import { useTransferLimits } from "../../lib/transferLimits";
@@ -571,28 +574,26 @@ function Report({ me, refresh }: { me: string; refresh: number }) {
       <DateBar day={day} setDay={setDay} gold />
       {error && <p className="text-xs text-[#E5484D]">⚠ Could not load: {error}</p>}
 
-      <div className="flex gap-2">
-        <div className="min-w-0 flex-[1.3] rounded-[20px] bg-gradient-to-br from-[#5A8FD6] to-[#2F6ABD] p-4 text-white shadow-lg">
-          <p className="text-[11px] font-bold">Earned · {label}</p>
-          <p className="truncate text-[28px] font-black leading-tight">{amount(total)}</p>
-          <p className="text-[11px] font-bold">
-            {change === null ? "\u00a0" : change === 0 ? "= same as the day before" : `${change > 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the day before`}
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex-1 rounded-2xl bg-white shadow-sm px-3 py-2">
-            <p className="text-[10px] text-[#5B6B8C]">★ My Tags · 3%</p>
-            <p className="truncate font-black text-[#1E63D6]">{amount(mentorTotal)}</p>
-          </div>
-          <div className="flex-1 rounded-2xl bg-white shadow-sm px-3 py-2">
-            <p className="text-[10px] text-[#5B6B8C]">◆ Merchants · 0.5%</p>
-            <p className="truncate font-black text-[#8B5CFF]">{amount(merchantTotal)}</p>
-          </div>
-        </div>
-      </div>
+      {/* 📊 design 2: the day's total split by source */}
+      <DonutSplit
+        total={total}
+        parts={[
+          { label: "Tagged users · 3%", value: mentorTotal, color: "#2563EB" },
+          { label: "Via merchants · 0.5%", value: merchantTotal, color: "#A78BFA" },
+        ]}
+        note={change === null ? undefined : change === 0 ? "= same as the day before" : `${change > 0 ? "▲" : "▼"} ${Math.abs(change)}% vs the day before`}
+      />
 
-      <TagGrid title="Mentor Tag" icon="★" rows={shown.direct} total={mentorTotal} tone="main" ready={!!data} empty="No mentor tagged users yet" />
-      <TagGrid title="Merchant Tag" icon="◆" rows={shown.merchant} total={merchantTotal} tone="second" ready={!!data} empty="No merchant tagged users yet" />
+      <SectionRow title={<>🏆 From my tagged users · {label}</>} right={`🪙 ${amount(mentorTotal)}`} />
+      <RankedRows rows={shown.direct} rate="3%" ready={!!data} empty="No mentor tagged users yet" />
+      <SectionRow title="🏪 Via my merchants" right={`🪙 ${amount(merchantTotal)}`} />
+      <RankedRows
+        rows={shown.merchant}
+        rate="0.5%"
+        color="linear-gradient(90deg,#C4B5FD,#7C3AED)"
+        ready={!!data}
+        empty="No merchant tagged users yet"
+      />
     </div>
   );
 }

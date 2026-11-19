@@ -469,7 +469,7 @@ export function EarningPanel({
 }) {
   const [d, setD] = useState<Record<string, any> | null>(null);
   const [balance, setBalance] = useState(0);
-  const [period, setPeriod] = useState<(typeof PERIODS)[number][0]>("today");
+  const [period, setPeriod] = useState<(typeof PERIODS)[number][0]>("last7Days");
   const [menu, setMenu] = useState(false);
   const [viaOpen, setViaOpen] = useState(false);
   // Live, from the same calculation the Report tab uses (getTrailReport), so
@@ -608,93 +608,109 @@ export function EarningPanel({
         pending: "bg-[#FFF1D6] text-[#C98A0C]",
       };
 
+  // 📊 design 2 (miglife 2026-11): period pills, the hero, a 7-day chart,
+  // who brought it, all-time + balance, then Via and Recent activity.
+  const green = kind === "merchant";
+  const heroBg = green ? "linear-gradient(135deg,#065F46,#059669 55%,#0EA5E9)" : "linear-gradient(135deg,#1E3A8A,#2563EB 55%,#7C3AED)";
+  const heroLedge = green ? "0 5px 0 #054D39,0 14px 22px rgba(5,150,105,.3)" : "0 5px 0 #17307A,0 14px 22px rgba(37,99,235,.3)";
+  const barGrad = green ? "linear-gradient(180deg,#34D399,#047857)" : "linear-gradient(180deg,#60A5FA,#1D4ED8)";
+  const rowBar = green ? "linear-gradient(90deg,#34D399,#059669)" : "linear-gradient(90deg,#60A5FA,#2563EB)";
+  const card3d = "rounded-[20px] bg-white p-3.5 shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]";
+  const periodLabel = PERIODS.find((p) => p[0] === period)![1];
+  const week = live?.days ? [...live.days].reverse() : Array.from({ length: 7 }, (_, i) => ({ day: "", total: i === 6 ? view.periods.today : 0 }));
+  const wkMax = Math.max(1, ...week.map((d) => d.total));
+  const wkBest = Math.max(...week.map((d) => d.total));
+  const bestIdx = wkBest > 0 ? week.findIndex((d) => d.total === wkBest) : -1;
+  const wkLabel = (day: string, i: number) => (i === 6 ? "Today" : day ? new Date(`${day}T12:00:00`).toLocaleDateString("en-US", { weekday: "short" }) : "");
+  const people = (live?.people || []).slice(0, 5);
+  const peopleTop = Math.max(1, ...people.map((x) => x.earning));
+
   return (
     <div className="space-y-3 px-3 py-3">
-      {gold ? (
-        <div className="earn-hero relative overflow-hidden rounded-[22px] bg-gradient-to-br from-[#5A8FD6] via-[#2F6ABD] to-[#8B5CFF] p-4 text-white shadow-[0_10px_24px_rgba(47,106,189,.35)]">
-          <span className="pointer-events-none absolute -right-12 -top-12 h-36 w-36 rounded-full bg-white/10" />
-          <span className="pointer-events-none absolute -bottom-10 left-6 h-24 w-24 rounded-full bg-white/[0.07]" />
-          <div className="relative flex items-center justify-between">
-            <p className="text-xs font-semibold text-white/85">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
-            <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold text-white">💼 {kind === "mentor" ? "Mentor" : "Merchant"}</span>
-          </div>
-          <div className="relative mt-1 flex items-center gap-3">
-            <p className="earn-hero-amt min-w-0 flex-1 truncate text-[28px] font-black leading-tight text-white drop-shadow-sm">
-              {amount(view.total)}
-            </p>
-            <SettledRing settled={view.settled} pending={view.pending} />
-          </div>
-          <div className="relative mt-3 grid grid-cols-3 gap-2 text-center">
-            {[
-              ["Pending", view.pending, "text-[#FFD66B]"],
-              ["Settled", view.settled, "text-[#8FF0B4]"],
-              ["Balance", balance, "text-white"],
-            ].map(([l, v, col]) => (
-              <div key={l as string} className="earn-hero-chip rounded-xl bg-white/15 py-1.5 backdrop-blur-sm">
-                <p className="text-[10px] text-white/80">
-                  <span className={col as string}>●</span> {l}
-                </p>
-                <p className={`truncate px-1 text-[13px] font-black ${col}`}>{amount(v as number)}</p>
-              </div>
-            ))}
-          </div>
+      {/* period pills */}
+      <div className="flex gap-1.5">
+        {PERIODS.map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setPeriod(k)}
+            className={`rounded-full px-3 py-1.5 text-[11.5px] font-extrabold transition ${k === period ? "bg-[#14284B] text-white" : "bg-white/80 text-[#5B6B8C]"}`}
+          >
+            {l === "Last 7 days" ? "7 days" : l === "Last 30 days" ? "30 days" : l === "All time" ? "All" : l}
+          </button>
+        ))}
+      </div>
+
+      {/* the hero */}
+      <div className="relative overflow-hidden rounded-[22px] p-4 text-white" style={{ background: heroBg, boxShadow: heroLedge }}>
+        <span className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-white/10" />
+        <p className="relative text-[10.5px] font-extrabold tracking-[.8px] text-white/85">
+          {kind === "mentor" ? "MENTOR" : "MERCHANT"} BONUS · {periodLabel.toUpperCase()}
+        </p>
+        <p className="relative mt-0.5 truncate text-[30px] font-black leading-9">🪙 {amount(view.periods[period])}</p>
+        <div className="relative mt-2 flex flex-wrap gap-1.5">
+          <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10.5px] font-extrabold">⏳ {amount(view.pending)} pending</span>
+          <span className="rounded-full bg-white/20 px-2.5 py-1 text-[10.5px] font-extrabold">✅ {amount(view.settled)} settled</span>
         </div>
-      ) : (
-        <div className="rounded-3xl bg-gradient-to-br from-[#F3E8FF] to-[#EDE3FA] p-4 shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E2CCF7] text-2xl text-[#7B1FB8]">▣</span>
-            <div>
-              <p className="text-xs text-[#6A4A8C]">Total {kind === "mentor" ? "Mentor" : "Merchant"} Bonus</p>
-              <p className="text-2xl font-black text-[#4A148C]">{amount(view.total)}</p>
+      </div>
+
+      {/* 📈 every day of the last 7 */}
+      <div className={card3d}>
+        <div className="flex items-center">
+          <p className="flex-1 text-[12.5px] font-extrabold text-[#14284B]">📈 Every day · 🪙 {amount(view.periods.last7Days)}</p>
+          {bestIdx >= 0 && <p className="text-[11px] font-bold text-[#5B6B8C]">best: {wkLabel(week[bestIdx].day, bestIdx)} {shortAmount(wkBest)}</p>}
+        </div>
+        <div className="mt-2 flex h-[110px] items-end gap-2">
+          {week.map((d, i) => (
+            <div key={i} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+              {d.total > 0 && <span className="max-w-full truncate text-[8.5px] font-bold text-[#5B6B8C]">{shortAmount(d.total)}</span>}
+              <span
+                className="w-full rounded-t-[8px] rounded-b-[3px] transition-[height] duration-500"
+                style={{
+                  height: `${Math.max(4, (d.total / wkMax) * 80)}px`,
+                  background: d.total <= 0 ? "#E3ECF7" : i === 6 ? "linear-gradient(180deg,#FFE29A,#E9A92E)" : barGrad,
+                }}
+              />
+              <span className={`text-[9.5px] ${i === 6 ? "font-extrabold text-[#B45309]" : "font-bold text-[#8A97A8]"}`}>{wkLabel(d.day, i)}</span>
             </div>
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-            {[
-              ["Pending", view.pending, "#C98A0C"],
-              ["Settled", view.settled, "#14A044"],
-              ["Balance", balance, "#0E1B3D"],
-            ].map(([l, v, col]) => (
-              <div key={l as string} className="rounded-2xl bg-[#E9DDF7] py-2">
-                <p className="text-[10px] text-[#6A4A8C]">{l}</p>
-                <p className="text-sm font-bold" style={{ color: col as string }}>{amount(v as number)}</p>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
+      </div>
+
+      {/* 👥 who brought it */}
+      <SectionRow title="👥 Who brought it" right="7 days" />
+      {people.length === 0 ? (
+        <p className="rounded-[18px] bg-white/80 py-4 text-center text-xs text-[#5B6B8C]">{live?.people ? "No bonus in the last 7 days" : "…"}</p>
+      ) : (
+        <ul className="space-y-2">
+          {people.map((x) => (
+            <li key={x.username} className="flex items-center gap-2.5 rounded-[18px] bg-white px-3 py-2.5 shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]">
+              <Avatar name={x.username} size="h-9 w-9" />
+              <div className="min-w-0 flex-1">
+                <p data-notranslate className="truncate text-[13.5px] font-extrabold text-[#14284B]">@{x.username}</p>
+                <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-[#E3ECF7]">
+                  <span className="block h-full rounded-full" style={{ width: `${Math.max(3, (x.earning / peopleTop) * 100)}%`, background: rowBar }} />
+                </div>
+              </div>
+              <p className="shrink-0 text-[14px] font-black text-[#15803D]">{amount(x.earning)}</p>
+            </li>
+          ))}
+        </ul>
       )}
 
-      {gold && <WeekChart days={live?.days} today={view.periods.today} last7={view.periods.last7Days} last30={view.periods.last30Days} />}
-
-      {!gold && <div className={c.card}>
-        <div className="flex items-center">
-          <p className={`flex-1 text-xs font-semibold ${c.sub}`}>Bonus</p>
-          <div className="relative">
-            <button type="button" onClick={() => setMenu((v) => !v)} className={`rounded-full px-3 py-1 text-sm font-bold ${c.chip}`}>
-              {PERIODS.find((p) => p[0] === period)![1]} {menu ? "▲" : "▼"}
-            </button>
-            {menu && (
-              <div className={`absolute right-0 top-full z-20 mt-1 w-40 overflow-hidden rounded-xl text-sm shadow-xl ${c.menu}`}>
-                {PERIODS.map(([k, l]) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => {
-                      setPeriod(k);
-                      setMenu(false);
-                    }}
-                    className={`flex w-full justify-between px-3 py-2 text-left ${c.menuHover} ${k === period ? c.menuOn : c.ink}`}
-                  >
-                    {l} {k === period && "✓"}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* all-time + balance */}
+      <div className="flex items-center rounded-[18px] bg-gradient-to-br from-[#FFF7E0] to-[#FFE7A6] p-3.5 shadow-[0_3px_0_#E7C569,0_8px_14px_rgba(180,120,0,.18)]">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10.5px] font-extrabold tracking-[.5px] text-[#92600A]">ALL-TIME BONUS</p>
+          <p className="truncate text-[20px] font-black text-[#6A4A00]">🪙 {amount(view.total)}</p>
         </div>
-        <p className={`mt-1 text-2xl font-black ${gold ? "text-[#F7D774]" : c.ink}`}>🪙 {amount(view.periods[period])}</p>
-      </div>}
+        <div className="text-right">
+          <p className="text-[10.5px] font-extrabold text-[#92600A]">BALANCE</p>
+          <p className="text-[13px] font-black text-[#6A4A00]">{shortAmount(balance)}</p>
+        </div>
+      </div>
 
-      <div className={c.card}>
+      <div className={card3d}>
         <button type="button" onClick={() => setViaOpen((v) => !v)} className="flex w-full items-center gap-2 text-left">
           <span className={c.icon}>◐</span>
           <span className={`flex-1 font-bold ${c.ink}`}>Via</span>
@@ -721,11 +737,11 @@ export function EarningPanel({
           ))}
       </div>
 
-      <div className={c.card}>
+      <div className={card3d}>
         <div className="flex items-center gap-2">
           {onRefresh ? <RefreshButton onClick={onRefresh} glyph="↺" className={c.icon} /> : <span className={c.icon}>↺</span>}
-          <span className={`flex-1 font-bold ${c.ink}`}>Recent Activity</span>
-          {gold && view.recent.length > 3 ? (
+          <span className={`flex-1 font-bold ${c.ink}`}>⚡ Recent Activity</span>
+          {view.recent.length > 3 ? (
             <button type="button" onClick={() => setAllRecent((v) => !v)} className="rounded-full bg-[#1E63D6]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#1E63D6]">
               {allRecent ? "Less ▴" : `See all ${view.recent.length} ›`}
             </button>
@@ -737,7 +753,7 @@ export function EarningPanel({
           <p className={`mt-2 text-xs ${c.sub}`}>No recent activity</p>
         ) : (
           <ul className={`mt-1 divide-y ${c.line}`}>
-            {(gold && !allRecent ? view.recent.slice(0, 3) : view.recent).map((r, i) => {
+            {(!allRecent ? view.recent.slice(0, 3) : view.recent).map((r, i) => {
               const name = String(r.username ?? r.taggedUsername ?? "");
               const status = String(r.status ?? "pending");
               return (
@@ -956,6 +972,129 @@ export function TodayBonusCard({ kind, note, refresh = 0 }: { kind: "mentor" | "
         <p className="text-[22px] font-black text-[#6A4A00]">🪙 {v === null ? "—" : amount(v)}</p>
       </div>
       <div className="text-right text-[11px] font-bold leading-4 text-[#92600A]">{note}</div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+/* 📊 Report & Bonus, design 2 (miglife 2026-11): donut split, ranked rows,  */
+/* period pills, 7-day bar chart.                                            */
+/* ------------------------------------------------------------------------- */
+
+/** A donut of the day's total split by source, with a legend. */
+export function DonutSplit({
+  total,
+  parts,
+  note,
+}: {
+  total: number;
+  parts: { label: string; value: number; color: string }[];
+  note?: ReactNode;
+}) {
+  const sumParts = parts.reduce((a, p) => a + Math.max(0, p.value), 0);
+  let acc = 0;
+  const stops = sumParts > 0
+    ? parts.map((p) => {
+        const from = (acc / sumParts) * 100;
+        acc += Math.max(0, p.value);
+        return `${p.color} ${from}% ${(acc / sumParts) * 100}%`;
+      }).join(",")
+    : "#E3ECF7 0 100%";
+  return (
+    <div className="flex items-center gap-3.5 rounded-[20px] bg-white p-3.5 shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)]">
+      <div className="flex h-[96px] w-[96px] shrink-0 items-center justify-center rounded-full" style={{ background: `conic-gradient(${stops})` }}>
+        <div className="flex h-[66px] w-[66px] flex-col items-center justify-center rounded-full bg-white">
+          <span className="max-w-[60px] truncate text-[15px] font-black leading-5 text-[#14284B]">{shortAmount(total)}</span>
+          <span className="text-[9px] font-bold text-[#5B6B8C]">TOTAL</span>
+        </div>
+      </div>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        {parts.map((p) => (
+          <div key={p.label} className="min-w-0">
+            <p className="flex items-center gap-1.5 truncate text-[12px] font-bold text-[#14284B]">
+              <i className="h-2.5 w-2.5 shrink-0 rounded-[3px]" style={{ background: p.color }} />
+              {p.label}
+            </p>
+            <p className="pl-4 text-[13px] font-black text-[#14284B]">🪙 {amount(p.value)}</p>
+          </div>
+        ))}
+        {note && <p className="pl-0.5 text-[11px] font-bold text-[#5B6B8C]">{note}</p>}
+      </div>
+    </div>
+  );
+}
+
+/** 5,380,614 → "5.38M", 12,500 → "12.5K", small numbers as they are. */
+export const shortAmount = (n: number) =>
+  n >= 1e6 ? `${(n / 1e6).toFixed(2).replace(/\.?0+$/, "")}M` : n >= 1e4 ? `${(n / 1e3).toFixed(1).replace(/\.0$/, "")}K` : amount(n);
+
+/** Ranked people: 🥇🥈🥉 numbers, spend · rate, +bonus and a bar. Those who
+ *  spent nothing that day come last, dimmed. */
+export function RankedRows({
+  rows,
+  rate,
+  color = "linear-gradient(90deg,#60A5FA,#2563EB)",
+  ready,
+  empty,
+  sub,
+}: {
+  rows: TrailRow[];
+  rate: string;
+  color?: string;
+  ready: boolean;
+  empty: string;
+  sub?: (r: TrailRow) => ReactNode;
+}) {
+  const sorted = [...rows].sort((a, b) => b.earning - a.earning || b.spend - a.spend || a.username.localeCompare(b.username));
+  const top = Math.max(0, ...sorted.map((r) => r.earning));
+  if (!sorted.length)
+    return ready ? (
+      <p className="rounded-[18px] bg-white/80 py-5 text-center text-xs text-[#5B6B8C]">
+        <span className="block text-xl">👥</span>
+        {empty}
+      </p>
+    ) : (
+      <div className="h-20 rounded-[18px] bg-white/60" />
+    );
+  const medal = ["bg-gradient-to-b from-[#FFE29A] to-[#F5B83D] text-[#5A3B00]", "bg-gradient-to-b from-[#E5E7EB] to-[#9CA3AF] text-white", "bg-gradient-to-b from-[#FBCFA0] to-[#C2773A] text-white"];
+  let rank = 0;
+  return (
+    <ul className="space-y-2">
+      {sorted.map((r) => {
+        const on = r.spend > 0;
+        if (on) rank += 1;
+        const pct = top > 0 ? Math.max(3, (r.earning / top) * 100) : 0;
+        return (
+          <li key={r.username} className={`rounded-[18px] bg-white px-3 py-2.5 shadow-[0_3px_0_#D3DFF1,0_7px_12px_rgba(30,60,120,.1)] ${on ? "" : "opacity-55"}`}>
+            <div className="flex items-center gap-2.5">
+              <span className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-black ${on && rank <= 3 ? medal[rank - 1] : "bg-[#EEF2F7] text-[#5B6B8C]"}`}>
+                {on ? rank : "–"}
+              </span>
+              <Avatar name={r.username} size="h-9 w-9" />
+              <div className="min-w-0 flex-1">
+                <p data-notranslate className="truncate text-[13.5px] font-extrabold text-[#14284B]">@{r.username}</p>
+                <p className="truncate text-[11px] text-[#5B6B8C]">{sub ? sub(r) : <>spent 🪙 {amount(r.spend)} · {rate}</>}</p>
+              </div>
+              <p className={`shrink-0 text-[14px] font-black ${on ? "text-[#15803D]" : "text-[#A3AFC2]"}`}>+{amount(r.earning)}</p>
+            </div>
+            {on && (
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#E3ECF7]">
+                <span className="block h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** A section title row: "🏆 Top earners · 19 Nov ······ 🪙 768". */
+export function SectionRow({ title, right }: { title: ReactNode; right?: ReactNode }) {
+  return (
+    <div className="flex items-center px-1 pb-0.5 pt-1.5">
+      <p className="flex-1 text-[13px] font-extrabold text-[#14284B]">{title}</p>
+      {right && <p className="text-[11px] font-extrabold text-[#5B6B8C]">{right}</p>}
     </div>
   );
 }
