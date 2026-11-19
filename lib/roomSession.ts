@@ -18,6 +18,8 @@ export type SessionMessage = {
   audioUrl: string;
   /** 🎬 a room video (type "video", on R2) */
   videoUrl?: string;
+  /** 🔊 SoundMig (type "sound"): the short sound everyone hears once */
+  soundUrl?: string;
   giftName: string;
   moderationColor?: string;
   createdAtMs: number;

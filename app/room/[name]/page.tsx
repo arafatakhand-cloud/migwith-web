@@ -184,6 +184,7 @@ import { BalanceCard, RoundResultCard, SimpleDialog, WarningDialog, type Balance
 import { GiftImg } from "../../_components/GiftImg";
 import { useBlockSets } from "../../../lib/blocks";
 import { flashToast } from "../../../lib/flashToast";
+import { onRoomSoundLine, previewSound, setSoundsMuted, soundsMuted } from "../../../lib/soundMig";
 
 // 🔒 Same words as the app's toasts for a locked room / a level too low.
 const ROOM_LOCKED_MSG = "This room is locked by an admin/mod.";
@@ -838,6 +839,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     return onSnapshot(
       q,
       (snap) => {
+        // 🔊 SoundMig: a fresh sound line plays once (unless sounds are off)
+        snap.docs.forEach((d) => {
+          if (d.get("type") === "sound") onRoomSoundLine(d.id, String(d.get("soundUrl") || ""), toMillis(d.get("createdAt", { serverTimestamps: "estimate" })));
+        });
         setMessages(
           snap.docs.map((d) => ({
             id: d.id,
@@ -849,6 +854,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             caption: String(d.get("caption") || ""),
             audioUrl: String(d.get("audioUrl") || ""),
             videoUrl: String(d.get("videoUrl") || ""),
+            soundUrl: String(d.get("soundUrl") || ""),
             giftName: String(d.get("giftName") || ""),
             moderationColor: String(d.get("moderationColor") || ""),
             reactions: Object.fromEntries(
@@ -3061,6 +3067,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["info", hideGiftShower ? "Show Gift Showers" : "Hide Gift Showers", () => (closeMenu(), toggleHideGiftShower())],
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
                 ["heart", "💭 FeelMig", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
+                ["info", "🔊 SoundMig", () => (closeMenu(), router.push(`/soundmig?room=${encodeURIComponent(roomName)}`))],
+                ["info", soundsMuted() ? "🔊 Sounds On" : "🔇 Sounds Off", () => (closeMenu(), setSoundsMuted(!soundsMuted()), flashToast(soundsMuted() ? "🔇 Room sounds are off" : "🔊 Room sounds are on"))],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],
@@ -3891,6 +3899,23 @@ function MessageRow({
         <span className="text-black">{brandMiglife(m.text)}</span>
         {stamp}
       </p>
+    );
+  }
+
+  // 🔊 SoundMig: the green card (tap → hear it again)
+  if (m.type === "sound") {
+    return (
+      <button
+        type="button"
+        onClick={() => (soundsMuted() ? flashToast("🔇 Sounds are off — turn them on in the ⋮ menu") : previewSound(m.soundUrl || ""))}
+        className="my-0.5 flex w-full items-center gap-2.5 rounded-2xl border border-[#9EE0C0] bg-gradient-to-r from-[#E3F8EE] to-[#F2FCF7] px-3 py-2 text-left"
+      >
+        <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full bg-[#0E9F6E] text-[14px]">🔊</span>
+        <span className="flex-1 font-bold text-[#0B5B40]" style={{ fontSize: fontPx }}>
+          {m.text.replace(/^🔊\s*/, "")}
+        </span>
+        <span className="text-[11px] font-black text-[#0E9F6E]">▮▮▮</span>
+      </button>
     );
   }
 
