@@ -17,6 +17,7 @@ const ITEMS: Item[] = [
   { icon: "📰", title: "Feed", subtitle: "Read and share stories", color: "#2563EB", tint: "#E6F0FC", href: "/feed", tab: "community" },
   { icon: "📢", title: "Announcements", subtitle: "miGlife news & updates", color: "#3984D9", tint: "#FFF3D6", href: "/announcements", tab: "community" },
   { icon: "🎁", title: "Gift Gallery", subtitle: "Send gifts to your friends", color: "#E5484D", tint: "#FFE6F2", href: "/gifts", tab: "shop" },
+  { icon: "🎯", title: "Daily Missions", subtitle: "Finish missions, earn Season Points", color: "#2563EB", tint: "#EAF2FF", href: "/missions", tab: "events" },
   { icon: "💭", title: "FeelMig", subtitle: "Share how you feel in a room", color: "#2563EB", tint: "#E6F0FC", href: "/feels", tab: "shop" },
   { icon: "🔊", title: "SoundMig", subtitle: "Play a short sound in your room", color: "#059669", tint: "#E3F8EE", href: "/soundmig", tab: "shop" },
   { icon: "👥", title: "Community", subtitle: "Staff, Mentors & Merchants", color: "#7B3FC7", tint: "#EDE6FF", href: "/members", tab: "community" },
