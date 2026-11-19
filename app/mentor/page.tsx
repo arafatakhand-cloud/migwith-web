@@ -169,6 +169,8 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
       () => {}
     );
     const off3 = onSnapshot(query(collection(db, "mentor_tagged"), where("mentorUsername", "==", me)), (s) => setTagged(s.docs), () => {});
+    // 🏷 every Merchant must be in Tagged too: the server puts back a missing one
+    httpsCallable(functions, "syncMentorTags")({}).catch(() => {});
     return () => {
       off1();
       off2();
@@ -329,7 +331,8 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                   const part = left === null ? 0 : Math.max(0, Math.min(100, (left / 30) * 100));
                   return (
                     <div key={t.id} className="relative rounded-2xl bg-white shadow-sm p-3 text-center">
-                      <button
+                      {/* a Merchant's own tag stays while they are your Merchant (it would come back) */}
+                      {!(String(t.get("source") || "") === "merchant" && merchants.some((m) => String(m.get("merchantUsername") || "") === name)) && <button
                         type="button"
                         aria-label={`Remove ${name}`}
                         disabled={busy.has(t.id)}
@@ -337,7 +340,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
                         className="absolute right-2 top-2 text-sm text-[#E5484D] disabled:opacity-40"
                       >
                         🗑
-                      </button>
+                      </button>}
                       <div className="relative mx-auto h-14 w-14">
                         <svg viewBox="0 0 36 36" className="absolute inset-0 -rotate-90">
                           <circle cx="18" cy="18" r="16" fill="none" className="stroke-[#E3ECF7]" strokeWidth="3" />
