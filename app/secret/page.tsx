@@ -415,6 +415,7 @@ export default function SecretPage() {
           { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
           { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
           { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
+          { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.isMigwith },
         ],
       ],
       [
