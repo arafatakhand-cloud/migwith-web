@@ -2939,7 +2939,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     const k = u.username.toLowerCase();
                     if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <G3Pic emoji="👑" />;
                     if (roomInfo.superMods.includes(k)) return <G3Pic emoji="🌟" />;
-                    // 🪙 G3: the room Moderator coin (orange M in the silver ring, like the other badges)
+                    // 🪙 G3: the room Moderator coin (orange MOD in the silver ring, like the other badges)
                     if (roomInfo.moderators.includes(k)) return <G3Letter k="MOD" />;
                     return null;
                   })()}
