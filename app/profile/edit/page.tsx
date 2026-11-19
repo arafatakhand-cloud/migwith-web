@@ -14,6 +14,7 @@ import { CountryPickerDialog } from "../../_components/CountryPicker";
 import { countryFlag, countryInfoFor } from "../../../lib/countries";
 import { useIsClassic } from "../../_components/Classic";
 import { getProfileDetails, saveProfileDetails } from "../../../lib/blocks";
+import { flashToast } from "../../../lib/flashToast";
 
 // Same fields and storage paths as the app's EditProfilePage (MainActivity.kt).
 
@@ -43,6 +44,16 @@ export default function EditProfilePage() {
   const [bio, setBio] = useState("");
   const [country, setCountry] = useState("");
   const [countryOpen, setCountryOpen] = useState(false);
+  // 🔒 Profile Lock (miglife secret): country locked → set once, never changed
+  const [savedCountry, setSavedCountry] = useState("");
+  const [countryLockOn, setCountryLockOn] = useState(false);
+  useEffect(() => {
+    getDoc(doc(db, "app_settings", "profile_lock"))
+      .then((d) => setCountryLockOn(d.get("country") === true))
+      .catch(() => {});
+  }, []);
+  const countryLocked = countryLockOn && !!savedCountry;
+  const openCountry = () => (countryLocked ? flashToast("🔒 Country can't be changed right now.") : setCountryOpen(true));
   const [gender, setGender] = useState("Male");
   const [relationship, setRelationship] = useState("Single");
   const [photoUrl, setPhotoUrl] = useState("");
@@ -70,6 +81,7 @@ export default function EditProfilePage() {
         setDateOfBirth(pick("dateOfBirth"));
         setBio(pick("bio"));
         setCountry(String(x.country || "").trim());
+        setSavedCountry(String(x.country || "").trim());
         if (x.gender) setGender(String(x.gender));
         if (pick("relationship")) setRelationship(pick("relationship"));
         setPhotoUrl(String(x.photoUrl || x.profilePic || x.avatarUrl || x.imageUrl || "").trim());
@@ -371,9 +383,10 @@ export default function EditProfilePage() {
                   </label>
                   <div>
                     <p className={lbl}>COUNTRY</p>
-                    <button type="button" onClick={() => setCountryOpen(true)} className={`${inField} text-left`}>
+                    <button type="button" onClick={openCountry} className={`${inField} text-left`}>
                       {icon("#E8F7EF", countryInfoFor(country) ? countryFlag(countryInfoFor(country)!.iso) : "🌍")}
                       <span className={`min-w-0 flex-1 truncate ${country ? "" : "text-[#8A9AB2]"}`}>{country || "Select"}</span>
+                      {countryLocked && <span className="text-[12px]">🔒</span>}
                     </button>
                   </div>
                 </div>
@@ -615,10 +628,10 @@ export default function EditProfilePage() {
               <div>
                 <p className="mb-1 text-xs font-bold text-[#35507E]">Country</p>
                 {/* searchable list of every country, with flags (like the app) */}
-                <button type="button" onClick={() => setCountryOpen(true)} className={`${field} flex items-center gap-2 text-left`}>
+                <button type="button" onClick={openCountry} className={`${field} flex items-center gap-2 text-left`}>
                   <span className="text-lg leading-none">{countryInfoFor(country) ? countryFlag(countryInfoFor(country)!.iso) : "🌍"}</span>
                   <span className={`min-w-0 flex-1 truncate ${country ? "" : "text-[#8A9AB2]"}`}>{country || "Select your country"}</span>
-                  <span className="text-[#2F80ED]">▾</span>
+                  <span className="text-[#2F80ED]">{countryLocked ? "🔒" : "▾"}</span>
                 </button>
               </div>
               <div>
