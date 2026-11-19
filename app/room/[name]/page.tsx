@@ -2939,15 +2939,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     const k = u.username.toLowerCase();
                     if (roomInfo.ownerUid && u.uid === roomInfo.ownerUid) return <G3Pic emoji="👑" />;
                     if (roomInfo.superMods.includes(k)) return <G3Pic emoji="🌟" />;
-                    if (roomInfo.moderators.includes(k))
-                      return (
-                        <span
-                          title="Moderator"
-                          className="pointer-events-none inline-grid h-[22px] min-w-[22px] shrink-0 select-none place-items-center rounded-full bg-gradient-to-b from-[#FFB74D] to-[#F57C00] px-1.5 text-[11px] font-black leading-none text-white shadow-[0_1px_0_#C25E00,inset_0_1px_0_rgba(255,255,255,.45)]"
-                        >
-                          M
-                        </span>
-                      );
+                    // 🪙 G3: the room Moderator coin (orange M in the silver ring, like the other badges)
+                    if (roomInfo.moderators.includes(k)) return <G3Letter k="MOD" />;
                     return null;
                   })()}
                   <span className="ml-auto shrink-0 text-xs text-[#6B7A99]">{u.level}</span>

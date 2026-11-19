@@ -19,6 +19,8 @@ const LETTERS: Record<string, Letter> = {
   MT: { t: "MT", outer: "#FF6B6B", top: "#E0102A", bottom: "#B80016", ring: "#FFE0DE", glow: "#FF5252" },
   CR: { t: "CR", outer: "#D6964A", top: "#9A5A12", bottom: "#6E3E06", ring: "#F5E1C8", glow: "#E39B3C" },
   M: { t: "M", outer: "#C77DFF", top: "#8E2DC8", bottom: "#6A1B9A", ring: "#E9D5FF", glow: "#C266FF" },
+  // 🛡️ room Moderator: an orange "M" coin (Merchant's M is purple)
+  MOD: { t: "M", outer: "#FFB74D", top: "#F57C00", bottom: "#C25E00", ring: "#FFE7C2", glow: "#FF9F1C" },
   EB: { t: "EB", outer: "#4B5563", top: "#1F2937", bottom: "#0B0F19", ring: "#FFE066", fg: "#FFE066", glow: "#9CA3AF" },
 };
 /** role badge emoji → its letter coin */
@@ -31,7 +33,7 @@ const ROLE_LETTER: Record<string, string> = {
   "🏛️": "EB", "🏛": "EB",
 };
 export const g3LetterFor = (emoji: string): string | undefined => ROLE_LETTER[emoji] ?? ROLE_LETTER[emoji.replace(/️/g, "")];
-const ROLE_NAME: Record<string, string> = { A: "Administrator", S: "Staff", MT: "Mentor", CR: "Country Representative", M: "Merchant", EB: "Executive Board" };
+const ROLE_NAME: Record<string, string> = { A: "Administrator", S: "Staff", MT: "Mentor", CR: "Country Representative", M: "Merchant", EB: "Executive Board", MOD: "Moderator" };
 
 function Ring({ size, title, glow, children }: { size: string; title?: string; glow?: string; children: React.ReactNode }) {
   return (
