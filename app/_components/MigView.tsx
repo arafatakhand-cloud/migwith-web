@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
@@ -70,6 +70,15 @@ export function MigView({
   const [sending, setSending] = useState(false);
   // ↩ the top comment I am replying to (null = a new top comment)
   const [replyTo, setReplyTo] = useState<BlogComment | null>(null);
+  // 🧵 2026-11: replies stay folded under their comment ("▸ View 3 replies") until opened
+  const [openThreads, setOpenThreads] = useState<Set<string>>(() => new Set());
+  const toggleThread = (id: string) =>
+    setOpenThreads((o) => {
+      const n = new Set(o);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
   const [toast, setToast] = useState("");
   const [canMod, setCanMod] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -253,6 +262,8 @@ export function MigView({
     setSending(true);
     try {
       await blogCall("comment", { postId: post.id, text: t, parentId: replyTo?.id || "" });
+      // my reply shows right away: open its thread
+      if (replyTo) setOpenThreads((o) => new Set(o).add(replyTo.replyTo || replyTo.id));
       setReplyTo(null);
       setText("");
       if (isPrivate) setPrivTick((n) => n + 1);
@@ -628,14 +639,32 @@ export function MigView({
           </div>
           <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
             {comments.length === 0 && <p className="text-[13px] text-[#6B7FA6]">No comments yet. Say something nice!</p>}
-            {orderComments(comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())), cSort, post.pinnedComment).map((c) => {
+            {orderComments(comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())), cSort, post.pinnedComment).map((c, ci, all) => {
               const cc = colorOf(c.author) || "#2563EB";
               const canDel = !!user && (c.authorUid === user.uid || mine || canMod);
               const isReply = !!c.replyTo;
+              // 🧵 folded threads: the replies of a closed comment are hidden; a "View N replies"
+              // line sits under the comment, and "Hide replies" under the last open reply
+              const threadOf = (x: BlogComment) => x.replyTo || x.id;
+              const replyCount = isReply ? 0 : all.filter((x) => x.replyTo === c.id).length;
+              const threadOpen = openThreads.has(threadOf(c));
+              if (isReply && threadOpen === false && all.some((x) => x.id === c.replyTo)) return null;
+              const lastOpenReply = isReply && threadOpen && all[ci + 1]?.replyTo !== c.replyTo;
+              const threadLine = (
+                <button
+                  type="button"
+                  onClick={() => toggleThread(threadOf(c))}
+                  className="ml-9 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]"
+                >
+                  <span className="inline-block h-px w-5 bg-[#BFD3F2]" />
+                  {threadOpen ? "▴ Hide replies" : `▸ View ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+                </button>
+              );
               const pinned = !isReply && c.id === post.pinnedComment;
               const top = !isReply && !pinned && c.id === topCommentId;
               return (
-                <div key={c.id} className={`flex gap-2 ${isReply ? "ml-9" : ""}`}>
+                <Fragment key={c.id}>
+                <div className={`flex gap-2 ${isReply ? "ml-9" : ""}`}>
                   <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: cc }}>
                     {c.author.slice(0, 1).toUpperCase()}
                   </span>
@@ -733,6 +762,9 @@ export function MigView({
                     </div>
                   </div>
                 </div>
+                {!isReply && replyCount > 0 && !threadOpen && threadLine}
+                {lastOpenReply && threadLine}
+                </Fragment>
               );
             })}
           </div>

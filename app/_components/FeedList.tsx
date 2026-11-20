@@ -2366,6 +2366,9 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   };
   const pic = p.cover || p.firstImage;
   const media = !!(p.video || pic);
+  // 📸 all the photos of this Mig (a carousel when there are 2 or more) and the one showing
+  const photos = useMemo(() => (p.video ? [] : photosOf(p)), [p]);
+  const [photoAt, setPhotoAt] = useState(0);
   const c = color || "#2563EB";
   const tr = useFeedTranslation(p.id);
   const trToggle = useFeedTranslateToggle(p.id);
@@ -2420,7 +2423,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     }
     lastTap.current = now;
     window.setTimeout(() => {
-      if (lastTap.current === now) (pic && !p.video && onPhoto ? onPhoto(0) : open());
+      if (lastTap.current === now) (pic && !p.video && onPhoto ? onPhoto(photos.length > 1 ? photoAt : 0) : open());
     }, 330);
   };
   // ⬜ a plain white post: dark words and soft grey buttons instead of white glass
@@ -2625,6 +2628,50 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           </button>
         ) : p.video ? (
           <video src={p.video} controls playsInline preload="metadata" onClick={(e) => e.stopPropagation()} className="block max-h-[520px] min-h-[300px] w-full bg-black object-cover" />
+        ) : pic && photos.length > 1 ? (
+          // 📸 2026-11: more than one photo → swipe through them (2 / 4 + dots), Instagram-style
+          <div className="relative">
+            <div
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                setPhotoAt(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+              }}
+              className="flex h-[340px] snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {photos.map((src, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={src}
+                  src={i === 0 ? (p.cover && p.thumb) || src : src}
+                  alt=""
+                  loading={i === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  draggable={false}
+                  onPointerDown={() => {
+                    held.current = false;
+                    if (!onPhotoMenu) return;
+                    holdTimer.current = window.setTimeout(() => {
+                      held.current = true;
+                      onPhotoMenu(src);
+                    }, 500);
+                  }}
+                  onPointerUp={holdEnd}
+                  onPointerLeave={holdEnd}
+                  onPointerCancel={holdEnd}
+                  onContextMenu={(e) => onPhotoMenu && (e.preventDefault(), holdEnd(), (held.current = true), onPhotoMenu(src))}
+                  className="h-full w-full shrink-0 snap-center select-none object-cover [-webkit-touch-callout:none]"
+                />
+              ))}
+            </div>
+            <span className="pointer-events-none absolute right-2.5 top-2.5 rounded-[10px] bg-black/55 px-2 py-0.5 text-[11.5px] font-bold text-white">
+              {photoAt + 1} / {photos.length}
+            </span>
+            <span className="pointer-events-none absolute bottom-2.5 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-[10px] bg-black/25 px-1.5 py-1">
+              {photos.map((_, i) => (
+                <i key={i} className={`block h-1.5 rounded-full ${i === photoAt ? "w-3.5 bg-white" : "w-1.5 bg-white/55"}`} />
+              ))}
+            </span>
+          </div>
         ) : pic ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
