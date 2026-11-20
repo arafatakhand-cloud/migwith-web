@@ -4,6 +4,7 @@ import { G3BadgeFor } from "./G3Badge";
 import Link from "next/link";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -2330,6 +2331,24 @@ function VideoLenBadge({ src }: { src: string }) {
 function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
+  // ⋯ menu position on the screen: drawn over the page (a portal), so the card's
+  // rounded clip can't cut off its lower items (Save · Translate · Delete)
+  const [menuAt, setMenuAt] = useState<{ right: number; top?: number; bottom?: number }>({ right: 12, top: 0 });
+  const menuBoxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: Event) => {
+      // scrolling inside the menu itself keeps it open
+      if (e.target instanceof Node && menuBoxRef.current?.contains(e.target)) return;
+      setMenu(false);
+    };
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
   const [pick, setPick] = useState(false);
   // ✨ the picked reaction flies up once
   const [fly, setFly] = useState<{ e: string; k: number } | null>(null);
@@ -2494,15 +2513,26 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             <button
               type="button"
               aria-label="Mig options"
-              onClick={(e) => (e.stopPropagation(), setMenu((v) => !v))}
+              onClick={(e) => {
+                e.stopPropagation();
+                const r = e.currentTarget.getBoundingClientRect();
+                const right = Math.max(8, window.innerWidth - r.right);
+                // open under the ⋯ key, or above it when it is near the bottom of the screen
+                setMenuAt(window.innerHeight - r.bottom > 380 ? { right, top: r.bottom + 6 } : { right, bottom: window.innerHeight - r.top + 6 });
+                setMenu((v) => !v);
+              }}
               className="mb-1 ml-1 flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-white to-[#EEF3FB] text-[17px] font-black leading-none text-[#5B6B8C] shadow-[0_3px_0_#C9D8EA] transition active:translate-y-[2px]"
             >
               ⋯
             </button>
-            {menu && (
+            {menu && typeof document !== "undefined" && createPortal(
               <>
-                <span className="fixed inset-0 z-10" onClick={(e) => (e.stopPropagation(), setMenu(false))} />
-                <div className="absolute right-0 top-11 z-20 w-48 overflow-hidden rounded-2xl bg-[#FFFFFF] py-1 text-[14px] font-bold text-[#1E1B4B] shadow-[0_12px_28px_-10px_rgba(30,27,75,.45)]">
+                <span className="fixed inset-0 z-[60]" onClick={(e) => (e.stopPropagation(), setMenu(false))} />
+                <div
+                  ref={menuBoxRef}
+                  className="fixed z-[61] max-h-[80vh] w-48 overflow-y-auto rounded-2xl bg-[#FFFFFF] py-1 text-[14px] font-bold text-[#1E1B4B] shadow-[0_12px_28px_-10px_rgba(30,27,75,.45)]"
+                  style={menuAt}
+                >
                   {onEdit && (
                     <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onEdit())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
                       ✏️ Edit
@@ -2554,7 +2584,8 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                     </button>
                   )}
                 </div>
-              </>
+              </>,
+              document.body
             )}
           </div>
         )}
