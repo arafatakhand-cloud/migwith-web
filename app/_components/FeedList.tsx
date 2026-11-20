@@ -6,6 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
+import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -355,6 +356,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cerr, setCerr] = useState("");
   // like the app's create-post box: one optional video, a mood line, a topic menu
   const [cvideo, setCvideo] = useState("");
+  // 🎙 a voice Mig (2026-11): the clip recorded in the writer (sent with Post)
+  const [cvoice, setCvoice] = useState<{ blob: Blob; sec: number; url: string } | null>(null);
   const [cvideoBusy, setCvideoBusy] = useState(false);
   // 🎬 miGlife's switch: when video is OFF the Video button is hidden
   const [videoOn, setVideoOn] = useState(true);
@@ -464,6 +467,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCtext("");
     setCphotos([]);
     setCvideo("");
+    setCvoice(null);
     setCplace(null);
     setCmood("");
     setCpoll(null);
@@ -571,19 +575,22 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean; voice?: { blob: Blob; sec: number } | null }) => {
     // no title box: the title is the first line of the text
     const first = plainText(p.text.trim()).split("\n")[0].slice(0, 60);
-    const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
+    const onlyVoice = !!p.voice && p.photos.length === 0;
+    const title = first.length >= 3 ? first : first ? `${first}...` : onlyVoice ? "🎙 Voice" : "📷 Photo";
     const [cover = "", ...rest] = p.photos;
-    const body = [p.text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
+    const body = [p.text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || (onlyVoice ? "🎙" : "📷");
     setCbusy(true);
     try {
+      // 🎙 the voice clip goes up first; the Mig carries its link
+      const voice = p.voice ? { audio: await uploadVoice(p.voice.blob), audioSec: p.voice.sec } : {};
       // the colour only matters for a words-only post
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}) });
+      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}), ...voice });
       const st = (r as { story?: boolean }).story;
       if (st === true) setStoryPrefs((x) => (x ? { ...x, used: x.used + 1 } : x));
       const storyNote = st === true ? " · 📖 also in your story" : st === false ? " · 📖 today's 5 stories are used up" : "";
@@ -596,6 +603,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCtext(p.text);
       setCphotos(p.photos);
       setCvideo(p.video);
+      if (p.voice) setCvoice({ ...p.voice, url: URL.createObjectURL(p.voice.blob) });
       setCcat(p.category);
       setCpriv(p.privacy);
       setCplace(p.place);
@@ -647,13 +655,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const storyOn = storyAllowed && (cstory ?? storyDefault);
   const publishInline = () => {
     setCerr("");
-    if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
+    if (!ctext.trim() && cphotos.length === 0 && !cvideo && !cvoice) return setCerr("Write something or add a photo.");
     // 📊 a poll: the text is the question, and it needs 2 answers or more
     const pollOpts = cpoll ? cpoll.options.map((o) => o.trim()).filter(Boolean) : [];
     if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
     if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
     const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn, voice: cvoice };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -672,6 +680,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCtext(payload.text);
         setCphotos(payload.photos);
         setCvideo(payload.video);
+        setCvoice(payload.voice);
         setCcat(payload.category);
         setCpriv(payload.privacy);
         setCplace(payload.place);
@@ -1245,7 +1254,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           // colour your post will have in the Feed, and pick that colour below
           const art = cphotos.length === 0 && !cvideo && !cvideoBusy;
           const [bgFill, ink] = cbg === PLAIN_BG ? ["#F6F7FC", "#1E1B4B"] : TEXT_ART[cbg] || TEXT_ART[0];
-          const empty = !ctext.trim() && cphotos.length === 0 && !cvideo;
+          const empty = !ctext.trim() && cphotos.length === 0 && !cvideo && !cvoice;
           const len = ctext.trim().length;
           const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
           return (
@@ -1792,6 +1801,17 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </button>
               )}
               {/* tools on the left, Post on the right */}
+              {/* 🎙 the recorded voice clip: listen, or ✕ to throw it away */}
+              {cvoice && (
+                <div className="mt-2.5 flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <VoicePlayer src={cvoice.url} seconds={cvoice.sec} />
+                  </div>
+                  <button type="button" disabled={cbusy} onClick={() => setCvoice(null)} aria-label="Remove the voice clip" className="p-2 text-[16px] font-black text-[#8494B2]">
+                    ✕
+                  </button>
+                </div>
+              )}
               <div className="mt-3 flex items-center gap-1">
                 <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
                   🖼️
@@ -1801,6 +1821,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     🎬
                   </button>
                 )}
+                {/* 🎙 a voice Mig: tap to record, tap again to stop (a new Mig only) */}
+                {!cedit && !cvoice && !cvideo && !cpoll && <MicButton disabled={cbusy} onClip={(blob, sec) => setCvoice({ blob, sec, url: URL.createObjectURL(blob) })} />}
                 {/* 📊 Poll (a new Mig only; words, no photos / video) */}
                 {!cedit && (
                   <button
@@ -2842,6 +2864,17 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
         </div>
       )}
 
+      {/* 🎙 a voice Mig's player · 🔗 the first link as a card (2026-11) */}
+      {p.audio && (
+        <div className="mx-3 mt-2">
+          <VoicePlayer src={p.audio} seconds={p.audioSec || 0} />
+        </div>
+      )}
+      {!media && !p.audio && !p.sharedId && firstLink(fullText) && (
+        <div className="mx-3 mt-2">
+          <LinkCard url={firstLink(fullText)} />
+        </div>
+      )}
       {/* a shared Mig (photo / plain) shows what it shares under it */}
       {p.sharedId && (media || plain || pollOnly) && (
         <button type="button" onClick={() => router.push(`/feed/${p.sharedId}`)} className="mx-3 mt-2.5 block w-[calc(100%-1.5rem)] rounded-2xl border border-[#E6EAF2] bg-[#F7F9FC] p-2.5 text-left">

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
+import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -253,6 +254,23 @@ export function MigView({
       setToast(blogError(e));
     } finally {
       setLikeBusy(false);
+    }
+  };
+  // 🎙 a voice comment: upload the clip, then the comment carries its link
+  const sendVoice = async (blob: Blob, sec: number) => {
+    if (!user || !post || sending) return;
+    setSending(true);
+    try {
+      const audio = await uploadVoice(blob);
+      await blogCall("comment", { postId: post.id, text: "", audio, audioSec: sec, parentId: replyTo?.id || "" });
+      if (replyTo) setOpenThreads((o) => new Set(o).add(replyTo.replyTo || replyTo.id));
+      setReplyTo(null);
+      if (isPrivate) setPrivTick((n) => n + 1);
+      setTimeout(() => commentsRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 300);
+    } catch (e) {
+      setToast(blogError(e));
+    } finally {
+      setSending(false);
     }
   };
   const send = async () => {
@@ -543,6 +561,17 @@ export function MigView({
               className="mt-3 block max-h-[560px] w-full rounded-2xl bg-black object-contain"
             />
           )}
+          {/* 🎙 the voice clip · 🔗 the first link as a card */}
+          {post.audio && (
+            <div className="mt-3">
+              <VoicePlayer src={post.audio} seconds={post.audioSec || 0} />
+            </div>
+          )}
+          {!post.video && !post.audio && firstLink(post.body) && (
+            <div className="mt-3">
+              <LinkCard url={firstLink(post.body)} />
+            </div>
+          )}
           </div>
 
           <div className="mt-3 flex gap-2.5">
@@ -678,7 +707,13 @@ export function MigView({
                       {pinned && <span className="rounded-md bg-[#14B88F] px-1.5 text-[10.5px] font-extrabold text-white">📌 Pinned</span>}
                       {top && <span className="rounded-md bg-[#F5A300] px-1.5 text-[10.5px] font-extrabold text-white">⭐ Top</span>}
                     </span>
-                    <span className="break-words">{commentWithMentions(c.text)}</span>
+                    {/* 🎙 a voice comment: the player (its words are just "🎙 Voice") */}
+                    {c.audio && (
+                      <span className="mt-0.5 block">
+                        <VoicePlayer src={c.audio} seconds={c.audioSec || 0} compact />
+                      </span>
+                    )}
+                    {(!c.audio || c.text !== "🎙 Voice") && <span className="break-words">{commentWithMentions(c.text)}</span>}
                     {/* 👍❤️ 5 — the reactions on this comment, on the bubble's corner */}
                     {c.likes > 0 && (
                       <span className="absolute -bottom-2.5 right-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-bold text-[#5A6F93] shadow-[0_1px_4px_rgba(0,0,0,.18)]">
@@ -824,6 +859,8 @@ export function MigView({
                 placeholder={`Comment as ${username || "you"}…`}
                 className="min-w-0 flex-1 rounded-full border border-[#C9D9EE] bg-[#F4F8FD] px-4 py-2 text-[14px] text-[#0F1D3A] outline-none focus:border-[#2563EB]"
               />
+              {/* 🎙 a voice comment: tap to record, tap again to send it */}
+              <MicButton disabled={sending} onClip={(blob, sec) => void sendVoice(blob, sec)} />
               <button
                 type="button"
                 onClick={send}

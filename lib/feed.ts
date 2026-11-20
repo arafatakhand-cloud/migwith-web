@@ -12,6 +12,9 @@ export type BlogPoll = { options: string[]; counts: number[]; total: number; vot
 
 export type BlogPost = {
   id: string;
+  /** 🎙 a voice Mig (2026-11): the clip and its length */
+  audio?: string;
+  audioSec?: number;
   authorUid: string;
   author: string;
   title: string;
@@ -65,6 +68,9 @@ export type BlogPost = {
 
 export type BlogComment = {
   id: string;
+  /** 🎙 a voice comment (2026-11) */
+  audio?: string;
+  audioSec?: number;
   authorUid: string;
   author: string;
   text: string;
@@ -137,6 +143,8 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
     edited: d.edited === true,
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
+    audio: String(d.audio || ""),
+    audioSec: Number(d.audioSec || 0),
     video: String(d.video || ""),
     sharedId: String(d.sharedId || ""),
     sharedAuthor: String(d.sharedAuthor || ""),
@@ -184,6 +192,8 @@ export function toBlogComment(id: string, d: Record<string, unknown>): BlogComme
     replyTo: String(d.replyTo || ""),
     reactions: reactionCounts(d.reactions),
     likes: Number(d.likes || 0),
+    audio: String(d.audio || ""),
+    audioSec: Number(d.audioSec || 0),
   };
 }
 
