@@ -4340,7 +4340,8 @@ function usePickerOpen(key: string): boolean {
 // left open without a choice → it closes by itself after this long
 const PICKER_IDLE_MS = 6000;
 
-// The long-press menu over a room message — ONE dark pill like the app (demo D):
+// The long-press menu over a room message — ONE pill like the app (R2-A, 2026-11: the miGlife
+// blue-green with solid white round keys; was demo D, dark):
 // 6 reactions (a dot under the one you gave) and ＋ for more (like WhatsApp), a thin line, then small round
 // 📋 Copy / 🌐 Translate / 🚩 Report buttons. Hover or hold one to see its name.
 // Tap outside to close.
@@ -4445,7 +4446,7 @@ function ReactionPicker({
         </div>
         {/* ＋ more reactions */}
         {more && (
-          <div className="reaction-pop grid w-[248px] grid-cols-8 gap-0.5 rounded-[18px] border border-white/10 bg-[#161E34]/[0.95] p-1.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
+          <div className="reaction-pop grid w-[248px] grid-cols-8 gap-0.5 rounded-[18px] border border-white/30 bg-gradient-to-r from-[#14B8A6] to-[#2563EB] p-1.5 shadow-[0_10px_24px_rgba(37,99,235,.4)]">
             {MORE_REACTIONS.map((e) => (
               <button
                 key={e}
@@ -4458,7 +4459,7 @@ function ReactionPicker({
             ))}
           </div>
         )}
-        <div className="reaction-pop flex items-center rounded-[30px] border border-white/10 bg-[#161E34]/[0.93] px-1 py-0.5 shadow-[0_10px_26px_rgba(0,0,0,.35)] backdrop-blur-md">
+        <div className="reaction-pop flex items-center rounded-[30px] border border-white/30 bg-gradient-to-r from-[#14B8A6] to-[#2563EB] px-1 py-0.5 shadow-[0_10px_24px_rgba(37,99,235,.4)]">
           {REACTION_EMOJIS.map(([e, name], i) => {
             const byMe = reactions[e]?.includes(myUid);
             return (
@@ -4480,20 +4481,20 @@ function ReactionPicker({
             aria-label="More reactions"
             onClick={() => setMore((v) => !v)}
             {...hintProps("More")}
-            className={`mx-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[17px] font-black text-white ${more ? "bg-white/25" : "bg-white/10"}`}
+            className={`mx-0.5 flex h-7 w-7 items-center justify-center rounded-full text-[17px] font-black text-[#2563EB] shadow-[0_2px_0_rgba(0,0,0,.18)] ${more ? "bg-[#DCE8FF]" : "bg-white"}`}
           >
             {more ? "×" : "+"}
           </button>
-          {shown.length > 0 && <span className="mx-1 h-5 w-px bg-white/20" />}
-          {shown.map(([icon, label, tint, run]) => (
+          {shown.length > 0 && <span className="mx-1 h-5 w-px bg-white/45" />}
+          {shown.map(([icon, label, , run]) => (
             <button
               key={label}
               type="button"
               aria-label={label}
               onClick={run}
               {...hintProps(label)}
-              className="mx-0.5 flex h-[26px] w-[26px] items-center justify-center rounded-full border text-[12px]"
-              style={{ background: `${tint}38`, borderColor: `${tint}73` }}
+              // R2-A: a solid white round key — its icon shows clearly on the blue-green bar
+              className="mx-0.5 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white text-[12px] shadow-[0_2px_0_rgba(0,0,0,.18)]"
             >
               {icon}
             </button>
