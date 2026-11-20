@@ -133,7 +133,8 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     category: String(d.category || "other"),
     likes: Number(d.likes || 0),
     comments: Number(d.comments || 0),
-    views: Number(d.views || 0),
+    // 👁 everyone who liked has seen it: older Migs (counted before 2026-11) never show fewer views than likes
+    views: Math.max(Number(d.views || 0), Number(d.likes || 0)),
     createdMs: Number(d.createdMs || 0) || ms(d.createdAt),
     edited: d.edited === true,
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
@@ -252,4 +253,23 @@ export const BLOG_MOODS: [string, string, string][] = [
 export function blogMood(key: string): [string, string] | null {
   const m = BLOG_MOODS.find(([k]) => k === key);
   return m ? [m[1], m[2]] : null;
+}
+
+// 👁 Migs I scrolled past in the Feed (on screen ~1 s): sent every few seconds, up to 30 at a time,
+// each counted once per person by the server (blog "viewMany"). Same as the app.
+const viewSent = new Set<string>();
+let viewWaiting: string[] = [];
+let viewTimer: ReturnType<typeof setTimeout> | null = null;
+export function queueFeedView(id: string) {
+  if (!id || viewSent.has(id)) return;
+  viewSent.add(id);
+  viewWaiting.push(id);
+  if (viewTimer) return;
+  const flush = () => {
+    const ids = viewWaiting.slice(0, 30);
+    viewWaiting = viewWaiting.slice(30);
+    if (ids.length) blogCall("viewMany", { postIds: ids }).catch(() => {});
+    viewTimer = viewWaiting.length ? setTimeout(flush, 3000) : null;
+  };
+  viewTimer = setTimeout(flush, 3000);
 }

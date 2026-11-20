@@ -47,6 +47,7 @@ import {
   blogShort,
   toBlogPost,
   type BlogPost,
+  queueFeedView,
 } from "../../lib/feed";
 
 // 📰 Feed list (the "Thread" look, like Twitter/X): Popular · New · Friends · Mine (or one writer's
@@ -2331,6 +2332,25 @@ function VideoLenBadge({ src }: { src: string }) {
 }
 
 function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+  // 👁 on screen for a second = seen (counted once per person, sent in small groups)
+  const seenRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const el = seenRef.current;
+    if (!el || !signedIn || typeof IntersectionObserver === "undefined") return;
+    let t: ReturnType<typeof setTimeout> | null = null;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) t = t ?? setTimeout(() => (queueFeedView(p.id), io.disconnect()), 1000);
+        else if (t) (clearTimeout(t), (t = null));
+      },
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      if (t) clearTimeout(t);
+    };
+  }, [p.id, signedIn]);
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   // ⋯ menu position on the screen: drawn over the page (a portal), so the card's
@@ -2437,7 +2457,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     .join("");
   return (
     // 🎨 K1·M1: the card stands on three layers of the writer's own colour (6D)
-    <article className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
+    <article ref={seenRef} className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
