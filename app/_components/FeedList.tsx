@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
+import { plainText, styledNodes } from "../../lib/textStyle";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -65,7 +66,8 @@ const TOKEN_SPLIT = /(#[^\s#@.,!?;:()"'“”।]+|@[^\s#@.,!?;:()"'“”।]+)
 function RichText({ text, className }: { text: string; className?: string }) {
   return (
     <span className={className}>
-      {text.split(TOKEN_SPLIT).map((part, i) => {
+      {styledNodes(text, (run, rk) => run.split(TOKEN_SPLIT).map((part, j) => {
+        const i = `${rk}-${j}`;
         if (part.length > 1 && part[0] === "#") return <span key={i} className="font-extrabold text-[#8B5CFF]">{part}</span>;
         if (part.length > 1 && part[0] === "@")
           return (
@@ -74,7 +76,7 @@ function RichText({ text, className }: { text: string; className?: string }) {
             </Link>
           );
         return <span key={i}>{part}</span>;
-      })}
+      }))}
     </span>
   );
 }
@@ -543,7 +545,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
   const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean }) => {
     // no title box: the title is the first line of the text
-    const first = p.text.trim().split("\n")[0].slice(0, 60);
+    const first = plainText(p.text.trim()).split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
     const [cover = "", ...rest] = p.photos;
     const body = [p.text.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
@@ -585,7 +587,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (!cedit || cbusy) return;
     setCerr("");
     if (!ctext.trim() && cphotos.length === 0 && !cvideo) return setCerr("Write something or add a photo.");
-    const first = ctext.trim().split("\n")[0].slice(0, 60);
+    const first = plainText(ctext.trim()).split("\n")[0].slice(0, 60);
     const title = first.length >= 3 ? first : first ? `${first}...` : "📷 Photo";
     const [cover = "", ...rest] = cphotos;
     const body = [ctext.trim(), ...rest.map((u) => `![](${u})`)].filter(Boolean).join("\n\n") || "📷";
