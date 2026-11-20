@@ -922,6 +922,8 @@ export default function PrivateChatPage() {
                   value={text}
                   onChange={(v) => setText(v.replace(/\u200B/g, "").replace(/\r/g, "").slice(0, 2000))}
                   newLineOnEnter
+                  // 🖼 a GIF / sticker from the keyboard (or a pasted picture) → the same as 📷 (preview, then ➤)
+                  onImage={(f) => setPendingPhoto(f)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

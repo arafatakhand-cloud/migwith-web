@@ -262,6 +262,8 @@ export function ChatBar({
                 value={text}
                 onChange={(v) => setText(v.replace(/\u200B/g, "").replace(/\r/g, "").slice(0, maxLength))}
                 newLineOnEnter
+                // 🖼 a GIF / sticker from the keyboard (or a pasted picture) → the same as 📷
+                onImage={photo.disabled ? undefined : (f) => photo.onFile(f)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();

@@ -10,17 +10,38 @@ import { requestRoomTranslation, setRoomTranslation, useRoomTranslation } from "
 // typed (execCommand "insertText"), so every chat / Feed box works without changes.
 // A box can opt out with data-nostyle.
 
-type Box = HTMLTextAreaElement | HTMLInputElement;
+type Box = HTMLTextAreaElement | HTMLInputElement | HTMLElement;
+const isField = (el: Box): el is HTMLTextAreaElement | HTMLInputElement => el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement;
+
+/** the selected words in a contenteditable box (the room / private chat boxes), or null */
+function ceRange(el: HTMLElement): Range | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+  const r = sel.getRangeAt(0);
+  return el.contains(r.commonAncestorContainer) ? r : null;
+}
 
 function styledBox(el: Element | null): Box | null {
   if (!el) return null;
+  if (el instanceof HTMLElement && el.isContentEditable && el.dataset.nostyle === undefined) return el;
   if (el instanceof HTMLTextAreaElement) return el.dataset.nostyle !== undefined ? null : el;
   if (el instanceof HTMLInputElement && (el.type === "text" || el.type === "search") && el.dataset.nostyle === undefined) return el;
   return null;
 }
 
+/** contenteditable: put `str` in place of the range, as if typed (the box's onInput reads it back) */
+function putCe(el: HTMLElement, range: Range, str: string) {
+  el.focus();
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
+  try {
+    document.execCommand("insertText", false, str);
+  } catch {}
+}
+
 /** replace [a, b) with `str` as if typed (keeps undo and React's onChange), then select [sa, sb) */
-function put(el: Box, a: number, b: number, str: string, sa: number, sb: number) {
+function put(el: HTMLTextAreaElement | HTMLInputElement, a: number, b: number, str: string, sa: number, sb: number) {
   el.focus();
   el.setSelectionRange(a, b);
   let ok = false;
@@ -41,15 +62,14 @@ export function TextStyleBar() {
   const [colorMode, setColorMode] = useState(false);
   const [note, setNote] = useState("");
   const [trId, setTrId] = useState("");
-  const trJob = useRef<{ el: Box; a: number; b: number; picked: string; retried: boolean } | null>(null);
+  const trJob = useRef<{ el: Box; a: number; b: number; range: Range | null; picked: string; retried: boolean } | null>(null);
   const tr = useRoomTranslation(trId);
 
   useEffect(() => {
     const check = () => {
       const el = styledBox(document.activeElement);
-      const a = el?.selectionStart ?? 0;
-      const b = el?.selectionEnd ?? 0;
-      if (!el || b <= a) {
+      const has = el ? (isField(el) ? (el.selectionEnd ?? 0) > (el.selectionStart ?? 0) : !!ceRange(el)) : false;
+      if (!el || !has) {
         setBox(null);
         setColorMode(false);
         return;
@@ -75,8 +95,10 @@ export function TextStyleBar() {
     const job = trJob.current;
     if (!tr || !job) return;
     if (tr.kind === "done") {
-      const { el, a, b, picked } = job;
-      if (el.value.slice(a, b) === picked) put(el, a, b, tr.text, a + tr.text.length, a + tr.text.length);
+      const { el, a, b, range, picked } = job;
+      if (isField(el)) {
+        if (el.value.slice(a, b) === picked) put(el, a, b, tr.text, a + tr.text.length, a + tr.text.length);
+      } else if (range && range.toString() === picked) putCe(el, range, tr.text);
       trJob.current = null;
       setRoomTranslation(trId, null);
       setTrId("");
@@ -98,67 +120,80 @@ export function TextStyleBar() {
 
   if (!box && !note) return null;
   const el = box;
-  const sel = () => {
-    const a = el?.selectionStart ?? 0;
-    const b = el?.selectionEnd ?? 0;
-    return { a: Math.min(a, b), b: Math.max(a, b) };
+  // the selection, for either kind of box
+  const pick = () => {
+    if (!el) return null;
+    if (isField(el)) {
+      const a = Math.min(el.selectionStart ?? 0, el.selectionEnd ?? 0);
+      const b = Math.max(el.selectionStart ?? 0, el.selectionEnd ?? 0);
+      return { a, b, range: null as Range | null, text: el.value.slice(a, b) };
+    }
+    const r = ceRange(el);
+    return r ? { a: 0, b: 0, range: r.cloneRange(), text: r.toString() } : null;
+  };
+  // put `str` in place of the selection; for a text field, select [sa, sb) of the result
+  const replace = (p: NonNullable<ReturnType<typeof pick>>, str: string, sa: number, sb: number) => {
+    if (!el) return;
+    if (isField(el)) put(el, p.a, p.b, str, sa, sb);
+    else if (p.range) putCe(el, p.range, str);
   };
 
   const wrap = (mark: string) => {
-    if (!el) return;
-    const { a, b } = sel();
-    const t = el.value;
-    if (a >= mark.length && t.slice(a - mark.length, a) === mark && t.slice(b, b + mark.length) === mark) {
-      put(el, a - mark.length, b + mark.length, t.slice(a, b), a - mark.length, b - mark.length);
-      return;
+    const p = pick();
+    if (!el || !p) return;
+    if (isField(el)) {
+      const t = el.value;
+      const { a, b } = p;
+      if (a >= mark.length && t.slice(a - mark.length, a) === mark && t.slice(b, b + mark.length) === mark) {
+        put(el, a - mark.length, b + mark.length, t.slice(a, b), a - mark.length, b - mark.length);
+        return;
+      }
     }
-    let x = a;
-    let y = b;
-    while (x < y && /\s/.test(t[x])) x++;
-    while (y > x && /\s/.test(t[y - 1])) y--;
-    if (y <= x) return;
-    put(el, x, y, mark + t.slice(x, y) + mark, x + mark.length, y + mark.length);
+    const lead = p.text.match(/^\s*/)?.[0] ?? "";
+    const trail = p.text.match(/\s*$/)?.[0] ?? "";
+    const core = p.text.trim();
+    if (!core) return;
+    const at = p.a + lead.length + mark.length;
+    replace(p, lead + mark + core + mark + trail, at, at + core.length);
   };
 
   const color = (name: string) => {
-    if (!el) return;
-    const { a, b } = sel();
-    const open = `{{${name}|`;
-    put(el, a, b, open + el.value.slice(a, b) + "}}", a + open.length, b + open.length);
+    const p = pick();
+    if (p && p.text) {
+      const open = `{{${name}|`;
+      replace(p, open + p.text + "}}", p.a + open.length, p.a + open.length + p.text.length);
+    }
     setColorMode(false);
   };
 
   const mention = () => {
-    if (!el) return;
-    const { a, b } = sel();
-    const word = el.value.slice(a, b).trim().replace(/^@/, "").replace(/\s+/g, "");
-    if (word) put(el, a, b, `@${word}`, a + word.length + 1, a + word.length + 1);
+    const p = pick();
+    if (!p) return;
+    const word = p.text.trim().replace(/^@/, "").replace(/\s+/g, "");
+    if (word) replace(p, `@${word}`, p.a + word.length + 1, p.a + word.length + 1);
   };
 
   const translate = () => {
-    if (!el) return;
-    const { a, b } = sel();
-    const picked = el.value.slice(a, b);
-    if (!picked.trim()) return;
-    trJob.current = { el, a, b, picked, retried: false };
+    const p = pick();
+    if (!el || !p || !p.text.trim()) return;
+    trJob.current = { el, a: p.a, b: p.b, range: p.range, picked: p.text, retried: false };
     const id = `sel_${Date.now()}`;
     setTrId(id);
     setNote("🌐 Translating…");
     setTimeout(() => setNote((n) => (n === "🌐 Translating…" ? "" : n)), 2500);
-    void requestRoomTranslation(id, picked, "en");
+    void requestRoomTranslation(id, p.text, "en");
   };
 
   const copy = () => {
-    if (!el) return;
-    const { a, b } = sel();
-    void navigator.clipboard?.writeText(el.value.slice(a, b)).catch(() => {});
+    const p = pick();
+    if (p) void navigator.clipboard?.writeText(p.text).catch(() => {});
   };
   const paste = () => {
-    if (!el) return;
-    const { a, b } = sel();
+    const p = pick();
+    if (!p) return;
     navigator.clipboard
       ?.readText()
-      .then((t) => t && put(el, a, b, t, a + t.length, a + t.length))
+      .then((t) => t && replace(p, t, p.a + t.length, p.a + t.length))
       .catch(() => {});
   };
 

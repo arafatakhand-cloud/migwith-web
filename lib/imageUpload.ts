@@ -41,8 +41,8 @@ function sizeLabel(bytes: number): string {
 /** Uploads a photo to `${folder}/<random>.jpg` and returns its download URL. */
 export async function uploadChatImage(folder: string, file: File): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("Please choose a photo.");
-  // GIFs keep their animation; everything else is re-encoded as JPEG.
-  const small = file.type === "image/gif" ? null : await compress(file);
+  // GIFs and WebP stickers keep their animation; everything else is re-encoded as JPEG.
+  const small = file.type === "image/gif" || file.type === "image/webp" ? null : await compress(file);
   const body: Blob = small && small.size < file.size ? small : file;
   if (body.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new Error(`That photo is ${sizeLabel(body.size)}. The limit is 10 MB — please send a smaller one.`);

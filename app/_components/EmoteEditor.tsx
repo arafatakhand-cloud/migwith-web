@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, type ClipboardEvent, type KeyboardEvent } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, type ClipboardEvent, type KeyboardEvent } from "react";
 import { emoteSrc, isAnimated, isSprite, splitEmotes } from "../../lib/emotes";
 
 // ✍️ A writing box where an emote shows as its PICTURE (like the app), not its code.
@@ -27,7 +27,22 @@ type Props = {
   /** ↵ chat boxes: on a phone Enter makes a new line (only ➤ sends); on a computer
    *  Shift+Enter makes a new line and Enter goes to onKeyDown (sends) */
   newLineOnEnter?: boolean;
+  /** 🖼 a GIF / sticker / picture from the keyboard (Gboard…), a paste or a drop → sent like a photo */
+  onImage?: (file: File) => void;
 };
+
+// the picture inside a paste / drop / keyboard insert, if any
+function imageFileOf(dt: DataTransfer | null | undefined): File | null {
+  if (!dt) return null;
+  for (const f of Array.from(dt.files || [])) if (f.type.startsWith("image/")) return f;
+  for (const it of Array.from(dt.items || [])) {
+    if (it.kind === "file" && it.type.startsWith("image/")) {
+      const f = it.getAsFile();
+      if (f) return f;
+    }
+  }
+  return null;
+}
 
 // a phone / tablet (touch screen, no mouse): Enter there means "new line"
 function touchOnly(): boolean {
@@ -133,10 +148,59 @@ function setCaretAt(el: HTMLElement, pos: number) {
 }
 
 export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEditor(
-  { value, onChange, onCaret, onKeyDown, placeholder, className, disabled, newLineOnEnter },
+  { value, onChange, onCaret, onKeyDown, placeholder, className, disabled, newLineOnEnter, onImage },
   ref
 ) {
   const box = useRef<HTMLDivElement>(null);
+  const imageRef = useRef(onImage);
+  imageRef.current = onImage;
+  const changeRef = useRef(onChange);
+  changeRef.current = onChange;
+
+  // 🖼 keyboard GIFs / stickers ("can't send images in this app" before): Chrome hands
+  // them over as a beforeinput with the picture, or drops an <img> straight into the
+  // box. Either way: take the picture out of the box and send it like a photo.
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const onBefore = (e: InputEvent) => {
+      const f = imageFileOf(e.dataTransfer);
+      if (f && imageRef.current) {
+        e.preventDefault();
+        imageRef.current(f);
+      }
+    };
+    el.addEventListener("beforeinput", onBefore);
+    const mo = new MutationObserver((list) => {
+      for (const m of list) {
+        m.addedNodes.forEach((n) => {
+          const imgs: HTMLImageElement[] =
+            n instanceof HTMLImageElement ? [n] : n instanceof HTMLElement ? Array.from(n.querySelectorAll("img")) : [];
+          for (const img of imgs) {
+            if (img.dataset.code) continue; // our own emote pictures
+            const src = img.currentSrc || img.src;
+            img.remove();
+            changeRef.current(toCodes(el));
+            if (!src || !imageRef.current) continue;
+            const send = imageRef.current;
+            fetch(src)
+              .then((r) => r.blob())
+              .then((b) => {
+                const type = b.type || "image/gif";
+                const ext = type.includes("gif") ? "gif" : type.includes("webp") ? "webp" : type.includes("png") ? "png" : "jpg";
+                send(new File([b], `keyboard.${ext}`, { type }));
+              })
+              .catch(() => {});
+          }
+        });
+      }
+    });
+    mo.observe(el, { childList: true, subtree: true });
+    return () => {
+      el.removeEventListener("beforeinput", onBefore);
+      mo.disconnect();
+    };
+  }, []);
 
   useImperativeHandle(ref, () => ({
     el: () => box.current,
@@ -207,9 +271,22 @@ export const EmoteEditor = forwardRef<EmoteEditorHandle, Props>(function EmoteEd
       }}
       onKeyUp={report}
       onMouseUp={report}
+      onDrop={(e) => {
+        const f = imageFileOf(e.dataTransfer);
+        if (f && onImage) {
+          e.preventDefault();
+          onImage(f);
+        }
+      }}
       onPaste={(e: ClipboardEvent<HTMLDivElement>) => {
         // plain text only, so pasted web formatting does not come along
         e.preventDefault();
+        // 🖼 a pasted picture / GIF → sent like a photo
+        const f = imageFileOf(e.clipboardData);
+        if (f && onImage) {
+          onImage(f);
+          return;
+        }
         const t = e.clipboardData.getData("text/plain");
         document.execCommand("insertText", false, t);
       }}
