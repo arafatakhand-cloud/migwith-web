@@ -15,6 +15,9 @@ export type BlogPost = {
   /** 🎙 a voice Mig (2026-11): the clip and its length */
   audio?: string;
   audioSec?: number;
+  /** ⚙️ a System post (miGlife's own Mig, 2026-11) and the card it draws */
+  system?: boolean;
+  sys?: SysCard | null;
   authorUid: string;
   author: string;
   title: string;
@@ -145,6 +148,8 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
     audio: String(d.audio || ""),
     audioSec: Number(d.audioSec || 0),
+    system: d.system === true,
+    sys: d.system === true && d.sys && typeof d.sys === "object" ? (d.sys as SysCard) : null,
     video: String(d.video || ""),
     sharedId: String(d.sharedId || ""),
     sharedAuthor: String(d.sharedAuthor || ""),
@@ -264,3 +269,10 @@ export function blogMood(key: string): [string, string] | null {
   const m = BLOG_MOODS.find(([k]) => k === key);
   return m ? [m[1], m[2]] : null;
 }
+
+// ⚙️ System post card (server: sysPublish)
+export type SysCard = {
+  kind: string; theme: string; kicker: string; title: string; text?: string; foot?: string;
+  rows?: { l: string; r: string }[]; top?: { id: string; name: string; likes: number; title?: string }[];
+  progress?: number; names?: string[];
+};

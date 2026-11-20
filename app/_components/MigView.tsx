@@ -1,5 +1,6 @@
 "use client";
 
+import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
@@ -483,6 +484,7 @@ export function MigView({
             <Link href={`/profile/${encodeURIComponent(post.author)}`} data-notranslate className="truncate font-bold" style={{ color }}>
               {post.author}
             </Link>
+            {post.system && <SysTag />}
             {blogMood(post.mood) && (
               <span className="shrink-0 font-semibold text-[#3B4266]">
                 is {blogMood(post.mood)![0]} <b>{blogMood(post.mood)![1]}</b>
@@ -505,7 +507,7 @@ export function MigView({
             <span className="shrink-0">
               · {blogAgo(post.createdMs)}
               {post.edited ? " · edited" : ""} · {blogCategoryLabel(post.category)}
-              {post.privacy ? ` · ${blogPrivacyLabel(post.privacy)}` : ""}
+              {post.privacy ? ` · ${blogPrivacyLabel(post.privacy)}` : <> · <EveryoneTag /></>}
             </span>
           </div>
           {post.place && (
@@ -546,7 +548,8 @@ export function MigView({
             </div>
           )}
           <div className="select-text">
-            <BlogBody body={post.body} mentions={post.mentions} />
+            {/* ⚙️ a System post shows its card instead of the plain words */}
+            {post.sys ? <div className="mt-2"><SystemCard sys={post.sys} onOpenPost={(id) => router.push(`/feed/${id}`)} /></div> : <BlogBody body={post.body} mentions={post.mentions} />}
           {/* 📊 the poll */}
           {post.poll && <PollBox postId={post.id} poll={post.poll} canEnd={mine || canMod} signedIn={!!user} />}
           {/* 🎬 the post's video (it was missing on this page before) */}

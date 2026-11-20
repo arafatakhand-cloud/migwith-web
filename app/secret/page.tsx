@@ -417,6 +417,7 @@ export default function SecretPage() {
           { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
           { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
           { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
+          { icon: "⚙️", label: "System posts", hint: "miGlife's own Migs: missions, birthdays, hadith…", tint: "#6366F1", href: "/secret/system-posts", ok: f.isMigwith },
           { icon: "🔒", label: "Profile Lock", hint: "Lock country changes (on / off)", tint: "#0B1F3A", href: "/secret/profile-lock", ok: f.isMigwith },
           { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.isMigwith },
         ],

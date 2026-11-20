@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
 import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, ScheduledSheet, scheduleLabel, type Memory } from "./FeedExtras";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -1069,6 +1070,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     const pub = await getDoc(doc(db, "blog_posts", m.id)).catch(() => null);
     if (pub && pub.exists()) setSharing(toBlogPost(pub.id, pub.data() as Record<string, unknown>));
   };
+  // ⚙️ "Don't mention me in System posts" (birthdays, welcome, Top Migs)
+  const sysOptOut = async () => {
+    try {
+      await blogCall("sysOptOut", { off: true });
+      setToast("OK — System posts won't mention you");
+    } catch (e) {
+      setToast(blogError(e));
+    }
+    window.setTimeout(() => setToast(""), 2600);
+  };
   const openSheet = (id: string) => {
     setSheetId(id);
     try {
@@ -1982,7 +1993,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     {/* ✔ the gold seal on my wall card too */}
                     {verifiedAuthors.has(username) && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src="/icons/miglife-verified.svg?v=3" alt="Verified" title="Verified" className="ml-1.5 inline-block h-[20px] w-[20px] align-[-3px]" style={{ filter: "drop-shadow(0 1px 2px rgba(120,60,0,.5))" }} />
+                      <img src="/icons/miglife-verified.svg?v=4" alt="Verified" title="Verified" className="ml-1.5 inline-block h-[20px] w-[20px] align-[-3px]" style={{ filter: "drop-shadow(0 1px 2px rgba(37,99,235,.45))" }} />
                     )}
                   </div>
                   <div className="mt-1 inline-flex max-w-full truncate whitespace-nowrap rounded-full bg-white/20 px-2.5 py-0.5 text-[11.5px] font-bold backdrop-blur-sm">
@@ -2139,7 +2150,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />✓ You&apos;re all caught up<span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />
                 </div>
               )}
-              <FeedCard key={p.id} onGift={user && p.authorUid !== user.uid && p.privacy !== "me" ? () => setGiftFor(p) : undefined} onGifts={() => setGiversOf(p)} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={whyFor(p)} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} onInsights={user && p.authorUid === user.uid ? () => setInsightsOf(p.id) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+              <FeedCard key={p.id} onOpenPost={openSheet} onSysOptOut={user && p.system ? sysOptOut : undefined} onGift={user && p.authorUid !== user.uid && p.privacy !== "me" && !p.system ? () => setGiftFor(p) : undefined} onGifts={() => setGiversOf(p)} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={whyFor(p)} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} onInsights={user && p.authorUid === user.uid ? () => setInsightsOf(p.id) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
               </Fragment>
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
@@ -2487,7 +2498,7 @@ function VideoLenBadge({ src }: { src: string }) {
   );
 }
 
-function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate, onInsights }: { onInsights?: () => void; onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "close" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate, onInsights, onOpenPost, onSysOptOut }: { onOpenPost?: (id: string) => void; onSysOptOut?: () => void; onInsights?: () => void; onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "close" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   // ⋯ menu position on the screen: drawn over the page (a portal), so the card's
@@ -2619,8 +2630,9 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
               {p.author}
               {verified && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src="/icons/miglife-verified.svg?v=3" alt="Verified" title="Verified" className="ml-1 inline-block h-[16px] w-[16px] align-[-3px]" />
+                <img src="/icons/miglife-verified.svg?v=4" alt="Verified" title="Verified" className="ml-1 inline-block h-[16px] w-[16px] align-[-3px]" />
               )}
+              {p.system && <SysTag />}
               {blogMood(p.mood) && (
                 <span className="font-semibold text-[#55658F]">
                   {" "}is {blogMood(p.mood)![0]} <b className="font-extrabold text-[#16264A]">{blogMood(p.mood)![1]}</b>
@@ -2652,7 +2664,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
               </button>
             )}
             {blogAgoBn(p.createdMs)}
-            {p.privacy ? ` · ${blogPrivacyLabel(p.privacy)}` : ""}
+            {p.privacy ? ` · ${blogPrivacyLabel(p.privacy)}` : <> · <EveryoneTag /></>}
             {why && <span className="sr-only"> {why}</span>}
           </div>
         </div>
@@ -2698,6 +2710,11 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                   {onEdit && (
                     <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onEdit())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
                       ✏️ Edit
+                    </button>
+                  )}
+                  {onSysOptOut && p.system && (
+                    <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onSysOptOut())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
+                      🙈 Don&apos;t mention me in System posts
                     </button>
                   )}
                   {onInsights && (
@@ -2769,8 +2786,14 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
         </p>
       )}
 
+      {/* ⚙️ a System post draws its own card */}
+      {p.sys && (
+        <div onClick={tapCard} className="mx-2.5 cursor-pointer select-none">
+          <SystemCard sys={p.sys} onOpenPost={onOpenPost} />
+        </div>
+      )}
       {/* the picture / video, the Text Art, or the words */}
-      <div onClick={tapCard} className={`relative cursor-pointer select-none ${media || (!plain && !pollOnly) ? "mx-2.5 overflow-hidden rounded-[18px]" : ""}`}>
+      {!p.sys && (<div onClick={tapCard} className={`relative cursor-pointer select-none ${media || (!plain && !pollOnly) ? "mx-2.5 overflow-hidden rounded-[18px]" : ""}`}>
         {p.video && onReels ? (
           // 🎬 tap ▶ → Reels, starting with this video
           <button
@@ -2910,10 +2933,10 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             ⤢
           </button>
         )}
-      </div>
+      </div>)}
 
       {/* 🌐 T3: under the Text Art / photo, not on it — the words stay clear */}
-      {hasWords && !plain && !pollOnly && (
+      {hasWords && !plain && !pollOnly && !p.sys && (
         <div className="px-4 [&>span]:mt-2.5">
           <TranslateLink postId={p.id} />
         </div>
