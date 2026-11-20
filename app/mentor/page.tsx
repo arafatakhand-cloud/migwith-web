@@ -152,6 +152,10 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
   const [requests, setRequests] = useState<DocumentSnapshot[]>([]);
   const [merchants, setMerchants] = useState<DocumentSnapshot[]>([]);
   const [tagged, setTagged] = useState<DocumentSnapshot[]>([]);
+  // 🏷 the count (top tile + tab badge) is only the active tags; ended ones stay in the list, at the bottom
+  const isActiveTag = (t: DocumentSnapshot) => String(t.get("status") || "active") === "active";
+  const activeTagged = tagged.filter(isActiveTag);
+  const taggedSorted = [...activeTagged, ...tagged.filter((t) => !isActiveTag(t))];
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState<Set<string>>(new Set());
   const [msg, setMsg] = useState("");
@@ -247,7 +251,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
       <StatTiles
         items={[
           { value: String(merchants.length), label: "🏪 Merchants" },
-          { value: String(tagged.filter((t) => String(t.get("status") || "active") === "active").length), label: "🏷 Tagged" },
+          { value: String(activeTagged.length), label: "🏷 Tagged" },
           { value: String(requests.length), label: "📨 Requests", color: requests.length ? "#DC2626" : undefined },
         ]}
       />
@@ -258,7 +262,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
           tabs={[
             { id: "REQUESTS", label: "Requests", badge: requests.length, alert: true },
             { id: "MERCHANTS", label: "Merchants", badge: merchants.length },
-            { id: "TAGGED", label: "Tagged", badge: tagged.length },
+            { id: "TAGGED", label: "Tagged", badge: activeTagged.length },
           ]}
           value={tab}
           onChange={setTab}
@@ -341,7 +345,7 @@ function Dashboard({ me, refresh }: { me: string; refresh: number }) {
               <p className="py-6 text-center text-sm text-[#5B6B8C]">No tagged users yet.</p>
             ) : (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {tagged.map((t) => {
+                {taggedSorted.map((t) => {
                   const name = String(t.get("taggedUsername") || "");
                   const status = String(t.get("status") || "active");
                   const left = daysLeft(t.get("expiresAt"));
