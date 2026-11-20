@@ -53,7 +53,7 @@ import {
 // posts with ?author=name, from their profile). Anyone can read; writing needs
 // a login. Read once per tab (no live listener), pull the tab again to refresh.
 
-type Tab = "popular" | "new" | "friends" | "following" | "mine" | "saved";
+type Tab = "foryou" | "popular" | "new" | "explore" | "friends" | "following" | "mine" | "saved";
 
 // 🎨 each category's colour: the card's corner glows in it
 const CAT_TINT: Record<string, string> = {
@@ -82,10 +82,12 @@ function RichText({ text, className }: { text: string; className?: string }) {
 }
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
 const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
-const TAB_ICONS: Record<string, string> = { new: "✨", popular: "🔥", friends: "👥", following: "⭐", mine: "👤" };
+const TAB_ICONS: Record<string, string> = { foryou: "🎯", new: "✨", popular: "🔥", explore: "🧭", friends: "👥", following: "⭐", mine: "👤" };
 const TABS: [Tab, string][] = [
+  ["foryou", "✨ For You"],
   ["new", "New"],
   ["popular", "Popular"],
+  ["explore", "🧭 Explore"],
   ["friends", "Friends"],
   ["following", "Following"],
   ["mine", "Mine"],
@@ -98,6 +100,8 @@ const TAB_KEYS: Record<string, [string, string, string, string, string]> = {
   friends: ["#16A34A", "#0F7A36", "#DCFCE7", "#97DDB0", "#15803D"],
   following: ["#7C3AED", "#5B21B6", "#EDE9FE", "#C4B2F3", "#6D28D9"],
   mine: ["#DB2777", "#9D174D", "#FCE7F3", "#F2A7C9", "#BE185D"],
+  foryou: ["#E11D48", "#9F1239", "#FFE4E6", "#F5A3B5", "#BE123C"],
+  explore: ["#0891B2", "#0E7490", "#CFFAFE", "#8BD8E8", "#0E7490"],
 };
 function tabKeyStyle(k: string, on: boolean): React.CSSProperties {
   const [fill, lip, light, lightLip, ink] = TAB_KEYS[k] || TAB_KEYS.new;
@@ -143,6 +147,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const { user, username } = useCurrentUser();
   const friends = useFriends(username);
   const [tab, setTab] = useState<Tab>("new");
+  // #️⃣ 🧭 (2026-11) trending hashtags, the hashtag being looked at, Explore
+  const [trending, setTrending] = useState<{ tag: string; count: number }[]>([]);
+  const [tagView, setTagView] = useState("");
+  const [tagRows, setTagRows] = useState<DiscoverRow[] | null>(null);
+  const [exploreRows, setExploreRows] = useState<DiscoverRow[] | null>(null);
   // 📷 show all posts, or only the ones with a photo
   const [media, setMedia] = useState<"all" | "photos">("all");
   // 🏷 one category, or "all"
@@ -267,6 +276,25 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   }, [posts, username]);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
+  useEffect(() => {
+    if (author) return;
+    blogCall("trending")
+      .then((r: any) => setTrending(Array.isArray(r?.tags) ? r.tags : []))
+      .catch(() => {});
+  }, [author, reload]);
+  useEffect(() => {
+    setTagRows(null);
+    if (!tagView) return;
+    blogCall("tag", { tag: tagView })
+      .then((r: any) => setTagRows(Array.isArray(r?.posts) ? r.posts : []))
+      .catch(() => setTagRows([]));
+  }, [tagView]);
+  useEffect(() => {
+    if (tab !== "explore") return;
+    blogCall("explore")
+      .then((r: any) => setExploreRows(Array.isArray(r?.posts) ? r.posts : []))
+      .catch(() => setExploreRows([]));
+  }, [tab, reload]);
   const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [ind, setInd] = useState<{ left: number; width: number } | null>(null);
   useLayoutEffect(() => {
@@ -291,7 +319,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   useEffect(() => setLikedAuthors(readLikedAuthors()), []);
   const bumpLikedAuthor = (name: string) => setLikedAuthors(bumpLiked(name));
   const whyFor = (p: BlogPost) =>
-    p.likes >= 10 ? "🔥 Trending" : friendSet.has(p.author.toLowerCase()) && p.author !== username ? "👥 Friend" : (likedAuthors[p.author.toLowerCase()] || 0) >= 3 ? "❤️ You often like" : tab === "new" ? "🆕 New" : "";
+    p.likes >= 10 ? "🔥 Trending" : friendSet.has(p.author.toLowerCase()) && p.author !== username ? "👥 Friend" : tab === "foryou" && (likedAuthors[p.author.toLowerCase()] || 0) >= 1 ? `🎯 Because you like ${p.author}` : (likedAuthors[p.author.toLowerCase()] || 0) >= 3 ? "❤️ You often like" : tab === "new" ? "🆕 New" : "";
   const followed = useFollowing(user?.uid);
   // 💜 how many members follow me (for my wall on the Mine tab)
   const [myFollowers, setMyFollowers] = useState<number | null>(null);
@@ -662,7 +690,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [fresh, setFresh] = useState(0);
   const [freshBy, setFreshBy] = useState<string[]>([]);
   // ✓ "you've seen everything new": the newest Mig of my last visit (time-ordered tabs)
-  const seenTab = !author && !placeView && (tab === "new" || tab === "friends" || tab === "following");
+  const seenTab = !author && !placeView && (tab === "new" || tab === "foryou" || tab === "friends" || tab === "following");
   const [seenMs, setSeenMs] = useState(0);
   useEffect(() => {
     if (!seenTab || !posts || !posts.length) return;
@@ -698,7 +726,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   useEffect(() => {
     let alive = true;
     // 💾 the last first page of Popular / New shows at once (then the fresh one replaces it)
-    const cacheKey = !author && (tab === "popular" || tab === "new") ? `migwith.feedCache.${tab}` : "";
+    const cacheKey = !author && (tab === "popular" || tab === "new" || tab === "foryou") ? `migwith.feedCache.${tab}` : "";
     let cached: BlogPost[] | null = null;
     try {
       const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
@@ -731,7 +759,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       if (author) return map(await getDocs(query(col, where("author", "==", author), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
       // 📍 every Everyone post written at one place
       if (placeView) return map(await getDocs(query(col, where("place", "==", placeView), limit(60)))).sort((a, b) => b.createdMs - a.createdMs);
-      if (tab === "popular" || tab === "new") {
+      if (tab === "explore") return [];
+      if (tab === "popular" || tab === "new" || tab === "foryou") {
         const snap = await getDocs(query(col, orderBy(tab === "popular" ? "hot" : "createdMs", "desc"), limit(FEED_PAGE)));
         lastSnap.current = (snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot) || null;
         if (alive) setHasMore(snap.size >= FEED_PAGE);
@@ -771,13 +800,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     };
     // 🔒 the 👥 Friends / 🔒 Only me posts I may see come from the server and join the list
     const withPrivate = async (p: BlogPost[]): Promise<BlogPost[]> => {
-      if (!user || placeView || !(author || tab === "new" || tab === "friends" || tab === "mine")) return p;
+      if (!user || placeView || !(author || tab === "new" || tab === "foryou" || tab === "friends" || tab === "mine")) return p;
       try {
         const r = await blogCall("privateFeed", { scope: tab === "mine" && !author ? "mine" : "all", author: author || "" });
         let extra = (Array.isArray(r.posts) ? (r.posts as Record<string, unknown>[]) : []).map((x) => toBlogPost(String(x.id), x));
         if (tab === "friends" && !author) extra = extra.filter((x) => x.authorUid !== user.uid);
         // New: only the ones that belong among the posts loaded so far
-        if (tab === "new" && !author && p.length >= FEED_PAGE) {
+        if ((tab === "new" || tab === "foryou") && !author && p.length >= FEED_PAGE) {
           const oldest = p[p.length - 1]?.createdMs || 0;
           extra = extra.filter((x) => x.createdMs >= oldest);
         }
@@ -801,7 +830,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   }, [tab, author, user, friendsKey, followedKey, reload, placeView]);
 
   // 📄 the posts shown now (Popular / New: all loaded pages; other tabs: the first `visible`)
-  const paged = !author && !placeView && (tab === "popular" || tab === "new");
+  const paged = !author && !placeView && (tab === "popular" || tab === "new" || tab === "foryou");
   const shown = posts ? (paged ? posts : posts.slice(0, visible)) : null;
   const loadMore = async () => {
     if (loadingMore || !hasMore || !posts) return;
@@ -1102,7 +1131,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   tabRefs.current[k] = el;
                 }}
                 type="button"
-                onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
+                onClick={() => (setTagView(""), k === tab ? setReload((n) => n + 1) : setTab(k))}
                 // 🎨 D3: every tab is a 6D key in its own colour; the chosen one is filled
                 className="mb-1 shrink-0 whitespace-nowrap rounded-[16px] px-4 py-2.5 text-[13.5px] font-black transition active:translate-y-[2px]"
                 style={tabKeyStyle(k, tab === k)}
@@ -1129,7 +1158,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     tabRefs.current[k] = el;
                   }}
                   type="button"
-                  onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
+                  onClick={() => (setTagView(""), k === tab ? setReload((n) => n + 1) : setTab(k))}
                   className={`relative flex-1 whitespace-nowrap px-1 pb-3 pt-2 text-[14px] font-extrabold transition-colors ${tab === k ? "text-[#1E1B4B]" : "text-[#8A8FB0]"}`}
                 >
                   {k === "popular" && tab === k ? "🔥 " : ""}
@@ -1154,7 +1183,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   tabRefs.current[k] = el;
                 }}
                 type="button"
-                onClick={() => (k === tab ? setReload((n) => n + 1) : setTab(k))}
+                onClick={() => (setTagView(""), k === tab ? setReload((n) => n + 1) : setTab(k))}
                 className="relative z-10 flex flex-col items-center gap-0.5 rounded-2xl py-1.5"
               >
                 <span className={`text-[19px] leading-none transition ${tab === k ? "scale-110" : "opacity-80 grayscale-[.3]"}`}>{TAB_ICONS[k]}</span>
@@ -1166,6 +1195,18 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
 
         {/* 📸 stories, under the tabs */}
         {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
+        {/* #️⃣ trending hashtags (New / Popular / For You) */}
+        {!author && !mineOnly && (tab === "new" || tab === "popular" || tab === "foryou") && trending.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 pb-1.5 pt-0.5 [scrollbar-width:none]">
+            <span className="shrink-0 pl-1 pr-0.5 text-[12.5px] font-black text-[#6D28D9]">🔥 Trending</span>
+            {trending.map((t) => (
+              <button key={t.tag} type="button" onClick={() => setTagView(t.tag)} className="shrink-0 rounded-xl bg-[#F5F3FF] px-2.5 py-1.5 text-[12.5px] font-extrabold text-[#6D28D9]">
+                #{t.tag}
+                <span className="ml-1 text-[10.5px] font-bold text-[#A78BFA]">{t.count}</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {false && !author && (
           <div className="no-scrollbar mx-3.5 mb-1 flex gap-2 overflow-x-auto">
@@ -1948,7 +1989,51 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </button>
         )}
 
-        {posts === null ? (
+        {!author && tagView ? (
+          // #️⃣ one hashtag's Migs
+          <div className="px-3.5">
+            <div className="mb-3 flex items-center gap-2.5">
+              <button type="button" onClick={() => setTagView("")} aria-label="Back" className="grid h-[38px] w-[38px] place-items-center rounded-full bg-white text-[17px] font-black text-[#1E1B4B] shadow">
+                ←
+              </button>
+              <div>
+                <p className="text-[21px] font-black text-[#6D28D9]">#{tagView}</p>
+                {tagRows && <p className="text-[12px] font-bold text-[#6B6F9A]">{tagRows.length} {tagRows.length === 1 ? "Mig" : "Migs"}</p>}
+              </div>
+            </div>
+            {tagRows === null ? (
+              <p className="p-4 text-[13px] text-[#6B6F9A]">Loading…</p>
+            ) : tagRows.length === 0 ? (
+              <p className="p-4 text-[14px] text-[#6B6F9A]">No Migs with #{tagView} yet.</p>
+            ) : (
+              tagRows.map((h) => <DiscoverHit key={h.id} h={h} onOpen={() => openSheet(h.id)} />)
+            )}
+          </div>
+        ) : !author && tab === "explore" ? (
+          // 🧭 Explore: popular photo / video Migs from people I don't follow yet
+          <div className="px-3.5">
+            <p className="pl-1 text-[18px] font-black text-[#1E1B4B]">🧭 Explore</p>
+            <p className="mb-2.5 pl-1 text-[12.5px] text-[#6B6F9A]">Popular photos and videos from people you don&apos;t follow yet</p>
+            {exploreRows === null ? (
+              <p className="p-4 text-[13px] text-[#6B6F9A]">Loading…</p>
+            ) : exploreRows.length === 0 ? (
+              <p className="p-4 text-[13px] text-[#6B6F9A]">Nothing to explore yet — come back soon.</p>
+            ) : (
+              <div className="grid grid-cols-3 gap-1">
+                {exploreRows.map((h) => (
+                  <button key={h.id} type="button" onClick={() => openSheet(h.id)} className="relative aspect-square overflow-hidden rounded-[10px] bg-[#E6EAF4]">
+                    {h.image && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={h.image} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                    )}
+                    {h.video && <span className="absolute right-1.5 top-1 text-[15px] font-black text-white drop-shadow">▶</span>}
+                    {h.likes > 0 && <span className="absolute bottom-1.5 left-1.5 rounded-lg bg-black/45 px-1.5 text-[10.5px] font-bold text-white">❤️ {blogShort(h.likes)}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : posts === null ? (
           <div className="space-y-3 px-3.5">
             {[0, 1].map((i) => (
               <div key={i} className="feed-shimmer h-[300px] rounded-[22px]" />
@@ -1979,7 +2064,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-6 px-3.5">
-            {rankFeed((shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)), !author && !placeView && tab === "popular", friendSet, likedAuthors).map((p, i, arr) => (
+            {rankFeed((shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)), !author && !placeView && (tab === "popular" || tab === "foryou"), friendSet, likedAuthors, tab === "foryou").map((p, i, arr) => (
               <Fragment key={p.id}>
               {seenTab && seenMs > 0 && p.createdMs <= seenMs && i > 0 && arr[i - 1].createdMs > seenMs && (
                 <div className="flex items-center gap-2 text-[12.5px] font-extrabold text-[#14B88F]">
@@ -2936,11 +3021,15 @@ function bumpLiked(name: string): Record<string, number> {
 }
 // 🧭 Popular, a little smarter: friends and writers I often like move up a few
 // places, and one writer never shows twice in a row (their next Mig waits a bit).
-function rankFeed(list: BlogPost[], on: boolean, friends: Set<string>, liked: Record<string, number>): BlogPost[] {
+// strong = ✨ For You: the people I like most and my friends come much higher (same as the app)
+function rankFeed(list: BlogPost[], on: boolean, friends: Set<string>, liked: Record<string, number>, strong = false): BlogPost[] {
   if (!on || list.length < 3) return list;
   const scored = list.map((p, i) => {
     const a = p.author.toLowerCase();
-    return { p, s: -i + (friends.has(a) ? 3 : 0) + Math.min(liked[a] || 0, 5) * 0.6 };
+    return {
+      p,
+      s: -i + (friends.has(a) ? (strong ? 6 : 3) : 0) + Math.min(liked[a] || 0, strong ? 8 : 5) * (strong ? 1.4 : 0.6) + (strong ? Math.min(p.likes + p.comments * 2, 30) * 0.08 : 0),
+    };
   });
   scored.sort((x, y) => y.s - x.s);
   const out: BlogPost[] = [];
@@ -2957,4 +3046,31 @@ function rankFeed(list: BlogPost[], on: boolean, friends: Set<string>, liked: Re
     if (j >= 0) out.push(...wait.splice(j, 1));
   }
   return [...out, ...wait];
+}
+
+// #️⃣ 🧭 a Mig as the server's short row (a hashtag's Migs, Explore)
+type DiscoverRow = { id: string; author: string; title: string; excerpt: string; place: string; image: string; video?: boolean; bg: number; createdMs: number; likes: number; comments: number };
+
+function DiscoverHit({ h, onOpen }: { h: DiscoverRow; onOpen: () => void }) {
+  return (
+    <button type="button" onClick={onOpen} className="mb-2.5 flex w-full items-center gap-2.5 rounded-[18px] bg-white p-3 text-left shadow-[0_3px_10px_-6px_rgba(30,27,75,.35)]">
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[12px] font-bold text-[#6B6F9A]">
+          {h.author}
+          {h.place ? ` · 📍 ${h.place}` : ""}
+        </span>
+        <span className="line-clamp-2 block text-[14.5px] font-extrabold text-[#1E1B4B]">{plainText(h.title || h.excerpt)}</span>
+        <span className="block text-[12px] font-bold text-[#8A8FB0]">
+          ❤️ {h.likes} · 💬 {h.comments}
+        </span>
+      </span>
+      {h.image && (
+        <span className="relative shrink-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={h.image} alt="" className="h-16 w-16 rounded-xl object-cover" />
+          {h.video && <span className="absolute inset-0 grid place-items-center text-[16px] text-white">▶</span>}
+        </span>
+      )}
+    </button>
+  );
 }
