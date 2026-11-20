@@ -8,6 +8,7 @@ import { BrandName } from "./_components/BrandName";
 import { RainbowFavicon } from "./_components/RainbowFavicon";
 import { LoginWelcomeSplash } from "./_components/LoginWelcome";
 import { FbGroupPopup } from "./_components/FbGroupPopup";
+import { TextStyleBar } from "./_components/TextStyleBar";
 import { BootSplash } from "./_components/BootSplash";
 import { BOOT_SPLASH_SCRIPT } from "../lib/bootSplash";
 
@@ -88,6 +89,8 @@ export default function RootLayout({
         <RainbowFavicon />
         <LoginWelcomeSplash />
         <FbGroupPopup />
+        {/* ✍️ S1: select words in a text box → Copy · Paste | B · I · 🎨 · 🌐 · @ */}
+        <TextStyleBar />
       </body>
     </html>
   );

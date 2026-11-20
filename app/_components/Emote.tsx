@@ -1,5 +1,6 @@
 "use client";
 
+import { styledNodes } from "../../lib/textStyle";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   ANIMATED_GROUPS,
@@ -95,6 +96,11 @@ export function EmoteView({ id, size, playing = true }: { id: string; size: numb
  * `renderText` renders the plain parts (e.g. @mentions).
  */
 export function withEmotes(text: string, fontPx: number, renderText: (s: string, key: string) => ReactNode = (s) => s): ReactNode[] {
+  // ✍️ **bold** __italic__ {{colour|…}} first, then the emotes in each piece
+  return styledNodes(text, (seg, key) => emotesOnly(seg, fontPx, (s2, k2) => renderText(s2, `${key}${k2}`)), "x");
+}
+
+function emotesOnly(text: string, fontPx: number, renderText: (s: string, key: string) => ReactNode): ReactNode[] {
   // ~the height of the text (was 10/7 — emoji looked bigger than the words)
   const size = Math.round(fontPx * 1.5);
   const pieces = splitEmotes(text);
