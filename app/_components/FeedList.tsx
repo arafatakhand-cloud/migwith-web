@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
 import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, ScheduledSheet, scheduleLabel, type Memory } from "./FeedExtras";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
@@ -392,7 +393,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cmatesQ, setCmatesQ] = useState("");
   const [ccatOpen, setCcatOpen] = useState(false);
   // 🔒 who can see the new post: '' = 🌍 Everyone, 'friends', 'me'
-  const [cpriv, setCpriv] = useState<"" | "friends" | "me">("");
+  const [cpriv, setCpriv] = useState<"" | "friends" | "close" | "me">("");
   // 📖 "Also share to my story": null = follow Settings (always / photos & videos only)
   const [cstory, setCstory] = useState<boolean | null>(null);
   const [storyPrefs, setStoryPrefs] = useState<{ always: boolean; mediaOnly: boolean; used: number; max: number } | null>(null);
@@ -403,6 +404,12 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       .catch(() => setStoryPrefs(null)); // an older server: no box
   }, [user]);
   const [cprivOpen, setCprivOpen] = useState(false);
+  // 📊 ⏰ 💚 phase 4: insights of one of my Migs, post later, the Close Friends list
+  const [insightsOf, setInsightsOf] = useState("");
+  const [csched, setCsched] = useState<number | null>(null);
+  const [cschedOpen, setCschedOpen] = useState(false);
+  const [schedListOpen, setSchedListOpen] = useState(false);
+  const [closeOpen, setCloseOpen] = useState(false);
   // 📍 where I am (optional) and its picker
   const [cplace, setCplace] = useState<Place | null>(null);
   const [cplaceOpen, setCplaceOpen] = useState(false);
@@ -433,7 +440,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cedit || !draftKey || ctext.trim() || cphotos.length || cvideo) return;
     try {
       const d = JSON.parse(localStorage.getItem(draftKey) || "null") as {
-        text?: string; photos?: string[]; video?: string; cat?: string; bg?: number; priv?: "" | "friends" | "me"; place?: Place | null; mood?: string;
+        text?: string; photos?: string[]; video?: string; cat?: string; bg?: number; priv?: "" | "friends" | "close" | "me"; place?: Place | null; mood?: string;
       } | null;
       if (!d || !(d.text || d.photos?.length || d.video)) return;
       setCtext(d.text || "");
@@ -474,6 +481,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCpriv("");
     setCstory(null);
     setCmates([]);
+    setCsched(null);
     setCerr("");
     setCdraftNote(false);
   };
@@ -575,7 +583,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean; voice?: { blob: Blob; sec: number } | null }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "close" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean; voice?: { blob: Blob; sec: number } | null; atMs?: number | null }) => {
     // no title box: the title is the first line of the text
     const first = plainText(p.text.trim()).split("\n")[0].slice(0, 60);
     const onlyVoice = !!p.voice && p.photos.length === 0;
@@ -590,7 +598,15 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      const r = await blogCall("create", { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}), ...voice });
+      const fields = { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}), ...voice };
+      // ⏰ a Mig for later: the server keeps it and posts it at that time
+      if (p.atMs) {
+        await blogCall("schedule", { ...fields, atMs: p.atMs });
+        setToast(`⏰ Scheduled · ${scheduleLabel(p.atMs)}`);
+        window.setTimeout(() => setToast(""), 3200);
+        return;
+      }
+      const r = await blogCall("create", fields);
       const st = (r as { story?: boolean }).story;
       if (st === true) setStoryPrefs((x) => (x ? { ...x, used: x.used + 1 } : x));
       const storyNote = st === true ? " · 📖 also in your story" : st === false ? " · 📖 today's 5 stories are used up" : "";
@@ -610,6 +626,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setCmood(p.mood);
       setCmates(p.mates || []);
       setCstory(p.alsoStory ?? null);
+      setCsched(p.atMs ?? null);
       setCpoll(p.poll ? { options: p.poll.options, days: (p.poll.days as 1 | 3 | 7) || 3, multi: p.poll.multi } : null);
       cbgKeep.current = p.bg;
       setComposing(true);
@@ -650,7 +667,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   };
   // 📖 is the "Also share to my story" box ticked? (never for 🔒 Only me / when today's 5 are used)
   const storyFull = !!storyPrefs && storyPrefs.used >= storyPrefs.max;
-  const storyAllowed = !!storyPrefs && !cedit && cpriv !== "me" && !storyFull;
+  const storyAllowed = !!storyPrefs && !cedit && cpriv !== "me" && cpriv !== "close" && !storyFull;
   const storyDefault = !!storyPrefs && storyPrefs.always && (!storyPrefs.mediaOnly || cphotos.length > 0 || !!cvideo);
   const storyOn = storyAllowed && (cstory ?? storyDefault);
   const publishInline = () => {
@@ -661,7 +678,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
     if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
     const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn, voice: cvoice };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn, voice: cvoice, atMs: csched };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -687,6 +704,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCmood(payload.mood);
         setCmates(payload.mates);
         setCstory(payload.alsoStory);
+        setCsched(payload.atMs);
         setCpoll(payload.poll ? { options: payload.poll.options, days: payload.poll.days, multi: payload.poll.multi } : null);
         cbgKeep.current = payload.bg;
         setComposing(true);
@@ -1019,7 +1037,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       setToast(blogError(e));
     }
   };
-  const setMigPrivacy = async (p: BlogPost, k: "" | "friends" | "me") => {
+  const setMigPrivacy = async (p: BlogPost, k: "" | "friends" | "close" | "me") => {
     setPosts((cur) => (cur ? cur.map((x) => (x.id === p.id ? { ...x, privacy: k } : x)) : cur));
     try {
       await blogCall("setPrivacy", { postId: p.id, privacy: k || "everyone" });
@@ -1046,6 +1064,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
   const [sheetId, setSheetId] = useState("");
   const [searching, setSearching] = useState(false); // 🔍 the search page
+  // 📅 Share again: the old Mig, shared as a new one (the share sheet)
+  const shareMemory = async (m: Memory) => {
+    const pub = await getDoc(doc(db, "blog_posts", m.id)).catch(() => null);
+    if (pub && pub.exists()) setSharing(toBlogPost(pub.id, pub.data() as Record<string, unknown>));
+  };
   const openSheet = (id: string) => {
     setSheetId(id);
     try {
@@ -1264,7 +1287,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-black leading-snug text-[#1E1B4B]">
                     {username}
-                    {cmates.length > 0 && cpriv !== "me" && (
+                    {cmates.length > 0 && cpriv !== "me" && cpriv !== "close" && (
                       <button type="button" onClick={() => setCmatesOpen(true)} className="ml-1 text-left font-semibold text-[#4B4F7A]">
                         — with <b className="font-black text-[#1E1B4B]">{withLine(cmates)}</b>
                       </button>
@@ -1485,11 +1508,14 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                         <span className="text-[22px]">{icon}</span>
                         <span className="min-w-0 flex-1">
                           <span className="block text-[14px] font-black text-[#1E1B4B]">{label}</span>
-                          <span className="block text-[11.5px] font-semibold text-[#8A8FB0]">{k === "" ? "Anyone on miGlife" : k === "friends" ? "Only your friends" : "Only you"}</span>
+                          <span className="block text-[11.5px] font-semibold text-[#8A8FB0]">{k === "" ? "Anyone on miGlife" : k === "friends" ? "Only your friends" : k === "close" ? "Only the friends on your list" : "Only you"}</span>
                         </span>
                         {cpriv === k && <span className="font-black text-[#6366F1]">✓</span>}
                       </button>
                     ))}
+                    <button type="button" onClick={() => (setCprivOpen(false), setCloseOpen(true))} className="mt-1 w-full rounded-2xl bg-[#ECFDF5] px-3 py-2 text-left text-[12.5px] font-extrabold text-[#059669]">
+                      💚 Edit Close Friends list ›
+                    </button>
                   </div>
                 </div>
               )}
@@ -1812,6 +1838,13 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   </button>
                 </div>
               )}
+              {csched && !cedit && (
+                <div className="mt-3 flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#F5F3FF] to-[#FDF2F8] px-3 py-2 text-[12.5px] font-extrabold text-[#6D28D9]">
+                  <span>⏰ Posts {scheduleLabel(csched)}</span>
+                  <button type="button" onClick={() => setCschedOpen(true)} className="ml-auto text-[#6366F1]">Change</button>
+                  <button type="button" onClick={() => setCsched(null)} aria-label="Post now instead" className="text-[#8A8FB0]">✕</button>
+                </div>
+              )}
               <div className="mt-3 flex items-center gap-1">
                 <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
                   🖼️
@@ -1848,8 +1881,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 >
                   😊
                 </button>
-                {/* 🤝 MigMates (not on a 🔒 Only me Mig) */}
-                {cpriv !== "me" && (
+                {/* ⏰ post later (a new Mig only) */}
+                {!cedit && (
+                  <button
+                    type="button"
+                    onClick={() => setCschedOpen(true)}
+                    aria-label="Post later"
+                    title={csched ? `Posts ${scheduleLabel(csched)}` : "Post later"}
+                    className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#F5F3FF] active:scale-90 ${csched ? "bg-[#EDE9FE]" : ""}`}
+                  >
+                    ⏰
+                  </button>
+                )}
+                {/* 🤝 MigMates (not on a 🔒 Only me / 💚 Close Friends Mig) */}
+                {cpriv !== "me" && cpriv !== "close" && (
                   <button
                     type="button"
                     onClick={() => setCmatesOpen(true)}
@@ -1894,7 +1939,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       : "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_10px_20px_-10px_rgba(236,72,153,.9)]"
                   }`}
                 >
-                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Migging…" : "Mig it ➤"}
+                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Migging…" : csched ? "Schedule ⏰" : "Mig it ➤"}
                 </button>
               </div>
             </div>
@@ -2086,6 +2131,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         ) : (
           <div className="space-y-6 px-3.5">
+            {user && !author && !placeView && (tab === "new" || tab === "foryou") && <MemoriesCard onOpen={openSheet} onShare={shareMemory} />}
             {rankFeed((shown || []).filter((p) => !hiddenIds.includes(p.id) && !blockSets.hidden.has(p.author.toLowerCase()) && !blockSets.hidden.has(String(p.sharedAuthor || "").toLowerCase())).filter((p) => (media !== "photos" || !!(p.cover || p.firstImage)) && (cat === "all" || p.category === cat)), !author && !placeView && (tab === "popular" || tab === "foryou"), friendSet, likedAuthors, tab === "foryou").map((p, i, arr) => (
               <Fragment key={p.id}>
               {seenTab && seenMs > 0 && p.createdMs <= seenMs && i > 0 && arr[i - 1].createdMs > seenMs && (
@@ -2093,7 +2139,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />✓ You&apos;re all caught up<span className="h-[2px] flex-1 rounded bg-[#BFEBDD]" />
                 </div>
               )}
-              <FeedCard key={p.id} onGift={user && p.authorUid !== user.uid && p.privacy !== "me" ? () => setGiftFor(p) : undefined} onGifts={() => setGiversOf(p)} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={whyFor(p)} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
+              <FeedCard key={p.id} onGift={user && p.authorUid !== user.uid && p.privacy !== "me" ? () => setGiftFor(p) : undefined} onGifts={() => setGiversOf(p)} p={p} onPhoto={(i) => setPhotoView({ p, i })} onPhotoMenu={(photo) => setPhotoMenu({ p, photo })} onReels={() => setReelsStart(p.id)} following={followed.includes(p.author)} canFollow={!!user && p.author !== username} onFollow={() => toggleFollow(p.author)} why={whyFor(p)} verified={verifiedAuthors.has(p.author)} roleBadge={authorBadge[p.author] || ""} rolePill={authorRole[p.author] || ""} roleImg={badgeImages[authorBadge[p.author] || ""] || ""} color={colorOf(p.author)} liked={liked.has(p.id)} reaction={reactOf[p.id] || (liked.has(p.id) ? "👍" : "")} onReact={(e) => react(p, e)} onLike={() => like(p)} onShare={() => setSharing(p)} onReactors={() => setReactorsOf(p)} saved={savedIds.has(p.id)} onSave={() => toggleSave(p)} onPlace={() => (setPlaceView(p.place), window.scrollTo({ top: 0 }))} onOpen={() => openSheet(p.id)} onEdit={user && p.authorUid === user.uid ? () => startEdit(p) : undefined} onDelete={user && p.authorUid === user.uid ? () => deleteMig(p) : undefined} onPrivacy={user && p.authorUid === user.uid ? (k) => setMigPrivacy(p, k) : undefined} onInsights={user && p.authorUid === user.uid ? () => setInsightsOf(p.id) : undefined} canReport={!!user && p.authorUid !== user.uid} signedIn={!!user} me={username} onRemoveMate={user && (p.mates || []).some((n) => n.toLowerCase() === username.toLowerCase()) ? () => removeMeAsMate(p) : undefined} />
               </Fragment>
             ))}
             {media === "photos" && !posts.some((p) => p.cover || p.firstImage) && (
@@ -2186,6 +2232,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         />
       )}
 
+      {insightsOf && <InsightsSheet postId={insightsOf} onClose={() => setInsightsOf("")} />}
+      {cschedOpen && <SchedulePicker value={csched} onPick={setCsched} onClose={() => setCschedOpen(false)} onList={() => (setCschedOpen(false), setSchedListOpen(true))} />}
+      {schedListOpen && <ScheduledSheet onClose={() => setSchedListOpen(false)} />}
+      {closeOpen && <CloseFriendsSheet friends={friends} onClose={() => setCloseOpen(false)} avatar={(f) => <Avatar name={f} color={colorOf(f)} size={34} />} />}
       {giftFor && user && (
         <PostGiftSheet
           post={giftFor}
@@ -2437,7 +2487,7 @@ function VideoLenBadge({ src }: { src: string }) {
   );
 }
 
-function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate }: { onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
+function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, liked, verified, why = "", roleBadge, rolePill = "", roleImg, reaction, onReact, onLike, onShare, onReactors, saved, onSave, following = false, canFollow = false, onFollow = () => {}, onPlace = () => {}, onOpen, onEdit, onDelete, onPrivacy, canReport = false, signedIn = false, me = "", onRemoveMate, onInsights }: { onInsights?: () => void; onGift?: () => void; onGifts?: () => void; onPhoto?: (i: number) => void; onPhotoMenu?: (photo: string) => void; onReels?: () => void; onRemoveMate?: () => void; me?: string; p: BlogPost; color: string; liked: boolean; verified: boolean; why?: string; roleBadge: string; rolePill?: string; roleImg: string; reaction: string; onReactors: () => void; onReact: (emoji: string) => void; onLike: () => void; onShare: () => void; saved: boolean; onSave: () => void; following?: boolean; canFollow?: boolean; onFollow?: () => void; onPlace?: () => void; onOpen?: () => void; onEdit?: () => void; onDelete?: () => void; onPrivacy?: (k: "" | "friends" | "close" | "me") => void; canReport?: boolean; signedIn?: boolean }) {
   // ⋯ my own Mig: Edit / Delete right on the card
   const [menu, setMenu] = useState(false);
   // ⋯ menu position on the screen: drawn over the page (a portal), so the card's
@@ -2648,6 +2698,11 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                   {onEdit && (
                     <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onEdit())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
                       ✏️ Edit
+                    </button>
+                  )}
+                  {onInsights && (
+                    <button type="button" onClick={(e) => (e.stopPropagation(), setMenu(false), onInsights())} className="block w-full px-4 py-2.5 text-left hover:bg-[#F4F6FD]">
+                      📊 Insights
                     </button>
                   )}
                   {onPrivacy && !p.sharedId && (

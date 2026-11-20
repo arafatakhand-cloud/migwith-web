@@ -41,7 +41,7 @@ export type BlogPost = {
   /** a small copy of the cover for the Feed list ('' = use the cover) */
   thumb: string;
   /** who can see it: '' = 🌍 Everyone, 'friends' = 👥 Friends, 'me' = 🔒 Only me */
-  privacy: "" | "friends" | "me";
+  privacy: "" | "friends" | "close" | "me";
   /** 📍 where the writer was ("" = none) and the line under it */
   place: string;
   placeSub: string;
@@ -234,9 +234,10 @@ export function blogError(e: unknown): string {
 }
 
 // 🔒 who can see a post
-export const BLOG_PRIVACY: ["" | "friends" | "me", string, string][] = [
+export const BLOG_PRIVACY: ["" | "friends" | "close" | "me", string, string][] = [
   ["", "🌍", "Everyone"],
   ["friends", "👥", "Friends"],
+  ["close", "💚", "Close Friends"],
   ["me", "🔒", "Only me"],
 ];
 export function blogPrivacyLabel(p: string): string {
