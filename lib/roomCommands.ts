@@ -1,8 +1,8 @@
 "use client";
 
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, limit, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
-import { db, functions } from "./firebase";
+import { auth, db, functions } from "./firebase";
 import { extraSocialMessage } from "./socialExtra";
 import { unfriendViaServer } from "./friends";
 
@@ -189,7 +189,7 @@ const HELP =
   "Game bots: /bot lowcard • /bot cricket • /bot trivia • /bot stop\n" +
   "/pick [code] (Lucky Voucher) • /invite @user • /commands • /help";
 
-const pickVoucher = httpsCallable<{ roomId: string; code: string }, { amount?: number }>(functions, "pickVoucher");
+const pickVoucher = httpsCallable<{ roomId: string; code: string; v: number }, { joined?: boolean; already?: boolean; endsInSec?: number; amount?: number }>(functions, "pickVoucher");
 const whoisUser = httpsCallable<{ username: string }, Record<string, unknown>>(functions, "whoisUser");
 const checkUserTag = httpsCallable<{ username: string }, { username?: string; tags?: { kind?: string }[] }>(functions, "checkUserTag");
 
@@ -506,11 +506,35 @@ export function handleRoomCommand(clean: string, ctx: CommandContext): boolean {
     }
     // The result is shown only to the picker, in a popup (like the app).
     const show = (title: string, text: string) => (ctx.popup ? ctx.popup(title, text) : ctx.note(`${title}\n${text}`));
-    pickVoucher({ roomId: ctx.roomName, code })
-      .then(({ data }) => show("🎉 You Won!", `You picked the Lucky Voucher and won ${Number(data?.amount || 0).toLocaleString()} coins!`))
+    // 🎟 2026-11: /pick JOINS a 15 s draw (one winner picked at random — an auto-pick
+    // script gains nothing). The join is a line only I see; then my own result
+    // (voucher_results/{me}) → a win popup, or a "Not this time" line.
+    pickVoucher({ roomId: ctx.roomName, code, v: 2 })
+      .then(({ data }) => {
+        const secs = Number(data?.endsInSec || 15);
+        ctx.note(data?.already ? `🎟 You're already in this draw — the winner is picked in ${secs} s.` : `🎟 You're in the draw! The winner is picked in ${secs} s.`);
+        const uid = auth.currentUser?.uid;
+        if (!uid) return;
+        const since = Date.now();
+        let stop = () => {};
+        const timer = setTimeout(() => stop(), (secs + 60) * 1000);
+        stop = onSnapshot(
+          doc(db, "voucher_results", uid),
+          (snap) => {
+            const r = snap.data();
+            if (!r || Number(r.atMs || 0) < since || r.roomId !== ctx.roomName || r.code !== code) return;
+            stop();
+            clearTimeout(timer);
+            const people = Number(r.people || 0);
+            if (r.won) show("🎉 You Won!", `You won the Lucky Voucher draw — ${Number(r.amount || 0).toLocaleString()} coins are in your wallet!`);
+            else ctx.note(`🎟 Not this time — ${people} ${people === 1 ? "person" : "people"} joined and someone else won. Good luck next time! 🍀`);
+          },
+          () => {}
+        );
+      })
       .catch((err: any) => {
-        const msg = String(err?.message || "Could not claim that voucher.");
-        const title = /already picked/i.test(msg) ? "😢 Already Claimed" : /expired/i.test(msg) ? "⏰ Time's Up" : /doesn't match/i.test(msg) ? "❌ Wrong Code" : "🎁 Voucher";
+        const msg = String(err?.message || "Could not join that voucher draw.");
+        const title = /already picked/i.test(msg) ? "😢 Already Claimed" : /expired|time's up/i.test(msg) ? "⏰ Time's Up" : /doesn't match/i.test(msg) ? "❌ Wrong Code" : "🎁 Voucher";
         show(title, msg);
       });
     return true;
