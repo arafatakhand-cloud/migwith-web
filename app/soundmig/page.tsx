@@ -6,7 +6,7 @@ import { PageShell } from "../_components/PageShell";
 import { BackButton } from "../_components/BackButton";
 import { useRequireLogin } from "../../lib/useRequireLogin";
 import { useSession } from "../_components/AppSession";
-import { SOUND_GROUPS, loadSounds, manageSound, playSound, previewSound, setSoundsMuted, soundsMuted, stopSound, type Sound } from "../../lib/soundMig";
+import { SOUND_GROUPS, addStarterSounds, loadSounds, manageSound, playSound, previewSound, setSoundsMuted, soundsMuted, stopSound, type Sound } from "../../lib/soundMig";
 
 // 🔊 SoundMig: short sounds (2–3 s) played in a room for everyone.
 // Opened from a room (?room=Bangladesh): tap one → listen → Play in the room.
@@ -50,6 +50,7 @@ function SoundGallery() {
   const [editing, setEditing] = useState<Sound | null>(null);
   const [muted, setMuted] = useState(false);
   const [toast, setToast] = useState("");
+  const [starterBusy, setStarterBusy] = useState("");
   useEffect(() => setMuted(soundsMuted()), []);
   useEffect(() => () => stopSound(), []);
 
@@ -108,6 +109,25 @@ function SoundGallery() {
         {manager && (
           <p className="mt-2.5 rounded-2xl border border-[#D4AF37]/65 bg-[#FFF6D8] p-3.5 text-xs text-[#0B1F3A]">
             Admin mode: add a sound (MP3 under 1 MB, 2–3 seconds), edit or delete. The coins all go to the house.
+            <button
+              type="button"
+              disabled={!!starterBusy}
+              onClick={async () => {
+                setStarterBusy("Adding…");
+                try {
+                  const n = await addStarterSounds((list || []).map((x) => x.name), (d, t) => setStarterBusy(`Adding ${d} / ${t}…`));
+                  setToast(n ? `✅ Added ${n} sounds` : "All starter sounds are already here");
+                  setTimeout(() => setToast(""), 2500);
+                  load();
+                } catch (e: any) {
+                  setErr(e?.message || "Could not add the sounds.");
+                }
+                setStarterBusy("");
+              }}
+              className="mt-2 block w-full rounded-xl bg-[#059669] py-2.5 text-[13px] font-bold text-white disabled:opacity-60"
+            >
+              {starterBusy || "🎵 Add 20 starter sounds (made for miGlife)"}
+            </button>
           </p>
         )}
         {!room && (
