@@ -129,11 +129,16 @@ export function roleBadgesFor(role: unknown): string[] {
 /** A role can be saved in membershipRole, memberType or role — the first that gives a badge wins. */
 export function roleBadgesForDoc(data: Record<string, unknown> | undefined | null): string[] {
   if (!data) return [];
+  let out: string[] = [];
   for (const field of ["membershipRole", "memberType", "role"]) {
     const b = roleBadgesFor(data[field]);
-    if (b.length) return b;
+    if (b.length) { out = b; break; }
   }
-  return [];
+  // 🛒 / 💼 (2026-11 fix): an Admin / Staff / Country Rep who is ALSO a Merchant (or Mentor)
+  // keeps their main role, and "merchant" sits in the roles list — show that badge too.
+  const extra = [data.membershipRole, data.memberType, data.role, ...(Array.isArray(data.roles) ? data.roles : [])].flatMap((r) => (["merchant", "mentor"].includes(String(r).trim().toLowerCase()) ? roleBadgesFor(r) : []));
+  for (const b of extra) if (!out.includes(b)) out = [...out, b];
+  return out;
 }
 
 /** Role badge + Color Shop badges, as in the app's room enter/left lines. */
