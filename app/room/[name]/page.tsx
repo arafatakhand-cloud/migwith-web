@@ -1997,7 +1997,10 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             const failed = (data?.failed || []).map((f) => `• ${f.target || ""} — ${String(f.reason || "").replace(/^🎁/, "").trim() || "Gift sending failed."}`);
             if (failed.length) setPopup({ title: "🎁 Gift Shower", text: `These people did not get the ${shownGift}:\n${failed.join("\n")}` });
           })
-          .catch((e: any) => setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\n${giftErrorText(e)}` }));
+          .catch((e: any) => {
+            if (String(e?.message || "").includes("You are not in this room")) return (setAutoLeft(true), setNotInRoomOpen(true), note(`${roomName} : You are not in ${roomName} chat room`));
+            setPopup({ title: "🎁 Gift Shower", text: `The gift shower did not send.\n\n${giftErrorText(e)}` });
+          });
         return;
       }
       stickToBottom.current = true;
@@ -2017,7 +2020,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
             recipientLevel: Number(data?.recipientLevel) || undefined,
           });
         })
-        .catch((e: any) => setPopup({ title: "🎁 Gift not sent", text: `That gift could not be sent.\n\n${giftErrorText(e)}` }));
+        .catch((e: any) => {
+          // 🚪 the server says I am not in the room any more
+          if (String(e?.message || "").includes("You are not in this room")) return (setAutoLeft(true), setNotInRoomOpen(true), note(`${roomName} : You are not in ${roomName} chat room`));
+          setPopup({ title: "🎁 Gift not sent", text: `That gift could not be sent.\n\n${giftErrorText(e)}` });
+        });
       return;
     }
 
@@ -3019,7 +3026,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         </div>
       </div>
 
-      {giftTarget !== null && (
+      {/* 🚪 (2026-11) taken out of the room: no gift panel — the "You are not in this room" page shows instead */}
+      {giftTarget !== null && !autoLeft && (
         <GiftPanel
           roomId={roomName}
           uid={user.uid}
@@ -3028,6 +3036,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
           initialTarget={giftTarget}
           onClose={() => setGiftTarget(null)}
           onSent={announceGift}
+          onNotInRoom={() => (setGiftTarget(null), setAutoLeft(true), setNotInRoomOpen(true), note(`${roomName} : You are not in ${roomName} chat room`))}
         />
       )}
 

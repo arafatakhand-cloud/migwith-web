@@ -59,6 +59,7 @@ export function GiftPanel({
   fixedTarget = false,
   onClose,
   onSent,
+  onNotInRoom,
 }: {
   roomId: string;
   uid: string;
@@ -69,6 +70,8 @@ export function GiftPanel({
   fixedTarget?: boolean;
   onClose: () => void;
   onSent: (result: GiftResult) => void;
+  /** 🚪 the server said I am not in the room any more (2026-11) */
+  onNotInRoom?: () => void;
 }) {
   const [balance, setBalance] = useState<number | null>(null);
   const [target, setTarget] = useState(initialTarget);
@@ -125,6 +128,11 @@ export function GiftPanel({
       onClose();
     } catch (err: any) {
       console.error(err);
+      // 🚪 taken out of the room: the room shows "You are not in this room" (nothing was sent)
+      if (onNotInRoom && String(err?.message || "").includes("You are not in this room")) {
+        onNotInRoom();
+        return;
+      }
       setError(err?.message || "Gift sending failed.");
     } finally {
       setSending(false);
