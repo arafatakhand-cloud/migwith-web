@@ -268,7 +268,8 @@ export default function FriendsPage() {
                 </li>
               )}
               {shownFriends.map((f) => (
-                <li key={f.name} className={`relative ${CARD}`}>
+                // the open ⋮ menu's card is lifted above the cards below it (it showed behind the next card)
+                <li key={f.name} className={`relative ${menuFor === f.name ? "z-40" : "z-0"} ${CARD}`}>
                   <Avatar name={f.name} />
                   {/* tap the name → private chat (like the app) */}
                   <Link href={chatHref(f.name)} className="min-w-0 flex-1">
