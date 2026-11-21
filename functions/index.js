@@ -28112,10 +28112,10 @@ exports.syncAutoVerifiedAll = functionsV1.https.onCall(async (data, context) => 
   return { ok: true, count };
 });
 
-// 🤖 miGlife Siri: a room member writes "siri ..." (or "@siri ...") and the bot answers
+// 🤖 atel: a room member writes "atel ..." (or "siri ...") and the bot answers
 // in the same room with an AI reply. The key is ANTHROPIC_API_KEY (functions/.env).
 // One answer per member per minute; the bot never answers itself.
-const SIRI_NAME = "miGlife Siri";
+const SIRI_NAME = "atel";
 const SIRI_MODEL = "claude-haiku-5-5";
 const SIRI_SYSTEM =
   "You are miGlife Siri, the friendly helper bot inside the miGlife chat rooms. " +
@@ -28123,7 +28123,7 @@ const SIRI_SYSTEM =
   "You help with miGlife questions: rooms, coins, levels, the Feed, gifts and commands. " +
   "Never ask for passwords, PINs or security codes, and never give out private data. " +
   "If you are unsure about a miGlife rule, say so and suggest asking miGlife support.";
-const SIRI_TRIGGER = /^\s*@?siri\b[\s,:.!?-]*/i;
+const SIRI_TRIGGER = /^\s*@?(atel|siri)\b[\s,:.!?-]*/i;
 
 exports.onRoomSiriAsk = functionsV1.firestore
   .document("room_messages/{roomId}/messages/{messageId}")
@@ -28146,7 +28146,7 @@ exports.onRoomSiriAsk = functionsV1.firestore
     const roomId = context.params.roomId;
     const who = uid || sender.toLowerCase();
     if (!question) {
-      await snap.ref.parent.add({ type: "chat", sender: SIRI_NAME, senderUid: "", text: `${SIRI_NAME}: Hi ${sender}! Ask me anything after "siri".`, createdAt: FieldValue.serverTimestamp() });
+      await snap.ref.parent.add({ type: "chat", sender: SIRI_NAME, senderUid: "", text: `${SIRI_NAME}: Hi ${sender}! Ask me anything after "atel".`, createdAt: FieldValue.serverTimestamp() });
       return null;
     }
     // one answer per member per minute
