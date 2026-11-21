@@ -58,6 +58,7 @@ type Profile = {
   coverPhotoUrl: string;
   level: number;
   role: string;
+  secondRole?: string;
   bio: string;
   country: string;
   relationship: string;
@@ -295,6 +296,12 @@ export default function ProfilePage() {
           coverPhotoUrl: String(x.coverPhotoUrl || "").trim(),
           level: Number(x.level || 1),
           role: String(x.membershipRole || x.memberType || x.role || ""),
+          // 🛒 a second role (a Staff member who is also a Merchant …): its own chip
+          secondRole: (() => {
+            const main = String(x.membershipRole || x.memberType || x.role || "").trim().toLowerCase();
+            const all = [x.membershipRole, x.memberType, x.role, ...(Array.isArray(x.roles) ? x.roles : [])].map((r) => String(r || "").trim().toLowerCase());
+            return all.find((r) => (r === "merchant" || r === "mentor") && r !== main) || "";
+          })(),
           bio: String(x.bio || "").trim(),
           country: String(x.country || "").trim(),
           relationship: String(x.relationship || "").trim(),
@@ -567,6 +574,8 @@ export default function ProfilePage() {
   // when there is one, else its badge emoji (🛒 Merchant, 💼 Mentor …), like the app
   const roleEmoji = roleBadgesFor(profile.role)[0] || shownRole?.icon || "🎖";
   const roleBadgeUrl = badgeImages[roleEmoji] || "";
+  const secondRole = profile.secondRole ? roleInfo(profile.secondRole) : null;
+  const secondEmoji = roleBadgesFor(profile.secondRole)[0] || "🛒";
   const facts = [profile.gender, profile.age > 0 ? String(profile.age) : ""].filter(Boolean);
   const bubble = profile.statusMessage || profile.bio;
   const dot = PRESENCE_DOT[profile.presence];
@@ -907,7 +916,8 @@ export default function ProfilePage() {
             <p
               data-notranslate
               className="truncate bg-gradient-to-r from-[#1D4ED8] to-[#7C3AED] bg-clip-text pb-1 text-[27px] font-black leading-tight text-transparent"
-              style={{ filter: "drop-shadow(0 1px 0 rgba(67,56,202,.55)) drop-shadow(0 1px 0 rgba(49,46,158,.55)) drop-shadow(0 1px 0 rgba(30,27,107,.5))" }}
+              // (2026-11) one soft shadow: the 3 stacked ones made short names ("life") blurry
+              style={{ filter: "drop-shadow(0 2px 3px rgba(30,27,107,.25))", letterSpacing: ".5px" }}
             >
               {username}
             </p>
@@ -923,6 +933,16 @@ export default function ProfilePage() {
               >
                 <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
                 {shownRole.label}
+              </span>
+            )}
+            {secondRole && (
+              // 🛒 a second role (a Staff member who is also a Merchant …)
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                style={{ color: secondRole.color, boxShadow: `0 3px 0 color-mix(in srgb, ${secondRole.color} 65%, transparent), 0 5px 0 color-mix(in srgb, ${secondRole.color} 35%, transparent)` }}
+              >
+                <G3BadgeFor emoji={secondEmoji} images={badgeImages[secondEmoji] ? { [secondEmoji]: badgeImages[secondEmoji] } : {}} />
+                {secondRole.label}
               </span>
             )}
             {team && (
@@ -963,7 +983,7 @@ export default function ProfilePage() {
                     profile.presence === "Online" ? "#15803D" : profile.presence === "Offline" ? "#6B7A99" : "#B45309",
                   ],
                 ];
-                if (team) rows.push(["⚽", "Supports", team.name]);
+                // (2026-11) no "⚽ Supports" row: the "… supporter" chip under the name already says it
                 const rel = [profile.relationship, facts.join(", ")].filter(Boolean).join(" · ");
                 if (rel) rows.push(["💙", "Relationship", rel]);
                 if (profile.country) rows.push(["📍", "From", profile.country]);
