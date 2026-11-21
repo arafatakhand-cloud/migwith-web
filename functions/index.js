@@ -28111,3 +28111,73 @@ exports.syncAutoVerifiedAll = functionsV1.https.onCall(async (data, context) => 
   }
   return { ok: true, count };
 });
+
+// 🤖 miGlife Siri: a room member writes "siri ..." (or "@siri ...") and the bot answers
+// in the same room with an AI reply. The key is ANTHROPIC_API_KEY (functions/.env).
+// One answer per member per minute; the bot never answers itself.
+const SIRI_NAME = "miGlife Siri";
+const SIRI_MODEL = "claude-haiku-5-5";
+const SIRI_SYSTEM =
+  "You are miGlife Siri, the friendly helper bot inside the miGlife chat rooms. " +
+  "Answer briefly (2-4 short sentences), in the same language the user wrote in (Bangla or English). " +
+  "You help with miGlife questions: rooms, coins, levels, the Feed, gifts and commands. " +
+  "Never ask for passwords, PINs or security codes, and never give out private data. " +
+  "If you are unsure about a miGlife rule, say so and suggest asking miGlife support.";
+const SIRI_TRIGGER = /^\s*@?siri\b[\s,:.!?-]*/i;
+
+exports.onRoomSiriAsk = functionsV1.firestore
+  .document("room_messages/{roomId}/messages/{messageId}")
+  .onCreate(async (snap, context) => {
+    const d = snap.data() || {};
+    if (String(d.type || "chat") !== "chat") return null;
+    const sender = String(d.sender || "").trim();
+    if (!sender || sender.toLowerCase() === SIRI_NAME.toLowerCase()) return null;
+    const text = String(d.text || "");
+    if (!text.startsWith(`${sender}: `)) return null;
+    const line = text.slice(sender.length + 2);
+    if (!SIRI_TRIGGER.test(line)) return null;
+    const question = line.replace(SIRI_TRIGGER, "").trim().slice(0, 500);
+    const apiKey = String(process.env.ANTHROPIC_API_KEY || "").trim();
+    if (!apiKey) {
+      console.error("siri: ANTHROPIC_API_KEY is not set");
+      return null;
+    }
+    const uid = String(d.senderUid || "").trim();
+    const roomId = context.params.roomId;
+    const who = uid || sender.toLowerCase();
+    if (!question) {
+      await snap.ref.parent.add({ type: "chat", sender: SIRI_NAME, senderUid: "", text: `${SIRI_NAME}: Hi ${sender}! Ask me anything after "siri".`, createdAt: FieldValue.serverTimestamp() });
+      return null;
+    }
+    // one answer per member per minute
+    const minute = Math.floor(Date.now() / 60000);
+    const marker = db.collection("_operations").doc(`siri_${who}_${minute}`);
+    try {
+      await marker.create({ createdAt: FieldValue.serverTimestamp() });
+    } catch (error) {
+      return null;
+    }
+    let reply = "";
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+        body: JSON.stringify({ model: SIRI_MODEL, max_tokens: 300, system: SIRI_SYSTEM, messages: [{ role: "user", content: question }] }),
+      });
+      const j = await res.json();
+      if (!res.ok) throw new Error(j?.error?.message || `HTTP ${res.status}`);
+      reply = (j.content || []).filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
+    } catch (error) {
+      console.error("siri: AI call failed", error?.message);
+      reply = "Sorry, I could not answer right now. Please try again in a minute.";
+    }
+    if (!reply) return null;
+    await db.collection("room_messages").doc(roomId).collection("messages").add({
+      type: "chat",
+      sender: SIRI_NAME,
+      senderUid: "",
+      text: `${SIRI_NAME}: ${reply.slice(0, 1500)}`,
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    return null;
+  });
