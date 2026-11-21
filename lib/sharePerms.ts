@@ -3,8 +3,8 @@
 import { BADGE_EMOJI_TO_KEY } from "./rooms";
 
 // 🔐 Who may share pictures / voice, from the Share Permissions table that
-// miglife sets (app_settings/media_sharing_permissions). A user takes the
-// HIGHEST row they hold: a Color Shop badge they have switched on, or a role.
+// miglife sets (app_settings/media_sharing_permissions). Any row a user holds (a Color
+// Shop badge they have switched on, or a role) that allows it is enough.
 // No row → Normal User (nothing). miglife (the main founder) is always allowed.
 
 export type ShareRow = { picture: boolean; voice: boolean; video: boolean; feedVideo: boolean };
@@ -27,13 +27,15 @@ export function shareKeysOf(badgeEmojis: string[]): string[] {
   return [...keys];
 }
 
-/** Picture / voice allowed for this user, from the table (highest row wins). */
+/** Picture / voice allowed for this user, from the table (any row they hold that allows it). */
 export function shareAllowed(table: ShareTable | null, keys: string[], what: "picture" | "voice" | "video" | "feedVideo"): boolean {
   if (!table) return false;
-  const best = keys.map((k) => ORDER.indexOf(k)).filter((i) => i >= 0).sort((a, b) => b - a)[0];
+  const held = keys.filter((k) => ORDER.includes(k));
   // no row = a Normal User: only the Feed-video column has a Normal User switch that counts
-  if (best === undefined) return what === "feedVideo" && (table.REGULAR as Partial<ShareRow> | undefined)?.feedVideo === true;
-  return (table[ORDER[best]] as Partial<ShareRow> | undefined)?.[what] === true;
+  if (!held.length) return what === "feedVideo" && (table.REGULAR as Partial<ShareRow> | undefined)?.feedVideo === true;
+  // (2026-11 fix) ANY row the user holds that allows it is enough. Before, only the HIGHEST
+  // row counted, so e.g. a Supporters Badge (no pictures) took away the pictures VIP gave.
+  return held.some((k) => (table[k] as Partial<ShareRow> | undefined)?.[what] === true);
 }
 
 /** ⏱️ the longest video miglife allows (seconds; 60 when not set). */
