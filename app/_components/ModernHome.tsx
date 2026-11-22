@@ -348,33 +348,6 @@ export function ModernHomeTop({
       {/* (Email / Alerts now sit in their own stats card above; the Rooms / Games
           buttons were removed — the tabs above already open them.) */}
 
-      {/* search */}
-      <div className="mh-search glass-card mx-2.5 my-3 rounded-[18px] px-3.5 py-3">
-        <input
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-          placeholder="🔍 Search friends"
-          className="w-full bg-transparent text-[15px] text-[#16264A] outline-none placeholder:text-[#8A97A8]"
-        />
-      </div>
-
-      {/* online now */}
-      {online.length > 0 && (
-        <>
-          <p className="px-3.5 pb-1.5 pt-3 text-xs font-extrabold tracking-[0.6px] text-[#3A4B6B]">ONLINE NOW · {online.length}</p>
-          <div className="no-scrollbar flex gap-2.5 overflow-x-auto px-2.5" data-notranslate>
-            {online.map((f) => (
-              <Link key={f.name} href={chatHref(f.name)} className="flex w-[58px] shrink-0 flex-col items-center">
-                <span className="rounded-full bg-gradient-to-br from-[#3CC24A] to-[#3FC1E8] p-[2.5px]">
-                  <Avatar name={f.name} photo={f.photo} size={49} ring="#FFFFFF" />
-                </span>
-                <span className="w-full truncate text-center text-[10.5px] text-[#2E3B4E]">{f.name}</span>
-              </Link>
-            ))}
-          </div>
-        </>
-      )}
-
     </div>
   );
 }
