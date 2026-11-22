@@ -375,11 +375,7 @@ export function Dashboard() {
         <div
           aria-hidden
           className="lobby-butterfly pointer-events-none fixed inset-0 z-0"
-          style={{
-            backgroundImage: "linear-gradient(rgba(255,255,255,.86), rgba(255,255,255,.86)), url(/lobby-bg.webp)",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
+          style={{ background: "#FFFFFF" }}
         />
       )}
       <div className="relative z-[1] min-w-0 flex-1 lg:overflow-hidden lg:rounded-2xl lg:bg-white lg:shadow-md">
