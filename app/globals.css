@@ -621,6 +621,13 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
   background-image: none !important;
   background-color: #f8fafc !important;
 }
+/* ⏸ the Lobby has no animation: rings, light drift, shines, pulses and the butterfly stay still */
+[data-lobby],
+[data-lobby] *,
+[data-lobby] *::before,
+[data-lobby] *::after {
+  animation: none !important;
+}
 /* 🤍 the Lobby page: plain white background (no sky) */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
