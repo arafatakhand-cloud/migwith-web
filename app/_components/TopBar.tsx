@@ -89,6 +89,7 @@ export function TopBar() {
     // 📰 Feed is the first tab, before Lobby
     ...(uid ? ["/feed"] : []),
     "/",
+    "/rooms",
     ...(swipePage ? [swipePage] : []),
     ...openRooms.map((r) => roomHref(r)),
     ...(swipeChat ? [swipeChat] : []),
@@ -448,6 +449,7 @@ export function TopBar() {
   const pillTabs = (roomsLabel: string): PillTabItem[] => [
     ...(uid ? [{ key: "feed", glyph: "news" as const, label: "Feed", selected: onFeed, href: "/feed" }] : []),
     { key: "home", glyph: "friends", label: "Lobby", selected: onHome, href: "/" },
+    { key: "rooms", glyph: "chat", label: roomsLabel, selected: onRooms, href: "/rooms" },
     ...(title ? [{ key: "page", glyph: "list" as const, label: title, selected: true }] : []),
     ...openRooms.map((r) => ({
       key: `r_${r}`,

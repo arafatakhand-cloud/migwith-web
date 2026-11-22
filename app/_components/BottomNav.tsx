@@ -13,6 +13,7 @@ export function BottomNav() {
 
   const tabs = [
     { href: "/", icon: "🏠", label: "Home", active: pathname === "/" },
+    { href: "/rooms", icon: "💬", label: "Rooms", active: pathname.startsWith("/room") },
     {
       href: "/messages",
       icon: "✉️",
