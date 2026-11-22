@@ -15,6 +15,7 @@ import { AndroidDownloadRow } from "./AndroidDownload";
 import { isOnlineNow } from "../../lib/heartbeat";
 import { useIsClassic } from "../../lib/uiStyle";
 import { ModernHomeTop } from "./ModernHome";
+import { RoomsList } from "../rooms/RoomsList";
 import { totalXpForLevel } from "../../lib/level";
 import { activeSupporterTeam, type SupporterTeam } from "../../lib/supporterTeams";
 import { SupporterJersey } from "./SupporterBadge";
@@ -407,6 +408,12 @@ export function Dashboard() {
             setEditing(true);
           }}
         />
+      )}
+      {/* 🏠 Lobby + Chat rooms on one page: the room list sits under the Lobby header */}
+      {!classic && (
+        <div className="relative z-[1] mx-auto mt-2 max-w-2xl px-1">
+          <RoomsList embedded />
+        </div>
       )}
       {/* Modern: status editor (tap the status in the hero card) */}
       {!classic && editing && (
