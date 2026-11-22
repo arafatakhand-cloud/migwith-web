@@ -49,7 +49,7 @@ export default function FriendsPage() {
 
   const [tab, setTab] = useState<"FRIENDS" | "REQUESTS" | "FIND">("FRIENDS");
   const [reqTab, setReqTab] = useState<"INCOMING" | "SENT">("INCOMING");
-  const [friendFilter, setFriendFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
+  const [friendFilter, setFriendFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ONLINE");
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [info, setInfo] = useState<Record<string, Info>>({});
   const [search, setSearch] = useState("");
