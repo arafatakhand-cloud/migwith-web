@@ -606,6 +606,21 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
 }
 /* not a full-screen page (fixed inset-0, e.g. classic Footprints / Votes, the
    Command list): see-through, it showed the blurred page underneath */
+/* 🤍 the Lobby's room list: plain cards and tiles, no coloured glow */
+[data-lobby] [style*="box-shadow"] {
+  box-shadow: 0 1px 3px rgba(11, 42, 91, 0.08) !important;
+}
+[data-lobby] [style*="box-shadow"] [style*="box-shadow"] {
+  box-shadow: none !important;
+}
+[data-lobby] span[style*="linear-gradient"] {
+  background: #e8eef6 !important;
+  color: #0b2a5b !important;
+}
+[data-lobby] [style*="linear-gradient"]:not(span):not(.aurora-card) {
+  background-image: none !important;
+  background-color: #f8fafc !important;
+}
 /* 🤍 the Lobby page: plain white background (no sky) */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
