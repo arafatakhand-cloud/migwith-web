@@ -244,6 +244,18 @@ export function ModernHomeTop({
               </Link>
             </div>
           </div>
+          {/* status pill under the name (mock) */}
+          {/* status bubble */}
+          <button
+            type="button"
+            onClick={onStatus}
+            data-notranslate
+            className="mh-status glass-shine-a relative mt-1.5 flex w-full items-start rounded-[14px] border-0 bg-[#0F2E42] px-[11px] py-1.5 text-left text-[14px] leading-[18px] text-[#38BDF8] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          >
+            <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
+            <span className="pl-1.5 text-xs text-white/70">✎</span>
+          </button>
+
           <div className="ml-2 flex w-[72px] shrink-0 flex-col items-center gap-1.5 self-center">
             <Link href="/level" className="flex flex-col items-center">
               {levelBadgeUrl ? (
@@ -265,16 +277,6 @@ export function ModernHomeTop({
             </Link>
           </div>
         </div>
-        {/* status bubble */}
-        <button
-          type="button"
-          onClick={onStatus}
-          data-notranslate
-          className="mh-status glass-shine-a relative mt-2 flex w-full items-start rounded-[14px] border-0 bg-[#0F2E42] px-[11px] py-1.5 text-left text-[14px] leading-[18px] text-[#38BDF8] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
-        >
-          <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
-          <span className="pl-1.5 text-xs text-white/70">✎</span>
-        </button>
       </div>
 
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
