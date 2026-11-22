@@ -368,7 +368,7 @@ export function Dashboard() {
   );
 
   return (
-    <div className="relative mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
+    <div data-lobby="" className="relative mx-auto max-w-2xl pb-8 lg:flex lg:max-w-5xl lg:items-start lg:gap-4 lg:px-4 lg:pt-4">
       {/* 🦋 Modern Lobby: the butterfly picture, very faint, behind everything —
           in the 🫧 Glass theme the sky (globals.css) shows instead */}
       {!classic && (
