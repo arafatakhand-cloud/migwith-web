@@ -213,7 +213,7 @@ export function ModernHomeTop({
           drift behind the card, the photo's rainbow ring turns, the status sits
           in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
       <div
-        className="aurora-card relative m-2.5 overflow-hidden rounded-[20px] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
+        className="aurora-card relative mx-2 mt-2 mb-1 overflow-hidden rounded-[18px] px-2.5 py-2 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
         style={{ background: "linear-gradient(170deg, #0B2A3C, #0F3B52)" }}
       >
         <span aria-hidden className="aurora-light aurora-a" />
@@ -251,7 +251,6 @@ export function ModernHomeTop({
             ) : (
               <span className="text-[26px] leading-none">{levelIcon}</span>
             )}
-            <span className="mt-0.5 text-[10px] font-extrabold text-white">Level {level}</span>
           </Link>
         </div>
         {/* status bubble */}
