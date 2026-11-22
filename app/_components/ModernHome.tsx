@@ -393,7 +393,7 @@ export function ModernHomeTop({
           <div className="no-scrollbar flex gap-2.5 overflow-x-auto px-2.5" data-notranslate>
             {online.map((f) => (
               <Link key={f.name} href={chatHref(f.name)} className="flex w-[58px] shrink-0 flex-col items-center">
-                <span className="rounded-full bg-gradient-to-br from-[#3CC24A] to-[#3FC1E8] p-[2.5px]">
+                <span className="rounded-full bg-gradient-to-br from-[#22D3EE] to-[#0E7490] p-[2.5px]">
                   <Avatar name={f.name} photo={f.photo} size={49} ring="#FFFFFF" />
                 </span>
                 <span className="w-full truncate text-center text-[10.5px] text-[#2E3B4E]">{f.name}</span>
