@@ -214,7 +214,7 @@ export function ModernHomeTop({
           in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
       <div
         className="aurora-card relative m-2.5 overflow-hidden rounded-[26px] p-4 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
-        style={{ background: "linear-gradient(135deg, #2F72DB, #4F55E3 55%, #8A4FD3)" }}
+        style={{ background: "linear-gradient(170deg, #0B2A3C, #0F3B52)" }}
       >
         <span aria-hidden className="aurora-light aurora-a" />
         <span aria-hidden className="aurora-light aurora-b" />
