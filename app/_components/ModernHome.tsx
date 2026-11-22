@@ -225,7 +225,6 @@ export function ModernHomeTop({
             <SupporterJersey team={supporter} size={150} depth />
           </span>
         )}
-        <h1 className="relative mb-2 text-[24px] font-black text-white">Lobby</h1>
         <div className="relative flex items-center">
           <Link href="/profile/me" className="relative h-[70px] w-[70px] shrink-0">
             <span
@@ -273,8 +272,8 @@ export function ModernHomeTop({
           <span className="pl-1.5 text-xs text-white/70">✎</span>
         </button>
         {/* XP bar: how much is left to the next level, with a shine */}
-        <Link href="/level" className="relative mt-3 block">
-          <span className="flex items-center text-[12px]">
+        <Link href="/level" className="relative mt-2 ml-auto block w-[42%]">
+          <span className="hidden items-center text-[12px]">
             <span className="font-bold text-white/95">
               ⚡ {Math.max(0, next - xp).toLocaleString("en-US")} XP to Level {level + 1}
             </span>
