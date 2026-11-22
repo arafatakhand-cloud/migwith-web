@@ -267,7 +267,7 @@ export function ModernHomeTop({
           type="button"
           onClick={onStatus}
           data-notranslate
-          className="mh-status glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/30 bg-white/[0.16] px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          className="mh-status glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/20 bg-white/10 px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
           <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
@@ -284,7 +284,7 @@ export function ModernHomeTop({
           </span>
           <span className="mt-[5px] block h-[9px] overflow-hidden rounded-md bg-white/[0.22]">
             <span
-              className="xp-fill relative block h-full overflow-hidden rounded-md bg-gradient-to-r from-[#FFE08A] to-[#FFB547]"
+              className="xp-fill relative block h-full overflow-hidden rounded-md bg-gradient-to-r from-[#5EEAD4] to-[#38BDF8]"
               style={{ width: `${frac * 100}%` }}
             >
               <span aria-hidden className="xp-shine absolute inset-y-0 w-[35%]" />
