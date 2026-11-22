@@ -432,7 +432,7 @@ export function TopBar() {
       <div className="fixed inset-0 z-50 lg:hidden" onClick={() => setOpen(false)}>
         <div className="absolute inset-0 bg-black/40" />
         <nav
-          className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] shadow-2xl pb-safe pt-[max(0.75rem,env(safe-area-inset-top))]"
+          className="absolute inset-y-0 left-0 flex w-80 max-w-[82vw] flex-col overflow-y-auto bg-white p-3 text-[#0B2A5B] shadow-2xl pb-safe pt-[max(0.75rem,env(safe-area-inset-top))]"
           onClick={(e) => e.stopPropagation()}
         >
           <MenuPanel />
