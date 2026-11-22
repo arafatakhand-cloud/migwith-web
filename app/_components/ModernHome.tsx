@@ -226,14 +226,14 @@ export function ModernHomeTop({
           </span>
         )}
         <div className="relative flex items-center">
-          <Link href="/profile/me" className="relative h-14 w-14 shrink-0">
+          <Link href="/profile/me" className="relative h-16 w-16 shrink-0">
             <span
               aria-hidden
               className="aurora-ring absolute inset-0 rounded-full"
               style={{ background: "conic-gradient(#FFD36B, #FF6FA5, #8B5CFF, #3FC1E8, #FFD36B)" }}
             />
             <span className="absolute inset-[3px]">
-              <Avatar name={username || "U"} photo={photo} size={52} ring="#FFFFFF" />
+              <Avatar name={username || "U"} photo={photo} size={60} ring="#FFFFFF" />
             </span>
           </Link>
           <div className="ml-3 min-w-0 flex-1">
@@ -244,44 +244,37 @@ export function ModernHomeTop({
               </Link>
             </div>
           </div>
-          <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-center">
-            {levelBadgeUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={levelBadgeUrl} alt="" className="h-9 w-9 object-contain" />
-            ) : (
-              <span className="text-[26px] leading-none">{levelIcon}</span>
-            )}
-          </Link>
+          <div className="ml-2 flex w-[72px] shrink-0 flex-col items-center gap-1.5 self-center">
+            <Link href="/level" className="flex flex-col items-center">
+              {levelBadgeUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={levelBadgeUrl} alt="" className="h-11 w-11 object-contain" />
+              ) : (
+                <span className="text-[34px] leading-none">{levelIcon}</span>
+              )}
+            </Link>
+            <Link href="/level" className="block w-full">
+              <span className="block h-[9px] overflow-hidden rounded-full bg-[#e5e7eb]">
+                <span
+                  className="xp-fill relative block h-full overflow-hidden rounded-full bg-gradient-to-r from-[#38BDF8] to-[#60A5FA]"
+                  style={{ width: `${frac * 100}%` }}
+                >
+                  <span aria-hidden className="xp-shine absolute inset-y-0 w-[35%]" />
+                </span>
+              </span>
+            </Link>
+          </div>
         </div>
         {/* status bubble */}
         <button
           type="button"
           onClick={onStatus}
           data-notranslate
-          className="mh-status glass-shine-a relative mt-2 flex w-full items-start rounded-[14px] border border-white/20 bg-white/10 px-[11px] py-2 text-left text-[13px] leading-[17px] text-[#7DD3FC] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          className="mh-status glass-shine-a relative mt-2 flex w-full items-start rounded-[14px] border-0 bg-[#0F2E42] px-[11px] py-1.5 text-left text-[14px] leading-[18px] text-[#38BDF8] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
           <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
         </button>
-        {/* XP bar: how much is left to the next level, with a shine */}
-        <Link href="/level" className="relative mt-1.5 ml-auto block w-[42%]">
-          <span className="hidden items-center text-[12px]">
-            <span className="font-bold text-white/95">
-              ⚡ {Math.max(0, next - xp).toLocaleString("en-US")} XP to Level {level + 1}
-            </span>
-            <span className="ml-auto font-semibold text-white/90">
-              {xp.toLocaleString("en-US")} / {next.toLocaleString("en-US")}
-            </span>
-          </span>
-          <span className="mt-[5px] block h-[9px] overflow-hidden rounded-md bg-white/[0.22]">
-            <span
-              className="xp-fill relative block h-full overflow-hidden rounded-md bg-gradient-to-r from-[#5EEAD4] to-[#38BDF8]"
-              style={{ width: `${frac * 100}%` }}
-            >
-              <span aria-hidden className="xp-shine absolute inset-y-0 w-[35%]" />
-            </span>
-          </span>
-        </Link>
       </div>
 
       {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
