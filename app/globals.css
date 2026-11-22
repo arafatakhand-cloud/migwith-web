@@ -628,6 +628,15 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
 [data-lobby] *::after {
   animation: none !important;
 }
+/* 🫧→⬜ every bubble card in the glass theme: plain white, no coloured glow.
+   The navy hero card and popups keep their own look. */
+html[data-theme="glass"]:not([data-ui="classic"]) [style*="box-shadow"]:not(.aurora-card):not(.fixed *):not(.fixed) {
+  box-shadow: 0 1px 3px rgba(11, 42, 91, 0.08) !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) [style*="linear-gradient"]:not(.aurora-card):not(.fixed *):not(.fixed):not(span) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+}
 /* 🤍 the Lobby page: plain white background (no sky) */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
