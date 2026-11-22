@@ -225,6 +225,7 @@ export function ModernHomeTop({
             <SupporterJersey team={supporter} size={150} depth />
           </span>
         )}
+        <h1 className="relative mb-2 text-[24px] font-black text-white">Lobby</h1>
         <div className="relative flex items-center">
           <Link href="/profile/me" className="relative h-[70px] w-[70px] shrink-0">
             <span
@@ -257,23 +258,8 @@ export function ModernHomeTop({
               </button>
             </div>
           </div>
-          {/* 🏅 level badge in a glass hexagon, the level under it */}
-          <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-start">
-            <span
-              className="hex-glass flex h-[68px] w-[62px] items-center justify-center"
-              style={{
-                clipPath: "polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%)",
-                background: "linear-gradient(rgba(255,255,255,.36), rgba(255,255,255,.08))",
-              }}
-            >
-              {levelBadgeUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={levelBadgeUrl} alt="" className="h-full w-full scale-[1.32] object-contain" />
-              ) : (
-                <span className="text-[46px] leading-none">{levelIcon}</span>
-              )}
-            </span>
-            <span className="mt-1 whitespace-nowrap text-[11.5px] font-extrabold">Level {level}</span>
+          <Link href="/level" className="ml-2 shrink-0 self-center rounded-2xl bg-white/15 px-3 py-1.5 text-[12px] font-extrabold text-white">
+            Level {level}
           </Link>
         </div>
         {/* status bubble */}
