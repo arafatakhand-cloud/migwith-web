@@ -641,6 +641,12 @@ html[data-theme="glass"]:not([data-ui="classic"]) [style*="linear-gradient"]:not
 html[data-theme="glass"]:not([data-ui="classic"]) main [class*="shadow-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *):not([class*="shadow-xl"]) {
   box-shadow: inset 0 2px 0 #fff, 0 3px 0 #d5dfea, 0 6px 0 #c2cfdd, 0 10px 14px -6px rgba(11, 42, 91, 0.2) !important;
 }
+/* 🤍 coloured gradient tiles, tabs and chips inside the pages become plain white (glass theme, not the hero or popups) */
+html[data-theme="glass"]:not([data-ui="classic"]) main [class*="bg-gradient-to-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *) {
+  background-image: none !important;
+  background-color: #ffffff !important;
+  color: #0b2a5b !important;
+}
 /* 🤍 the Lobby page: plain white background (no sky) */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
