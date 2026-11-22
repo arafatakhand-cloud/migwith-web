@@ -1325,9 +1325,10 @@ html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip {
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-chip::before { display: none; }
 html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-status {
-  background: rgba(255, 255, 255, 0.75) !important;
-  border: 2px solid #fff !important;
-  box-shadow: 0 2px 0 #9fd8d0;
+  background: #0f2e42 !important;
+  border: 0 !important;
+  box-shadow: none;
+  color: #38bdf8 !important;
 }
 html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .mh-status::before { border-bottom-color: #fff !important; }
 html[data-theme="glass"]:not([data-ui="classic"]) .aurora-card .xp-fill {
