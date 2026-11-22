@@ -263,9 +263,9 @@ export function MenuPanel() {
               style={{
                 borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
                 borderWidth: active ? 1.6 : 1,
-                background: `linear-gradient(90deg, #FFFFFF, #FFFFFF, ${MENU_COLORS[label] || "#3984D9"}${active ? "2E" : "1A"})`,
+                background: "#FFFFFF",
                 // 🫧 6D: stacked depth layers in the row's colour, a top shine
-                boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "55" : "3D"}, 0 6px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "40" : "2A"}, 0 9px 0 ${MENU_COLORS[label] || "#3984D9"}${active ? "2E" : "1A"}, 0 14px 18px ${MENU_COLORS[label] || "#3984D9"}${active ? "4D" : "2E"}`,
+                boxShadow: "0 1px 3px rgba(11, 42, 91, 0.08)",
               }}
             >
               <span
