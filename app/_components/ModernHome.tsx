@@ -237,24 +237,11 @@ export function ModernHomeTop({
             </span>
           </Link>
           <div className="ml-3 min-w-0 flex-1">
-            <Link href="/profile/me" data-notranslate className="block truncate text-xl font-black">
-              {username || "User"}
-            </Link>
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <span
-                className="mh-chip mh-role glass-shine rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold uppercase"
-                style={{ ["--role-ink" as string]: roleInk(roleLabel) }}
-              >
-                {roleLabel}
-              </span>
-              <button
-                type="button"
-                onClick={openPresencePopup}
-                className="mh-chip glass-shine flex items-center gap-1 rounded-xl border border-white/[0.42] bg-white/[0.18] px-2 py-0.5 text-[10.5px] font-extrabold"
-              >
-                <span className="h-[7px] w-[7px] rounded-full" style={{ background: dot }} />
-                {presenceLabel}
-              </button>
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="h-[14px] w-[14px] shrink-0 rounded-full border-2 border-[#0b2a3c]" style={{ background: dot }} />
+              <Link href="/profile/me" data-notranslate className="block truncate text-[17px] font-extrabold">
+                {username || "User"}
+              </Link>
             </div>
           </div>
           <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-center">
