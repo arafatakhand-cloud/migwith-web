@@ -209,6 +209,85 @@ export function ModernHomeTop({
   return (
     // see-through: the Lobby's background shows behind (Dashboard)
     <div className="pb-1.5">
+      {/* ✨ AURORA hero card (the app's AuroraProfileCard): soft coloured lights
+          drift behind the card, the photo's rainbow ring turns, the status sits
+          in a bubble (2 lines) and the XP bar says how much is left, with a shine. */}
+      <div
+        className="aurora-card relative m-2.5 overflow-hidden rounded-[20px] px-3 py-2.5 text-white shadow-[0_10px_24px_rgba(21,101,216,.4)]"
+        style={{ background: "linear-gradient(170deg, #0B2A3C, #0F3B52)" }}
+      >
+        <span aria-hidden className="aurora-light aurora-a" />
+        <span aria-hidden className="aurora-light aurora-b" />
+        <span aria-hidden className="aurora-light aurora-c" />
+        {supporter && (
+          // 🛡 B2: still behind, but clearer and 6D (half see-through)
+          <span className="pointer-events-none absolute right-16 -top-5 opacity-50" aria-hidden>
+            <SupporterJersey team={supporter} size={150} depth />
+          </span>
+        )}
+        <div className="relative flex items-center">
+          <Link href="/profile/me" className="relative h-14 w-14 shrink-0">
+            <span
+              aria-hidden
+              className="aurora-ring absolute inset-0 rounded-full"
+              style={{ background: "conic-gradient(#FFD36B, #FF6FA5, #8B5CFF, #3FC1E8, #FFD36B)" }}
+            />
+            <span className="absolute inset-[3px]">
+              <Avatar name={username || "U"} photo={photo} size={52} ring="#FFFFFF" />
+            </span>
+          </Link>
+          <div className="ml-3 min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="h-[14px] w-[14px] shrink-0 rounded-full border-2 border-[#0b2a3c]" style={{ background: dot }} />
+              <Link href="/profile/me" data-notranslate className="block truncate text-[17px] font-extrabold">
+                {username || "User"}
+              </Link>
+            </div>
+          </div>
+          <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-center">
+            {levelBadgeUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={levelBadgeUrl} alt="" className="h-9 w-9 object-contain" />
+            ) : (
+              <span className="text-[26px] leading-none">{levelIcon}</span>
+            )}
+            <span className="mt-0.5 text-[10px] font-extrabold text-white">Level {level}</span>
+          </Link>
+        </div>
+        {/* status bubble */}
+        <button
+          type="button"
+          onClick={onStatus}
+          data-notranslate
+          className="mh-status glass-shine-a relative mt-2 flex w-full items-start rounded-[14px] border border-white/20 bg-white/10 px-[11px] py-2 text-left text-[13px] leading-[17px] text-[#7DD3FC] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+        >
+          <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
+          <span className="pl-1.5 text-xs text-white/70">✎</span>
+        </button>
+        {/* XP bar: how much is left to the next level, with a shine */}
+        <Link href="/level" className="relative mt-1.5 ml-auto block w-[42%]">
+          <span className="hidden items-center text-[12px]">
+            <span className="font-bold text-white/95">
+              ⚡ {Math.max(0, next - xp).toLocaleString("en-US")} XP to Level {level + 1}
+            </span>
+            <span className="ml-auto font-semibold text-white/90">
+              {xp.toLocaleString("en-US")} / {next.toLocaleString("en-US")}
+            </span>
+          </span>
+          <span className="mt-[5px] block h-[9px] overflow-hidden rounded-md bg-white/[0.22]">
+            <span
+              className="xp-fill relative block h-full overflow-hidden rounded-md bg-gradient-to-r from-[#5EEAD4] to-[#38BDF8]"
+              style={{ width: `${frac * 100}%` }}
+            >
+              <span aria-hidden className="xp-shine absolute inset-y-0 w-[35%]" />
+            </span>
+          </span>
+        </Link>
+      </div>
+
+      {/* 📊 stats card — smart tiles: each its own colour; something NEW lights
+          its tile up with a glowing border and a pulsing dot; Online pulses
+          while friends are online (see StatCell6D below). */}
       {/* 🎨 6D C2 (miglife): all four in ONE raised white card, slim cells — a
           colour 6D icon tile on the left, the number + name on the right, thin
           lines between them. Same as the app (HomeStatCell6D). */}
