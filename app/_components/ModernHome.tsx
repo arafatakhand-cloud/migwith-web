@@ -257,8 +257,14 @@ export function ModernHomeTop({
               </button>
             </div>
           </div>
-          <Link href="/level" className="ml-2 shrink-0 self-center rounded-2xl bg-white/15 px-3 py-1.5 text-[12px] font-extrabold text-white">
-            Level {level}
+          <Link href="/level" className="ml-2 flex shrink-0 flex-col items-center self-center">
+            {levelBadgeUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={levelBadgeUrl} alt="" className="h-12 w-12 object-contain" />
+            ) : (
+              <span className="text-[34px] leading-none">{levelIcon}</span>
+            )}
+            <span className="mt-1 text-[11px] font-extrabold text-white">Level {level}</span>
           </Link>
         </div>
         {/* status bubble */}
@@ -266,7 +272,7 @@ export function ModernHomeTop({
           type="button"
           onClick={onStatus}
           data-notranslate
-          className="mh-status glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/20 bg-white/10 px-[11px] py-2 text-left text-[13px] leading-[17px] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+          className="mh-status glass-shine-a relative mt-3 flex w-full items-start rounded-[14px] border border-white/20 bg-white/10 px-[11px] py-2 text-left text-[13px] leading-[17px] text-[#7DD3FC] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
         >
           <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
           <span className="pl-1.5 text-xs text-white/70">✎</span>
