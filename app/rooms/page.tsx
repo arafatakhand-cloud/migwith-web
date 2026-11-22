@@ -1,6 +1,6 @@
-import { RoomsList } from "./RoomsList";
+import { redirect } from "next/navigation";
 
-// /rooms: the room list on its own page (the Lobby embeds the same list).
+// The separate Chat Rooms page is gone: the room list lives on the Lobby.
 export default function RoomsPage() {
-  return <RoomsList />;
+  redirect("/");
 }
