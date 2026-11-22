@@ -312,7 +312,7 @@ export function DesktopSidebar() {
   const { user } = useSession();
   if (!user) return null;
   return (
-    <aside className="sticky top-[53px] hidden h-[calc(100vh-53px)] w-72 shrink-0 overflow-y-auto border-r border-[#BFD7F2] bg-gradient-to-b from-[#CFE6F9] to-[#B4DDF7] p-3 text-[#0B2A5B] lg:flex lg:flex-col">
+    <aside className="sticky top-[53px] hidden h-[calc(100vh-53px)] w-72 shrink-0 overflow-y-auto border-r border-[#BFD7F2] bg-white p-3 text-[#0B2A5B] lg:flex lg:flex-col">
       <MenuPanel />
     </aside>
   );
