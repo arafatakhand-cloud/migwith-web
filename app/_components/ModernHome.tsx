@@ -403,29 +403,6 @@ export function ModernHomeTop({
         </>
       )}
 
-      {/* friend cards */}
-      <p className="px-3.5 pb-1.5 pt-3 text-xs font-extrabold tracking-[0.6px] text-[#3A4B6B]">FRIENDS · {friends.length}</p>
-      {friends.length === 0 && (
-        <p className="px-4 py-2 text-[13px] text-[#6C87B0]">{search.trim() ? "No friends match your search." : "No friends yet. Add friends to see them here."}</p>
-      )}
-      <div data-notranslate>
-        {friends.map((f) => (
-          <div key={f.name} className="mh-row glass-card mx-2.5 my-1.5 flex items-center rounded-[18px] px-3 py-2.5">
-            <Link href={`/profile/${encodeURIComponent(f.name)}`} className="relative shrink-0">
-              <Avatar name={f.name} photo={f.photo} size={44} />
-              <span
-                className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white ${f.online ? "bg-[#3CC24A]" : "bg-[#C9D2DE]"}`}
-              />
-            </Link>
-            <Link href={chatHref(f.name)} className="ml-2.5 min-w-0 flex-1">
-              <span className="block truncate text-[15.5px] font-bold text-[#16264A]">{f.name}</span>
-              <span className={`mt-0.5 block truncate text-[13px] text-[#6B7A90] ${f.status ? "italic" : ""}`}>
-                {f.status || [f.online ? null : "Offline", `Level ${f.level}`, f.country || null].filter(Boolean).join(" · ")}
-              </span>
-            </Link>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
