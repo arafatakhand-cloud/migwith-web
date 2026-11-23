@@ -4130,7 +4130,8 @@ function MessageRow({
                   className={`mb-[-1px] flex w-fit max-w-[88%] items-center gap-1.5 truncate rounded-t-[12px] border border-b-0 px-2.5 py-1 text-left text-xs text-[#1b2430] ${rightSide ? "ml-auto mr-2.5" : "ml-2.5"}`}
                   style={{
                     borderColor: `${qColor}33`,
-                    background: `linear-gradient(90deg, ${qColor}1F, rgba(255,255,255,.92) 70%)`,
+                    // the same background as the message bubble it is attached to (mint for mine, grey-blue for others)
+                    background: rightSide ? "#E3F8F0" : "#e7eff4",
                     boxShadow: `inset 3px 0 0 ${qColor}, 0 -2px 6px -2px ${qColor}55`,
                   }}
                 >
