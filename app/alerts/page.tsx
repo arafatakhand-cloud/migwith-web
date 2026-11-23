@@ -885,7 +885,7 @@ export default function AlertsPage() {
 
   return (
     <PageShell light>
-      <section className="mx-auto max-w-2xl pb-8">
+      <section data-keep-color="" className="mx-auto max-w-2xl pb-8">
         {/* Gradient header, like the app */}
         <div className="relative overflow-hidden rounded-b-[26px] bg-gradient-to-br from-[#2B5FD9] via-[#0B1F3A] to-[#5B2A86] px-2 pb-3.5 pt-1 text-white sm:mt-3 sm:rounded-[26px]">
           <span className="pointer-events-none absolute -right-14 -top-16 h-[150px] w-[150px] rounded-full bg-white/[0.07]" />
