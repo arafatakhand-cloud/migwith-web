@@ -3045,7 +3045,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           </button>
           {/* 🔒 a 👥 / 🔒 post can't be shared */}
           {!p.privacy && (
-            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-white to-[#EFE7FF] text-[13.5px] font-black text-[#6D28D9] shadow-[0_3px_0_#C9B6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#C9B6F5]">
+            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-white to-[#E3EEFF] text-[13.5px] font-black text-[#1D4ED8] shadow-[0_3px_0_#A9C6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#C9B6F5]">
               ↗ Share
             </button>
           )}
