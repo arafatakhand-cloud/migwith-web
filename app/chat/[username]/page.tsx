@@ -853,7 +853,7 @@ export default function PrivateChatPage() {
 
         {/* Input bar: ⋮ menu, a rounded message box (photo, text, emoji) and
             🎤 voice, which turns into ➤ send as soon as something is typed. */}
-        <div className="keep-round relative mx-2 mb-2 flex items-end gap-1.5 rounded-[28px] bg-white px-2 py-1.5 shadow-[0_4px_16px_rgba(11,42,91,.14)]">
+        <div data-chatbar="" className="keep-round relative mx-2 mb-2 flex items-end gap-1.5 rounded-[28px] bg-white px-2 py-1.5 shadow-[0_4px_16px_rgba(11,42,91,.14)]">
           <div className="relative">
             <button
               type="button"
