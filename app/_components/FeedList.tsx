@@ -2910,9 +2910,26 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
               style={sysKind ? { color: "#ffffff", background: SYS_GRADIENT[sysKind] } : undefined}
             >
             <div className={`relative ${long && !more ? "max-h-[9.6em] overflow-hidden" : ""}`}>
+              {sysKind === "missions" && !long ? (
+                // 🎯 app look: each mission is a soft bar with its SP on the right
+                <div className="space-y-2">
+                  {text.split("\n").filter((l) => l.trim()).map((l, i) => {
+                    const sp = l.match(/\+\s*\d+\s*SP/);
+                    return sp ? (
+                      <div key={i} className="flex items-center justify-between gap-3 rounded-2xl bg-white/20 px-3.5 py-2.5 text-[15px] font-bold text-white">
+                        <span className="min-w-0 break-words">{l.replace(sp[0], "").trim()}</span>
+                        <span className="shrink-0">{sp[0]}</span>
+                      </div>
+                    ) : (
+                      <p key={i} className="whitespace-pre-line break-words text-[14px] leading-[1.6] text-white">{l}</p>
+                    );
+                  })}
+                </div>
+              ) : (
               <p className={`whitespace-pre-line break-words leading-[1.5] ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`} style={{ color: sysKind ? "#ffffff" : "#16264A" }}>
                 <RichText text={long ? fullText : text} />
               </p>
+              )}
               {long && !more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
             </div>
             {long && (
