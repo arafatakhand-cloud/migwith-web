@@ -334,7 +334,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [myFollowers, setMyFollowers] = useState<number | null>(null);
   useEffect(() => {
     if (tab !== "mine" || !username) return;
-    getCountFromServer(query(collection(db, "profiles"), where("following", "array-contains", username)))
+    // 👥 the follow list is users/{uid}.following (same as the app), so count the users who list me
+    getCountFromServer(query(collection(db, "users"), where("following", "array-contains", username)))
       .then((c) => setMyFollowers(c.data().count))
       .catch(() => {});
   }, [tab, username]);
