@@ -238,7 +238,7 @@ export function ModernHomeTop({
           </Link>
           <div className="ml-3 min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="h-[14px] w-[14px] shrink-0 rounded-full border-2 border-[#0b2a3c]" style={{ background: dot }} />
+              <button type="button" onClick={openPresencePopup} aria-label="Change my status" title="Change my status" className="h-[14px] w-[14px] shrink-0 rounded-full border-2 border-[#0b2a3c] transition active:scale-90" style={{ background: dot }} />
               <Link href="/profile/me" data-notranslate className="block truncate text-[17px] font-extrabold">
                 {username || "User"}
               </Link>
