@@ -607,7 +607,7 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
 /* not a full-screen page (fixed inset-0, e.g. classic Footprints / Votes, the
    Command list): see-through, it showed the blurred page underneath */
 /* 🤍 the Lobby's room list: plain cards and tiles, no coloured glow */
-[data-lobby] [style*="box-shadow"] {
+[data-lobby] [style*="box-shadow"]:not([data-cell6d]) {
   box-shadow: 0 1px 3px rgba(11, 42, 91, 0.08) !important;
 }
 [data-lobby] [style*="box-shadow"] [style*="box-shadow"] {
