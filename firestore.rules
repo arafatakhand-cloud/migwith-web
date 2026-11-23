@@ -1349,6 +1349,21 @@ service cloud.firestore {
               || currentUsername().lower() in get(r).data.get("superMods", [])
               || currentUsername().lower() in get(r).data.get("moderators", []));
       }
+      // 🏷 the level badge icon for a level (same tiers as lib/rooms.ts LEVEL_BADGES)
+      function levelTierIcon(lv) {
+        return lv >= 1000 ? "♾️" : lv >= 900 ? "🌌" : lv >= 800 ? "⚡" : lv >= 700 ? "💫" : lv >= 600 ? "🔱" : lv >= 500 ? "👑" : lv >= 400 ? "🌟" : lv >= 300 ? "💠" : lv >= 200 ? "🛡️" : lv >= 150 ? "⚔️" : lv >= 100 ? "🏆" : lv >= 75 ? "👑" : lv >= 50 ? "🔥" : lv >= 30 ? "💎" : lv >= 20 ? "🥇" : lv >= 11 ? "🥈" : lv >= 1 ? "🥚" : "🥚";
+      }
+      // 🔒 SECURITY: the level and level badge shown in a room must be the account's
+      // real ones (users/{uid}), not what the phone sends. The badge may also be
+      // the tier badge of that level.
+      function presenceLevelOk() {
+        let u = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        let lv = request.resource.data.get("level", 1);
+        let badge = request.resource.data.get("levelBadgeIcon", "");
+        return lv == u.get("level", 1)
+          && (badge == u.get("levelBadgeIcon", "") || badge == levelTierIcon(lv));
+      }
+
       function kickedOrBannedHere(room, name) {
         let m = /databases/$(database)/documents/room_moderation/$(room)/users/$(name.lower());
         return name is string && name != ""
@@ -1365,11 +1380,13 @@ service cloud.firestore {
         && request.resource.data.get("username", "").lower() == currentUsername().lower()
         && !("parkedUntil" in request.resource.data)
         // 👢 kicked less than 30 minutes ago: can't come back in yet
-        && !kickedFromRoomRecently(roomId);
+        && !kickedFromRoomRecently(roomId)
+        && presenceLevelOk();
       allow update: if signedIn()
         && request.auth.uid == userId
         && request.resource.data.get("username", "").lower() == currentUsername().lower()
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["parkedUntil"]);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(["parkedUntil"])
+        && presenceLevelOk();
 
       allow delete: if signedIn()
         && (
