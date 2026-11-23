@@ -324,7 +324,9 @@ export default function ProfilePage() {
       })
       .catch((err) => {
         console.error(err);
-        setError("Could not load this profile.");
+        // show the reason too (the Firebase code or message), so it can be found
+        const why = String(err?.code || err?.message || "").slice(0, 160);
+        setError(`Could not load this profile.${why ? ` (${why})` : ""}`);
       });
   }, [user, username]);
 
