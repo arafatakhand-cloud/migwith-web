@@ -229,17 +229,13 @@ export default function MembersPage() {
   const findTarget = async (input: string): Promise<Member | null> => {
     const v = input.trim();
     if (!v) return null;
-    // usernameLower first: "vip" must find "VIP", "Vip" … (names are stored with their own capitals)
-    for (const field of ["usernameLower", "username", "migId"]) {
-      const value = field === "usernameLower" ? v.toLowerCase() : v;
-      const snap = await getDocs(query(collection(db, "profiles"), where(field, "==", value), limit(1))).catch(() => null);
-      const d = snap?.docs[0];
-      if (d) return toMember(d.id, d.data());
-    }
-    // not in the public profiles yet (older accounts): look in users/{uid} too
-    for (const field of ["usernameLower", "username"]) {
-      const value = field === "usernameLower" ? v.toLowerCase() : v;
-      const snap = await getDocs(query(collection(db, "users"), where(field, "==", value), limit(1))).catch(() => null);
+    // Names are stored with their own capitals ("VIP", "Vip", "vip"), so try every spelling.
+    const cap = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
+    const spellings = [...new Set([v, v.toLowerCase(), v.toUpperCase(), cap])].slice(0, 10);
+    const snap0 = await getDocs(query(collection(db, "profiles"), where("usernameLower", "==", v.toLowerCase()), limit(1))).catch(() => null);
+    if (snap0?.docs[0]) return toMember(snap0.docs[0].id, snap0.docs[0].data());
+    for (const coll of ["profiles", "users"]) {
+      const snap = await getDocs(query(collection(db, coll), where("username", "in", spellings), limit(1))).catch(() => null);
       const d = snap?.docs[0];
       if (d) return toMember(d.id, d.data());
     }
