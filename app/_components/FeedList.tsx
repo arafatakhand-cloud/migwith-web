@@ -1245,7 +1245,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 pb-1.5 pt-0.5 [scrollbar-width:none]">
             <span className="shrink-0 pl-1 pr-0.5 text-[12.5px] font-black text-[#6D28D9]">🔥 Trending</span>
             {trending.map((t) => (
-              <button key={t.tag} type="button" onClick={() => setTagView(t.tag)} className="shrink-0 rounded-xl bg-[#F5F3FF] px-2.5 py-1.5 text-[12.5px] font-extrabold text-[#6D28D9]">
+              <button key={t.tag} type="button" onClick={() => setTagView(t.tag)} className="shrink-0 px-1 py-1 text-[12.5px] font-extrabold text-[#6D28D9]">
                 #{t.tag}
                 <span className="ml-1 text-[10.5px] font-bold text-[#A78BFA]">{t.count}</span>
               </button>
