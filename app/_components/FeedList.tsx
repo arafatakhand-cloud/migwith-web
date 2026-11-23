@@ -2933,8 +2933,8 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             </div>
           </div>
         ) : (
-          <div className="flex min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center" style={{ background: artBg }}>
-            <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: artInk, textShadow: artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
+          <div className="flex min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center" style={{ background: sysKind ? SYS_GRADIENT[sysKind] : artBg }}>
+            <p className={`whitespace-pre-line break-words font-extrabold leading-snug ${artSize} ${text.length > 140 ? "line-clamp-[9]" : ""}`} style={{ color: sysKind ? "#FFFFFF" : artInk, textShadow: sysKind || artInk === "#FFFFFF" ? "0 2px 12px rgba(0,0,0,.25)" : "none" }}>
               <RichText text={text || "📷"} />
             </p>
             {p.sharedId && (
