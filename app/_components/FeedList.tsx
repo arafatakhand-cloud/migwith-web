@@ -2558,7 +2558,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   const [viewing, setViewing] = useState(false);
   const text = tr?.text || p.excerpt;
   // 🎨 miGlife's own cards (Daily Missions, Welcome) keep the app's colourful look
-  const sysKind = p.author.toLowerCase() === "miglife" && !p.cover
+  const sysKind = (p.system || p.author.toLowerCase() === "miglife") && !p.cover
     ? /daily missions/i.test(p.title) ? "missions" : /welcome to miglife|new member joined/i.test(p.title) ? "welcome" : /birthday/i.test(p.title) ? "birthday" : /top mig|most loved/i.test(p.title) ? "top" : "amal"
     : "";
   // X1: a long words-only Mig shows like normal writing on white, its end fading
