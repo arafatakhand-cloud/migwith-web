@@ -236,6 +236,13 @@ export default function MembersPage() {
       const d = snap?.docs[0];
       if (d) return toMember(d.id, d.data());
     }
+    // not in the public profiles yet (older accounts): look in users/{uid} too
+    for (const field of ["usernameLower", "username"]) {
+      const value = field === "usernameLower" ? v.toLowerCase() : v;
+      const snap = await getDocs(query(collection(db, "users"), where(field, "==", value), limit(1))).catch(() => null);
+      const d = snap?.docs[0];
+      if (d) return toMember(d.id, d.data());
+    }
     const lower = v.toLowerCase();
     return (members || []).find((m) => m.name.toLowerCase() === lower || m.uid.toLowerCase() === lower) || null;
   };
