@@ -630,7 +630,7 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
 }
 /* 🫧→⬜ every bubble card in the glass theme: plain white, no coloured glow.
    The navy hero card and popups keep their own look. */
-html[data-theme="glass"]:not([data-ui="classic"]) [style*="box-shadow"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed):not([data-chatbar] *):not([data-chatbar]):not([data-feed] *):not([data-feed]):not([data-flat] *):not([data-flat]) {
+html[data-theme="glass"]:not([data-ui="classic"]) [style*="box-shadow"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed):not([data-chatbar] *):not([data-chatbar]):not([data-feed] *):not([data-feed]) {
   box-shadow: inset 0 2px 0 #fff, 0 3px 0 #d5dfea, 0 6px 0 #c2cfdd, 0 10px 14px -6px rgba(11, 42, 91, 0.2) !important;
 }
 html[data-theme="glass"]:not([data-ui="classic"]) [style*="linear-gradient"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed):not(span):not([data-feed] *):not([data-feed]) {

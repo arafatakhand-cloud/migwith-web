@@ -619,7 +619,7 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
           const rooms = limited ? (key === "hot" || key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
           return (
-            <div key={key} data-flat="" className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: "none" }}>
+            <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
               <div className="flex items-center pr-3" style={{ background: `linear-gradient(90deg, ${accent}1A, transparent)` }}>
                 <button
                   type="button"
@@ -656,12 +656,11 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                       <div key={name} className="px-2 py-[3px]">
                         {/* 🫧 every room is its own clear glass card, like the app */}
                         <div
-                          data-flat=""
                           className="mb-1 flex items-center rounded-[16px] border border-white/90 py-2 pl-2.5 pr-1 backdrop-blur-sm"
                           style={{
                             background: "linear-gradient(180deg, rgba(255,255,255,0.85), rgba(255,255,255,0.45))",
                             // 🫧 6D: stacked depth layers in the room's colour, a top shine
-                            boxShadow: "inset 0 2px 0 rgba(255,255,255,.95)", // flat: no extra bottom bubble
+                            boxShadow: `inset 0 2px 0 rgba(255,255,255,.95), 0 2px 0 ${accent}40, 0 4px 0 ${accent}2E, 0 7px 0 ${accent}1F, 0 12px 16px ${accent}2E`,
                           }}
                         >
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
