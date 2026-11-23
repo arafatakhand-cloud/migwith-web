@@ -82,7 +82,7 @@ const roomsMemory: {
   countAt: number;
 } = { uid: "", userRooms: [], listAt: 0, level: 0, counts: {}, maxes: {}, countKey: "", countAt: 0 };
 
-export function RoomsList({ embedded = false }: { embedded?: boolean } = {}) {
+export function RoomsList({ embedded = false, full = false }: { embedded?: boolean; full?: boolean } = {}) {
   const router = useRouter();
   const { user, username, loading } = useCurrentUser();
   // ⏰ tapping a room you were auto left from = coming back in
@@ -466,7 +466,7 @@ export function RoomsList({ embedded = false }: { embedded?: boolean } = {}) {
           </div>
           {sections.map(([key, title, allRooms]) => {
             const isOpen = !!q || (key in classicOpen ? classicOpen[key] : true);
-            const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
+            const limited = !full && !q && allRooms.length > 5; // full: the /rooms page shows every room, no ⌄ cut // ⭐ Favorite rooms too: top 5, the rest under ⌄
             const expanded = !!showAll[key];
             const rooms = limited ? (key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
             return (
@@ -614,7 +614,7 @@ export function RoomsList({ embedded = false }: { embedded?: boolean } = {}) {
 
         {shownSections.map(([key, title, allRooms]) => {
           const isOpen = !!q || (key in modernOpen ? modernOpen[key] : key === "fav" || key === "recent" || key === "public" || key === "game" || key === "hot");
-          const limited = !q && allRooms.length > 5; // ⭐ Favorite rooms too: top 5, the rest under ⌄
+          const limited = !full && !q && allRooms.length > 5; // full: the /rooms page shows every room, no ⌄ cut // ⭐ Favorite rooms too: top 5, the rest under ⌄
           const expanded = !!showAll[key];
           const rooms = limited ? (key === "hot" || key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
           const [icon, accent] = LOOK[key];
