@@ -28111,3 +28111,80 @@ exports.syncAutoVerifiedAll = functionsV1.https.onCall(async (data, context) => 
   }
   return { ok: true, count };
 });
+
+// 🛡 SECURITY MONITOR (log only — nothing is blocked here).
+// security_flags/{id} = { kind, uid, username, roomId, detail, at }. Read it in the
+// Firebase console. The two checks below only WRITE a flag; they never change the
+// member's message, level or badge. Once the logs show how often this happens, a
+// limit can be turned on.
+const SECURITY_MSG_WINDOW_MS = 10 * 1000;
+const SECURITY_MSG_FLAG_AT = 8; // this many messages in 10 seconds gets flagged
+
+async function addSecurityFlag(kind, data) {
+  try {
+    await db.collection("security_flags").add({ kind, ...data, at: FieldValue.serverTimestamp() });
+  } catch (e) {
+    console.error("addSecurityFlag failed", kind, e);
+  }
+}
+
+// Message bursts: counts each member's messages in a 10-second window.
+exports.onRoomMessageMonitor = functionsV1.firestore
+  .document("room_messages/{roomId}/messages/{messageId}")
+  .onCreate(async (snap, context) => {
+    const d = snap.data() || {};
+    const uid = String(d.senderUid || "");
+    if (!uid || uid === "system") return null;
+    if (String(d.type || "chat") !== "chat") return null;
+    const now = Date.now();
+    const ref = db.collection("security_monitor").doc("msg_" + uid);
+    let flagged = null;
+    await db.runTransaction(async (tx) => {
+      const s = await tx.get(ref);
+      let start = s.exists ? Number(s.get("windowStart") || 0) : 0;
+      let count = s.exists ? Number(s.get("count") || 0) : 0;
+      if (!start || now - start > SECURITY_MSG_WINDOW_MS) {
+        start = now;
+        count = 0;
+      }
+      count += 1;
+      tx.set(ref, { windowStart: start, count }, { merge: true });
+      if (count === SECURITY_MSG_FLAG_AT) flagged = count;
+    });
+    if (flagged) {
+      await addSecurityFlag("message_burst", {
+        uid,
+        username: String(d.sender || ""),
+        roomId: String(context.params.roomId || ""),
+        detail: `${SECURITY_MSG_FLAG_AT} messages within ${SECURITY_MSG_WINDOW_MS / 1000} seconds`,
+      });
+    }
+    return null;
+  });
+
+// Fake level or badge in a room: the level and badge written in the room's
+// presence doc are compared with the account's real ones (users/{uid}).
+exports.onRoomPresenceMonitor = functionsV1.firestore
+  .document("room_presence/{roomId}/users/{uid}")
+  .onCreate(async (snap, context) => {
+    const p = snap.data() || {};
+    const uid = String(context.params.uid || "");
+    if (!uid) return null;
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) return null;
+    const real = userSnap.data() || {};
+    const realLevel = Number(real.level || 1);
+    const shownLevel = p.level === undefined ? realLevel : Number(p.level);
+    const shownBadge = p.levelBadgeIcon === undefined ? "" : String(p.levelBadgeIcon);
+    const tierBadge = luckyBadgeForLevel(shownLevel).icon;
+    const badgeOk = shownBadge === "" || shownBadge === String(real.levelBadgeIcon || "") || shownBadge === tierBadge;
+    if (shownLevel !== realLevel || !badgeOk) {
+      await addSecurityFlag("fake_level_presence", {
+        uid,
+        username: String(real.username || p.username || ""),
+        roomId: String(context.params.roomId || ""),
+        detail: `shown level ${shownLevel} (real ${realLevel}), shown badge ${shownBadge}`,
+      });
+    }
+    return null;
+  });
