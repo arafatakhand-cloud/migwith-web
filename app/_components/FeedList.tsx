@@ -2629,9 +2629,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
       className="relative overflow-hidden rounded-[22px]"
       style={{
         boxShadow: depthOf(c),
-        background: [...p.id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 2
-          ? "linear-gradient(135deg, #FDF2F8, #FCE7F3 60%, #FFFFFF)"
-          : "linear-gradient(135deg, #EFF6FF, #DBEAFE 60%, #FFFFFF)",
+        background: "#FFFFFF",
       }}
     >
       {/* who wrote it */}
@@ -3067,7 +3065,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                 setPick(true);
               }}
               aria-label={liked ? "Unlike" : "Like"}
-              className={`relative flex h-10 w-full items-center justify-center gap-1.5 rounded-[13px] text-[13.5px] font-black transition active:translate-y-[2px] ${liked ? "bg-gradient-to-b from-[#FFE4EC] to-[#FBCFE8] text-[#BE185D] shadow-[0_3px_0_#F472B6] active:shadow-[0_1px_0_#F472B6]" : "bg-gradient-to-b from-white to-[#FFE4EC] text-[#BE185D] shadow-[0_3px_0_#F9A8C0] active:shadow-[0_1px_0_#F9A8C0]"}`}
+              className={`relative flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black transition active:scale-[.98] ${liked ? "text-[#E34F75]" : "text-[#4F46E5]"}`}
             >
               {burst > 0 &&
                 ["❤️", "💖", "✨", "💕"].map((h, i) => (
@@ -3081,12 +3079,12 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             </button>
           </div>
           {/* 🎨 K1·M3: 💬 blue and ↗ purple 6D buttons next to the pink ❤️ */}
-          <button type="button" onClick={open} aria-label="Comments" className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-[13px] bg-gradient-to-b from-white to-[#E3EEFF] text-[13.5px] font-black text-[#1D4ED8] shadow-[0_3px_0_#A9C6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#A9C6F5]">
+          <button type="button" onClick={open} aria-label="Comments" className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black text-[#4B5575] transition active:scale-[.98]">
             💬 {blogShort(p.comments)}
           </button>
           {/* 🔒 a 👥 / 🔒 post can't be shared */}
           {!p.privacy && (
-            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-[13px] bg-gradient-to-b from-white to-[#E3EEFF] text-[13.5px] font-black text-[#1D4ED8] shadow-[0_3px_0_#A9C6F5] transition active:translate-y-[2px] active:shadow-[0_1px_0_#C9B6F5]">
+            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black text-[#4B5575] transition active:scale-[.98]">
               ↗ Share
             </button>
           )}
