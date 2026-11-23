@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../lib/firebase";
+import { passwordProblem } from "../../lib/password";
 
 const inputClass =
   "w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3.5 text-sm text-white outline-none placeholder:text-white/25 transition focus:border-cyan-300/50 focus:bg-black/30 focus:ring-2 focus:ring-cyan-300/10 disabled:opacity-60";
@@ -71,8 +72,9 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
+    const pwErr = passwordProblem(newPassword);
+    if (pwErr) {
+      setError(pwErr);
       return;
     }
 

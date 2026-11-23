@@ -14,6 +14,7 @@ import { migAliasEmail } from "../../lib/migAlias";
 import { useSession } from "../_components/AppSession";
 import { BackPill } from "../_components/BackButton";
 import { useIsClassic } from "../../lib/uiStyle";
+import { passwordProblem } from "../../lib/password";
 
 // Create ID, the same flow (and the same redesigned look) as the app's
 // RegisterPage — 👤 Account → 🪪 Profile → ✉️ Verify: fill in the form, get a
@@ -163,7 +164,8 @@ export default function RegisterPage() {
     if (!isFounder && !enabled) return setError("ID creation is currently disabled by the founder.");
     if (!idOk)
       return setError(`MIG ID must be ${minLen}-${maxLen} characters and contain at least 1 English letter. Allowed: A-Z, a-z, 0-9, . _ -`);
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
+    const pwErr = passwordProblem(password);
+    if (pwErr) return setError(pwErr);
     if (password !== confirm) return setError("Passwords do not match.");
     if (liveId?.s === "taken") return setError("This MIG ID is already taken. Please choose another.");
     // 🆔 ask the server right away whether this MIG ID is free (before the email step)

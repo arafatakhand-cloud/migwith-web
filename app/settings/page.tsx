@@ -18,6 +18,7 @@ import { detachPushForLogout } from "../../lib/push";
 import { leaveAllOpenRooms } from "../../lib/openRooms";
 import { markOfflineForLogout } from "../../lib/heartbeat";
 import { getBlockedNames, saveBlockedNames } from "../../lib/blocks";
+import { passwordProblem } from "../../lib/password";
 
 // 🔒 Profile lock goes through the server (it keeps the private-chat lock too).
 const setProfileLockCall = httpsCallable<{ locked: boolean }, { ok: boolean }>(functions, "setProfileLock");
@@ -487,7 +488,8 @@ function PasswordDialog({ onClose, onDone }: { onClose: () => void; onDone: () =
     const u = auth.currentUser;
     if (!u || !u.email) return setError("Could not identify your account.");
     if (!current) return setError("Enter your current password.");
-    if (next.length < 6) return setError("New password must be at least 6 characters.");
+    const pwErr = passwordProblem(next);
+    if (pwErr) return setError(pwErr);
     if (next !== confirm) return setError("Passwords do not match.");
     if (next === current) return setError("The new password must be different.");
     setBusy(true);

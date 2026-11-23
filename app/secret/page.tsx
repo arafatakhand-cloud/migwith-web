@@ -25,6 +25,7 @@ import { AccountDeleteCard } from "./_AccountDeleteCard";
 import { WatchdogSpeedCard } from "./_WatchdogSpeedCard";
 import { DailyGameRewardsCard } from "./_DailyGameRewardsCard";
 import { FounderAchievementsCard } from "../_components/Achievements";
+import { passwordProblem } from "../../lib/password";
 
 // "miglife secret", the app's BlogPage: the founder tools, the "other users
 // ID creation" switch and FOUNDER CREATE ID.
@@ -706,7 +707,8 @@ function CreateIdDialog({ onClose, onDone }: { onClose: () => void; onDone: (m: 
     if (!/^(?=.*[A-Za-z])[A-Za-z0-9._-]{1,27}$/.test(id))
       return setError("MIG ID must be 1-27 characters and contain at least 1 English letter. Allowed: A-Z, a-z, 0-9, . _ -");
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setError("Enter a valid email.");
-    if (password.length < 6) return setError("Password must be at least 6 characters.");
+    const pwErr = passwordProblem(password);
+    if (pwErr) return setError(pwErr);
     if (password !== confirm) return setError("Passwords do not match.");
     if (!gender || !country) return setError("Gender and country are required.");
     setBusy(true);
