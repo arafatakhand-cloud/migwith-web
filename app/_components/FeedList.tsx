@@ -1111,7 +1111,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
   const mineOnly = (!author && !!user && (tab === "mine" || tab === "saved")) || (!author && !!placeView);
   return (
-    <div className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
+    <div data-feed="" className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
       <section className="relative mx-auto max-w-2xl pb-10">
         {author ? (
           <div className="px-3 sm:px-6">
