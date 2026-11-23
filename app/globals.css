@@ -648,7 +648,7 @@ html[data-theme="glass"]:not([data-ui="classic"]) main [style*="border-color"]:n
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
 }
-html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .bg-white:not(header):not(header *):not(.fixed *):not(.fixed.inset-0):not(input):not(textarea):not([data-feed] *):not([data-feed]):not([data-chatbar] *):not([data-chatbar]) {
+html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .bg-white:not(header):not(header *):not(.fixed *):not(.fixed.inset-0):not(input):not(textarea):not([data-feed] *):not([data-feed]):not([data-chatbar] *):not([data-chatbar]):not([data-cell6d]) {
   background: linear-gradient(160deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.1)) !important;
   border-color: rgba(255, 255, 255, 0.92) !important;
   box-shadow:
