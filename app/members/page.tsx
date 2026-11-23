@@ -202,22 +202,31 @@ export default function MembersPage() {
 
   useEffect(() => {
     if (!ready) return;
+    // Everyone with a role on this page, asked by role (the first 500 profiles alone
+    // could miss a new Staff member), 10 role names per query.
+    const roleNames = [...new Set(MANAGEMENT.flatMap((c) => c.roles))];
+    const roleChunks: string[][] = [];
+    for (let i = 0; i < roleNames.length; i += 10) roleChunks.push(roleNames.slice(i, i + 10));
     Promise.all([
       getDocs(query(collection(db, "profiles"), limit(500))),
+      Promise.all(roleChunks.map((c) => getDocs(query(collection(db, "profiles"), where("role", "in", c), limit(500))).catch(() => null))),
       // 🏪 a Merchant with another role too (Country Representative …) is still
       // listed under Merchant while their Merchant Program record runs
       getDocs(collection(db, "mentor_merchants")).catch(() => null),
     ])
-      .then(([snap, links]) => {
+      .then(([base, byRole, links]) => {
         const now = Date.now();
+        const seen = new Map<string, DocumentData>();
+        for (const d of [...base.docs, ...byRole.flatMap((r) => r?.docs || [])]) seen.set(d.id, d.data());
+        const all = [...seen.entries()];
         const activeMerchants = new Set(
           (links?.docs || [])
             .filter((l) => (l.get("expiresAt")?.toMillis?.() || 0) > now)
             .map((l) => String(l.get("merchantUsername") || "").trim().toLowerCase())
         );
         setMembers(
-          snap.docs
-            .map((d) => toMember(d.id, d.data()))
+          all
+            .map(([uid, data]) => toMember(uid, data))
             .filter((m) => m.name)
             .map((m) => (activeMerchants.has(m.name.toLowerCase()) && !m.roles.includes("merchant") ? { ...m, roles: [...m.roles, "merchant"] } : m))
         );
