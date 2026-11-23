@@ -86,14 +86,12 @@ function RichText({ text, className }: { text: string; className?: string }) {
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
 const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
 const TAB_ICONS: Record<string, string> = { foryou: "🎯", new: "✨", popular: "🔥", explore: "🧭", friends: "👥", following: "⭐", mine: "👤" };
+// The app's Feed tabs: For You · New · Popular · Explore (Friends / Following / Mine live elsewhere)
 const TABS: [Tab, string][] = [
   ["foryou", "✨ For You"],
   ["new", "New"],
   ["popular", "Popular"],
   ["explore", "🧭 Explore"],
-  ["friends", "Friends"],
-  ["following", "Following"],
-  ["mine", "Mine"],
 ];
 
 // 🎨 D3: each Feed tab's colour — [fill, lip, light, light lip, ink]
@@ -787,7 +785,11 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       if (author) return map(await getDocs(query(col, where("author", "==", author), limit(100)))).sort((a, b) => b.createdMs - a.createdMs);
       // 📍 every Everyone post written at one place
       if (placeView) return map(await getDocs(query(col, where("place", "==", placeView), limit(60)))).sort((a, b) => b.createdMs - a.createdMs);
-      if (tab === "explore") return [];
+      if (tab === "explore") {
+        // 🧭 Explore: the most-liked Migs that have a picture or a video
+        const snap = await getDocs(query(col, orderBy("hot", "desc"), limit(FEED_PAGE)));
+        return map(snap).filter((p) => !!(p.cover || p.video || p.firstImage));
+      }
       if (tab === "popular" || tab === "new" || tab === "foryou") {
         const snap = await getDocs(query(col, orderBy(tab === "popular" ? "hot" : "createdMs", "desc"), limit(FEED_PAGE)));
         lastSnap.current = (snap.docs[snap.docs.length - 1] as QueryDocumentSnapshot) || null;
