@@ -1499,11 +1499,20 @@ service cloud.firestore {
       // those lines without a sender name, so they looked like official room
       // messages ("Bangladesh: ..."), and a fake "room_leave" for someone
       // else's uid also dropped that person from "Currently in this room".
+      // The level in the line ("name [12]") must be the real level of the person
+      // the line is about (senderUid = the leaver for a watcher's notice).
+      function presenceNoticeLevelOk() {
+        let d = request.resource.data;
+        let who = d.get("senderUid", request.auth.uid);
+        let lv = get(/databases/$(database)/documents/users/$(who)).data.get("level", 1);
+        return d.text.matches('.*\\[' + string(lv) + '\\].*');
+      }
       function presenceNoticeTextOk() {
         let d = request.resource.data;
         let t = d.get("type", "");
         return (t != "room_entry" && t != "room_leave")
           || (d.get("text", "") is string
+              && presenceNoticeLevelOk()
               && ((t == "room_entry" && d.text.matches('.* has entered[.]'))
                   || (t == "room_leave" && d.text.matches('.* has left[.]'))));
       }
