@@ -2627,7 +2627,12 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     // 🎨 each card carries a light colour: blue or pink, picked from the post id
     <article
       className="relative overflow-hidden rounded-[22px]"
-      style={{ boxShadow: depthOf(c), background: "#FFFFFF" }}
+      style={{
+        boxShadow: depthOf(c),
+        background: [...p.id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 2
+          ? "linear-gradient(135deg, #FDF2F8, #FCE7F3 60%, #FFFFFF)"
+          : "linear-gradient(135deg, #EFF6FF, #DBEAFE 60%, #FFFFFF)",
+      }}
     >
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
