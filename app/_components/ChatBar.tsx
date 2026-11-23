@@ -145,7 +145,7 @@ export function ChatBar({
   }, [moreOpen]);
 
   return (
-    <div>
+    <div data-chatbar="">
     {attachment && (
       <div className="flex items-center gap-2.5 px-3 pb-1 pt-2">
         <span className="relative shrink-0">

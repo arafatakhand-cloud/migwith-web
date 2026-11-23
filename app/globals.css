@@ -630,7 +630,7 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) {
 }
 /* 🫧→⬜ every bubble card in the glass theme: plain white, no coloured glow.
    The navy hero card and popups keep their own look. */
-html[data-theme="glass"]:not([data-ui="classic"]) [style*="box-shadow"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed) {
+html[data-theme="glass"]:not([data-ui="classic"]) [style*="box-shadow"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed):not([data-chatbar] *):not([data-chatbar]) {
   box-shadow: inset 0 2px 0 #fff, 0 3px 0 #d5dfea, 0 6px 0 #c2cfdd, 0 10px 14px -6px rgba(11, 42, 91, 0.2) !important;
 }
 html[data-theme="glass"]:not([data-ui="classic"]) [style*="linear-gradient"]:not(.aurora-card):not(header):not(header *):not(.fixed *):not(.fixed):not(span) {
@@ -638,17 +638,17 @@ html[data-theme="glass"]:not([data-ui="classic"]) [style*="linear-gradient"]:not
   background-color: #ffffff !important;
 }
 /* 6D (style B) for the Tailwind shadows too (Discover and the other pages): inside the glass theme only */
-html[data-theme="glass"]:not([data-ui="classic"]) main [class*="shadow-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *):not([class*="shadow-xl"]) {
+html[data-theme="glass"]:not([data-ui="classic"]) main [class*="shadow-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *):not([class*="shadow-xl"]):not([data-chatbar] *):not([data-chatbar]) {
   box-shadow: inset 0 2px 0 #fff, 0 3px 0 #d5dfea, 0 6px 0 #c2cfdd, 0 10px 14px -6px rgba(11, 42, 91, 0.2) !important;
 }
 /* 🤍 coloured gradient tiles, tabs and chips inside the pages become plain white (glass theme, not the hero or popups) */
-html[data-theme="glass"]:not([data-ui="classic"]) main [class*="bg-gradient-to-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *) {
+html[data-theme="glass"]:not([data-ui="classic"]) main [class*="bg-gradient-to-"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *):not([data-chatbar] *):not([data-chatbar]) {
   background-image: none !important;
   background-color: #ffffff !important;
   color: #0b2a5b !important;
 }
 /* 🤍 bubble cards on every page (glass theme): plain grey edge, no coloured border, plain white icon tiles */
-html[data-theme="glass"]:not([data-ui="classic"]) main [style*="border-color"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *) {
+html[data-theme="glass"]:not([data-ui="classic"]) main [style*="border-color"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *):not([data-chatbar] *):not([data-chatbar]) {
   border-color: #e2e8f0 !important;
 }
 html[data-theme="glass"]:not([data-ui="classic"]) main span[style*="linear-gradient"]:not(.aurora-card):not(header *):not(.fixed *) {
