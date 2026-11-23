@@ -341,6 +341,7 @@ export default function MembersPage() {
                   <li key={m.uid} className={podium && i === 0 ? "md:col-span-2" : ""}>
                     <Link
                       href={`/profile/${encodeURIComponent(m.name)}`}
+                      data-keep-color=""
                       className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 shadow-[0_3px_0_#C9D8EA,0_6px_0_#B7C9E0,0_10px_14px_rgba(11,31,58,.16)] hover:brightness-110 active:translate-y-[2px] ${
                         lightCard ? "" : "border-[#3A3570] bg-gradient-to-r from-[#17163A] to-[#2B2656]"
                       }`}
