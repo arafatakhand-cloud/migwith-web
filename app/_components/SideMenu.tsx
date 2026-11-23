@@ -261,7 +261,7 @@ export function MenuPanel() {
               onClick={href === "#spin" ? (e) => (e.preventDefault(), openDailySpin()) : undefined}
               className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] active:translate-y-[3px] ${active ? "font-extrabold" : "font-bold"}`}
               style={{
-                borderColor: active ? "#94a3b8" : "#e2e8f0",
+                borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
                 borderWidth: active ? 1.6 : 1,
                 background: "#FFFFFF",
                 // 🫧 6D: stacked depth layers in the row's colour, a top shine
@@ -270,7 +270,7 @@ export function MenuPanel() {
             >
               <span
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[19px]"
-                style={{ background: "#f1f5f9", borderColor: "#e2e8f0", boxShadow: `inset 0 2px 0 #fff, 0 2px 0 ${MENU_COLORS[label] || "#3984D9"}40, 0 4px 6px ${MENU_COLORS[label] || "#3984D9"}2E` }}
+                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, borderColor: `${MENU_COLORS[label] || "#3984D9"}4D`, boxShadow: `inset 0 2px 0 #fff, 0 2px 0 ${MENU_COLORS[label] || "#3984D9"}40, 0 4px 6px ${MENU_COLORS[label] || "#3984D9"}2E` }}
               >
                 {icon}
               </span>
@@ -282,7 +282,7 @@ export function MenuPanel() {
               )}
               <span
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold"
-                style={{ background: "#f1f5f9", color: "#0b2a5b" }}
+                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, color: MENU_COLORS[label] || "#3984D9" }}
               >
                 ›
               </span>
