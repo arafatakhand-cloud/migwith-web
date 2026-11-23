@@ -429,7 +429,7 @@ export default function MembersPage() {
                                 setCountryPickFor(m);
                               }}
                               className="flex max-w-[150px] shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-[7px] text-[13px] font-bold shadow-[inset_0_1px_0_#fff,0_2px_0_rgba(11,31,58,.16),0_4px_6px_rgba(11,31,58,.12)] active:translate-y-[2px] disabled:cursor-default"
-                              style={{ background: `${accent}24`, borderColor: `${accent}8C`, color: m.repCountry ? "#fff" : "#CBD5E8" }}
+                              style={{ background: `${accent}24`, borderColor: `${accent}8C`, color: lightCard ? (m.repCountry ? "#0B2A5B" : "#5B6B8C") : m.repCountry ? "#fff" : "#CBD5E8" }}
                             >
                               <span className="text-lg leading-none">{info ? countryFlag(info.iso) : "🌍"}</span>
                               <span className="truncate">{info?.name || m.repCountry || "Set country"}</span>
