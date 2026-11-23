@@ -28188,3 +28188,111 @@ exports.onRoomPresenceMonitor = functionsV1.firestore
     }
     return null;
   });
+
+// 🏅 SERVER BADGES (phase 1: computed and logged, nothing blocked).
+// users/{uid}.presenceBadges = the badges the server works out for the account
+// (role badges + running merchant term + Color Shop badges), the same rules as
+// the app's presenceBadgesForDoc / withMerchantBadge. A room_presence entry whose
+// shopBadges differ from it is logged to security_flags (kind "fake_badges").
+const SERVER_SHOP_BADGES = [
+  ["king", "👑"], ["queen", "👼"], ["mafia", "🎩"], ["vip", "⭐"],
+  ["diamond", "💎"], ["premium", "🏵️"], ["supporter", "🛡️"], ["streamer", "🎬"],
+];
+const SERVER_ROLE_BADGE_SET = new Set(["💼", "🛒", "🛠️", "⚙️", "✨", "🏛️", "🌍"]);
+
+function serverRoleBadges(role) {
+  switch (String(role ?? "").trim().toLowerCase().replace(/[- ]/g, "_")) {
+    case "mentor": return ["💼"];
+    case "merchant": return ["🛒"];
+    case "staff": return ["🛠️"];
+    case "admin":
+    case "administrator": return ["⚙️"];
+    case "elite":
+    case "elite_user": return ["✨"];
+    case "executive_board": return ["🏛️"];
+    case "country_representative": return ["🌍"];
+    default: return [];
+  }
+}
+
+function serverActiveShopBadges(ownedColors) {
+  if (!ownedColors || typeof ownedColors !== "object") return [];
+  const now = Date.now();
+  return SERVER_SHOP_BADGES.flatMap(([id, badge]) => {
+    const e = ownedColors[id];
+    const expiresAt = Number(e?.expiresAt || 0);
+    return e && e.active === true && expiresAt > now ? [{ at: Number(e.grantedAt || 0), badge }] : [];
+  })
+    .sort((a, b) => a.at - b.at)
+    .map((x) => x.badge);
+}
+
+async function serverMerchantRunning(username) {
+  if (!username) return false;
+  try {
+    const names = [...new Set([username, username.toLowerCase()])];
+    const snap = await db.collection("mentor_merchants").where("merchantUsername", "in", names).get();
+    const now = Date.now();
+    return snap.docs.some((d) => (d.get("expiresAt")?.toMillis?.() || 0) > now);
+  } catch (e) {
+    return false;
+  }
+}
+
+async function serverPresenceBadges(data) {
+  let out = [];
+  for (const field of ["membershipRole", "memberType", "role"]) {
+    const b = serverRoleBadges(data[field]);
+    if (b.length) { out = b; break; }
+  }
+  const extra = [data.membershipRole, data.memberType, data.role, ...(Array.isArray(data.roles) ? data.roles : [])]
+    .flatMap((r) => (["merchant", "mentor"].includes(String(r ?? "").trim().toLowerCase()) ? serverRoleBadges(r) : []));
+  for (const b of extra) if (!out.includes(b)) out = [...out, b];
+  let badges = [...out, ...serverActiveShopBadges(data.ownedColors)];
+  const merchant = await serverMerchantRunning(String(data.username || ""));
+  if (badges.includes("💼")) {
+    badges = badges.filter((b) => b !== "🛒");
+  } else if (merchant && !badges.includes("🛒")) {
+    const roleCount = badges.filter((b) => SERVER_ROLE_BADGE_SET.has(b)).length;
+    badges = [...badges.slice(0, roleCount), "🛒", ...badges.slice(roleCount)];
+  }
+  return badges;
+}
+
+exports.onUserPresenceBadges = functionsV1.firestore
+  .document("users/{uid}")
+  .onWrite(async (change, context) => {
+    const after = change.after;
+    if (!after || !after.exists) return null;
+    const b = change.before && change.before.exists ? change.before.data() || {} : {};
+    const a = after.data() || {};
+    const keys = ["username", "role", "membershipRole", "memberType", "roles", "ownedColors"];
+    const same = keys.every((k) => JSON.stringify(a[k] ?? null) === JSON.stringify(b[k] ?? null));
+    if (same && Array.isArray(a.presenceBadges)) return null;
+    const badges = await serverPresenceBadges(a);
+    if (JSON.stringify(badges) === JSON.stringify(a.presenceBadges ?? null)) return null;
+    return after.ref.update({ presenceBadges: badges });
+  });
+
+exports.onRoomPresenceBadgeMonitor = functionsV1.firestore
+  .document("room_presence/{roomId}/users/{uid}")
+  .onCreate(async (snap, context) => {
+    const p = snap.data() || {};
+    if (!Array.isArray(p.shopBadges)) return null;
+    const uid = String(context.params.uid || "");
+    const userSnap = await db.collection("users").doc(uid).get();
+    if (!userSnap.exists) return null;
+    const real = userSnap.data() || {};
+    if (!Array.isArray(real.presenceBadges)) return null;
+    const shown = p.shopBadges.map(String).join(",");
+    const server = real.presenceBadges.map(String).join(",");
+    if (shown !== server) {
+      await addSecurityFlag("fake_badges", {
+        uid,
+        username: String(real.username || p.username || ""),
+        roomId: String(context.params.roomId || ""),
+        detail: `shown [${shown}], server [${server}]`,
+      });
+    }
+    return null;
+  });
