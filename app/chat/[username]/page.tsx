@@ -680,6 +680,7 @@ export default function PrivateChatPage() {
                     if (longPressed.current) return;
                     if (m.type !== "image" && m.type !== "file") startReply(label, body);
                   }}
+                  data-own-bubble={mine ? "" : undefined}
                   className={`cursor-pointer select-none ${
                     classic
                       ? "w-full px-1 py-[3px]"
