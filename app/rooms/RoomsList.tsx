@@ -526,7 +526,7 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                           type="button"
                           onClick={() => setShowAll((o) => ({ ...o, [key]: !expanded }))}
                           aria-label={expanded ? "Show fewer rooms" : "Show all rooms"}
-                          className="relative flex h-[22px] w-11 items-center justify-center rounded border border-[#B9C4D2] bg-gradient-to-b from-[#4F86C6] to-[#2F5F9E] text-[10px] text-white"
+                          className="relative flex h-[22px] w-11 items-center justify-center rounded border border-[#B9C4D2] bg-gradient-to-b from-[#4F86C6] to-[#2F5F9E] text-[10px] text-black"
                         >
                           <span className={`transition-transform duration-[250ms] ${expanded ? "rotate-180" : ""}`}>▼</span>
                         </button>
@@ -715,7 +715,7 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                         type="button"
                         onClick={() => setShowAll((o) => ({ ...o, [key]: !expanded }))}
                         aria-label={expanded ? "Show fewer rooms" : "Show all rooms"}
-                        className="glass-shine relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-[20px] font-black leading-none text-white"
+                        className="glass-shine relative flex h-[30px] w-[30px] items-center justify-center rounded-full text-[20px] font-black leading-none text-black"
                         style={{ background: `linear-gradient(135deg, ${accent}D9, ${accent})`, boxShadow: `0 2px 6px ${accent}80` }}
                       >
                         <span className={`-mt-0.5 transition-transform duration-300 ${expanded ? "-rotate-90" : "rotate-90"}`}>›</span>
