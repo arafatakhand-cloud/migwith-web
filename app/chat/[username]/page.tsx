@@ -533,6 +533,7 @@ export default function PrivateChatPage() {
       >
         {/* Header: teal → blue, like the top bar */}
         <div
+          data-keep-color=""
           className="flex items-center gap-2.5 rounded-b-3xl px-3.5 py-2 shadow-lg"
           style={{ background: classic ? "linear-gradient(90deg, #0B2A5B, #15589B)" : "linear-gradient(90deg, #14B88F, #2C9BEA)" }}
         >
