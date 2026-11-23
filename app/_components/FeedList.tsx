@@ -85,6 +85,14 @@ function RichText({ text, className }: { text: string; className?: string }) {
 }
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
 const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
+// 🎨 miGlife's own cards, the app's colours
+const SYS_GRADIENT: Record<string, string> = {
+  missions: "linear-gradient(135deg, #FB923C, #F97316 55%, #EC4899)",
+  welcome: "linear-gradient(135deg, #2563EB, #38BDF8)",
+  birthday: "linear-gradient(135deg, #DB2777, #A855F7)",
+  top: "linear-gradient(135deg, #FB923C, #F59E0B)",
+  amal: "linear-gradient(135deg, #1E3A8A, #0E7490)",
+};
 const TAB_ICONS: Record<string, string> = { foryou: "🎯", new: "✨", popular: "🔥", explore: "🧭", friends: "👥", following: "⭐", mine: "👤" };
 // The app's Feed tabs: For You · New · Popular · Explore (Friends / Following / Mine live elsewhere)
 const TABS: [Tab, string][] = [
@@ -2551,7 +2559,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   const text = tr?.text || p.excerpt;
   // 🎨 miGlife's own cards (Daily Missions, Welcome) keep the app's colourful look
   const sysKind = p.author.toLowerCase() === "miglife" && !p.cover
-    ? /daily missions/i.test(p.title) ? "missions" : /welcome to miglife|new member joined/i.test(p.title) ? "welcome" : ""
+    ? /daily missions/i.test(p.title) ? "missions" : /welcome to miglife|new member joined/i.test(p.title) ? "welcome" : /birthday/i.test(p.title) ? "birthday" : /top mig|most loved/i.test(p.title) ? "top" : "amal"
     : "";
   // X1: a long words-only Mig shows like normal writing on white, its end fading
   // out under a "Read more ⌄" pill that opens it right here
@@ -2904,7 +2912,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           <div className="px-4 pb-1 text-left">
             <div
               className={sysKind ? "rounded-[20px] p-4 text-white shadow-[0_10px_22px_-10px_rgba(0,0,0,.35)]" : ""}
-              style={sysKind ? { color: "#ffffff", background: sysKind === "missions" ? "linear-gradient(135deg, #FB923C, #F97316 55%, #EC4899)" : "linear-gradient(135deg, #2563EB, #38BDF8)" } : undefined}
+              style={sysKind ? { color: "#ffffff", background: SYS_GRADIENT[sysKind] } : undefined}
             >
             <div className={`relative ${long && !more ? "max-h-[9.6em] overflow-hidden" : ""}`}>
               <p className={`whitespace-pre-line break-words leading-[1.5] ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`} style={{ color: sysKind ? "#ffffff" : "#16264A" }}>
