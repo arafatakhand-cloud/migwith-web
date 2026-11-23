@@ -2616,7 +2616,16 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     .join("");
   return (
     // 🎨 K1·M1: the card stands on three layers of the writer's own colour (6D)
-    <article className="relative overflow-hidden rounded-[22px] bg-white" style={{ boxShadow: depthOf(c) }}>
+    // 🎨 each card carries a light colour: blue or pink, picked from the post id
+    <article
+      className="relative overflow-hidden rounded-[22px]"
+      style={{
+        boxShadow: depthOf(c),
+        background: [...p.id].reduce((n, ch) => n + ch.charCodeAt(0), 0) % 2
+          ? "linear-gradient(135deg, #FDF2F8, #FCE7F3 60%, #FFFFFF)"
+          : "linear-gradient(135deg, #EFF6FF, #DBEAFE 60%, #FFFFFF)",
+      }}
+    >
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
         <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
