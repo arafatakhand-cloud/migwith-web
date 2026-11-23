@@ -1360,8 +1360,10 @@ service cloud.firestore {
         let u = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
         let lv = request.resource.data.get("level", 1);
         let badge = request.resource.data.get("levelBadgeIcon", "");
-        return lv == u.get("level", 1)
-          && (badge == u.get("levelBadgeIcon", "") || badge == levelTierIcon(lv));
+        // a field the phone leaves out shows nothing fake, so it is allowed (old app versions)
+        return (!("level" in request.resource.data) || lv == u.get("level", 1))
+          && (!("levelBadgeIcon" in request.resource.data)
+              || badge == u.get("levelBadgeIcon", "") || badge == levelTierIcon(lv));
       }
 
       function kickedOrBannedHere(room, name) {
