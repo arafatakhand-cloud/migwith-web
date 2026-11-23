@@ -89,7 +89,6 @@ function StatCell6D({
   bottom,
   lip,
   highlight = false,
-  divider = false,
   onClick,
 }: {
   href: string;
@@ -100,12 +99,17 @@ function StatCell6D({
   bottom: string;
   lip: string;
   highlight?: boolean;
-  divider?: boolean;
   onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <Link href={href} onClick={onClick} aria-label={`${label}: ${value}`} className="relative flex min-w-0 flex-1 items-center justify-center gap-1.5 py-0.5 transition-transform active:scale-[0.92]">
-      {divider && <span aria-hidden className="absolute left-0 top-1/2 h-[30px] w-px -translate-y-1/2 bg-[#E1E8F2]" />}
+    <Link
+      href={href}
+      onClick={onClick}
+      aria-label={`${label}: ${value}`}
+      data-cell6d=""
+      className="relative flex min-w-0 flex-1 flex-col items-center justify-center rounded-[18px] bg-white px-1 py-2.5 transition-transform active:translate-y-[3px] active:scale-[0.97]"
+      style={{ boxShadow: `inset 0 2px 0 #fff, 0 4px 0 ${lip}, 0 8px 12px -6px ${bottom}88` }}
+    >
       {/* ✨ design B (miglife 2026-11): something new → the cell glows in its own
           colour and slowly breathes (2 s), a NEW chip on top, the bell swings.
           Same as the app (HomeStatCell6D). */}
@@ -121,18 +125,7 @@ function StatCell6D({
           </span>
         </>
       )}
-      <span className="relative shrink-0">
-        <span
-          className={`relative flex h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[10px]${highlight && glyph === "bell" ? " stat-bell" : ""}`}
-          style={{ background: `linear-gradient(${top},${bottom})`, boxShadow: `0 3px 0 ${lip}` }}
-        >
-          <span aria-hidden className="absolute inset-x-1 top-0.5 h-[9px] rounded-md bg-gradient-to-b from-white/50 to-white/0" />
-          <svg viewBox="0 0 24 24" className="relative h-[16px] w-[16px] text-white" fill="none" stroke="currentColor" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round">
-            {STAT_GLYPHS[glyph]}
-          </svg>
-        </span>
-      </span>
-      <span className="relative min-w-0 leading-none">
+      <span className="relative min-w-0 text-center leading-none">
         <span className="block text-[17px] font-black leading-[18px]" style={{ color: lip }}>
           {value > 999 ? "999+" : value}
         </span>
@@ -285,14 +278,12 @@ export function ModernHomeTop({
           colour 6D icon tile on the left, the number + name on the right, thin
           lines between them. Same as the app (HomeStatCell6D). */}
       <div
-        className="mh-stats6d relative mx-2.5 mb-2 flex items-center rounded-[22px] px-1 py-2.5"
-        style={{ background: "linear-gradient(180deg,#FFFFFF,#EEF4FB)", boxShadow: "0 4px 0 #B9CCE4, 0 10px 16px -8px rgba(30,60,110,.35)" }}
+        className="mh-stats6d relative mx-2.5 mb-2 flex items-stretch gap-2 px-0.5 py-1"
       >
         <StatCell6D href="/mail" glyph="mail" value={unreadEmails} label="Email" top="#5AB2FF" bottom="#2F6FE0" lip="#1A48A8" highlight={unreadEmails > 0} />
-        <StatCell6D divider href="/alerts" glyph="bell" value={unreadAlerts} label="Alerts" top="#FFD15C" bottom="#F59E0B" lip="#B86E00" highlight={unreadAlerts > 0} />
-        <StatCell6D divider href="/friends" glyph="users" value={friends.length} label="Friends" top="#C3A8FF" bottom="#7C4DEB" lip="#4F25B0" />
+        <StatCell6D href="/alerts" glyph="bell" value={unreadAlerts} label="Alerts" top="#FFD15C" bottom="#F59E0B" lip="#B86E00" highlight={unreadAlerts > 0} />
+        <StatCell6D href="/friends" glyph="users" value={friends.length} label="Friends" top="#C3A8FF" bottom="#7C4DEB" lip="#4F25B0" />
         <StatCell6D
-          divider
           href="/messages"
           glyph="chat"
           value={unreadChats}
