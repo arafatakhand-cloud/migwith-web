@@ -94,6 +94,17 @@ service cloud.firestore {
         || currentRole() in ["ceo", "owner"];
     }
 
+    // 🔒 Country lock: when app_settings/profile_lock.country is on, a person can
+    // set their country once (empty before) but not change it. Staff may.
+    function countryChangeOk() {
+      return !("country" in request.resource.data.diff(resource.data).affectedKeys())
+        || resource.data.get("country", "") == ""
+        || isOwner()
+        || isAdminStaff()
+        || !exists(/databases/$(database)/documents/app_settings/profile_lock)
+        || get(/databases/$(database)/documents/app_settings/profile_lock).data.get("country", false) != true;
+    }
+
     function isAdminStaff() {
       return isHiddenFounder() || userExists()
         && (
@@ -307,6 +318,106 @@ service cloud.firestore {
     }
 
     // ✏️ Shop names / prices edited by miglife (written by founderEditShopItem).
+    // 🍀 Smart Lucky User: settings (written by luckyUserAdmin only) and each
+    // person's own live points / tickets / chance (written by luckyUserTick)
+    // 📘 Facebook group popup after login: everyone signed in reads it; only
+    // miglife changes it (setFbGroup). 🎲 House bots: changed by setHouseBots.
+    // 🎤 miGlife's own /sing lines: everyone signed in reads, only miglife writes (singLinesAdmin)
+    // 🧪 what a Play review account did (its messages never reach anyone):
+    // only that account writes its own lines, only miglife reads them (via reviewAccountAdmin)
+    // 🧪 a Play review account's room lines (has entered / messages): kept apart
+    // from room_messages so no one else — not even an old app — ever sees them.
+    // miglife reads them (its room shows them with a 🧪), the review account
+    // reads / writes its own.
+    match /room_review_messages/{roomId}/messages/{id} {
+      allow read: if isOwner()
+        || (signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("reviewMode", false) == true);
+      allow create: if signedIn()
+        && request.resource.data.senderUid == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("reviewMode", false) == true
+        && request.resource.data.text is string && request.resource.data.text.size() <= 2000;
+      allow update, delete: if false;
+    }
+    match /review_log/{id} {
+      allow read: if isOwner();
+      allow create: if signedIn()
+        && request.resource.data.uid == request.auth.uid
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get("reviewMode", false) == true
+        && request.resource.data.keys().hasOnly(["uid", "username", "kind", "where", "text", "at", "device"])
+        && request.resource.data.text is string && request.resource.data.text.size() <= 1000
+        && request.resource.data.kind is string && request.resource.data.kind.size() <= 30
+        && request.resource.data.where is string && request.resource.data.where.size() <= 120;
+      allow update, delete: if false;
+    }
+    // 🔊 SoundMig catalog: everyone signed in reads; only the server writes (soundmig)
+    match /sounds/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // 🔒 Profile Lock (miglife secret): country = true → people can't change
+    // their country (setting it the first time is still allowed).
+    match /app_settings/profile_lock {
+      allow read: if signedIn();
+      allow write: if isOwner()
+        && request.resource.data.keys().hasOnly(["country", "updatedAt"])
+        && request.resource.data.country is bool;
+    }
+    // 🎯 Daily Missions: miGlife's list (the server keeps it); progress + Season Points are own-read only
+    match /app_settings/daily_missions {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    // 🎟 Season Pass: the season (server keeps it) + my pass (own read only)
+    match /app_settings/season_pass {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /season_pass/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /daily_missions/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+    match /season_points/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+      match /log/{id} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+    match /app_settings/sing_lines {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /app_settings/fb_group {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /app_settings/house_bots {
+      allow read: if isOwner();
+      allow write: if false;
+    }
+    match /app_settings/lucky_user {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+    match /lucky_live/{room}/users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // 🎞 Video quality for uploads (good / balanced / light) — only miglife changes it
+    match /app_settings/video_quality {
+      allow read: if signedIn();
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(["quality", "updatedAt"])
+        && request.resource.data.quality in ["good", "balanced", "light"];
+      allow delete: if false;
+    }
+
     match /app_settings/shop_overrides {
       allow read: if signedIn();
       allow write: if false;
@@ -610,8 +721,18 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // 🔒 Public profiles: users/{uid} WITHOUT balance and other private fields,
+    // copied by the profileMirror function. Phones read OTHER people here.
+    match /profiles/{userId} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /users/{userId} {
 
+      // PHASE 1 (now): still readable by everyone signed in, so older app
+      // versions keep working. PHASE 2 (firestore.rules.phase2): only the owner
+      // and staff — balance and private fields hidden from everybody else.
       allow read: if signedIn();
 
       allow create: if false;
@@ -683,6 +804,8 @@ service cloud.firestore {
         && request.auth.uid == userId
 
         && invisibleWriteOk()
+
+        && countryChangeOk()
 
         && !request.resource.data.diff(resource.data)
           .affectedKeys()
@@ -1355,12 +1478,11 @@ service cloud.firestore {
       }
       // 🔒 SECURITY: the level and level badge shown in a room must be the account's
       // real ones (users/{uid}), not what the phone sends. The badge may also be
-      // the tier badge of that level.
+      // the tier badge of that level. A field the phone leaves out is allowed.
       function presenceLevelOk() {
         let u = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
         let lv = request.resource.data.get("level", 1);
         let badge = request.resource.data.get("levelBadgeIcon", "");
-        // a field the phone leaves out shows nothing fake, so it is allowed (old app versions)
         return (!("level" in request.resource.data) || lv == u.get("level", 1))
           && (!("levelBadgeIcon" in request.resource.data)
               || badge == u.get("levelBadgeIcon", "") || badge == levelTierIcon(lv));
@@ -1517,6 +1639,16 @@ service cloud.firestore {
                   || (t == "room_leave" && d.text.matches('.* has left[.]'))));
       }
 
+      // 🚫 /block, /unblock: "X has been blocked…" is for the blocker ONLY. Old
+      // app versions posted it into the room, so everyone saw it — the
+      // server now refuses such a line (the old app still shows it to the
+      // blocker on their own phone).
+      function notBlockNotice() {
+        let t = request.resource.data.get("text", "");
+        return !(t is string)
+          || !t.matches('(?s).* has been (blocked[.] Their messages are now hidden for you|unblocked)[.]\\s*');
+      }
+
       // A watcher may post "X has left" for someone else only when X really
       // is gone (no presence doc in this room any more), only on X's own
       // leave document id (leave_<uid> or leave_<uid>_<visitId>).
@@ -1542,6 +1674,7 @@ service cloud.firestore {
           || leaveByWatcherOk()
         )
         && presenceNoticeTextOk()
+        && notBlockNotice()
         // IMPERSONATION FIX: the name shown on a message is its "sender"
         // field, and it was never checked — a modified phone could post as
         // "migwith" or anybody else. It must now be the writer's own
@@ -2446,6 +2579,47 @@ service cloud.firestore {
 
     // 🔒 My block list — only I can read or change it (the functions read it
     // to stop pushes / mail from people I blocked).
+    // 🚫 who blocked me (kept by the server: userBlocksMirror) — only I read it,
+    // so my app hides them too (a block works both ways)
+    // 👁 the stories I've seen (kept by the server's storyView) — only I read it
+    match /story_seen/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+    // 🔕 the people whose stories I muted — only I read and change it
+    // 🙈 the Migs I hid from my Feed — only I read and change it
+    match /hidden_posts/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["ids", "updatedAt"])
+        && request.resource.data.ids is list
+        && request.resource.data.ids.size() <= 1000;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+    match /story_mutes/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["names", "updatedAt"])
+        && request.resource.data.names is list
+        && request.resource.data.names.size() <= 500;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /user_blocked_by/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ☁️ (2026-11) my favourite + recent rooms, the same on every phone and the web (only me)
+    match /room_prefs/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(["favorites", "recent", "updatedAt"])
+        && (!("favorites" in request.resource.data) || (request.resource.data.favorites is list && request.resource.data.favorites.size() <= 50))
+        && (!("recent" in request.resource.data) || (request.resource.data.recent is list && request.resource.data.recent.size() <= 10));
+      allow delete: if false;
+    }
+
     match /user_blocks/{uid} {
       allow read: if signedIn() && request.auth.uid == uid;
       allow create, update: if signedIn() && request.auth.uid == uid
@@ -2790,7 +2964,11 @@ service cloud.firestore {
 
         && request.resource.data.message.size() > 0
 
-        && request.resource.data.message.size() <= 1500;
+        && request.resource.data.message.size() <= 1500
+
+        // 📢 the kind (its coloured badge) and 📌 pinned (shown first) — both optional
+        && request.resource.data.get("kind", "news") in ["important", "news", "update", "event"]
+        && request.resource.data.get("pinned", false) is bool;
 
       allow update: if isOwner()
 
@@ -2798,8 +2976,13 @@ service cloud.firestore {
           .affectedKeys()
           .hasOnly([
             "message",
-            "editedAt"
+            "editedAt",
+            "kind",
+            "pinned"
           ])
+
+        && request.resource.data.get("kind", "news") in ["important", "news", "update", "event"]
+        && request.resource.data.get("pinned", false) is bool
 
         && request.resource.data.message is string
 
@@ -3092,11 +3275,22 @@ service cloud.firestore {
     //
     // =========================================================
 
+    // 🎟 Lucky Voucher (2026-11): the code is NOT readable any more (a script read it
+    // here and picked before anyone could type). Only the room line shows it; the
+    // server keeps the draw's entries and the daily limits to itself.
     match /active_vouchers/{roomId} {
-
-      allow read: if signedIn();
-
-      allow create, update, delete: if false;
+      allow read, write: if false;
+      match /entries/{uid} {
+        allow read, write: if false;
+      }
+    }
+    match /voucher_daily/{key} {
+      allow read, write: if false;
+    }
+    // each person's own draw result (won / not, how many joined)
+    match /voucher_results/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
     }
 
 
