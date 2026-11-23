@@ -2545,6 +2545,10 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   const open = () => (onOpen ? onOpen() : router.push(`/feed/${p.id}`));
   const [viewing, setViewing] = useState(false);
   const text = tr?.text || p.excerpt;
+  // 🎨 miGlife's own cards (Daily Missions, Welcome) keep the app's colourful look
+  const sysKind = p.author.toLowerCase() === "miglife" && !p.cover
+    ? /daily missions/i.test(p.title) ? "missions" : /welcome to miglife|new member joined/i.test(p.title) ? "welcome" : ""
+    : "";
   // X1: a long words-only Mig shows like normal writing on white, its end fading
   // out under a "Read more ⌄" pill that opens it right here
   const fullText =
@@ -2885,8 +2889,9 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           </div>
         ) : plain ? (
           <div className="px-4 pb-1 text-left">
+            <div className={sysKind ? `rounded-[20px] p-4 text-white shadow-[0_10px_22px_-10px_rgba(0,0,0,.35)] ${sysKind === "missions" ? "bg-gradient-to-br from-[#FB923C] via-[#F97316] to-[#EC4899]" : "bg-gradient-to-br from-[#2563EB] to-[#38BDF8]"}` : ""}>
             <div className={`relative ${long && !more ? "max-h-[9.6em] overflow-hidden" : ""}`}>
-              <p className={`whitespace-pre-line break-words leading-[1.5] text-[#16264A] ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`}>
+              <p className={`whitespace-pre-line break-words leading-[1.5] ${sysKind ? "text-white" : "text-[#16264A]"} ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`}>
                 <RichText text={long ? fullText : text} />
               </p>
               {long && !more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
@@ -2901,6 +2906,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
               </button>
             )}
             {hasWords && <TranslateLink postId={p.id} />}
+            </div>
           </div>
         ) : (
           <div className="flex min-h-[220px] flex-col items-center justify-center px-6 py-8 text-center" style={{ background: artBg }}>
