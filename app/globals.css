@@ -647,6 +647,15 @@ html[data-theme="glass"]:not([data-ui="classic"]) main [class*="bg-gradient-to-"
   background-color: #ffffff !important;
   color: #0b2a5b !important;
 }
+/* 🤍 bubble cards on every page (glass theme): plain grey edge, no coloured border, plain white icon tiles */
+html[data-theme="glass"]:not([data-ui="classic"]) main [style*="border-color"]:not(.aurora-card):not(header):not(header *):not(.fixed):not(.fixed *) {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="glass"]:not([data-ui="classic"]) main span[style*="linear-gradient"]:not(.aurora-card):not(header *):not(.fixed *) {
+  background-image: none !important;
+  background-color: #eef3f9 !important;
+  color: #0b2a5b !important;
+}
 /* 🤍 the Lobby page: plain white background (no sky) */
 html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) {
   background: #ffffff !important;
