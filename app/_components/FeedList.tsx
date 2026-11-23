@@ -2902,9 +2902,12 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           </div>
         ) : plain ? (
           <div className="px-4 pb-1 text-left">
-            <div className={sysKind ? `rounded-[20px] p-4 text-white shadow-[0_10px_22px_-10px_rgba(0,0,0,.35)] ${sysKind === "missions" ? "bg-gradient-to-br from-[#FB923C] via-[#F97316] to-[#EC4899]" : "bg-gradient-to-br from-[#2563EB] to-[#38BDF8]"}` : ""}>
+            <div
+              className={sysKind ? "rounded-[20px] p-4 text-white shadow-[0_10px_22px_-10px_rgba(0,0,0,.35)]" : ""}
+              style={sysKind ? { color: "#ffffff", background: sysKind === "missions" ? "linear-gradient(135deg, #FB923C, #F97316 55%, #EC4899)" : "linear-gradient(135deg, #2563EB, #38BDF8)" } : undefined}
+            >
             <div className={`relative ${long && !more ? "max-h-[9.6em] overflow-hidden" : ""}`}>
-              <p className={`whitespace-pre-line break-words leading-[1.5] ${sysKind ? "text-white" : "text-[#16264A]"} ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`}>
+              <p className={`whitespace-pre-line break-words leading-[1.5] ${long ? "text-[15px] font-medium" : "text-[18px] font-bold"}`} style={{ color: sysKind ? "#ffffff" : "#16264A" }}>
                 <RichText text={long ? fullText : text} />
               </p>
               {long && !more && <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-b from-transparent to-white" />}
