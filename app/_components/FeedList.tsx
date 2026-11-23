@@ -1965,8 +1965,10 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               onClick={() => setComposing(true)}
               className="group mx-3.5 mb-4 mt-1 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[22px] bg-[#FFFFFF] py-2.5 pl-3 pr-2.5 text-left shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition duration-200 active:scale-[.99]"
             >
-              <MigLifeMark size={40} />
+              {/* 🎨 app look: my picture with a ring, the placeholder, and a photo tile on the right */}
+              <Avatar name={username} color={meColor} size={42} ring />
               <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#F1EFFF] text-[18px]">🖼️</span>
             </button>
           ) : (
             <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
