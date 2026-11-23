@@ -229,8 +229,10 @@ export default function MembersPage() {
   const findTarget = async (input: string): Promise<Member | null> => {
     const v = input.trim();
     if (!v) return null;
-    for (const field of ["username", "migId"]) {
-      const snap = await getDocs(query(collection(db, "profiles"), where(field, "==", v), limit(1))).catch(() => null);
+    // usernameLower first: "vip" must find "VIP", "Vip" … (names are stored with their own capitals)
+    for (const field of ["usernameLower", "username", "migId"]) {
+      const value = field === "usernameLower" ? v.toLowerCase() : v;
+      const snap = await getDocs(query(collection(db, "profiles"), where(field, "==", value), limit(1))).catch(() => null);
       const d = snap?.docs[0];
       if (d) return toMember(d.id, d.data());
     }
