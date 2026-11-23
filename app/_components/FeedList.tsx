@@ -94,12 +94,16 @@ const SYS_GRADIENT: Record<string, string> = {
   amal: "linear-gradient(135deg, #1E3A8A, #0E7490)",
 };
 const TAB_ICONS: Record<string, string> = { foryou: "🎯", new: "✨", popular: "🔥", explore: "🧭", friends: "👥", following: "⭐", mine: "👤" };
-// The app's Feed tabs: For You · New · Popular · Explore (Friends / Following / Mine live elsewhere)
+// The app's Feed tabs, in the same order (the bar scrolls sideways): For You · New · Popular · Explore · Friends · Following · Mine · Saved
 const TABS: [Tab, string][] = [
   ["foryou", "✨ For You"],
   ["new", "New"],
   ["popular", "Popular"],
   ["explore", "🧭 Explore"],
+  ["friends", "Friends"],
+  ["following", "Following"],
+  ["mine", "Mine"],
+  ["saved", "🔖 Saved"],
 ];
 
 // 🎨 D3: each Feed tab's colour — [fill, lip, light, light lip, ink]
@@ -111,6 +115,7 @@ const TAB_KEYS: Record<string, [string, string, string, string, string]> = {
   mine: ["#DB2777", "#9D174D", "#FCE7F3", "#F2A7C9", "#BE185D"],
   foryou: ["#E11D48", "#9F1239", "#FFE4E6", "#F5A3B5", "#BE123C"],
   explore: ["#0891B2", "#0E7490", "#CFFAFE", "#8BD8E8", "#0E7490"],
+  saved: ["#D97706", "#B45309", "#FEF3C7", "#F5D27A", "#B45309"],
 };
 function tabKeyStyle(k: string, on: boolean): React.CSSProperties {
   const [fill, lip, light, lightLip, ink] = TAB_KEYS[k] || TAB_KEYS.new;
