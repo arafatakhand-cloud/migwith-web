@@ -660,9 +660,9 @@ function StatusEditor({ value, onChange, onCancel, onSave }: { value: string; on
             type="button"
             onClick={save}
             disabled={saving}
-            data-keep-color=""
             className="h-12 flex-[1.4] rounded-3xl border-[1.5px] border-white/60 text-[15px] font-extrabold text-white shadow-[0_6px_14px_rgba(59,123,240,.4)] disabled:opacity-70"
-            style={{ background: BRAND }}
+            // a solid blue (no "linear-gradient" in the style), so the glass theme's white rule cannot turn it white
+            style={{ background: "#3B7BF0" }}
           >
             {saving ? "Saving…" : "✓  Save status"}
           </button>
