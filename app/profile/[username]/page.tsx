@@ -995,7 +995,7 @@ export default function ProfilePage() {
                   <div key={label} className={`flex items-center gap-3 py-2.5 ${i < rows.length - 1 ? "border-b border-[#EEF3F8]" : ""}`}>
                     <span className="flex w-5 justify-center text-[15px]">{icon}</span>
                     <span className="w-[92px] shrink-0 text-[12.5px] font-bold text-[#6B7FA0]">{label}</span>
-                    <span className="ml-auto min-w-0 truncate text-right text-[13.5px] font-extrabold" style={{ color: color || "#0B2A5B" }} data-notranslate>
+                    <span className="ml-auto min-w-0 truncate text-right text-[13.5px] font-extrabold" style={{ color: color || "var(--ink-strong, #0B2A5B)" }} data-notranslate>
                       {value}
                     </span>
                   </div>
