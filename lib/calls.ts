@@ -18,6 +18,8 @@ export type CallView = {
   muted: boolean;
   speaker: boolean;
   error: string;
+  /** false when the server sent no TURN relay (Cloudflare keys missing): calls on mobile data may not connect */
+  relay?: boolean;
 };
 
 type Listener = (v: CallView | null) => void;
@@ -49,13 +51,19 @@ let connectTimer = 0;
 const FINAL: string[] = ["declined", "cancelled", "missed", "ended", "busy"];
 
 async function iceServers(given?: RTCIceServer[]): Promise<RTCIceServer[]> {
-  if (given && given.length) return given;
-  try {
-    const r = await httpsCallable<unknown, { iceServers: RTCIceServer[] }>(functions, "callIce")({});
-    return r.data.iceServers || [];
-  } catch {
-    return [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }];
+  let list: RTCIceServer[] = given && given.length ? given : [];
+  if (!list.length) {
+    try {
+      const r = await httpsCallable<unknown, { iceServers: RTCIceServer[] }>(functions, "callIce")({});
+      list = r.data.iceServers || [];
+    } catch {
+      list = [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }];
+    }
   }
+  // 🛰 is there a TURN relay? (without it many mobile networks can't connect)
+  const relay = list.some((s) => (Array.isArray(s.urls) ? s.urls : [s.urls]).some((u) => /^turns?:/.test(String(u))));
+  patch({ relay });
+  return list;
 }
 
 async function micStream(): Promise<MediaStream> {

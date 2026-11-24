@@ -76,6 +76,11 @@ export default function CallHost() {
           </span>
         </div>
         {live && <div className="mt-10 text-[14px] text-white/80">🔒 Only you two can hear this call</div>}
+        {v.status === "connecting" && v.relay === false && (
+          <div className="mx-8 mt-8 rounded-xl bg-black/25 px-4 py-2.5 text-center text-[12.5px] text-[#FDE68A]">
+            ⚠️ No relay server (TURN) — calls on mobile data may not connect. Try Wi-Fi.
+          </div>
+        )}
 
         <div className="absolute inset-x-0 bottom-[max(56px,env(safe-area-inset-bottom))] flex justify-around px-6">
           {incoming ? (
