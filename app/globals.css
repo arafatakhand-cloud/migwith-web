@@ -1836,31 +1836,43 @@ html[data-theme="dark_night"] :is([style*="px 0 #"], [style*="px 0 rgb"], [class
 }
 html[data-theme] .pf6d-card.pf6d-card.pf6d-card,
 html[data-theme] .pf6d-tile.pf6d-tile.pf6d-tile { box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06) !important; }
-html[data-theme="dark_night"] { --card-line: #262C3E; --chip-surface: #1F2536; }
+html[data-theme="dark_night"] { --card-line: #262626; --chip-surface: #1C1C1E; }
 html[data-theme="dark_night"] .pf6d-card.pf6d-card.pf6d-card,
-html[data-theme="dark_night"] .pf6d-tile.pf6d-tile.pf6d-tile { background: #1A1F2D !important; }
-html[data-theme="dark_night"] :is(.divide-\[\#EEF2F8\], .divide-\[\#EEF2F6\], .divide-\[\#E3E8F2\]) > :not(:last-child) { border-color: #262C3E; }
+html[data-theme="dark_night"] .pf6d-tile.pf6d-tile.pf6d-tile { background: #121212 !important; }
+html[data-theme="dark_night"] :is(.divide-\[\#EEF2F8\], .divide-\[\#EEF2F6\], .divide-\[\#E3E8F2\]) > :not(:last-child) { border-color: #262626; }
 
 /* 🌙 Modern Dark: pages whose light colours are written inline (miglife's video 2026-11-24) */
-html[data-theme="dark_night"] { --ink-strong: #E7EAF3; }
+html[data-theme="dark_night"] { --ink-strong: #F2F2F2; }
 html[data-theme="modern_light"] { --chip-surface: #FFFFFF; }
-html[data-theme="dark_night"] .wl-page { background: #12151F !important; }
-html[data-theme="dark_night"] .wl-hero { background: linear-gradient(135deg, #22305A, #1A1F2D 60%) !important; border-color: #262C3E !important; box-shadow: none !important; }
+html[data-theme="dark_night"] .wl-page { background: #000000 !important; }
+html[data-theme="dark_night"] .wl-hero { background: linear-gradient(135deg, #22305A, #121212 60%) !important; border-color: #262626 !important; box-shadow: none !important; }
 html[data-theme="dark_night"] .wl-hero > svg { opacity: .25; }
-html[data-theme="dark_night"] .wl-stat { background: #1F2536 !important; border-color: #262C3E !important; box-shadow: none !important; }
+html[data-theme="dark_night"] .wl-stat { background: #1C1C1E !important; border-color: #262626 !important; box-shadow: none !important; }
 html[data-theme="dark_night"] .wl-stat > svg { opacity: .2; }
-html[data-theme="dark_night"] .wl-hero :is(.text-\[\#6B7A90\]) { color: #9AA3BD; }
+html[data-theme="dark_night"] .wl-hero :is(.text-\[\#6B7A90\]) { color: #A0A0A0; }
 /* inline dark-navy text (style="color:#0B2A5B" …) becomes the light ink */
-html[data-theme="dark_night"] :is([style*="color: rgb(11, 42, 91)"], [style*="color: rgb(11, 31, 58)"], [style*="color: rgb(22, 38, 74)"], [style*="color: rgb(14, 27, 61)"], [style*="color: rgb(10, 30, 99)"]):not([style*="background"]) { color: #E7EAF3 !important; }
+html[data-theme="dark_night"] :is([style*="color: rgb(11, 42, 91)"], [style*="color: rgb(11, 31, 58)"], [style*="color: rgb(22, 38, 74)"], [style*="color: rgb(14, 27, 61)"], [style*="color: rgb(10, 30, 99)"]):not([style*="background"]) { color: #F2F2F2 !important; }
 
 /* 🌙 Modern Dark: the room's top cards (managed by · welcome · who is here) and the
    pinned announcement — they were light cards, so the lifted light text vanished */
-html[data-theme="dark_night"] .ric-card { background: #1A1F2D !important; border-color: #262C3E !important; box-shadow: none !important; }
-html[data-theme="dark_night"] .ric-card :is(.text-\[\#1E293B\], .text-\[\#0B2A5B\]) { color: #E7EAF3 !important; }
+html[data-theme="dark_night"] .ric-card { background: #121212 !important; border-color: #262626 !important; box-shadow: none !important; }
+html[data-theme="dark_night"] .ric-card :is(.text-\[\#1E293B\], .text-\[\#0B2A5B\]) { color: #F2F2F2 !important; }
 html[data-theme="dark_night"] .ric-card .text-\[\#1565D8\] { color: #8AA8FF !important; }
 html[data-theme="dark_night"] .ric-card .text-\[\#6D28D9\] { color: #C4B5FD !important; }
 html[data-theme="dark_night"] .ric-card .text-\[\#0E9F8E\] { color: #5EEAD4 !important; }
-html[data-theme="dark_night"] .ric-card .bg-\[\#E0F6F2\] { background: #12332F !important; }
-html[data-theme="dark_night"] .room-announce { background: #3A1F28 !important; }
+html[data-theme="dark_night"] .ric-card .bg-\[\#E0F6F2\] { background: #10241F !important; }
+html[data-theme="dark_night"] .room-announce { background: #2A1A1F !important; }
 html[data-theme="dark_night"] .room-announce :is(p, a) { color: #F8D7DD !important; }
 html[data-theme="modern_light"] .ric-card { box-shadow: none !important; border-color: #E3E8F2 !important; }
+
+/* ⚫ Modern Dark = flat black (miglife 2026-11-24): black page, #121212 cards, no blue
+   tint, no 3D lips, a black top bar */
+html[data-theme="dark_night"] { --ink-strong: #F2F2F2; --card-line: #262626; --chip-surface: #1C1C1E; }
+html[data-theme="dark_night"] header[data-topbar], html[data-theme="dark_night"] .topbar-6d { background: #0A0A0A !important; }
+html[data-theme="dark_night"] header[data-topbar] { border-bottom: 1px solid #1F1F1F; }
+html[data-theme="dark_night"] [data-cell6d] { background: #121212 !important; box-shadow: none !important; border: 1px solid #262626; }
+html[data-theme="dark_night"] .aurora-card { background: #121212 !important; box-shadow: none !important; border: 1px solid #262626; }
+html[data-theme="dark_night"] .aurora-card .aurora-light { opacity: .3; }
+html[data-theme="dark_night"] .mh-status { background: #1C1C1E !important; }
+html[data-theme="dark_night"] .room-chat-bg { background: #000000 !important; }
+html[data-theme="dark_night"] main[data-shell] { background: #000000; }

@@ -79,10 +79,9 @@ function darkSurface(hex) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
   if (l < 0.72) return null;
   // white / grey → the soft blue-grey card colour (#1A1F2D), like the app
-  if (s < 0.08) return toHex(hslToRgb(226, 0.27, 0.14 + (1 - l) * 0.5));
-  // pale blue page / card tints → the same deep blue-black as the pages (#12151F … #1A1F2D)
-  if (h >= 180 && h <= 260) return toHex(hslToRgb(226, 0.25, 0.1 + (1 - l) * 0.45));
-  return toHex(hslToRgb(h, Math.min(s, 0.35), 0.11 + (1 - l) * 0.55));
+  // ⚫ flat black (miglife 2026-11-24): white / grey / pale-blue cards → neutral #121212 …
+  if (s < 0.08 || (h >= 180 && h <= 290)) return toHex(hslToRgb(0, 0, 0.07 + (1 - l) * 0.5));
+  return toHex(hslToRgb(h, Math.min(s, 0.25), 0.08 + (1 - l) * 0.5));
 }
 // Same as the app's darkModeInk: text too dark to read on the dark pages is
 // made light. A coloured one keeps its colour (dark blue → light blue, dark
@@ -95,7 +94,7 @@ function darkInk(hex) {
   if (lumv >= 0.3 || (l >= 0.6 && lumv >= 0.22)) return null;
   if (l >= 0.4 && s <= 0.4) return toHex(hslToRgb(h, Math.min(s, 0.3), 0.74));
   // very dark navy text (titles) → the clear off-white of the demo (#E7EAF3)
-  if (l < 0.25 && h >= 180 && h <= 260) return "#E7EAF3";
+  if (l < 0.25 && h >= 180 && h <= 260) return "#F2F2F2";
   if (s > 0.4) return toHex(hslToRgb(h, Math.min(s, 0.9), 0.7));
   return toHex(hslToRgb(h, Math.min(s, 0.35), 0.88 - l * 0.3));
 }
@@ -168,13 +167,13 @@ for (const [cls, info] of entries) {
   if (!out) continue;
   css += media(info.variants, `html[data-theme="dark_night"] .${esc(cls)}${pseudo(info.variants)}{${PROPS[info.kind]}:${withAlpha(out, info.alpha)}}`);
 }
-css += `html[data-theme="dark_night"]{--card-surface:#1A1F2D;color-scheme:dark}
-html[data-theme="dark_night"] body{background:#12151F;color:#E7EAF3}
-html[data-theme="dark_night"] .bg-white{background-color:#1A1F2D}
-html[data-theme="dark_night"] .bg-white\\/70,html[data-theme="dark_night"] .bg-white\\/85,html[data-theme="dark_night"] .bg-white\\/90{background-color:rgb(26 31 45 / .88)}
-html[data-theme="dark_night"] .text-black,html[data-theme="dark_night"] .text-gray-500,html[data-theme="dark_night"] .text-gray-400{color:#9AA3BD}
-html[data-theme="dark_night"] input,html[data-theme="dark_night"] textarea,html[data-theme="dark_night"] select{color:#E7EAF3}
-html[data-theme="dark_night"] .bg-sky-app{background:linear-gradient(180deg,#151926 0%,#12151F 45%,#0F121B 100%);background-attachment:fixed}
+css += `html[data-theme="dark_night"]{--card-surface:#121212;color-scheme:dark}
+html[data-theme="dark_night"] body{background:#000000;color:#F2F2F2}
+html[data-theme="dark_night"] .bg-white{background-color:#121212}
+html[data-theme="dark_night"] .bg-white\\/70,html[data-theme="dark_night"] .bg-white\\/85,html[data-theme="dark_night"] .bg-white\\/90{background-color:rgb(18 18 18 / .9)}
+html[data-theme="dark_night"] .text-black,html[data-theme="dark_night"] .text-gray-500,html[data-theme="dark_night"] .text-gray-400{color:#A0A0A0}
+html[data-theme="dark_night"] input,html[data-theme="dark_night"] textarea,html[data-theme="dark_night"] select{color:#F2F2F2}
+html[data-theme="dark_night"] .bg-sky-app{background:#000000}
 `;
 
 // ☀️ Modern Light: pale sky-blue page / card tints become clean light greys
