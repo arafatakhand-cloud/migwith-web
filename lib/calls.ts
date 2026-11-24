@@ -22,6 +22,8 @@ export type CallView = {
   relay?: boolean;
   /** 🛰 this browser reached the relay ("ok"), could not ("fail"), or is still trying */
   relayCheck?: "ok" | "fail";
+  /** why the server has no relay ("keys not set", "Cloudflare said 401" …) */
+  relayWhy?: string;
 };
 
 type Listener = (v: CallView | null) => void;
@@ -56,9 +58,11 @@ async function iceServers(given?: RTCIceServer[]): Promise<RTCIceServer[]> {
   let list: RTCIceServer[] = given && given.length ? given : [];
   if (!list.length) {
     try {
-      const r = await httpsCallable<unknown, { iceServers: RTCIceServer[] }>(functions, "callIce")({});
+      const r = await httpsCallable<unknown, { iceServers: RTCIceServer[]; why?: string }>(functions, "callIce")({});
       list = r.data.iceServers || [];
-    } catch {
+      patch({ relayWhy: r.data.why || "" });
+    } catch (e) {
+      patch({ relayWhy: `callIce failed: ${String((e as { message?: string })?.message || "").slice(0, 60)}` });
       list = [{ urls: ["stun:stun.cloudflare.com:3478", "stun:stun.l.google.com:19302"] }];
     }
   }
