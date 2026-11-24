@@ -28359,3 +28359,61 @@ exports.decideProfileSongRequest = functionsV1.https.onCall(async (data, context
   await reqRef.update({ status: "approved", catalogId: songId, price, decidedAt: FieldValue.serverTimestamp(), decidedBy: me.get("username") || "" });
   return { ok: true, id: songId };
 });
+
+// 🌐 Vercel buttons (miGlife secret → Site control): list the last production deployments,
+// redeploy the live one, or roll production back to an earlier good deployment.
+// Needs functions env values (set once, never in the app):
+//   VERCEL_TOKEN        — an access token from Vercel (Account → Tokens)
+//   VERCEL_PROJECT_NAME — the project name, "migwith" if not set
+//   VERCEL_TEAM_ID      — only if the project belongs to a team (optional)
+const VERCEL_API = "https://api.vercel.com";
+async function vercelCall(method, path, body) {
+  const token = process.env.VERCEL_TOKEN;
+  if (!token) throw new functionsV1.https.HttpsError("failed-precondition", "VERCEL_TOKEN is not set in the functions settings.");
+  const teamId = process.env.VERCEL_TEAM_ID || "";
+  const sep = path.includes("?") ? "&" : "?";
+  const url = VERCEL_API + path + (teamId ? `${sep}teamId=${encodeURIComponent(teamId)}` : "");
+  const res = await fetch(url, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new functionsV1.https.HttpsError("internal", "Vercel: " + ((json && json.error && json.error.message) || res.status));
+  return json;
+}
+
+exports.founderVercel = functionsV1.runWith({ timeoutSeconds: 120 }).https.onCall(async (data, context) => {
+  await assertSecretOpen(context && context.auth);   // 🔒 miGlife secret must be open
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(me.get("username"))) throw new E("permission-denied", "Only miglife can do this.");
+  const project = process.env.VERCEL_PROJECT_NAME || "migwith";
+  const action = String((data && data.action) || "");
+  if (action === "list") {
+    const r = await vercelCall("GET", `/v6/deployments?projectId=${encodeURIComponent(project)}&target=production&limit=10`);
+    return {
+      deployments: (r.deployments || []).map((d) => ({
+        id: String(d.uid || ""),
+        url: String(d.url || ""),
+        state: String(d.state || ""),
+        created: Number(d.created || 0),
+        message: String((d.meta && d.meta.githubCommitMessage) || "").slice(0, 90),
+      })),
+    };
+  }
+  if (action === "redeploy") {
+    const id = String((data && data.deploymentId) || "");
+    if (!/^dpl_[A-Za-z0-9]+$/.test(id)) throw new E("invalid-argument", "Unknown deployment.");
+    const r = await vercelCall("POST", "/v13/deployments?forceNew=1", { name: project, deploymentId: id, target: "production" });
+    return { ok: true, id: String(r.id || ""), url: String(r.url || "") };
+  }
+  if (action === "rollback") {
+    const id = String((data && data.deploymentId) || "");
+    if (!/^dpl_[A-Za-z0-9]+$/.test(id)) throw new E("invalid-argument", "Unknown deployment.");
+    await vercelCall("POST", `/v10/projects/${encodeURIComponent(project)}/promote/${encodeURIComponent(id)}`);
+    return { ok: true };
+  }
+  throw new E("invalid-argument", "Choose list, redeploy or rollback.");
+});

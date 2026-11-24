@@ -12,6 +12,8 @@ import { FounderShell, card, input } from "../_Shell";
 //  • Maintenance: everyone except miglife sees a maintenance screen.
 //  • Stuck games: stop a room's running bot game; every entry is refunded (adminStopBot).
 const stopBot = httpsCallable<{ roomId: string }, unknown>(functions, "adminStopBot");
+const vercel = httpsCallable<{ action: "list" | "redeploy" | "rollback"; deploymentId?: string }, any>(functions, "founderVercel");
+type Deploy = { id: string; url: string; state: string; created: number; message: string };
 const LUXURY_ROOM = "🎰 Luxury Bet";
 
 type Stuck = { roomId: string; game: string };
@@ -23,6 +25,34 @@ export default function SiteControlPage() {
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [stuck, setStuck] = useState<Stuck[] | null>(null);
+  const [deploys, setDeploys] = useState<Deploy[] | null>(null);
+  const [vBusy, setVBusy] = useState(false);
+  const loadDeploys = async () => {
+    try {
+      const r = await vercel({ action: "list" });
+      setDeploys(r.data.deployments || []);
+    } catch (e: any) {
+      setDeploys([]);
+      setMsg({ text: e?.message || "Could not load Vercel deployments.", bad: true });
+    }
+  };
+  const vercelAct = async (action: "redeploy" | "rollback", d: Deploy) => {
+    const ask = action === "redeploy"
+      ? "Redeploy the live website now? It rebuilds and goes live again."
+      : `Roll the website back to ${d.created ? new Date(d.created).toLocaleString() : d.url}?`;
+    if (!window.confirm(ask)) return;
+    setVBusy(true);
+    setMsg(null);
+    try {
+      await vercel({ action, deploymentId: d.id });
+      setMsg({ text: action === "redeploy" ? "✓ Redeploy started. It goes live in a few minutes." : "✓ Website rolled back.", bad: false });
+      await loadDeploys();
+    } catch (e: any) {
+      setMsg({ text: e?.message || "Vercel did not accept it.", bad: true });
+    } finally {
+      setVBusy(false);
+    }
+  };
 
   const loadAll = async () => {
     const ctl = await getDoc(doc(db, "app_settings", "site_control")).catch(() => null);
@@ -38,7 +68,10 @@ export default function SiteControlPage() {
     setStuck(list);
   };
   useEffect(() => {
-    if (f.isMigwith) void loadAll();
+    if (f.isMigwith) {
+      void loadAll();
+      void loadDeploys();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.isMigwith]);
 
@@ -118,6 +151,41 @@ export default function SiteControlPage() {
           </ul>
         )}
         <p className="text-[11px] text-[#5B6B8C]">Stopping refunds every entry in that game. Use it only when a game is stuck.</p>
+      </div>
+
+      <div className={`${card} mt-4 space-y-3`}>
+        <div className="flex items-center justify-between">
+          <p className="font-extrabold">🌐 Website (Vercel)</p>
+          <button type="button" onClick={() => void loadDeploys()} className="rounded-lg bg-[#EEF3FA] px-2.5 py-1.5 text-xs font-bold text-[#174EA6]">↻</button>
+        </div>
+        <p className="text-xs text-[#5B6B86]">If the site is slow or stuck: Redeploy the live version, or roll back to an earlier good one.</p>
+        {deploys === null ? (
+          <p className="text-sm text-[#5B6B86]">Loading…</p>
+        ) : deploys.length === 0 ? (
+          <p className="text-sm text-[#5B6B86]">No deployments found (check the VERCEL_TOKEN setting).</p>
+        ) : (
+          <ul className="space-y-2">
+            {deploys.map((d, i) => (
+              <li key={d.id} className="flex items-center gap-2 rounded-xl border border-[#E3ECF7] bg-white p-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold">
+                    {i === 0 ? "● Live now" : d.state === "READY" ? "Earlier" : d.state} · {d.created ? new Date(d.created).toLocaleString() : ""}
+                  </p>
+                  <p className="truncate text-[11px] text-[#5B6B86]">{d.message || d.url}</p>
+                </div>
+                {i === 0 ? (
+                  <button type="button" disabled={vBusy} onClick={() => vercelAct("redeploy", d)} className="rounded-lg bg-[#2F80ED] px-3 py-2 text-xs font-bold text-white disabled:opacity-60">
+                    Redeploy
+                  </button>
+                ) : d.state === "READY" ? (
+                  <button type="button" disabled={vBusy} onClick={() => vercelAct("rollback", d)} className="rounded-lg bg-[#16264A] px-3 py-2 text-xs font-bold text-white disabled:opacity-60">
+                    Roll back here
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {msg && <p className={`mt-4 rounded-xl px-3 py-2 text-sm font-bold ${msg.bad ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>{msg.text}</p>}
