@@ -10,6 +10,7 @@ import { LoginWelcomeSplash } from "./_components/LoginWelcome";
 import { FbGroupPopup } from "./_components/FbGroupPopup";
 import { TextStyleBar } from "./_components/TextStyleBar";
 import { BootSplash } from "./_components/BootSplash";
+import { SiteControlGate } from "./_components/SiteControlGate";
 import { BOOT_SPLASH_SCRIPT } from "../lib/bootSplash";
 
 export const metadata: Metadata = {
@@ -82,6 +83,7 @@ export default function RootLayout({
         />
         <BootSplash />
         <AppSession>{children}</AppSession>
+        <SiteControlGate />
         {/* 🚩 the Report dialog, opened from profiles, room lines and private chats */}
         <ReportDialogHost />
         <Translator />

@@ -3356,6 +3356,18 @@ service cloud.firestore {
     //
     // =========================================================
 
+    // 🛠 Site control: everyone reads (maintenance screen and the refresh signal); only miglife writes
+    match /app_settings/site_control {
+      allow read: if true;
+      allow create, update: if isOwner()
+        && request.resource.data.keys().hasOnly(["refreshAt", "maintenance", "maintenanceText", "updatedAt"])
+        && request.resource.data.get("maintenance", false) is bool
+        && request.resource.data.get("refreshAt", 0) is number
+        && request.resource.data.get("maintenanceText", "") is string
+        && request.resource.data.get("maintenanceText", "").size() <= 200;
+      allow delete: if false;
+    }
+
     match /app_config/{docId} {
 
       allow read: if true;
