@@ -1605,17 +1605,21 @@ html:not([data-theme="dark_night"]) .chat-name { color: var(--name-light); }
 
 /* 🌙 Dark Night: the profile page is a lighter slate (not near-black), and its
    details box is a light glass with dark text, so the words can be read. */
+/* ⚫ (2026-11-24) flat black: black page, #121212 details box with light text
+   (the box had turned black while its text stayed navy — unreadable) */
 html[data-theme="dark_night"] main[data-shell] .page-bg {
-  background-color: #2F4262 !important;
+  background-color: #000000 !important;
 }
 html[data-theme="dark_night"] .pf-info-glass {
-  background: linear-gradient(160deg, rgba(236, 243, 252, 0.97), rgba(214, 226, 242, 0.94)) !important;
-  border-color: rgba(255, 255, 255, 0.9);
+  background: #121212 !important;
+  border-color: #262626 !important;
 }
 html[data-theme="dark_night"] .pf-info-glass,
 html[data-theme="dark_night"] .pf-info-glass * {
-  color: #0B2A5B !important;
+  color: #F2F2F2 !important;
 }
+html[data-theme="dark_night"] .pf-info-glass .w-\[92px\] { color: #A0A0A0 !important; }
+html[data-theme="dark_night"] .pf-info-glass .border-b { border-color: #262626 !important; }
 
 /* 🫧 The blue behind the page's bottom edge (when the page is pulled or ends
    short of the phone's bottom bar) matches the top bar. */
@@ -1876,3 +1880,9 @@ html[data-theme="dark_night"] .aurora-card .aurora-light { opacity: .3; }
 html[data-theme="dark_night"] .mh-status { background: #1C1C1E !important; }
 html[data-theme="dark_night"] .room-chat-bg { background: #000000 !important; }
 html[data-theme="dark_night"] main[data-shell] { background: #000000; }
+
+/* ⚫ dark profile: tile numbers in a lighter shade of their colour so they read on #121212 */
+html[data-theme="dark_night"] .pf6d-tile span[style*="color-mix"] { filter: brightness(1.9) saturate(0.9); }
+html[data-theme="dark_night"] .pf-name { background-image: linear-gradient(90deg, #93C5FD, #C4B5FD) !important; filter: none !important; }
+html[data-theme="dark_night"] .pf-chip { background: #1C1C1E !important; box-shadow: none !important; border: 1px solid #2E2E30; filter: brightness(1.55); }
+html[data-theme="dark_night"] .pf6d-tile .text-\[\#5B6B8C\] { color: #A0A0A0 !important; }

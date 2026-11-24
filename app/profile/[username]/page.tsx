@@ -917,7 +917,7 @@ export default function ProfilePage() {
           ) : (
             <p
               data-notranslate
-              className="truncate bg-gradient-to-r from-[#1D4ED8] to-[#7C3AED] bg-clip-text pb-1 text-[27px] font-black leading-tight text-transparent"
+              className="pf-name truncate bg-gradient-to-r from-[#1D4ED8] to-[#7C3AED] bg-clip-text pb-1 text-[27px] font-black leading-tight text-transparent"
               // (2026-11) one soft shadow: the 3 stacked ones made short names ("life") blurry
               style={{ filter: "drop-shadow(0 2px 3px rgba(30,27,107,.25))", letterSpacing: ".5px" }}
             >
@@ -930,7 +930,7 @@ export default function ProfilePage() {
           <div className="mt-2.5 flex flex-wrap gap-2">
             {shownRole && (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                className="pf-chip inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
                 style={{ color: shownRole.color, boxShadow: `0 3px 0 color-mix(in srgb, ${shownRole.color} 65%, transparent), 0 5px 0 color-mix(in srgb, ${shownRole.color} 35%, transparent)` }}
               >
                 <G3BadgeFor emoji={roleEmoji} images={roleBadgeUrl ? { [roleEmoji]: roleBadgeUrl } : {}} />
@@ -940,7 +940,7 @@ export default function ProfilePage() {
             {secondRole && (
               // 🛒 a second role (a Staff member who is also a Merchant …)
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                className="pf-chip inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
                 style={{ color: secondRole.color, boxShadow: `0 3px 0 color-mix(in srgb, ${secondRole.color} 65%, transparent), 0 5px 0 color-mix(in srgb, ${secondRole.color} 35%, transparent)` }}
               >
                 <G3BadgeFor emoji={secondEmoji} images={badgeImages[secondEmoji] ? { [secondEmoji]: badgeImages[secondEmoji] } : {}} />
@@ -949,7 +949,7 @@ export default function ProfilePage() {
             )}
             {team && (
               <span
-                className="inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
+                className="pf-chip inline-flex items-center gap-1 rounded-full bg-gradient-to-b from-white to-[#F4F7FC] px-3 py-[5px] text-[13px] font-extrabold"
                 style={{ color: team.text, boxShadow: `0 3px 0 color-mix(in srgb, ${team.text} 65%, transparent), 0 5px 0 color-mix(in srgb, ${team.text} 35%, transparent)` }}
                 title={`${team.name} supporter`}
               >
