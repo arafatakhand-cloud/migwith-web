@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
-import { functions } from "../../../lib/firebase";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { db, functions } from "../../../lib/firebase";
 import { useFounderPerms } from "../../../lib/founder";
 import { PROFILE_SONGS, playProfileSong, stopProfileSong, type ProfileSong } from "../../../lib/profileSongs";
 import { useCustomSongs, useSongPrices } from "../../_components/ProfileSongs";
@@ -13,6 +14,10 @@ import { FounderShell, card, input } from "../_Shell";
 // switched on like the built-in tunes (founderProfileSong on the server).
 
 const call = httpsCallable<Record<string, unknown>, { ok?: boolean; id?: string }>(functions, "founderProfileSong");
+const decideRequest = httpsCallable<{ id: string; action: "approve" | "reject"; price?: number }, { ok?: boolean }>(functions, "decideProfileSongRequest");
+
+// 🎵 a member's own song waiting for approval (profile_song_requests, written by submitProfileSong)
+type SongRequest = { id: string; username: string; title: string; url: string; seconds: number; price: string };
 const editBuiltIn = httpsCallable<{ kind: "song"; id: string; name: string; price: number }, { ok?: boolean }>(functions, "founderEditShopItem");
 const MAX_SECONDS = 300;
 const MAX_BYTES = 7 * 1024 * 1024;
@@ -81,6 +86,36 @@ export default function SongsPage() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [requests, setRequests] = useState<SongRequest[] | null>(null);
+  const [reqBusy, setReqBusy] = useState<string | null>(null);
+  const loadRequests = () =>
+    getDocs(query(collection(db, "profile_song_requests"), where("status", "==", "pending"), limit(50)))
+      .then((snap) =>
+        setRequests(
+          snap.docs
+            .map((d) => ({ id: d.id, username: String(d.get("username") || ""), title: String(d.get("title") || "Song"), url: String(d.get("url") || ""), seconds: Number(d.get("seconds") || 0), price: "150000" }))
+            .sort((a, b) => a.username.localeCompare(b.username))
+        )
+      )
+      .catch(() => setRequests([]));
+  useEffect(() => {
+    if (f.isMigwith) void loadRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [f.isMigwith]);
+  const decide = async (r: SongRequest, action: "approve" | "reject") => {
+    setReqBusy(r.id);
+    setMsg(null);
+    try {
+      const price = Math.floor(Number(r.price.replace(/,/g, "")));
+      await decideRequest({ id: r.id, action, price: action === "approve" ? price : undefined });
+      setMsg({ text: action === "approve" ? `✓ ${r.title} (${r.username}) added to the 🎤 miGlife tab.` : `Rejected: ${r.title} (${r.username}).`, bad: false });
+      setRequests((list) => (list || []).filter((x) => x.id !== r.id));
+    } catch (e: any) {
+      setMsg({ text: e?.message || "Could not decide this request.", bad: true });
+    } finally {
+      setReqBusy(null);
+    }
+  };
   const prices = useSongPrices();
   const [tab, setTab] = useState<"Happy" | "Sad" | "Flute">("Sad");
 
@@ -278,6 +313,43 @@ export default function SongsPage() {
           })}
         </ul>
         <p className="mt-2 text-[11px] text-[#5B6B8C]">The new price shows in the shop on the web and in the app right away. People who already bought a song keep it.</p>
+      </div>
+
+      <div className={`${card} mt-4 space-y-3`}>
+        <div className="flex items-center justify-between">
+          <p className="font-extrabold">🎵 Member songs waiting for approval</p>
+          <button type="button" onClick={() => void loadRequests()} className="rounded-lg bg-[#EEF3FA] px-2.5 py-1.5 text-xs font-bold text-[#174EA6]">↻</button>
+        </div>
+        {requests === null ? (
+          <p className="text-sm text-[#5B6B8C]">Loading…</p>
+        ) : requests.length === 0 ? (
+          <p className="text-sm text-[#5B6B8C]">No songs waiting right now.</p>
+        ) : (
+          <ul className="space-y-3">
+            {requests.map((r) => (
+              <li key={r.id} className="rounded-xl border border-[#E3ECF7] bg-white p-3">
+                <p className="text-sm font-bold">{r.title}</p>
+                <p className="text-xs text-[#5B6B8C]">from @{r.username} · {Math.round(r.seconds)} s</p>
+                {r.url && <audio controls preload="none" src={r.url} className="mt-2 w-full" />}
+                <div className="mt-2 flex items-center gap-2">
+                  <input
+                    className={`${input} w-32`}
+                    inputMode="numeric"
+                    value={r.price}
+                    onChange={(e) => setRequests((list) => (list || []).map((x) => (x.id === r.id ? { ...x, price: e.target.value } : x)))}
+                    aria-label="Price in coins"
+                  />
+                  <button type="button" disabled={reqBusy === r.id} onClick={() => decide(r, "approve")} className="rounded-lg bg-[#2EC27E] px-3 py-2 text-xs font-bold text-white disabled:opacity-60">
+                    ✓ Approve
+                  </button>
+                  <button type="button" disabled={reqBusy === r.id} onClick={() => decide(r, "reject")} className="rounded-lg bg-[#E5484D] px-3 py-2 text-xs font-bold text-white disabled:opacity-60">
+                    ✕ Reject
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </FounderShell>
   );

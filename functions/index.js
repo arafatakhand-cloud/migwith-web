@@ -28318,3 +28318,44 @@ exports.submitProfileSong = functionsV1.https.onCall(async (data, context) => {
   await ref.set({ uid, username, url, title, seconds, status: "pending", createdAt: FieldValue.serverTimestamp() });
   return { ok: true, id: ref.id };
 });
+
+// 🎵 miGlife decides a member's song request (profile_song_requests/{id}).
+// approve: the song is added to the 🎤 miGlife tab (shop_overrides.songCatalog) at the price given
+// (default 150,000 coins, 30 days), and the request is marked approved. reject: marked rejected.
+exports.decideProfileSongRequest = functionsV1.https.onCall(async (data, context) => {
+  await assertSecretOpen(context && context.auth);   // 🔒 miGlife secret must be open
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const me = await db.collection("users").doc(uid).get();
+  if (!isMainFounderName(me.get("username"))) throw new E("permission-denied", "Only miglife can decide song requests.");
+  const id = String((data && data.id) || "");
+  if (!id) throw new E("invalid-argument", "Unknown request.");
+  const action = String((data && data.action) || "");
+  const reqRef = db.collection("profile_song_requests").doc(id);
+  const snap = await reqRef.get();
+  if (!snap.exists) throw new E("not-found", "That request is gone.");
+  if (snap.get("status") !== "pending") throw new E("failed-precondition", "This request was already decided.");
+  if (action === "reject") {
+    await reqRef.update({ status: "rejected", decidedAt: FieldValue.serverTimestamp(), decidedBy: me.get("username") || "" });
+    return { ok: true };
+  }
+  if (action !== "approve") throw new E("invalid-argument", "Choose approve or reject.");
+  const price = Math.floor(Number(data && data.price) || 150000);
+  if (!(Number.isInteger(price) && price >= 1000 && price <= 100000000)) throw new E("invalid-argument", "Price must be 1,000 – 100,000,000 coins.");
+  const songId = "up_" + crypto.randomBytes(6).toString("hex");
+  const song = {
+    name: String(snap.get("title") || "Song").slice(0, 30),
+    emoji: "🎵",
+    mood: "",
+    price,
+    seconds: Math.round(Number(snap.get("seconds")) || 15),
+    url: String(snap.get("url") || ""),
+    path: "",
+    on: true,
+    createdAt: Date.now(),
+    requestedBy: String(snap.get("username") || ""),
+  };
+  await SHOP_OVERRIDES_REF().set({ songCatalog: { [songId]: song } }, { merge: true });
+  await reqRef.update({ status: "approved", catalogId: songId, price, decidedAt: FieldValue.serverTimestamp(), decidedBy: me.get("username") || "" });
+  return { ok: true, id: songId };
+});
