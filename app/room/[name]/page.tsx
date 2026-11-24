@@ -3794,11 +3794,13 @@ function MessageRow({
   const translation = useRoomTranslation(m.id);
   const hold = useRef<{ t: ReturnType<typeof setTimeout>; x: number; y: number } | null>(null);
   const time = timeLabel(m.createdAtMs);
-  const stamp = time && <span className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  // ⏱ <bdi dir="ltr">: the time stays "2:36 PM", in one piece, after the text — Arabic /
+  // Urdu (right-to-left) lines used to pull it apart ("2:36 … PM").
+  const stamp = time && <bdi dir="ltr" className="ml-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</bdi>;
   // 🕘 Own messages (right side), like the app: ONE line → the time in FRONT of
   // the text; 2+ lines → the time at the END. Worked out from the real layout
   // (with the time in front); once it wraps it stays at the end.
-  const stampFront = time && <span className="mr-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</span>;
+  const stampFront = time && <bdi dir="ltr" className="mr-1.5 whitespace-nowrap align-baseline text-[9px] text-[#9AA8C2]">{time}</bdi>;
   const ownBodyRef = useRef<HTMLSpanElement>(null);
   const ownKey = `${m.text}|${fontPx}`;
   const [ownWrap, setOwnWrap] = useState({ key: "", wraps: false });
@@ -4287,6 +4289,9 @@ function MessageRow({
               {rightSide && !ownWraps && !ownNameShown && stampFront}
               <span
                 ref={rightSide ? ownBodyRef : undefined}
+                // dir="auto": an Arabic / Urdu message reads right-to-left on its own,
+                // without moving the name before it or the time after it
+                dir="auto"
                 className="whitespace-pre-wrap break-words"
                 style={{ color: rightSide && !isRoomLine ? "#000000" : INK }}
                 onClick={(e) => {
