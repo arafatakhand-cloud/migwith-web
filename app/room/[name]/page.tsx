@@ -2630,7 +2630,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 {/* Room announcement (/announcement), pinned under who is here, like the app */}
                 {/* 📢 a pink card "<< text >>", like the reference app (miglife) */}
                 {announcement && (
-                  <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
+                  <div className="room-announce rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
                     {/* a long link breaks onto the next line instead of running off the box; links can be tapped */}
                     <p className="whitespace-pre-wrap text-[15px] leading-[22px] text-[#2B2F38] [overflow-wrap:anywhere]">
                       {/* 📢 faces the same way as in the app (the browser's emoji faces the other way) */}
@@ -3946,7 +3946,7 @@ function MessageRow({
   // 📢 "<< life has set the announcement to … >>": a pink card across the chat, like the reference app.
   if (m.type === "announcement") {
     return (
-      <div className="rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
+      <div className="room-announce rounded-[12px] px-3 py-2" style={{ background: ANNOUNCE_PINK }}>
         {/* the icon sits in the text, so a long line wraps under it — no time, like the reference app */}
         <p className="whitespace-pre-wrap leading-snug text-[#2B2F38] [overflow-wrap:anywhere]" style={{ fontSize: fontPx }}>
           <span className="mr-1 inline-block -scale-x-100 text-[1.2em] leading-none">📢</span>

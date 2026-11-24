@@ -1852,3 +1852,15 @@ html[data-theme="dark_night"] .wl-stat > svg { opacity: .2; }
 html[data-theme="dark_night"] .wl-hero :is(.text-\[\#6B7A90\]) { color: #9AA3BD; }
 /* inline dark-navy text (style="color:#0B2A5B" …) becomes the light ink */
 html[data-theme="dark_night"] :is([style*="color: rgb(11, 42, 91)"], [style*="color: rgb(11, 31, 58)"], [style*="color: rgb(22, 38, 74)"], [style*="color: rgb(14, 27, 61)"], [style*="color: rgb(10, 30, 99)"]):not([style*="background"]) { color: #E7EAF3 !important; }
+
+/* 🌙 Modern Dark: the room's top cards (managed by · welcome · who is here) and the
+   pinned announcement — they were light cards, so the lifted light text vanished */
+html[data-theme="dark_night"] .ric-card { background: #1A1F2D !important; border-color: #262C3E !important; box-shadow: none !important; }
+html[data-theme="dark_night"] .ric-card :is(.text-\[\#1E293B\], .text-\[\#0B2A5B\]) { color: #E7EAF3 !important; }
+html[data-theme="dark_night"] .ric-card .text-\[\#1565D8\] { color: #8AA8FF !important; }
+html[data-theme="dark_night"] .ric-card .text-\[\#6D28D9\] { color: #C4B5FD !important; }
+html[data-theme="dark_night"] .ric-card .text-\[\#0E9F8E\] { color: #5EEAD4 !important; }
+html[data-theme="dark_night"] .ric-card .bg-\[\#E0F6F2\] { background: #12332F !important; }
+html[data-theme="dark_night"] .room-announce { background: #3A1F28 !important; }
+html[data-theme="dark_night"] .room-announce :is(p, a) { color: #F8D7DD !important; }
+html[data-theme="modern_light"] .ric-card { box-shadow: none !important; border-color: #E3E8F2 !important; }

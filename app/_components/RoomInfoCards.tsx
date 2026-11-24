@@ -31,7 +31,7 @@ export function RoomInfoCards({
   const w = splitWelcome(description);
   // "2 · three separate cards": solid white cards (no glass), each with a lip in
   // its own colour — blue (managed by), green (welcome), lilac (who is here).
-  const card = "rounded-[18px] border-2 border-white px-3.5 py-2.5";
+  const card = "ric-card rounded-[18px] border-2 border-white px-3.5 py-2.5";
   return (
     <>
       <div className="flex flex-col gap-2.5 pb-1">
