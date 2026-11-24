@@ -205,3 +205,38 @@ export function LinkCard({ url }: { url: string }) {
     </div>
   );
 }
+
+// 🎵 A Mig's song (Music Library, 2026-11-25): a small pill — tap to play / stop. One song at a time.
+let songNow: HTMLAudioElement | null = null;
+export function SongPill({ url, title }: { url: string; title: string }) {
+  const [on, setOn] = useState(false);
+  const me = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => () => {
+    me.current?.pause();
+  }, []);
+  const toggle = () => {
+    if (on && me.current) {
+      me.current.pause();
+      setOn(false);
+      return;
+    }
+    if (songNow && songNow !== me.current) songNow.pause();
+    const a = me.current || new Audio(url);
+    me.current = a;
+    a.onpause = () => setOn(false);
+    a.onended = () => setOn(false);
+    songNow = a;
+    void a.play().then(() => setOn(true)).catch(() => setOn(false));
+  };
+  return (
+    <button
+      type="button"
+      onClick={(e) => (e.stopPropagation(), toggle())}
+      className="flex max-w-full items-center gap-2 rounded-full bg-gradient-to-r from-[#FDF2F8] to-[#EEF2FF] py-1.5 pl-1.5 pr-3.5 text-left text-[13px] font-bold text-[#0B1B3F] ring-1 ring-[#E6E0F5]"
+    >
+      <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#EC4899] to-[#7C3AED] text-[12px] text-white">{on ? "■" : "▶"}</span>
+      <span className="min-w-0 truncate">🎵 {title}</span>
+      {on && <span className="shrink-0 text-[11px] font-semibold text-[#7C3AED]">playing</span>}
+    </button>
+  );
+}

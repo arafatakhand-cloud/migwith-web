@@ -4,7 +4,7 @@ import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
-import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { LinkCard, MicButton, SongPill, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -568,6 +568,11 @@ export function MigView({
           {post.audio && (
             <div className="mt-3">
               <VoicePlayer src={post.audio} seconds={post.audioSec || 0} />
+            </div>
+          )}
+          {post.song && !post.audio && (
+            <div className="mt-3 flex">
+              <SongPill url={post.song.url} title={post.song.title} />
             </div>
           )}
           {!post.video && !post.audio && firstLink(post.body) && (

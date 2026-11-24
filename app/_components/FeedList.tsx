@@ -6,7 +6,8 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
-import { LinkCard, MicButton, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { LinkCard, MicButton, SongPill, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { StorySongPicker } from "./ProfileSongs";
 import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, ScheduledSheet, scheduleLabel, type Memory } from "./FeedExtras";
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
@@ -373,6 +374,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   const [cvideo, setCvideo] = useState("");
   // 🎙 a voice Mig (2026-11): the clip recorded in the writer (sent with Post)
   const [cvoice, setCvoice] = useState<{ blob: Blob; sec: number; url: string } | null>(null);
+  // 🎵 a song from the Music Library on the new Mig (not with a voice clip or a video)
+  const [csong, setCsong] = useState<{ url: string; title: string } | null>(null);
+  const [csongOpen, setCsongOpen] = useState(false);
   const [cvideoBusy, setCvideoBusy] = useState(false);
   // 🎬 miGlife's switch: when video is OFF the Video button is hidden
   const [videoOn, setVideoOn] = useState(true);
@@ -489,6 +493,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     setCphotos([]);
     setCvideo("");
     setCvoice(null);
+    setCsong(null);
     setCplace(null);
     setCmood("");
     setCpoll(null);
@@ -597,7 +602,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // ↶ Undo: a post waits 5 seconds before it is sent, and can be taken back in that time
   const [undoable, setUndoable] = useState(false);
   const undoRef = useRef<{ id: number; restore: () => void } | null>(null);
-  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "close" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean; voice?: { blob: Blob; sec: number } | null; atMs?: number | null }) => {
+  const sendPost = async (p: { text: string; photos: string[]; video: string; category: string; bg: number; privacy: "" | "friends" | "close" | "me"; place: Place | null; mood: string; poll?: { options: string[]; days: number; multi: boolean } | null; mates?: string[]; alsoStory?: boolean; voice?: { blob: Blob; sec: number } | null; atMs?: number | null; song?: { url: string; title: string } | null }) => {
     // no title box: the title is the first line of the text
     const first = plainText(p.text.trim()).split("\n")[0].slice(0, 60);
     const onlyVoice = !!p.voice && p.photos.length === 0;
@@ -612,7 +617,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
       // 🪶 a small copy of the cover for the Feed list (the viewer keeps the full photo)
       const coverFile = cover ? cfilesRef.current[cover] : undefined;
       const thumb = coverFile && user ? await uploadThumb(`room_images/blog_${user.uid}`, coverFile) : "";
-      const fields = { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}), ...voice };
+      const fields = { title, body, cover, category: p.category, video: p.video, ...(thumb ? { thumb } : {}), ...(p.privacy ? { privacy: p.privacy } : {}), ...(p.place ? { place: p.place.name, placeSub: p.place.sub } : {}), ...(p.mood ? { mood: p.mood } : {}), ...(p.poll ? { poll: p.poll } : {}), ...(p.mates?.length ? { mates: p.mates } : {}), ...(cover || p.video ? {} : { bg: p.bg }), ...(p.alsoStory ? { alsoStory: true } : {}), ...(p.song && !p.voice && !p.video ? { song: p.song } : {}), ...voice };
       // ⏰ a Mig for later: the server keeps it and posts it at that time
       if (p.atMs) {
         await blogCall("schedule", { ...fields, atMs: p.atMs });
@@ -692,7 +697,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
     if (cpoll && !ctext.trim()) return setCerr("Write the poll question first.");
     if (cpoll && pollOpts.length < 2) return setCerr("A poll needs at least 2 answers.");
     const poll = cpoll ? { options: pollOpts, days: cpoll.days, multi: cpoll.multi } : null;
-    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn, voice: cvoice, atMs: csched };
+    const payload = { text: ctext, photos: cphotos, video: cvideo, category: ccat, bg: cbg, privacy: cpriv, place: cplace, mood: cmood, poll, mates: cmates, alsoStory: storyOn, voice: cvoice, atMs: csched, song: csong };
     clearWriter();
     dropDraft();
     setComposing(false);
@@ -712,6 +717,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
         setCphotos(payload.photos);
         setCvideo(payload.video);
         setCvoice(payload.voice);
+        setCsong(payload.song);
         setCcat(payload.category);
         setCpriv(payload.privacy);
         setCplace(payload.place);
@@ -1482,6 +1488,16 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
               </div>
               {/* quick chips (scroll sideways) */}
               <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5">
+                {!cedit && (
+                  <button
+                    type="button"
+                    disabled={!!cvoice || !!cvideo}
+                    onClick={() => setCsongOpen(true)}
+                    className={`${chipCls} disabled:opacity-40 ${csong ? "border-[#F0ABFC] bg-[#FDF2F8] text-[#A21CAF]" : "border-[#DCE4F2] bg-white"}`}
+                  >
+                    🎵 {csong ? csong.title : "Music"}
+                  </button>
+                )}
                 {cpriv !== "me" && cpriv !== "close" && (
                   <button type="button" onClick={() => setCmatesOpen(true)} className={`${chipCls} ${cmates.length ? "border-[#93B4F5] bg-[#EEF4FF] text-[#1D4ED8]" : "border-[#DCE4F2] bg-white"}`}>
                     🤝 Tag friends{cmates.length ? ` · ${cmates.length}` : ""}
@@ -1991,6 +2007,23 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     ✕
                   </button>
                 </div>
+              )}
+              {/* 🎵 the Mig's song (Music Library) */}
+              {csong && !cvoice && !cvideo && (
+                <div className="mt-2.5 flex items-center gap-2">
+                  <div className="min-w-0 flex-1"><SongPill url={csong.url} title={csong.title} /></div>
+                  <button type="button" onClick={() => setCsong(null)} aria-label="Remove the song" className="p-2 text-[16px] font-black text-[#8494B2]">✕</button>
+                </div>
+              )}
+              {csongOpen && user && (
+                <StorySongPicker
+                  uid={user.uid}
+                  subtitle="PICK A SONG FOR YOUR MIG"
+                  current={csong?.title}
+                  onPick={(x) => (setCsong({ url: x.url, title: x.title }), setCsongOpen(false))}
+                  onRemove={() => (setCsong(null), setCsongOpen(false))}
+                  onClose={() => setCsongOpen(false)}
+                />
               )}
               {csched && !cedit && (
                 <div className="mt-3 flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#F5F3FF] to-[#FDF2F8] px-3 py-2 text-[12.5px] font-extrabold text-[#6D28D9]">
@@ -3069,6 +3102,11 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
       {p.audio && (
         <div className="mx-3 mt-2">
           <VoicePlayer src={p.audio} seconds={p.audioSec || 0} />
+        </div>
+      )}
+      {p.song && !p.audio && (
+        <div className="mx-3 mt-2 flex">
+          <SongPill url={p.song.url} title={p.song.title} />
         </div>
       )}
       {!media && !p.audio && !p.sharedId && firstLink(fullText) && (

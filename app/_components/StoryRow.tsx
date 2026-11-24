@@ -574,7 +574,16 @@ function StoryViewer({
 
   const face = colorOf(current.author) || "#2563EB";
   return (
-    <div className="fixed inset-0 z-50 flex justify-center bg-black" role="dialog" aria-label="Story">
+    // 🚫 holding a story pauses it: the phone's own "Copy image · Download image" menu must not open
+    <div
+      className="story-nocallout fixed inset-0 z-50 flex justify-center bg-black"
+      role="dialog"
+      aria-label="Story"
+      onContextMenu={(e) => {
+        const t = e.target as HTMLElement;
+        if (!t.closest("input, textarea")) e.preventDefault();
+      }}
+    >
       <div className="relative h-full w-full max-w-[480px] overflow-hidden bg-black text-white">
         {current.song && (
           <audio
@@ -633,7 +642,7 @@ function StoryViewer({
             />
           ) : current.url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={current.url} alt="" draggable={false} className="max-h-full max-w-full select-none object-contain" style={{ filter: fxCss(current.fx) }} />
+            <img src={current.url} alt="" draggable={false} onContextMenu={(e) => e.preventDefault()} className="max-h-full max-w-full select-none object-contain" style={{ filter: fxCss(current.fx) }} />
           ) : (
             <div className="flex h-full w-full select-none items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
               {current.text}

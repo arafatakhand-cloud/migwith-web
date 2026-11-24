@@ -15,6 +15,8 @@ export type BlogPost = {
   /** 🎙 a voice Mig (2026-11): the clip and its length */
   audio?: string;
   audioSec?: number;
+  /** 🎵 a song from the Music Library on the Mig (2026-11-25) */
+  song?: { url: string; title: string } | null;
   /** ⚙️ a System post (miGlife's own Mig, 2026-11) and the card it draws */
   system?: boolean;
   sys?: SysCard | null;
@@ -148,6 +150,7 @@ export function toBlogPost(id: string, d: Record<string, unknown>): BlogPost {
     mentions: Array.isArray(d.mentions) ? d.mentions.map((x) => String(x).toLowerCase()) : [],
     audio: String(d.audio || ""),
     audioSec: Number(d.audioSec || 0),
+    song: d.song && typeof d.song === "object" && (d.song as { url?: unknown }).url ? { url: String((d.song as { url: unknown }).url), title: String((d.song as { title?: unknown }).title || "Song") } : null,
     system: d.system === true,
     sys: d.system === true && d.sys && typeof d.sys === "object" ? (d.sys as SysCard) : null,
     video: String(d.video || ""),

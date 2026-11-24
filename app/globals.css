@@ -1917,3 +1917,12 @@ html[data-theme="dark_night"] :is(main[data-shell], [data-shell-copy]):has([data
   color: transparent;
   filter: drop-shadow(0 2px 2px rgba(29, 78, 216, 0.25));
 }
+
+/* 🚫 Story viewer: holding the photo pauses the story — no "Copy image / Download image" phone menu */
+.story-nocallout img,
+.story-nocallout video {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}

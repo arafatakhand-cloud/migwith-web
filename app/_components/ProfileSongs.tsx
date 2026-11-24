@@ -428,8 +428,10 @@ export function StorySongPicker({
   onPick,
   onRemove,
   onClose,
+  subtitle = "PICK A SONG FOR YOUR STORY",
 }: {
   uid: string;
+  subtitle?: string;
   current?: string;
   onPick: (s: { url: string; title: string; startSec: number }) => void;
   onRemove?: () => void;
@@ -486,7 +488,7 @@ export function StorySongPicker({
             <span className="w-16" />
             <div className="flex-1 text-center">
               <p className="text-[18px] font-black">🎵 Music Library</p>
-              <p className="text-[10.5px] font-bold tracking-[2px] text-[#2563EB]">PICK A SONG FOR YOUR STORY</p>
+              <p className="text-[10.5px] font-bold tracking-[2px] text-[#2563EB]">{subtitle}</p>
             </div>
             <span className="flex w-16 justify-end">
               {current && onRemove && (
