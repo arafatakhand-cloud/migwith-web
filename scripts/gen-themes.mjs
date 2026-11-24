@@ -89,7 +89,11 @@ function darkSurface(hex) {
 // red → soft red); a grey / navy one becomes an off-white.
 function darkInk(hex) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
-  if (l >= 0.52) return null;
+  // ⚡ judged by how BRIGHT the colour really looks (luminance), like the app: a grey-blue
+  // such as #6B7FA0 (lightness .52) still looks dark on the dark cards, so it is lifted too
+  const lumv = lum(hexToRgb(hex));
+  if (lumv >= 0.3 || (l >= 0.6 && lumv >= 0.22)) return null;
+  if (l >= 0.4 && s <= 0.4) return toHex(hslToRgb(h, Math.min(s, 0.3), 0.74));
   // very dark navy text (titles) → the clear off-white of the demo (#E7EAF3)
   if (l < 0.25 && h >= 180 && h <= 260) return "#E7EAF3";
   if (s > 0.4) return toHex(hslToRgb(h, Math.min(s, 0.9), 0.7));
