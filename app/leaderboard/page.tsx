@@ -255,6 +255,7 @@ export default function LeaderboardPage() {
                     title={r.title}
                     subtitle={r.id === "level" ? "All time" : r.id === "all" ? ALL_GAMES_LINE : "Today · Yesterday · Week · Month"}
                     color={r.color}
+                    quiet
                     onClick={() => {
                       setRanking(r);
                       setPeriod("Today");

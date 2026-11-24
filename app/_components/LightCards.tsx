@@ -78,6 +78,7 @@ export function PastelCard({
   onClick,
   note,
   right,
+  quiet = false,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -88,6 +89,8 @@ export function PastelCard({
   note?: string;
   /** Replaces the › on the right (a switch, say). */
   right?: React.ReactNode;
+  /** Less colour: silver icon tile and arrow, silver layer under the card (only the emoji is coloured). */
+  quiet?: boolean;
 }) {
   const classic = useIsClassic();
   if (classic)
@@ -106,7 +109,7 @@ export function PastelCard({
     <>
       <span
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
-        style={{ backgroundColor: `${color}26` }}
+        style={quiet ? { background: "linear-gradient(180deg, #FFFFFF, #E4E8EE)", boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #B9C0CB" } : { backgroundColor: `${color}26` }}
       >
         {flipMegaphone(icon)}
       </span>
@@ -121,7 +124,7 @@ export function PastelCard({
       ) : (
         <span
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-          style={{ backgroundColor: `${color}22`, color }}
+          style={quiet ? { background: "linear-gradient(180deg, #FFFFFF, #E6E9EF)", color: "#5B6B86", boxShadow: "0 3px 0 #9EA6B3" } : { backgroundColor: `${color}22`, color }}
         >
           ›
         </span>
@@ -130,11 +133,17 @@ export function PastelCard({
   );
   // 🫧 6D: stacked depth in the card's colour under it, a top shine
   const cls = "flex w-full items-center gap-3 rounded-[18px] border px-3 py-3 text-left transition active:translate-y-[2px]";
-  const style = {
-    background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`,
-    borderColor: `${color}40`,
-    boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${color}4D, 0 6px 0 ${color}36, 0 9px 0 ${color}24, 0 14px 20px ${color}36`,
-  };
+  const style = quiet
+    ? {
+        background: "linear-gradient(180deg, #FFFFFF, #F3F5F8)",
+        borderColor: "#E3E7EE",
+        boxShadow: "inset 0 2px 0 #fff, 0 4px 0 #B9C0CB, 0 6px 0 #9EA6B3, 0 10px 14px -6px rgba(40, 50, 70, 0.35)",
+      }
+    : {
+        background: `linear-gradient(90deg, var(--card-surface, #ffffff) 40%, ${color}1f)`,
+        borderColor: `${color}40`,
+        boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${color}4D, 0 6px 0 ${color}36, 0 9px 0 ${color}24, 0 14px 20px ${color}36`,
+      };
   // A `right` with nothing to open (a switch, say) stays a plain row; with an
   // href / onClick the whole card still opens it (Discover's LIVE, Play Zone).
   if (right && !href && !onClick)
