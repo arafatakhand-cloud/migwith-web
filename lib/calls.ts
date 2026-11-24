@@ -43,6 +43,8 @@ let unsubs: (() => void)[] = [];
 let myUid = "";
 let ringTimer = 0;
 let endTimer = 0;
+let beatTimer = 0;
+let connectTimer = 0;
 
 const FINAL: string[] = ["declined", "cancelled", "missed", "ended", "busy"];
 
@@ -117,6 +119,10 @@ function listenIce(callId: string, fromUid: string) {
 
 function cleanup(final?: CallStatus, keepMsMs = 1800) {
   window.clearTimeout(ringTimer);
+  window.clearInterval(beatTimer);
+  window.clearTimeout(connectTimer);
+  beatTimer = 0;
+  connectTimer = 0;
   stopTone();
   unsubs.forEach((u) => u());
   unsubs = [];
@@ -158,6 +164,23 @@ function watchCall(callId: string, peerUid: string) {
           }
         }
         patch({ acceptedAtMs: acc, status: pc?.connectionState === "connected" ? "accepted" : "connecting" });
+        // 💓 "I'm still on the call" every 20 s (the server ends a call nobody is on any more)
+        if (!beatTimer) {
+          const field = view.role === "caller" ? "beatCaller" : "beatCallee";
+          const ref = doc(db, "calls", callId);
+          const beat = () => void updateDoc(ref, { [field]: serverTimestamp() }).catch(() => {});
+          beat();
+          beatTimer = window.setInterval(beat, 20000);
+        }
+        // ⏳ picked up but the voice can't get through in 25 s → say so and hang up
+        if (!connectTimer && pc?.connectionState !== "connected") {
+          connectTimer = window.setTimeout(() => {
+            if (view?.id === callId && view.status === "connecting") {
+              patch({ error: "Couldn't connect. Check the internet (try Wi-Fi) and call again." });
+              void hangUp();
+            }
+          }, 25000);
+        }
       }
     })
   );
@@ -292,7 +315,7 @@ export async function hangUp() {
       await updateDoc(ref, { status: "ended", endedBy: myUid }).catch(() => {});
     }
   }
-  cleanup("ended", 1400);
+  cleanup("ended", view?.error ? 3500 : 1400);
 }
 
 export function toggleMute() {
