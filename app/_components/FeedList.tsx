@@ -1341,6 +1341,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
+        {/* 📸 stories, right under the tabs (miglife 2026-11-24) */}
+        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
         {/* #️⃣ trending hashtags (New / Popular / For You) */}
         {!author && !mineOnly && (tab === "new" || tab === "popular" || tab === "foryou") && trending.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 pb-1.5 pt-0.5 [scrollbar-width:none]">
@@ -2080,8 +2082,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           )
         )}
 
-        {/* 📸 stories, under "What's on your mind?" (Feed 2026-11-24) */}
-        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
         {/* 🧱 My wall (Mine tab): one tidy card — picture, name, my numbers, New post */}
         {!author && !placeView && tab === "mine" && user && posts && !composing && (() => {
           const since = Date.now() - 7 * 86400000;
