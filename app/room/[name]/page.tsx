@@ -3077,7 +3077,13 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ["wallet", "Check Balance", () => (closeMenu(), checkBalance())],
                 ["heart", "💭 FeelMig", () => (closeMenu(), router.push(`/feels?room=${encodeURIComponent(roomName)}`))],
                 ["info", "🔊 SoundMig", () => (closeMenu(), router.push(`/soundmig?room=${encodeURIComponent(roomName)}`))],
-                ["info", soundsMuted() ? "🔊 Sounds On" : "🔇 Sounds Off", () => (closeMenu(), setSoundsMuted(!soundsMuted()), flashToast(soundsMuted() ? "🔇 Room sounds are off" : "🔊 Room sounds are on"))],
+                // 🔊 the label says what the tap does now: a clear state, read at every open of the menu
+                [soundsMuted() ? "info" : "info", soundsMuted() ? "🔇 Sounds are off · tap to turn on" : "🔊 Sounds are on · tap to turn off", () => {
+                  const nowMuted = !soundsMuted();
+                  setSoundsMuted(nowMuted);
+                  closeMenu();
+                  flashToast(nowMuted ? "🔇 Room sounds are off" : "🔊 Room sounds are on");
+                }],
                 ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],
