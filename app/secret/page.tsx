@@ -439,6 +439,7 @@ export default function SecretPage() {
           { icon: "✔", label: "Verified", hint: "Give or remove the ✔ tick by MIG ID", tint: "#1D9BF0", href: "/secret/verified", ok: f.isMigwith },
           { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.isMigwith },
           { icon: "🛠", label: "Site control", hint: "Refresh everyone, maintenance, stuck games", tint: "#16264A", href: "/secret/site-control", ok: f.isMigwith },
+          { icon: "📞", label: "Audio Calls", hint: "Calls ON / OFF for everyone", tint: "#1D4ED8", href: "/secret/site-control#calls", ok: f.isMigwith },
           { icon: "🔁", label: "Mentor Renewals", hint: "Mentors' renew requests — renew or decline", tint: "#1E63D6", href: "/secret/mentor-renewals", ok: f.isMigwith },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
           { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },

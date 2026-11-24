@@ -21,6 +21,7 @@ type Stuck = { roomId: string; game: string };
 export default function SiteControlPage() {
   const f = useFounderPerms();
   const [maintenance, setMaintenance] = useState(false);
+  const [callsOff, setCallsOff] = useState(false);
   const [text, setText] = useState("");
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -58,6 +59,7 @@ export default function SiteControlPage() {
     const ctl = await getDoc(doc(db, "app_settings", "site_control")).catch(() => null);
     if (ctl?.exists()) {
       setMaintenance(ctl.get("maintenance") === true);
+      setCallsOff(ctl.get("callsOff") === true);
       setText(String(ctl.get("maintenanceText") || ""));
     }
     const list: Stuck[] = [];
@@ -111,6 +113,26 @@ export default function SiteControlPage() {
         <p className="text-xs text-[#5B6B8C]">Every open page reloads once. Use it after a new version is published.</p>
         <button type="button" disabled={busy} onClick={refreshAll} className="w-full rounded-xl bg-[#2F80ED] py-2.5 text-sm font-bold text-white disabled:opacity-60">
           Refresh all open pages
+        </button>
+      </div>
+
+      <div id="calls" className={`${card} mt-4 space-y-3`}>
+        <p className="font-extrabold">📞 Audio calls</p>
+        <p className="text-xs text-[#5B6B8C]">Off: the 📞 button disappears from every private chat (web and app) and nobody can start a call. miglife can still call (to test).</p>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => {
+            const next = !callsOff;
+            setCallsOff(next);
+            void saveControl({ callsOff: next }, next ? "✓ Audio calls are OFF for everyone." : "✓ Audio calls are ON.");
+          }}
+          className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-sm font-bold disabled:opacity-60 ${callsOff ? "bg-[#FEE2E2] text-[#B91C1C]" : "bg-[#DCFCE7] text-[#15803D]"}`}
+        >
+          <span>{callsOff ? "Calls are OFF" : "Calls are ON"}</span>
+          <span className={`relative h-[26px] w-[46px] rounded-full ${callsOff ? "bg-[#CBD5E1]" : "bg-[#22C55E]"}`}>
+            <span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white transition-all ${callsOff ? "left-[3px]" : "left-[23px]"}`} />
+          </span>
         </button>
       </div>
 

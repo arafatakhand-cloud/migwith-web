@@ -5,6 +5,7 @@
 // connection notes. Server: callStart / callIce (functions), firestore.rules.
 
 import { addDoc, collection, doc, onSnapshot, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "./firebase";
 
@@ -412,4 +413,14 @@ export function listenIncoming(me: { uid: string }, onCall: (id: string, from: s
     },
     () => {}
   );
+}
+
+/** 📴 false while miGlife has turned audio calls off (Secret → Site control). */
+export function useCallsOn(): boolean {
+  const [on, setOn] = useState(true);
+  useEffect(
+    () => onSnapshot(doc(db, "app_settings", "site_control"), (s) => setOn(s.get("callsOff") !== true), () => {}),
+    []
+  );
+  return on;
 }

@@ -24,7 +24,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
-import { startCall } from "../../../lib/calls";
+import { startCall, useCallsOn } from "../../../lib/calls";
 import { chatLockedFor, lockedChatText } from "../../../lib/privacy";
 import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
@@ -145,6 +145,7 @@ export default function PrivateChatPage() {
 
   const chatId = useMemo(() => (username && friend ? privateChatId(username, friend) : ""), [username, friend]);
   const self = !!username && friend.toLowerCase() === username.toLowerCase();
+  const callsOn = useCallsOn(); // 📴 miGlife can turn calls off (Secret → Site control)
 
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
@@ -552,7 +553,7 @@ export default function PrivateChatPage() {
             <p className={`truncate text-[11px] ${online ? "text-[#E6FFF6]" : "text-white/80"}`}>{online ? "● Active now" : status}</p>
           </div>
           {/* 📞 audio call (2026-11-24) */}
-          {!self && !blocked && !blockedMe && user && username && (
+          {callsOn && !self && !blocked && !blockedMe && user && username && (
             <button
               type="button"
               onClick={() => void startCall({ uid: user.uid, username }, friend)}
