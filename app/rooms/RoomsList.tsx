@@ -617,7 +617,7 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
           const limited = !full && !q && allRooms.length > 5; // full: the /rooms page shows every room, no ⌄ cut // ⭐ Favorite rooms too: top 5, the rest under ⌄
           const expanded = !!showAll[key];
           const rooms = limited ? (key === "hot" || key === "fav" ? allRooms : [...allRooms].sort(byLive)).slice(0, expanded ? undefined : 5) : allRooms;
-          const [icon, accent] = LOOK[key];
+          const [, accent] = LOOK[key];
           return (
             <div key={key} className="overflow-hidden rounded-[18px] bg-white" style={{ boxShadow: `0 3px 10px ${accent}40` }}>
               <div className="flex items-center pr-3" style={{ background: `linear-gradient(90deg, ${accent}1A, transparent)` }}>
@@ -626,10 +626,8 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                   onClick={() => setModernOpen((o) => ({ ...o, [key]: !isOpen }))}
                   className="flex min-w-0 flex-1 items-center py-2.5 pl-3 text-left"
                 >
-                  <span className="glass-shine flex h-8 w-8 items-center justify-center rounded-[10px] text-base" style={{ background: `${accent}29` }}>
-                    {icon}
-                  </span>
-                  <span className="ml-2.5 text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
+                  {/* 🎨 flat: no icon tile before the folder name (miglife) */}
+                  <span className="text-[15px] font-extrabold text-[#0B2A5B]">{title}</span>
                   <span className={`ml-auto text-[22px] font-bold text-[#6B7A99] transition-transform ${isOpen ? "rotate-90" : ""}`}>›</span>
                 </button>
                 {/* 🔥 Hot now: its own ↻ — the live numbers count again and the
@@ -651,7 +649,6 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                     const users = counts[name] ?? 0;
                     const fav = favorites.includes(name);
                     const shown = roomListName(name);
-                    const letter = (shown.match(/[\p{L}\p{N}]/u)?.[0] || "#").toUpperCase();
                     return (
                       <div key={name} className="px-2 py-[3px]">
                         {/* 🫧 every room is its own clear glass card, like the app */}
@@ -664,21 +661,8 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
                           }}
                         >
                           <Link href={roomHref(name)} className="flex min-w-0 flex-1 items-center">
-                            <span className="relative h-10 w-10 shrink-0">
-                              <span
-                                className="glass-shine flex h-10 w-10 items-center justify-center rounded-[13px] text-[17px] font-extrabold text-white"
-                                style={{
-                                  background: `linear-gradient(180deg, ${accent}F2, ${accent}B3)`,
-                                  boxShadow: `inset 0 2px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.15), 0 3px 0 ${accent}99, 0 5px 0 ${accent}66, 0 8px 12px ${accent}55`,
-                                }}
-                              >
-                                {letter}
-                              </span>
-                              {users > 0 && (
-                                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#34C77B]" />
-                              )}
-                            </span>
-                            <span className="ml-3 min-w-0 flex-1">
+                            {/* 🎨 flat: no letter tile before the room name (miglife) */}
+                            <span className="ml-1 min-w-0 flex-1">
                               <span data-notranslate className="block truncate text-[14.5px] font-bold text-[#0B2A5B]">
                                 {shown}
                               </span>
