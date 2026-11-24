@@ -25,6 +25,8 @@ export type CallView = {
   relayCheck?: "ok" | "fail";
   /** why the server has no relay ("keys not set", "Cloudflare said 401" …) */
   relayWhy?: string;
+  /** ⏱ the longest this call may last (the smaller of the two friends' time left), 0 = no limit */
+  maxSec?: number;
 };
 
 type Listener = (v: CallView | null) => void;
@@ -52,6 +54,7 @@ let ringTimer = 0;
 let endTimer = 0;
 let beatTimer = 0;
 let connectTimer = 0;
+let limitTimer = 0;
 
 const FINAL: string[] = ["declined", "cancelled", "missed", "ended", "busy"];
 
@@ -153,6 +156,8 @@ function cleanup(final?: CallStatus, keepMsMs = 1800) {
   window.clearTimeout(ringTimer);
   window.clearInterval(beatTimer);
   window.clearTimeout(connectTimer);
+  window.clearTimeout(limitTimer);
+  limitTimer = 0;
   beatTimer = 0;
   connectTimer = 0;
   stopTone();
@@ -196,6 +201,16 @@ function watchCall(callId: string, peerUid: string) {
           }
         }
         patch({ acceptedAtMs: acc, status: pc?.connectionState === "connected" ? "accepted" : "connecting" });
+        // ⏱ call time limit: the call ends by itself when the time is up
+        const maxSec = Number(s.get("maxSec") || 0);
+        if (maxSec > 0 && !limitTimer) {
+          patch({ maxSec });
+          limitTimer = window.setTimeout(() => {
+            if (view?.id !== callId) return;
+            patch({ error: "Call time limit reached." });
+            void hangUp();
+          }, Math.max(1000, acc + maxSec * 1000 - Date.now()));
+        }
         // 💓 "I'm still on the call" every 20 s (the server ends a call nobody is on any more)
         if (!beatTimer) {
           const field = view.role === "caller" ? "beatCaller" : "beatCallee";

@@ -15,6 +15,9 @@ const stopBot = httpsCallable<{ roomId: string }, unknown>(functions, "adminStop
 const vercel = httpsCallable<{ action: "list" | "redeploy" | "rollback"; deploymentId?: string }, any>(functions, "founderVercel");
 type Deploy = { id: string; url: string; state: string; created: number; message: string };
 const LUXURY_ROOM = "🎰 Luxury Bet";
+// ⏱ call time limits (minutes a day / a month; 0 = no limit)
+const callLimits = httpsCallable<Record<string, unknown>, any>(functions, "callLimits");
+type LimitUser = { username: string; dayMin: number; monthMin: number };
 
 type Stuck = { roomId: string; game: string };
 
@@ -22,6 +25,34 @@ export default function SiteControlPage() {
   const f = useFounderPerms();
   const [maintenance, setMaintenance] = useState(false);
   const [callsOff, setCallsOff] = useState(false);
+  const [defDay, setDefDay] = useState("0");
+  const [defMonth, setDefMonth] = useState("0");
+  const [limUsers, setLimUsers] = useState<LimitUser[] | null>(null);
+  const [lu, setLu] = useState({ username: "", day: "", month: "" });
+  const loadLimits = async () => {
+    try {
+      const r = await callLimits({ action: "get" });
+      setDefDay(String(r.data.dayMin || 0));
+      setDefMonth(String(r.data.monthMin || 0));
+      setLimUsers(r.data.users || []);
+    } catch (e: any) {
+      setLimUsers([]);
+      setMsg({ text: e?.message || "Could not load call limits.", bad: true });
+    }
+  };
+  const limitAct = async (data: Record<string, unknown>, ok: string) => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      await callLimits(data);
+      setMsg({ text: ok, bad: false });
+      await loadLimits();
+    } catch (e: any) {
+      setMsg({ text: e?.message || "Could not save.", bad: true });
+    } finally {
+      setBusy(false);
+    }
+  };
   const [text, setText] = useState("");
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,6 +104,7 @@ export default function SiteControlPage() {
     if (f.isMigwith) {
       void loadAll();
       void loadDeploys();
+      void loadLimits();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [f.isMigwith]);
@@ -134,6 +166,44 @@ export default function SiteControlPage() {
             <span className={`absolute top-[3px] h-5 w-5 rounded-full bg-white transition-all ${callsOff ? "left-[3px]" : "left-[23px]"}`} />
           </span>
         </button>
+      </div>
+
+      <div id="call-limits" className={`${card} mt-4 space-y-3`}>
+        <p className="font-extrabold">⏱ Call limits</p>
+        <p className="text-xs text-[#5B6B8C]">How many minutes a person may talk on calls (Bangladesh time). 0 = no limit. A call ends by itself when the smaller of the two friends&apos; time left is over. miglife has no limit.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="text-xs font-bold text-[#5B6B8C]">Everyone — minutes a day
+            <input className={input} inputMode="numeric" value={defDay} onChange={(e) => setDefDay(e.target.value.replace(/\D/g, ""))} />
+          </label>
+          <label className="text-xs font-bold text-[#5B6B8C]">Everyone — minutes a month
+            <input className={input} inputMode="numeric" value={defMonth} onChange={(e) => setDefMonth(e.target.value.replace(/\D/g, ""))} />
+          </label>
+        </div>
+        <button type="button" disabled={busy} onClick={() => void limitAct({ action: "setDefault", dayMin: Number(defDay || 0), monthMin: Number(defMonth || 0) }, "✓ Call limits for everyone saved.")} className="w-full rounded-xl bg-[#1D4ED8] py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          Save for everyone
+        </button>
+        <div className="border-t border-[#E3ECF7] pt-3">
+          <p className="text-sm font-extrabold">One member&apos;s own limit</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <input className={input} placeholder="MIG ID" value={lu.username} onChange={(e) => setLu({ ...lu, username: e.target.value })} />
+            <input className={input} placeholder="Min / day" inputMode="numeric" value={lu.day} onChange={(e) => setLu({ ...lu, day: e.target.value.replace(/\D/g, "") })} />
+            <input className={input} placeholder="Min / month" inputMode="numeric" value={lu.month} onChange={(e) => setLu({ ...lu, month: e.target.value.replace(/\D/g, "") })} />
+          </div>
+          <button type="button" disabled={busy || !lu.username.trim()} onClick={() => void limitAct({ action: "setUser", username: lu.username.trim(), dayMin: Number(lu.day || 0), monthMin: Number(lu.month || 0) }, `✓ ${lu.username.trim()}'s call limit saved.`).then(() => setLu({ username: "", day: "", month: "" }))} className="mt-2 w-full rounded-xl bg-[#16264A] py-2.5 text-sm font-bold text-white disabled:opacity-60">
+            Save for this member
+          </button>
+          {limUsers && limUsers.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {limUsers.map((u) => (
+                <li key={u.username} className="flex items-center gap-2 rounded-xl border border-[#E3ECF7] bg-white px-3 py-2 text-sm">
+                  <span className="min-w-0 flex-1 truncate font-bold">{u.username}</span>
+                  <span className="text-xs text-[#5B6B8C]">{u.dayMin || "∞"} / day · {u.monthMin || "∞"} / month</span>
+                  <button type="button" disabled={busy} onClick={() => void limitAct({ action: "clearUser", username: u.username }, `✓ ${u.username} now follows the limit for everyone.`)} className="rounded-lg bg-[#FEE2E2] px-2 py-1 text-xs font-bold text-[#B91C1C]">Remove</button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
 
       <div className={`${card} mt-4 space-y-3`}>

@@ -54,6 +54,8 @@ export default function CallHost() {
   const incoming = v.role === "callee" && v.status === "ringing";
   const live = v.status === "accepted";
   const sub = live ? fmt(now - v.acceptedAtMs) : v.error || LABEL[v.status] || "";
+  // ⏱ the last minute of a limited call: how long is left
+  const leftMs = live && v.maxSec ? v.acceptedAtMs + v.maxSec * 1000 - now : Infinity;
 
   return (
     <div data-nodark className="fixed inset-0 z-[90] flex justify-center bg-black/40" role="dialog" aria-label="Audio call">
@@ -76,6 +78,9 @@ export default function CallHost() {
           </span>
         </div>
         {live && <div className="mt-10 text-[14px] text-white/80">🔒 Only you two can hear this call</div>}
+        {leftMs <= 60000 && leftMs > 0 && (
+          <div className="mt-3 rounded-full bg-[#F59E0B]/25 px-3 py-1 text-[13px] font-bold text-[#FDE68A]">⏱ Call time ends in {fmt(leftMs)}</div>
+        )}
         {(v.status === "connecting" || v.status === "ringing") && v.relay !== false && v.relayCheck && (
           <div className="mt-6 text-[12px] text-white/70">{v.relayCheck === "ok" ? "🛰 Relay: OK" : "🛰 Relay: not reachable from this network"}</div>
         )}
