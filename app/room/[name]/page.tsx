@@ -744,7 +744,9 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
     () => {
       const p = roomPerms(roomInfo, user?.uid || "", profile?.username || "", profile?.role || "", founder.isHiddenFounder);
       // Only the Share Permissions table decides who may share (pictures / voice).
-      return { ...p, canShareMedia: picAllowed, canShareVoice: voiceAllowed };
+      // 🛡 (2026-11) a private room's owner, Super Mods and mods may always share pictures and
+      // voice in that room — no Share Permission needed (videos still follow the table)
+      return { ...p, canShareMedia: picAllowed || p.canModeratePrivate, canShareVoice: voiceAllowed || p.canModeratePrivate };
     },
     [roomInfo, user, profile, founder.isHiddenFounder, picAllowed, voiceAllowed]
   );
