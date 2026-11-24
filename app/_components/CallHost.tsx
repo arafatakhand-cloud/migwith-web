@@ -86,7 +86,7 @@ export default function CallHost() {
         )}
         {v.status === "connecting" && v.relay === false && (
           <div className="mx-8 mt-8 rounded-xl bg-black/25 px-4 py-2.5 text-center text-[12.5px] text-[#FDE68A]">
-            ⚠️ No relay server (TURN) — calls on mobile data may not connect. Try Wi-Fi.
+            ⚠️ No relay server (TURN) — some Wi-Fi and mobile networks can't connect.
             {v.relayWhy && <span className="mt-1 block text-[11px] text-white/70">({v.relayWhy})</span>}
           </div>
         )}
