@@ -14,7 +14,7 @@ import { auth, db } from "../../lib/firebase";
 import { AndroidDownload } from "../_components/AndroidDownload";
 import { ChatBubbleRow, MigLoginLogo, requestWelcomeSplash } from "../_components/LoginWelcome";
 import { migAliasEmail } from "../../lib/migAlias";
-import { setUiStyle, useUiStyle } from "../../lib/uiStyle";
+import { setThemeMode, useThemeMode, type ThemeMode } from "../../lib/theme";
 
 const REMEMBER_ID_KEY = "migwith.rememberedId";
 const OFFLINE_KEY = "migwith.loginOffline";
@@ -228,28 +228,12 @@ export default function LoginPage() {
           APPEARANCE
           <span className="login-rule h-px flex-1 bg-white/25" />
         </div>
-        {/* ✨ / 📟 The site opens in whichever style is chosen here (same switch as Settings › Appearance). */}
-        <LoginStyleChoice />
-        {/* 🫧 Glass / 🔵 Blue: pick the look before signing in (it is the theme too) */}
+        {/* ☀️ / 🌙 / 📱 Light, Dark or Auto (same choice as Settings › Appearance) */}
         <LoginThemeChoice />
         {/* Android app download (the link miglife sets in miglife secret) */}
         <AndroidDownload />
       </FitToScreen>
     </main>
-  );
-}
-
-function LoginStyleChoice() {
-  const style = useUiStyle();
-  return (
-    <LoginSegment
-      options={[
-        ["modern", "✨ Modern"],
-        ["classic", "📟 Classic"],
-      ]}
-      value={style === "classic" ? "classic" : "modern"}
-      onPick={(id) => setUiStyle(id as "modern" | "classic")}
-    />
   );
 }
 
@@ -318,29 +302,18 @@ function FitToScreen({ children }: { children: React.ReactNode }) {
   );
 }
 
-// 🫧 Glass / 🔵 Blue (miGlife Classic): the same choice as Settings › Appearance,
-// saved in this browser, so the site opens in it after signing in too.
+// ☀️ Light / 🌙 Dark / 📱 Auto: the same choice as Settings › Appearance.
 function LoginThemeChoice() {
-  const [glass, setGlass] = useState(true);
-  useEffect(() => setGlass(document.documentElement.dataset.theme === "glass"), []);
-  const pick = (g: boolean) => {
-    setGlass(g);
-    try {
-      localStorage.setItem("migwith.theme", g ? "glass" : "sky_blue");
-    } catch {
-      // storage blocked
-    }
-    if (g) document.documentElement.dataset.theme = "glass";
-    else delete document.documentElement.dataset.theme;
-  };
+  const mode = useThemeMode();
   return (
     <LoginSegment
       options={[
-        ["glass", "🫧 Glass"],
-        ["blue", "🔵 Blue"],
+        ["light", "☀️ Light"],
+        ["dark", "🌙 Dark"],
+        ["auto", "📱 Auto"],
       ]}
-      value={glass ? "glass" : "blue"}
-      onPick={(id) => pick(id === "glass")}
+      value={mode}
+      onPick={(id) => setThemeMode(id as ThemeMode)}
     />
   );
 }

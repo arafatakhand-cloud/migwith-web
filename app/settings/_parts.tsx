@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { CHAT_TEXT_MAX, CHAT_TEXT_MIN, setChatTextSize, useChatTextSize } from "../../lib/chatTextSize";
-import { setUiStyle, useUiStyle, type UiStyle } from "../../lib/uiStyle";
+import { ThemePicker } from "../_components/ThemePicker";
+import { useUiStyle } from "../../lib/uiStyle";
 
 // ⚙ Settings rows: a coloured icon tile, title + short line, and a switch /
 // value / › on the right. Modern: every row is its own Community-page card
@@ -105,68 +106,15 @@ export function TextSizeRow() {
   );
 }
 
-// 📱 App mode picker: two little previews of the look, tap one to switch.
+// 🎨 Theme picker: Light / Dark / Auto (only Modern Light and Modern Dark).
 export function AppModeCard() {
-  const style = useUiStyle();
-  const tile = (id: UiStyle, label: string, hint: string, preview: React.ReactNode) => {
-    const on = style === id;
-    return (
-      <button
-        type="button"
-        onClick={() => setUiStyle(id)}
-        className={`flex-1 rounded-2xl border-2 p-2 text-left transition ${on ? "border-[#E0A800] bg-[#FFFBEB] shadow-md" : "border-[#E3EAF4] bg-white hover:border-[#C9D6E8]"}`}
-        aria-pressed={on}
-      >
-        <div className="h-[92px] overflow-hidden rounded-xl border border-black/5">{preview}</div>
-        <p className="mt-2 flex items-center gap-1.5 text-[14px] font-extrabold text-[#0B1F3A]">
-          <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[10px] text-white ${on ? "bg-[#E0A800]" : "border border-[#C5D0E0] bg-white"}`}>
-            {on ? "✓" : ""}
-          </span>
-          {label}
-        </p>
-        <p className="pl-[22px] text-[11px] text-[#6B7A99]">{hint}</p>
-      </button>
-    );
-  };
   return (
-    <section>
-      <p className="mb-1.5 px-2 text-[11px] font-extrabold uppercase tracking-[1.4px] text-[#5B6B8C]">App mode</p>
-      <div className="flex gap-2.5 rounded-3xl bg-white p-2.5 shadow-[0_2px_10px_rgba(16,40,90,0.06)]">
-        {tile(
-          "modern",
-          "Modern",
-          "Cards, gradients, bubbles",
-          <div className="h-full bg-[#EAF4FE]">
-            <div className="h-5 bg-gradient-to-r from-[#2F6FD6] to-[#7C4DFF]" />
-            <div className="space-y-1.5 p-2">
-              <div className="h-5 rounded-lg bg-gradient-to-r from-[#2F6FD6] to-[#174EA6]" />
-              <div className="flex gap-1.5">
-                <div className="h-6 flex-1 rounded-lg bg-white shadow-sm" />
-                <div className="h-6 flex-1 rounded-lg bg-white shadow-sm" />
-              </div>
-              <div className="ml-auto h-3 w-2/3 rounded-full bg-[#2F80ED]" />
-            </div>
-          </div>
-        )}
-        {tile(
-          "classic",
-          "Classic",
-          "Orange bar, simple lists",
-          <div className="h-full bg-white">
-            <div className="h-5 bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
-            <div className="h-2.5 bg-gradient-to-b from-[#5A8FD6] to-[#2F6ABD]" />
-            <div className="space-y-1 p-2">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-1.5 border-b border-[#EEF2F8] pb-1">
-                  <span className="h-3 w-3 rounded-sm bg-gradient-to-b from-[#FF9D2E] to-[#F07A00]" />
-                  <span className="h-1.5 flex-1 rounded-full bg-[#C9D2DE]" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+    <div>
+      <p className="mb-1.5 pl-2 text-[11px] font-extrabold tracking-[0.14em] text-[#5B6B8C]">THEME</p>
+      <div className="rounded-[18px] bg-white p-3 shadow-sm">
+        <ThemePicker />
       </div>
-    </section>
+    </div>
   );
 }
 
