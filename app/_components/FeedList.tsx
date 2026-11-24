@@ -1183,9 +1183,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : tab === "saved" ? "🔖 Saved Migs" : "My Migs"}</span>
               </button>
             ) : (
-              <h1 className="relative pl-0.5 pr-1 font-serif text-[30px] font-black italic tracking-tight text-[#0B2A8C]">
-                {/* 🎨 Feed 2026-11-24: the navy miGlife name with a small crown */}
-                <span aria-hidden className="absolute -top-3 left-1 text-[15px] not-italic">👑</span>
+              <h1 className="feed-logo pl-0.5 pr-1 text-[34px] leading-[1.3]">
+                {/* 🎨 Feed 2026-11-24 (miglife "A"): handwritten Pacifico, blue → violet, soft shadow */}
                 miGlife
               </h1>
             )}
