@@ -25,7 +25,8 @@ const systemDark = () =>
   typeof window !== "undefined" && !!window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
 export function applyThemeMode(mode: ThemeMode) {
-  const dark = mode === "dark" || (mode === "auto" && systemDark());
+  // ☀️ a page that always shows Light (the Feed) keeps Light while it is open
+  const dark = document.documentElement.dataset.forceLight !== "1" && (mode === "dark" || (mode === "auto" && systemDark()));
   document.documentElement.dataset.theme = dark ? "dark_night" : "modern_light";
   // ⚫ the browser bar follows: black in Dark
   document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#000000" : "#0B1A33");
@@ -54,4 +55,17 @@ export function useThemeMode(): ThemeMode {
     };
   }, []);
   return mode;
+}
+
+/** ☀️ The Feed looks the same in Light and Dark: while it is open the site shows Light. */
+export function useForceLight() {
+  useEffect(() => {
+    const html = document.documentElement;
+    html.dataset.forceLight = "1";
+    applyThemeMode(getThemeMode());
+    return () => {
+      delete html.dataset.forceLight;
+      applyThemeMode(getThemeMode());
+    };
+  }, []);
 }
