@@ -1115,10 +1115,8 @@ export function StoryDialog({
           {!song && (
             <button
               type="button"
-              onClick={async () => {
-                setShowLib((v) => !v);
-                if (library === null) setLibrary(await loadSongLibrary().catch(() => []));
-              }}
+              // 🎼 Library opens the Profile Songs page, where a song is picked and added
+              onClick={() => (window.location.href = "/profile-songs")}
               className="ml-2 rounded-full bg-[#F1EFFF] px-3.5 py-1.5 text-[12.5px] font-extrabold text-[#4F46E5]"
             >
               🎼 Library
