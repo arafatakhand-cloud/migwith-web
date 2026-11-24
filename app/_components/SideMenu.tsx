@@ -198,7 +198,7 @@ export function MenuPanel() {
   return (
     <>
     {/* Profile card */}
-    <div className="rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-4 text-white shadow-lg">
+    <div className="shrink-0 rounded-3xl border-2 border-[#D4AF37] bg-gradient-to-br from-[#2F6FD6] to-[#174EA6] p-4 text-white shadow-lg">
       <div className="flex items-center gap-3">
         <div className="relative h-14 w-14 shrink-0">
           <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border-2 border-[#D4AF37] bg-[#0B2A5B] text-2xl font-black">
@@ -250,7 +250,9 @@ export function MenuPanel() {
       </div>
     </div>
 
-    <ul className="mt-3 divide-y divide-[#EEF2F8] overflow-hidden rounded-[18px] border border-[#E3E8F2] bg-white">
+    {/* shrink-0: in the drawer (a flex column that scrolls) the list must keep its full height — with
+        overflow-hidden it used to be squeezed and Settings at the bottom was cut off */}
+    <ul className="mt-3 shrink-0 divide-y divide-[#EEF2F8] overflow-hidden rounded-[18px] border border-[#E3E8F2] bg-white">
       {links.map(([href, icon, label, n]) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
