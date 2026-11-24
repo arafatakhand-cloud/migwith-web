@@ -652,7 +652,7 @@ export function MigView({
           {viewers && <ViewersSheet postId={post.id} onClose={() => setViewers(false)} />}
 
           <div className="mb-2 mt-3 flex items-center gap-2">
-            <h3 className="text-[13px] font-bold tracking-wide text-[#5A6F93]">COMMENTS ({comments.length})</h3>
+            <h3 className="text-[15px] font-black text-[#0B1B3F]">Comments <span className="font-bold text-[#5B6B8C]">{blogShort(comments.length)}</span></h3>
             {/* ⭐ Top · 🕒 New · 📜 Old (a pinned comment always comes first) */}
             {comments.length > 1 && (
               <span className="ml-auto flex gap-1">
@@ -669,7 +669,7 @@ export function MigView({
               </span>
             )}
           </div>
-          <div ref={commentsRef} className="space-y-3" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
+          <div ref={commentsRef} className="space-y-3.5" onClick={(e) => cPick && !(e.target as HTMLElement).closest("[data-react]") && setCPick("")}>
             {comments.length === 0 && <p className="text-[13px] text-[#6B7FA6]">No comments yet. Say something nice!</p>}
             {orderComments(comments.filter((c) => !blockSets.hidden.has(String(c.author || "").toLowerCase())), cSort, post.pinnedComment).map((c, ci, all) => {
               const cc = colorOf(c.author) || "#2563EB";
@@ -682,34 +682,55 @@ export function MigView({
               const threadOpen = openThreads.has(threadOf(c));
               if (isReply && threadOpen === false && all.some((x) => x.id === c.replyTo)) return null;
               const lastOpenReply = isReply && threadOpen && all[ci + 1]?.replyTo !== c.replyTo;
-              const threadLine = (
-                <button
-                  type="button"
-                  onClick={() => toggleThread(threadOf(c))}
-                  className="ml-9 flex items-center gap-1.5 text-[12px] font-bold text-[#2563EB]"
-                >
-                  <span className="inline-block h-px w-5 bg-[#BFD3F2]" />
-                  {threadOpen ? "▴ Hide replies" : `▸ View ${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+              // 💬 C2 (2026-11-25): a closed thread shows its first reply in one line, then "↳ View N more replies"
+              const firstReply = !isReply && !threadOpen ? all.find((x) => x.replyTo === c.id) : undefined;
+              const threadLine = threadOpen ? (
+                <button type="button" onClick={() => toggleThread(threadOf(c))} className="ml-[54px] text-[13px] font-extrabold text-[#1D4ED8]">
+                  ▴ Hide replies
                 </button>
+              ) : (
+                <div className="ml-[46px] min-w-0">
+                  {firstReply && (
+                    <button type="button" onClick={() => toggleThread(threadOf(c))} className="flex w-full min-w-0 items-center gap-2 py-0.5 text-left text-[13px] text-[#253A5E]">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10.5px] font-bold text-white" style={{ background: colorOf(firstReply.author) || "#2563EB" }}>
+                        {firstReply.author.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 truncate">
+                        <b className="font-extrabold text-[#0B1B3F]" data-notranslate>{firstReply.author}</b>{" "}
+                        {firstReply.audio && firstReply.text === "🎙 Voice" ? "🎙 Voice" : firstReply.text}
+                      </span>
+                    </button>
+                  )}
+                  {(!firstReply || replyCount > 1) && (
+                    <button type="button" onClick={() => toggleThread(threadOf(c))} className="mt-1 pl-2 text-[13px] font-extrabold text-[#1D4ED8]">
+                      ↳ View {firstReply ? `${replyCount - 1} more` : replyCount} {replyCount - (firstReply ? 1 : 0) === 1 ? "reply" : "replies"}
+                    </button>
+                  )}
+                </div>
               );
               const pinned = !isReply && c.id === post.pinnedComment;
               const top = !isReply && !pinned && c.id === topCommentId;
               return (
                 <Fragment key={c.id}>
-                <div className={`flex gap-2 ${isReply ? "ml-9" : ""}`}>
-                  <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold text-white" style={{ background: cc }}>
+                <div className={`flex gap-2.5 ${isReply ? "ml-[46px]" : ""}`}>
+                  <Link
+                    href={`/profile/${encodeURIComponent(c.author)}`}
+                    className={`mt-0.5 flex shrink-0 items-center justify-center rounded-full font-bold text-white ${isReply ? "h-7 w-7 text-[12px]" : "h-9 w-9 text-[15px]"}`}
+                    style={{ background: cc }}
+                  >
                     {c.author.slice(0, 1).toUpperCase()}
-                  </span>
-                  <div className="relative min-w-0">
-                  <div className={`relative min-w-0 rounded-xl px-2.5 py-1.5 text-[13.5px] leading-snug text-[#253A5E] shadow-[0_1px_4px_-2px_rgba(0,0,0,.15)] ${pinned ? "border-[1.5px] border-[#9BE3CC] bg-[#ECFBF6]" : top ? "border-[1.5px] border-[#F3DB95] bg-[#FFFBEA]" : "bg-white"}`}>
-                    <span className="flex items-center gap-1.5">
-                      <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[13px] font-extrabold text-[#1E3A6E] underline-offset-2 hover:underline">
-                        {c.author}
-                      </Link>
-                      {c.authorUid === post.authorUid && <span className="text-[11px]" title="Writer">✍️</span>}
-                      {pinned && <span className="rounded-md bg-[#14B88F] px-1.5 text-[10.5px] font-extrabold text-white">📌 Pinned</span>}
-                      {top && <span className="rounded-md bg-[#F5A300] px-1.5 text-[10.5px] font-extrabold text-white">⭐ Top</span>}
-                    </span>
+                  </Link>
+                  <div className="relative min-w-0 flex-1">
+                  <div className="relative inline-block max-w-full rounded-[18px] bg-[#F1F4FA] px-3 py-2 text-[14.5px] leading-snug text-[#0B1B3F]">
+                    {/* the small label above the name */}
+                    {(pinned || top || c.authorUid === post.authorUid) && (
+                      <span className={`block text-[11px] font-bold leading-tight ${pinned ? "text-[#1D4ED8]" : top ? "text-[#B45309]" : "text-[#5B6B8C]"}`}>
+                        {[pinned && "📌 Pinned", top && "🏆 Top comment", c.authorUid === post.authorUid && "✍️ Author"].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                    <Link href={`/profile/${encodeURIComponent(c.author)}`} data-notranslate className="block text-[14px] font-extrabold text-[#0B1B3F] underline-offset-2 hover:underline">
+                      {c.author}
+                    </Link>
                     {/* 🎙 a voice comment: the player (its words are just "🎙 Voice") */}
                     {c.audio && (
                       <span className="mt-0.5 block">
@@ -717,18 +738,6 @@ export function MigView({
                       </span>
                     )}
                     {(!c.audio || c.text !== "🎙 Voice") && <span className="break-words">{commentWithMentions(c.text)}</span>}
-                    {/* 👍❤️ 5 — the reactions on this comment, on the bubble's corner */}
-                    {c.likes > 0 && (
-                      <span className="absolute -bottom-2.5 right-1 flex items-center gap-0.5 rounded-full bg-white px-1.5 py-0.5 text-[11px] font-bold text-[#5A6F93] shadow-[0_1px_4px_rgba(0,0,0,.18)]">
-                        {Object.entries(c.reactions)
-                          .sort((a, b) => b[1] - a[1])
-                          .slice(0, 3)
-                          .map(([e]) => (
-                            <span key={e} className="text-[12px] leading-none">{e}</span>
-                          ))}
-                        <span className="ml-0.5">{c.likes}</span>
-                      </span>
-                    )}
                   </div>
                     {/* the six reactions, after a long press on Like */}
                     {cPick === c.id && (
@@ -740,8 +749,8 @@ export function MigView({
                         ))}
                       </div>
                     )}
-                    <div className={`flex gap-3 pl-1 text-[11.5px] text-[#8494B2] ${c.likes > 0 ? "mt-3" : "mt-1"}`}>
-                      <span>{blogAgo(c.createdMs)}</span>
+                    <div className="mt-1 flex items-center gap-3.5 pl-2.5 text-[12.5px] font-bold text-[#5B6B8C]">
+                      <span className="font-semibold">{blogAgo(c.createdMs)}</span>
                       {(() => {
                         const mineR = cReact[c.id] || "";
                         const look = BLOG_REACTIONS.find(([e]) => e === mineR);
@@ -782,7 +791,7 @@ export function MigView({
                             setText(`@${c.author} `);
                             document.getElementById("blog-comment")?.focus();
                           }}
-                          className="font-semibold text-[#2563EB]"
+                          className="font-bold"
                         >
                           Reply
                         </button>
@@ -797,6 +806,20 @@ export function MigView({
                           Delete
                         </button>
                       )}
+                      {/* 👍❤️ 5 — the reactions on this comment, at the end of the row */}
+                      {c.likes > 0 && (
+                        <span className="ml-auto flex items-center gap-1 pr-1 font-semibold text-[#5B6B8C]">
+                          {blogShort(c.likes)}
+                          <span className="flex">
+                            {Object.entries(c.reactions)
+                              .sort((a, b) => b[1] - a[1])
+                              .slice(0, 3)
+                              .map(([e]) => (
+                                <span key={e} className="-mr-0.5 text-[14px] leading-none">{e}</span>
+                              ))}
+                          </span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -810,7 +833,7 @@ export function MigView({
       </article>
 
       {/* comment box, fixed at the bottom */}
-      <div className={`${sheet ? "sticky" : "fixed inset-x-0"} bottom-0 z-30 border-t border-[#C9D9EE] bg-white/95 px-3 py-2 backdrop-blur`}>
+      <div className={`${sheet ? "sticky" : "fixed inset-x-0"} bottom-0 z-30 border-t border-[#EEF2F8] bg-white px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5`}>
         {replyTo && (
           <div className="mx-auto mb-1.5 flex max-w-2xl items-center justify-between text-[12px] font-semibold text-[#2563EB]">
             <span>↩ Replying to {replyTo.author}</span>
@@ -850,27 +873,33 @@ export function MigView({
             </div>
           );
         })()}
-        <div className="mx-auto flex max-w-2xl gap-2">
+        <div className="mx-auto flex max-w-2xl items-center gap-2">
           {user ? (
             <>
-              <input
-                id="blog-comment"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && send()}
-                maxLength={500}
-                placeholder={`Comment as ${username || "you"}…`}
-                className="min-w-0 flex-1 rounded-full border border-[#C9D9EE] bg-[#F4F8FD] px-4 py-2 text-[14px] text-[#0F1D3A] outline-none focus:border-[#2563EB]"
-              />
-              {/* 🎙 a voice comment: tap to record, tap again to send it */}
-              <MicButton disabled={sending} onClip={(blob, sec) => void sendVoice(blob, sec)} />
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[14px] font-black text-white" style={{ background: colorOf(username || "") || "#2563EB" }}>
+                {(username || "?").slice(0, 1).toUpperCase()}
+              </span>
+              <div className="flex min-w-0 flex-1 items-center rounded-full bg-[#F1F4FA] pl-4 pr-1">
+                <input
+                  id="blog-comment"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && send()}
+                  maxLength={500}
+                  placeholder={replyTo ? `Reply to ${replyTo.author}…` : "Write a comment…"}
+                  className="h-11 min-w-0 flex-1 bg-transparent text-[14.5px] text-[#0B1B3F] outline-none placeholder:text-[#8C98B3]"
+                />
+                {/* 🎙 a voice comment: tap to record, tap again to send it */}
+                <MicButton disabled={sending} onClip={(blob, sec) => void sendVoice(blob, sec)} />
+              </div>
               <button
                 type="button"
                 onClick={send}
                 disabled={sending || !text.trim()}
-                className="rounded-full bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] px-4 text-[14px] font-bold text-white disabled:opacity-50"
+                aria-label="Send"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1D4ED8] text-[16px] font-bold text-white transition active:scale-95 disabled:bg-[#B9C6E4]"
               >
-                {sending ? "…" : "Send"}
+                {sending ? "…" : "➤"}
               </button>
             </>
           ) : (

@@ -1395,10 +1395,31 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           const empty = !ctext.trim() && cphotos.length === 0 && !cvideo && !cvoice;
           const len = ctext.trim().length;
           const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
-          return (
-            <div className="mx-3.5 mb-4 mt-1 rounded-[26px] bg-[#FFFFFF] p-3.5 shadow-[0_8px_16px_-12px_rgba(60,64,140,.45)]">
-              <div className="flex items-center gap-2.5">
-                <Avatar name={username} color={meColor} size={42} ring />
+          // 📝 N1 (2026-11-25): the writer is a full-screen "New post" page — ✕ · title · Post on top,
+          // me + who sees it, quick chips, the words, then the media tiles and the bottom bar
+          const postLabel = cedit ? (cbusy ? "Saving…" : "Save") : cbusy ? "Posting…" : csched ? "Schedule" : "Post";
+          const postOff = cbusy || cvideoBusy || empty;
+          const chipCls = "flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-bold transition active:scale-95";
+          return typeof document === "undefined" ? null : createPortal(
+            <div data-nodark className="fixed inset-0 z-[80] flex justify-center bg-[#0B1F3A]/30">
+            <div className="flex h-[100dvh] w-full max-w-[560px] flex-col bg-white text-[#0B1B3F]">
+              <div className="flex items-center gap-2 px-3 pb-1.5 pt-[max(10px,env(safe-area-inset-top))]">
+                <button type="button" onClick={closeWriter} aria-label="Close" className="flex h-10 w-10 items-center justify-center rounded-full text-[19px] font-bold text-[#0B1B3F] active:bg-[#F1F4FA]">
+                  ✕
+                </button>
+                <div className="flex-1 text-center text-[17px] font-extrabold">{cedit ? "Edit post" : "New post"}</div>
+                <button
+                  type="button"
+                  onClick={cedit ? saveEdit : publishInline}
+                  disabled={postOff}
+                  className={`h-10 rounded-xl px-5 text-[14.5px] font-extrabold transition active:scale-95 ${postOff ? "bg-[#E6EBF4] text-[#9AA6BF]" : "bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white shadow-[0_6px_14px_-8px_rgba(29,78,216,.9)]"}`}
+                >
+                  {postLabel}
+                </button>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              <div className="flex items-center gap-3 pt-2">
+                <Avatar name={username} color={meColor} size={52} ring />
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-black leading-snug text-[#1E1B4B]">
                     {username}
@@ -1458,8 +1479,39 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     </span>
                   )}
                 </div>
-                <button type="button" onClick={closeWriter} aria-label="Close" className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1F2F8] text-[14px] font-black text-[#6B6F9A]">
-                  ✕
+              </div>
+              {/* quick chips (scroll sideways) */}
+              <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5">
+                {cpriv !== "me" && cpriv !== "close" && (
+                  <button type="button" onClick={() => setCmatesOpen(true)} className={`${chipCls} ${cmates.length ? "border-[#93B4F5] bg-[#EEF4FF] text-[#1D4ED8]" : "border-[#DCE4F2] bg-white"}`}>
+                    🤝 Tag friends{cmates.length ? ` · ${cmates.length}` : ""}
+                  </button>
+                )}
+                <button type="button" onClick={() => setCplaceOpen(true)} className={`${chipCls} ${cplace ? "border-[#93B4F5] bg-[#EEF4FF] text-[#1D4ED8]" : "border-[#DCE4F2] bg-white"}`}>
+                  📍 {cplace ? cplace.name : "Location"}
+                </button>
+                <button type="button" onClick={() => (setCmoodOpen((v) => !v), setCcatOpen(false))} className={`${chipCls} ${cmood || cmoodOpen ? "border-[#93B4F5] bg-[#EEF4FF] text-[#1D4ED8]" : "border-[#DCE4F2] bg-white"}`}>
+                  😊 Feeling
+                </button>
+                {!cedit && (
+                  <button
+                    type="button"
+                    disabled={cbusy || cphotos.length > 0 || !!cvideo}
+                    onClick={() => setCpoll((v) => (v ? null : { options: ["", ""], days: 3, multi: false }))}
+                    className={`${chipCls} disabled:opacity-40 ${cpoll ? "border-[#93B4F5] bg-[#EEF4FF] text-[#1D4ED8]" : "border-[#DCE4F2] bg-white"}`}
+                  >
+                    📊 Poll
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCtext((t) => (t && !/\s$/.test(t) ? `${t} @` : `${t}@`));
+                    window.setTimeout(() => ctextRef.current?.focus(), 0);
+                  }}
+                  className={`${chipCls} border-[#DCE4F2] bg-white`}
+                >
+                  @ Mention
                 </button>
               </div>
               {cedit && (
@@ -1474,17 +1526,20 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 </div>
               )}
               {closeAsk && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[#0B1F3A]/40 p-4" onClick={() => setCloseAsk(false)}>
-                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[300px] rounded-3xl bg-[#FFFFFF] p-4 text-center shadow-2xl">
-                    <div className="text-[28px]">📝</div>
-                    <div className="mt-1 text-[16px] font-black text-[#1E1B4B]">Keep this as a draft?</div>
-                    <div className="mt-1 text-[12.5px] font-semibold text-[#8A8FB0]">It comes back the next time you write.</div>
-                    <button type="button" onClick={() => (setCloseAsk(false), setComposing(false))} className="mt-3 h-11 w-full rounded-2xl bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-[14.5px] font-black text-white">
-                      Keep draft
-                    </button>
-                    <button type="button" onClick={() => (setCloseAsk(false), clearWriter(), dropDraft(), setComposing(false))} className="mt-2 h-10 w-full rounded-2xl bg-[#FEF2F2] text-[14px] font-extrabold text-[#DC2626]">
-                      Discard
-                    </button>
+                <div className="fixed inset-0 z-[90] flex items-end justify-center bg-[#0B1F3A]/40" onClick={() => setCloseAsk(false)}>
+                  <div onClick={(e) => e.stopPropagation()} className="w-full max-w-[560px] rounded-t-[24px] bg-white px-5 pb-[max(18px,env(safe-area-inset-bottom))] pt-2.5 shadow-2xl">
+                    <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#D5DCE8]" />
+                    <div className="mb-1 text-[14px] font-bold text-[#5B6B8C]">Finish your post later?</div>
+                    {[
+                      ["💾", "Save as draft", "text-[#0B1B3F]", () => (setCloseAsk(false), setComposing(false))],
+                      ["🗑", "Discard post", "text-[#E11D48]", () => (setCloseAsk(false), clearWriter(), dropDraft(), setComposing(false))],
+                      ["✔️", "Keep writing", "text-[#0B1B3F]", () => setCloseAsk(false)],
+                    ].map(([icon, label, cls, run]) => (
+                      <button key={label as string} type="button" onClick={run as () => void} className={`flex w-full items-center gap-3.5 py-2.5 text-left text-[15.5px] font-bold ${cls as string}`}>
+                        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F1F4FA] text-[17px]">{icon as string}</span>
+                        {label as string}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -1745,7 +1800,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   autoCorrect="off"
                   placeholder="Say something about this…"
                   rows={3}
-                  className="mt-3 w-full resize-none rounded-2xl bg-[#F6F7FC] px-3.5 py-3 text-[15px] text-[#1E1B4B] outline-none placeholder:text-[#9AA3BD]"
+                  className="mt-3 w-full resize-none bg-transparent py-1 text-[19px] leading-snug text-[#0B1B3F] outline-none placeholder:text-[#9AA6BF]"
                 />
               )}
               {art && (
@@ -1925,22 +1980,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   </div>
                 </div>
               )}
-              {/* 📖 Also share to my story (the same card a shared Mig shows; 24 hours) */}
-              {storyPrefs && !cedit && (
-                <button
-                  type="button"
-                  disabled={!storyAllowed}
-                  onClick={() => setCstory(!storyOn)}
-                  className={`mt-3 flex w-full items-center gap-2.5 rounded-xl border-[1.5px] px-3 py-2 text-left transition disabled:opacity-50 ${storyOn ? "border-[#9BE3CC] bg-[#ECFBF6]" : "border-[#E3EAF3] bg-[#F7FAFD]"}`}
-                >
-                  <span className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md text-[14px] font-black ${storyOn ? "bg-[#14B88F] text-white" : "border-2 border-[#C9D5E2] bg-white"}`}>{storyOn ? "✓" : ""}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-bold text-[#0E7A62]">📖 Also share to my story</span>
-                    <span className="block text-[11.5px] text-[#4D7D70]">{cpriv === "me" ? "Not for 🔒 Only me Migs" : storyFull ? "Today's 5 are used — try tomorrow" : "Stays 24 hours · tap it to open this Mig"}</span>
-                  </span>
-                  <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold text-[#0E7A62]">today {storyPrefs.used}/{storyPrefs.max}</span>
-                </button>
-              )}
               {/* tools on the left, Post on the right */}
               {/* 🎙 the recorded voice clip: listen, or ✕ to throw it away */}
               {cvoice && (
@@ -1960,104 +1999,52 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <button type="button" onClick={() => setCsched(null)} aria-label="Post now instead" className="text-[#8A8FB0]">✕</button>
                 </div>
               )}
-              <div className="mt-3 flex items-center gap-1">
-                <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} aria-label="Add photos" title="Photo" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#ECFDF5] active:scale-90 disabled:opacity-40">
-                  🖼️
+              </div>
+              {/* the media tiles */}
+              <div className="no-scrollbar flex gap-2 overflow-x-auto border-t border-[#EEF2F8] px-3 pt-2.5">
+                <button type="button" disabled={cbusy || cphotos.length >= 10 || !!cpoll} onClick={() => cfileRef.current?.click()} className="flex h-[62px] min-w-[72px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl border-[1.5px] border-[#E1E8F4] bg-white text-[12px] font-bold text-[#0B1B3F] shadow-[0_2px_6px_rgba(16,40,90,.06)] transition active:scale-95 disabled:opacity-40">
+                  <span className="text-[21px] leading-none">🖼️</span>Photos
                 </button>
                 {videoOn && feedVideo.allowed && !cedit && (
-                  <button type="button" disabled={cbusy || cvideoBusy || !!cvideo || !!cpoll} onClick={() => cvideoRef.current?.click()} aria-label="Add a video" title="Video" className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FEF2F2] active:scale-90 disabled:opacity-40">
-                    🎬
+                  <button type="button" disabled={cbusy || cvideoBusy || !!cvideo || !!cpoll} onClick={() => cvideoRef.current?.click()} className="flex h-[62px] min-w-[72px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl border-[1.5px] border-[#E1E8F4] bg-white text-[12px] font-bold text-[#0B1B3F] shadow-[0_2px_6px_rgba(16,40,90,.06)] transition active:scale-95 disabled:opacity-40">
+                    <span className="text-[21px] leading-none">🎬</span>Video
                   </button>
                 )}
                 {/* 🎙 a voice Mig: tap to record, tap again to stop (a new Mig only) */}
-                {!cedit && !cvoice && !cvideo && !cpoll && <MicButton disabled={cbusy} onClip={(blob, sec) => setCvoice({ blob, sec, url: URL.createObjectURL(blob) })} />}
-                {/* 📊 Poll (a new Mig only; words, no photos / video) */}
+                {!cedit && !cvoice && !cvideo && !cpoll && (
+                  <div className="flex h-[62px] min-w-[72px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl border-[1.5px] border-[#E1E8F4] bg-white text-[12px] font-bold text-[#0B1B3F] shadow-[0_2px_6px_rgba(16,40,90,.06)] transition active:scale-95 disabled:opacity-40">
+                    <MicButton disabled={cbusy} onClip={(blob, sec) => setCvoice({ blob, sec, url: URL.createObjectURL(blob) })} />
+                    <span className="-mt-1.5">Voice</span>
+                  </div>
+                )}
                 {!cedit && (
-                  <button
-                    type="button"
-                    disabled={cbusy || cphotos.length > 0 || !!cvideo}
-                    onClick={() => setCpoll((v) => (v ? null : { options: ["", ""], days: 3, multi: false }))}
-                    aria-label="Add a poll"
-                    title={cphotos.length > 0 || cvideo ? "A poll can't have photos or a video" : "Poll"}
-                    className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#EEF2FF] active:scale-90 disabled:opacity-40 ${cpoll ? "bg-[#EEF2FF]" : ""}`}
-                  >
-                    📊
+                  <button type="button" onClick={() => setCschedOpen(true)} className="flex h-[62px] min-w-[72px] flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl border-[1.5px] border-[#E1E8F4] bg-white text-[12px] font-bold text-[#0B1B3F] shadow-[0_2px_6px_rgba(16,40,90,.06)] transition active:scale-95 disabled:opacity-40 {csched ? '!border-[#C4B5FD] !bg-[#F5F3FF]' : ''}">
+                    <span className="text-[21px] leading-none">⏰</span>Schedule
                   </button>
                 )}
+              </div>
+              {/* the bottom bar: who sees it · topic */}
+              <div className="flex items-center gap-2 px-3 pb-[max(10px,env(safe-area-inset-bottom))] pt-2.5">
                 <button
                   type="button"
-                  onClick={() => {
-                    setCmoodOpen((v) => !v);
-                    setCcatOpen(false);
-                  }}
-                  aria-label="Mood"
-                  title="Mood"
-                  className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[21px] transition hover:bg-[#FFFBEB] active:scale-90 ${cmoodOpen ? "bg-[#FFFBEB]" : ""}`}
+                  disabled={!!cedit}
+                  onClick={() => (setCprivOpen(true), setCcatOpen(false), setCmoodOpen(false))}
+                  className="whitespace-nowrap rounded-full bg-[#F1F4FA] px-3 py-1.5 text-[12.5px] font-bold text-[#0B1B3F] disabled:opacity-60"
                 >
-                  😊
+                  {blogPrivacyLabel(cpriv)} ▾
                 </button>
-                {/* ⏰ post later (a new Mig only) */}
-                {!cedit && (
-                  <button
-                    type="button"
-                    onClick={() => setCschedOpen(true)}
-                    aria-label="Post later"
-                    title={csched ? `Posts ${scheduleLabel(csched)}` : "Post later"}
-                    className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#F5F3FF] active:scale-90 ${csched ? "bg-[#EDE9FE]" : ""}`}
-                  >
-                    ⏰
+                <button type="button" onClick={() => (setCcatOpen(true), setCmoodOpen(false))} className="whitespace-nowrap rounded-full bg-[#F1F4FA] px-3 py-1.5 text-[12.5px] font-bold text-[#0B1B3F]">
+                  {BLOG_CATEGORIES.find(([k]) => k === ccat)?.[1] ?? "Topic"} ▾
+                </button>
+                {storyPrefs && !cedit && (
+                  <button type="button" disabled={!storyAllowed} onClick={() => setCstory(!storyOn)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[12.5px] font-bold disabled:opacity-50 ${storyOn ? "bg-[#ECFBF6] text-[#0E7A62]" : "bg-[#F1F4FA] text-[#0B1B3F]"}`}>
+                    📖 Story: {storyOn ? "On" : "Off"}
                   </button>
                 )}
-                {/* 🤝 MigMates (not on a 🔒 Only me / 💚 Close Friends Mig) */}
-                {cpriv !== "me" && cpriv !== "close" && (
-                  <button
-                    type="button"
-                    onClick={() => setCmatesOpen(true)}
-                    aria-label="Add MigMates"
-                    title="MigMates"
-                    className={`relative flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#EEF4FF] active:scale-90 ${cmates.length ? "bg-[#EEF4FF]" : ""}`}
-                  >
-                    🤝
-                    {cmates.length > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#2563EB] px-1 text-[10px] font-black text-white">{cmates.length}</span>
-                    )}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCtext((t) => (t && !/\s$/.test(t) ? `${t} @` : `${t}@`));
-                    window.setTimeout(() => ctextRef.current?.focus(), 0);
-                  }}
-                  aria-label="Mention a friend"
-                  title="Mention"
-                  className="flex h-10 w-10 items-center justify-center rounded-[13px] text-[18px] font-black text-[#6366F1] transition hover:bg-[#EEF0FF] active:scale-90"
-                >
-                  @
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCplaceOpen(true)}
-                  aria-label="Add a place"
-                  title="Location"
-                  className={`flex h-10 w-10 items-center justify-center rounded-[13px] text-[20px] transition hover:bg-[#FFF1F2] active:scale-90 ${cplace ? "bg-[#FFE4E6]" : ""}`}
-                >
-                  📍
-                </button>
-                <button
-                  type="button"
-                  onClick={cedit ? saveEdit : publishInline}
-                  disabled={cbusy || cvideoBusy || empty}
-                  className={`ml-auto h-11 rounded-2xl px-6 text-[15px] font-black transition active:scale-95 ${
-                    cbusy || cvideoBusy || empty
-                      ? "bg-[#E9EBF4] text-[#A0A6C2]"
-                      : "bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] text-white shadow-[0_10px_20px_-10px_rgba(236,72,153,.9)]"
-                  }`}
-                >
-                  {cedit ? (cbusy ? "Saving…" : "Save ✓") : cbusy ? "Migging…" : csched ? "Schedule ⏰" : "Mig it ➤"}
-                </button>
               </div>
             </div>
+            </div>,
+            document.body
           );
         })()}
         {!author && !placeView && (!user || !composing) && !(user && (tab === "mine" || tab === "saved")) && (
