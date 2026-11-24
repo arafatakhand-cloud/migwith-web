@@ -2680,6 +2680,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   }
                   // 🎨 Modern Light / Dark: flat text lines in rooms ("name: message", every line on the left, no bubbles)
                   classic={true}
+                  // 👉 2026-11-25: my own lines on the right, everyone else's on the left (not in the Classic style)
+                  mineRight={!classic}
                   roomName={roomName}
                   gameRoom={gameRoom}
                   colorOf={colorOf}
@@ -3741,6 +3743,7 @@ function MessageRow({
   m,
   mine,
   classic,
+  mineRight = false,
   roomName,
   gameRoom,
   colorOf,
@@ -3761,6 +3764,7 @@ function MessageRow({
   mentionsMe?: boolean;
   /** 📟 Classic style: every line on the left, own name shown too. */
   classic: boolean;
+  mineRight?: boolean;
   roomName: string;
   /** Game rooms: everything on the left, full-width plain lines, no swipe reply. */
   gameRoom: boolean;
@@ -4080,7 +4084,7 @@ function MessageRow({
   const ytLink = m.type === "image" || m.type === "voice" || m.type === "video" ? null : firstYouTubeLink(body);
   // Own messages sit on the right in EVERY room, game rooms included (like the
   // app) — except in the Classic style, where every line is on the left.
-  const rightSide = mine && !classic;
+  const rightSide = mine && (!classic || mineRight);
   const isRoomLine = senderName.toLowerCase() === roomName.toLowerCase();
   // my own line shows my name too (miglife / VIP / 🎂 birthday colour)
   const ownNameShown = rightSide && !isRoomLine && !!senderName && special.has(senderName);
@@ -4220,7 +4224,7 @@ function MessageRow({
           {/* own line WITH the name (miglife / VIP / birthday colour): the time
               sits on the left of the name — "8:50 PM pro: hi" */}
           {rightSide && !ownWraps && ownNameShown && m.type !== "image" && m.type !== "voice" && stampFront}
-          {(!mine || classic || (!isRoomLine && special.has(senderName))) && senderName && (
+          {(!rightSide && (!mine || classic) || (!isRoomLine && special.has(senderName))) && senderName && (
             <span
               className={`mr-1 font-bold ${isRoomLine || m.local ? "" : "cursor-pointer"} ${isRoomLine ? "" : "chat-name"} ${!isRoomLine && colorOf(senderName, m.createdAtMs).toUpperCase() === "#FFBF00" ? "admin-edge" : ""}`}
               style={isRoomLine ? { color: ROOM_ORANGE } : ({ "--name-dark": colorOf(senderName, m.createdAtMs), "--name-light": inkOnWhite(colorOf(senderName, m.createdAtMs)) } as React.CSSProperties)}
