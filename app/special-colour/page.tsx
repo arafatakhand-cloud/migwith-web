@@ -36,7 +36,7 @@ type Req = { id: string; months: number; amountCoins: number; legacyUsd: number;
 const fmtDate = (ms: number) => new Date(ms).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
 function Card({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-white/20 bg-white/[0.12] p-3.5">{children}</div>;
+  return <div className="rounded-2xl border border-[#D5DCE8] bg-white p-3.5">{children}</div>;
 }
 
 function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () => void }) {
@@ -45,7 +45,7 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
       type="button"
       onClick={onClick}
       className={`shrink-0 whitespace-nowrap rounded-full px-3 py-[7px] text-xs font-semibold ${
-        on ? "bg-gradient-to-r from-[#3F5378] to-[#8A97AE] text-white" : "border border-white/25 bg-white/[0.13] text-[#2B3A5C]"
+        on ? "bg-gradient-to-r from-[#3F5378] to-[#8A97AE] text-white" : "border border-[#D5DCE8] bg-white text-[#2B3A5C]"
       }`}
     >
       {label}
@@ -55,16 +55,16 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
 
 function Pill({ title, value, sub, on }: { title: string; value: string; sub?: string; on?: boolean }) {
   return (
-    <div className={`min-w-0 flex-1 rounded-[14px] border p-3 ${on ? "border-[#3F5378] bg-[#3F5378]/20" : "border-white/20 bg-white/[0.13]"}`}>
+    <div className={`min-w-0 flex-1 rounded-[14px] border p-3 ${on ? "border-[#3F5378] bg-[#3F5378]/20" : "border-[#D5DCE8] bg-white"}`}>
       <p className="text-[11px] text-[#5B6B86]">{title}</p>
-      <p className="truncate text-[15px] font-bold text-white">{value}</p>
-      {sub && <p className="truncate text-[15px] font-bold text-white">{sub}</p>}
+      <p className="truncate text-[15px] font-bold text-[#16264A]">{value}</p>
+      {sub && <p className="truncate text-[15px] font-bold text-[#16264A]">{sub}</p>}
     </div>
   );
 }
 
 const input =
-  "mt-1.5 w-full rounded-lg border border-white/25 bg-transparent px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#5B6B86] focus:border-[#3F5378]";
+  "mt-1.5 w-full rounded-lg border border-[#D5DCE8] bg-white px-3 py-2.5 text-sm text-[#16264A] outline-none placeholder:text-[#5B6B86] focus:border-[#3F5378]";
 
 export default function SpecialColourPage() {
   const ready = useRequireLogin();
@@ -156,7 +156,7 @@ export default function SpecialColourPage() {
 
   return (
     <PageShell light>
-      <div className="classic-light min-h-screen bg-gradient-to-b from-[#F7F8FB] via-[#EEF1F6] to-[#E6EAF2] px-4 pb-10 pt-4 text-white">
+      <div className="classic-light min-h-screen bg-gradient-to-b from-[#F7F8FB] via-[#EEF1F6] to-[#E6EAF2] px-4 pb-10 pt-4 text-[#16264A]">
         <div className="mx-auto max-w-xl">
           <div className="flex items-center gap-2">
             <BackButton variant="dark" href="/explore" />
@@ -208,7 +208,7 @@ export default function SpecialColourPage() {
                 >
                   {i + 1}
                 </span>
-                <span className={`ml-1.5 text-[13px] font-semibold ${step > i ? "text-white" : "text-[#6B7A93]"}`}>{label}</span>
+                <span className={`ml-1.5 text-[13px] font-semibold ${step > i ? "text-[#16264A]" : "text-[#6B7A93]"}`}>{label}</span>
                 {i < 2 && <span className={`mx-1.5 h-0.5 flex-1 ${step > i + 1 ? "bg-[#3F5378]" : "bg-[#C9D2E0]"}`} />}
               </div>
             ))}
@@ -260,10 +260,10 @@ export default function SpecialColourPage() {
                             disabled={isTaken}
                             onClick={() => setChosen(st)}
                             className={`flex w-full items-center rounded-xl border px-3 py-2 text-left ${
-                              chosen === st ? "border-[#3F5378] bg-[#3F5378]/20" : "border-white/15 bg-white/[0.08]"
+                              chosen === st ? "border-[#3F5378] bg-[#3F5378]/20" : "border-[#D5DCE8] bg-white"
                             }`}
                           >
-                            <span className={`flex-1 text-[13px] ${isTaken ? "text-[#8A97AE]" : "text-white"}`}>{SPECIAL_COLOR_STYLE_NAMES[st]}</span>
+                            <span className={`flex-1 text-[13px] ${isTaken ? "text-[#8A97AE]" : "text-[#16264A]"}`}>{SPECIAL_COLOR_STYLE_NAMES[st]}</span>
                             {isTaken ? (
                               <span className="text-xs text-[#6B7A93]">Taken</span>
                             ) : (
