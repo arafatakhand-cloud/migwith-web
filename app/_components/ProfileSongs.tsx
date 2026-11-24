@@ -5,6 +5,7 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { db, functions } from "../../lib/firebase";
 import { serverNow } from "../../lib/serverTime";
+import { uploadStorySong } from "../../lib/songUpload";
 import { PROFILE_SONGS, customSong, playProfileSong, songSeconds, stopProfileSong, type ProfileSong } from "../../lib/profileSongs";
 
 // 🎵 Profile Theme Songs (the app's ProfileSongs.kt): buy a 15-second tune for
@@ -196,6 +197,24 @@ export function ProfileSongChip({ username, classic }: { username: string; class
 }
 
 /** 🎵 Explore › Profile Songs: listen, buy (+30 days), turn one on / off. */
+// The length of a song file, read by the browser (used to check it is 1 s – 5 min).
+function audioSeconds(file: File): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const a = document.createElement("audio");
+    a.preload = "metadata";
+    const u = URL.createObjectURL(file);
+    a.onloadedmetadata = () => {
+      URL.revokeObjectURL(u);
+      resolve(a.duration);
+    };
+    a.onerror = () => {
+      URL.revokeObjectURL(u);
+      reject(new Error("Could not read that song."));
+    };
+    a.src = u;
+  });
+}
+
 export function ProfileSongShop({ uid }: { uid: string }) {
   const [owned, setOwned] = useState<Record<string, number>>({});
   const [active, setActive] = useState("none");
@@ -253,8 +272,40 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   };
 
   const mine = [...PROFILE_SONGS, ...custom].filter((s) => (owned[s.id] || 0) > now);
+  // 🎵 Add my own song: it goes to miGlife for approval (submitProfileSong). Once added,
+  // it shows in the 🎤 miGlife tab and can be bought like any other Profile Song.
+  const [sending, setSending] = useState(false);
+  const submitFile = async (file: File) => {
+    setSending(true);
+    setMessage(null);
+    try {
+      const seconds = await audioSeconds(file);
+      if (!(seconds >= 1 && seconds <= 300)) throw new Error("The song must be 1 second to 5 minutes long.");
+      const { url, title } = await uploadStorySong(uid, file);
+      await httpsCallable(functions, "submitProfileSong")({ url, title, seconds: Math.round(seconds) });
+      setMessage("✓ Sent to miGlife for approval. Once it is added, you can buy it here.");
+    } catch (e: any) {
+      setMessage(e?.message || "Could not send the song.");
+    } finally {
+      setSending(false);
+    }
+  };
   return (
     <div>
+      <label className={`mb-2 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#3984D9] bg-white/70 py-2.5 text-[13px] font-extrabold text-[#2563EB] ${sending ? "opacity-60" : ""}`}>
+        {sending ? "Sending…" : "🎵 + Add my song"}
+        <input
+          type="file"
+          accept="audio/*"
+          hidden
+          disabled={sending}
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f) void submitFile(f);
+          }}
+        />
+      </label>
       <div className="flex items-center justify-between px-1 text-sm">
         <span className="font-semibold text-[#35507E]">Plays when someone opens your profile</span>
         <span className="rounded-full bg-[#12324F] px-[9px] py-1 text-[11px] font-bold text-[#6FE0A0]">💲 {balance === null ? "…" : balance.toLocaleString("en-US")}</span>

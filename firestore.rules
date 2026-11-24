@@ -1451,6 +1451,12 @@ service cloud.firestore {
     //
     // =========================================================
 
+    // 🎵 a member's own profile song waiting for miGlife (written only by submitProfileSong)
+    match /profile_song_requests/{requestId} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isOwner());
+      allow create, update, delete: if false;
+    }
+
     match /tp_scores/{uid} {
 
       allow read: if signedIn();

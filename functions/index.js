@@ -28296,3 +28296,25 @@ exports.onRoomPresenceBadgeMonitor = functionsV1.firestore
     }
     return null;
   });
+
+// 🎵 A member's own profile song, sent to miGlife for approval.
+// profile_song_requests/{id} = { uid, username, url, title, seconds, status: "pending", createdAt }.
+// miGlife listens to the list, adds the song to the shop (founderProfileSong "add") and
+// the request is then marked done. At most 3 waiting requests per member.
+exports.submitProfileSong = functionsV1.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const E = functionsV1.https.HttpsError;
+  const url = String((data && data.url) || "").trim();
+  if (!/^https:\/\/[^\s]{5,990}$/.test(url)) throw new E("invalid-argument", "The song link is not valid.");
+  const title = String((data && data.title) || "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 40) || "My song";
+  const seconds = Math.round(Number(data && data.seconds) || 0);
+  if (!(seconds >= 1 && seconds <= 300)) throw new E("invalid-argument", "The song must be 1 second to 5 minutes long.");
+  const me = await db.collection("users").doc(uid).get();
+  const username = String((me.exists && me.get("username")) || "");
+  if (!username) throw new E("failed-precondition", "No username.");
+  const waiting = await db.collection("profile_song_requests").where("uid", "==", uid).where("status", "==", "pending").limit(3).get();
+  if (waiting.size >= 3) throw new E("resource-exhausted", "You already have 3 songs waiting for approval.");
+  const ref = db.collection("profile_song_requests").doc();
+  await ref.set({ uid, username, url, title, seconds, status: "pending", createdAt: FieldValue.serverTimestamp() });
+  return { ok: true, id: ref.id };
+});
