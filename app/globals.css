@@ -1876,7 +1876,7 @@ html[data-theme="dark_night"] header[data-topbar], html[data-theme="dark_night"]
 html[data-theme="dark_night"] header[data-topbar] { border-bottom: 1px solid #1F1F1F; }
 html[data-theme="dark_night"] [data-cell6d] { background: #121212 !important; box-shadow: none !important; border: 1px solid #262626; }
 html[data-theme="dark_night"] .aurora-card { background: #121212 !important; box-shadow: none !important; border: 1px solid #262626; }
-html[data-theme="dark_night"] .aurora-card .aurora-light { opacity: .3; }
+html[data-theme="dark_night"] .aurora-card .aurora-light { display: none; }
 html[data-theme="dark_night"] .mh-status { background: #1C1C1E !important; }
 html[data-theme="dark_night"] .room-chat-bg { background: #000000 !important; }
 html[data-theme="dark_night"] main[data-shell] { background: #000000; }
@@ -1886,3 +1886,14 @@ html[data-theme="dark_night"] .pf6d-tile span[style*="color-mix"] { filter: brig
 html[data-theme="dark_night"] .pf-name { background-image: linear-gradient(90deg, #93C5FD, #C4B5FD) !important; filter: none !important; }
 html[data-theme="dark_night"] .pf-chip { background: #1C1C1E !important; box-shadow: none !important; border: 1px solid #2E2E30; filter: brightness(1.55); }
 html[data-theme="dark_night"] .pf6d-tile .text-\[\#5B6B8C\] { color: #A0A0A0 !important; }
+
+/* ⚫ flat black Lobby (2026-11-24): no blue band under the page, brighter stat numbers,
+   flat hero card with a thin line, the + button flat */
+html[data-theme="dark_night"] { background-color: #000000 !important; }
+html[data-theme="dark_night"] body { background-color: #000000; }
+html[data-theme="dark_night"] [data-cell6d] > span > span:first-child { filter: brightness(1.9) saturate(0.95); }
+html[data-theme="dark_night"] [data-cell6d] .text-\[\#5B6B86\] { color: #A0A0A0 !important; }
+html[data-theme="dark_night"] .aurora-card { background-image: none !important; }
+html[data-theme="dark_night"] .aurora-card .aurora-ring { opacity: 1; }
+html[data-theme="dark_night"] .room-add-btn { background: #3358D4 !important; box-shadow: none !important; }
+html[data-theme="dark_night"] .room-add-btn.glass-shine::after, html[data-theme="dark_night"] .room-add-btn.glass-shine::before { display: none !important; }

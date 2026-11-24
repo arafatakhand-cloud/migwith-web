@@ -70,7 +70,7 @@ export default function RootLayout({
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{localStorage.removeItem("migwith.font");localStorage.removeItem("migwith.uiStyle");var m=localStorage.getItem("migwith.themeMode");if(m!=="light"&&m!=="dark"&&m!=="auto")m=localStorage.getItem("migwith.theme")==="dark_night"?"dark":"auto";var q=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)");var ap=function(){var x=localStorage.getItem("migwith.themeMode")||m;document.documentElement.dataset.theme=(x==="dark"||(x!=="light"&&q&&q.matches))?"dark_night":"modern_light"};ap();if(q&&q.addEventListener)q.addEventListener("change",ap)}catch(e){}`,
+            __html: `try{localStorage.removeItem("migwith.font");localStorage.removeItem("migwith.uiStyle");var m=localStorage.getItem("migwith.themeMode");if(m!=="light"&&m!=="dark"&&m!=="auto")m=localStorage.getItem("migwith.theme")==="dark_night"?"dark":"auto";var q=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)");var ap=function(){var x=localStorage.getItem("migwith.themeMode")||m;var d=(x==="dark"||(x!=="light"&&q&&q.matches));document.documentElement.dataset.theme=d?"dark_night":"modern_light";var t=document.querySelector('meta[name="theme-color"]');if(t)t.setAttribute("content",d?"#000000":"#0B1A33")};ap();if(q&&q.addEventListener)q.addEventListener("change",ap)}catch(e){}`,
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />

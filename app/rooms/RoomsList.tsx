@@ -602,7 +602,7 @@ export function RoomsList({ embedded = false, full = false }: { embedded?: boole
             type="button"
             onClick={tryCreate}
             title="Create Room"
-            className="glass-shine ml-2 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] via-[#3B7BF0] to-[#7B5CF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
+            className="room-add-btn glass-shine ml-2 flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6FB0FF] via-[#3B7BF0] to-[#7B5CF0] text-[26px] font-light text-white shadow-[0_3px_8px_rgba(59,123,240,.45)]"
           >
             +
           </button>

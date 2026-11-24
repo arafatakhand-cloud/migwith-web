@@ -27,6 +27,8 @@ const systemDark = () =>
 export function applyThemeMode(mode: ThemeMode) {
   const dark = mode === "dark" || (mode === "auto" && systemDark());
   document.documentElement.dataset.theme = dark ? "dark_night" : "modern_light";
+  // ⚫ the browser bar follows: black in Dark
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", dark ? "#000000" : "#0B1A33");
 }
 
 export function setThemeMode(mode: ThemeMode) {
