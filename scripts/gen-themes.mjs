@@ -80,6 +80,8 @@ function darkSurface(hex) {
   if (l < 0.72) return null;
   // white / grey → the soft blue-grey card colour (#1A1F2D), like the app
   if (s < 0.08) return toHex(hslToRgb(226, 0.27, 0.14 + (1 - l) * 0.5));
+  // pale blue page / card tints → the same deep blue-black as the pages (#12151F … #1A1F2D)
+  if (h >= 180 && h <= 260) return toHex(hslToRgb(226, 0.25, 0.1 + (1 - l) * 0.45));
   return toHex(hslToRgb(h, Math.min(s, 0.35), 0.11 + (1 - l) * 0.55));
 }
 // Same as the app's darkModeInk: text too dark to read on the dark pages is
@@ -88,6 +90,8 @@ function darkSurface(hex) {
 function darkInk(hex) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
   if (l >= 0.52) return null;
+  // very dark navy text (titles) → the clear off-white of the demo (#E7EAF3)
+  if (l < 0.25 && h >= 180 && h <= 260) return "#E7EAF3";
   if (s > 0.4) return toHex(hslToRgb(h, Math.min(s, 0.9), 0.7));
   return toHex(hslToRgb(h, Math.min(s, 0.35), 0.88 - l * 0.3));
 }

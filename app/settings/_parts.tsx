@@ -3,21 +3,16 @@
 import Link from "next/link";
 import { CHAT_TEXT_MAX, CHAT_TEXT_MIN, setChatTextSize, useChatTextSize } from "../../lib/chatTextSize";
 import { ThemePicker } from "../_components/ThemePicker";
-import { useUiStyle } from "../../lib/uiStyle";
 
 // ⚙ Settings rows: a coloured icon tile, title + short line, and a switch /
 // value / › on the right. Modern: every row is its own Community-page card
 // (white → its colour); Classic: grouped white cards with dividers.
+// 🎨 Modern Light / Dark: one flat white card per group, thin lines between rows (no 3D / 6D).
 export function Group({ title, children }: { title: string; children: React.ReactNode }) {
-  const classic = useUiStyle() === "classic";
   return (
     <section>
       <p className="mb-1.5 px-2 text-[11px] font-extrabold uppercase tracking-[1.4px] text-[#5B6B8C]">{title}</p>
-      {classic ? (
-        <div className="divide-y divide-[#EEF2F8] overflow-hidden rounded-3xl bg-white shadow-[0_2px_10px_rgba(16,40,90,0.06)]">{children}</div>
-      ) : (
-        <div className="space-y-2.5">{children}</div>
-      )}
+      <div className="divide-y divide-[#EEF2F8] overflow-hidden rounded-[18px] border border-[#E3E8F2] bg-white">{children}</div>
     </section>
   );
 }
@@ -41,7 +36,7 @@ export function Row({
   href?: string;
   onClick?: () => void;
 }) {
-  const classic = useUiStyle() === "classic";
+  const classic = true; // flat list row (Modern Light / Dark)
   const body = (
     <>
       <span

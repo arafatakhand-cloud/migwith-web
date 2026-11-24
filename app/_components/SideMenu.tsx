@@ -250,7 +250,7 @@ export function MenuPanel() {
       </div>
     </div>
 
-    <ul className="mt-3 space-y-2">
+    <ul className="mt-3 divide-y divide-[#EEF2F8] overflow-hidden rounded-[18px] border border-[#E3E8F2] bg-white">
       {links.map(([href, icon, label, n]) => {
         const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
         return (
@@ -259,19 +259,10 @@ export function MenuPanel() {
             <Link
               href={href}
               onClick={href === "#spin" ? (e) => (e.preventDefault(), openDailySpin()) : undefined}
-              className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] active:translate-y-[3px] ${active ? "font-extrabold" : "font-bold"}`}
-              style={{
-                // 🪙 silver 6D layer under each row (like the Lobby cards); the icon keeps its own colour
-                borderWidth: 0,
-                background: "linear-gradient(180deg, #FFFFFF, #F3F5F8)",
-                boxShadow: "inset 0 2px 0 #fff, 0 4px 0 #B9C0CB, 0 6px 0 #9EA6B3, 0 10px 14px -6px rgba(40, 50, 70, 0.35)",
-              }}
+              // 🎨 flat list row (Modern Light / Dark): no 3D / 6D layers
+              className={`flex items-center gap-3 px-3 py-2.5 text-sm text-[#0B2A5B] transition hover:bg-[#F6F8FC] ${active ? "bg-[#EEF2FF] font-extrabold" : "font-bold"}`}
             >
-              <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border-0 text-[19px]"
-                // 🪙 silver icon tile: only the emoji carries the colour
-                style={{ background: "linear-gradient(180deg, #FFFFFF, #E4E8EE)", boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #B9C0CB" }}
-              >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EEF1F8] text-[18px]">
                 {icon}
               </span>
               <span className="min-w-0 flex-1 pl-1">{label}</span>
@@ -280,13 +271,7 @@ export function MenuPanel() {
                   {badgeText(n)}
                 </span>
               )}
-              <span
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold"
-                // 🪙 silver arrow chip, dark arrow
-                style={{ background: "linear-gradient(180deg, #FFFFFF, #E6E9EF)", color: "#5B6B86", boxShadow: "0 3px 0 #9EA6B3" }}
-              >
-                ›
-              </span>
+              <span className="shrink-0 text-xl leading-none text-[#A9B4C2]">›</span>
             </Link>
           </li>
         );

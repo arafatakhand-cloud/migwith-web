@@ -499,21 +499,21 @@ export function TopBar() {
 
   // ✨ MODERN: a blue → violet bar (the Home profile card's colours), a round
   // ☰ button, and white icons with the open tab as a white pill, its name blue.
-  // 🌿 Fresh mint look (same as the app's top bar)
+  // 🎨 Modern Light / Dark: one flat brand blue (same as the app's top bar)
   const colors: PillColors = {
     pillTop: "#FFFFFF",
-    pillBottom: "#EFFFFA",
-    pillText: "#0E7A62",
+    pillBottom: "#FFFFFF",
+    pillText: "#2F55C8",
     idleIcon: "#FFFFFF",
-    idleTile: "#14B88F",
-    activeIcon: "#0E7A62",
+    idleTile: "#2B4BC0",
+    activeIcon: "#2F55C8",
   };
   return (
     <>
       <div className="topbar-6d-wrap">
       <div
         className="topbar-6d flex items-center px-2 py-1.5 sm:px-4"
-        style={{ background: "linear-gradient(90deg, #14B88F, #2C9BEA)" }}
+        style={{ background: "#3358D4" }}
       >
         <button
           type="button"
