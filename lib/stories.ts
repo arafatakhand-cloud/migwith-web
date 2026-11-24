@@ -17,7 +17,13 @@ export type Story = {
   createdMs: number;
   expiresAt: number;
   caption: string;
-  privacy: "everyone" | "friends" | "only_me";
+  privacy: "everyone" | "friends" | "only_me" | "close";
+  /** 💚 Close friends: sha256(storyId|name) of each close friend */
+  closeKeys?: string[];
+  /** ✨ colour effect (0 = none) · 💬 replies turned off · 📊 poll votes [a, b] */
+  fx?: number;
+  noReplies?: boolean;
+  pollVotes?: number[];
   /** a text-only story (no photo) */
   text: string;
   /** an optional song; it plays for 30 seconds from startSec */
@@ -54,7 +60,11 @@ export async function loadStories(): Promise<Story[]> {
         createdMs: Number(x.createdMs || 0),
         expiresAt: Number(x.expiresAt || 0),
         caption: String(x.caption || ""),
-        privacy: x.privacy === "friends" || x.privacy === "only_me" ? x.privacy : "everyone",
+        privacy: x.privacy === "friends" || x.privacy === "only_me" || x.privacy === "close" ? x.privacy : "everyone",
+        closeKeys: Array.isArray(x.closeKeys) ? x.closeKeys.map(String) : undefined,
+        fx: Number(x.fx || 0),
+        noReplies: x.noReplies === true,
+        pollVotes: Array.isArray(x.pollVotes) ? x.pollVotes.map((n: unknown) => Number(n) || 0) : undefined,
         text: String(x.text || ""),
         song:
           x.song && typeof x.song.url === "string" && x.song.url
