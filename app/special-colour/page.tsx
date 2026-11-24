@@ -45,7 +45,7 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
       type="button"
       onClick={onClick}
       className={`shrink-0 whitespace-nowrap rounded-full px-3 py-[7px] text-xs font-semibold ${
-        on ? "bg-gradient-to-r from-[#B8C2D1] to-[#8A94A6] text-white" : "border border-white/25 bg-white/[0.13] text-[#D0D6E0]"
+        on ? "bg-gradient-to-r from-[#3F5378] to-[#8A97AE] text-white" : "border border-white/25 bg-white/[0.13] text-[#2B3A5C]"
       }`}
     >
       {label}
@@ -55,8 +55,8 @@ function Chip({ label, on, onClick }: { label: string; on: boolean; onClick: () 
 
 function Pill({ title, value, sub, on }: { title: string; value: string; sub?: string; on?: boolean }) {
   return (
-    <div className={`min-w-0 flex-1 rounded-[14px] border p-3 ${on ? "border-[#B8C2D1] bg-[#B8C2D1]/20" : "border-white/20 bg-white/[0.13]"}`}>
-      <p className="text-[11px] text-[#AEB6C4]">{title}</p>
+    <div className={`min-w-0 flex-1 rounded-[14px] border p-3 ${on ? "border-[#3F5378] bg-[#3F5378]/20" : "border-white/20 bg-white/[0.13]"}`}>
+      <p className="text-[11px] text-[#5B6B86]">{title}</p>
       <p className="truncate text-[15px] font-bold text-white">{value}</p>
       {sub && <p className="truncate text-[15px] font-bold text-white">{sub}</p>}
     </div>
@@ -64,7 +64,7 @@ function Pill({ title, value, sub, on }: { title: string; value: string; sub?: s
 }
 
 const input =
-  "mt-1.5 w-full rounded-lg border border-white/25 bg-transparent px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#AEB6C4] focus:border-[#B8C2D1]";
+  "mt-1.5 w-full rounded-lg border border-white/25 bg-transparent px-3 py-2.5 text-sm text-white outline-none placeholder:text-[#5B6B86] focus:border-[#3F5378]";
 
 export default function SpecialColourPage() {
   const ready = useRequireLogin();
@@ -156,25 +156,25 @@ export default function SpecialColourPage() {
 
   return (
     <PageShell light>
-      <div className="classic-light min-h-screen bg-gradient-to-b from-[#1E1E26] via-[#26262F] to-[#15151B] px-4 pb-10 pt-4 text-white">
+      <div className="classic-light min-h-screen bg-gradient-to-b from-[#F7F8FB] via-[#EEF1F6] to-[#E6EAF2] px-4 pb-10 pt-4 text-white">
         <div className="mx-auto max-w-xl">
           <div className="flex items-center gap-2">
             <BackButton variant="dark" href="/explore" />
             <div>
               <h1 className="text-[21px] font-extrabold">VIP Subscription</h1>
-              <p className="text-[11px] tracking-[1.5px] text-[#E2E8F0]">THE MIGLIFE RAINBOW NAME</p>
+              <p className="text-[11px] tracking-[1.5px] text-[#9A6B00]">THE MIGLIFE RAINBOW NAME</p>
             </div>
           </div>
 
           {/* Preview: your own name in the moving rainbow */}
           <div className="mt-4 rounded-[20px] bg-gradient-to-br from-[#FFE08A] via-[#FF4F8B] to-[#3AA0E0] p-[3px] shadow-[0_6px_20px_rgba(156,91,255,.5)]">
-            <div className="rounded-[17px] bg-[#15151B] px-4 py-[22px] text-center">
-              <p className="text-xs text-[#AEB6C4]">Your name in the room</p>
+            <div className="rounded-[17px] bg-white px-4 py-[22px] text-center">
+              <p className="text-xs text-[#5B6B86]">Your name in the room</p>
               <p className="mt-1.5">
                 <RainbowName name={username || "miglife"} style={previewStyle} className="text-[30px]" />
-                <span className="text-lg text-[#E5E9F0]">: hello everyone 👋</span>
+                <span className="text-lg text-[#16264A]">: hello everyone 👋</span>
               </p>
-              <p className="mt-2.5 text-xs text-[#AEB6C4]">
+              <p className="mt-2.5 text-xs text-[#5B6B86]">
                 Only 5 people can have it — each one gets their own rainbow animation. Pictures and voice can always be shared in rooms.
               </p>
             </div>
@@ -193,7 +193,7 @@ export default function SpecialColourPage() {
           <div className="mt-2.5">
             <Card>
               <p className="text-[15px] font-bold">What you get</p>
-              <p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-[#E5E9F0]">
+              <p className="mt-1 whitespace-pre-line text-[13px] leading-5 text-[#16264A]">
                 {"🌈 Your own rainbow animation on your name (rooms + profile)\n🖼 Picture sharing in every room\n🎤 Voice sharing in every room\n👑 Only 5 people at a time — no two have the same animation"}
               </p>
             </Card>
@@ -204,12 +204,12 @@ export default function SpecialColourPage() {
             {["Choose", "Apply", "Approve"].map((label, i) => (
               <div key={label} className={`flex items-center ${i < 2 ? "flex-1" : ""}`}>
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold ${step > i ? "bg-[#B8C2D1]" : "bg-[#3A3F4B]"}`}
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold ${step > i ? "bg-[#3F5378]" : "bg-[#C9D2E0]"}`}
                 >
                   {i + 1}
                 </span>
-                <span className={`ml-1.5 text-[13px] font-semibold ${step > i ? "text-white" : "text-[#8A93A3]"}`}>{label}</span>
-                {i < 2 && <span className={`mx-1.5 h-0.5 flex-1 ${step > i + 1 ? "bg-[#B8C2D1]" : "bg-[#3A3F4B]"}`} />}
+                <span className={`ml-1.5 text-[13px] font-semibold ${step > i ? "text-white" : "text-[#6B7A93]"}`}>{label}</span>
+                {i < 2 && <span className={`mx-1.5 h-0.5 flex-1 ${step > i + 1 ? "bg-[#3F5378]" : "bg-[#C9D2E0]"}`} />}
               </div>
             ))}
           </div>
@@ -221,8 +221,8 @@ export default function SpecialColourPage() {
               </Card>
             ) : pending ? (
               <Card>
-                <p className="text-base font-bold text-[#E2E8F0]">⏳ Waiting for approval</p>
-                <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#E5E9F0]">
+                <p className="text-base font-bold text-[#9A6B00]">⏳ Waiting for approval</p>
+                <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#16264A]">
                   {`${vipPlanLabel(pending.months)} · ${pending.amountCoins > 0 ? `🪙 ${coins(pending.amountCoins)} coins` : `$${pending.legacyUsd}`}\nWhen miGlife approves, the coins are cut and your rainbow name turns on. If it's rejected, nothing is cut. Keep enough coins until then!${
                     pending.amountCoins > 0 && balance !== null && balance < pending.amountCoins
                       ? `\n⚠ You have ${coins(balance)} now — approval needs ${coins(pending.amountCoins)}.`
@@ -232,21 +232,21 @@ export default function SpecialColourPage() {
               </Card>
             ) : !applyOpen ? (
               <Card>
-                <p className="text-base font-bold text-[#E2E8F0]">🔒 Applications are closed right now</p>
-                <p className="mt-1 text-[13px] text-[#E5E9F0]">miGlife will open it again soon — check back later.</p>
+                <p className="text-base font-bold text-[#9A6B00]">🔒 Applications are closed right now</p>
+                <p className="mt-1 text-[13px] text-[#16264A]">miGlife will open it again soon — check back later.</p>
               </Card>
             ) : (
               <>
                 {!iAmActive && placesLeft === 0 && (
                   <Card>
-                    <p className="text-[15px] font-bold text-[#E2E8F0]">😔 All 5 places are taken right now.</p>
-                    <p className="text-[13px] text-[#E5E9F0]">Come back when someone&apos;s month ends.</p>
+                    <p className="text-[15px] font-bold text-[#9A6B00]">😔 All 5 places are taken right now.</p>
+                    <p className="text-[13px] text-[#16264A]">Come back when someone&apos;s month ends.</p>
                   </Card>
                 )}
                 <Card>
                   <p className="text-[15px] font-bold">① Choose your animation</p>
                   {iAmActive ? (
-                    <p className="mt-1 text-xs text-[#AEB6C4]">
+                    <p className="mt-1 text-xs text-[#5B6B86]">
                       Yours: {SPECIAL_COLOR_STYLE_NAMES[special.styleOf(username)] || ""} (stays the same when you renew)
                     </p>
                   ) : (
@@ -260,12 +260,12 @@ export default function SpecialColourPage() {
                             disabled={isTaken}
                             onClick={() => setChosen(st)}
                             className={`flex w-full items-center rounded-xl border px-3 py-2 text-left ${
-                              chosen === st ? "border-[#B8C2D1] bg-[#B8C2D1]/20" : "border-white/15 bg-white/[0.08]"
+                              chosen === st ? "border-[#3F5378] bg-[#3F5378]/20" : "border-white/15 bg-white/[0.08]"
                             }`}
                           >
-                            <span className={`flex-1 text-[13px] ${isTaken ? "text-[#6B7280]" : "text-white"}`}>{SPECIAL_COLOR_STYLE_NAMES[st]}</span>
+                            <span className={`flex-1 text-[13px] ${isTaken ? "text-[#8A97AE]" : "text-white"}`}>{SPECIAL_COLOR_STYLE_NAMES[st]}</span>
                             {isTaken ? (
-                              <span className="text-xs text-[#8A93A3]">Taken</span>
+                              <span className="text-xs text-[#6B7A93]">Taken</span>
                             ) : (
                               <RainbowName name={username || "miglife"} style={st} className="text-[17px]" />
                             )}
@@ -282,22 +282,22 @@ export default function SpecialColourPage() {
                     ))}
                   </div>
                   {active && (
-                    <p className="mt-1.5 text-[11px] text-[#AEB6C4]">
+                    <p className="mt-1.5 text-[11px] text-[#5B6B86]">
                       Your colour is still on — the new months are added after {fmtDate(myUntil)}.
                     </p>
                   )}
                 </Card>
                 <Card>
                   <p className="text-[15px] font-bold">② Pay with coins</p>
-                  <div className="mt-1.5 rounded-xl border border-[#B8C2D1]/35 bg-gradient-to-r from-[#B8C2D1]/20 to-[#8A94A6]/20 p-3">
-                    <p className="text-[11px] text-[#AEB6C4]">{vipPlanLabel(months)} plan</p>
+                  <div className="mt-1.5 rounded-xl border border-[#3F5378]/35 bg-gradient-to-r from-[#3F5378]/20 to-[#8A97AE]/20 p-3">
+                    <p className="text-[11px] text-[#5B6B86]">{vipPlanLabel(months)} plan</p>
                     <p className="text-[26px] font-extrabold leading-8">🪙 {coins(price)}</p>
                     <p className="mt-1.5 flex text-xs">
-                      <span className="flex-1 text-[#AEB6C4]">Your coins</span>
+                      <span className="flex-1 text-[#5B6B86]">Your coins</span>
                       <b className="text-[13px]">{balance === null ? "…" : coins(balance)}</b>
                     </p>
                     <p className="flex text-xs">
-                      <span className="flex-1 text-[#AEB6C4]">After approval</span>
+                      <span className="flex-1 text-[#5B6B86]">After approval</span>
                       <b className={`text-[13px] ${enough ? "text-[#3DDC84]" : "text-[#FF8A9A]"}`}>
                         {balance === null ? "…" : balance >= price ? coins(balance - price) : "—"}
                       </b>
@@ -306,7 +306,7 @@ export default function SpecialColourPage() {
                       <p className="mt-1 text-xs font-semibold text-[#FF8A9A]">⚠ You need {coins(price - balance)} more coins for this plan.</p>
                     )}
                   </div>
-                  <p className="mt-1.5 text-[11px] text-[#AEB6C4]">
+                  <p className="mt-1.5 text-[11px] text-[#5B6B86]">
                     Nothing is cut now. When miGlife approves, {coins(price)} coins are taken from your balance. Rejected = nothing is cut.
                   </p>
                 </Card>
@@ -314,7 +314,7 @@ export default function SpecialColourPage() {
                   type="button"
                   disabled={!canSend}
                   onClick={send}
-                  className="h-[50px] w-full rounded-[14px] bg-[#B8C2D1] text-[15px] font-extrabold text-white disabled:bg-[#454B58]"
+                  className="h-[50px] w-full rounded-[14px] bg-[#3F5378] text-[15px] font-extrabold text-white disabled:bg-[#C9D2E0]"
                 >
                   {busy
                     ? "Sending…"
@@ -331,12 +331,12 @@ export default function SpecialColourPage() {
 
           {requests.some((r) => r.status !== "pending") && (
             <div className="mt-4">
-              <p className="text-[11px] font-bold tracking-[1px] text-[#E2E8F0]">YOUR REQUESTS</p>
+              <p className="text-[11px] font-bold tracking-[1px] text-[#9A6B00]">YOUR REQUESTS</p>
               {requests
                 .filter((r) => r.status !== "pending")
                 .slice(0, 10)
                 .map((r) => (
-                  <p key={r.id} className="py-[3px] text-xs text-[#E5E9F0]">
+                  <p key={r.id} className="py-[3px] text-xs text-[#16264A]">
                     {r.status === "approved" ? "✅" : "❌"} {fmtDate(r.createdAtMs)} · {vipPlanLabel(r.months)} ·{" "}
                     {r.amountCoins > 0 ? `🪙 ${coins(r.amountCoins)}${r.status === "approved" ? " cut" : " (not cut)"}` : `$${r.legacyUsd}`}
                     {r.status === "rejected" && r.reason ? ` · ${r.reason}` : ""}
