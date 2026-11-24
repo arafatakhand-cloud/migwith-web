@@ -1897,3 +1897,11 @@ html[data-theme="dark_night"] .aurora-card { background-image: none !important; 
 html[data-theme="dark_night"] .aurora-card .aurora-ring { opacity: 1; }
 html[data-theme="dark_night"] .room-add-btn { background: #3358D4 !important; box-shadow: none !important; }
 html[data-theme="dark_night"] .room-add-btn.glass-shine::after, html[data-theme="dark_night"] .room-add-btn.glass-shine::before { display: none !important; }
+/* ⚫ flat black Lobby: the white page behind the room list (lobby-butterfly #FFFFFF)
+   and the Lobby's light "plain" gradient cards / chips turn black too */
+html[data-theme="dark_night"] .lobby-butterfly { background: #000000 !important; }
+html[data-theme="dark_night"] [data-lobby] [style*="linear-gradient"]:not(span):not(.aurora-card) { background-color: #121212 !important; }
+html[data-theme="dark_night"] [data-lobby] span[style*="linear-gradient"] { background: #1C1C1E !important; color: #F2F2F2 !important; }
+html[data-theme="dark_night"] [data-lobby] [style*="box-shadow"]:not([data-cell6d]) { box-shadow: none !important; }
+html[data-theme="dark_night"] [data-lobby] .lg\:bg-white { background: #000000 !important; }
+html[data-theme="dark_night"] :is(main[data-shell], [data-shell-copy]):has([data-lobby]) { background: #000000 !important; }
