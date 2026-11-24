@@ -47,10 +47,8 @@ export function PageTitle({
     <div className="flex items-center gap-3 py-3">
       <BackButton onClick={back} />
       <div className="min-w-0 flex-1 text-center">
-        <h1 className="text-xl font-black text-[#0B2A5B]">
-          {icon && <span className="mr-1">{flipMegaphone(icon)}</span>}
-          {title}
-        </h1>
+        {/* 🎨 no icon before the page name (miglife) */}
+        <h1 className="text-xl font-black text-[#0B2A5B]">{title}</h1>
         {subtitle && <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2F80ED]">{subtitle}</p>}
       </div>
       <span className="w-10 shrink-0" />
@@ -107,12 +105,7 @@ export function PastelCard({
     );
   const body = (
     <>
-      <span
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-xl"
-        style={quiet ? { background: "var(--chip-surface, #EEF1F8)" } : { backgroundColor: `${color}26` }}
-      >
-        {flipMegaphone(icon)}
-      </span>
+      {/* 🎨 no icon before the name (miglife) */}
       <span className="min-w-0 flex-1">
         <span className="block truncate font-bold text-[#0B2A5B]">{title}</span>
         <span className="block truncate text-xs text-[#6B7A99]">{subtitle}</span>
@@ -122,12 +115,7 @@ export function PastelCard({
       ) : note ? (
         <span className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 text-[10px] font-bold text-[#6B7A99]">{note}</span>
       ) : (
-        <span
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold"
-          style={quiet ? { color: "#A9B4C2" } : { backgroundColor: `${color}22`, color }}
-        >
-          ›
-        </span>
+        <span className="shrink-0 text-xl leading-none text-[#A9B4C2]">›</span>
       )}
     </>
   );

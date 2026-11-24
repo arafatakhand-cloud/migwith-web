@@ -262,9 +262,7 @@ export function MenuPanel() {
               // 🎨 flat list row (Modern Light / Dark): no 3D / 6D layers
               className={`flex items-center gap-3 px-3 py-2.5 text-sm text-[#0B2A5B] transition hover:bg-[#F6F8FC] ${active ? "bg-[#EEF2FF] font-extrabold" : "font-bold"}`}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#EEF1F8] text-[18px]">
-                {icon}
-              </span>
+              {/* 🎨 no icon before the name (miglife) */}
               <span className="min-w-0 flex-1 pl-1">{label}</span>
               {n > 0 && (
                 <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold leading-5 text-white">
