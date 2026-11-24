@@ -1,4 +1,5 @@
 import DarkReadable from "./_components/DarkReadable";
+import CallHost from "./_components/CallHost";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./themes.css";
@@ -83,7 +84,11 @@ export default function RootLayout({
           }}
         />
         <BootSplash />
-        <AppSession>{children}</AppSession>
+        <AppSession>
+          {children}
+          {/* 📞 audio calls: a friend ringing, and the call screen */}
+          <CallHost />
+        </AppSession>
         <SiteControlGate />
         {/* 🚩 the Report dialog, opened from profiles, room lines and private chats */}
         <ReportDialogHost />

@@ -24,6 +24,7 @@ import { getDownloadURL, ref as storageRef, uploadBytes } from "firebase/storage
 import { db, storage } from "../../../lib/firebase";
 import { useCurrentUser } from "../../../lib/useCurrentUser";
 import { lastSeenLabel, privateChatId } from "../../../lib/privateChat";
+import { startCall } from "../../../lib/calls";
 import { chatLockedFor, lockedChatText } from "../../../lib/privacy";
 import { PageShell } from "../../_components/PageShell";
 import { EmojiPicker } from "../../_components/EmojiPicker";
@@ -550,6 +551,18 @@ export default function PrivateChatPage() {
             </Link>
             <p className={`truncate text-[11px] ${online ? "text-[#E6FFF6]" : "text-white/80"}`}>{online ? "● Active now" : status}</p>
           </div>
+          {/* 📞 audio call (2026-11-24) */}
+          {!self && !blocked && !blockedMe && user && username && (
+            <button
+              type="button"
+              onClick={() => void startCall({ uid: user.uid, username }, friend)}
+              aria-label={`Call ${friend}`}
+              title={`Audio call ${friend}`}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/20 text-[18px] text-white transition active:scale-95"
+            >
+              📞
+            </button>
+          )}
         </div>
 
         {/* Messages */}
@@ -585,6 +598,31 @@ export default function PrivateChatPage() {
             }
             const ink = mineRight && !barePic ? "text-white" : "text-[#12233F]";
             const sub = mineRight && !barePic ? "text-white/75" : "text-[#6D7A90]";
+            // 📞 a call line ("📞 Audio call · 3:24" / "📞 Missed audio call"), in the middle
+            if (m.type === "call") {
+              const missed = /missed|declined/i.test(m.text);
+              return (
+                <div key={m.id} className="flex flex-col items-center">
+                  {showDay && (
+                    <span className="my-1.5 rounded-[10px] bg-white px-3 py-1 text-[11px] font-semibold text-[#0E8F74] shadow-[0_1px_3px_rgba(11,42,91,.12)]">{dayLabel(m.createdAtMs)}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => user && username && !self && void startCall({ uid: user.uid, username }, friend)}
+                    className="flex items-center gap-2.5 rounded-[14px] bg-white px-3.5 py-2 text-left shadow-[0_1px_4px_rgba(15,40,100,.08)]"
+                  >
+                    <span className={`flex h-[30px] w-[30px] items-center justify-center rounded-full text-[15px] ${missed ? "bg-[#FEE2E2]" : "bg-[#DCFCE7]"}`}>{missed ? "↙" : "📞"}</span>
+                    <span>
+                      <span className={`block text-[13.5px] ${missed ? "text-[#DC2626]" : "text-[#0B1B3F]"}`}>{m.text.replace(/^📞\s*/, "")}</span>
+                      <span className="block text-[11.5px] text-[#64748B]">
+                        {new Date(m.createdAtMs || Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                        {missed && !mine ? " · tap to call back" : ""}
+                      </span>
+                    </span>
+                  </button>
+                </div>
+              );
+            }
             return (
               <div key={m.id} className={`flex flex-col ${mineRight ? "items-end" : "items-start"}`}>
                 {showDay && (
