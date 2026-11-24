@@ -2678,7 +2678,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     !!myName &&
                     chatLineAtMentionsMe(m.text, myName)
                   }
-                  classic={classic}
+                  // 🎨 Modern Light / Dark: flat text lines in rooms ("name: message", every line on the left, no bubbles)
+                  classic={true}
                   roomName={roomName}
                   gameRoom={gameRoom}
                   colorOf={colorOf}
@@ -4161,12 +4162,8 @@ function MessageRow({
           className={`relative ${fullWidthLines && !rightSide ? "w-full" : "max-w-[85%]"} leading-snug text-left ${quoteNode ? (rightSide ? "rounded-tr-[4px]" : "rounded-tl-[4px]") : ""} ${
             mentionsMe ? "rounded-md border-l-[3px] border-[#FF8A00] px-1.5 py-0.5" : ""
           } ${
-            !isRoomLine && m.type !== "sticker" && m.type !== "gift"
-              ? rightSide
-                // 🫧 6D bubbles: stacked depth layers under each bubble, a top shine
-                ? "rounded-[14px] rounded-br-[4px] bg-[#E3F8F0] px-2.5 py-1.5 text-black shadow-[inset_0_1px_0_#fff,0_2px_0_#B8E6D3,0_4px_0_#A3DBC4,0_8px_12px_rgba(11,59,43,.14)]"
-                : "rounded-[14px] rounded-bl-[4px] bg-[#e7eff4] px-2.5 py-1.5 shadow-[inset_0_2px_0_#fff,0_2px_0_#C9D8EA,0_4px_0_#B7C9E0,0_8px_12px_rgba(11,31,58,.14)]"
-              : ""
+            // 🎨 flat text: no bubble, no 3D / 6D layers
+            !isRoomLine && m.type !== "sticker" && m.type !== "gift" ? "px-1 py-0.5" : ""
           }`}
           style={{
             fontSize: fontPx,
