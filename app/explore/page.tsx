@@ -124,11 +124,12 @@ function DiscoverRow6D({ item: i, live }: { item: Item; live: boolean }) {
     <Link
       href={i.href || "#"}
       className="flex items-center gap-3 rounded-[18px] bg-gradient-to-b from-white to-[#F6F9FD] px-3 py-[11px] transition active:translate-y-[3px]"
-      style={{ boxShadow: `0 4px 0 ${i.color}59, 0 10px 16px -12px ${i.color}` }}
+      // 🪙 less colour: silver 6D layer under each row, a silver icon tile (only the emoji is coloured), a silver arrow
+      style={{ boxShadow: "0 4px 0 #B9C0CB, 0 10px 16px -12px rgba(40, 50, 70, 0.4)" }}
     >
       <span
         className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] text-[22px]"
-        style={{ background: `linear-gradient(${i.color}E0, ${i.color})`, boxShadow: `0 3px 0 ${i.color}99` }}
+        style={{ background: "linear-gradient(180deg, #FFFFFF, #E4E8EE)", boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #B9C0CB" }}
       >
         <span aria-hidden className="absolute inset-x-[5px] top-[3px] h-3 rounded-lg bg-gradient-to-b from-white/45 to-white/0" />
         <span className="relative">{i.icon}</span>
@@ -145,7 +146,7 @@ function DiscoverRow6D({ item: i, live }: { item: Item; live: boolean }) {
         </span>
         <span className="block truncate text-[12px] text-[#5B6B86]">{i.subtitle}</span>
       </span>
-      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[18px] font-black" style={{ background: `${i.color}21`, color: i.color }}>
+      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[18px] font-black" style={{ background: "linear-gradient(180deg, #FFFFFF, #E6E9EF)", color: "#5B6B86", boxShadow: "0 3px 0 #9EA6B3" }}>
         ›
       </span>
     </Link>
