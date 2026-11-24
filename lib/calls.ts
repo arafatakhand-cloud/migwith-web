@@ -48,6 +48,63 @@ const currentView = (): CallView | null => view;
 let pc: RTCPeerConnection | null = null;
 let local: MediaStream | null = null;
 let audioEl: HTMLAudioElement | null = null;
+// 🔊 2026-11-25: "Speaker" = a louder voice — the friend's sound goes through a gain (×2.5)
+let boostCtx: AudioContext | null = null;
+let boostGain: GainNode | null = null;
+let boostSrc: MediaStreamAudioSourceNode | null = null;
+// 💡 keep the screen awake during a call (a dark screen can stop the mic on phones)
+let wake: { release: () => Promise<void> } | null = null;
+async function keepAwake(on: boolean) {
+  try {
+    if (on) {
+      const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<{ release: () => Promise<void> }> } };
+      if (!wake && nav.wakeLock && document.visibilityState === "visible") wake = await nav.wakeLock.request("screen");
+    } else if (wake) {
+      const w = wake;
+      wake = null;
+      await w.release();
+    }
+  } catch {
+    wake = null;
+  }
+}
+if (typeof document !== "undefined") {
+  // the screen lock is dropped when the page hides: take it again when it comes back
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && view && view.status !== "ended") {
+      wake = null;
+      void keepAwake(true);
+    }
+  });
+}
+function applyLoud(on: boolean) {
+  const el = audioEl;
+  const stream = el?.srcObject as MediaStream | null;
+  if (!el || !stream) return;
+  try {
+    if (on) {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      boostCtx = boostCtx || new AC();
+      void boostCtx.resume().catch(() => {});
+      boostSrc?.disconnect();
+      boostSrc = boostCtx.createMediaStreamSource(stream);
+      boostGain = boostGain || boostCtx.createGain();
+      boostGain.gain.value = 2.5;
+      boostSrc.connect(boostGain);
+      boostGain.connect(boostCtx.destination);
+      // the element keeps playing (Chrome needs it to feed the gain) but silent, so the voice is not doubled
+      el.muted = true;
+    } else {
+      boostSrc?.disconnect();
+      boostSrc = null;
+      el.muted = false;
+      el.volume = 1;
+    }
+  } catch {
+    el.muted = false;
+  }
+}
 let unsubs: (() => void)[] = [];
 let myUid = "";
 let ringTimer = 0;
@@ -111,6 +168,7 @@ function makePeer(servers: RTCIceServer[], callId: string, onCandidateReady: (c:
     audioEl.volume = 1;
     audioEl.srcObject = e.streams[0] || new MediaStream([e.track]);
     const el = audioEl;
+    if (view?.speaker) applyLoud(true);
     void el.play().catch(() => {
       // the browser wants a tap first: play on the next tap anywhere
       const go = () => void el.play().catch(() => {});
@@ -171,6 +229,13 @@ function cleanup(final?: CallStatus, keepMsMs = 1800) {
   pc = null;
   local?.getTracks().forEach((t) => t.stop());
   local = null;
+  boostSrc?.disconnect();
+  boostSrc = null;
+  boostGain?.disconnect();
+  boostGain = null;
+  void boostCtx?.close().catch(() => {});
+  boostCtx = null;
+  void keepAwake(false);
   if (audioEl) {
     audioEl.srcObject = null;
     audioEl.remove();
@@ -238,6 +303,7 @@ export async function startCall(me: { uid: string; username: string }, friend: s
   if (view) return;
   myUid = me.uid;
   emit({ id: "", role: "caller", peer: friend, status: "starting", acceptedAtMs: 0, muted: false, speaker: false, error: "" });
+  void keepAwake(true);
   try {
     local = await micStream();
     const servers = await iceServers();
@@ -316,6 +382,7 @@ export async function acceptCall() {
   const callId = view.id;
   stopTone();
   patch({ status: "connecting" });
+  void keepAwake(true);
   try {
     local = await micStream();
     const servers = await iceServers();
@@ -374,9 +441,9 @@ export function toggleMute() {
 
 export function toggleSpeaker() {
   if (!view) return;
-  // browsers choose the output themselves; louder playback is the best we can do
+  // browsers choose the output (earpiece / loudspeaker) themselves; "Speaker" makes the voice ×2.5 louder
   const speaker = !view.speaker;
-  if (audioEl) audioEl.volume = speaker ? 1 : 0.7;
+  applyLoud(speaker);
   patch({ speaker });
 }
 
