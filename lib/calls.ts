@@ -87,8 +87,16 @@ function makePeer(servers: RTCIceServer[], callId: string, onCandidateReady: (c:
       audioEl.style.display = "none";
       document.body.appendChild(audioEl);
     }
-    audioEl.srcObject = e.streams[0];
-    void audioEl.play().catch(() => {});
+    // 🔊 the friend's voice (a stream without an id gets its own stream, so it still plays)
+    audioEl.muted = false;
+    audioEl.volume = 1;
+    audioEl.srcObject = e.streams[0] || new MediaStream([e.track]);
+    const el = audioEl;
+    void el.play().catch(() => {
+      // the browser wants a tap first: play on the next tap anywhere
+      const go = () => void el.play().catch(() => {});
+      window.addEventListener("pointerdown", go, { once: true });
+    });
   };
   p.onconnectionstatechange = () => {
     if (!view || view.id !== callId) return;
