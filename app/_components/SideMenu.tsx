@@ -268,12 +268,13 @@ export function MenuPanel() {
               }}
             >
               <span
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border text-[19px]"
-                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, borderColor: `${MENU_COLORS[label] || "#3984D9"}4D`, boxShadow: `inset 0 2px 0 #fff, 0 2px 0 ${MENU_COLORS[label] || "#3984D9"}40, 0 4px 6px ${MENU_COLORS[label] || "#3984D9"}2E` }}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] border-0 text-[19px]"
+                // 🪙 silver icon tile: only the emoji carries the colour
+                style={{ background: "linear-gradient(180deg, #FFFFFF, #E4E8EE)", boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #B9C0CB" }}
               >
                 {icon}
               </span>
-              <span className="flex-1">{label}</span>
+              <span className="min-w-0 flex-1 pl-1">{label}</span>
               {n > 0 && (
                 <span className="rounded-full bg-rose-500 px-2 text-[11px] font-bold leading-5 text-white">
                   {badgeText(n)}
@@ -281,7 +282,8 @@ export function MenuPanel() {
               )}
               <span
                 className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg font-bold"
-                style={{ background: `${MENU_COLORS[label] || "#3984D9"}24`, color: MENU_COLORS[label] || "#3984D9" }}
+                // 🪙 silver arrow chip, dark arrow
+                style={{ background: "linear-gradient(180deg, #FFFFFF, #E6E9EF)", color: "#5B6B86", boxShadow: "0 3px 0 #9EA6B3" }}
               >
                 ›
               </span>
