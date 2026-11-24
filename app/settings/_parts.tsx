@@ -39,12 +39,7 @@ export function Row({
   const classic = true; // flat list row (Modern Light / Dark)
   const body = (
     <>
-      <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-        style={{ background: `linear-gradient(145deg, ${tint}26, ${tint}12)`, boxShadow: `inset 0 0 0 1px ${tint}${classic ? "22" : "4D"}` }}
-      >
-        {icon}
-      </span>
+      {/* 🎨 no icon before the name (miglife) */}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[15px] font-bold text-[#0B1F3A]">{title}</span>
         {subtitle && <span className="block truncate text-xs text-[#6B7A99]">{subtitle}</span>}

@@ -539,41 +539,19 @@ function HonorIcon() {
 
 // 🔢 A numbered 3D card (Modern): number ball · icon · title · arrow ball, a rim
 // and a lip in the category's colour — like the app.
-function NumberedCard({ n, c, onClick }: { n: number; c: Category; onClick: () => void }) {
-  const deep = c.id === "admin" ? "#D4A017" : c.id === "staff" ? "#1FA80E" : c.color;
-  const ball = {
-    background: `linear-gradient(180deg, rgba(255,255,255,.4), transparent 50%), ${deep}`,
-    border: "1.5px solid #fff",
-    boxShadow: "0 2px 0 rgba(0,0,0,.15)",
-  };
+function NumberedCard({ c, onClick }: { n: number; c: Category; onClick: () => void }) {
+  // 🎨 flat row: no number ball, no icon before the name, a plain › (miglife)
   return (
     <button
       type="button"
       onClick={onClick}
-      className="mb-[3px] flex w-full items-center gap-3 rounded-[20px] px-3 py-2.5 text-left transition active:scale-[.98]"
-      style={{
-        background: "linear-gradient(rgba(255,255,255,.92), rgba(255,255,255,.72))",
-        border: "2px solid",
-        borderColor: `#fff color-mix(in srgb, ${deep} 55%, #fff) ${deep} color-mix(in srgb, ${deep} 55%, #fff)`,
-        boxShadow: `inset 0 2px 1px #fff, 0 3px 0 ${deep}, 0 6px 0 color-mix(in srgb, ${deep} 55%, #fff), 0 10px 16px rgba(40,80,160,.18)`,
-      }}
+      className="flex w-full items-center gap-3 rounded-[18px] border border-[#E3E8F2] bg-white px-4 py-3 text-left transition"
     >
-      <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-full text-xs font-black text-white" style={ball}>
-        {n}
-      </span>
-      <span
-        className="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[14px] text-2xl"
-        style={{ background: `linear-gradient(#fff, color-mix(in srgb, ${deep} 14%, #fff))`, border: "1.5px solid #fff", boxShadow: `inset 0 2px 0 #fff, 0 3px 0 ${deep}, 0 5px 0 color-mix(in srgb, ${deep} 55%, #fff), 0 8px 10px rgba(40,80,160,.18)` }}
-      >
-        {c.icon}
-      </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-black text-[#0B2A5B]">{c.title}</span>
         <span className="block truncate text-xs text-[#5B6B8C]">{c.subtitle}</span>
       </span>
-      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-lg font-black text-white" style={ball}>
-        ›
-      </span>
+      <span className="shrink-0 text-xl leading-none text-[#A9B4C2]">›</span>
     </button>
   );
 }

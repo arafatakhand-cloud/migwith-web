@@ -96,7 +96,7 @@ export default function ExplorePage() {
               <div key={id}>
                 {/* 🎨 look A (miglife): the same list, 6D — a section name with a raised icon chip + count … */}
                 <div className="mb-2 mt-4 flex items-center gap-2 px-0.5">
-                  <span className="flex h-[26px] w-[26px] items-center justify-center rounded-[9px] bg-white text-[14px] shadow-[0_2px_0_#BFD0E6]">{label.split(" ")[0]}</span>
+                  {/* 🎨 no icon before the section name (miglife) */}
                   <span className="flex-1 text-[12px] font-black tracking-[1px] text-[#0B2A5B]">{label.slice(label.indexOf(" ") + 1)}</span>
                   <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#5B6B86]">{items.filter((i) => inSection(i, id)).length}</span>
                 </div>
@@ -123,17 +123,9 @@ function DiscoverRow6D({ item: i, live }: { item: Item; live: boolean }) {
   return (
     <Link
       href={i.href || "#"}
-      className="flex items-center gap-3 rounded-[18px] bg-gradient-to-b from-white to-[#F6F9FD] px-3 py-[11px] transition active:translate-y-[3px]"
-      // 🪙 less colour: silver 6D layer under each row, a silver icon tile (only the emoji is coloured), a silver arrow
-      style={{ boxShadow: "0 4px 0 #B9C0CB, 0 10px 16px -12px rgba(40, 50, 70, 0.4)" }}
+      // 🎨 flat row, no icon before the name (miglife)
+      className="flex items-center gap-3 rounded-[18px] border border-[#E3E8F2] bg-white px-4 py-[11px] transition"
     >
-      <span
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[14px] text-[22px]"
-        style={{ background: "linear-gradient(180deg, #FFFFFF, #E4E8EE)", boxShadow: "inset 0 2px 0 #fff, 0 3px 0 #B9C0CB" }}
-      >
-        <span aria-hidden className="absolute inset-x-[5px] top-[3px] h-3 rounded-lg bg-gradient-to-b from-white/45 to-white/0" />
-        <span className="relative">{i.icon}</span>
-      </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate text-[15px] font-extrabold text-[#16264A]">{i.title}</span>
@@ -146,9 +138,7 @@ function DiscoverRow6D({ item: i, live }: { item: Item; live: boolean }) {
         </span>
         <span className="block truncate text-[12px] text-[#5B6B86]">{i.subtitle}</span>
       </span>
-      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[18px] font-black" style={{ background: "linear-gradient(180deg, #FFFFFF, #E6E9EF)", color: "#5B6B86", boxShadow: "0 3px 0 #9EA6B3" }}>
-        ›
-      </span>
+      <span className="shrink-0 text-xl leading-none text-[#A9B4C2]">›</span>
     </Link>
   );
 }
