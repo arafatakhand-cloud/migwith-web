@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
 import { loadSongLibrary, type LibrarySong } from "../../lib/songUpload";
@@ -98,7 +99,9 @@ export function StoryCreator({ uid, onClose, onVideo }: { uid: string; onClose: 
     </div>
   );
 
-  return (
+  // over the whole page (also over the top bar): drawn straight into <body>
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <div className="fixed inset-0 z-[65] flex justify-center bg-black/60" role="dialog" aria-label="Create story">
       {/* 1 · Create story */}
       {step === "pick" && (
@@ -276,5 +279,7 @@ export function StoryCreator({ uid, onClose, onVideo }: { uid: string; onClose: 
         </div>
       )}
     </div>
+    ,
+    document.body
   );
 }
