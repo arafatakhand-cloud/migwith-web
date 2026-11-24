@@ -1,3 +1,4 @@
+import DarkReadable from "./_components/DarkReadable";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./themes.css";
@@ -93,6 +94,8 @@ export default function RootLayout({
         <FbGroupPopup />
         {/* ✍️ S1: select words in a text box → Copy · Paste | B · I · 🎨 · 🌐 · @ */}
         <TextStyleBar />
+        {/* ⚫ Dark: light cards painted by the pages themselves turn black, dark text turns light */}
+        <DarkReadable />
       </body>
     </html>
   );
