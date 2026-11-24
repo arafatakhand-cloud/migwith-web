@@ -420,7 +420,7 @@ export function ProfileSongShop({ uid }: { uid: string }) {
   );
 }
 
-/** 🎵 Story v3 (2026-11-25): the story's Music opens the Profile Songs — every song can go on a story
+/** 🎵 Story v3 (2026-11-25): the story's Music opens the Music Library (the Profile Songs) — every song can go on a story
  *  (bought or not). A note-song is made into a short WAV and uploaded; a miGlife file song is used as it is. */
 export function StorySongPicker({
   uid,
@@ -485,7 +485,7 @@ export function StorySongPicker({
           <div className="flex items-center">
             <span className="w-16" />
             <div className="flex-1 text-center">
-              <p className="text-[18px] font-black">🎵 Profile Songs</p>
+              <p className="text-[18px] font-black">🎵 Music Library</p>
               <p className="text-[10.5px] font-bold tracking-[2px] text-[#2563EB]">PICK A SONG FOR YOUR STORY</p>
             </div>
             <span className="flex w-16 justify-end">
