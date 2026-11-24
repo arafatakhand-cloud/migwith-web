@@ -13,7 +13,8 @@ const EVENT = "migwith-ui-style";
 
 export function getUiStyle(): UiStyle {
   try {
-    return localStorage.getItem(KEY) === "classic" ? "classic" : "modern";
+    // The Classic style is gone: everyone is on Modern.
+    return localStorage.getItem(KEY) === "classic" ? "modern" : "modern";
   } catch {
     return "modern";
   }
@@ -25,8 +26,8 @@ export function setUiStyle(id: UiStyle) {
   } catch {
     // storage blocked
   }
-  if (id === "classic") document.documentElement.dataset.ui = "classic";
-  else delete document.documentElement.dataset.ui;
+  void id;
+  delete document.documentElement.dataset.ui;
   window.dispatchEvent(new Event(EVENT));
 }
 

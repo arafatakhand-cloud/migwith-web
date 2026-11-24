@@ -14,23 +14,9 @@ import { join } from "node:path";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 
-const THEMES = {
-  mint: [160 - 217, 1],
-  lavender: [262 - 217, 1],
-  rose_pink: [330 - 217, 1],
-  sunset: [24 - 217, 1],
-  sunshine: [46 - 217, 1],
-  aqua: [186 - 217, 1],
-  cherry: [355 - 217, 1],
-  teal: [-45, 1],
-  emerald: [-72, 1],
-  ruby: [128, 1],
-  purple: [48, 1],
-  black_gold: [-172, 0.2],
-  dark_luxury: [0, 0.15],
-  light_clean: [0, 0.85],
-  rose_gold: [138, 0.55],
-};
+// 🎨 Only two themes now: Modern Light (html[data-theme="modern_light"]) and
+// Modern Dark (html[data-theme="dark_night"]). No hue-turned themes any more.
+const THEMES = {};
 
 function files(dir) {
   return readdirSync(dir).flatMap((n) => {
@@ -92,7 +78,9 @@ function remap(hex, shift, satScale) {
 function darkSurface(hex) {
   const [h, s, l] = rgbToHsl(hexToRgb(hex));
   if (l < 0.72) return null;
-  return toHex(hslToRgb(s < 0.05 ? 222 : h, Math.min(s < 0.05 ? 0.35 : s, 0.35), 0.09 + (1 - l) * 0.55));
+  // white / grey → the soft blue-grey card colour (#1A1F2D), like the app
+  if (s < 0.08) return toHex(hslToRgb(226, 0.27, 0.14 + (1 - l) * 0.5));
+  return toHex(hslToRgb(h, Math.min(s, 0.35), 0.11 + (1 - l) * 0.55));
 }
 // Same as the app's darkModeInk: text too dark to read on the dark pages is
 // made light. A coloured one keeps its colour (dark blue → light blue, dark
@@ -172,13 +160,31 @@ for (const [cls, info] of entries) {
   if (!out) continue;
   css += media(info.variants, `html[data-theme="dark_night"] .${esc(cls)}${pseudo(info.variants)}{${PROPS[info.kind]}:${withAlpha(out, info.alpha)}}`);
 }
-css += `html[data-theme="dark_night"]{--card-surface:#16213D}
-html[data-theme="dark_night"] body{background:#0B1222;color:#E8EEF9}
-html[data-theme="dark_night"] .bg-white{background-color:#16213D}
-html[data-theme="dark_night"] .bg-white\\/70,html[data-theme="dark_night"] .bg-white\\/85,html[data-theme="dark_night"] .bg-white\\/90{background-color:rgb(22 33 61 / .85)}
-html[data-theme="dark_night"] .text-black,html[data-theme="dark_night"] .text-gray-500,html[data-theme="dark_night"] .text-gray-400{color:#AEBBD6}
-html[data-theme="dark_night"] input,html[data-theme="dark_night"] textarea,html[data-theme="dark_night"] select{color:#E8EEF9}
-html[data-theme="dark_night"] .bg-sky-app{background:linear-gradient(180deg,#131E38 0%,#0F1A31 45%,#0B1424 100%);background-attachment:fixed}
+css += `html[data-theme="dark_night"]{--card-surface:#1A1F2D;color-scheme:dark}
+html[data-theme="dark_night"] body{background:#12151F;color:#E7EAF3}
+html[data-theme="dark_night"] .bg-white{background-color:#1A1F2D}
+html[data-theme="dark_night"] .bg-white\\/70,html[data-theme="dark_night"] .bg-white\\/85,html[data-theme="dark_night"] .bg-white\\/90{background-color:rgb(26 31 45 / .88)}
+html[data-theme="dark_night"] .text-black,html[data-theme="dark_night"] .text-gray-500,html[data-theme="dark_night"] .text-gray-400{color:#9AA3BD}
+html[data-theme="dark_night"] input,html[data-theme="dark_night"] textarea,html[data-theme="dark_night"] select{color:#E7EAF3}
+html[data-theme="dark_night"] .bg-sky-app{background:linear-gradient(180deg,#151926 0%,#12151F 45%,#0F121B 100%);background-attachment:fixed}
+`;
+
+// ☀️ Modern Light: pale sky-blue page / card tints become clean light greys
+// (like the app's Modern Light), the sky pages get the one brand blue.
+function modernLightSurface(hex) {
+  const [h, s, l] = rgbToHsl(hexToRgb(hex));
+  if (l < 0.8 || s < 0.08 || h < 170 || h > 290) return null;
+  return toHex(hslToRgb(222, Math.min(s * 0.3, 0.3), Math.max(l, 0.93)));
+}
+for (const [cls, info] of entries) {
+  if (!SURFACE.has(info.kind)) continue;
+  const out = modernLightSurface(info.hex);
+  if (!out) continue;
+  css += media(info.variants, `html[data-theme="modern_light"] .${esc(cls)}${pseudo(info.variants)}{${PROPS[info.kind]}:${withAlpha(out, info.alpha)}}`);
+}
+css += `html[data-theme="modern_light"]{color-scheme:light}
+html[data-theme="modern_light"] body{background:#F4F6FB}
+html[data-theme="modern_light"] .bg-sky-app{background:linear-gradient(180deg,#3D63D8 0%,#3358D4 45%,#2B48B8 100%);background-attachment:fixed}
 `;
 
 // 📟 Classic app style (html[data-ui="classic"], Settings › Appearance › App

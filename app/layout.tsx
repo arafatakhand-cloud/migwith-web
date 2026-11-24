@@ -50,7 +50,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning data-theme="glass">
+    <html lang="en" suppressHydrationWarning data-theme="modern_light">
       <body className="antialiased">
         {/* 📱 Every phone shows the page the same: it is laid out 412px wide (a
             normal phone) and the phone scales that to its own screen, so a small
@@ -70,7 +70,7 @@ export default function RootLayout({
         {/* The font chosen in Settings › Appearance, applied before the page shows. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{localStorage.removeItem("migwith.font");var t=localStorage.getItem("migwith.theme");if(t==="sky_blue")delete document.documentElement.dataset.theme;else if(t)document.documentElement.dataset.theme=t;if(localStorage.getItem("migwith.uiStyle")==="classic")document.documentElement.dataset.ui="classic"}catch(e){}`,
+            __html: `try{localStorage.removeItem("migwith.font");localStorage.removeItem("migwith.uiStyle");var m=localStorage.getItem("migwith.themeMode");if(m!=="light"&&m!=="dark"&&m!=="auto")m=localStorage.getItem("migwith.theme")==="dark_night"?"dark":"auto";var q=window.matchMedia&&matchMedia("(prefers-color-scheme: dark)");var ap=function(){var x=localStorage.getItem("migwith.themeMode")||m;document.documentElement.dataset.theme=(x==="dark"||(x!=="light"&&q&&q.matches))?"dark_night":"modern_light"};ap();if(q&&q.addEventListener)q.addEventListener("change",ap)}catch(e){}`,
           }}
         />
         <script dangerouslySetInnerHTML={{ __html: BOOT_SPLASH_SCRIPT }} />

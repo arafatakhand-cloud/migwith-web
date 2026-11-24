@@ -149,11 +149,10 @@ export default function SettingsPage() {
 
         {ready && (
           <div className="mt-4 space-y-5">
-            {/* 📱 App mode: Modern or Classic (saved in this browser, like the app's App style) */}
+            {/* 🎨 Theme: Light / Dark / Auto (saved in this browser, like the app) */}
             <AppModeCard />
 
             <Group title="Appearance">
-              <Row icon="🎨" tint="#E12A6B" title="Theme & colours" subtitle="17 colour themes for the whole site" href="/appearance" />
               <Row
                 icon="🌐"
                 tint="#3984D9"
