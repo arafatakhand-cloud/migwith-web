@@ -167,14 +167,14 @@ export default function SpecialColourPage() {
           </div>
 
           {/* Preview: your own name in the moving rainbow */}
-          <div className="mt-4 rounded-[20px] bg-gradient-to-br from-[#FFE08A] via-[#FF4F8B] to-[#3AA0E0] p-[3px] shadow-[0_6px_20px_rgba(156,91,255,.5)]">
-            <div className="rounded-[17px] bg-white px-4 py-[22px] text-center">
-              <p className="text-xs text-[#5B6B86]">Your name in the room</p>
+          <div className="mt-4 rounded-[20px] bg-[#16264A] shadow-[0_6px_18px_rgba(22,38,74,.35)]">
+            <div className="rounded-[20px] px-4 py-[22px] text-center">
+              <p className="text-xs text-[#B8C4DA]">Your name in the room</p>
               <p className="mt-1.5">
                 <RainbowName name={username || "miglife"} style={previewStyle} className="text-[30px]" />
-                <span className="text-lg text-[#16264A]">: hello everyone 👋</span>
+                <span className="text-lg text-white">: hello everyone 👋</span>
               </p>
-              <p className="mt-2.5 text-xs text-[#5B6B86]">
+              <p className="mt-2.5 text-xs text-[#B8C4DA]">
                 Only 5 people can have it — each one gets their own rainbow animation. Pictures and voice can always be shared in rooms.
               </p>
             </div>
