@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 // (functions/index.js, the Android app). Update it whenever that changes.
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy Policy" updated="14 October 2026">
+    <LegalPage title="Privacy Policy" updated="24 November 2026">
       <p>
         This policy explains what information miGlife (the Android app and the website web.miglife.app) collects, why we use
         it, who it is shared with, and how you can delete it. Questions:{" "}
@@ -25,6 +25,7 @@ export default function PrivacyPage() {
           <><b>Profile (what you choose to add):</b> profile and cover photo, full name, gender, date of birth, country, relationship status, bio and status message.</>,
           <><b>Your content:</b> messages in chat rooms and private chats, photos and voice messages you send, mail, gifts, reactions and votes.</>,
           <><b>Coins and activity:</b> coin balance and coin history (transfers, gifts, bets and winnings in the in-app games), XP, level, badges and achievements. Coins are virtual and are used only inside miGlife.</>,
+          <><b>Screenshots and screen recording (Android app):</b> on Android 14 and newer, when you take a screenshot inside miGlife — or, on Android 15 and newer, record the screen — the app tells miGlife <i>that</i> it happened, <i>where</i> (for example a room, a profile or your wallet) and <i>when</i>. The picture or video itself is never sent. miGlife may also block screenshots and screen recording in parts of the app.</>,
           <><b>Device and technical data:</b> your IP address and the approximate location worked out from it (country, region, city, internet provider); on Android, an identifier of your phone that we store only in hashed form; your push-notification token; when you were last online.</>,
         ]}
       />
