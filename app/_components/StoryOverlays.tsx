@@ -13,8 +13,13 @@ import { placeHere, searchPlaces } from "../../lib/places";
 // and sizes follow the frame's width, so it looks the same on every screen.
 
 export type StoryOverlay = {
-  k: "text" | "emoji" | "place" | "time" | "mention";
+  k: "text" | "emoji" | "place" | "time" | "mention" | "date" | "birthday" | "thoughts" | "question" | "poll" | "link";
   s: string;
+  /** 📊 poll answers */
+  a?: string;
+  b?: string;
+  /** 🔗 a link's label */
+  t?: string;
   x: number;
   y: number;
   z: number;
@@ -37,6 +42,26 @@ const STICKER_EMOJI = [
   "🍕", "☕", "🎂", "🎁", "⚽", "🏏", "🇧🇩", "💤",
 ];
 const MAX_ITEMS = 12;
+const OVERLAY_KINDS: string[] = ["text", "emoji", "place", "time", "mention", "date", "birthday", "thoughts", "question", "poll", "link"];
+
+/** ✨ the colour effects (Story editor → Effects); index 0 = none. Same on the app. */
+export const STORY_FX: { name: string; css: string }[] = [
+  { name: "Normal", css: "none" },
+  { name: "Warm", css: "sepia(.25) saturate(1.35) hue-rotate(-8deg)" },
+  { name: "Cool", css: "saturate(1.1) hue-rotate(12deg) brightness(1.05)" },
+  { name: "B & W", css: "grayscale(1) contrast(1.1)" },
+  { name: "Vivid", css: "saturate(1.7) contrast(1.08)" },
+  { name: "Fade", css: "contrast(.85) brightness(1.1) saturate(.8)" },
+];
+export const fxCss = (fx?: number) => STORY_FX[fx || 0]?.css || "none";
+
+/** what the viewer can do with a story's poll / question / link */
+export type OverlayActions = {
+  pollVotes?: number[];
+  myVote?: number | null;
+  onVote?: (choice: number) => void;
+  onAnswer?: () => void;
+};
 
 /** parse what the server saved (anything odd is dropped) */
 export function readOverlays(raw: unknown): StoryOverlay[] {
@@ -46,8 +71,11 @@ export function readOverlays(raw: unknown): StoryOverlay[] {
     .map((o) => {
       const v = o as StoryOverlay;
       return {
-        k: (["text", "emoji", "place", "time", "mention"].includes(v.k) ? v.k : "emoji") as StoryOverlay["k"],
+        k: (OVERLAY_KINDS.includes(v.k) ? v.k : "emoji") as StoryOverlay["k"],
         s: v.s,
+        ...(typeof v.a === "string" ? { a: v.a } : {}),
+        ...(typeof v.b === "string" ? { b: v.b } : {}),
+        ...(typeof v.t === "string" ? { t: v.t } : {}),
         x: Number(v.x) || 0.5,
         y: Number(v.y) || 0.5,
         z: Number(v.z) || 1,
@@ -67,7 +95,7 @@ function inkOn(hex: string) {
 }
 
 /** one item, drawn at its place (base = 1/100 of the frame's width, in px) */
-function OverlayView({ o, base }: { o: StoryOverlay; base: number }) {
+function OverlayView({ o, base, act }: { o: StoryOverlay; base: number; act?: OverlayActions }) {
   if (o.k === "emoji") return <span style={{ fontSize: base * 14, lineHeight: 1, filter: "drop-shadow(0 3px 3px rgba(0,0,0,.3))" }}>{o.s}</span>;
   if (o.k === "text") {
     const col = STORY_TEXT_COLORS[o.c || 0] || "#FFFFFF";
@@ -95,7 +123,95 @@ function OverlayView({ o, base }: { o: StoryOverlay; base: number }) {
       </span>
     );
   }
-  const icon = o.k === "place" ? "📍" : o.k === "time" ? "🕒" : "@";
+  const card: React.CSSProperties = {
+    display: "inline-block",
+    background: "#fff",
+    color: "#0B1B3F",
+    borderRadius: base * 3,
+    padding: `${base * 2.6}px ${base * 3}px`,
+    fontFamily: "system-ui, sans-serif",
+    boxShadow: "0 4px 14px rgba(0,0,0,.22)",
+    width: base * 62,
+    textAlign: "left",
+  };
+  if (o.k === "poll") {
+    const v = act?.pollVotes || [0, 0];
+    const total = (v[0] || 0) + (v[1] || 0);
+    const voted = act?.myVote !== undefined && act?.myVote !== null;
+    const opt = (label: string, i: number, tint: string) => {
+      const pct = total ? Math.round(((v[i] || 0) * 100) / total) : 0;
+      return (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => (e.stopPropagation(), act?.onVote?.(i))}
+          style={{ position: "relative", flex: 1, overflow: "hidden", borderRadius: base * 2, padding: `${base * 2}px ${base}px`, background: tint, fontWeight: 800, fontSize: base * 3.6, color: "#0B1B3F", border: act?.myVote === i ? `${base * 0.5}px solid #1D4ED8` : "none" }}
+        >
+          {voted && <span style={{ position: "absolute", inset: 0, width: `${pct}%`, background: "rgba(29,78,216,.18)" }} />}
+          <span style={{ position: "relative" }}>{label}{voted ? ` · ${pct}%` : ""}</span>
+        </button>
+      );
+    };
+    return (
+      <div style={card}>
+        <div style={{ fontWeight: 900, fontSize: base * 4.4, marginBottom: base * 2 }}>{o.s}</div>
+        <div style={{ display: "flex", gap: base * 1.5 }}>
+          {opt(o.a || "Yes", 0, "#DBEAFE")}
+          {opt(o.b || "No", 1, "#FCE7F3")}
+        </div>
+      </div>
+    );
+  }
+  if (o.k === "question") {
+    return (
+      <div style={{ ...card, textAlign: "center", background: "linear-gradient(135deg,#7C3AED,#2563EB)", color: "#fff" }}>
+        <div style={{ fontWeight: 900, fontSize: base * 4.6, marginBottom: base * 2 }}>❓ {o.s}</div>
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => (e.stopPropagation(), act?.onAnswer?.())}
+          style={{ width: "100%", borderRadius: base * 2, padding: `${base * 2}px`, background: "rgba(255,255,255,.95)", color: "#64748B", fontSize: base * 3.6, fontWeight: 700 }}
+        >
+          Tap to answer…
+        </button>
+      </div>
+    );
+  }
+  if (o.k === "thoughts") {
+    return (
+      <span style={{ display: "inline-block", background: "#fff", color: "#0B1B3F", borderRadius: base * 6, padding: `${base * 2}px ${base * 3.4}px`, fontWeight: 800, fontSize: base * 4.4, fontFamily: "system-ui, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,.2)", maxWidth: base * 70 }}>
+        💭 {o.s}
+      </span>
+    );
+  }
+  if (o.k === "birthday") {
+    return (
+      <span style={{ display: "inline-block", background: "linear-gradient(135deg,#F472B6,#F59E0B)", color: "#fff", borderRadius: base * 3, padding: `${base * 2}px ${base * 3.4}px`, fontWeight: 900, fontSize: base * 5, fontFamily: "system-ui, sans-serif", boxShadow: "0 4px 12px rgba(0,0,0,.2)" }}>
+        🎂 {o.s}
+      </span>
+    );
+  }
+  if (o.k === "link") {
+    let host = o.s;
+    try {
+      host = new URL(o.s).hostname.replace(/^www\./, "");
+    } catch {
+      /* keep */
+    }
+    return (
+      <a
+        href={o.s}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
+        style={{ display: "inline-flex", alignItems: "center", gap: base * 1.4, background: "#fff", color: "#1D4ED8", borderRadius: base * 2.4, padding: `${base * 1.6}px ${base * 2.8}px`, fontWeight: 900, fontSize: base * 4.2, fontFamily: "system-ui, sans-serif", boxShadow: "0 3px 0 rgba(0,0,0,.18)", textDecoration: "none", whiteSpace: "nowrap" }}
+      >
+        🔗 {o.t || host}
+      </a>
+    );
+  }
+  const icon = o.k === "place" ? "📍" : o.k === "time" ? "🕒" : o.k === "date" ? "📅" : "@";
   return (
     <span
       style={{
@@ -140,16 +256,16 @@ const place = (o: StoryOverlay): React.CSSProperties => ({
   transformOrigin: "center",
 });
 
-/** the words and stickers over a story (taps go through to the story) */
-export function StoryOverlayLayer({ overlays }: { overlays: StoryOverlay[] | undefined }) {
+/** the words and stickers over a story (taps go through to the story, except a poll, a question or a link) */
+export function StoryOverlayLayer({ overlays, act }: { overlays: StoryOverlay[] | undefined; act?: OverlayActions }) {
   const box = useRef<HTMLDivElement>(null);
   const base = useFrameBase(box);
   if (!overlays || overlays.length === 0) return null;
   return (
     <div ref={box} className="pointer-events-none absolute inset-0 z-[5] select-none overflow-hidden">
       {overlays.map((o, i) => (
-        <div key={i} style={place(o)}>
-          <OverlayView o={o} base={base} />
+        <div key={i} style={{ ...place(o), pointerEvents: o.k === "poll" || o.k === "question" || o.k === "link" ? "auto" : "none" }}>
+          <OverlayView o={o} base={base} act={act} />
         </div>
       ))}
     </div>
@@ -162,21 +278,34 @@ export function StoryDecorEditor({
   initial,
   onDone,
   onCancel,
+  fx,
+  onFx,
+  musicTitle,
+  onMusic,
+  doneLabel = "Done",
 }: {
   background: ReactNode;
   initial: StoryOverlay[];
   onDone: (items: StoryOverlay[]) => void;
   onCancel: () => void;
+  /** ✨ the colour effect (index in STORY_FX) and how to change it */
+  fx?: number;
+  onFx?: (fx: number) => void;
+  /** 🎵 the song picked, and how to pick one */
+  musicTitle?: string;
+  onMusic?: () => void;
+  doneLabel?: string;
 }) {
   const [items, setItems] = useState<StoryOverlay[]>(initial);
   const [sel, setSel] = useState<number | null>(null);
-  const [mode, setMode] = useState<null | "text" | "stickers">(null);
+  const [mode, setMode] = useState<null | "text" | "stickers" | "place" | "mention" | "link" | "poll" | "question" | "thoughts" | "birthday" | "effects">(null);
+  const [form, setForm] = useState({ s: "", a: "", b: "", t: "" });
+  const [stickerQ, setStickerQ] = useState("");
+  const openForm = (m: NonNullable<typeof mode>, s0 = "") => (setForm({ s: s0, a: "", b: "", t: "" }), setMode(m));
   const [editing, setEditing] = useState<number | null>(null); // which text is being typed (null = a new one)
   const [draft, setDraft] = useState({ s: "", c: 0, bg: false, f: 0 });
-  const [tab, setTab] = useState<"emoji" | "info">("emoji");
   const [placeQ, setPlaceQ] = useState("");
   const [placeBusy, setPlaceBusy] = useState("");
-  const [mention, setMention] = useState("");
   const [dragging, setDragging] = useState(false);
   const [overTrash, setOverTrash] = useState(false);
   const frame = useRef<HTMLDivElement>(null);
@@ -284,7 +413,7 @@ export function StoryDecorEditor({
   return (
     <div className="fixed inset-0 z-[70] flex justify-center bg-black" role="dialog" aria-label="Text and stickers">
       <div ref={frame} className="relative h-full w-full max-w-[480px] touch-none select-none overflow-hidden" onPointerDown={() => setSel(null)}>
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">{background}</div>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ filter: fxCss(fx) }}>{background}</div>
 
         {items.map((o, i) => (
           <div
@@ -302,12 +431,34 @@ export function StoryDecorEditor({
         {/* top: ✕ · Aa · 😊 · Done */}
         {!mode && (
           <>
-            <div className="absolute left-0 right-0 top-0 flex items-center gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
+            <div className="absolute left-0 top-0 p-3" onPointerDown={(e) => e.stopPropagation()}>
               <button type="button" onClick={onCancel} className="grid h-10 w-10 place-items-center rounded-full bg-black/45 text-[16px] font-bold text-white">✕</button>
-              <span className="flex-1" />
-              <button type="button" disabled={full} onClick={() => openText(null)} className="grid h-11 w-11 place-items-center rounded-full bg-white text-[17px] font-black text-[#7f53ff] shadow disabled:opacity-40" aria-label="Add text">Aa</button>
-              <button type="button" disabled={full} onClick={() => setMode("stickers")} className="grid h-11 w-11 place-items-center rounded-full bg-black/45 text-[20px] disabled:opacity-40" aria-label="Add a sticker">😊</button>
             </div>
+            {musicTitle && (
+              <div className="pointer-events-none absolute left-16 top-4 max-w-[52%] truncate rounded-full bg-black/40 px-3 py-1.5 text-[12.5px] font-bold text-white">🎵 {musicTitle}</div>
+            )}
+            {/* 🎨 Story v2 (2026-11-24): the tools on the right — Music · Stickers · Text · Effects · Mention · Link */}
+            {!dragging && (
+              <div className="absolute right-3 top-16 flex flex-col items-end gap-3" onPointerDown={(e) => e.stopPropagation()}>
+                {(
+                  [
+                    ["Music", "🎵", () => onMusic?.(), !onMusic],
+                    ["Stickers", "🏷", () => (setStickerQ(""), setMode("stickers")), full],
+                    ["Text", "Aa", () => openText(null), full],
+                    ["Effects", "✨", () => setMode("effects"), !onFx],
+                    ["Mention", "@", () => openForm("mention"), full],
+                    ["Link", "🔗", () => openForm("link", "https://"), full],
+                  ] as [string, string, () => void, boolean][]
+                ).map(([label, icon, run, off]) =>
+                  off ? null : (
+                    <button key={label} type="button" onClick={run} className="flex items-center gap-2 text-[12px] font-bold text-white [text-shadow:0_1px_3px_rgba(0,0,0,.6)]">
+                      {label}
+                      <span className="grid h-11 w-11 place-items-center rounded-full bg-white/20 text-[19px] font-black backdrop-blur-sm">{icon}</span>
+                    </button>
+                  )
+                )}
+              </div>
+            )}
             {/* the picked item: smaller / bigger / turn / edit / delete (for a mouse) */}
             {s && sel !== null && !dragging && (
               <div className="absolute bottom-20 left-1/2 flex -translate-x-1/2 gap-1.5 rounded-full bg-black/55 p-1.5" onPointerDown={(e) => e.stopPropagation()}>
@@ -331,10 +482,10 @@ export function StoryDecorEditor({
             {!dragging && (
               <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 p-3" onPointerDown={(e) => e.stopPropagation()}>
                 <span className="text-[11.5px] text-white/75 [text-shadow:0_1px_2px_rgba(0,0,0,.6)]">
-                  {items.length ? "Drag to move · two fingers to size & turn" : "Add words (Aa) or a sticker (😊)"}
+                  {items.length ? "Drag to move · two fingers to size & turn" : "Add words, stickers, a link…"}
                 </span>
                 <span className="flex-1" />
-                <button type="button" onClick={() => onDone(items)} className="rounded-full bg-white px-5 py-2 text-[14px] font-black text-[#16264A] shadow">Done</button>
+                <button type="button" onClick={() => onDone(items)} className="rounded-full bg-white px-5 py-2 text-[14px] font-black text-[#1D4ED8] shadow">{doneLabel}</button>
               </div>
             )}
           </>
@@ -389,59 +540,128 @@ export function StoryDecorEditor({
           </div>
         )}
 
-        {/* 😊 — the sticker tray */}
+        {/* 🏷 Story v2: the sticker sheet — search, the special stickers, then big emoji */}
         {mode === "stickers" && (
           <div className="absolute inset-0 z-20 flex flex-col justify-end bg-black/40" onPointerDown={(e) => (e.stopPropagation(), setMode(null))}>
-            <div className="max-h-[66%] overflow-y-auto rounded-t-3xl bg-white p-3" onPointerDown={(e) => e.stopPropagation()}>
-              <div className="mb-2 flex gap-1.5">
-                {([["emoji", "😀 Emoji"], ["info", "📍 Place · 🕒 Time · @"]] as const).map(([k, label]) => (
-                  <button key={k} type="button" onClick={() => setTab(k)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-extrabold ${tab === k ? "bg-[#7f53ff] text-white" : "bg-[#F1F4F9] text-[#5B6B8C]"}`}>
-                    {label}
-                  </button>
-                ))}
-                <span className="flex-1" />
-                <button type="button" onClick={() => setMode(null)} className="rounded-full bg-[#F1F4F9] px-3 text-[13px] font-bold text-[#5B6B8C]">✕</button>
-              </div>
-              {tab === "emoji" ? (
-                <div className="grid grid-cols-8 gap-1.5">
-                  {STICKER_EMOJI.map((e) => (
-                    <button key={e} type="button" onClick={() => add({ k: "emoji", s: e })} className="grid h-11 place-items-center rounded-xl bg-[#F6F8FC] text-[26px] hover:bg-[#EEF2FA]">
-                      {e}
+            <div className="max-h-[70%] overflow-y-auto rounded-t-[26px] bg-white px-3.5 pb-5 pt-2.5 text-[#0B1B3F]" onPointerDown={(e) => e.stopPropagation()}>
+              <div className="mx-auto mb-3 h-[5px] w-11 rounded-full bg-[#CBD5E1]" />
+              <input value={stickerQ} onChange={(e) => setStickerQ(e.target.value.slice(0, 30))} placeholder="🔍 Search stickers" className="mb-3 h-11 w-full rounded-2xl bg-[#EEF2FA] px-4 text-[14px] outline-none" />
+              <div className="mb-3.5 flex flex-wrap gap-2">
+                {(
+                  [
+                    ["📍 Location", () => setMode("place")],
+                    [`🕒 ${new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`, () => add({ k: "time", s: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) })],
+                    ["📅 Today", () => add({ k: "date", s: new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) })],
+                    ["📊 Poll", () => openForm("poll")],
+                    ["❓ Question", () => openForm("question", "Ask me anything")],
+                    ["@ Mention", () => openForm("mention")],
+                    ...(onMusic ? ([["🎵 Music", () => (setMode(null), onMusic())]] as [string, () => void][]) : []),
+                    ["🔗 Link", () => openForm("link", "https://")],
+                    ["💭 Thoughts", () => openForm("thoughts")],
+                    ["🎂 Birthday", () => openForm("birthday", "Happy Birthday!")],
+                  ] as [string, () => void][]
+                )
+                  .filter(([label]) => !stickerQ.trim() || label.toLowerCase().includes(stickerQ.trim().toLowerCase()))
+                  .map(([label, run]) => (
+                    <button key={label} type="button" disabled={full} onClick={run} className="rounded-xl bg-[#EEF2FA] px-3 py-2 text-[13.5px] font-extrabold disabled:opacity-40">
+                      {label}
                     </button>
                   ))}
-                </div>
-              ) : (
-                <div className="space-y-3 text-[#16264A]">
-                  <div>
-                    <p className="mb-1 text-[13px] font-extrabold">📍 Place</p>
-                    <button type="button" disabled={placeBusy === "Finding you…"} onClick={fillGps} className="w-full rounded-2xl bg-gradient-to-r from-[#EEF4FF] to-[#F3E8FF] px-3.5 py-2.5 text-left text-[13.5px] font-extrabold text-[#4F46E5]">
-                      🎯 {placeBusy || "Use my current location"}
-                    </button>
-                    <input value={placeQ} onChange={(e) => setPlaceQ(e.target.value.slice(0, 60))} placeholder="🔍 Search a place…" className="mt-2 h-10 w-full rounded-2xl bg-[#F4F6FD] px-3 text-[13.5px] outline-none" />
-                    <div className="mt-1 flex flex-wrap gap-1.5">
-                      {placeQ.trim() && (
-                        <button type="button" onClick={() => add({ k: "place", s: placeQ.trim() })} className="rounded-full bg-[#FFF1F2] px-3 py-1 text-[12px] font-bold">➕ {placeQ.trim()}</button>
-                      )}
-                      {searchPlaces(placeQ).slice(0, 8).map((p) => (
-                        <button key={p.name + p.sub} type="button" onClick={() => add({ k: "place", s: p.name })} className="rounded-full bg-[#F1F4F9] px-3 py-1 text-[12px] font-bold">
-                          {p.icon} {p.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => add({ k: "time", s: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) })} className="rounded-full bg-[#F1F4F9] px-4 py-2 text-[13px] font-extrabold">
-                    🕒 Add the time
+              </div>
+              <div className="grid grid-cols-5 gap-2.5">
+                {STICKER_EMOJI.map((e) => (
+                  <button key={e} type="button" disabled={full} onClick={() => add({ k: "emoji", s: e })} className="grid h-14 place-items-center rounded-2xl text-[38px] hover:bg-[#EEF2FA] disabled:opacity-40">
+                    {e}
                   </button>
-                  <div>
-                    <p className="mb-1 text-[13px] font-extrabold">@ Mention a friend</p>
-                    <div className="flex gap-2">
-                      <input value={mention} onChange={(e) => setMention(e.target.value.replace(/[^A-Za-z0-9_.\-]/g, "").slice(0, 30))} placeholder="username" className="h-10 flex-1 rounded-2xl bg-[#F4F6FD] px-3 text-[13.5px] outline-none" />
-                      <button type="button" disabled={mention.length < 2} onClick={() => (add({ k: "mention", s: mention }), setMention(""))} className="rounded-2xl bg-[#4F46E5] px-4 text-[13px] font-extrabold text-white disabled:opacity-40">Add</button>
-                    </div>
-                    <p className="mt-1 text-[11.5px] text-[#6B7A99]">Your friend gets an alert when you share the story.</p>
-                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 📍 a place */}
+        {mode === "place" && (
+          <div className="absolute inset-0 z-20 flex flex-col justify-end bg-black/40" onPointerDown={(e) => (e.stopPropagation(), setMode(null))}>
+            <div className="rounded-t-[26px] bg-white p-4 text-[#16264A]" onPointerDown={(e) => e.stopPropagation()}>
+              <p className="mb-2 text-[15px] font-extrabold">📍 Location</p>
+              <button type="button" disabled={placeBusy === "Finding you…"} onClick={fillGps} className="w-full rounded-2xl bg-[#EEF4FF] px-3.5 py-2.5 text-left text-[13.5px] font-extrabold text-[#1D4ED8]">
+                🎯 {placeBusy || "Use my current location"}
+              </button>
+              <input value={placeQ} onChange={(e) => setPlaceQ(e.target.value.slice(0, 60))} placeholder="🔍 Search a place…" className="mt-2 h-11 w-full rounded-2xl bg-[#F4F6FD] px-3 text-[13.5px] outline-none" />
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {placeQ.trim() && (
+                  <button type="button" onClick={() => add({ k: "place", s: placeQ.trim() })} className="rounded-full bg-[#FFF1F2] px-3 py-1 text-[12px] font-bold">➕ {placeQ.trim()}</button>
+                )}
+                {searchPlaces(placeQ).slice(0, 8).map((p) => (
+                  <button key={p.name + p.sub} type="button" onClick={() => add({ k: "place", s: p.name })} className="rounded-full bg-[#F1F4F9] px-3 py-1 text-[12px] font-bold">
+                    {p.icon} {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* @ mention · 🔗 link · 📊 poll · ❓ question · 💭 thoughts · 🎂 birthday — a small form */}
+        {mode && ["mention", "link", "poll", "question", "thoughts", "birthday"].includes(mode) && (
+          <div className="absolute inset-0 z-20 flex flex-col justify-end bg-black/40" onPointerDown={(e) => (e.stopPropagation(), setMode(null))}>
+            <div className="space-y-2.5 rounded-t-[26px] bg-white p-4 text-[#16264A]" onPointerDown={(e) => e.stopPropagation()}>
+              <p className="text-[15px] font-extrabold">
+                {{ mention: "@ Mention a friend", link: "🔗 Add a link", poll: "📊 Poll", question: "❓ Question", thoughts: "💭 Thoughts", birthday: "🎂 Birthday" }[mode as string]}
+              </p>
+              <input
+                autoFocus
+                value={form.s}
+                onChange={(e) => setForm({ ...form, s: mode === "mention" ? e.target.value.replace(/[^A-Za-z0-9_.\-@]/g, "").slice(0, 30) : e.target.value.slice(0, mode === "link" ? 300 : mode === "question" ? 80 : 60) })}
+                placeholder={{ mention: "username", link: "https://…", poll: "Ask a question", question: "Ask me anything", thoughts: "What's on your mind?", birthday: "Happy Birthday!" }[mode as string]}
+                className="h-11 w-full rounded-2xl bg-[#F4F6FD] px-3.5 text-[14px] outline-none"
+              />
+              {mode === "poll" && (
+                <div className="flex gap-2">
+                  <input value={form.a} onChange={(e) => setForm({ ...form, a: e.target.value.slice(0, 24) })} placeholder="Answer 1" className="h-11 min-w-0 flex-1 rounded-2xl bg-[#DBEAFE] px-3 text-[14px] outline-none" />
+                  <input value={form.b} onChange={(e) => setForm({ ...form, b: e.target.value.slice(0, 24) })} placeholder="Answer 2" className="h-11 min-w-0 flex-1 rounded-2xl bg-[#FCE7F3] px-3 text-[14px] outline-none" />
                 </div>
               )}
+              {mode === "link" && (
+                <input value={form.t} onChange={(e) => setForm({ ...form, t: e.target.value.slice(0, 30) })} placeholder="Label (optional)" className="h-11 w-full rounded-2xl bg-[#F4F6FD] px-3.5 text-[14px] outline-none" />
+              )}
+              {mode === "mention" && <p className="text-[11.5px] text-[#6B7A99]">Your friend gets an alert when you share the story.</p>}
+              {mode === "question" && <p className="text-[11.5px] text-[#6B7A99]">Answers come to you as private messages.</p>}
+              {mode === "poll" && items.some((o) => o.k === "poll") && <p className="text-[11.5px] text-[#B91C1C]">A story can have one poll.</p>}
+              <button
+                type="button"
+                disabled={
+                  !form.s.trim() ||
+                  (mode === "poll" && (!form.a.trim() || !form.b.trim() || items.some((o) => o.k === "poll"))) ||
+                  (mode === "link" && !/^https?:\/\/[^\s<>"']+\.[^\s<>"']+$/i.test(form.s.trim())) ||
+                  (mode === "mention" && form.s.replace(/^@/, "").length < 2)
+                }
+                onClick={() => {
+                  const v = form.s.trim();
+                  if (mode === "mention") add({ k: "mention", s: v.replace(/^@/, "") });
+                  else if (mode === "link") add({ k: "link", s: v, t: form.t.trim() || undefined });
+                  else if (mode === "poll") add({ k: "poll", s: v, a: form.a.trim(), b: form.b.trim() });
+                  else add({ k: mode as StoryOverlay["k"], s: v });
+                }}
+                className="h-12 w-full rounded-2xl bg-[#1D4ED8] text-[15px] font-extrabold text-white disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ✨ effects */}
+        {mode === "effects" && onFx && (
+          <div className="absolute inset-0 z-20 flex flex-col justify-end" onPointerDown={(e) => (e.stopPropagation(), setMode(null))}>
+            <div className="flex gap-2.5 overflow-x-auto bg-black/55 p-3.5 pb-5 [scrollbar-width:none]" onPointerDown={(e) => e.stopPropagation()}>
+              {STORY_FX.map((f, k) => (
+                <button key={f.name} type="button" onClick={() => onFx(k)} className="flex shrink-0 flex-col items-center gap-1.5 text-[12px] font-bold text-white">
+                  <span className={`h-16 w-16 overflow-hidden rounded-2xl border-[3px] ${fx === k ? "border-white" : "border-transparent"}`} style={{ background: "linear-gradient(135deg,#F59E0B,#EC4899,#3B82F6)", filter: f.css }} />
+                  {f.name}
+                </button>
+              ))}
+              <button type="button" onClick={() => setMode(null)} className="ml-auto shrink-0 self-center rounded-full bg-white px-4 py-2 text-[13px] font-black text-[#1D4ED8]">Done</button>
             </div>
           </div>
         )}

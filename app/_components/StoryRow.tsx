@@ -13,7 +13,8 @@ import { r2Upload } from "../../lib/r2Upload";
 import { VideoEditor } from "./VideoEditor";
 import { useBlockSets } from "../../lib/blocks";
 import { openReport } from "./ReportDialog";
-import { StoryDecorEditor, StoryOverlayLayer, type StoryOverlay } from "./StoryOverlays";
+import { StoryDecorEditor, StoryOverlayLayer, fxCss, type StoryOverlay } from "./StoryOverlays";
+import { StoryCreator } from "./StoryCreator";
 
 export type StorySong = { url: string; title: string; startSec: number };
 
@@ -25,7 +26,7 @@ export type StorySong = { url: string; title: string; startSec: number };
 //    copy link (mine: edit / delete); a reply box, quick replies and reactions below
 //    (a reply goes to their private chat with the story's picture)
 
-type Audience = "everyone" | "friends" | "only_me";
+type Audience = "everyone" | "friends" | "only_me" | "close";
 
 // 😍 the story reactions (same as the server's list)
 const STORY_REACTIONS = ["❤️", "😂", "😮", "😢", "😍", "🔥"];
@@ -71,7 +72,8 @@ export function StoryRow({
   const [error, setError] = useState("");
   const [toast, setToast] = useState("");
   const [draft, setDraft] = useState<string | null>(null); // a photo waiting for its caption
-  const [textDraft, setTextDraft] = useState(false); // a story being written
+  const [textDraft, setTextDraft] = useState(false); // a story being written (the older dialog: a video story)
+  const [creating, setCreating] = useState(false); // 📸 Story v2: Create story → editor → share
   const fileInput = useRef<HTMLInputElement>(null);
 
   const reload = () =>
@@ -104,6 +106,23 @@ export function StoryRow({
     return () => (a(), b());
   }, [myUid]);
   const blockSets = useBlockSets(myUid);
+  // 💚 the Close-friends stories I'm allowed to see (sha256(storyId|me) is on the story)
+  const [closeOk, setCloseOk] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const close = (stories || []).filter((s) => s.privacy === "close" && s.author !== myName && s.closeKeys?.length);
+    if (!close.length || !myName || !crypto?.subtle) return;
+    let gone = false;
+    void Promise.all(
+      close.map(async (s) => {
+        const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${s.id}|${myName.trim().toLowerCase()}`));
+        const hex = Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 24);
+        return s.closeKeys!.includes(hex) ? s.id : "";
+      })
+    ).then((ids) => !gone && setCloseOk(new Set(ids.filter(Boolean))));
+    return () => {
+      gone = true;
+    };
+  }, [stories, myName]);
 
   // 👥 who may see what, then one group per person: me first, then unseen, then seen
   const groups = useMemo<Group[]>(() => {
@@ -114,6 +133,8 @@ export function StoryRow({
       if (s.author !== myName && mutes.includes(low)) return false;
       if (s.privacy === "only_me") return s.author === myName;
       if (s.privacy === "friends") return s.author === myName || mine.has(s.author);
+      // 💚 Close friends: only people on the writer's list (the story keeps hashes, see closeKey)
+      if (s.privacy === "close") return s.author === myName || closeOk.has(s.id);
       return true;
     });
     const m = new Map<string, Story[]>();
@@ -129,7 +150,7 @@ export function StoryRow({
       if (!!a.unseen !== !!b.unseen) return a.unseen ? -1 : 1;
       return newest(b) - newest(a);
     });
-  }, [stories, friends, myName, blockSets, mutes, seen]);
+  }, [stories, friends, myName, blockSets, mutes, seen, closeOk]);
 
   // the viewer: which person, which of their stories
   const [open, setOpen] = useState<{ g: number; i: number } | null>(null);
@@ -190,7 +211,7 @@ export function StoryRow({
         {myUid && (
           <>
             <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => (onFile(e.target.files), (e.target.value = ""))} />
-            <button type="button" onClick={() => setTextDraft(true)} disabled={busy} className="flex h-[108px] w-[100px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl bg-[#E3E9F4] text-center transition active:scale-95 disabled:opacity-60">
+            <button type="button" onClick={() => setCreating(true)} disabled={busy} className="flex h-[108px] w-[100px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl bg-[#E3E9F4] text-center transition active:scale-95 disabled:opacity-60">
               <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F1E3D] text-[26px] font-light leading-none text-white">{busy ? "…" : "+"}</span>
               <span className="w-full truncate px-1 text-[13px] font-medium text-[#0B1B3F]">Add Story</span>
             </button>
@@ -240,6 +261,10 @@ export function StoryRow({
             publish({ url, caption, song, overlays }, audience);
           }}
         />
+      )}
+
+      {creating && myUid && (
+        <StoryCreator uid={myUid} onClose={() => (setCreating(false), void reload())} onVideo={() => (setCreating(false), setTextDraft(true))} />
       )}
 
       {textDraft && (
@@ -326,6 +351,16 @@ function StoryViewer({
   const [editing, setEditing] = useState<Story | null>(null);
   const [reactors, setReactors] = useState<StoryReactor[] | null>(null);
   const [reply, setReply] = useState("");
+  // 📊 poll votes (fresh counts after my vote) · my vote per story · ❓ the answer being written
+  const [pollVotes, setPollVotes] = useState<Record<string, number[]>>({});
+  const [myVotes, setMyVotes] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("migwith.storyVotes") || "{}");
+    } catch {
+      return {};
+    }
+  });
+  const [answering, setAnswering] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [myReacts, setMyReacts] = useState<Record<string, string>>({});
   const [burst, setBurst] = useState<{ emoji: string; key: number } | null>(null);
@@ -431,6 +466,35 @@ function StoryViewer({
     } catch (e) {
       setMyReacts((m) => ({ ...m, [current.id]: was }));
       toast(blogError(e));
+    }
+  };
+  const vote = async (choice: number) => {
+    if (current.author === myName) return;
+    try {
+      const r = (await blogCall("storyVote", { storyId: current.id, choice })) as { votes?: number[] };
+      if (r.votes) setPollVotes((v) => ({ ...v, [current.id]: r.votes! }));
+      const next = { ...myVotes, [current.id]: choice };
+      setMyVotes(next);
+      try {
+        localStorage.setItem("migwith.storyVotes", JSON.stringify(next));
+      } catch {
+        /* storage blocked */
+      }
+    } catch (e) {
+      window.alert(blogError(e));
+    }
+  };
+  const answer = async () => {
+    const t = (answering || "").trim();
+    if (!t) return;
+    setSending(true);
+    try {
+      await blogCall("storyAnswer", { storyId: current.id, text: t });
+      setAnswering(null);
+    } catch (e) {
+      window.alert(blogError(e));
+    } finally {
+      setSending(false);
     }
   };
   const sendReply = async (text: string) => {
@@ -565,10 +629,11 @@ function StoryViewer({
               }}
               onEnded={next}
               className="max-h-full max-w-full object-contain"
+              style={{ filter: fxCss(current.fx) }}
             />
           ) : current.url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={current.url} alt="" draggable={false} className="max-h-full max-w-full select-none object-contain" />
+            <img src={current.url} alt="" draggable={false} className="max-h-full max-w-full select-none object-contain" style={{ filter: fxCss(current.fx) }} />
           ) : (
             <div className="flex h-full w-full select-none items-center justify-center bg-gradient-to-br from-[#38BDF8] via-[#6366F1] to-[#A855F7] p-7 text-center text-[24px] font-extrabold leading-snug text-white">
               {current.text}
@@ -577,7 +642,29 @@ function StoryViewer({
         </div>
 
         {/* ✍️ the writer's words and stickers */}
-        <StoryOverlayLayer key={`ov_${current.id}`} overlays={current.overlays} />
+        <StoryOverlayLayer
+          key={`ov_${current.id}`}
+          overlays={current.overlays}
+          act={{
+            pollVotes: pollVotes[current.id] || current.pollVotes,
+            myVote: myVotes[current.id] ?? null,
+            onVote: (c) => void vote(c),
+            onAnswer: () => setAnswering(""),
+          }}
+        />
+        {/* ❓ answering the writer's question */}
+        {answering !== null && (
+          <div className="absolute inset-0 z-30 flex items-end bg-black/50" onClick={() => setAnswering(null)}>
+            <div className="w-full space-y-2.5 rounded-t-[26px] bg-white p-4 text-[#0B1B3F]" onClick={(e) => e.stopPropagation()}>
+              <p className="text-[15px] font-extrabold">❓ {current.overlays?.find((o) => o.k === "question")?.s}</p>
+              <input autoFocus value={answering} onChange={(e) => setAnswering(e.target.value.slice(0, 200))} placeholder="Write your answer…" className="h-11 w-full rounded-2xl bg-[#F4F6FD] px-3.5 text-[14px] outline-none" />
+              <p className="text-[11.5px] text-[#6B7A99]">{current.author} gets it as a private message.</p>
+              <button type="button" disabled={!answering.trim() || sending} onClick={() => void answer()} className="h-12 w-full rounded-2xl bg-[#1D4ED8] text-[15px] font-extrabold text-white disabled:opacity-40">
+                Send answer
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* one bar per story */}
         <div className="pointer-events-none absolute left-2.5 right-2.5 top-2.5 flex gap-1">
@@ -599,6 +686,7 @@ function StoryViewer({
           <span className="shrink-0 text-[12px] opacity-80">{blogAgoBn(current.createdMs)}</span>
           {current.privacy === "friends" && <span className="text-[12px] opacity-80">👥</span>}
           {current.privacy === "only_me" && <span className="text-[12px] opacity-80">🔒</span>}
+          {current.privacy === "close" && <span className="text-[12px] opacity-80">⭐</span>}
           <span className="ml-auto flex items-center gap-1">
             <button type="button" onClick={() => setStrip((x) => !x)} aria-label="Everyone's stories" className={`rounded-full px-2 py-0.5 text-[18px] font-black transition ${strip ? "rotate-180" : ""}`}>
               ⌄
@@ -663,7 +751,7 @@ function StoryViewer({
         ) : (
           <>
             {/* M2 · quick replies as chat bubbles, bottom left (Bangla + English) */}
-            {!typing && !bloom && (
+            {!typing && !bloom && !current.noReplies && (
               <div className="absolute bottom-[78px] left-3 z-10 flex flex-col items-start gap-2">
                 {QUICK_REPLIES.map((q) => (
                   <button
@@ -685,8 +773,9 @@ function StoryViewer({
                 onChange={(e) => setReply(e.target.value.slice(0, 500))}
                 onFocus={() => (setTyping(true), setBloom(false))}
                 onBlur={() => !reply && setTyping(false)}
-                onKeyDown={(e) => e.key === "Enter" && sendReply(reply)}
-                placeholder={`💬 Reply to ${current.author}…`}
+                onKeyDown={(e) => e.key === "Enter" && !current.noReplies && sendReply(reply)}
+                disabled={current.noReplies}
+                placeholder={current.noReplies ? "💬 Replies are off" : `💬 Reply to ${current.author}…`}
                 className="min-w-0 flex-1 rounded-full border-[1.5px] border-white/55 bg-white/20 px-4 py-2.5 text-[14px] text-white outline-none backdrop-blur placeholder:text-white/80"
               />
               {(
@@ -1055,7 +1144,7 @@ export function StoryDialog({
           </button>
         )}
         <div className="mt-3 grid grid-cols-3 gap-1 rounded-2xl bg-[#F1F6F4] p-1">
-          {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
+          {([["everyone", "🌍 Everyone"], ["friends", "👥 Friends"], ["close", "⭐ Close"], ["only_me", "🔒 Only me"]] as const).map(([k, label]) => (
             <button
               key={k}
               type="button"
