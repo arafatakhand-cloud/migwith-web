@@ -314,9 +314,22 @@ export function playProfileSong(song: ProfileSong): number {
   const master = ac.createGain();
   master.gain.value = 0.22;
   master.connect(ac.destination);
+  const { end: t, nodes } = scheduleSong(ac, master, song, ac.currentTime + 0.05);
+  const total = (t - ac.currentTime) * 1000;
+  stopCurrent = () => {
+    nodes.forEach((o) => {
+      try { o.stop(); } catch {}
+    });
+    master.disconnect();
+  };
+  return total;
+}
+
+/** 🎼 Puts a note-song's sounds on any audio context (live or offline). Returns when it ends. */
+function scheduleSong(ac: BaseAudioContext, master: AudioNode, song: ProfileSong, t0: number): { end: number; nodes: AudioScheduledSourceNode[] } {
   const beat = 60 / song.bpm;
-  let t = ac.currentTime + 0.05;
-  const nodes: OscillatorNode[] = [];
+  let t = t0;
+  const nodes: AudioScheduledSourceNode[] = [];
   for (const [note, beats] of song.notes) {
     const dur = beats * beat;
     if (note !== "-") {
@@ -389,7 +402,7 @@ export function playProfileSong(song: ProfileSong): number {
   }
   // 🎻 drone: a soft low Sa–Pa under the whole tune
   if (song.drone) {
-    const start = ac.currentTime + 0.05;
+    const start = t0;
     for (const dn of song.drone.split("+")) {
       const f = freqOf(dn);
       if (!f) continue;
@@ -408,14 +421,29 @@ export function playProfileSong(song: ProfileSong): number {
       nodes.push(o);
     }
   }
-  const total = (t - ac.currentTime) * 1000;
-  stopCurrent = () => {
-    nodes.forEach((o) => {
-      try { o.stop(); } catch {}
-    });
-    master.disconnect();
-  };
-  return total;
+  return { end: t, nodes };
+}
+
+/** 🎵 Story v3 (2026-11-25): a note-song made into a WAV file (mono, 22 kHz) — so a story can carry it. */
+export async function profileSongFile(song: ProfileSong, maxSec = 30): Promise<File> {
+  const rate = 22050;
+  const len = Math.min(maxSec, Math.ceil(songSeconds(song) + 1.5));
+  const OAC = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext }).webkitOfflineAudioContext;
+  const ac = new OAC(1, rate * len, rate);
+  const master = ac.createGain();
+  master.gain.value = 0.5;
+  master.connect(ac.destination);
+  scheduleSong(ac, master, song, 0.05);
+  const buf = await ac.startRendering();
+  const pcm = buf.getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+  const w = (o: number, t: string) => [...t].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  w(0, "RIFF"); out.setUint32(4, 36 + pcm.length * 2, true); w(8, "WAVE"); w(12, "fmt ");
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, rate, true); out.setUint32(28, rate * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true);
+  w(36, "data"); out.setUint32(40, pcm.length * 2, true);
+  for (let i = 0; i < pcm.length; i++) out.setInt16(44 + i * 2, Math.max(-1, Math.min(1, pcm[i])) * 0x7fff, true);
+  return new File([out.buffer], `${song.name}.wav`, { type: "audio/wav" });
 }
 
 export function stopProfileSong() {

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { blogCall, blogError } from "../../lib/feed";
 import { uploadChatImage } from "../../lib/imageUpload";
-import { loadSongLibrary, type LibrarySong } from "../../lib/songUpload";
+import { StorySongPicker } from "./ProfileSongs";
 import { STORIES_CHANGED } from "../../lib/stories";
 import { StoryDecorEditor, type StoryOverlay } from "./StoryOverlays";
 import type { StorySong } from "./StoryRow";
@@ -28,7 +28,6 @@ export function StoryCreator({ uid, onClose, onVideo }: { uid: string; onClose: 
   const [overlays, setOverlays] = useState<StoryOverlay[]>([]);
   const [fx, setFx] = useState(0);
   const [song, setSong] = useState<StorySong | null>(null);
-  const [songs, setSongs] = useState<LibrarySong[] | null>(null);
   const [songSheet, setSongSheet] = useState(false);
   const [audience, setAudience] = useState<Audience>("everyone");
   const [replies, setReplies] = useState(true);
@@ -58,8 +57,8 @@ export function StoryCreator({ uid, onClose, onVideo }: { uid: string; onClose: 
   };
 
   const openSongs = async () => {
+    stopPreview();
     setSongSheet(true);
-    if (songs === null) setSongs(await loadSongLibrary().catch(() => []));
   };
   const stopPreview = () => {
     preview.current?.pause();
@@ -233,50 +232,15 @@ export function StoryCreator({ uid, onClose, onVideo }: { uid: string; onClose: 
         </div>
       )}
 
-      {/* 🎵 the song list (miGlife's own songs) */}
+      {/* 🎵 Music = the Profile Songs (every song can go on a story) */}
       {songSheet && (
-        <div className="fixed inset-0 z-[80] flex flex-col justify-end bg-black/45" onClick={() => (stopPreview(), setSongSheet(false))}>
-          <div className="mx-auto max-h-[70%] w-full max-w-[480px] overflow-y-auto rounded-t-[26px] bg-white p-4 text-[#0B1B3F]" onClick={(e) => e.stopPropagation()}>
-            <div className="mx-auto mb-3 h-[5px] w-11 rounded-full bg-[#CBD5E1]" />
-            <div className="mb-2 flex items-center">
-              <p className="text-[16px] font-extrabold">🎵 Music</p>
-              <span className="flex-1" />
-              {song && (
-                <button type="button" onClick={() => (setSong(null), stopPreview())} className="rounded-full bg-[#FEE2E2] px-3 py-1 text-[12px] font-bold text-[#B91C1C]">Remove song</button>
-              )}
-            </div>
-            {songs === null && <p className="py-3 text-[13px] text-[#64748B]">Loading…</p>}
-            {songs !== null && songs.length === 0 && <p className="py-3 text-[13px] text-[#64748B]">No songs yet.</p>}
-            {(songs || []).map((x) => (
-              <div key={x.id} className="flex items-center gap-3 border-b border-[#EEF2F8] py-2.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    stopPreview();
-                    const a = new Audio(x.url);
-                    preview.current = a;
-                    void a.play().catch(() => {});
-                  }}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#EEF2FA] text-[15px]"
-                  aria-label="Listen"
-                >
-                  ▶
-                </button>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[14.5px] font-bold">{x.title}</span>
-                  <span className="block truncate text-[12px] text-[#64748B]">{x.artist || x.category}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => (setSong({ url: x.url, title: x.title, startSec: 0 }), stopPreview(), setSongSheet(false))}
-                  className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-extrabold ${song?.url === x.url ? "bg-[#1D4ED8] text-white" : "bg-[#EEF2FA] text-[#1D4ED8]"}`}
-                >
-                  {song?.url === x.url ? "✓ Added" : "Add"}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
+        <StorySongPicker
+          uid={uid}
+          current={song?.title}
+          onPick={(x) => (setSong(x), setSongSheet(false))}
+          onRemove={() => (setSong(null), setSongSheet(false))}
+          onClose={() => setSongSheet(false)}
+        />
       )}
     </div>
     ,
