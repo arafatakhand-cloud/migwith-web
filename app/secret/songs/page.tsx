@@ -153,7 +153,7 @@ export default function SongsPage() {
         contentType: audioType(file) || "audio/mpeg",
         fileBase64,
       });
-      setMsg({ text: `✅ "${name.trim()}" is in the shop now (Profile Songs › 🎤 miGlife).`, bad: false });
+      setMsg({ text: `✅ "${name.trim()}" is in the shop now (Music Library › 🎤 miGlife).`, bad: false });
       setFile(null);
       setSecs(0);
       setName("");
@@ -201,7 +201,7 @@ export default function SongsPage() {
     <FounderShell title="🎤 Profile Songs" allowed={allowed} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-xs text-[#5B6B8C]">
-          Add any song (up to 5 minutes, 7 MB). It shows in Explore › Profile Songs › 🎤 miGlife, bought for 30 days like the others. Only upload music
+          Add any song (up to 5 minutes, 7 MB). It shows in Discover › Music Library › 🎤 miGlife, bought for 30 days like the others. Only upload music
           you have the right to use.
         </p>
         <label className="block">
