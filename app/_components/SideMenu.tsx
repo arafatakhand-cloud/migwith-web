@@ -261,11 +261,10 @@ export function MenuPanel() {
               onClick={href === "#spin" ? (e) => (e.preventDefault(), openDailySpin()) : undefined}
               className={`flex items-center gap-3 rounded-[18px] border px-2.5 py-2 text-sm text-[#0B2A5B] transition hover:brightness-[.98] active:translate-y-[3px] ${active ? "font-extrabold" : "font-bold"}`}
               style={{
-                borderColor: `${MENU_COLORS[label] || "#3984D9"}${active ? "D9" : "40"}`,
-                borderWidth: active ? 1.6 : 1,
-                background: "#FFFFFF",
-                // 🫧 6D: stacked depth layers in the row's colour, a top shine
-                boxShadow: "0 1px 3px rgba(11, 42, 91, 0.08)",
+                // 🪙 silver 6D layer under each row (like the Lobby cards); the icon keeps its own colour
+                borderWidth: 0,
+                background: "linear-gradient(180deg, #FFFFFF, #F3F5F8)",
+                boxShadow: "inset 0 2px 0 #fff, 0 4px 0 #B9C0CB, 0 6px 0 #9EA6B3, 0 10px 14px -6px rgba(40, 50, 70, 0.35)",
               }}
             >
               <span
