@@ -241,9 +241,9 @@ export function ModernHomeTop({
               type="button"
               onClick={onStatus}
               data-notranslate
-              className="mh-status relative mt-1.5 flex w-full items-start rounded-[14px] border-0 bg-[#0F2E42] px-[11px] py-1.5 text-left text-[14px] leading-[18px] text-[#38BDF8] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
+              className="mh-status relative mt-1.5 flex h-[34px] w-full items-center overflow-hidden rounded-[14px] border-0 bg-[#0F2E42] px-[11px] py-1.5 text-left text-[14px] leading-[18px] text-[#38BDF8] before:absolute before:-top-[7px] before:left-5 before:border-x-[7px] before:border-b-[7px] before:border-x-transparent before:border-b-white/30 before:content-['']"
             >
-              <span className="line-clamp-2 min-w-0 flex-1 text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
+              <span className="min-w-0 flex-1 truncate text-[14px] leading-[19px]">💬 {status || "What are you thinking?"}</span>
               <span className="pl-1.5 text-xs text-white/70">✎</span>
             </button>
           </div>
