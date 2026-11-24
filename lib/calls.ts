@@ -20,6 +20,8 @@ export type CallView = {
   error: string;
   /** false when the server sent no TURN relay (Cloudflare keys missing): calls on mobile data may not connect */
   relay?: boolean;
+  /** 🛰 this browser reached the relay ("ok"), could not ("fail"), or is still trying */
+  relayCheck?: "ok" | "fail";
 };
 
 type Listener = (v: CallView | null) => void;
@@ -78,7 +80,16 @@ async function micStream(): Promise<MediaStream> {
 function makePeer(servers: RTCIceServer[], callId: string, onCandidateReady: (c: RTCIceCandidate) => void) {
   const p = new RTCPeerConnection({ iceServers: servers });
   local?.getTracks().forEach((t) => p.addTrack(t, local!));
-  p.onicecandidate = (e) => e.candidate && onCandidateReady(e.candidate);
+  let gotRelay = false;
+  p.onicecandidate = (e) => {
+    if (e.candidate) {
+      if (e.candidate.type === "relay" && !gotRelay) {
+        gotRelay = true;
+        patch({ relayCheck: "ok" });
+      }
+      onCandidateReady(e.candidate);
+    } else if (!gotRelay) patch({ relayCheck: "fail" }); // gathering finished without a relay address
+  };
   p.ontrack = (e) => {
     if (!audioEl) {
       audioEl = document.createElement("audio");

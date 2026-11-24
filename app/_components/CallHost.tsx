@@ -76,6 +76,9 @@ export default function CallHost() {
           </span>
         </div>
         {live && <div className="mt-10 text-[14px] text-white/80">🔒 Only you two can hear this call</div>}
+        {(v.status === "connecting" || v.status === "ringing") && v.relay !== false && v.relayCheck && (
+          <div className="mt-6 text-[12px] text-white/70">{v.relayCheck === "ok" ? "🛰 Relay: OK" : "🛰 Relay: not reachable from this network"}</div>
+        )}
         {v.status === "connecting" && v.relay === false && (
           <div className="mx-8 mt-8 rounded-xl bg-black/25 px-4 py-2.5 text-center text-[12.5px] text-[#FDE68A]">
             ⚠️ No relay server (TURN) — calls on mobile data may not connect. Try Wi-Fi.
