@@ -12,6 +12,7 @@ import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, Schedul
 import { collection, doc, documentId, getDoc, getDocs, limit, onSnapshot, orderBy, query, where, getCountFromServer, startAfter, setDoc, serverTimestamp, type QueryDocumentSnapshot } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useCurrentUser } from "../../lib/useCurrentUser";
+import { useSession } from "./AppSession";
 import { setFollowing, useFollowing } from "../../lib/follow";
 import { useFriends } from "../../lib/privateChat";
 import { cachedPhotoOf, useSenderColors } from "../../lib/senderColors";
@@ -84,7 +85,7 @@ function RichText({ text, className }: { text: string; className?: string }) {
   );
 }
 // which tab bar look the Feed uses ("pills" = T2, "underline" = T1, "icons" = T3)
-const TAB_LOOK: "pills" | "underline" | "icons" = "pills"; // design A: blue pill for the chosen tab
+const TAB_LOOK: "pills" | "underline" | "icons" | "appbar" = "appbar"; // 🎨 2026-11-24: white bar, icon over name, More menu
 // 🎨 miGlife's own cards, the app's colours
 const SYS_GRADIENT: Record<string, string> = {
   missions: "linear-gradient(135deg, #FB923C, #F97316 55%, #EC4899)",
@@ -1081,6 +1082,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 🫧 X2: a Mig opens in a sheet from the bottom (pull it down, ✕ or Back closes it)
   const [sheetId, setSheetId] = useState("");
   const [searching, setSearching] = useState(false); // 🔍 the search page
+  const [moreOpen, setMoreOpen] = useState(false); // ••• the More tab's list
+  const { badges } = useSession();
   // 📅 Share again: the old Mig, shared as a new one (the share sheet)
   const shareMemory = async (m: Memory) => {
     const pub = await getDoc(doc(db, "blog_posts", m.id)).catch(() => null);
@@ -1127,8 +1130,41 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 👤 Mine = only my own wall and my posts (no stories, tabs or writer box)
   const mineOnly = (!author && !!user && (tab === "mine" || tab === "saved")) || (!author && !!placeView);
   return (
-    <div data-feed="" className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#F4F4F8]">
-      <section className="relative mx-auto max-w-2xl pb-10">
+    <div data-feed="" className="relative -mb-8 min-h-[calc(100dvh-60px)] overflow-hidden bg-[#EEF2F9]">
+      <section className="relative mx-auto max-w-2xl pb-24">
+        {/* 🎨 Feed 2026-11-24: the bottom bar — Home · Friends · ＋ · Notifications · Profile */}
+        {!author && !embedded && user && (
+          <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto flex max-w-2xl items-end bg-white pb-[max(10px,env(safe-area-inset-bottom))] pt-2 shadow-[0_-2px_8px_rgba(15,40,100,.06)]">
+            {(
+              [
+                ["Home", null, <path key="h" d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor" />],
+                ["Friends", "/friends", <g key="f" fill="currentColor"><circle cx="8" cy="8" r="3.5" /><circle cx="16.5" cy="8.5" r="3" /><path d="M1.5 20c0-4 3-6.5 6.5-6.5s6.5 2.5 6.5 6.5zM14 20c0-2.5-.8-4.5-2-5.8 1.2-.6 2.6-.9 4-.9 3.5 0 6.5 2.3 6.5 6.7z" /></g>],
+                ["+", null, null],
+                ["Notifications", "/alerts", <g key="n" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" /><path d="M10 20a2 2 0 0 0 4 0" /></g>],
+                ["Profile", "/profile/me", <g key="p" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.5 3.6-7 8-7s8 2.5 8 7z" /></g>],
+              ] as [string, string | null, React.ReactNode][]
+            ).map(([label, href, icon]) =>
+              label === "+" ? (
+                <button key="+" type="button" onClick={() => (window.scrollTo({ top: 0, behavior: "smooth" }), setComposing(true))} aria-label="Write a Mig" className="flex flex-1 justify-center">
+                  <span className="mb-1.5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#1D4ED8] text-[32px] font-light leading-none text-white shadow-[0_6px_14px_-6px_rgba(29,78,216,.7)] transition active:scale-95">+</span>
+                </button>
+              ) : href ? (
+                <Link key={label} href={href} className="relative flex flex-1 flex-col items-center gap-0.5 text-[11.5px] text-[#3B4763]">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6">{icon}</svg>
+                  {label}
+                  {label === "Notifications" && badges.alerts > 0 && (
+                    <span className="absolute left-1/2 top-[-4px] ml-1 min-w-[18px] rounded-full border-2 border-white bg-[#E53935] px-1 text-center text-[10px] font-bold leading-[14px] text-white">{badges.alerts > 99 ? "99+" : badges.alerts}</span>
+                  )}
+                </Link>
+              ) : (
+                <button key={label} type="button" onClick={() => (setTagView(""), setTab("new"), window.scrollTo({ top: 0, behavior: "smooth" }))} className="flex flex-1 flex-col items-center gap-0.5 text-[11.5px] text-[#1D4ED8]">
+                  <svg viewBox="0 0 24 24" className="h-6 w-6">{icon}</svg>
+                  {label}
+                </button>
+              )
+            )}
+          </nav>
+        )}
         {author ? (
           <div className="px-3 sm:px-6">
             <PageTitle title={`${author}'s Feed`} subtitle="Every Mig by this writer" icon="📰" backHref={`/profile/${encodeURIComponent(author)}`} />
@@ -1147,39 +1183,92 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                 <span className="truncate text-[22px] font-black tracking-tight">{placeView ? `📍 ${placeView}` : tab === "saved" ? "🔖 Saved Migs" : "My Migs"}</span>
               </button>
             ) : (
-              <h1 className="bg-gradient-to-r from-[#F59E0B] via-[#EC4899] to-[#8B5CF6] bg-clip-text pr-1 font-serif text-[30px] font-black italic tracking-tight text-transparent">miGlife</h1>
+              <h1 className="relative pl-0.5 pr-1 font-serif text-[30px] font-black italic tracking-tight text-[#0B2A8C]">
+                {/* 🎨 Feed 2026-11-24: the navy miGlife name with a small crown */}
+                <span aria-hidden className="absolute -top-3 left-1 text-[15px] not-italic">👑</span>
+                miGlife
+              </h1>
             )}
             {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
-                {/* 🔍 search Migs, people and places */}
-                <button
-                  type="button"
-                  onClick={() => setSearching(true)}
-                  aria-label="Search"
-                  title="Search"
-                  className="flex h-[38px] w-[38px] items-center justify-center rounded-full text-[21px] transition hover:bg-[#EEF0F8] active:scale-95"
-                >
-                  🔍
+                {/* ＋ write a Mig */}
+                <button type="button" onClick={() => setComposing(true)} aria-label="Write a Mig" title="Write a Mig" className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition hover:bg-[#E3E9F4] active:scale-95">
+                  <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="#0B1B3F" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                 </button>
-                {/* 🎬 MigClips: every Feed video, full screen */}
-                <button
-                  type="button"
-                  onClick={() => setReelsStart("")}
-                  aria-label="MigClips"
-                  title="MigClips"
-                  className="flex h-[38px] w-[38px] items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#DB2777] text-[18px] shadow-[0_4px_10px_rgba(219,39,119,.35)] transition active:scale-95"
-                >
-                  🎬
-                </button>
+                {/* 🔔 alerts, with how many are new */}
+                <Link href="/alerts" aria-label="Alerts" title="Alerts" className="relative flex h-[38px] w-[38px] items-center justify-center rounded-full transition hover:bg-[#E3E9F4] active:scale-95">
+                  <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="#0B1B3F" strokeWidth="2"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z" /><path d="M10 20a2 2 0 0 0 4 0" /></svg>
+                  {badges.alerts > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full border-2 border-white bg-[#E53935] px-1 text-center text-[10px] font-bold leading-[14px] text-white">{badges.alerts > 99 ? "99+" : badges.alerts}</span>
+                  )}
+                </Link>
                 {/* 👤 my picture → my own posts (the Mine tab) */}
-                <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="rounded-full transition active:scale-95">
-                  <Avatar name={username} color={meColor} size={34} ring />
+                <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="relative rounded-full transition active:scale-95" style={{ boxShadow: "0 0 0 2.5px #2563EB" }}>
+                  <Avatar name={username} color={meColor} size={40} />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-[#22C55E]" />
                 </button>
               </div>
             )}
           </div>
         )}
 
+        {!author && !mineOnly && TAB_LOOK === "appbar" && (() => {
+          // 🎨 Feed 2026-11-24: a white bar — Home · For You · Popular · Explore · More;
+          // the chosen one is a blue tile. More opens Friends, Following, Mine, Saved, Search, MigClips.
+          const MAIN: [Tab, string, React.ReactNode][] = [
+            ["new", "Home", <path key="h" d="M3 11 12 3l9 8v10h-6v-6H9v6H3z" fill="currentColor" />],
+            ["foryou", "For You", <path key="f" d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2z" fill="currentColor" />],
+            ["popular", "Popular", <path key="p" d="M12 2s6 5 6 11a6 6 0 0 1-12 0c0-3 2-5 2-5s0 3 2 4c0-5 2-10 2-10z" fill="currentColor" />],
+            ["explore", "Explore", <g key="e"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z" fill="currentColor" /></g>],
+          ];
+          const inMore = !MAIN.some(([k]) => k === tab);
+          const MORE: [string, string, () => void][] = [
+            ["👥", "Friends", () => setTab("friends")],
+            ["⭐", "Following", () => setTab("following")],
+            ["👤", "My Migs", () => setTab("mine")],
+            ["🔖", "Saved", () => setTab("saved")],
+            ["🔍", "Search", () => setSearching(true)],
+            ["🎬", "MigClips", () => setReelsStart("")],
+          ];
+          const tile = (on: boolean) => `relative flex flex-1 flex-col items-center gap-[3px] rounded-2xl py-[7px] text-[12px] transition active:scale-95 ${on ? "bg-[#1D4ED8] text-white" : "text-[#1F2A44]"}`;
+          return (
+            <div className="sticky top-0 z-30 bg-[#EEF2F9] px-2.5 pb-2 pt-1">
+              <div className="flex rounded-[22px] bg-white p-[5px] shadow-[0_2px_8px_rgba(15,40,100,.06)]">
+                {MAIN.map(([k, label, icon]) => (
+                  <button
+                    key={k}
+                    ref={(el) => {
+                      tabRefs.current[k] = el;
+                    }}
+                    type="button"
+                    onClick={() => (setTagView(""), setMoreOpen(false), k === tab ? setReload((n) => n + 1) : setTab(k))}
+                    className={tile(tab === k)}
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5">{icon}</svg>
+                    {label}
+                  </button>
+                ))}
+                <button type="button" onClick={() => setMoreOpen((v) => !v)} className={tile(inMore)} aria-expanded={moreOpen}>
+                  <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
+                  {inMore ? (TABS.find(([k]) => k === tab)?.[1] || "More").replace(/^\S+ /, "") : "More"}
+                </button>
+              </div>
+              {moreOpen && (
+                <>
+                  <span className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
+                  <div className="absolute right-3 top-full z-50 w-48 overflow-hidden rounded-2xl bg-white py-1 shadow-[0_12px_28px_-10px_rgba(15,40,100,.35)]">
+                    {MORE.map(([ic, label, go]) => (
+                      <button key={label} type="button" onClick={() => (setMoreOpen(false), setTagView(""), go())} className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-[14.5px] text-[#1F2A44] hover:bg-[#EEF2FA]">
+                        <span className="w-5 text-center">{ic}</span>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
         {!author && !mineOnly && TAB_LOOK === "pills" && (
           // T2 · Gradient pill: a white pill for each tab; the chosen one turns miGlife-colour
           <div className="no-scrollbar sticky top-0 z-30 mb-2 flex gap-2 overflow-x-auto bg-[#F4F4F8] px-3.5 pb-2 pt-1">
@@ -1252,8 +1341,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           </div>
         )}
 
-        {/* 📸 stories, under the tabs */}
-        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
         {/* #️⃣ trending hashtags (New / Popular / For You) */}
         {!author && !mineOnly && (tab === "new" || tab === "popular" || tab === "foryou") && trending.length > 0 && (
           <div className="flex items-center gap-1.5 overflow-x-auto px-3.5 pb-1.5 pt-0.5 [scrollbar-width:none]">
@@ -1977,21 +2064,24 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             <button
               type="button"
               onClick={() => setComposing(true)}
-              className="group mx-3.5 mb-4 mt-1 flex w-[calc(100%-1.75rem)] items-center gap-2.5 rounded-[22px] bg-[#FFFFFF] py-2.5 pl-3 pr-2.5 text-left shadow-[0_10px_28px_-16px_rgba(60,64,140,.35)] transition duration-200 active:scale-[.99]"
+              className="group mx-2.5 mb-3 mt-1 flex w-[calc(100%-1.25rem)] items-center gap-3 rounded-[18px] bg-[#FFFFFF] px-4 py-3.5 text-left shadow-[0_2px_8px_rgba(15,40,100,.05)] transition duration-200 active:scale-[.99]"
             >
-              {/* 🎨 app look: my picture with a ring, the placeholder, and a photo tile on the right */}
-              <Avatar name={username} color={meColor} size={42} ring />
-              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">{`What's on your mind, ${username}?`}</span>
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[#F1EFFF] text-[18px]">🖼️</span>
+              {/* 🎨 Feed 2026-11-24: a feather, the placeholder, and › */}
+              <span className="text-[24px] leading-none">🪶</span>
+              <span className="min-w-0 flex-1 truncate text-[15px] text-[#4B5875]">{`What's on your mind, ${username}?`}</span>
+              <span className="text-[20px] leading-none text-[#1F2A44]">›</span>
             </button>
           ) : (
-            <Link href="/login" className="mx-3.5 my-2.5 flex items-center gap-2.5 rounded-[20px] border border-[#6366F1]/15 bg-white/75 py-2.5 pl-3 pr-2.5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg">✍️</span>
-              <span className="min-w-0 flex-1 truncate text-[14.5px] text-[#7A7FA6]">Log in to write a Mig</span>
+            <Link href="/login" className="mx-2.5 mb-3 mt-1 flex items-center gap-3 rounded-[18px] bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(15,40,100,.05)]">
+              <span className="text-[24px] leading-none">🪶</span>
+              <span className="min-w-0 flex-1 truncate text-[15px] text-[#4B5875]">Log in to write a Mig</span>
+              <span className="text-[20px] leading-none text-[#1F2A44]">›</span>
             </Link>
           )
         )}
 
+        {/* 📸 stories, under "What's on your mind?" (Feed 2026-11-24) */}
+        {!author && !mineOnly && <StoryRow myUid={user?.uid} myName={username} friends={friends} colorOf={colorOf} />}
         {/* 🧱 My wall (Mine tab): one tidy card — picture, name, my numbers, New post */}
         {!author && !placeView && tab === "mine" && user && posts && !composing && (() => {
           const since = Date.now() - 7 * 86400000;
@@ -2468,11 +2558,6 @@ function textArtOf(id: string, bg = -1): [string, string] {
   return TEXT_ART[h % TEXT_ART.length];
 }
 
-// 🎨 K1·M1: three layers of the writer's colour under a card, then a soft shadow
-function depthOf(c: string): string {
-  const hex = /^#[0-9a-f]{6}$/i.test(c) ? c : "#2563EB";
-  return `inset 0 2px 0 #fff, 0 0 0 1px ${hex}1f, 0 3px 0 ${hex}59, 0 6px 0 ${hex}40, 0 9px 0 ${hex}2b, 0 14px 18px -8px ${hex}80`;
-}
 // 🤝 "anima" / "anima and vip" / "anima, vip and 3 others"
 function withLine(names: string[]): string {
   if (names.length <= 2) return names.join(" and ");
@@ -2632,16 +2717,17 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     // 🎨 K1·M1: the card stands on three layers of the writer's own colour (6D)
     // 🎨 each card carries a light colour: blue or pink, picked from the post id
     <article
-      className="relative overflow-hidden rounded-[22px]"
+      className="relative overflow-hidden rounded-[20px]"
+      // 🎨 Feed 2026-11-24: a plain white card with a soft shadow
       style={{
-        boxShadow: depthOf(c),
+        boxShadow: "0 2px 8px rgba(15,40,100,.06)",
         background: "#FFFFFF",
       }}
     >
       {/* who wrote it */}
       <div className="flex items-center gap-2.5 px-3.5 pb-2.5 pt-3 text-[#16264A]">
-        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: `0 0 0 2.5px #fff, 0 0 0 4.5px ${c}, 0 4px 0 2.5px ${c}88` }}>
-          <Avatar name={p.author} color={c} size={42} />
+        <Link href={`/profile/${encodeURIComponent(p.author)}`} onClick={(e) => e.stopPropagation()} className="relative flex shrink-0 rounded-full" style={{ boxShadow: "0 0 0 2.5px #fff, 0 0 0 5px #2563EB" }}>
+          <Avatar name={p.author} color={c} size={46} />
           {rolePill && ROLE_DOTS[rolePill] && (
             // 🏷 R2: A (Admin) · S (Staff) · M (Merchant) … on the picture's corner
             <span
@@ -2724,9 +2810,9 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                 setMenuAt(window.innerHeight - r.bottom > 380 ? { right, top: r.bottom + 6 } : { right, bottom: window.innerHeight - r.top + 6 });
                 setMenu((v) => !v);
               }}
-              className="mb-1 ml-1 flex h-9 w-9 items-center justify-center rounded-[12px] bg-gradient-to-b from-white to-[#EEF3FB] text-[17px] font-black leading-none text-[#5B6B8C] shadow-[0_3px_0_#C9D8EA] transition active:translate-y-[2px]"
+              className="mb-1 ml-1 flex h-9 w-7 items-center justify-center rounded-full text-[20px] font-black leading-none text-[#1F2A44] transition active:scale-90"
             >
-              ⋯
+              ⋮
             </button>
             {menu && typeof document !== "undefined" && createPortal(
               <>
@@ -3071,7 +3157,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                 setPick(true);
               }}
               aria-label={liked ? "Unlike" : "Like"}
-              className={`relative flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black transition active:scale-[.98] ${liked ? "text-[#E34F75]" : "text-[#4F46E5]"}`}
+              className={`relative flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-[#EEF2FA] text-[14px] font-semibold transition active:scale-[.98] ${liked ? "text-[#1D4ED8]" : "text-[#1F2A44]"}`}
             >
               {burst > 0 &&
                 ["❤️", "💖", "✨", "💕"].map((h, i) => (
@@ -3080,17 +3166,17 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
                   </span>
                 ))}
               <span key={burst} className={`flex items-center gap-1.5 ${burst > 0 ? "feed-pop" : ""}`}>
-                {liked ? reaction || "❤️" : "🤍"} {p.likes > 0 ? blogShort(p.likes) : "Like"}
+                {liked ? reaction || "👍" : "👍"} {p.likes > 0 ? blogShort(p.likes) : "Like"}
               </span>
             </button>
           </div>
           {/* 🎨 K1·M3: 💬 blue and ↗ purple 6D buttons next to the pink ❤️ */}
-          <button type="button" onClick={open} aria-label="Comments" className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black text-[#4B5575] transition active:scale-[.98]">
+          <button type="button" onClick={open} aria-label="Comments" className="flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#EEF2FA] text-[14px] font-semibold text-[#1F2A44] transition active:scale-[.98]">
             💬 {blogShort(p.comments)}
           </button>
           {/* 🔒 a 👥 / 🔒 post can't be shared */}
           {!p.privacy && (
-            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-xl bg-[#F5F6FD] text-[13.5px] font-black text-[#4B5575] transition active:scale-[.98]">
+            <button type="button" onClick={onShare} aria-label="Share" className="flex h-10 flex-1 items-center justify-center gap-1 rounded-xl bg-[#EEF2FA] text-[14px] font-semibold text-[#1F2A44] transition active:scale-[.98]">
               ↗ Share
             </button>
           )}

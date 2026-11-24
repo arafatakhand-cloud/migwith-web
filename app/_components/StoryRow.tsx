@@ -184,15 +184,15 @@ export function StoryRow({
   return (
     <>
       {error && <p className="mx-3.5 mb-1 text-[12.5px] text-[#B91C1C]">{error}</p>}
-      <div className="no-scrollbar mx-3.5 mb-2 flex gap-2.5 overflow-x-auto pb-1 pt-1">
+      {/* 🎨 Feed 2026-11-24: soft tiles — Add Story (a dark + button), then a round picture
+          with a blue ring and a blue dot before the name for each friend's story */}
+      <div className="no-scrollbar mx-2.5 mb-2.5 flex gap-2.5 overflow-x-auto pb-1 pt-1">
         {myUid && (
           <>
             <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => (onFile(e.target.files), (e.target.value = ""))} />
-            <button type="button" onClick={() => setTextDraft(true)} disabled={busy} className="flex w-[70px] shrink-0 flex-col items-center gap-1 text-center disabled:opacity-60">
-              <span className="flex h-[96px] w-[62px] items-center justify-center rounded-xl border-[1.5px] border-dashed border-[#A5B4FC] bg-white text-[24px] font-black text-[#6366F1]">
-                {busy ? "…" : "+"}
-              </span>
-              <span className="w-full truncate text-[11px] font-bold text-[#1E1B4B]">Your story</span>
+            <button type="button" onClick={() => setTextDraft(true)} disabled={busy} className="flex h-[108px] w-[100px] shrink-0 flex-col items-center justify-center gap-2 rounded-2xl bg-[#E3E9F4] text-center transition active:scale-95 disabled:opacity-60">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0F1E3D] text-[26px] font-light leading-none text-white">{busy ? "…" : "+"}</span>
+              <span className="w-full truncate px-1 text-[13px] font-medium text-[#0B1B3F]">Add Story</span>
             </button>
           </>
         )}
@@ -200,27 +200,21 @@ export function StoryRow({
           const cover = grp.items[grp.items.length - 1];
           const allSeen = grp.author !== myName && grp.unseen === 0;
           const many = grp.items.length > 1;
-          const back = many ? grp.items[grp.items.length - 2] : null;
           return (
-            <button key={grp.author} type="button" onClick={() => openGroup(gi)} className="story-item flex w-[70px] shrink-0 flex-col items-center gap-1 text-center">
-              <span className={`relative ml-1.5 block h-[96px] w-[62px] ${allSeen ? "opacity-70" : ""}`}>
-                {back && (
-                  <span className="absolute inset-0 -translate-x-1.5 translate-y-1 -rotate-6 overflow-hidden rounded-xl opacity-55">
-                    <StoryThumb s={back} />
-                  </span>
-                )}
-                <span
-                  className={`absolute inset-0 overflow-hidden rounded-xl border-2 shadow-[0_3px_8px_rgba(0,0,0,.18)] ${allSeen ? "border-[#CBD5E1]" : "border-transparent"}`}
-                  style={allSeen ? undefined : { background: "linear-gradient(white,white) padding-box, linear-gradient(135deg,#38BDF8,#6366F1,#A855F7,#EC4899) border-box" }}
-                >
+            <button key={grp.author} type="button" onClick={() => openGroup(gi)} className="story-item flex h-[108px] w-[100px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl bg-[#E3E9F4] text-center transition active:scale-95">
+              <span className={`relative block h-[70px] w-[70px] rounded-full border-[3px] p-[2px] ${allSeen ? "border-[#CBD5E1] opacity-75" : "border-[#2E8BFF]"}`}>
+                <span className="block h-full w-full overflow-hidden rounded-full">
                   <StoryThumb s={cover} />
-                  {cover.video && <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 text-[8.5px] font-extrabold text-white">▶</span>}
                 </span>
+                {cover.video && <span className="absolute bottom-0 right-0 rounded-full bg-black/60 px-1 text-[8.5px] font-extrabold text-white">▶</span>}
                 {many && grp.unseen > 0 && (
                   <span className="absolute -right-1 -top-1 z-10 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-[#DB2777] px-1 text-[10px] font-black text-white shadow">{grp.unseen}</span>
                 )}
               </span>
-              <span className={`w-full truncate text-[11px] font-bold ${allSeen ? "text-[#94A3B8]" : "text-[#1E1B4B]"}`}>{grp.author === myName ? "You" : grp.author}</span>
+              <span className={`flex w-full items-center justify-center gap-1 truncate px-1 text-[13px] font-medium ${allSeen ? "text-[#94A3B8]" : "text-[#0B1B3F]"}`}>
+                {!allSeen && <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-[#2563EB]" />}
+                <span className="truncate">{grp.author === myName ? "You" : grp.author}</span>
+              </span>
             </button>
           );
         })}
