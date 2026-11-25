@@ -6,7 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
-import { LinkCard, MicButton, SongCorner, SongLine, VoicePlayer, firstLink, uploadVoice, usePostSong } from "./VoiceBits";
+import { LinkCard, MicButton, SongCorner, SongLine, SongPlayCorner, VoicePlayer, firstLink, uploadVoice, usePostSong, usePostSongTap } from "./VoiceBits";
 import { StorySongPicker } from "./ProfileSongs";
 import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, ScheduledSheet, scheduleLabel, type Memory } from "./FeedExtras";
@@ -2664,10 +2664,10 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   };
   const pic = p.cover || p.firstImage;
   const media = !!(p.video || pic);
-  // 🎵 the post's song plays by itself while the card is on the screen
+  // 🎵 the post's song: ▶ on the picture plays it (not by itself); opening the post plays it too
   const cardRef = useRef<HTMLElement | null>(null);
   const songUrl = p.song && !p.audio && !p.video ? p.song.url : undefined;
-  const song = usePostSong(`feed_${p.id}`, songUrl, cardRef);
+  const song = usePostSongTap(`feed_${p.id}`, songUrl, cardRef);
   // 📸 all the photos of this Mig (a carousel when there are 2 or more) and the one showing
   const photos = useMemo(() => (p.video ? [] : photosOf(p)), [p]);
   const [photoAt, setPhotoAt] = useState(0);
@@ -2807,7 +2807,11 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
           {songUrl && p.song && (
             <div className="flex items-center gap-1.5">
               <SongLine title={p.song.title} className="max-w-[230px]" />
-              {pollOnly && <SongCorner playing={song.playing} muted={song.muted} inline />}
+              {pollOnly && (
+                <button type="button" onClick={(e) => (e.stopPropagation(), song.toggle())} className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F1F4FA] text-[12px]">
+                  {song.playing ? "⏸" : "▶"}
+                </button>
+              )}
             </div>
           )}
           <div className="truncate text-[11.5px] font-semibold text-[#7C88A6]">
@@ -3095,7 +3099,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             ❤️
           </span>
         )}
-        {songUrl && <SongCorner playing={song.playing} muted={song.muted} />}
+        {songUrl && <SongPlayCorner playing={song.playing} onToggle={song.toggle} />}
         {media && pic && !p.video && (
           <button
             type="button"

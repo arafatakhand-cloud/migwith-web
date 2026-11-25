@@ -356,6 +356,59 @@ export function usePostSong(id: string, url: string | undefined, ref: React.RefO
   return { playing: st.id === id && st.playing, muted: st.muted, mine: st.id === id };
 }
 
+/** 🎵 Feed (2026-11-25 fix): NOT by itself — ▶ on the picture plays it; it stops when the card scrolls away. */
+export function postSongTap(id: string, url: string) {
+  sLoadMute();
+  if (sState.id === id && sState.playing) return postSongRelease(id);
+  if (sState.muted) {
+    try {
+      localStorage.setItem(MUTE_KEY, "0");
+    } catch {
+      /* storage blocked */
+    }
+    sEmit({ muted: false });
+  }
+  postSongClaim(id, url);
+}
+export function usePostSongTap(id: string, url: string | undefined, ref: React.RefObject<HTMLElement | null>) {
+  const st = usePostSongState();
+  useEffect(() => {
+    if (!url) return;
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return () => postSongRelease(id);
+    const io = new IntersectionObserver((es) => es.forEach((e) => e.intersectionRatio < 0.3 && postSongRelease(id)), { threshold: [0, 0.3] });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      postSongRelease(id);
+    };
+  }, [id, url, ref]);
+  return { playing: st.id === id && st.playing, toggle: () => url && postSongTap(id, url) };
+}
+
+/** ▶ / ⏸ on the picture's corner (Feed), and "Playing" while it plays */
+export function SongPlayCorner({ playing, onToggle }: { playing: boolean; onToggle: () => void }) {
+  return (
+    <>
+      {playing && (
+        <span className="pointer-events-none absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-bold text-white">
+          ♪ Playing
+        </span>
+      )}
+      <span className="absolute bottom-2.5 right-2.5">
+        <button
+          type="button"
+          onClick={(e) => (e.stopPropagation(), onToggle())}
+          aria-label={playing ? "Stop the song" : "Play the song"}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-[14px] text-white"
+        >
+          {playing ? "⏸" : "▶"}
+        </button>
+      </span>
+    </>
+  );
+}
+
 /** 🎵 the song's name under the writer's name */
 export function SongLine({ title, className = "" }: { title: string; className?: string }) {
   return (
