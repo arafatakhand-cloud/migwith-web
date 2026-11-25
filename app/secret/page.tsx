@@ -415,6 +415,7 @@ export default function SecretPage() {
           { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
           { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
           { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
+          { icon: "📧", label: "Email Check", hint: "MIG ID → its email · email → its IDs", tint: "#2F80ED", href: "/secret/email-check", ok: f.isMigwith },
           { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
           { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
           { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
