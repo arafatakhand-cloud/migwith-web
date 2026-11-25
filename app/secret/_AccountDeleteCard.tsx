@@ -13,17 +13,21 @@ export function AccountDeleteCard() {
   const [info, setInfo] = useState<{ username: string; status: string; scheduledAt?: number; coins?: number } | null>(null);
   const [msg, setMsg] = useState("");
   const [confirm, setConfirm] = useState(false);
+  // ⚡ delete NOW: type the ID again
+  const [nowAsk, setNowAsk] = useState(false);
+  const [nowType, setNowType] = useState("");
   const who = target.trim().replace(/^@/, "");
   const day = (ms?: number) => (ms ? new Date(ms).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "");
 
-  const run = (action: "status" | "schedule" | "cancel") => {
+  const run = (action: "status" | "schedule" | "cancel" | "now", confirmName?: string) => {
     setBusy(true);
     setMsg("");
-    founderAccountDeletion({ username: who, action })
+    founderAccountDeletion({ username: who, action, ...(confirmName ? { confirm: confirmName } : {}) })
       .then(({ data }) => {
         setInfo(data);
         if (action === "schedule") setMsg(`@${data.username} will be deleted on ${day(data.scheduledAt)}. They have been logged out.`);
         if (action === "cancel") setMsg(`@${data.username}: deletion cancelled.`);
+        if (action === "now") setMsg(`🗑 @${data.username} was deleted.`);
       })
       .catch((e) => setMsg(e?.message || "Something went wrong."))
       .finally(() => setBusy(false));
@@ -34,7 +38,7 @@ export function AccountDeleteCard() {
       <p className="text-[17px] font-extrabold">🗑 Delete Account</p>
       <p className="text-xs text-gray-500">
         For a “Delete my account” email. The account is deleted 7 days after you schedule it; if the person logs in again
-        before that, it is cancelled. Accounts with coins can&apos;t be deleted.
+        before that, it is cancelled. ⚡ Delete now removes it at once. Coins on the account are lost.
       </p>
       <input
         value={target}
@@ -74,16 +78,55 @@ export function AccountDeleteCard() {
           ) : info.status !== "deleted" ? (
             <button
               type="button"
-              disabled={busy || (info.coins ?? 0) > 0}
+              disabled={busy}
               onClick={() => setConfirm(true)}
               className="w-full rounded-xl bg-[#E53935] py-2 font-bold text-white disabled:opacity-50"
             >
-              {(info.coins ?? 0) > 0 ? "Has coins — can't delete" : "Schedule deletion (7 days)"}
+              Schedule deletion (7 days)
             </button>
           ) : null}
+          {info.status !== "deleted" && (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => (setNowType(""), setNowAsk(true))}
+              className="w-full rounded-xl border-[1.5px] border-[#B71C1C] bg-[#FFF5F5] py-2 font-extrabold text-[#B71C1C] disabled:opacity-50"
+            >
+              ⚡ Delete now
+            </button>
+          )}
         </div>
       )}
       {msg && <p className="text-sm font-semibold text-[#0B2A5B]">{msg}</p>}
+      {nowAsk && info && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3" onClick={() => setNowAsk(false)}>
+          <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
+            <p className="text-lg font-bold text-[#B71C1C]">⚡ Delete @{info.username} NOW?</p>
+            <p className="text-sm">
+              The account is deleted right away — profile, photos, friends, mail, history and login
+              {(info.coins ?? 0) > 0 ? `, and its ${(info.coins ?? 0).toLocaleString()} coins` : ""}. This can&apos;t be undone. Their old messages stay as “Deleted user”.
+            </p>
+            <p className="text-xs text-gray-500">Type <b>{info.username}</b> to confirm:</p>
+            <input value={nowType} onChange={(e) => setNowType(e.target.value)} placeholder={info.username} className={input} autoCapitalize="none" autoCorrect="off" />
+            <div className="flex justify-end gap-4">
+              <button type="button" onClick={() => setNowAsk(false)} className="font-bold text-[#2F80ED]">
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={nowType.trim().toLowerCase() !== info.username.toLowerCase()}
+                className="font-bold text-[#B71C1C] disabled:opacity-40"
+                onClick={() => {
+                  setNowAsk(false);
+                  run("now", nowType.trim());
+                }}
+              >
+                Delete now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirm && info && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3" onClick={() => setConfirm(false)}>
           <div className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5" onClick={(e) => e.stopPropagation()}>
