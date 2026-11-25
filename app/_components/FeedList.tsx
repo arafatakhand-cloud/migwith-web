@@ -6,7 +6,7 @@ import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { plainText, styledNodes } from "../../lib/textStyle";
-import { LinkCard, MicButton, SongPill, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { LinkCard, MicButton, SongCorner, SongLine, VoicePlayer, firstLink, uploadVoice, usePostSong } from "./VoiceBits";
 import { StorySongPicker } from "./ProfileSongs";
 import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import { CloseFriendsSheet, InsightsSheet, MemoriesCard, SchedulePicker, ScheduledSheet, scheduleLabel, type Memory } from "./FeedExtras";
@@ -377,6 +377,9 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
   // 🎵 a song from the Music Library on the new Mig (not with a voice clip or a video)
   const [csong, setCsong] = useState<{ url: string; title: string } | null>(null);
   const [csongOpen, setCsongOpen] = useState(false);
+  // the chosen song plays while writing (🔊 / 🔇 next to my name)
+  const csongRef = useRef<HTMLElement | null>(null);
+  const csongPlay = usePostSong("composer", composing && csong && !cvoice && !cvideo ? csong.url : undefined, csongRef, true);
   const [cvideoBusy, setCvideoBusy] = useState(false);
   // 🎬 miGlife's switch: when video is OFF the Video button is hidden
   const [videoOn, setVideoOn] = useState(true);
@@ -1484,7 +1487,19 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                       </button>
                     </span>
                   )}
+                  {/* 🎵 the chosen song, under my name */}
+                  {csong && !cvoice && !cvideo && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <button type="button" onClick={() => setCsongOpen(true)} className="min-w-0">
+                        <SongLine title={csong.title} className="max-w-[200px]" />
+                      </button>
+                      <button type="button" onClick={() => setCsong(null)} aria-label="Remove the song" className="text-[12px] font-black text-[#A0A6C2]">
+                        ✕
+                      </button>
+                    </div>
+                  )}
                 </div>
+                {csong && !cvoice && !cvideo && <SongCorner playing={csongPlay.playing} muted={csongPlay.muted} inline />}
               </div>
               {/* quick chips (scroll sideways) */}
               <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-0.5">
@@ -2006,13 +2021,6 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                   <button type="button" disabled={cbusy} onClick={() => setCvoice(null)} aria-label="Remove the voice clip" className="p-2 text-[16px] font-black text-[#8494B2]">
                     ✕
                   </button>
-                </div>
-              )}
-              {/* 🎵 the Mig's song (Music Library) */}
-              {csong && !cvoice && !cvideo && (
-                <div className="mt-2.5 flex items-center gap-2">
-                  <div className="min-w-0 flex-1"><SongPill url={csong.url} title={csong.title} /></div>
-                  <button type="button" onClick={() => setCsong(null)} aria-label="Remove the song" className="p-2 text-[16px] font-black text-[#8494B2]">✕</button>
                 </div>
               )}
               {csongOpen && user && (
@@ -2656,6 +2664,10 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
   };
   const pic = p.cover || p.firstImage;
   const media = !!(p.video || pic);
+  // 🎵 the post's song plays by itself while the card is on the screen
+  const cardRef = useRef<HTMLElement | null>(null);
+  const songUrl = p.song && !p.audio && !p.video ? p.song.url : undefined;
+  const song = usePostSong(`feed_${p.id}`, songUrl, cardRef);
   // 📸 all the photos of this Mig (a carousel when there are 2 or more) and the one showing
   const photos = useMemo(() => (p.video ? [] : photosOf(p)), [p]);
   const [photoAt, setPhotoAt] = useState(0);
@@ -2736,6 +2748,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
     // 🎨 K1·M1: the card stands on three layers of the writer's own colour (6D)
     // 🎨 each card carries a light colour: blue or pink, picked from the post id
     <article
+      ref={cardRef}
       className="relative overflow-hidden rounded-[20px]"
       // 🎨 Feed 2026-11-24: a plain white card with a soft shadow
       style={{
@@ -2791,6 +2804,12 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             {/* 🪙 G3 role coin (A / S / MT / CR / M) or the badge picture / emoji in the ring */}
             {!role && roleBadge ? <G3BadgeFor emoji={roleBadge} images={roleImg ? { [roleBadge]: roleImg } : {}} /> : null}
           </div>
+          {songUrl && p.song && (
+            <div className="flex items-center gap-1.5">
+              <SongLine title={p.song.title} className="max-w-[230px]" />
+              {pollOnly && <SongCorner playing={song.playing} muted={song.muted} inline />}
+            </div>
+          )}
           <div className="truncate text-[11.5px] font-semibold text-[#7C88A6]">
             {p.place && (
               <button type="button" onClick={(e) => (e.stopPropagation(), onPlace())} className="mr-1 font-extrabold text-[#55658F] underline-offset-2 hover:underline">
@@ -3076,6 +3095,7 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
             ❤️
           </span>
         )}
+        {songUrl && <SongCorner playing={song.playing} muted={song.muted} />}
         {media && pic && !p.video && (
           <button
             type="button"
@@ -3102,11 +3122,6 @@ function FeedCard({ onGift, onGifts, p, onPhoto, onPhotoMenu, onReels, color, li
       {p.audio && (
         <div className="mx-3 mt-2">
           <VoicePlayer src={p.audio} seconds={p.audioSec || 0} />
-        </div>
-      )}
-      {p.song && !p.audio && (
-        <div className="mx-3 mt-2 flex">
-          <SongPill url={p.song.url} title={p.song.title} />
         </div>
       )}
       {!media && !p.audio && !p.sharedId && firstLink(fullText) && (

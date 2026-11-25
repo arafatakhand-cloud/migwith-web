@@ -4,7 +4,7 @@ import { EveryoneTag, SysTag, SystemCard } from "./SystemPost";
 import Link from "next/link";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { GiftBoxIcon, PostGiftBar, PostGiftSheet, PostGiversSheet } from "./FeedGift";
-import { LinkCard, MicButton, SongPill, VoicePlayer, firstLink, uploadVoice } from "./VoiceBits";
+import { LinkCard, MicButton, SongCorner, SongLine, VoicePlayer, firstLink, uploadVoice, usePostSong } from "./VoiceBits";
 import { useRouter } from "next/navigation";
 import { collection, doc, getDoc, limit, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -93,6 +93,9 @@ export function MigView({
   const [privTick, setPrivTick] = useState(0);
   const [privMenu, setPrivMenu] = useState(false);
   const commentsRef = useRef<HTMLDivElement>(null);
+  // 🎵 the Mig's song plays by itself while it is open
+  const songRef = useRef<HTMLElement | null>(null);
+  const viewSong = usePostSong(`view_${id}`, post?.song && !post.audio && !post.video ? post.song.url : undefined, songRef, true);
 
   useEffect(() => {
     if (!id) return;
@@ -510,6 +513,13 @@ export function MigView({
               {post.privacy ? ` · ${blogPrivacyLabel(post.privacy)}` : <> · <EveryoneTag /></>}
             </span>
           </div>
+          {post.song && !post.audio && !post.video && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <SongLine title={post.song.title} className="min-w-0 flex-1" />
+              {viewSong.playing && !viewSong.muted && <span className="shrink-0 text-[11px] font-bold text-[#DB2777]">♪ Playing</span>}
+              <SongCorner playing={viewSong.playing} muted={viewSong.muted} inline />
+            </div>
+          )}
           {post.place && (
             <button
               type="button"
@@ -570,11 +580,7 @@ export function MigView({
               <VoicePlayer src={post.audio} seconds={post.audioSec || 0} />
             </div>
           )}
-          {post.song && !post.audio && (
-            <div className="mt-3 flex">
-              <SongPill url={post.song.url} title={post.song.title} />
-            </div>
-          )}
+
           {!post.video && !post.audio && firstLink(post.body) && (
             <div className="mt-3">
               <LinkCard url={firstLink(post.body)} />

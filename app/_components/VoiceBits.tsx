@@ -240,3 +240,159 @@ export function SongPill({ url, title }: { url: string; title: string }) {
     </button>
   );
 }
+
+// =============================================================================
+// 🎵 Post music, the Feed way (2026-11-25): the song's name sits under the writer's
+// name, the song plays BY ITSELF while the post is on the screen (60 % or more)
+// and stops when it scrolls away. One song at a time. 🔊 / 🔇 on the picture
+// mutes every post (kept on this device). Browsers allow sound only after the
+// first tap on the page — until then the song waits and starts on that tap.
+// =============================================================================
+const MUTE_KEY = "migwith.feedSongMute";
+type SongState = { id: string; playing: boolean; muted: boolean };
+let sState: SongState = { id: "", playing: false, muted: false };
+let sAudio: HTMLAudioElement | null = null;
+let sUrl = "";
+const sListeners = new Set<() => void>();
+let sMuteLoaded = false;
+function sEmit(next: Partial<SongState>) {
+  sState = { ...sState, ...next };
+  sListeners.forEach((f) => f());
+}
+function sLoadMute() {
+  if (sMuteLoaded || typeof window === "undefined") return;
+  sMuteLoaded = true;
+  try {
+    sState = { ...sState, muted: localStorage.getItem(MUTE_KEY) === "1" };
+  } catch {
+    /* storage blocked */
+  }
+}
+function sTryPlay() {
+  const a = sAudio;
+  if (!a || sState.muted) return;
+  void a
+    .play()
+    .then(() => sEmit({ playing: true }))
+    .catch(() => {
+      // no tap on the page yet: start on the first one
+      const go = () => {
+        if (sAudio === a && !sState.muted) void a.play().then(() => sEmit({ playing: true })).catch(() => {});
+      };
+      window.addEventListener("pointerdown", go, { once: true });
+    });
+}
+export function postSongClaim(id: string, url: string) {
+  sLoadMute();
+  if (sState.id === id && sUrl === url && sAudio) {
+    if (!sState.playing) sTryPlay();
+    return;
+  }
+  sAudio?.pause();
+  sAudio = new Audio(url);
+  sAudio.loop = true;
+  sAudio.onpause = () => sState.id === id && sEmit({ playing: false });
+  sAudio.onplaying = () => sState.id === id && sEmit({ playing: true });
+  sUrl = url;
+  sEmit({ id, playing: false });
+  sTryPlay();
+}
+export function postSongRelease(id: string) {
+  if (sState.id !== id) return;
+  sAudio?.pause();
+  sAudio = null;
+  sUrl = "";
+  sEmit({ id: "", playing: false });
+}
+export function postSongToggleMute() {
+  sLoadMute();
+  const muted = !sState.muted;
+  try {
+    localStorage.setItem(MUTE_KEY, muted ? "1" : "0");
+  } catch {
+    /* storage blocked */
+  }
+  sEmit({ muted });
+  if (muted) sAudio?.pause();
+  else sTryPlay();
+}
+function usePostSongState(): SongState {
+  const [, force] = useState(0);
+  useEffect(() => {
+    sLoadMute();
+    const f = () => force((n) => n + 1);
+    sListeners.add(f);
+    f();
+    return () => void sListeners.delete(f);
+  }, []);
+  return sState;
+}
+/** Plays the post's song while `ref` is 60 % on the screen (or always, with `always`). */
+export function usePostSong(id: string, url: string | undefined, ref: React.RefObject<HTMLElement | null>, always = false) {
+  const st = usePostSongState();
+  useEffect(() => {
+    if (!url) return;
+    if (always) {
+      postSongClaim(id, url);
+      return () => postSongRelease(id);
+    }
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (es) => {
+        for (const e of es) {
+          if (e.intersectionRatio >= 0.6) postSongClaim(id, url);
+          else postSongRelease(id);
+        }
+      },
+      { threshold: [0, 0.6, 1] }
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      postSongRelease(id);
+    };
+  }, [id, url, ref, always]);
+  return { playing: st.id === id && st.playing, muted: st.muted, mine: st.id === id };
+}
+
+/** 🎵 the song's name under the writer's name */
+export function SongLine({ title, className = "" }: { title: string; className?: string }) {
+  return (
+    <div className={`flex min-w-0 items-center gap-1 text-[12px] font-semibold text-[#16264A] ${className}`}>
+      <span className="shrink-0">🎵</span>
+      <span className="min-w-0 truncate" data-notranslate>{title}</span>
+    </div>
+  );
+}
+
+/** 🔊 / 🔇 on the picture, and "Playing" while it plays */
+export function SongCorner({ playing, muted, inline = false }: { playing: boolean; muted: boolean; inline?: boolean }) {
+  const btn = (
+    <button
+      type="button"
+      onClick={(e) => (e.stopPropagation(), postSongToggleMute())}
+      aria-label={muted ? "Turn the song on" : "Mute the song"}
+      className={`flex h-9 w-9 items-center justify-center rounded-full text-[15px] ${inline ? "bg-[#F1F4FA] text-[#16264A]" : "bg-black/55 text-white"}`}
+    >
+      {muted ? "🔇" : "🔊"}
+    </button>
+  );
+  if (inline) return btn;
+  return (
+    <>
+      {playing && !muted && (
+        <span className="pointer-events-none absolute bottom-2.5 left-2.5 flex items-center gap-1.5 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-bold text-white">
+          <style>{`@keyframes mgEq{from{height:3px}to{height:12px}}`}</style>
+          <span className="inline-flex h-3 items-end gap-[2px]">
+            {[0, 1, 2, 3].map((i) => (
+              <i key={i} className="block w-[3px] rounded-sm bg-[#F472B6]" style={{ animation: `mgEq .${5 + i}s ease-in-out ${i * 0.08}s infinite alternate` }} />
+            ))}
+          </span>
+          Playing
+        </span>
+      )}
+      <span className="absolute bottom-2.5 right-2.5">{btn}</span>
+    </>
+  );
+}
