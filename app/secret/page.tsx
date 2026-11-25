@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { collection, doc, getDocs, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
@@ -358,15 +358,34 @@ function CricketWinFxCard({ field = "cricketRooms", game = "Cricket", icon = "�
   );
 }
 
-// 📁 each tool group's folder colour (Team blue, Safety red, Coins green, Games purple, Danger slate)
-function folderColor(title: string): string {
-  if (/team/i.test(title)) return "#2563EB";
-  if (/safety/i.test(title)) return "#DC2626";
-  if (/coin/i.test(title)) return "#16A34A";
-  if (/game/i.test(title)) return "#7C3AED";
-  if (/danger/i.test(title)) return "#475569";
-  return "#0EA5E9";
+// 🎨 each category's colour (A · Grid)
+function catColor(title: string): string {
+  if (/ids/i.test(title)) return "#3B82F6";
+  if (/safety/i.test(title)) return "#EF4444";
+  if (/coin/i.test(title)) return "#10B981";
+  if (/game/i.test(title)) return "#8B5CF6";
+  if (/room/i.test(title)) return "#F59E0B";
+  if (/feed/i.test(title)) return "#EC4899";
+  return "#64748B";
 }
+
+// ⭐ Most used: the tools this founder opens most (kept on this device only).
+const USE_KEY = "mig_secret_use";
+function readUse(): Record<string, number> {
+  try {
+    return JSON.parse(localStorage.getItem(USE_KEY) || "{}") || {};
+  } catch {
+    return {};
+  }
+}
+function countUse(label: string) {
+  try {
+    const u = readUse();
+    u[label] = (u[label] || 0) + 1;
+    localStorage.setItem(USE_KEY, JSON.stringify(u));
+  } catch {}
+}
+const DEFAULT_MOST_USED = ["Coin Control", "IP Monitor / IP Ban", "Reports", "Suspend ID", "Email Check"];
 
 export default function SecretPage() {
   const f = useFounderPerms();
@@ -375,8 +394,11 @@ export default function SecretPage() {
   const [createOpen, setCreateOpen] = useState(false);
   // 🧰 Which Founder Tool is open (null = the tools list).
   const [tool, setTool] = useState<string | null>(null);
-  // 📁 which tool folders are open (Team & Users to start with)
-  const [openFolders, setOpenFolders] = useState<string[]>(["👥 Team & Users"]);
+  // 🔐 A · Grid: the open category (null = the grid) and the search text
+  const [openCat, setOpenCat] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [use, setUse] = useState<Record<string, number>>({});
+  useEffect(() => setUse(readUse()), []);
 
   useEffect(() => {
     if (!f.isAnyFounder) return;
@@ -390,39 +412,32 @@ export default function SecretPage() {
   const groups: [string, Tool[]][] = (
     [
       [
-        "👥 Team & Users",
+        "👥 IDs & Accounts",
         [
           { icon: "👑", label: "Founders", hint: "Add / remove founders & their tools", tint: "#E0A82E", href: "/secret/founders", ok: f.isMigwith },
-          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.isMigwith },
-          { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
-          { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
           { icon: "⚡", label: "Quick Create ID", hint: "Type only the ID name → Create", tint: "#F59E0B", key: "quick_id", ok: f.isMigwith },
-          { icon: "🧪", label: "Review Account", hint: "Google Play's test ID — nothing reaches real people", tint: "#0F766E", href: "/secret/review-account", ok: f.isMigwith },
           { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },
           { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.isMigwith },
+          { icon: "🧪", label: "Review Account", hint: "Google Play's test ID — nothing reaches real people", tint: "#0F766E", href: "/secret/review-account", ok: f.isMigwith },
+          { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
+          { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
+          { icon: "📧", label: "Email Check", hint: "MIG ID → its email · email → its IDs", tint: "#2F80ED", href: "/secret/email-check", ok: f.isMigwith },
+          { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.isMigwith },
+          { icon: "⛔", label: "Suspend ID", hint: "Stop an ID from logging in · or bring it back", tint: "#C62828", href: "/secret/suspend", ok: f.isMigwith || f.can("ip_monitor") },
+          { icon: "🗑", label: "Delete Account", hint: "For a “Delete my account” email · deleted after 7 days", tint: "#E53935", key: "delete_account", ok: f.isMigwith },
+          { icon: "✔", label: "Verified", hint: "Give or remove the ✔ tick by MIG ID", tint: "#1D9BF0", href: "/secret/verified", ok: f.isMigwith },
         ],
       ],
       [
-        "🛡 Safety & Rooms",
+        "🛡 Safety",
         [
-          { icon: "🔐", label: "Share Permissions", hint: "Who can share pictures / voice / video", tint: "#00897B", href: "/secret/share", ok: f.can("share_permissions") },
-          { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.isMigwith },
-          { icon: "🍀", label: "Lucky User", hint: "Random-time lottery · rooms, prize, fairness", tint: "#14B88F", href: "/secret/lucky", ok: f.isMigwith },
-          { icon: "ℹ", label: "Room Info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
-          { icon: "🏠", label: "Rooms by ID", hint: "Type a MIG ID → every room it created", tint: "#0D9488", href: "/secret/rooms-by-id", ok: f.can("room_info") },
           { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
-          { icon: "⛔", label: "Suspend ID", hint: "Stop an ID from logging in · or bring it back", tint: "#C62828", href: "/secret/suspend", ok: f.isMigwith || f.can("ip_monitor") },
           { icon: "🚩", label: "Reports", hint: "What users reported · handle within 24h", tint: "#D93025", href: "/secret/reports", ok: f.can("reports") },
-          { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
-          { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
-          { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
-          { icon: "📧", label: "Email Check", hint: "MIG ID → its email · email → its IDs", tint: "#2F80ED", href: "/secret/email-check", ok: f.isMigwith },
-          { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
-          { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
-          { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
-          { icon: "⚙️", label: "System posts", hint: "miGlife's own Migs: missions, birthdays, hadith…", tint: "#6366F1", href: "/secret/system-posts", ok: f.isMigwith },
+          { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.isMigwith },
           { icon: "🔒", label: "Profile Lock", hint: "Lock country changes (on / off)", tint: "#0B1F3A", href: "/secret/profile-lock", ok: f.isMigwith },
           { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.isMigwith },
+          { icon: "🔐", label: "Share Permissions", hint: "Who can share pictures / voice / video", tint: "#00897B", href: "/secret/share", ok: f.can("share_permissions") },
+          { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
         ],
       ],
       [
@@ -430,23 +445,12 @@ export default function SecretPage() {
         [
           { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
           { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
-          { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
           { icon: "💭", label: "FeelMig", hint: "Add / edit / delete feelings", tint: "#2563EB", href: "/feels", ok: f.can("gift_shop") },
           { icon: "🔊", label: "Manage Sounds", hint: "SoundMig: upload, price, delete", tint: "#059669", href: "/soundmig", ok: f.can("gift_shop") },
-          { icon: "🎁", label: "Gift Contest", hint: "Prize, rules, room and time", tint: "#E12A2A", href: "/gift-contest", ok: f.can("gift_contest") },
-          { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
-          { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },
-          { icon: "🎬", label: "Feed Video", hint: "Video posts ON / OFF", tint: "#6366F1", href: "/secret/video", ok: f.isMigwith },
-          { icon: "✔", label: "Verified", hint: "Give or remove the ✔ tick by MIG ID", tint: "#1D9BF0", href: "/secret/verified", ok: f.isMigwith },
-          { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.isMigwith },
-          { icon: "🛠", label: "Site control", hint: "Refresh everyone, maintenance, stuck games", tint: "#16264A", href: "/secret/site-control", ok: f.isMigwith },
-          { icon: "📞", label: "Audio Calls", hint: "Calls ON / OFF for everyone", tint: "#1D4ED8", href: "/secret/site-control#calls", ok: f.isMigwith },
-          { icon: "⏱", label: "Call Limits", hint: "Minutes a day / a month, per member", tint: "#0E7490", href: "/secret/site-control#call-limits", ok: f.isMigwith },
-          { icon: "🔁", label: "Mentor Renewals", hint: "Mentors' renew requests — renew or decline", tint: "#1E63D6", href: "/secret/mentor-renewals", ok: f.isMigwith },
           { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
-          { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
-          { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
+          { icon: "🔁", label: "Mentor Renewals", hint: "Mentors' renew requests — renew or decline", tint: "#1E63D6", href: "/secret/mentor-renewals", ok: f.isMigwith },
+          { icon: "🍀", label: "Lucky User", hint: "Random-time lottery · rooms, prize, fairness", tint: "#14B88F", href: "/secret/lucky", ok: f.isMigwith },
         ],
       ],
       [
@@ -454,7 +458,8 @@ export default function SecretPage() {
         [
           { icon: "🎰", label: "Luxury Bet", hint: "🤖 Auto players · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
           { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
-          // (🎲 Luxury Bot Tiers removed — Luxury Bot Official is gone; Luxury Bet replaced it)
+          { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
+          { icon: "🎁", label: "Gift Contest", hint: "Prize, rules, room and time", tint: "#E12A2A", href: "/gift-contest", ok: f.can("gift_contest") },
           { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
           { icon: "🃏", label: "LowCard Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#7C3AED", key: "lowcard_winfx", ok: f.isMigwith },
           { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.isMigwith },
@@ -462,10 +467,36 @@ export default function SecretPage() {
         ],
       ],
       [
-        "⚠ Danger zone",
+        "🏠 Rooms & Calls",
         [
-          { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.isMigwith },
-          { icon: "🗑", label: "Delete Account", hint: "For a “Delete my account” email · deleted after 7 days", tint: "#E53935", key: "delete_account", ok: f.isMigwith },
+          { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.isMigwith },
+          { icon: "ℹ", label: "Room Info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
+          { icon: "🏠", label: "Rooms by ID", hint: "Type a MIG ID → every room it created", tint: "#0D9488", href: "/secret/rooms-by-id", ok: f.can("room_info") },
+          { icon: "📞", label: "Audio Calls", hint: "Calls ON / OFF for everyone", tint: "#1D4ED8", href: "/secret/site-control#calls", ok: f.isMigwith },
+          { icon: "⏱", label: "Call Limits", hint: "Minutes a day / a month, per member", tint: "#0E7490", href: "/secret/site-control#call-limits", ok: f.isMigwith },
+        ],
+      ],
+      [
+        "📣 Feed & Content",
+        [
+          { icon: "⚙️", label: "System posts", hint: "miGlife's own Migs: missions, birthdays, hadith…", tint: "#6366F1", href: "/secret/system-posts", ok: f.isMigwith },
+          { icon: "🎬", label: "Feed Video", hint: "Video posts ON / OFF", tint: "#6366F1", href: "/secret/video", ok: f.isMigwith },
+          { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
+          { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
+          { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
+          { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
+          { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },
+        ],
+      ],
+      [
+        "⚙️ App & Rewards",
+        [
+          { icon: "🛠", label: "Site control", hint: "Refresh everyone, maintenance, stuck games", tint: "#16264A", href: "/secret/site-control", ok: f.isMigwith },
+          { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
+          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.isMigwith },
+          { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
+          { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
+          { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
         ],
       ],
     ] as [string, Tool[]][]
@@ -474,90 +505,117 @@ export default function SecretPage() {
     .filter(([, list]) => list.length > 0);
   const allTools = groups.flatMap(([, list]) => list);
   const openTool = allTools.find((t) => t.key && t.key === tool) || null;
+  const qq = search.trim().toLowerCase();
+  const found = qq ? allTools.filter((t) => `${t.label} ${t.hint}`.toLowerCase().includes(qq)) : [];
+  const used = allTools.filter((t) => (use[t.label] || 0) > 0).sort((x, y) => (use[y.label] || 0) - (use[x.label] || 0));
+  const mostUsed = (used.length >= 5 ? used : [...used, ...allTools.filter((t) => DEFAULT_MOST_USED.includes(t.label) && !used.includes(t))]).slice(0, 5);
+  const pick = (t: Tool) => {
+    countUse(t.label);
+    setUse(readUse());
+    if (t.key) setTool(t.key);
+  };
+  // One tool: a page link, or a tool that opens right here.
+  const ToolLink = ({ t, className, children }: { t: Tool; className: string; children: ReactNode }) =>
+    t.href ? (
+      <Link href={t.href} className={className} onClick={() => pick(t)}>
+        {children}
+      </Link>
+    ) : (
+      <button type="button" className={className} onClick={() => pick(t)}>
+        {children}
+      </button>
+    );
+  // A clean list of tools (a category, or search results).
+  const ToolList = ({ list, color, empty }: { list: Tool[]; color: string; empty: string }) =>
+    list.length === 0 ? (
+      <p className="py-6 text-center text-[13px] text-[#9AA1AB]">{empty}</p>
+    ) : (
+      <div className="overflow-hidden rounded-[16px] border border-[#EEF0F3] bg-white">
+        {list.map((t, i) => (
+          <ToolLink
+            key={t.label}
+            t={t}
+            className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition hover:bg-[#F8FAFC] ${i > 0 ? "border-t border-[#F1F3F5]" : ""}`}
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] text-[18px]" style={{ background: `${color}18` }}>
+              {t.icon}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-[15px] font-semibold text-[#111]">{t.label}</span>
+              <span className="block truncate text-[11.5px] text-[#6B7280]">{t.hint}</span>
+            </span>
+            <span className="text-[18px] text-[#C0C5CC]">›</span>
+          </ToolLink>
+        ))}
+      </div>
+    );
 
   return (
     <FounderShell
-      title={openTool ? `${openTool.icon} ${openTool.label}` : "miGlife secret"}
+      title={openTool ? `${openTool.icon} ${openTool.label}` : openCat || "miGlife secret"}
       allowed={f.isAnyFounder}
       loaded={f.loaded}
-      onBack={openTool ? () => setTool(null) : undefined}
+      onBack={openTool ? () => setTool(null) : openCat ? () => setOpenCat(null) : undefined}
     >
-      {/* 📁 D · Folders (miglife): each group is a coloured 6D folder that shows
-          its first icons; tap it to open its list. Same as the app (SecretFolder). */}
-      {!openTool && (
-        <div className="space-y-3">
-          <p className="pl-0.5 text-[12px] font-bold text-[#5B6B8C]">🧰 Founder Tools · {allTools.length} tools</p>
-          {groups.map(([groupTitle, list]) => {
-            const c = folderColor(groupTitle);
-            const icon = groupTitle.split(" ")[0];
-            const name = groupTitle.slice(icon.length).trim();
-            const isOpen = openFolders.includes(groupTitle);
-            const toggle = () => setOpenFolders((o) => (o.includes(groupTitle) ? o.filter((x) => x !== groupTitle) : [...o, groupTitle]));
-            return (
-              <div key={groupTitle} className="overflow-hidden rounded-[20px] bg-white" style={{ boxShadow: `0 4px 0 ${c}73, 0 10px 18px -12px ${c}` }}>
-                <button
-                  type="button"
-                  onClick={toggle}
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center gap-2.5 px-3.5 py-3 text-left text-white"
-                  style={{ background: `linear-gradient(135deg, ${c}, ${c}CC)` }}
-                >
-                  <span className="flex h-[38px] w-[38px] items-center justify-center rounded-[12px] bg-white/[0.22] text-[20px]">{icon}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15.5px] font-extrabold">{name}</span>
-                    <span className="block text-[11.5px] text-white/85">
-                      {list.length} tool{list.length === 1 ? "" : "s"}
-                    </span>
-                  </span>
-                  <span className="text-[12px]">{isOpen ? "▲" : "▼"}</span>
-                </button>
-                {!isOpen ? (
-                  <button type="button" onClick={toggle} className="flex w-full gap-1.5 px-3.5 py-2.5" aria-label={`Open ${name}`}>
-                    {list.slice(0, 6).map((t) => (
-                      <span key={t.label} className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[16px]" style={{ background: `${t.tint}24` }}>
-                        {t.icon}
-                      </span>
+      {/* 🔐 A · Grid (miglife): search, Most used, then 7 colour categories.
+          Tap a category → its tools. Same as the app (SecretGrid). */}
+      {!openTool && !openCat && (
+        <div className="space-y-4">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value.slice(0, 40))}
+            placeholder={`🔍 Search ${allTools.length} tools…`}
+            className="h-11 w-full rounded-full bg-[#F2F4F7] px-4 text-[14px] outline-none placeholder:text-[#9AA1AB] focus:ring-2 focus:ring-[#3B82F6]/40"
+          />
+          {search.trim() ? (
+            <ToolList list={found} color="#3B82F6" empty={`No tool named "${search.trim()}"`} />
+          ) : (
+            <>
+              {mostUsed.length > 0 && (
+                <div>
+                  <p className="mb-2 pl-0.5 text-[12px] font-bold uppercase tracking-wider text-[#6B7280]">Most used</p>
+                  <div className="grid grid-cols-5 gap-1">
+                    {mostUsed.map((t) => (
+                      <ToolLink key={t.label} t={t} className="flex flex-col items-center gap-1 text-center">
+                        <span className="flex h-[52px] w-[52px] items-center justify-center rounded-[16px] bg-[#F2F4F7] text-[24px]">{t.icon}</span>
+                        <span className="line-clamp-2 text-[11px] leading-tight text-[#374151]">{t.label}</span>
+                      </ToolLink>
                     ))}
-                    {list.length > 6 && (
-                      <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#F1F5FB] text-[11px] font-extrabold text-[#5B6B8C]">+{list.length - 6}</span>
-                    )}
-                  </button>
-                ) : (
-                  <div>
-                    {list.map((t, i) => {
-                      const body = (
-                        <>
-                          <span
-                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] text-[16px]"
-                            style={{ background: `linear-gradient(${t.tint}E6, ${t.tint})`, boxShadow: `0 2px 0 ${t.tint}8C` }}
-                          >
-                            {t.icon}
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[14px] font-bold text-[#1E3A6E]">{t.label}</span>
-                            <span className="block truncate text-[11.5px] text-[#5B6B8C]">{t.hint}</span>
-                          </span>
-                          <span className="text-[20px] text-[#9AA8C2]">›</span>
-                        </>
-                      );
-                      const cls = `flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left transition hover:bg-[#F6F9FD] ${i > 0 ? "border-t border-[#EEF2F7]" : ""}`;
-                      return t.href ? (
-                        <Link key={t.label} href={t.href} className={cls}>
-                          {body}
-                        </Link>
-                      ) : (
-                        <button key={t.label} type="button" onClick={() => setTool(t.key!)} className={cls}>
-                          {body}
-                        </button>
-                      );
-                    })}
                   </div>
-                )}
+                </div>
+              )}
+              <div>
+                <p className="mb-2 pl-0.5 text-[12px] font-bold uppercase tracking-wider text-[#6B7280]">Categories</p>
+                <div className="grid grid-cols-2 gap-2.5">
+                  {groups.map(([groupTitle, list]) => {
+                    const c = catColor(groupTitle);
+                    const icon = groupTitle.split(" ")[0];
+                    const name = groupTitle.slice(icon.length).trim();
+                    return (
+                      <button
+                        key={groupTitle}
+                        type="button"
+                        onClick={() => setOpenCat(groupTitle)}
+                        className="rounded-[18px] p-3.5 text-left transition active:scale-[0.98]"
+                        style={{ background: `${c}14`, border: `1px solid ${c}33` }}
+                      >
+                        <span className="flex h-10 w-10 items-center justify-center rounded-[12px] text-[20px]" style={{ background: c }}>
+                          {icon}
+                        </span>
+                        <span className="mt-2.5 block text-[15px] font-bold text-[#111]">{name}</span>
+                        <span className="block text-[12px] text-[#6B7280]">
+                          {list.length} tool{list.length === 1 ? "" : "s"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            );
-          })}
+            </>
+          )}
         </div>
       )}
+      {!openTool && openCat && <ToolList list={groups.find(([g]) => g === openCat)?.[1] || []} color={catColor(openCat)} empty="No tools here" />}
 
       {/* ID tools: the main founder (miglife) ONLY, whatever perms other founders have. */}
       {f.isMigwith && tool === "id_creation" && (
