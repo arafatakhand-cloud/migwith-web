@@ -243,11 +243,6 @@ export default function SettingsPage() {
             >
               ↪ Log out
             </button>
-            {/* 🗑 Google Play: deleting the account must be possible inside the app.
-                A small grey link under Log out — easy to find, not in the way. */}
-            <Link href="/delete-account" className="block text-center text-xs text-[#8A97A8] underline">
-              Delete account
-            </Link>
             <p className="text-center text-[11px] text-[#8A97A8]">miGlife Web</p>
           </div>
         )}
@@ -282,6 +277,10 @@ export default function SettingsPage() {
             MIGlife — chat rooms, friends, gifts and games. This is the web version; it uses the same account, rooms and coins as
             the app.
           </p>
+          {/* 🗑 Delete account: inside About, in a soft colour (like the app) */}
+          <Link href="/delete-account" className="mt-3 block text-[12px] text-[#C3CAD6] underline-offset-2 hover:underline">
+            Delete account
+          </Link>
           <div className="flex">
             <button type="button" className={primary} onClick={() => setDialog("")}>
               OK
