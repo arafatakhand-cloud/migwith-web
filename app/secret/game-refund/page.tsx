@@ -11,7 +11,7 @@ import { FounderShell, card, input } from "../_Shell";
 // Same as the app (GameRefundTool). Server: secretGameRefund.
 const gameRefund = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "secretGameRefund");
 
-type Bet = { id: string; game: string; amount: number; roomName: string; roundNumber: number; at: number; refunded: boolean; won: boolean; gameRefunded: boolean };
+type Bet = { id: string; betIds: string[]; bets: number; game: string; amount: number; roomName: string; roundNumber: number; at: number; refunded: boolean; won: boolean; gameRefunded: boolean };
 
 type StuckPlayer = { uid: string; name: string; amount: number };
 type StuckGame = { docId: string; game: string; room: string; round: number; stuckSince: number; players: StuckPlayer[] };
@@ -88,7 +88,7 @@ export default function GameRefundPage() {
     setBusy(true);
     setMsg("");
     try {
-      const { data } = await gameRefund({ action: "refund", username: user.username, betId: b.id, reason: reason.trim() });
+      const { data } = await gameRefund({ action: "refund", username: user.username, betIds: b.betIds, reason: reason.trim() });
       setMsg(`✅ ${Number(data.amount).toLocaleString()} coins refunded to @${user.username}.`);
       setReason("");
       setBets((l) => l.map((x) => (x.id === b.id ? { ...x, refunded: true } : x)));
@@ -141,7 +141,7 @@ export default function GameRefundPage() {
 
       <div className={`${card} space-y-3`}>
         <p className="text-[15px] font-bold text-[#111]">🔎 Find by ID</p>
-        <p className="text-xs text-[#5B6B8C]">Type a MIG ID to see its last game bets. Refund gives that bet&apos;s coins back. Each bet can be refunded only once, within 30 days.</p>
+        <p className="text-xs text-[#5B6B8C]">Type a MIG ID to see its last game rounds. All bets of a round are added up — Refund gives the whole round back at once. Once per round, within 30 days.</p>
         <div className="flex gap-2">
           <input className={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void load()} placeholder="MIG ID" autoCapitalize="none" autoCorrect="off" />
           <button type="button" disabled={busy || !who} onClick={() => void load()} className="shrink-0 rounded-xl bg-[#2F80ED] px-4 font-bold text-white disabled:opacity-50">
@@ -165,7 +165,7 @@ export default function GameRefundPage() {
                     {b.game} · <span className="text-[#C62828]">−{b.amount.toLocaleString()}</span>
                   </p>
                   <p className="truncate text-[11.5px] text-[#6B7280]">
-                    {[b.roomName, b.roundNumber ? `Round ${b.roundNumber}` : "", when(b.at)].filter(Boolean).join(" · ")}
+                    {[b.roomName, b.roundNumber ? `Round ${b.roundNumber}` : "", b.bets > 1 ? `${b.bets} bets` : "", when(b.at)].filter(Boolean).join(" · ")}
                   </p>
                   {(b.won || b.gameRefunded) && !b.refunded && (
                     <p className="text-[11px] font-bold text-[#B45309]">{b.won ? "⚠ Won this round" : "⚠ Game already refunded it"}</p>
@@ -191,7 +191,7 @@ export default function GameRefundPage() {
               Refund {pick.amount.toLocaleString()} coins?
             </p>
             <p className="text-sm">
-              {pick.game} bet of @{user.username}
+              {pick.game} · @{user.username}{pick.bets > 1 ? ` · ${pick.bets} bets added up` : ""}
               {pick.roundNumber ? ` · Round ${pick.roundNumber}` : ""}
             </p>
             {(pick.won || pick.gameRefunded) && (
