@@ -456,6 +456,7 @@ export default function SecretPage() {
       [
         "🎮 Games",
         [
+          { icon: "↩", label: "Game Refund", hint: "Give back a game bet (stuck or broken round)", tint: "#10B981", href: "/secret/game-refund", ok: f.isMigwith || f.can("coin_control") },
           { icon: "🎰", label: "Luxury Bet", hint: "🤖 Auto players · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
           { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
           { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
