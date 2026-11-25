@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { httpsCallable } from "firebase/functions";
 import { functions } from "../../../lib/firebase";
 import { useFounderPerms } from "../../../lib/founder";
@@ -12,6 +12,9 @@ import { FounderShell, card, input } from "../_Shell";
 const gameRefund = httpsCallable<Record<string, unknown>, Record<string, unknown>>(functions, "secretGameRefund");
 
 type Bet = { id: string; game: string; amount: number; roomName: string; roundNumber: number; at: number; refunded: boolean; won: boolean; gameRefunded: boolean };
+
+type StuckPlayer = { uid: string; name: string; amount: number };
+type StuckGame = { docId: string; game: string; room: string; round: number; stuckSince: number; players: StuckPlayer[] };
 
 const when = (ms: number) =>
   ms ? new Date(ms).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }) : "";
@@ -27,6 +30,40 @@ export default function GameRefundPage() {
   const [pick, setPick] = useState<Bet | null>(null);
   const [reason, setReason] = useState("");
   const who = q.trim().replace(/^@/, "");
+  // ⏳ stuck games: loaded on open, one tap refunds a player
+  const [stuck, setStuck] = useState<StuckGame[] | null>(null);
+  const [stuckMsg, setStuckMsg] = useState("");
+  const [paying, setPaying] = useState("");
+  const loadStuck = useCallback(async () => {
+    setStuckMsg("");
+    try {
+      const { data } = await gameRefund({ action: "stuck" });
+      setStuck((data.games as StuckGame[]) || []);
+    } catch (e) {
+      setStuck([]);
+      setStuckMsg((e as { message?: string })?.message || "Could not load.");
+    }
+  }, []);
+  useEffect(() => {
+    if (allowed) void loadStuck();
+  }, [allowed, loadStuck]);
+  const stuckRefund = async (g: StuckGame, p: StuckPlayer) => {
+    const k = `${g.docId}_${p.uid}`;
+    setPaying(k);
+    setStuckMsg("");
+    try {
+      const { data } = await gameRefund({ action: "stuckRefund", docId: g.docId, round: g.round, uid: p.uid });
+      setStuckMsg(`✅ ${Number(data.amount).toLocaleString()} coins refunded to @${p.name}${data.closed ? " · game closed" : ""}.`);
+      setStuck((l) =>
+        (l || []).map((x) => (x.docId === g.docId ? { ...x, players: x.players.filter((y) => y.uid !== p.uid) } : x)).filter((x) => x.players.length > 0)
+      );
+    } catch (e) {
+      setStuckMsg((e as { message?: string })?.message || "Could not refund.");
+      void loadStuck();
+    } finally {
+      setPaying("");
+    }
+  };
 
   const load = async (name = who) => {
     if (!name) return;
@@ -66,6 +103,44 @@ export default function GameRefundPage() {
   return (
     <FounderShell title="↩ Game Refund" allowed={allowed} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
+        <div className="flex items-center gap-2">
+          <p className="flex-1 text-[15px] font-bold text-[#111]">⏳ Stuck games</p>
+          <button type="button" onClick={() => (setStuck(null), void loadStuck())} className="rounded-full bg-[#F2F4F7] px-3 py-1 text-[12px] font-bold text-[#374151]">
+            ⟳ Refresh
+          </button>
+        </div>
+        {stuck === null && <p className="py-3 text-center text-sm text-[#9AA1AB]">Checking games…</p>}
+        {stuck && stuck.length === 0 && <p className="py-3 text-center text-sm text-[#2E7D32]">✅ No game is stuck right now.</p>}
+        {stuck?.map((g) => (
+          <div key={g.docId} className="overflow-hidden rounded-[14px] border border-[#FDE2C4]">
+            <div className="bg-[#FFF7ED] px-3 py-2">
+              <p className="text-[13.5px] font-bold text-[#9A3412]">
+                {g.game} · {g.room}
+                {g.round ? ` · Round ${g.round}` : ""}
+              </p>
+              <p className="text-[11px] text-[#B45309]">Stuck {Math.max(1, Math.round((Date.now() - g.stuckSince) / 60000))} min</p>
+            </div>
+            {g.players.map((p, i) => (
+              <div key={p.uid} className={`flex items-center gap-3 px-3 py-2.5 ${i > 0 ? "border-t border-[#F1F3F5]" : ""}`}>
+                <p className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[#111]">@{p.name}</p>
+                <p className="shrink-0 text-[14px] font-bold text-[#111]">💰 {p.amount.toLocaleString()}</p>
+                <button
+                  type="button"
+                  disabled={!!paying}
+                  onClick={() => void stuckRefund(g, p)}
+                  className="shrink-0 rounded-full bg-[#10B981] px-3.5 py-1.5 text-[12.5px] font-bold text-white disabled:opacity-50"
+                >
+                  {paying === `${g.docId}_${p.uid}` ? "…" : "↩ Refund"}
+                </button>
+              </div>
+            ))}
+          </div>
+        ))}
+        {stuckMsg && <p className="text-sm font-semibold text-[#0B2A5B]">{stuckMsg}</p>}
+      </div>
+
+      <div className={`${card} space-y-3`}>
+        <p className="text-[15px] font-bold text-[#111]">🔎 Find by ID</p>
         <p className="text-xs text-[#5B6B8C]">Type a MIG ID to see its last game bets. Refund gives that bet&apos;s coins back. Each bet can be refunded only once, within 30 days.</p>
         <div className="flex gap-2">
           <input className={input} value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void load()} placeholder="MIG ID" autoCapitalize="none" autoCorrect="off" />
