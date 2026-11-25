@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { blogAgoBn, blogCall, blogError, blogShort, type BlogPost } from "../../lib/feed";
 import { openReport } from "./ReportDialog";
+import { SongCorner, SongLine, usePostSong } from "./VoiceBits";
 
 // 🖼 Feed photos (miglife, P1 + P2):
 //  P1 · hold a photo → a sheet: Save · Download · Copy link · Share, then
@@ -158,6 +159,9 @@ export function PhotoViewer({
   const [pull, setPull] = useState(0);
   const touch = useRef<{ x: number; y: number; d: number; z: number; px: number; py: number } | null>(null);
   const lastTap = useRef(0);
+  // 🎵 the Mig's song plays while its photo is open (2026-11-25)
+  const songRef = useRef<HTMLElement | null>(null);
+  const viewSong = usePostSong(`photo_${post.id}`, post.song && !post.audio && !post.video ? post.song.url : undefined, songRef, true);
 
   useEffect(() => {
     setZoom(1);
@@ -259,6 +263,13 @@ export function PhotoViewer({
         <p>
           <b className="text-[14px]">{post.author}</b> <span className="opacity-70">· {blogAgoBn(post.createdMs)}</span>
         </p>
+        {post.song && !post.audio && !post.video && (
+          <div className="mt-1 flex items-center gap-2">
+            <SongLine title={post.song.title} className="min-w-0 !text-white" />
+            {viewSong.playing && !viewSong.muted && <span className="shrink-0 text-[11px] font-bold text-[#F9A8D4]">♪ Playing</span>}
+            <SongCorner playing={viewSong.playing} muted={viewSong.muted} inline />
+          </div>
+        )}
         {words && <p className="mt-0.5 line-clamp-2 opacity-95">{words}</p>}
         <p className="mt-1 text-[12px] opacity-70">
           {total > 0 && `${tops || "👍"} ${blogShort(total)}`}
