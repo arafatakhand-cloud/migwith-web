@@ -16,12 +16,17 @@ type Settings = { master: boolean; kinds: Record<string, Kind>; eids: { date: st
 type Hadith = { text: string; ref: string };
 type History = { md: string; year: number; title: string; text: string };
 type Amal = { title: string; text: string; ref: string };
-type Content = { hadith: Hadith[]; history: History[]; amal: Amal[] };
+type Short = { title?: string; text: string };
+type Content = { hadith: Hadith[]; history: History[]; amal: Amal[]; question: Short[]; tip: Short[]; safety: Short[] };
+type ListTab = "hadith" | "history" | "amal" | "question" | "tip" | "safety";
 
 const call = (data: Record<string, unknown>) => httpsCallable(functions, "systemPosts")(data).then((r) => r.data as any);
 const KIND_LABEL: Record<string, string> = {
   amal: "🌙 Daily amal", morning: "☀️ Good morning + Daily Missions", festival: "🇧🇩 Special days & Eid", birthday: "🎂 Birthdays",
   history: "📜 On this day in history", hadith: "🕌 Hadith", season: "🏅 Season Pass", topmigs: "🔥 Top Migs of the week", welcome: "👋 Welcome new members",
+  champions: "🏆 Yesterday's Champions", lucky: "🍀 Yesterday's Lucky Users", topgifters: "💎 Gifts of the week", levelup: "⭐ Big level-ups today",
+  anniversary: "🎂 miGlife anniversaries", roomofday: "🏠 Busiest rooms", question: "❓ Question of the day", newinshop: "🛍 New in the shop this week",
+  ramadan: "🌙 Ramadan day count", countdown: "📅 Countdown to special days", tip: "💡 miGlife tip", safety: "🛡 Stay safe reminder",
 };
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -31,13 +36,13 @@ export default function SystemPostsPage() {
   const [kinds, setKinds] = useState<string[]>([]);
   const [content, setContent] = useState<Content | null>(null);
   const [log, setLog] = useState<{ id: string; postId?: string; skipped?: boolean; error?: string }[]>([]);
-  const [tab, setTab] = useState<"kinds" | "hadith" | "history" | "amal">("kinds");
+  const [tab, setTab] = useState<"kinds" | ListTab>("kinds");
   const [preview, setPreview] = useState<{ kind: string; card: SysCard | null; note?: string } | null>(null);
   const [busy, setBusy] = useState("");
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
   const load = () =>
     call({ action: "get" })
-      .then((r) => (setS(r.settings), setKinds(r.kinds), setContent(r.content), setLog(r.log || [])))
+      .then((r) => (setS(r.settings), setKinds(r.kinds), setContent({ question: [], tip: [], safety: [], ...r.content }), setLog(r.log || [])))
       .catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
   useEffect(() => {
     if (f.isMigwith) load();
@@ -74,9 +79,9 @@ export default function SystemPostsPage() {
             ⚠️ Hadith, amal and history come only from the lists below. Please have them checked by someone who knows before turning those kinds on.
           </p>
           <div className="flex gap-1.5 overflow-x-auto">
-            {(["kinds", "hadith", "history", "amal"] as const).map((t) => (
+            {(["kinds", "hadith", "history", "amal", "question", "tip", "safety"] as const).map((t) => (
               <button key={t} type="button" onClick={() => setTab(t)} className={`${btn} shrink-0 ${tab === t ? "bg-[#0B1F3A] text-white" : "bg-[#EEF2F8] text-[#16264A]"}`}>
-                {t === "kinds" ? "Kinds & times" : t === "hadith" ? `🕌 Hadith (${content.hadith.length})` : t === "history" ? `📜 History (${content.history.length})` : `🌙 Amal (${content.amal.length})`}
+                {t === "kinds" ? "Kinds & times" : `${{ hadith: "🕌 Hadith", history: "📜 History", amal: "🌙 Amal", question: "❓ Questions", tip: "💡 Tips", safety: "🛡 Safety" }[t]} (${content[t].length})`}
               </button>
             ))}
           </div>
@@ -127,6 +132,7 @@ export default function SystemPostsPage() {
                 ))}
                 <button type="button" onClick={() => setS({ ...s, eids: [...s.eids, { date: "", name: "Eid ul-Fitr", text: "" }] })} className={`${btn} bg-[#EEF2F8] text-[#16264A]`}>+ Add a date</button>
                 <p className="text-[11px] font-semibold text-[#5B6B8C]">21 February, 26 March, Pohela Boishakh, 16 December and 1 January go out by themselves.</p>
+                <p className="text-[11px] font-semibold text-[#5B6B8C]">🌙 Ramadan: add a date named “Ramadan” = the 1st day of Ramadan → a “Ramadan · Day N” post every day for 30 days. 📅 7, 3 and 1 day(s) before every date here, a countdown post goes out.</p>
               </div>
               <button type="button" disabled={!!busy} onClick={() => run("s", async () => { const r = await call({ action: "save", settings: s }); setS(r.settings); return "✅ Saved."; })} className="w-full rounded-xl bg-[#0B1F3A] py-3 text-[14px] font-bold text-white disabled:opacity-60">
                 {busy === "s" ? "Saving…" : "Save settings"}
@@ -162,9 +168,9 @@ export default function SystemPostsPage() {
   );
 }
 
-function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind: "hadith" | "history" | "amal"; items: any[]; onChange: (x: any[]) => void; onSave: () => void; busy: boolean; input: string; btn: string }) {
+function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind: ListTab; items: any[]; onChange: (x: any[]) => void; onSave: () => void; busy: boolean; input: string; btn: string }) {
   const set = (i: number, p: Record<string, unknown>) => onChange(items.map((x, j) => (j === i ? { ...x, ...p } : x)));
-  const blank = kind === "hadith" ? { text: "", ref: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : { title: "", text: "", ref: "" };
+  const blank = kind === "hadith" ? { text: "", ref: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : kind === "question" ? { text: "" } : kind === "amal" ? { title: "", text: "", ref: "" } : { title: "", text: "" };
   const list = kind === "history" ? items.map((x, i) => [x, i] as const).sort((a, b) => String(a[0].md).localeCompare(String(b[0].md))) : items.map((x, i) => [x, i] as const);
   return (
     <div className="space-y-2">
@@ -178,10 +184,10 @@ function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind:
               <input value={x.title} placeholder="Title" onChange={(e) => set(i, { title: e.target.value })} className={input} />
             </div>
           )}
-          {kind === "amal" && <input value={x.title} placeholder="Title (e.g. Before sleeping)" onChange={(e) => set(i, { title: e.target.value })} className={input} />}
-          <textarea value={x.text} rows={2} placeholder={kind === "hadith" ? "Hadith text (English)" : "Text (English)"} onChange={(e) => set(i, { text: e.target.value })} className={input} />
+          {(kind === "amal" || kind === "tip" || kind === "safety") && <input value={x.title || ""} placeholder={kind === "amal" ? "Title (e.g. Before sleeping)" : "Title (e.g. Music Library)"} onChange={(e) => set(i, { title: e.target.value })} className={input} />}
+          <textarea value={x.text} rows={2} placeholder={kind === "hadith" ? "Hadith text (English)" : kind === "question" ? "Question (English), e.g. Tea or coffee? ☕" : "Text (English)"} onChange={(e) => set(i, { text: e.target.value })} className={input} />
           <div className="flex gap-1.5">
-            {kind !== "history" && <input value={x.ref} placeholder="Reference (e.g. Sahih al-Bukhari 1)" onChange={(e) => set(i, { ref: e.target.value })} className={input} />}
+            {(kind === "hadith" || kind === "amal") && <input value={x.ref} placeholder="Reference (e.g. Sahih al-Bukhari 1)" onChange={(e) => set(i, { ref: e.target.value })} className={input} />}
             <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className={`${btn} ml-auto bg-[#FEF2F2] text-[#DC2626]`}>Remove</button>
           </div>
         </div>
