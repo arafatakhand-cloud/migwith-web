@@ -86,7 +86,10 @@ export function SwipeToReply({
           // change rooms), a mostly-vertical move (scrolling) or a left drag is
           // left alone for the room slide / the list.
           const deliberateRight = mx > 0 && Math.abs(mx) > 2 * Math.abs(my);
-          d.sideways = deliberateRight && e.timeStamp - d.t >= 70;
+          // ✋ 2026-11-26 ("tab swipe opens reply"): reply needs a short HOLD first —
+          // the finger/mouse stays still ~0.2 s on the message, then pulls right.
+          // A swipe that starts moving straight away always slides the room tabs.
+          d.sideways = deliberateRight && e.timeStamp - d.t >= 220;
           if (d.sideways) {
             swipeReplyClaim.at = Date.now();
             e.currentTarget.setPointerCapture(e.pointerId);
