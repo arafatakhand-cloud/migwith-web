@@ -13,7 +13,7 @@ import { FounderShell, card } from "../_Shell";
 // history / amal lists. Preview or post one now. Same as the app's tool.
 type Kind = { on: boolean; time: string; days: number[] };
 type Settings = { master: boolean; kinds: Record<string, Kind>; eids: { date: string; name: string; text: string }[] };
-type Hadith = { text: string; ref: string };
+type Hadith = { text: string; ref: string; ar?: string; bn?: string };
 type History = { md: string; year: number; title: string; text: string };
 type Amal = { title: string; text: string; ref: string };
 type Short = { title?: string; text: string };
@@ -170,7 +170,7 @@ export default function SystemPostsPage() {
 
 function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind: ListTab; items: any[]; onChange: (x: any[]) => void; onSave: () => void; busy: boolean; input: string; btn: string }) {
   const set = (i: number, p: Record<string, unknown>) => onChange(items.map((x, j) => (j === i ? { ...x, ...p } : x)));
-  const blank = kind === "hadith" ? { text: "", ref: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : kind === "question" ? { text: "" } : kind === "amal" ? { title: "", text: "", ref: "" } : { title: "", text: "" };
+  const blank = kind === "hadith" ? { text: "", ref: "", ar: "", bn: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : kind === "question" ? { text: "" } : kind === "amal" ? { title: "", text: "", ref: "" } : { title: "", text: "" };
   const list = kind === "history" ? items.map((x, i) => [x, i] as const).sort((a, b) => String(a[0].md).localeCompare(String(b[0].md))) : items.map((x, i) => [x, i] as const);
   return (
     <div className="space-y-2">
@@ -185,6 +185,12 @@ function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind:
             </div>
           )}
           {(kind === "amal" || kind === "tip" || kind === "safety") && <input value={x.title || ""} placeholder={kind === "amal" ? "Title (e.g. Before sleeping)" : "Title (e.g. Music Library)"} onChange={(e) => set(i, { title: e.target.value })} className={input} />}
+          {kind === "hadith" && (
+            <>
+              <textarea dir="rtl" value={x.ar || ""} rows={2} placeholder="النص العربي (Arabic — optional, please have it checked)" onChange={(e) => set(i, { ar: e.target.value })} className={`${input} text-right text-[15px]`} />
+              <textarea value={x.bn || ""} rows={2} placeholder="বাংলা অনুবাদ" onChange={(e) => set(i, { bn: e.target.value })} className={input} />
+            </>
+          )}
           <textarea value={x.text} rows={2} placeholder={kind === "hadith" ? "Hadith text (English)" : kind === "question" ? "Question (English), e.g. Tea or coffee? ☕" : "Text (English)"} onChange={(e) => set(i, { text: e.target.value })} className={input} />
           <div className="flex gap-1.5">
             {(kind === "hadith" || kind === "amal") && <input value={x.ref} placeholder="Reference (e.g. Sahih al-Bukhari 1)" onChange={(e) => set(i, { ref: e.target.value })} className={input} />}
