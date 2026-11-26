@@ -578,7 +578,10 @@ function ColorRequestCard({ a }: { a: Alert }) {
       setLocal(res.data?.status || (approve ? "approved" : "rejected"));
     } catch (e: any) {
       const code = String(e?.code || "").replace(/^functions\//, "");
-      setError(transient(e) || !e?.message ? `Server is busy — please tap again in a moment (${code || "error"}).` : e.message);
+      // the server's own reason when it sent one (not just the bare code word)
+      const msg = String(e?.message || "").trim();
+      const real = msg && msg.toLowerCase() !== code.toLowerCase() && msg.toLowerCase() !== "internal";
+      setError(real ? msg : `Server is busy — please tap again in a moment (${code || "error"}).`);
     } finally {
       setBusy(false);
     }
