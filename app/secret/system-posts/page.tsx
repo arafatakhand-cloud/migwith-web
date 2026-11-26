@@ -17,8 +17,9 @@ type Hadith = { text: string; ref: string; ar?: string; bn?: string };
 type History = { md: string; year: number; title: string; text: string };
 type Amal = { title: string; text: string; ref: string };
 type Short = { title?: string; text: string };
-type Content = { hadith: Hadith[]; history: History[]; amal: Amal[]; question: Short[]; tip: Short[]; safety: Short[] };
-type ListTab = "hadith" | "history" | "amal" | "question" | "tip" | "safety";
+type Quote = { bn: string; text: string; by: string };
+type Content = { hadith: Hadith[]; history: History[]; amal: Amal[]; question: Short[]; tip: Short[]; safety: Short[]; quote: Quote[] };
+type ListTab = "hadith" | "history" | "amal" | "question" | "tip" | "safety" | "quote";
 
 const call = (data: Record<string, unknown>) => httpsCallable(functions, "systemPosts")(data).then((r) => r.data as any);
 const KIND_LABEL: Record<string, string> = {
@@ -27,6 +28,7 @@ const KIND_LABEL: Record<string, string> = {
   champions: "🏆 Yesterday's Champions", lucky: "🍀 Yesterday's Lucky Users", topgifters: "💎 Gifts of the week", levelup: "⭐ Big level-ups today",
   anniversary: "🎂 miGlife anniversaries", roomofday: "🏠 Busiest rooms", question: "❓ Question of the day", newinshop: "🛍 New in the shop this week",
   ramadan: "🌙 Ramadan day count", countdown: "📅 Countdown to special days", tip: "💡 miGlife tip", safety: "🛡 Stay safe reminder",
+  quote: "💬 Words of wisdom (proverbs & quotes)",
 };
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -42,7 +44,7 @@ export default function SystemPostsPage() {
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
   const load = () =>
     call({ action: "get" })
-      .then((r) => (setS(r.settings), setKinds(r.kinds), setContent({ question: [], tip: [], safety: [], ...r.content }), setLog(r.log || [])))
+      .then((r) => (setS(r.settings), setKinds(r.kinds), setContent({ question: [], tip: [], safety: [], quote: [], ...r.content }), setLog(r.log || [])))
       .catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
   useEffect(() => {
     if (f.isMigwith) load();
@@ -79,9 +81,9 @@ export default function SystemPostsPage() {
             ⚠️ Hadith, amal and history come only from the lists below. Please have them checked by someone who knows before turning those kinds on.
           </p>
           <div className="flex gap-1.5 overflow-x-auto">
-            {(["kinds", "hadith", "history", "amal", "question", "tip", "safety"] as const).map((t) => (
+            {(["kinds", "hadith", "history", "amal", "question", "tip", "safety", "quote"] as const).map((t) => (
               <button key={t} type="button" onClick={() => setTab(t)} className={`${btn} shrink-0 ${tab === t ? "bg-[#0B1F3A] text-white" : "bg-[#EEF2F8] text-[#16264A]"}`}>
-                {t === "kinds" ? "Kinds & times" : `${{ hadith: "🕌 Hadith", history: "📜 History", amal: "🌙 Amal", question: "❓ Questions", tip: "💡 Tips", safety: "🛡 Safety" }[t]} (${content[t].length})`}
+                {t === "kinds" ? "Kinds & times" : `${{ hadith: "🕌 Hadith", history: "📜 History", amal: "🌙 Amal", question: "❓ Questions", tip: "💡 Tips", safety: "🛡 Safety", quote: "💬 Quotes" }[t]} (${content[t].length})`}
               </button>
             ))}
           </div>
@@ -170,7 +172,7 @@ export default function SystemPostsPage() {
 
 function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind: ListTab; items: any[]; onChange: (x: any[]) => void; onSave: () => void; busy: boolean; input: string; btn: string }) {
   const set = (i: number, p: Record<string, unknown>) => onChange(items.map((x, j) => (j === i ? { ...x, ...p } : x)));
-  const blank = kind === "hadith" ? { text: "", ref: "", ar: "", bn: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : kind === "question" ? { text: "" } : kind === "amal" ? { title: "", text: "", ref: "" } : { title: "", text: "" };
+  const blank = kind === "hadith" ? { text: "", ref: "", ar: "", bn: "" } : kind === "history" ? { md: "", year: 0, title: "", text: "" } : kind === "question" ? { text: "" } : kind === "quote" ? { bn: "", text: "", by: "" } : kind === "amal" ? { title: "", text: "", ref: "" } : { title: "", text: "" };
   const list = kind === "history" ? items.map((x, i) => [x, i] as const).sort((a, b) => String(a[0].md).localeCompare(String(b[0].md))) : items.map((x, i) => [x, i] as const);
   return (
     <div className="space-y-2">
@@ -185,13 +187,15 @@ function ListEditor({ kind, items, onChange, onSave, busy, input, btn }: { kind:
             </div>
           )}
           {(kind === "amal" || kind === "tip" || kind === "safety") && <input value={x.title || ""} placeholder={kind === "amal" ? "Title (e.g. Before sleeping)" : "Title (e.g. Music Library)"} onChange={(e) => set(i, { title: e.target.value })} className={input} />}
+          {kind === "quote" && <textarea value={x.bn || ""} rows={2} placeholder="বাংলা প্রবাদ বা উক্তি" onChange={(e) => set(i, { bn: e.target.value })} className={input} />}
           {kind === "hadith" && (
             <>
               <textarea dir="rtl" value={x.ar || ""} rows={2} placeholder="النص العربي (Arabic — optional, please have it checked)" onChange={(e) => set(i, { ar: e.target.value })} className={`${input} text-right text-[15px]`} />
               <textarea value={x.bn || ""} rows={2} placeholder="বাংলা অনুবাদ" onChange={(e) => set(i, { bn: e.target.value })} className={input} />
             </>
           )}
-          <textarea value={x.text} rows={2} placeholder={kind === "hadith" ? "Hadith text (English)" : kind === "question" ? "Question (English), e.g. Tea or coffee? ☕" : "Text (English)"} onChange={(e) => set(i, { text: e.target.value })} className={input} />
+          <textarea value={x.text} rows={2} placeholder={kind === "hadith" ? "Hadith text (English)" : kind === "question" ? "Question (English), e.g. Tea or coffee? ☕" : kind === "quote" ? "English meaning" : "Text (English)"} onChange={(e) => set(i, { text: e.target.value })} className={input} />
+          {kind === "quote" && <input value={x.by || ""} placeholder="Who said it (empty = বাংলা প্রবাদ)" onChange={(e) => set(i, { by: e.target.value })} className={input} />}
           <div className="flex gap-1.5">
             {(kind === "hadith" || kind === "amal") && <input value={x.ref} placeholder="Reference (e.g. Sahih al-Bukhari 1)" onChange={(e) => set(i, { ref: e.target.value })} className={input} />}
             <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} className={`${btn} ml-auto bg-[#FEF2F2] text-[#DC2626]`}>Remove</button>
