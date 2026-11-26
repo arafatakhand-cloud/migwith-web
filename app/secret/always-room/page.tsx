@@ -38,7 +38,7 @@ export default function AlwaysInRoomPage() {
       .then(({ data }) => setSeats(data.seats || []))
       .catch((e) => setStatus(e?.message || "Could not load."));
   useEffect(() => {
-    if (!f.isMigwith) return;
+    if (!f.can("always_room")) return;
     void load();
     getDocs(query(collection(db, "rooms"), limit(400)))
       .then((s) => setAllRooms(s.docs.map((d) => d.id).sort((a, b) => a.localeCompare(b))))
@@ -82,7 +82,7 @@ export default function AlwaysInRoomPage() {
   const chip = (on: boolean) => `rounded-full px-3 py-1.5 text-[12.5px] font-bold ${on ? "bg-gradient-to-r from-[#14B8A6] to-[#0EA5E9] text-white" : "bg-[#F1F5F9] text-[#334155]"}`;
 
   return (
-    <FounderShell title="🪑 Always in Room" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🪑 Always in Room" allowed={f.can("always_room")} loaded={f.loaded}>
       <div className="space-y-2 rounded-2xl bg-white p-3.5">
         <p className="text-[15px] font-extrabold">➕ Seat an ID</p>
         <p className="text-[11px] font-extrabold tracking-wide text-[#64748b]">MIG ID</p>

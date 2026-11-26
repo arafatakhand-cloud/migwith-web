@@ -20,6 +20,7 @@ const oneLine = (t: string) => t.replace(/\s*\n\s*/g, ", ").replace(/["*]/g, "")
 
 export default function SingSongsPage() {
   const f = useFounderPerms();
+  const canTool = f.can("sing_songs");
   const [kinds, setKinds] = useState<string[]>(["a Bangla song"]);
   const [kind, setKind] = useState("a Bangla song");
   const [text, setText] = useState("");
@@ -46,13 +47,13 @@ export default function SingSongsPage() {
     }
   };
   useEffect(() => {
-    if (f.loaded && f.isMigwith) call({ action: "list" });
+    if (f.loaded && canTool) call({ action: "list" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.loaded, f.isMigwith]);
+  }, [f.loaded, canTool]);
 
   const clean = oneLine(text);
   return (
-    <FounderShell title="🎤 Sing Songs" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🎤 Sing Songs" allowed={canTool} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-xs text-[#5B6B8C]">Write a new song for /sing. All the old songs stay — yours are added to them, and /sing picks from all of them.</p>
         <div>

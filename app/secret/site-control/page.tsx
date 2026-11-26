@@ -23,6 +23,7 @@ type Stuck = { roomId: string; game: string };
 
 export default function SiteControlPage() {
   const f = useFounderPerms();
+  const canTool = f.can("site_control") || f.can("calls");
   const [maintenance, setMaintenance] = useState(false);
   const [callsOff, setCallsOff] = useState(false);
   const [defDay, setDefDay] = useState("0");
@@ -101,13 +102,13 @@ export default function SiteControlPage() {
     setStuck(list);
   };
   useEffect(() => {
-    if (f.isMigwith) {
+    if (canTool) {
       void loadAll();
       void loadDeploys();
       void loadLimits();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.isMigwith]);
+  }, [canTool]);
 
   const saveControl = async (patch: Record<string, unknown>, ok: string) => {
     setBusy(true);
@@ -139,7 +140,7 @@ export default function SiteControlPage() {
   };
 
   return (
-    <FounderShell title="🛠 Site control" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🛠 Site control" allowed={canTool} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="font-extrabold">🔄 Refresh everyone</p>
         <p className="text-xs text-[#5B6B8C]">Every open page reloads once. Use it after a new version is published.</p>

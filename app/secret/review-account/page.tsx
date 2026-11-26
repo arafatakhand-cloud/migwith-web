@@ -19,6 +19,7 @@ const reviewAccountAdmin = httpsCallable<{ action: string; username?: string; on
 
 export default function ReviewAccountPage() {
   const f = useFounderPerms();
+  const canTool = f.can("review_account");
   const [q, setQ] = useState("");
   const [list, setList] = useState<Acc[] | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
@@ -45,12 +46,12 @@ export default function ReviewAccountPage() {
     }
   };
   useEffect(() => {
-    if (f.loaded && f.isMigwith) call({ action: "list" });
+    if (f.loaded && canTool) call({ action: "list" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.loaded, f.isMigwith]);
+  }, [f.loaded, canTool]);
 
   return (
-    <FounderShell title="🧪 Review Account" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🧪 Review Account" allowed={canTool} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-xs text-[#5B6B8C]">
           The test ID you gave Google Play. Google can use the app normally, but nothing reaches real people: invisible in rooms (no &quot;has

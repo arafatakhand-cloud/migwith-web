@@ -75,7 +75,8 @@ const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).
 
 export default function SongsPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const canTool = f.can("profile_songs");
+  const allowed = canTool;
   const songs = useCustomSongs() as (ProfileSong & { hidden?: boolean })[];
   const [file, setFile] = useState<File | null>(null);
   const [secs, setSecs] = useState(0);
@@ -99,9 +100,9 @@ export default function SongsPage() {
       )
       .catch(() => setRequests([]));
   useEffect(() => {
-    if (f.isMigwith) void loadRequests();
+    if (canTool) void loadRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.isMigwith]);
+  }, [canTool]);
   const decide = async (r: SongRequest, action: "approve" | "reject") => {
     setReqBusy(r.id);
     setMsg(null);

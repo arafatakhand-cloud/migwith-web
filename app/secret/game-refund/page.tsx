@@ -21,7 +21,7 @@ const when = (ms: number) =>
 
 export default function GameRefundPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith || f.can("coin_control");
+  const allowed = f.can("coin_control") || f.can("game_refund");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");

@@ -43,7 +43,7 @@ function durationOf(file: File): Promise<number> {
 
 export default function StorySongsPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("profile_songs");
   const [file, setFile] = useState<File | null>(null);
   const [secs, setSecs] = useState(0);
   const [title, setTitle] = useState("");

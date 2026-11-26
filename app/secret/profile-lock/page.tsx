@@ -33,7 +33,7 @@ export default function ProfileLockPage() {
     setBusy(false);
   };
   return (
-    <FounderShell title="🔒 Profile Lock" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🔒 Profile Lock" allowed={f.can("profile_lock")} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-[13px] text-[#45557A]">Stop people from changing parts of their profile. Staff can still change them.</p>
         <div className="flex items-center gap-3">

@@ -19,7 +19,7 @@ const setFeedVideo = httpsCallable<{ enabled: boolean }, { ok: boolean; videoEna
 
 export default function FeedVideoPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("feed_video");
   const [on, setOn] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);

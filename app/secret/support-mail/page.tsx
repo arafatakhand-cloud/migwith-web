@@ -27,7 +27,7 @@ const ROLES: [string, string][] = [
 
 export default function SupportMailPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("support_mail");
   const [target, setTarget] = useState<"user" | "role">("role");
   const [role, setRole] = useState("staff");
   const [username, setUsername] = useState("");

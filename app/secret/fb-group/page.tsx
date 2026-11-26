@@ -14,6 +14,7 @@ const setFbGroup = httpsCallable<Partial<Cfg>, Cfg & { ok: boolean }>(functions,
 
 export default function FbGroupPage() {
   const f = useFounderPerms();
+  const canTool = f.can("fb_group");
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
@@ -35,12 +36,12 @@ export default function FbGroupPage() {
     }
   };
   useEffect(() => {
-    if (f.loaded && f.isMigwith) save({});
+    if (f.loaded && canTool) save({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.loaded, f.isMigwith]);
+  }, [f.loaded, canTool]);
 
   return (
-    <FounderShell title="📘 Facebook Group" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="📘 Facebook Group" allowed={canTool} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-xs text-[#5B6B8C]">
           After logging in, everyone sees a card asking them to join the miGlife Facebook group (until they tick &quot;Don&apos;t show again&quot;).

@@ -14,7 +14,7 @@ const when = (ms: number) => (ms ? new Date(ms).toLocaleString("en-GB", { day: "
 
 export default function EmailCheckPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("email_check");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");

@@ -21,7 +21,7 @@ const BADGE: Record<Bot["status"], [string, string, string]> = {
 
 export default function BotRestartPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith || f.can("coin_control");
+  const allowed = f.can("coin_control") || f.can("bot_restart");
   const [bots, setBots] = useState<Bot[] | null>(null);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState("");

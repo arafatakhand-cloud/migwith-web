@@ -415,17 +415,17 @@ export default function SecretPage() {
         "👥 IDs & Accounts",
         [
           { icon: "👑", label: "Founders", hint: "Add / remove founders & their tools", tint: "#E0A82E", href: "/secret/founders", ok: f.isMigwith },
-          { icon: "⚡", label: "Quick Create ID", hint: "Type only the ID name → Create", tint: "#F59E0B", key: "quick_id", ok: f.isMigwith },
-          { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.isMigwith },
-          { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.isMigwith },
-          { icon: "🧪", label: "Review Account", hint: "Google Play's test ID — nothing reaches real people", tint: "#0F766E", href: "/secret/review-account", ok: f.isMigwith },
+          { icon: "⚡", label: "Quick Create ID", hint: "Type only the ID name → Create", tint: "#F59E0B", key: "quick_id", ok: f.can("quick_id") },
+          { icon: "👑", label: "Founder Create ID", hint: "Create a MIG ID yourself", tint: "#D4A017", key: "create_id", ok: f.can("create_id") },
+          { icon: "🆔", label: "Other Users ID Creation", hint: "Let normal users create IDs (ON/OFF)", tint: "#E53935", key: "id_creation", ok: f.can("id_creation") },
+          { icon: "🧪", label: "Review Account", hint: "Google Play's test ID — nothing reaches real people", tint: "#0F766E", href: "/secret/review-account", ok: f.can("review_account") },
           { icon: "✉", label: "Change Email", hint: "Change an ID's email", tint: "#2E86DE", href: "/secret/email", ok: f.can("change_email") },
-          { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.isMigwith },
-          { icon: "📧", label: "Email Check", hint: "MIG ID → its email · email → its IDs", tint: "#2F80ED", href: "/secret/email-check", ok: f.isMigwith },
-          { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.isMigwith },
+          { icon: "🔐", label: "Security Question Reset", hint: "Remove an ID's security question", tint: "#6A4BD8", key: "security", ok: f.can("security_reset") },
+          { icon: "📧", label: "Email Check", hint: "MIG ID → its email · email → its IDs", tint: "#2F80ED", href: "/secret/email-check", ok: f.can("email_check") },
+          { icon: "🔒", label: "Private Emails", hint: "Hide everyone's email & push token (one-time move)", tint: "#37474F", key: "privacy", ok: f.can("privacy") },
           { icon: "⛔", label: "Suspend ID", hint: "Stop an ID from logging in · or bring it back", tint: "#C62828", href: "/secret/suspend", ok: f.isMigwith || f.can("ip_monitor") },
-          { icon: "🗑", label: "Delete Account", hint: "For a “Delete my account” email · deleted after 7 days", tint: "#E53935", key: "delete_account", ok: f.isMigwith },
-          { icon: "✔", label: "Verified", hint: "Give or remove the ✔ tick by MIG ID", tint: "#1D9BF0", href: "/secret/verified", ok: f.isMigwith },
+          { icon: "🗑", label: "Delete Account", hint: "For a “Delete my account” email · deleted after 7 days", tint: "#E53935", key: "delete_account", ok: f.can("delete_account") },
+          { icon: "✔", label: "Verified", hint: "Give or remove the ✔ tick by MIG ID", tint: "#1D9BF0", href: "/secret/verified", ok: f.can("verified") },
         ],
       ],
       [
@@ -433,72 +433,72 @@ export default function SecretPage() {
         [
           { icon: "🌐", label: "IP Monitor / IP Ban", hint: "See IPs, ban an IP", tint: "#546E7A", href: "/secret/ip", ok: f.can("ip_monitor") },
           { icon: "🚩", label: "Reports", hint: "What users reported · handle within 24h", tint: "#D93025", href: "/secret/reports", ok: f.can("reports") },
-          { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.isMigwith },
-          { icon: "🔒", label: "Profile Lock", hint: "Lock country changes (on / off)", tint: "#0B1F3A", href: "/secret/profile-lock", ok: f.isMigwith },
-          { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.isMigwith },
+          { icon: "⚠️", label: "Warnings", hint: "Warn a member for a rule breach", tint: "#B45309", href: "/secret/warnings", ok: f.can("warnings") },
+          { icon: "🔒", label: "Profile Lock", hint: "Lock country changes (on / off)", tint: "#0B1F3A", href: "/secret/profile-lock", ok: f.can("profile_lock") },
+          { icon: "🔒", label: "Public Profiles", hint: "Copy profiles without balance (run once)", tint: "#0B1F3A", href: "/secret/profiles", ok: f.can("public_profiles") },
           { icon: "🔐", label: "Share Permissions", hint: "Who can share pictures / voice / video", tint: "#00897B", href: "/secret/share", ok: f.can("share_permissions") },
-          { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.isMigwith },
+          { icon: "⏱", label: "Watchdog Speed", hint: "Game backup timer: 1, 5 or 10 min", tint: "#0E7490", key: "watchdog_speed", ok: f.can("watchdog_speed") },
         ],
       ],
       [
         "💰 Coins & Shop",
         [
           { icon: "💰", label: "Coin Control", hint: "Add or remove coins", tint: "#2E7D32", href: "/secret/coins", ok: f.can("coin_control") },
-          { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.isMigwith },
+          { icon: "🎚", label: "Transfer Limits", hint: "Daily limit per role · Merchant accept", tint: "#00897B", key: "transfer_limits", ok: f.can("transfer_limits") },
           { icon: "🎁", label: "Gift Gallery", hint: "Add / edit / delete gifts", tint: "#E91E63", href: "/gifts", ok: f.can("gift_shop") },
           { icon: "💭", label: "FeelMig", hint: "Add / edit / delete feelings", tint: "#2563EB", href: "/feels", ok: f.can("gift_shop") },
           { icon: "🔊", label: "Manage Sounds", hint: "SoundMig: upload, price, delete", tint: "#059669", href: "/soundmig", ok: f.can("gift_shop") },
-          { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.isMigwith },
-          { icon: "🔁", label: "Mentor Renewals", hint: "Mentors' renew requests — renew or decline", tint: "#1E63D6", href: "/secret/mentor-renewals", ok: f.isMigwith },
-          { icon: "🍀", label: "Lucky User", hint: "Random-time lottery · rooms, prize, fairness", tint: "#14B88F", href: "/secret/lucky", ok: f.isMigwith },
+          { icon: "👑", label: "VIP Subscription", hint: "Approve payments · ON/OFF · rate", tint: "#AB47BC", key: "vip", ok: f.can("vip") },
+          { icon: "🔁", label: "Mentor Renewals", hint: "Mentors' renew requests — renew or decline", tint: "#1E63D6", href: "/secret/mentor-renewals", ok: f.can("mentor_renewals") },
+          { icon: "🍀", label: "Lucky User", hint: "Random-time lottery · rooms, prize, fairness", tint: "#14B88F", href: "/secret/lucky", ok: f.can("lucky_user") },
         ],
       ],
       [
         "🎮 Games",
         [
-          { icon: "↩", label: "Game Refund", hint: "Give back a game bet (stuck or broken round)", tint: "#10B981", href: "/secret/game-refund", ok: f.isMigwith || f.can("coin_control") },
-          { icon: "🔄", label: "Bot Restart", hint: "A stuck game bot → refund everyone, ready again", tint: "#3B82F6", href: "/secret/bot-restart", ok: f.isMigwith || f.can("coin_control") },
-          { icon: "🎰", label: "Luxury Bet", hint: "🤖 Auto players · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.isMigwith },
-          { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.isMigwith },
+          { icon: "↩", label: "Game Refund", hint: "Give back a game bet (stuck or broken round)", tint: "#10B981", href: "/secret/game-refund", ok: f.can("coin_control") || f.can("game_refund") },
+          { icon: "🔄", label: "Bot Restart", hint: "A stuck game bot → refund everyone, ready again", tint: "#3B82F6", href: "/secret/bot-restart", ok: f.can("coin_control") || f.can("bot_restart") },
+          { icon: "🎰", label: "Luxury Bet", hint: "🤖 Auto players · Level · Schedule", tint: "#8E24AA", key: "luxury_bet", ok: f.can("luxury_bet") },
+          { icon: "🔍", label: "Payout Check", hint: "Luxury Bet wins re-checked · big wins · top winners", tint: "#D4AF37", key: "lb_audit", ok: f.can("lb_audit") },
           { icon: "🎮", label: "Game Contest", hint: "Start, stop and reset game contests", tint: "#2F6FD6", href: "/ludo-contest", ok: f.can("game_contest") },
           { icon: "🎁", label: "Gift Contest", hint: "Prize, rules, room and time", tint: "#E12A2A", href: "/gift-contest", ok: f.can("gift_contest") },
-          { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.isMigwith },
-          { icon: "🃏", label: "LowCard Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#7C3AED", key: "lowcard_winfx", ok: f.isMigwith },
-          { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.isMigwith },
-          { icon: "🎲", label: "House Bots", hint: "Rafi• Nila•… keep LowCard & Cricket playing", tint: "#0F9D58", href: "/secret/house-bots", ok: f.isMigwith },
+          { icon: "🎆", label: "Cricket Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#FF6F00", key: "cricket_winfx", ok: f.can("win_effects") },
+          { icon: "🃏", label: "LowCard Win Effect", hint: "Fireworks ON / OFF for each room", tint: "#7C3AED", key: "lowcard_winfx", ok: f.can("win_effects") },
+          { icon: "🏆", label: "Daily Game Rewards", hint: "Luxury Top 10 · LowCard & Cricket Top 3 · paid at 12 am", tint: "#D4AF37", key: "daily_rewards", ok: f.can("daily_rewards") },
+          { icon: "🎲", label: "House Bots", hint: "Rafi• Nila•… keep LowCard & Cricket playing", tint: "#0F9D58", href: "/secret/house-bots", ok: f.can("house_bots") },
         ],
       ],
       [
         "🏠 Rooms & Calls",
         [
-          { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.isMigwith },
+          { icon: "🪑", label: "Always in Room", hint: "Keep any ID in rooms + Online, without logging in", tint: "#0EA5E9", href: "/secret/always-room", ok: f.can("always_room") },
           { icon: "ℹ", label: "Room Info", hint: "Room details & settings", tint: "#3949AB", href: "/secret/rooms", ok: f.can("room_info") },
           { icon: "🏠", label: "Rooms by ID", hint: "Type a MIG ID → every room it created", tint: "#0D9488", href: "/secret/rooms-by-id", ok: f.can("room_info") },
-          { icon: "📞", label: "Audio Calls", hint: "Calls ON / OFF for everyone", tint: "#1D4ED8", href: "/secret/site-control#calls", ok: f.isMigwith },
-          { icon: "⏱", label: "Call Limits", hint: "Minutes a day / a month, per member", tint: "#0E7490", href: "/secret/site-control#call-limits", ok: f.isMigwith },
+          { icon: "📞", label: "Audio Calls", hint: "Calls ON / OFF for everyone", tint: "#1D4ED8", href: "/secret/site-control#calls", ok: f.can("calls") },
+          { icon: "⏱", label: "Call Limits", hint: "Minutes a day / a month, per member", tint: "#0E7490", href: "/secret/site-control#call-limits", ok: f.can("calls") },
         ],
       ],
       [
         "📣 Feed & Content",
         [
-          { icon: "⚙️", label: "System posts", hint: "miGlife's own Migs: missions, birthdays, hadith…", tint: "#6366F1", href: "/secret/system-posts", ok: f.isMigwith },
-          { icon: "🎬", label: "Feed Video", hint: "Video posts ON / OFF", tint: "#6366F1", href: "/secret/video", ok: f.isMigwith },
-          { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.isMigwith },
-          { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.isMigwith },
-          { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.isMigwith },
-          { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.isMigwith },
-          { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.isMigwith },
+          { icon: "⚙️", label: "System posts", hint: "miGlife's own Migs: missions, birthdays, hadith…", tint: "#6366F1", href: "/secret/system-posts", ok: f.can("system_posts") },
+          { icon: "🎬", label: "Feed Video", hint: "Video posts ON / OFF", tint: "#6366F1", href: "/secret/video", ok: f.can("feed_video") },
+          { icon: "🎤", label: "Profile Songs", hint: "Upload any song (up to 5 min) for the shop", tint: "#8B4DFF", href: "/secret/songs", ok: f.can("profile_songs") },
+          { icon: "🎤", label: "Sing Songs", hint: "Add new songs for /sing (old ones stay)", tint: "#7C3AED", href: "/secret/sing-lines", ok: f.can("sing_songs") },
+          { icon: "📣", label: "Push Notifications", hint: "Notify everyone · now, once or every day", tint: "#F57C00", href: "/secret/push", ok: f.can("push") },
+          { icon: "📘", label: "Facebook Group", hint: "Join-the-group popup after login · link", tint: "#1877F2", href: "/secret/fb-group", ok: f.can("fb_group") },
+          { icon: "📣", label: "Support Mail", hint: "Mail one member or a whole role", tint: "#174EA6", href: "/secret/support-mail", ok: f.can("support_mail") },
         ],
       ],
       [
         "⚙️ App & Rewards",
         [
-          { icon: "🛠", label: "Site control", hint: "Refresh everyone, maintenance, stuck games", tint: "#16264A", href: "/secret/site-control", ok: f.isMigwith },
-          { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.isMigwith },
-          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.isMigwith },
-          { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.isMigwith },
-          { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.isMigwith },
-          { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.isMigwith },
+          { icon: "🛠", label: "Site control", hint: "Refresh everyone, maintenance, stuck games", tint: "#16264A", href: "/secret/site-control", ok: f.can("site_control") },
+          { icon: "📲", label: "App Download Link", hint: "Android app download link", tint: "#1E88E5", key: "app_link", ok: f.can("app_link") },
+          { icon: "⭐", label: "Level Curve", hint: "New level curve (after Lv.50)", tint: "#F2B705", key: "level", ok: f.can("level_curve") },
+          { icon: "🎟", label: "Season Pass", hint: "Start a season, Gold price, rewards", tint: "#EA580C", href: "/secret/season", ok: f.can("season_pass") },
+          { icon: "🎯", label: "Daily Missions", hint: "Missions, targets, Season Points", tint: "#2563EB", href: "/secret/missions", ok: f.can("daily_missions") },
+          { icon: "🏅", label: "Achievements & Badges", hint: "Recount badges · event badges", tint: "#FF8F00", key: "achievements", ok: f.can("achievements") },
         ],
       ],
     ] as [string, Tool[]][]
@@ -620,7 +620,7 @@ export default function SecretPage() {
       {!openTool && openCat && <ToolList list={groups.find(([g]) => g === openCat)?.[1] || []} color={catColor(openCat)} empty="No tools here" />}
 
       {/* ID tools: the main founder (miglife) ONLY, whatever perms other founders have. */}
-      {f.isMigwith && tool === "id_creation" && (
+      {f.can("id_creation") && tool === "id_creation" && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-white p-4">
           <p className="text-[17px] font-bold">🔴 Other Users ID Creation</p>
           <p className="mt-1 text-xs text-gray-500">{idOn ? "ENABLE — normal users can create IDs." : "OFF — normal users cannot create IDs."}</p>
@@ -646,7 +646,7 @@ export default function SecretPage() {
         </div>
       )}
 
-      {f.isMigwith && tool === "create_id" && (
+      {f.can("create_id") && tool === "create_id" && (
         <div className="rounded-[18px] border border-[#E0A82E] bg-[#11101A] p-4">
           <p className="text-lg font-extrabold text-[#FFD35A]">👑 FOUNDER CREATE ID</p>
           <p className="mt-1 text-xs text-[#D0D5E0]">FOUNDER mode uses the same MIG ID rule: minimum 3 characters and at least 1 English letter.</p>
@@ -657,22 +657,22 @@ export default function SecretPage() {
       )}
 
       {/* miglife only, like the app: new level curve, Security Question Reset, 🎰 Luxury Bet. */}
-      {f.isMigwith && tool === "quick_id" && <QuickCreateIdCard />}
-      {f.isMigwith && tool === "achievements" && <FounderAchievementsCard />}
-      {f.isMigwith && tool === "vip" && <FounderSpecialColorCard />}
-      {f.isMigwith && tool === "app_link" && <AppDownloadLinkCard />}
-      {f.isMigwith && tool === "level" && <LevelCurveCard />}
-      {f.isMigwith && tool === "cricket_winfx" && <CricketWinFxCard />}
-      {f.isMigwith && tool === "lowcard_winfx" && <CricketWinFxCard key="lowcard" field="lowcardRooms" game="LowCard" icon="🃏" />}
-      {f.isMigwith && tool === "security" && <SecurityQuestionResetCard />}
-      {f.isMigwith && tool === "privacy" && <PrivateEmailsCard />}
-      {f.isMigwith && tool === "luxury_bet" && <LuxuryAutoPlayersCard />}
-      {f.isMigwith && tool === "luxury_bet" && <LuxuryBetControlCard />}
-      {f.isMigwith && tool === "lb_audit" && <LuxuryBetAuditCard />}
-      {f.isMigwith && tool === "daily_rewards" && <DailyGameRewardsCard />}
-      {f.isMigwith && tool === "transfer_limits" && <TransferLimitsCard />}
-      {f.isMigwith && tool === "watchdog_speed" && <WatchdogSpeedCard />}
-      {f.isMigwith && tool === "delete_account" && <AccountDeleteCard />}
+      {f.can("quick_id") && tool === "quick_id" && <QuickCreateIdCard />}
+      {f.can("achievements") && tool === "achievements" && <FounderAchievementsCard />}
+      {f.can("vip") && tool === "vip" && <FounderSpecialColorCard />}
+      {f.can("app_link") && tool === "app_link" && <AppDownloadLinkCard />}
+      {f.can("level_curve") && tool === "level" && <LevelCurveCard />}
+      {f.can("win_effects") && tool === "cricket_winfx" && <CricketWinFxCard />}
+      {f.can("win_effects") && tool === "lowcard_winfx" && <CricketWinFxCard key="lowcard" field="lowcardRooms" game="LowCard" icon="🃏" />}
+      {f.can("security_reset") && tool === "security" && <SecurityQuestionResetCard />}
+      {f.can("privacy") && tool === "privacy" && <PrivateEmailsCard />}
+      {f.can("luxury_bet") && tool === "luxury_bet" && <LuxuryAutoPlayersCard />}
+      {f.can("luxury_bet") && tool === "luxury_bet" && <LuxuryBetControlCard />}
+      {f.can("lb_audit") && tool === "lb_audit" && <LuxuryBetAuditCard />}
+      {f.can("daily_rewards") && tool === "daily_rewards" && <DailyGameRewardsCard />}
+      {f.can("transfer_limits") && tool === "transfer_limits" && <TransferLimitsCard />}
+      {f.can("watchdog_speed") && tool === "watchdog_speed" && <WatchdogSpeedCard />}
+      {f.can("delete_account") && tool === "delete_account" && <AccountDeleteCard />}
 
       {status && <p className="text-xs font-bold text-[#B3261E]">{status}</p>}
 

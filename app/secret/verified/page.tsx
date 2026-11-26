@@ -17,7 +17,7 @@ const syncAutoVerifiedAll = httpsCallable<Record<string, never>, { ok: boolean; 
 
 export default function VerifiedPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("verified");
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);

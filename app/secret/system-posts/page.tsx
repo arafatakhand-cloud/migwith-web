@@ -34,6 +34,7 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function SystemPostsPage() {
   const f = useFounderPerms();
+  const canTool = f.can("system_posts");
   const [s, setS] = useState<Settings | null>(null);
   const [kinds, setKinds] = useState<string[]>([]);
   const [content, setContent] = useState<Content | null>(null);
@@ -47,8 +48,8 @@ export default function SystemPostsPage() {
       .then((r) => (setS(r.settings), setKinds(r.kinds), setContent({ question: [], tip: [], safety: [], quote: [], ...r.content }), setLog(r.log || [])))
       .catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
   useEffect(() => {
-    if (f.isMigwith) load();
-  }, [f.isMigwith]);
+    if (canTool) load();
+  }, [canTool]);
   const run = async (label: string, fn: () => Promise<string>) => {
     setBusy(label);
     setMsg(null);
@@ -63,7 +64,7 @@ export default function SystemPostsPage() {
   const input = "w-full rounded-lg border border-[#D4DDEB] bg-white px-2 py-1.5 text-[13px] text-[#16264A] outline-none";
   const btn = "rounded-lg px-3 py-1.5 text-[12px] font-bold disabled:opacity-50";
   return (
-    <FounderShell title="⚙️ System posts" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="⚙️ System posts" allowed={canTool} loaded={f.loaded}>
       {!s || !content ? (
         <p className="p-3 text-sm text-[#5B6B8C]">{msg?.text || "Loading…"}</p>
       ) : (

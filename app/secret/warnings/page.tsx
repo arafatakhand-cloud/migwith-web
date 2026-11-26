@@ -20,7 +20,7 @@ const listWarnings = httpsCallable<{ username?: string }, { warnings: Row[]; rea
 
 export default function WarningsPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("warnings");
   const [username, setUsername] = useState("");
   const [reason, setReason] = useState("harassment");
   const [note, setNote] = useState("");

@@ -9,6 +9,7 @@ import { FounderShell, card } from "../_Shell";
 // SP per level, and each level's FREE / GOLD reward. Same as the app's tool.
 export default function SeasonAdminPage() {
   const f = useFounderPerms();
+  const canTool = f.can("season_pass");
   const [d, setD] = useState<SeasonData | null>(null);
   const [name, setName] = useState("");
   const [days, setDays] = useState(30);
@@ -29,8 +30,8 @@ export default function SeasonAdminPage() {
       })
       .catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
   useEffect(() => {
-    if (f.isMigwith) load();
-  }, [f.isMigwith]);
+    if (canTool) load();
+  }, [canTool]);
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true);
     setMsg(null);
@@ -80,7 +81,7 @@ export default function SeasonAdminPage() {
   );
   const s = d?.season;
   return (
-    <FounderShell title="🎟 Season Pass" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🎟 Season Pass" allowed={canTool} loaded={f.loaded}>
       {!s ? (
         <p className="p-3 text-sm text-[#5B6B8C]">{msg?.text || "Loading…"}</p>
       ) : (

@@ -30,6 +30,7 @@ function Switch({ on, onChange, disabled }: { on: boolean; onChange: (v: boolean
 
 export default function HouseBotsPage() {
   const f = useFounderPerms();
+  const canTool = f.can("house_bots");
   const [cfg, setCfg] = useState<Cfg | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
@@ -49,9 +50,9 @@ export default function HouseBotsPage() {
     }
   };
   useEffect(() => {
-    if (f.loaded && f.isMigwith) save({});
+    if (f.loaded && canTool) save({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [f.loaded, f.isMigwith]);
+  }, [f.loaded, canTool]);
 
   const chip = (label: string, sel: boolean, onClick: () => void) => (
     <button
@@ -66,7 +67,7 @@ export default function HouseBotsPage() {
   );
 
   return (
-    <FounderShell title="🎲 House Bots" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🎲 House Bots" allowed={canTool} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-xs text-[#5B6B8C]">
           Rafi• Nila• Sakib• Riya• Tanvir• keep LowCard and Cricket playing all the time. The house pays their entries; they never get XP,

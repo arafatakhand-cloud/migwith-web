@@ -27,7 +27,7 @@ export default function PublicProfilesPage() {
     setBusy(false);
   };
   return (
-    <FounderShell title="🔒 Public Profiles" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🔒 Public Profiles" allowed={f.can("public_profiles")} loaded={f.loaded}>
       <div className={`${card} space-y-3`}>
         <p className="text-[13px] text-[#45557A]">
           Everyone now sees other people&apos;s profiles from a public copy without the coin balance and private data. Press this once after

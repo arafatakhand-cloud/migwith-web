@@ -9,12 +9,13 @@ import { FounderShell, card } from "../_Shell";
 // Points and on/off, and the "all done" bonus. Same as the app's tool.
 export default function MissionsAdminPage() {
   const f = useFounderPerms();
+  const canTool = f.can("daily_missions");
   const [c, setC] = useState<MissionConfig | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; error: boolean } | null>(null);
   useEffect(() => {
-    if (f.isMigwith) loadMissionConfig().then(setC).catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
-  }, [f.isMigwith]);
+    if (canTool) loadMissionConfig().then(setC).catch((e) => setMsg({ text: e?.message || "Could not load.", error: true }));
+  }, [canTool]);
   const set = (i: number, p: Partial<MissionConfig["missions"][number]>) => setC((o) => (o ? { ...o, missions: o.missions.map((m, j) => (j === i ? { ...m, ...p } : m)) } : o));
   const save = async () => {
     if (!c) return;
@@ -30,7 +31,7 @@ export default function MissionsAdminPage() {
   };
   const input = "w-full rounded-lg border border-[#D4DDEB] bg-white px-2 py-1.5 text-[13px] text-[#16264A] outline-none";
   return (
-    <FounderShell title="🎯 Daily Missions" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🎯 Daily Missions" allowed={canTool} loaded={f.loaded}>
       {!c ? (
         <p className="p-3 text-sm text-[#5B6B8C]">{msg?.text || "Loading…"}</p>
       ) : (

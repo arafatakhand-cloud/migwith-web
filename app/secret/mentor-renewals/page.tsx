@@ -17,7 +17,7 @@ const STATUS: Record<string, [string, string, string]> = {
 
 export default function MentorRenewalsPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("mentor_renewals");
   const [rows, setRows] = useState<RenewRequest[] | null>(null);
   const load = () => loadRenewRequests(true).then(setRows);
   useEffect(() => {

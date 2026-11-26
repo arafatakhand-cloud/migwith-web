@@ -42,7 +42,7 @@ function dhakaLocalToMs(v: string): number {
 
 export default function PushPage() {
   const f = useFounderPerms();
-  const allowed = f.isMigwith;
+  const allowed = f.can("push");
   const [list, setList] = useState<Campaign[] | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");

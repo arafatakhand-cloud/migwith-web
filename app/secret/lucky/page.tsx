@@ -33,7 +33,7 @@ export default function LuckyUserSecretPage() {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    if (!f.isMigwith) return;
+    if (!f.can("lucky_user")) return;
     call({ action: "get" })
       .then(({ data }) => {
         if (data.settings) setS({ ...DEFAULTS, ...data.settings });
@@ -90,7 +90,7 @@ export default function LuckyUserSecretPage() {
   );
 
   return (
-    <FounderShell title="🍀 Lucky User" allowed={f.isMigwith} loaded={f.loaded}>
+    <FounderShell title="🍀 Lucky User" allowed={f.can("lucky_user")} loaded={f.loaded}>
       <p className="px-1 text-xs text-[#475569]">
         A lottery among the chatters picks the Lucky User at a random time (nobody knows when). Pink ID until the next Lucky User. Users never see how the points are counted.
       </p>
