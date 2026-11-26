@@ -32,7 +32,9 @@ export const OFFICIAL_GAME_ROOMS = [
 export const ROOM_PRESENCE_STALE_MS = 185 * 60 * 1000;
 
 // How often the app refreshes presence.lastSeen while in a room.
-export const PRESENCE_HEARTBEAT_MS = 20_000;
+// 💰 (2026-11-26) every 2 min (a spot goes stale only after 3 h): each beat was a
+// write, a server trigger and a read for everyone in the room
+export const PRESENCE_HEARTBEAT_MS = 120_000;
 
 const LEVEL_BADGES: [number, number | null, string, string][] = [
   [1, 10, "🥚", "Newcomer"], [11, 19, "🥈", "Silver"], [20, 29, "🥇", "Gold"], [30, 49, "💎", "Diamond"],

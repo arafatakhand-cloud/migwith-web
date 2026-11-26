@@ -37,7 +37,7 @@ export function useOnlineHeartbeat(uid: string | undefined) {
       },
       () => {}
     );
-    timer = setInterval(beat, 30_000);
+    timer = setInterval(beat, 40_000); // 💰 40 s (online = within 90 s)
     const onVisible = () => {
       if (document.visibilityState === "visible") beat();
     };
