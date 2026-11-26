@@ -182,7 +182,9 @@ export function useLuxuryBet(
     const t = setInterval(() => {
       const n = serverNow();
       setNow(n);
-      const due = running && ((phase === "BETTING" && n >= phaseEndsAt + 500) || phase === "SETTLING");
+      // 🖥 (2026-11-26) the VPS closes every round on time; the page asks only as a
+      // backup: 4 s after betting ended, or 8 s into settling
+      const due = running && ((phase === "BETTING" && n >= phaseEndsAt + 4000) || (phase === "SETTLING" && n >= phaseEndsAt + 8000));
       if (due && n - lastTick.current > 4000) {
         lastTick.current = n;
         tickCall().catch(() => {});
