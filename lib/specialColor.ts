@@ -45,6 +45,7 @@ export const SPECIAL_COLOR_STYLE_NAMES = [
   "🔥 Fire & Ice",
   "✨ Gold Sparkle",
   "🎂 Birthday",
+  "🇧🇩 Bangladesh",
 ];
 /** 🎂 The birthday colour (style 6): on for the whole birthday (24 hours). */
 export const BIRTHDAY_STYLE = 6;
@@ -110,15 +111,21 @@ export function birthdayToday(h: Holders, name?: string | null): boolean {
   return !!n && h.bday.has(n) && h.bdayDate === todayKey();
 }
 
-/** A coloured name: VIP / miglife, or the birthday colour for the day. */
+/** 🇧🇩 2026-11-26: the "bangladesh" ID's name always moves in the flag's green ↔ red
+ *  (style 7, like miglife's rainbow). Only the colour — no VIP perks come with it. */
+export const BANGLADESH_NAMES = new Set(["bangladesh"]);
+export const BANGLADESH_STYLE = 7;
+
+/** A coloured name: VIP / miglife, the "bangladesh" ID, or the birthday colour for the day. */
 export function specialColorHas(h: Holders, name?: string | null): boolean {
-  return specialColorPaid(h, name) || birthdayToday(h, name);
+  return specialColorPaid(h, name) || birthdayToday(h, name) || BANGLADESH_NAMES.has(key(name));
 }
 
 /** 0 = miglife's original rainbow, 1-5 = the buyer's own animation, 6 = 🎂 birthday. */
 export function specialColorStyle(h: Holders, name?: string | null): number {
   const n = key(name);
   if (isMainFounderName(n)) return 0;
+  if (BANGLADESH_NAMES.has(n)) return BANGLADESH_STYLE;
   if (!specialColorPaid(h, n) && birthdayToday(h, n)) return BIRTHDAY_STYLE;
   return h.style.get(n) ?? 1;
 }
