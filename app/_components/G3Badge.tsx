@@ -37,7 +37,8 @@ const ROLE_NAME: Record<string, string> = { A: "Administrator", S: "Staff", MT: 
 
 function Ring({ size, title, glow, children }: { size: string; title?: string; glow?: string; children: React.ReactNode }) {
   return (
-    <span className="g3-badge" style={{ ["--g3" as string]: size, ...(glow ? { ["--g3glow" as string]: glow } : {}) }} title={title}>
+    // data-nodark: the Dark safety net must not paint the silver ring / white coin black
+    <span className="g3-badge" data-nodark style={{ ["--g3" as string]: size, ...(glow ? { ["--g3glow" as string]: glow } : {}) }} title={title}>
       <span className="g3-in">{children}</span>
       <i className="g3-shine" />
     </span>

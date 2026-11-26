@@ -136,7 +136,20 @@ export default function SeasonPage() {
                   <span className="flex h-[68px] items-center justify-center text-[#5B6B8C]">FREE</span>
                   <span className="flex h-[68px] items-center justify-center text-[#B45309]">👑 GOLD</span>
                 </div>
-                <div ref={track} className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto pb-1">
+                <div className="relative min-w-0 flex-1">
+                {/* ‹ › arrows: move the levels with a mouse (miglife: "how can i move between them") */}
+                {(["left", "right"] as const).map((side) => (
+                  <button
+                    key={side}
+                    type="button"
+                    aria-label={side === "left" ? "Earlier levels" : "Later levels"}
+                    onClick={() => track.current?.scrollBy({ left: (side === "left" ? -1 : 1) * Math.max(220, (track.current?.clientWidth || 300) * 0.8), behavior: "smooth" })}
+                    className={`absolute top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white text-[18px] font-black text-[#1D4ED8] shadow-[0_2px_8px_rgba(30,60,120,.25)] hover:bg-[#EEF4FF] ${side === "left" ? "-left-1" : "-right-1"}`}
+                  >
+                    {side === "left" ? "‹" : "›"}
+                  </button>
+                ))}
+                <div ref={track} className="no-scrollbar flex min-w-0 flex-1 gap-1.5 overflow-x-auto scroll-smooth pb-1">
                   {s.levels.map((l, i) => {
                     const n = i + 1;
                     return (
@@ -154,8 +167,9 @@ export default function SeasonPage() {
                     );
                   })}
                 </div>
+                </div>
               </div>
-              <p className="mt-1.5 text-center text-[10.5px] font-bold text-[#5B6B8C]">← swipe to see all 30 levels → · tap a green box to claim</p>
+              <p className="mt-1.5 text-center text-[10.5px] font-bold text-[#5B6B8C]">← swipe or tap ‹ › to see all levels · tap a green box to claim</p>
             </div>
 
             {/* badges */}

@@ -2202,7 +2202,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         setNotInRoomOpen(true);
         return;
       }
-      await addDoc(collection(db, "room_messages", roomName, "messages"), {
+      const line = {
         // the quote keeps only the replied line: an older "↩ name: …" quote line is dropped, so replies never nest
         text: `${profile.username}: ${replyTo ? `↩ ${replyTo.sender}: ${replyTo.snippet.replace(/^↩ [^\n]*\n/, "")}\n` : ""}${clean}`,
         sender: profile.username,
@@ -2211,13 +2211,25 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
         giftName: "",
         createdAt: serverTimestamp(),
         clientCreatedAt: Date.now(),
-      });
+      };
+      const msgs = collection(db, "room_messages", roomName, "messages");
+      try {
+        await addDoc(msgs, line);
+      } catch (first) {
+        // 📶 a short network hiccup: try once more by itself before saying it failed
+        const code = String((first as { code?: string })?.code || "");
+        if (!["unavailable", "deadline-exceeded", "aborted", "internal", "resource-exhausted", "unknown"].includes(code)) throw first;
+        await new Promise((r) => setTimeout(r, 900));
+        await addDoc(msgs, line);
+      }
       setText("");
       setReplyTo(null);
       stickToBottom.current = true;
     } catch (err) {
       console.error(err);
-      note("Message could not be sent. Please try again.");
+      // the code says why (like the app): permission-denied = the server refused it, unavailable = no connection …
+      const code = String((err as { code?: string })?.code || "").replace(/^firestore\//, "");
+      note(`Message could not be sent${code ? ` (${code})` : ""}. Please try again.`);
     } finally {
       setSending(false);
     }
@@ -2920,7 +2932,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
 
           {/* People in the room */}
           <aside
-            className={`${showUsers ? "block" : "hidden"} absolute inset-x-2 top-2 z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#CFE3F5] bg-white p-3 shadow-lg lg:static lg:block lg:max-h-none lg:w-60 lg:shadow-sm`}
+            className={`${showUsers ? "block" : "hidden"} thin-scroll absolute inset-x-2 top-2 z-20 max-h-[60vh] overflow-y-auto rounded-2xl border border-[#CFE3F5] bg-white p-3 shadow-lg lg:static lg:block lg:max-h-none lg:w-60 lg:shadow-sm`}
           >
             <div className="mb-2 flex items-center">
               <h2 className="flex-1 text-xs font-bold uppercase tracking-widest text-[#35507E]">
@@ -2963,12 +2975,12 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                     return null;
                   })()}
                   <span className="ml-auto shrink-0 text-xs text-[#6B7A99]">{u.level}</span>
-                  {u.uid !== user.uid && (perms.canKick || perms.canBan || perms.canMute || perms.canManagePrivate) && (
+                  {u.uid !== user.uid && (
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setMenuFor(menuFor === u.uid ? null : u.uid)}
-                        title="Moderate"
+                        title="Options"
                         className="rounded px-1 text-[#5B6B8C] hover:bg-[#EAF4FE] hover:text-[#0B2A5B]"
                       >
                         ⋯
@@ -2977,6 +2989,11 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                         <div className="absolute right-0 top-6 z-30 w-40 overflow-hidden rounded-xl border border-[#D5E3F5] bg-white text-sm text-[#0B2A5B] shadow-xl">
                           {(
                             [
+                              // @ Mention (everyone) — the side list now has everything the Participants panel has
+                              ["@ Mention", () => {
+                                const mention = `@${u.username}`;
+                                setText((t) => (t.includes(mention) ? t : t.trim() ? `${t.trimEnd()} ${mention} ` : `${mention} `));
+                              }, false],
                               perms.canKick && ["👢 Kick", (c: ModContext) => kickUser(c, u.username)],
                               perms.canKick && ["👋 Bump", (c: ModContext) => bumpUser(c, u.username)],
                               perms.canBan && ["🚫 Ban", (c: ModContext) => banUser(c, u.username, true)],
@@ -2992,13 +3009,14 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                                 (roomInfo.moderators.includes(u.username.toLowerCase())
                                   ? ["🛑 Remove Mod", (c: ModContext) => setPublicRoomMod(c, u.username, false)]
                                   : ["⭐ Make Mod", (c: ModContext) => setPublicRoomMod(c, u.username, true)]),
-                            ].filter(Boolean) as [string, (c: ModContext) => unknown][]
-                          ).map(([label, run]) => (
+                            ].filter(Boolean) as [string, (c: ModContext) => unknown, boolean?][]
+                          ).map(([label, run, needsMod]) => (
                             <button
                               key={label}
                               type="button"
                               onClick={() => {
                                 setMenuFor(null);
+                                if (needsMod === false) return void (run as () => unknown)();
                                 const c = modCtx();
                                 if (c) run(c);
                               }}
@@ -3089,7 +3107,8 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                   closeMenu();
                   flashToast(nowMuted ? "🔇 Room sounds are off" : "🔊 Room sounds are on");
                 }],
-                ["people", "Participants", () => (closeMenu(), setPeopleOpen(true))],
+                // on a computer the people list is always on the right → no second list in the menu
+                ...(typeof window !== "undefined" && window.innerWidth >= 1024 ? [] : [["people", "Participants", () => (closeMenu(), setPeopleOpen(true))]]),
                 ["kick", "Kick User", () => (closeMenu(), setKickOpen(true))],
                 ["leave", "Leave Room", () => (closeMenu(), leaveRoom())],
               ] as [MenuIconName, string, () => void][]
@@ -3127,7 +3146,7 @@ function RoomView({ roomName, user, loading }: { roomName: string; user: User | 
                 ⤢
               </button>
             </div>
-            <ul data-notranslate className="min-h-0 flex-1 overflow-y-auto pb-safe">
+            <ul data-notranslate className="thin-scroll min-h-0 flex-1 overflow-y-auto pb-safe">
               {roomUsers.map((u) => {
                 const owner = !!roomInfo.ownerUid && u.uid === roomInfo.ownerUid;
                 const actions = (

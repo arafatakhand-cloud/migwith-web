@@ -1,4 +1,5 @@
 import DarkReadable from "./_components/DarkReadable";
+import WheelSideways from "./_components/WheelSideways";
 import CallHost from "./_components/CallHost";
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
@@ -101,6 +102,7 @@ export default function RootLayout({
         <TextStyleBar />
         {/* ⚫ Dark: light cards painted by the pages themselves turn black, dark text turns light */}
         <DarkReadable />
+        <WheelSideways />
       </body>
     </html>
   );
