@@ -441,6 +441,7 @@ export function StorySongPicker({
   const [tab, setTab] = useState<"All" | "Happy" | "Sad" | "Flute" | "miGlife">("All");
   const [busy, setBusy] = useState("");
   const [err, setErr] = useState("");
+  const [query, setQuery] = useState("");
   const { playing, play, stop } = usePlayer();
   const custom = useCustomSongs() as (ProfileSong & { hidden?: boolean })[];
   const ALL = [...PROFILE_SONGS, ...custom.filter((s) => !s.hidden)];
@@ -469,75 +470,65 @@ export function StorySongPicker({
     }
   };
   const tabs = (["All", "Happy", "Sad", "Flute", "miGlife"] as const).filter((t) => t !== "miGlife" || ALL.some((s) => s.category === "miGlife"));
-  const useBtn = (s: ProfileSong) => (
-    <button
-      type="button"
-      disabled={!!busy}
-      onClick={() => void use(s)}
-      className={`h-9 rounded-full px-4 text-[13px] font-extrabold disabled:opacity-60 ${current === s.name ? "bg-[#16A34A] text-white" : "bg-[#1D4ED8] text-white"}`}
-    >
-      {busy === s.id ? "Adding…" : current === s.name ? "✓ Added" : "Use"}
-    </button>
-  );
+  // 🎨 Music Library v2 (2026-11-26, design A "Clean List"): search · sideways mood chips · one song per row
+  const q = query.trim().toLowerCase();
+  const list = ALL.filter((s) => (tab === "All" || s.category === tab) && (!q || s.name.toLowerCase().includes(q) || (s.mood || "").toLowerCase().includes(q)));
+  const row = (s: ProfileSong, sub: React.ReactNode) => {
+    const on = playing === s.id;
+    return (
+      <div key={s.id} className={`flex items-center gap-3 rounded-2xl px-2 py-2 ${on || current === s.name ? "bg-[#EEF3FF]" : ""}`}>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[22px]" style={{ background: `linear-gradient(135deg, ${s.colors[0]}, ${s.colors[1]})` }}>{s.emoji}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[14.5px] font-extrabold">{s.name}</span>
+          {on ? <Eq on color="#2563EB" /> : <span className="block truncate text-[12px] text-[#7A8499]">{sub}</span>}
+        </span>
+        <button type="button" onClick={() => play(s)} aria-label={on ? "Stop" : "Play"} className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-[1.5px] border-[#D5DBE6] text-[12px] text-[#2563EB]">{on ? "❚❚" : "▶"}</button>
+        <button
+          type="button"
+          disabled={!!busy}
+          onClick={() => void use(s)}
+          className={`h-9 shrink-0 rounded-full px-3.5 text-[13px] font-extrabold disabled:opacity-60 ${current === s.name ? "bg-[#16A34A] text-white" : on ? "bg-[#1D4ED8] text-white" : "bg-[#EEF3FF] text-[#1D4ED8]"}`}
+        >
+          {busy === s.id ? "Adding…" : current === s.name ? "✓ Added" : "Use"}
+        </button>
+      </div>
+    );
+  };
   return (
     <div data-nodark className="fixed inset-0 z-[85] flex flex-col justify-end bg-black/45" onClick={() => (stop(), onClose())}>
-      <div className="mx-auto flex max-h-[86%] w-full max-w-[480px] flex-col rounded-t-[26px] bg-[#F3F6FB] text-[#0B1B3F]" onClick={(e) => e.stopPropagation()}>
+      <div className="mx-auto flex max-h-[86%] w-full max-w-[480px] flex-col rounded-t-[26px] bg-white text-[#0B1B3F]" onClick={(e) => e.stopPropagation()}>
         <div className="px-4 pt-2.5">
-          <div className="mx-auto mb-2.5 h-[5px] w-11 rounded-full bg-[#CBD5E1]" />
-          <div className="flex items-center">
-            <span className="w-16" />
-            <div className="flex-1 text-center">
-              <p className="text-[18px] font-black">🎵 Music Library</p>
-              <p className="text-[10.5px] font-bold tracking-[2px] text-[#2563EB]">{subtitle}</p>
+          <div className="mx-auto mb-2 h-[5px] w-11 rounded-full bg-[#D5DBE6]" />
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[19px] font-black">🎵 Music Library</p>
+              <p className="text-[10px] font-bold tracking-[1.6px] text-[#2563EB]">{subtitle}</p>
             </div>
-            <span className="flex w-16 justify-end">
-              {current && onRemove && (
-                <button type="button" onClick={() => (stop(), onRemove())} className="rounded-full bg-[#FEE2E2] px-2.5 py-1 text-[11.5px] font-bold text-[#B91C1C]">Remove</button>
-              )}
-            </span>
+            {current && onRemove && (
+              <button type="button" onClick={() => (stop(), onRemove())} className="rounded-full bg-[#FEE2E2] px-2.5 py-1 text-[11.5px] font-bold text-[#B91C1C]">Remove</button>
+            )}
+            <button type="button" onClick={() => (stop(), onClose())} aria-label="Close" className="grid h-9 w-9 place-items-center rounded-full text-[18px] text-[#667085] hover:bg-[#F1F4FA]">✕</button>
           </div>
-          {err && <p className="mt-2 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[12.5px] font-semibold text-[#B91C1C]">{err}</p>}
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-2">
-          {mine.length > 0 && (
-            <div className="rounded-[20px] bg-[#FFF8E6] p-2.5">
-              <p className="px-1 text-[14px] font-black text-[#8A5A00]">🏅 My Profile Songs</p>
-              {mine.map(([s, t]) => (
-                <div key={s.id} className="mt-2 flex items-center gap-2.5 rounded-2xl border-[1.5px] border-[#E6ECF5] bg-white p-2">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[20px]" style={{ background: `linear-gradient(135deg, ${s.colors[0]}, ${s.colors[1]})` }}>{s.emoji}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-extrabold">{s.name}</span>
-                    <span className="block text-[11px] font-semibold text-[#6B7A99]">⏳ {Math.max(1, Math.ceil((t - now) / 86_400_000))} days left</span>
-                  </span>
-                  <button type="button" onClick={() => play(s)} aria-label="Play" className="grid h-9 w-9 place-items-center rounded-full border-[1.5px] border-[#C9D6EE] text-[13px] text-[#1D4ED8]">{playing === s.id ? "■" : "▶"}</button>
-                  {useBtn(s)}
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="mt-3 flex flex-wrap gap-1.5">
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="🔍  Search songs…" className="mt-2.5 w-full rounded-[14px] bg-[#F1F4FA] px-3.5 py-2.5 text-[14px] outline-none placeholder:text-[#8A94A8] focus:ring-2 focus:ring-[#BFD0FF]" />
+          <div className="thin-scroll -mx-4 mt-2.5 flex gap-2 overflow-x-auto whitespace-nowrap px-4 pb-1.5">
             {tabs.map((t) => (
-              <button key={t} type="button" onClick={() => setTab(t)} className={`rounded-full px-3 py-1.5 text-[12.5px] font-extrabold ${tab === t ? "bg-[#1D4ED8] text-white" : "bg-white text-[#0B1B3F]"}`}>
-                {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : t === "Flute" ? "🪈 Bansuri" : t === "miGlife" ? "🎤 miGlife" : "All"} ({t === "All" ? ALL.length : ALL.filter((s) => s.category === t).length})
+              <button key={t} type="button" onClick={() => setTab(t)} className={`shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-extrabold ${tab === t ? "bg-[#0B1B3F] text-white" : "bg-[#F1F4FA] text-[#334155]"}`}>
+                {t === "Happy" ? "😊 Happy" : t === "Sad" ? "😢 Sad" : t === "Flute" ? "🪈 Bansuri" : t === "miGlife" ? "🎤 miGlife" : "All"} {t === "All" ? ALL.length : ALL.filter((s) => s.category === t).length}
               </button>
             ))}
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            {ALL.filter((s) => tab === "All" || s.category === tab).map((s) => (
-              <div key={s.id} className="rounded-[18px] border-[1.5px] border-[#E6ECF5] bg-white p-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl text-[20px]" style={{ background: `linear-gradient(135deg, ${s.colors[0]}, ${s.colors[1]})` }}>{s.emoji}</span>
-                  <Eq on={playing === s.id} color={s.colors[1]} />
-                </div>
-                <p className="mt-1.5 truncate text-[14px] font-black">{s.name}</p>
-                <p className="truncate text-[11px] text-[#6B7A99]">{s.mood} · {songSeconds(s)} s</p>
-                <div className="mt-2 flex gap-1.5">
-                  <button type="button" onClick={() => play(s)} className="h-9 flex-1 rounded-full border-[1.5px] border-[#C9D6EE] text-[12.5px] font-extrabold text-[#1D4ED8]">{playing === s.id ? "■ Stop" : "▶ Play"}</button>
-                  {useBtn(s)}
-                </div>
-              </div>
-            ))}
-          </div>
+          {err && <p className="mt-1 rounded-xl bg-[#FEF2F2] px-3 py-2 text-[12.5px] font-semibold text-[#B91C1C]">{err}</p>}
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-[max(16px,env(safe-area-inset-bottom))] pt-1">
+          {mine.length > 0 && !q && (
+            <>
+              <p className="px-2 pb-0.5 pt-2 text-[11.5px] font-extrabold tracking-[1.5px] text-[#8A94A8]">MY PROFILE SONG{mine.length > 1 ? "S" : ""}</p>
+              {mine.map(([s, t]) => row(s, `⏳ ${Math.max(1, Math.ceil((t - now) / 86_400_000))} days left`))}
+            </>
+          )}
+          <p className="px-2 pb-0.5 pt-3 text-[11.5px] font-extrabold tracking-[1.5px] text-[#8A94A8]">{q ? `RESULTS (${list.length})` : tab === "All" ? "ALL SONGS" : "SONGS"}</p>
+          {list.map((s) => row(s, `${s.mood} · ${songSeconds(s)} s`))}
+          {list.length === 0 && <p className="px-2 py-8 text-center text-[13px] text-[#7A8499]">No song found.</p>}
         </div>
       </div>
     </div>
