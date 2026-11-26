@@ -1199,6 +1199,8 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
             )}
             {user && !mineOnly && (
               <div className="flex items-center gap-2.5">
+                {/* ＋ and 🔔 live in the bottom bar; only here when that bar isn't shown (no duplicate) */}
+                {(author || embedded) && (<>
                 {/* ＋ write a Mig */}
                 <button type="button" onClick={() => setComposing(true)} aria-label="Write a Mig" title="Write a Mig" className="flex h-[38px] w-[38px] items-center justify-center rounded-full transition hover:bg-[#E3E9F4] active:scale-95">
                   <svg viewBox="0 0 24 24" className="h-[26px] w-[26px]" fill="none" stroke="#0B1B3F" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
@@ -1210,6 +1212,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
                     <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full border-2 border-white bg-[#E53935] px-1 text-center text-[10px] font-bold leading-[14px] text-white">{badges.alerts > 99 ? "99+" : badges.alerts}</span>
                   )}
                 </Link>
+                </>)}
                 {/* 👤 my picture → my own posts (the Mine tab) */}
                 <button type="button" onClick={() => setTab("mine")} aria-label="My Migs" title="My Migs" className="relative rounded-full transition active:scale-95" style={{ boxShadow: "0 0 0 2.5px #2563EB" }}>
                   <Avatar name={username} color={meColor} size={40} />
