@@ -50,18 +50,34 @@ html[data-font="rounded"] body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
-/* 📜 long up-and-down lists (room people …): a thin scrollbar you can see and grab */
-.thin-scroll { scrollbar-width: thin; scrollbar-color: rgba(100, 116, 139, 0.55) transparent; }
-.thin-scroll::-webkit-scrollbar { width: 7px; height: 7px; }
-.thin-scroll::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.55); border-radius: 9999px; }
-.thin-scroll::-webkit-scrollbar-track { background: transparent; }
-/* 🖱 with a mouse (computer) a thin scrollbar shows, so sideways rows can be moved
+/* 📜 long up-and-down lists (room people …): a scrollbar that is ALWAYS drawn, on its own
+   light track, so it is clearly the list's own bar (not the browser's).
+   Chrome / Edge: only the ::-webkit-scrollbar styles (when scrollbar-width / scrollbar-color
+   are also set, Chrome ignores these and may hide the bar as an overlay).
+   Firefox: scrollbar-width / scrollbar-color. */
+.thin-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.thin-scroll::-webkit-scrollbar-track { background: rgba(100, 116, 139, 0.12); border-radius: 9999px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.6); border-radius: 9999px; }
+.thin-scroll::-webkit-scrollbar-thumb:hover { background: rgba(51, 65, 85, 0.8); }
+@supports not selector(::-webkit-scrollbar) {
+  .thin-scroll { scrollbar-width: thin; scrollbar-color: rgba(71, 85, 105, 0.6) rgba(100, 116, 139, 0.12); }
+}
+html[data-theme="dark_night"] .thin-scroll::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.08); }
+html[data-theme="dark_night"] .thin-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.35); }
+
+/* 🖱 with a mouse (computer) sideways rows show a thin bar too, so they can be moved
    (miglife: "how can i move between them — no scrollbar"); phones stay clean */
 @media (hover: hover) and (pointer: fine) {
-  .no-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(100, 116, 139, 0.45) transparent; }
   .no-scrollbar::-webkit-scrollbar { display: block; height: 6px; width: 6px; }
-  .no-scrollbar::-webkit-scrollbar-thumb { background: rgba(100, 116, 139, 0.45); border-radius: 9999px; }
-  .no-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .no-scrollbar::-webkit-scrollbar-track { background: rgba(100, 116, 139, 0.1); border-radius: 9999px; }
+  .no-scrollbar::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.5); border-radius: 9999px; }
+  @supports not selector(::-webkit-scrollbar) {
+    .no-scrollbar { scrollbar-width: thin; scrollbar-color: rgba(71, 85, 105, 0.5) transparent; }
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  /* the base rule above sets scrollbar-width: none — in Chrome that would hide the bar */
+  @supports selector(::-webkit-scrollbar) { .no-scrollbar { scrollbar-width: auto; } }
 }
 
 /* ---- iPhone / phone comfort ---- */
