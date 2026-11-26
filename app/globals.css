@@ -1168,6 +1168,10 @@ html[data-theme="glass"] :is(main[data-shell], [data-shell-copy]) .fr-solid.fr-s
   50% { color: #f5a300; }
 }
 .rb-bday { animation: rb-bday 2.4s ease-in-out infinite; }
+/* 🇧🇩 the "bangladesh" ID: clean green / red, quick switch (no brown in between) */
+@keyframes rb-bd { 0%, 38%, 100% { color: #008A5A; } 50%, 88% { color: #F42A41; } }
+.rb-bd { animation: rb-bd 2.4s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .rb-bd { animation-play-state: paused; } }
 
 /* 🫧 Glass theme: the private chat ⋮ menu is a clear glass card (like the app) */
 html[data-theme="glass"]:not([data-ui="classic"]) :is(main[data-shell], [data-shell-copy]) .pc-menu.pc-menu.pc-menu.bg-white {
