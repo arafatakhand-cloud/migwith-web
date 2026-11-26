@@ -1409,7 +1409,7 @@ export function FeedList({ author = "", embedded = false }: { author?: string; e
           const artSize = len <= 60 ? "text-[23px]" : len <= 140 ? "text-[19px]" : "text-[16px]";
           // 📝 N1 (2026-11-25): the writer is a full-screen "New post" page — ✕ · title · Post on top,
           // me + who sees it, quick chips, the words, then the media tiles and the bottom bar
-          const postLabel = cedit ? (cbusy ? "Saving…" : "Save") : cbusy ? "Posting…" : csched ? "Schedule" : "Post";
+          const postLabel = cedit ? (cbusy ? "Saving…" : "Save") : cbusy ? "Migging…" : csched ? "Schedule" : "Mig it ➤";
           const postOff = cbusy || cvideoBusy || empty;
           const chipCls = "flex shrink-0 items-center gap-1.5 rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-bold transition active:scale-95";
           return typeof document === "undefined" ? null : createPortal(
