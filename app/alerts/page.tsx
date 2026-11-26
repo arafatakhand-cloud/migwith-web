@@ -559,13 +559,29 @@ function ColorRequestCard({ a }: { a: Alert }) {
     [a.requestId]
   );
   const result = a.resolution || (live === "approved" || live === "rejected" ? live : null) || local;
-  const act = (approve: boolean) => {
+  // 🔁 2026-11-27: a short server hiccup ("unavailable": busy or just waking up) is
+  // tried once more by itself; then a clear message with the code.
+  const act = async (approve: boolean) => {
     setBusy(true);
     setError("");
-    (approve ? approveColorPurchase : rejectColorPurchase)({ requestId: a.requestId })
-      .then(({ data }) => setLocal(data?.status || (approve ? "approved" : "rejected")))
-      .catch((e: any) => setError(e?.message || "Could not update the request."))
-      .finally(() => setBusy(false));
+    const call = () => (approve ? approveColorPurchase : rejectColorPurchase)({ requestId: a.requestId });
+    const transient = (e: any) => /unavailable|deadline-exceeded|internal/i.test(String(e?.code || ""));
+    try {
+      let res;
+      try {
+        res = await call();
+      } catch (e: any) {
+        if (!transient(e)) throw e;
+        await new Promise((r) => setTimeout(r, 1500));
+        res = await call();
+      }
+      setLocal(res.data?.status || (approve ? "approved" : "rejected"));
+    } catch (e: any) {
+      const code = String(e?.code || "").replace(/^functions\//, "");
+      setError(transient(e) || !e?.message ? `Server is busy — please tap again in a moment (${code || "error"}).` : e.message);
+    } finally {
+      setBusy(false);
+    }
   };
   return (
     <FancyCard top="#2EC5D6" bottom="#0B4F6C">
