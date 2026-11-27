@@ -1,7 +1,7 @@
 import { getApps, getApp, initializeApp } from "firebase/app";
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
@@ -39,5 +39,20 @@ export const storage = getStorage(app);
 
 // Must match FUNCTIONS_REGION in the Cloud Functions index.js.
 export const functions = getFunctions(app, "asia-south1");
+
+// 🌐 2026-11-27 (leaving Firebase billing, step 1): the same functions also run on
+// miGlife's own server. app_settings/api.useVps chooses where every call goes; the
+// Firebase copies stay as the backup (the server turns useVps off if the VPS stops).
+// The Firebase SDK reads `customDomain` on every call, so switching needs no reload.
+export const API_VPS_URL = "https://api.miglife.app";
+if (typeof window !== "undefined") {
+  onSnapshot(
+    doc(db, "app_settings", "api"),
+    (s) => {
+      (functions as unknown as { customDomain: string | null }).customDomain = s.get("useVps") === true ? API_VPS_URL : null;
+    },
+    () => {}
+  );
+}
 
 export default app;
